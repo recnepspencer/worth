@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn composed_workflow_run_mints_artifact_authority_and_cleans_every_owner() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let operation_resources = admitted_plan("managed-workflow", 8);
     let stage_resources = admitted_plan("managed-workflow:stage", 4);
@@ -17,7 +21,7 @@ fn composed_workflow_run_mints_artifact_authority_and_cleans_every_owner() {
 
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
+        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
         .expect("managed admission should compose workflow lower authorities")
         .start()
         .expect("workflow start should mint one artifact authority");
@@ -52,6 +56,10 @@ fn composed_workflow_run_mints_artifact_authority_and_cleans_every_owner() {
 
 #[test]
 fn workflow_cleanup_pending_retains_run_until_live_artifact_owner_closes() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let operation_resources = admitted_plan("artifact-workflow", 8);
     let stage_resources = admitted_plan("artifact-workflow:producer", 4);
@@ -69,7 +77,7 @@ fn workflow_cleanup_pending_retains_run_until_live_artifact_owner_closes() {
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
+        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
         .expect("artifact workflow should admit")
         .start()
         .expect("artifact workflow should start");
@@ -189,6 +197,10 @@ fn workflow_cleanup_pending_retains_run_until_live_artifact_owner_closes() {
 
 #[test]
 fn workflow_cleanup_thread_failure_returns_the_same_terminal_for_retry() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let operation_resources = admitted_plan("workflow-cleanup-retry", 8);
     let stage_resources = admitted_plan("workflow-cleanup-retry:stage", 4);
@@ -203,7 +215,7 @@ fn workflow_cleanup_thread_failure_returns_the_same_terminal_for_retry() {
     let lower = causal_fixture::managed_admission_context();
     let terminal = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
+        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
         .expect("workflow run should admit")
         .start()
         .expect("workflow run should start")
@@ -252,6 +264,10 @@ fn workflow_cleanup_thread_failure_returns_the_same_terminal_for_retry() {
 
 #[test]
 fn rejected_workflow_admission_returns_its_reserved_attempt() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let owner_runtime = query_runtime();
     let foreign_runtime = query_runtime();
     let operation_resources = admitted_plan("rejected-workflow", 8);
@@ -268,7 +284,7 @@ fn rejected_workflow_admission_returns_its_reserved_attempt() {
 
     let failure = match foreign_runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
+        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
     {
         Ok(_) => panic!("foreign Query runtime admitted workflow authority"),
         Err(failure) => failure,

@@ -9,6 +9,10 @@ use crate::facade::{
 
 #[test]
 fn bridge_harness_subscription_suite_31_shared_fanout_parity_is_canonical() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = runtime(BridgeRuntimePolicy::development());
     let declaration = detail_subscription(&bridge);
     let shared_active = active_subscription_for(
@@ -16,6 +20,7 @@ fn bridge_harness_subscription_suite_31_shared_fanout_parity_is_canonical() {
         &declaration,
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let plan = bridge
         .plan_shared_subscription_fanout(&shared_active, vec![canonical_consumer(&bridge)])
@@ -42,6 +47,7 @@ fn bridge_harness_subscription_suite_31_shared_fanout_parity_is_canonical() {
         &separate_declaration,
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let separate_window = sealed_window_with_members(
         &separate_runtime,
@@ -110,6 +116,7 @@ fn bridge_harness_subscription_suite_31_shared_fanout_parity_is_canonical() {
         &collection_declaration,
         BridgeSubscriptionDeliveryDensityPosture::BoundedCoalescedWindow,
         2,
+        resource_request,
     );
     let coalesced_plan = bridge
         .plan_shared_subscription_fanout(&coalesced_active, vec![canonical_consumer(&bridge)])
@@ -152,7 +159,7 @@ fn bridge_harness_subscription_suite_31_shared_fanout_parity_is_canonical() {
             BridgeSubscriptionConsumerDiagnosticsRetention::MinimalReference,
         )
         .expect("lag-bounded primary consumer should admit");
-    let lag_ready = activation_ready_for(&lag_runtime, &lag_declaration);
+    let lag_ready = activation_ready_for(&lag_runtime, &lag_declaration, resource_request);
     let lag_cost = lag_runtime
         .admit_subscription_delivery_cost_profile(
             BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,

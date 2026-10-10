@@ -11,11 +11,14 @@ use crate::domain_computation::{
 #[test]
 fn proposed_state_exposes_typed_overlay_origins_without_mutating_authoritative_truth() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let state = state();
-        let (mut running, graph) = provisional_run(Arc::clone(&state));
+        let (mut running, graph) = provisional_run(Arc::clone(&state), resource_request);
         let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
         let program = staged
             .effect_authority()
@@ -75,35 +78,45 @@ fn proposed_state_exposes_typed_overlay_origins_without_mutating_authoritative_t
 #[test]
 fn every_provisional_stage_has_a_consuming_discard_that_clears_overlay_and_session() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        discard_at_stage(execution, Stage::Attempt);
-        discard_at_stage(execution, Stage::Proposed);
-        discard_at_stage(execution, Stage::Inspection);
+        discard_at_stage(execution, Stage::Attempt, resource_request);
+        discard_at_stage(execution, Stage::Proposed, resource_request);
+        discard_at_stage(execution, Stage::Inspection, resource_request);
     });
 }
 
 #[test]
 fn abandoning_each_provisional_state_discards_overlay_before_aborting_session() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        abandon_at_stage(execution, Stage::Attempt);
-        abandon_at_stage(execution, Stage::Proposed);
-        abandon_at_stage(execution, Stage::Inspection);
+        abandon_at_stage(execution, Stage::Attempt, resource_request);
+        abandon_at_stage(execution, Stage::Proposed, resource_request);
+        abandon_at_stage(execution, Stage::Inspection, resource_request);
     });
 }
 
 #[test]
 fn equivalent_direct_and_revised_programs_have_the_same_semantic_post_state() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let direct_state = state();
-        let (mut direct_run, direct_graph) = provisional_run(Arc::clone(&direct_state));
+        let (mut direct_run, direct_graph) =
+            provisional_run(Arc::clone(&direct_state), resource_request);
         let (direct_staged, direct_fresh) =
             staged_with_fresh_read_set(execution, &mut direct_run, &direct_graph);
         let direct_program = final_program(&direct_staged, &direct_fresh);
@@ -116,7 +129,8 @@ fn equivalent_direct_and_revised_programs_have_the_same_semantic_post_state() {
         cleanup(direct_run);
 
         let revised_state = state();
-        let (mut revised_run, revised_graph) = provisional_run(Arc::clone(&revised_state));
+        let (mut revised_run, revised_graph) =
+            provisional_run(Arc::clone(&revised_state), resource_request);
         let (revised_staged, revised_fresh) =
             staged_with_fresh_read_set(execution, &mut revised_run, &revised_graph);
         let initial = revised_staged
@@ -155,9 +169,10 @@ enum Stage {
 fn discard_at_stage(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     stage: Stage,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let state = state();
-    let (mut running, graph) = provisional_run(Arc::clone(&state));
+    let (mut running, graph) = provisional_run(Arc::clone(&state), resource_request);
     let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
     let program = final_program(&staged, &fresh);
     let attempt = staged.begin_provisional_attempt(fresh, program).unwrap();
@@ -181,9 +196,10 @@ fn discard_at_stage(
 fn abandon_at_stage(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     stage: Stage,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let state = state();
-    let (mut running, graph) = provisional_run(Arc::clone(&state));
+    let (mut running, graph) = provisional_run(Arc::clone(&state), resource_request);
     let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
     let program = final_program(&staged, &fresh);
     let attempt = staged.begin_provisional_attempt(fresh, program).unwrap();

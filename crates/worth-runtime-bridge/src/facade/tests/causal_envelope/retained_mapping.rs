@@ -23,6 +23,10 @@ use crate::facade::{
 
 #[test]
 fn causal_envelope_maps_retained_source_structural_stream_continuity_and_merge_records() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let merge_declaration = registered_causal_merge(
         MergeHistoryDeclarationIdentity::admit_bridge_owned("merge:causal-retained"),
     );
@@ -43,10 +47,11 @@ fn causal_envelope_maps_retained_source_structural_stream_continuity_and_merge_r
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("route should plan");
     let route_result = runtime
-        .deliver_invalidation(planned_route)
+        .deliver_invalidation(planned_route, execution)
         .expect("route should deliver");
     let route_record = runtime
         .diagnostics()
@@ -74,7 +79,7 @@ fn causal_envelope_maps_retained_source_structural_stream_continuity_and_merge_r
         ))
         .expect("historical source should admit");
     let source_observation = runtime
-        .materialize_source_packet(&source_contract, SnapshotReadPacket::new(vec![]))
+        .materialize_source_packet(&source_contract, SnapshotReadPacket::new(vec![]), execution)
         .expect("source should materialize");
     let source_record = runtime
         .canonicalize_source_materialization_record(&source_contract, &source_observation)
@@ -111,6 +116,7 @@ fn causal_envelope_maps_retained_source_structural_stream_continuity_and_merge_r
             &structural_contract,
             structural_read.clone(),
             vec![structural_read],
+            execution,
         )
         .expect("structural packets should plan");
     let structural_reduced = runtime

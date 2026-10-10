@@ -8,6 +8,9 @@ use worth_query_installation::facade::WorthQueryInvariantEnforcement;
 #[test]
 fn provider_must_load_exactly_the_admitted_locator_closure() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -29,6 +32,7 @@ fn provider_must_load_exactly_the_admitted_locator_closure() {
                 )],
                 "closed-loop",
                 locators,
+                resource_request,
             )
             .err()
             .expect("omitted or out-of-closure state must deny");

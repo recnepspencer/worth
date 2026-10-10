@@ -2,7 +2,11 @@ use super::support::*;
 
 #[test]
 fn runtime_admits_detail_exact_subscription_against_current_snapshot_basis() {
-    let (_runtime, ready) = activation_ready_detail_subscription();
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (_runtime, ready) = activation_ready_detail_subscription(resource_request);
     let admitted = ready.admitted();
 
     assert_eq!(
@@ -18,7 +22,11 @@ fn runtime_admits_detail_exact_subscription_against_current_snapshot_basis() {
 
 #[test]
 fn runtime_admits_collection_membership_subscription_against_snapshot_basis() {
-    let (_runtime, ready) = activation_ready_collection_subscription();
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (_runtime, ready) = activation_ready_collection_subscription(resource_request);
     let admitted = ready.admitted();
 
     assert_eq!(
@@ -38,6 +46,10 @@ fn runtime_admits_collection_membership_subscription_against_snapshot_basis() {
 
 #[test]
 fn signal_strategy_identity_is_derived_from_validated_basis_evidence() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let declaration = runtime
         .declare_subscription(
@@ -61,6 +73,7 @@ fn signal_strategy_identity_is_derived_from_validated_basis_evidence() {
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
             ),
+            execution,
         )
         .expect("snapshot basis should admit");
     let branch_head_admission = runtime
@@ -69,6 +82,7 @@ fn signal_strategy_identity_is_derived_from_validated_basis_evidence() {
             BridgeSubscriptionBasisRequest::branch_head(
                 crate::truth_identity_fixtures::truth_branch_fixture("main"),
             ),
+            execution,
         )
         .expect("branch-head basis should admit");
 
@@ -98,6 +112,10 @@ fn signal_strategy_identity_is_derived_from_validated_basis_evidence() {
 
 #[test]
 fn runtime_rejects_subscription_admission_when_snapshot_basis_cannot_bind() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let declaration = runtime
         .declare_subscription(
@@ -121,6 +139,7 @@ fn runtime_rejects_subscription_admission_when_snapshot_basis_cannot_bind() {
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("missing"),
             ),
+            execution,
         )
         .expect_err("unknown snapshot should reject admission");
 
@@ -133,7 +152,11 @@ fn runtime_rejects_subscription_admission_when_snapshot_basis_cannot_bind() {
 
 #[test]
 fn runtime_prepares_and_inspects_activation_ready_subscription() {
-    let (runtime, ready) = activation_ready_detail_subscription();
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, ready) = activation_ready_detail_subscription(resource_request);
 
     let explanation = runtime.inspect_activation_ready_subscription(&ready);
 
@@ -147,7 +170,11 @@ fn runtime_prepares_and_inspects_activation_ready_subscription() {
 
 #[test]
 fn runtime_deactivates_and_replays_retained_subscription_bundle() {
-    let (runtime, ready) = activation_ready_detail_subscription();
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, ready) = activation_ready_detail_subscription(resource_request);
     let registry_identity = runtime.subscription_family_registry_identity().clone();
 
     let deactivated = runtime.deactivate_subscription(ready);

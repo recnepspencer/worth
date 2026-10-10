@@ -147,6 +147,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for MultiCallArtifactPro
 #[test]
 fn provider_step_evidence_ignores_preexisting_artifacts_and_keeps_checkpoint_continuity() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -186,8 +189,12 @@ fn provider_step_evidence_ignores_preexisting_artifacts_and_keeps_checkpoint_con
             WorthQueryOperationGraphAccess::Observe,
             output,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let production = running
             .artifacts()
             .production_authority("producer")
@@ -254,6 +261,9 @@ fn provider_step_evidence_ignores_preexisting_artifacts_and_keeps_checkpoint_con
 #[test]
 fn governed_artifact_retention_survives_a_later_provider_call() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -298,8 +308,12 @@ fn governed_artifact_retention_survives_a_later_provider_call() {
             WorthQueryOperationGraphAccess::Observe,
             output,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
 
         let first = complete_observe_call(execution, running, &graph, "multi-call-first");
         assert_eq!(first.receipt().work_report().produced_artifact_count(), 1);

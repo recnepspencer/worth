@@ -114,12 +114,17 @@ fn snapshot(snapshot_identity: TruthSnapshotIdentity, text: &str) -> SnapshotFix
 
 #[test]
 fn discard_certification_retains_typed_residue_counter_and_route_evidence() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_policy(BridgeRuntimePolicy::development());
     let fixture = fixture_with_policy(BridgeRuntimePolicy::development());
     let execution = execute_speculation_request(
         &runtime,
         &fixture,
         SpeculationHarnessTarget::DiscardCertification,
+        resource_request,
     )
     .expect("discard certification should execute");
 
@@ -155,12 +160,17 @@ fn discard_certification_retains_typed_residue_counter_and_route_evidence() {
 
 #[test]
 fn promotion_certification_retains_typed_commit_replay_and_discard_evidence() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_policy(BridgeRuntimePolicy::development());
     let fixture = fixture_with_policy(BridgeRuntimePolicy::development());
     let execution = execute_speculation_request(
         &runtime,
         &fixture,
         SpeculationHarnessTarget::PromotionCertification,
+        resource_request,
     )
     .expect("promotion certification should execute");
 
@@ -207,12 +217,17 @@ fn promotion_certification_retains_typed_commit_replay_and_discard_evidence() {
 
 #[test]
 fn churn_certification_retains_typed_branch_isolation_and_resource_evidence() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_policy(BridgeRuntimePolicy::development());
     let fixture = fixture_with_policy(BridgeRuntimePolicy::development());
     let execution = execute_speculation_request(
         &runtime,
         &fixture,
         SpeculationHarnessTarget::ChurnCertification,
+        resource_request,
     )
     .expect("churn certification should execute");
 

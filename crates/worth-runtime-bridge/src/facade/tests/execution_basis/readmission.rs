@@ -6,8 +6,12 @@ use crate::facade::{
 
 #[test]
 fn readmission_mints_fresh_signal_generation_and_commits_one_new_basis() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let yielded = yielded_basis(&runtime);
+    let yielded = yielded_basis(&runtime, resource_request);
     let old_basis = yielded.basis_identity().as_str().to_owned();
     let old_request = yielded.basis_request_identity().to_owned();
     let preflight = exact_preflight(&runtime, yielded);
@@ -44,8 +48,12 @@ fn readmission_mints_fresh_signal_generation_and_commits_one_new_basis() {
 
 #[test]
 fn abort_returns_the_exact_yielded_basis_and_releases_provisional_ownership() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let yielded = yielded_basis(&runtime);
+    let yielded = yielded_basis(&runtime, resource_request);
     let yielded_basis = yielded.basis_identity().as_str().to_owned();
     let yielded_request = yielded.basis_request_identity().to_owned();
     let pending = pending_readmission(&runtime, yielded, "attempt-b");
@@ -71,8 +79,12 @@ fn abort_returns_the_exact_yielded_basis_and_releases_provisional_ownership() {
 
 #[test]
 fn foreign_thread_abort_returns_recovery_that_owner_thread_can_finish() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let yielded = yielded_basis(&runtime);
+    let yielded = yielded_basis(&runtime, resource_request);
     let yielded_basis = yielded.basis_identity().as_str().to_owned();
     let pending = pending_readmission(&runtime, yielded, "attempt-b");
     let recovery = std::thread::spawn(move || match pending.abort() {
@@ -107,9 +119,13 @@ fn foreign_thread_abort_returns_recovery_that_owner_thread_can_finish() {
 
 #[test]
 fn foreign_runtime_preflight_returns_the_untouched_yielded_authority() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let owner_runtime = runtime(BridgeRuntimePolicy::development());
     let foreign = runtime(BridgeRuntimePolicy::development());
-    let yielded = yielded_basis(&owner_runtime);
+    let yielded = yielded_basis(&owner_runtime, resource_request);
     let basis_identity = yielded.basis_identity().as_str().to_owned();
     let denial = match foreign.preflight_yielded_execution_basis(yielded, "query-operation-binding")
     {
@@ -139,9 +155,13 @@ fn foreign_runtime_preflight_returns_the_untouched_yielded_authority() {
 
 #[test]
 fn foreign_runtime_cannot_commit_an_owner_runtime_pending_readmission() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let owner_runtime = runtime(BridgeRuntimePolicy::development());
     let foreign_runtime = runtime(BridgeRuntimePolicy::development());
-    let yielded = yielded_basis(&owner_runtime);
+    let yielded = yielded_basis(&owner_runtime, resource_request);
     let pending = pending_readmission(&owner_runtime, yielded, "attempt-b");
     let commit = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         foreign_runtime.commit_yielded_execution_basis_readmission(pending)
@@ -154,8 +174,12 @@ fn foreign_runtime_cannot_commit_an_owner_runtime_pending_readmission() {
 
 #[test]
 fn reused_query_attempt_denies_before_signal_admission_and_preserves_retry() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let yielded = yielded_basis(&runtime);
+    let yielded = yielded_basis(&runtime, resource_request);
     let preflight = exact_preflight(&runtime, yielded);
     let denial = match runtime.readmit_yielded_execution_basis(
         preflight,
@@ -181,13 +205,17 @@ fn reused_query_attempt_denies_before_signal_admission_and_preserves_retry() {
         .expect("attempt-reuse denial should preserve retry authority");
 }
 
-fn yielded_basis(runtime: &RuntimeBridge) -> crate::facade::BridgeYieldedExecutionBasis {
+fn yielded_basis(
+    runtime: &RuntimeBridge,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::facade::BridgeYieldedExecutionBasis {
     runtime
         .admit_managed_execution_basis(
             managed_intent("attempt-a"),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(runtime),
+            planned_truth_view(runtime, execution),
+            execution,
         )
         .expect("initial managed basis should admit")
         .yield_execution_basis()

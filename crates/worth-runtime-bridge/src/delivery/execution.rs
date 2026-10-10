@@ -18,26 +18,16 @@ use super::snapshot::{first_snapshot_read_coordinate, open_planned_snapshot};
 pub(crate) fn deliver_planned_route(
     runtime: &RuntimeBridge,
     route: BridgePlannedRoute,
+    request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeRouteResult, BridgeDeliveryError> {
     let prepared = prepare_planned_route_for_delivery(route);
-    deliver_prepared_route(runtime, prepared)
-}
-
-pub(crate) fn deliver_planned_route_with_lease(
-    runtime: &RuntimeBridge,
-    route: BridgePlannedRoute,
-    lease: &worth_execution::ExecutionResourceLease<'_>,
-) -> Result<BridgeRouteResult, BridgeDeliveryError> {
-    deliver_prepared_route_with_request(
-        runtime,
-        prepare_planned_route_for_delivery(route),
-        worth_execution::ExecutionRequest::leased(lease),
-    )
+    deliver_prepared_route(runtime, prepared, request)
 }
 
 pub(crate) fn deliver_bulk_workload_plan(
     runtime: &RuntimeBridge,
     plan: BridgeBulkWorkloadPlan,
+    request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeBulkWorkloadResult, BridgeDeliveryError> {
     if plan.planned_routes().is_empty() {
         return Err(BridgeDeliveryError::new(
@@ -49,18 +39,13 @@ pub(crate) fn deliver_bulk_workload_plan(
     let execution_plan = plan.execution_plan();
     validate_bulk_delivery_mode(execution_plan, execution_plan.selected_mode())?;
 
-    let serial = runtime
-        .policy()
-        .execution()
-        .serial_request(worth_execution::CancellationToken::new(), None);
-    let request = worth_execution::ExecutionRequest::serial(&serial);
     let route_results = request
         .in_scope(|_| {
             plan.planned_routes()
                 .iter()
                 .cloned()
                 .map(|route| {
-                    deliver_prepared_route_with_request(
+                    deliver_prepared_route(
                         runtime,
                         prepare_planned_route_for_delivery(route),
                         request,
@@ -118,21 +103,6 @@ pub(crate) fn prepare_planned_route_for_delivery(
 pub(crate) fn deliver_prepared_route(
     runtime: &RuntimeBridge,
     prepared: BridgePreparedDeliveryRequest,
-) -> Result<BridgeRouteResult, BridgeDeliveryError> {
-    let serial = runtime
-        .policy()
-        .execution()
-        .serial_request(worth_execution::CancellationToken::new(), None);
-    deliver_prepared_route_with_request(
-        runtime,
-        prepared,
-        worth_execution::ExecutionRequest::serial(&serial),
-    )
-}
-
-pub(crate) fn deliver_prepared_route_with_request(
-    runtime: &RuntimeBridge,
-    prepared: BridgePreparedDeliveryRequest,
     request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeRouteResult, BridgeDeliveryError> {
     request
@@ -155,24 +125,27 @@ fn deliver_prepared_route_in_scope(
     let lowering_plan = prepared.validated_lowering_plan().plan();
     let mut counters = *prepared.counters();
     let read_packet = prepared.read_packet();
-    let snapshot_reader =
-        match super::snapshot::open_snapshot_reader(runtime, lowering_plan.source_snapshot()) {
-            Ok(snapshot_reader) => snapshot_reader,
-            Err(error) => {
-                let failure = BridgeDeliveryError::new(
-                    BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
-                    format!(
-                        "Bridge failed to open snapshot `{}`: {error}",
-                        lowering_plan.source_snapshot().as_str()
-                    ),
-                )
-                .with_context(delivery_context(
-                    route_identity.clone(),
-                    lowering_plan.source_snapshot().clone(),
-                ));
-                return Err(reject_delivery(runtime, failure_base.clone(), failure));
-            }
-        };
+    let snapshot_reader = match super::snapshot::open_snapshot_reader(
+        runtime,
+        lowering_plan.source_snapshot(),
+        request,
+    ) {
+        Ok(snapshot_reader) => snapshot_reader,
+        Err(error) => {
+            let failure = BridgeDeliveryError::new(
+                BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
+                format!(
+                    "Bridge failed to open snapshot `{}`: {error}",
+                    lowering_plan.source_snapshot().as_str()
+                ),
+            )
+            .with_context(delivery_context(
+                route_identity.clone(),
+                lowering_plan.source_snapshot().clone(),
+            ));
+            return Err(reject_delivery(runtime, failure_base.clone(), failure));
+        }
+    };
     let snapshot = match crate::snapshot::AdmittedSnapshotContext::admit_for(
         crate::snapshot::BridgeSnapshotContext::bind(snapshot_reader),
         lowering_plan.source_snapshot(),
@@ -341,6 +314,7 @@ fn deliver_prepared_route_in_scope(
 pub(crate) fn prepare_signal_evaluation(
     runtime: &RuntimeBridge,
     route: BridgePlannedRoute,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeSignalEvaluationRequest, BridgeDeliveryError> {
     let prepared = prepare_planned_route_for_delivery(route);
     let counters = *prepared.counters();
@@ -348,6 +322,7 @@ pub(crate) fn prepare_signal_evaluation(
     let snapshot = open_planned_snapshot(
         runtime,
         prepared.validated_lowering_plan().plan().source_snapshot(),
+        execution,
     )?;
     let artifact = prepared
         .into_inner()

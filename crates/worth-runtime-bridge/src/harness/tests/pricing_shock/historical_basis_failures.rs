@@ -2,6 +2,10 @@ use super::support::*;
 
 #[test]
 fn pricing_shock_conflicting_historical_basis_is_detectable_against_independent_oracle() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let scenario = generated_pricing_scenario();
     let runtime = build_pricing_runtime(
         pricing_reference_source_with_conflicting_shock_snapshot(),
@@ -15,6 +19,7 @@ fn pricing_shock_conflicting_historical_basis_is_detectable_against_independent_
                 crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
             )
             .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .expect("conflicting historical basis should still materialize as retained truth");
     let historical_provenance = runtime
@@ -24,6 +29,7 @@ fn pricing_shock_conflicting_historical_basis_is_detectable_against_independent_
                 crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
             )
             .with_read_packet(pricing_provenance_read_packet("rubber")),
+            execution,
         )
         .expect("conflicting historical basis should materialize provenance packet");
     let provenance_texts = read_pricing_provenance_aspect_text_packet(&historical_provenance);
@@ -57,6 +63,10 @@ fn pricing_shock_conflicting_historical_basis_is_detectable_against_independent_
 
 #[test]
 fn pricing_shock_branch_head_and_snapshot_basis_mutation_sweep_is_detectable() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for (label, source, branch) in [
         (
             "speculative-branch-head-points-at-main",
@@ -79,6 +89,7 @@ fn pricing_shock_branch_head_and_snapshot_basis_mutation_sweep_is_detectable() {
                     crate::truth_identity_fixtures::truth_branch_fixture(branch),
                 )
                 .with_read_packet(pricing_component_read_packet("rubber")),
+                execution,
             )
             .err()
             .unwrap_or_else(|| panic!("{label} should fail closed under branch-head mutation"));
@@ -100,6 +111,7 @@ fn pricing_shock_branch_head_and_snapshot_basis_mutation_sweep_is_detectable() {
                 crate::truth_identity_fixtures::truth_branch_fixture("pricing-shock"),
             )
             .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .err()
         .expect("missing branch-head snapshot basis should fail closed");
@@ -109,6 +121,10 @@ fn pricing_shock_branch_head_and_snapshot_basis_mutation_sweep_is_detectable() {
 
 #[test]
 fn pricing_shock_snapshot_identity_conflict_sweep_is_detectable_against_independent_oracle() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let scenario = generated_pricing_scenario();
 
     for (label, source, selector_branch, expected_snapshot, unexpected_cost) in [
@@ -140,6 +156,7 @@ fn pricing_shock_snapshot_identity_conflict_sweep_is_detectable_against_independ
                     crate::truth_identity_fixtures::truth_branch_fixture(selector_branch),
                 )
                 .with_read_packet(pricing_component_read_packet("rubber")),
+                execution,
             )
             .unwrap_or_else(|_| {
                 panic!("{label} should still materialize the overwritten retained snapshot")
@@ -160,6 +177,10 @@ fn pricing_shock_snapshot_identity_conflict_sweep_is_detectable_against_independ
 
 #[test]
 fn pricing_shock_branch_head_missing_commit_sweep_fails_closed() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for (label, source, branch, missing_commit) in [
         (
             "main-branch-head-missing-envelope",
@@ -184,6 +205,7 @@ fn pricing_shock_branch_head_missing_commit_sweep_fails_closed() {
                     crate::truth_identity_fixtures::truth_branch_fixture(branch),
                 )
                 .with_read_packet(pricing_component_read_packet("rubber")),
+                execution,
             )
             .err()
             .unwrap_or_else(|| {

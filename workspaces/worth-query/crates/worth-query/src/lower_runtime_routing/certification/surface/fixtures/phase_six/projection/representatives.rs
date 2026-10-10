@@ -92,7 +92,9 @@ pub(crate) fn representative_projection_relational_row() -> RepresentativeArtifa
     )
 }
 
-pub(crate) fn representative_projection_bridge_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_projection_bridge_row(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
     let bridge = super::super::projection_bridge_runtime::projection_bridge_runtime();
     let declaration = SourceDeclaration::new(
         SourceDeclarationIdentity::from_stable_name("source:lower-runtime-certification"),
@@ -119,9 +121,9 @@ pub(crate) fn representative_projection_bridge_row() -> RepresentativeArtifacts 
         string_read(entity_two, "status"),
     ]);
     let materialized = bridge
-        .materialize_source_packet_batch(contract, vec![packet])
+        .materialize_source_packet_batch(contract, vec![packet], resource_request)
         .expect("bridge projection fixture should materialize source packets");
-    let row_set = materialize_bridge_row_set(materialized.first())
+    let row_set = materialize_bridge_row_set(materialized.first(), resource_request)
         .expect("bridge projection fixture should materialize row set");
     let grouped = materialize_bridge_grouped_truth_view_from_projection(
         &row_set,

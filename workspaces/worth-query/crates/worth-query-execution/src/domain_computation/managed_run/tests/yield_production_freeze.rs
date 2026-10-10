@@ -159,6 +159,9 @@ impl WorthQueryArtifactProviderResource for FreezeProbeArtifact {
 #[test]
 fn workflow_freezes_artifact_production_before_provider_suspension() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -170,7 +173,7 @@ fn workflow_freezes_artifact_production_before_provider_suspension() {
             result: Arc::clone(&result),
             disposals: Arc::clone(&disposals),
         };
-        let (running, graph, production) = freeze_probe_workflow(provider);
+        let (running, graph, production) = freeze_probe_workflow(provider, resource_request);
         *authority
             .lock()
             .expect("freeze probe authority lock remains available") = Some(production);
@@ -240,6 +243,7 @@ fn workflow_freezes_artifact_production_before_provider_suspension() {
 
 fn freeze_probe_workflow(
     provider: FreezeProbeProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryRunningWorkflowRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -283,8 +287,12 @@ fn freeze_probe_workflow(
         WorthQueryOperationGraphAccess::Observe,
         output,
     );
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let running = super::workflow_provider_steps::admitted_workflow(
+        &runtime,
+        &operation,
+        resources,
+        resource_request,
+    );
     let production = running
         .artifacts()
         .production_authority("producer")

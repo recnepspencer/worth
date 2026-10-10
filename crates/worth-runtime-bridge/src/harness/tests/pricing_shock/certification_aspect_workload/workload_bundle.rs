@@ -8,13 +8,19 @@ use super::EXPECTED_COST_USD_TARGET_BASIS;
 
 #[test]
 fn pricing_shock_workload_certification_bundle_is_profile_invariant_for_semantic_truth() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let baseline = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-workload-baseline"),
+        resource_request,
     );
     let forensic = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::forensic(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-workload-forensic"),
+        resource_request,
     );
 
     assert_eq!(baseline.matrix, forensic.matrix);
@@ -53,10 +59,15 @@ fn pricing_shock_workload_certification_bundle_is_profile_invariant_for_semantic
 
 #[test]
 fn pricing_shock_workload_certification_bundle_exposes_phase_3_truth_edges() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let scenario = generated_pricing_scenario();
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-workload-edges"),
+        resource_request,
     );
     let suite_25 = bundle.suite_25_digest_evidence();
     let suite_26 = bundle.suite_26_digest_evidence();

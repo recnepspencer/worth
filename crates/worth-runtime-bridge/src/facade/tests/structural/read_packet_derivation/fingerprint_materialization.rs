@@ -3,6 +3,13 @@ use crate::facade::BridgeDeliveryErrorKind;
 
 #[test]
 fn runtime_materializes_structural_fingerprint_from_truth_view_read() {
+    let policy = crate::policy::BridgeExecutionPolicyBaseline::operational().request_policy();
+    let lease = crate::snapshot::test_execution_lease_for_policy(
+        policy,
+        worth_execution::CancellationToken::new(),
+    );
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = registered_structural(
         "structural:analysis-snapshot",
@@ -16,18 +23,28 @@ fn runtime_materializes_structural_fingerprint_from_truth_view_read() {
         .admit_structural_comparison(declaration)
         .expect("registered structural declaration should be admitted");
 
-    let fingerprint = runtime
-        .materialize_structural_fingerprint(
-            &contract,
-            SnapshotReadPacket::new(vec![crate::snapshot::SnapshotReadRequest::for_coarse(
-                "entity-1",
-                crate::snapshot::SnapshotReadContract::scalar(
-                    worth_foundational::facade::AspectKey::new("profile")
-                        .expect("valid snapshot aspect key"),
-                    worth_foundational::facade::ScalarAspectType::String,
-                ),
-            )]),
+    let fingerprint = execution
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(8_000_000),
+            |_| {
+                runtime.materialize_structural_fingerprint(
+                    &contract,
+                    SnapshotReadPacket::new(vec![
+                        crate::snapshot::SnapshotReadRequest::for_coarse(
+                            "entity-1",
+                            crate::snapshot::SnapshotReadContract::scalar(
+                                worth_foundational::facade::AspectKey::new("profile")
+                                    .expect("valid snapshot aspect key"),
+                                worth_foundational::facade::ScalarAspectType::String,
+                            ),
+                        ),
+                    ]),
+                    execution,
+                )
+            },
         )
+        .expect("active leased scope")
+        .0
         .expect("structural fingerprint should materialize");
 
     assert_eq!(
@@ -104,6 +121,7 @@ impl crate::adapter::SnapshotReadSource for RefusingSnapshotSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         Box<dyn crate::snapshot::TruthSnapshotReader>,
         crate::adapter::RelationalBridgeSourceError,
@@ -117,6 +135,10 @@ impl crate::adapter::SnapshotReadSource for RefusingSnapshotSource {
 
 #[test]
 fn structural_read_adapter_preserves_resource_and_domain_refusals() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for resource in [true, false] {
         let declaration = registered_structural(
             "structural:analysis-snapshot",
@@ -148,6 +170,7 @@ fn structural_read_adapter_preserves_resource_and_domain_refusals() {
                         worth_foundational::facade::ScalarAspectType::String,
                     ),
                 )]),
+                execution,
             )
             .unwrap_err();
         if resource {

@@ -1,3 +1,5 @@
+mod proposed_change;
+use proposed_change::proposed_change;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
@@ -289,6 +291,7 @@ impl WorthQueryProvisionalGraphProvider for ProvisionalProvider {
 
 pub(super) fn provisional_run(
     state: Arc<Mutex<ProvisionalProviderState>>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -302,6 +305,7 @@ pub(super) fn provisional_run(
         .unwrap()
         .with_exact_fact_count(9)
         .unwrap()],
+        resource_request,
     )
 }
 
@@ -370,31 +374,4 @@ pub(super) fn cleanup(running: WorthQueryRunningDirectRun) {
         .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
         .cleanup()
         .expect("provisional fixture cleanup should complete");
-}
-
-fn proposed_change(
-    action: &WorthQueryProvisionalEffectAction,
-) -> (String, WorthQueryProposedFactOrigin, &'static str) {
-    match action {
-        WorthQueryProvisionalEffectAction::Create { symbolic_identity } => (
-            symbolic_identity.to_string(),
-            WorthQueryProposedFactOrigin::StagedCreation,
-            "created",
-        ),
-        WorthQueryProvisionalEffectAction::Replace { target_identity } => (
-            target_identity.to_string(),
-            WorthQueryProposedFactOrigin::StagedReplacement,
-            "replaced",
-        ),
-        WorthQueryProvisionalEffectAction::Retire { target_identity } => (
-            target_identity.to_string(),
-            WorthQueryProposedFactOrigin::StagedRetirement,
-            "retired",
-        ),
-        WorthQueryProvisionalEffectAction::DeriveView { view_identity } => (
-            view_identity.to_string(),
-            WorthQueryProposedFactOrigin::DerivedProvisionalView,
-            "derived",
-        ),
-    }
 }

@@ -24,19 +24,21 @@ pub(in crate::domain_computation::managed_run) fn yielded_workflow(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 
     provider: YieldProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     RuntimeBridge,
     WorthQueryExecutionRuntime,
     Arc<crate::domain_computation::WorthQueryArtifactProductionAuthority>,
 ) {
-    yielded_workflow_for_stage(execution, provider, "producer")
+    yielded_workflow_for_stage(execution, provider, "producer", resource_request)
 }
 
 pub(super) fn yielded_workflow_with_retained_artifact(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 
     provider: YieldProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     RuntimeBridge,
@@ -45,7 +47,7 @@ pub(super) fn yielded_workflow_with_retained_artifact(
     crate::domain_computation::WorthQueryMoveOnlyArtifactHandle,
 ) {
     let (yielded, bridge, runtime, producer, artifact) =
-        yielded_workflow_fixture(execution, provider, "producer", true);
+        yielded_workflow_fixture(execution, provider, "producer", true, resource_request);
     (
         yielded,
         bridge,
@@ -60,6 +62,7 @@ pub(super) fn yielded_workflow_for_stage(
 
     provider: YieldProvider,
     stage_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     RuntimeBridge,
@@ -67,7 +70,7 @@ pub(super) fn yielded_workflow_for_stage(
     Arc<crate::domain_computation::WorthQueryArtifactProductionAuthority>,
 ) {
     let (yielded, bridge, runtime, producer, artifact) =
-        yielded_workflow_fixture(execution, provider, stage_identity, false);
+        yielded_workflow_fixture(execution, provider, stage_identity, false, resource_request);
     debug_assert!(artifact.is_none());
     (yielded, bridge, runtime, producer)
 }
@@ -78,6 +81,7 @@ fn yielded_workflow_fixture(
     provider: YieldProvider,
     stage_identity: &str,
     retain_artifact: bool,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     RuntimeBridge,
@@ -128,7 +132,7 @@ fn yielded_workflow_fixture(
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
+        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
         .expect("workflow should admit")
         .start()
         .expect("workflow should start");
@@ -180,12 +184,15 @@ fn yielded_workflow_fixture(
 #[test]
 fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
         let (yielded, bridge, runtime, old_producer) =
-            yielded_workflow(execution, YieldProvider::installed(7));
+            yielded_workflow(execution, YieldProvider::installed(7), resource_request);
         let logical = yielded.inspection().logical_run_identity().to_owned();
         let old_managed_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let old_resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
@@ -281,12 +288,18 @@ fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
 #[test]
 fn workflow_provider_restore_denial_keeps_frozen_generation_retryable() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime, _producer) =
-            yielded_workflow(execution, YieldProvider::checkpoint_restore_failure(7));
+        let (yielded, bridge, runtime, _producer) = yielded_workflow(
+            execution,
+            YieldProvider::checkpoint_restore_failure(7),
+            resource_request,
+        );
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let generation = yielded
             .inspection()
@@ -323,12 +336,18 @@ fn workflow_provider_restore_denial_keeps_frozen_generation_retryable() {
 #[test]
 fn workflow_restore_panic_can_recover_only_through_terminal_cleanup() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime, _producer) =
-            yielded_workflow(execution, YieldProvider::checkpoint_restore_panic(7));
+        let (yielded, bridge, runtime, _producer) = yielded_workflow(
+            execution,
+            YieldProvider::checkpoint_restore_panic(7),
+            resource_request,
+        );
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let generation = yielded
             .inspection()

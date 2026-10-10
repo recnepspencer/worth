@@ -76,32 +76,38 @@ pub(crate) fn admit_subscription_backed_identity(
 pub(crate) fn activation_ready_for_snapshot(
     runtime: &RuntimeBridge,
     snapshot_identity: TruthSnapshotIdentity,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeSubscriptionActivationReady {
     activation_ready_for_basis(
         runtime,
         BridgeSubscriptionBasisRequest::snapshot(snapshot_identity),
+        resource_request,
     )
 }
 
 pub(crate) fn activation_ready_for_branch_head(
     runtime: &RuntimeBridge,
     branch_identity: TruthBranchIdentity,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeSubscriptionActivationReady {
     activation_ready_for_basis(
         runtime,
         BridgeSubscriptionBasisRequest::branch_head(branch_identity),
+        resource_request,
     )
 }
 
 pub(crate) fn preview_active_subscription(
     runtime: &RuntimeBridge,
     suffix: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgePreviewActiveSubscription {
     preview_active_subscription_with_basis(
         runtime,
         suffix,
         crate::truth_identity_fixtures::truth_branch_fixture(format!("truth-branch:{suffix}")),
         crate::truth_identity_fixtures::truth_snapshot_fixture(format!("snapshot:{suffix}")),
+        resource_request,
     )
 }
 
@@ -110,10 +116,12 @@ pub(crate) fn preview_active_subscription_with_basis(
     suffix: &str,
     truth_branch_identity: TruthBranchIdentity,
     truth_snapshot_identity: TruthSnapshotIdentity,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgePreviewActiveSubscription {
     let ready = activation_ready_for_snapshot(
         runtime,
         crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
+        resource_request,
     );
     let admitted_preview = runtime
         .admit_preview_session(
@@ -270,6 +278,7 @@ fn subscription_backed_draft(node: NodeId) -> BridgeAsyncSourceDeclarationDraft 
 fn activation_ready_for_basis(
     runtime: &RuntimeBridge,
     basis_request: BridgeSubscriptionBasisRequest,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeSubscriptionActivationReady {
     let declaration = runtime
         .declare_subscription(
@@ -285,7 +294,7 @@ fn activation_ready_for_basis(
         )
         .expect("declaration should succeed");
     let admitted = runtime
-        .admit_subscription(&declaration, basis_request)
+        .admit_subscription(&declaration, basis_request, execution)
         .expect("subscription admission should succeed");
     runtime.prepare_subscription_activation(&admitted)
 }

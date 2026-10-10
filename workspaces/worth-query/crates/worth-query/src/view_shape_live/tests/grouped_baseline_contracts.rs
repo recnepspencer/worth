@@ -17,12 +17,16 @@ use super::view_plan_world::{collection_canonical, planned_view, runtime_basis};
 
 #[test]
 fn grouped_baseline_is_derived_from_authoritative_execution_bindings() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let planned = planned_view(
         &collection_canonical(),
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
     let basis = runtime_basis(planned.validated().query().schema_basis().clone());
-    let truth_view = grouped_truth_view(&planned);
+    let truth_view = grouped_truth_view(&planned, resource_request);
     let grouped_execution =
         materialize_grouped_execution_surface_from_truth_view(&planned, basis.clone(), &truth_view)
             .unwrap();
@@ -71,12 +75,16 @@ fn grouped_baseline_is_derived_from_authoritative_execution_bindings() {
 
 #[test]
 fn grouped_baseline_rejects_mismatched_grouped_execution_surface() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let planned = planned_view(
         &collection_canonical(),
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
     let basis = runtime_basis(planned.validated().query().schema_basis().clone());
-    let truth_view = grouped_truth_view(&planned);
+    let truth_view = grouped_truth_view(&planned, resource_request);
     let grouped_execution =
         materialize_grouped_execution_surface_from_truth_view(&planned, basis.clone(), &truth_view)
             .unwrap();
@@ -95,6 +103,10 @@ fn grouped_baseline_rejects_mismatched_grouped_execution_surface() {
 
 #[test]
 fn grouped_execution_rejects_truth_view_with_mismatched_identity_binding() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let planned = planned_view(
         &collection_canonical(),
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
@@ -105,6 +117,7 @@ fn grouped_execution_rejects_truth_view_with_mismatched_identity_binding() {
         &[grouped_row("task-1", "Ada", "todo")],
         "profile.display_name",
         None,
+        resource_request,
     );
 
     let error =
@@ -119,6 +132,10 @@ fn grouped_execution_rejects_truth_view_with_mismatched_identity_binding() {
 
 #[test]
 fn grouped_execution_rejects_truth_view_with_mismatched_snapshot_identity() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let planned = planned_view(
         &collection_canonical(),
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
@@ -140,7 +157,7 @@ fn grouped_execution_rejects_truth_view_with_mismatched_snapshot_identity() {
         BasisResolutionMode::RuntimeDirect,
     )
     .unwrap();
-    let truth_view = grouped_truth_view(&planned);
+    let truth_view = grouped_truth_view(&planned, resource_request);
 
     let error =
         materialize_grouped_execution_surface_from_truth_view(&planned, wrong_basis, &truth_view)

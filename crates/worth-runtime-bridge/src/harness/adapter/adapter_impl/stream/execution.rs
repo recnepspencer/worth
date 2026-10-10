@@ -25,27 +25,29 @@ pub(in crate::harness::adapter::adapter_impl) enum StreamHarnessExecution {
 pub(in crate::harness::adapter::adapter_impl) fn execute_stream_request(
     runtime_bridge: &crate::facade::RuntimeBridge,
     target: StreamHarnessTarget,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StreamHarnessExecution, BridgeHarnessError> {
     match target {
         StreamHarnessTarget::RoutingWindow {
             window: native_window,
-        } => execute_routing_stream_window(runtime_bridge, &native_window),
+        } => execute_routing_stream_window(runtime_bridge, &native_window, resource_request),
         StreamHarnessTarget::ReplayAuditWindow {
             window: native_window,
-        } => execute_replay_audit_stream_window(runtime_bridge, &native_window),
+        } => execute_replay_audit_stream_window(runtime_bridge, &native_window, resource_request),
     }
 }
 
 fn execute_routing_stream_window(
     runtime_bridge: &crate::facade::RuntimeBridge,
     native_window: &NativeStreamCommitWindow,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StreamHarnessExecution, BridgeHarnessError> {
     let protocol =
         validate_stream_declaration(runtime_bridge, StreamConsumerShape::RoutingConsumer)?;
     let contract = resolve_stream_contract(runtime_bridge, &protocol)?;
-    let window = plan_stream_window(runtime_bridge, &contract, native_window)?;
+    let window = plan_stream_window(runtime_bridge, &contract, native_window, execution)?;
     let result = runtime_bridge
-        .deliver_change_stream_window(&contract, &window)
+        .deliver_change_stream_window(&contract, &window, execution)
         .map_err(|error| {
             BridgeHarnessError::new(format!("bridge stream delivery failed: {error}"))
         })?;
@@ -72,11 +74,12 @@ fn execute_routing_stream_window(
 fn execute_replay_audit_stream_window(
     runtime_bridge: &crate::facade::RuntimeBridge,
     native_window: &NativeStreamCommitWindow,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StreamHarnessExecution, BridgeHarnessError> {
     let protocol =
         validate_stream_declaration(runtime_bridge, StreamConsumerShape::ReplayAuditConsumer)?;
     let contract = resolve_stream_contract(runtime_bridge, &protocol)?;
-    let window = plan_stream_window(runtime_bridge, &contract, native_window)?;
+    let window = plan_stream_window(runtime_bridge, &contract, native_window, resource_request)?;
     let result = runtime_bridge
         .deliver_replay_audit_stream_window(&contract, &window)
         .map_err(|error| {
@@ -113,11 +116,12 @@ fn plan_stream_window(
     runtime_bridge: &crate::facade::RuntimeBridge,
     contract: &AdmittedConsumerContract,
     native_window: &NativeStreamCommitWindow,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<PlannedChangeStreamWindow, BridgeHarnessError> {
     let mut envelopes = Vec::with_capacity(native_window.commits().len());
     for commit in native_window.commits() {
         let envelope = runtime_bridge
-            .ingest_committed_patch(BridgeRouteRequest::for_commit(commit.clone()))
+            .ingest_committed_patch(BridgeRouteRequest::for_commit(commit.clone()), execution)
             .map_err(|error| {
                 BridgeHarnessError::new(format!(
                     "bridge stream ingestion failed for `{}`: {error}",

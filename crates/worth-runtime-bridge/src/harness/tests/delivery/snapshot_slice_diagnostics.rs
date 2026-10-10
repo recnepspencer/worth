@@ -8,6 +8,10 @@ use super::super::support::{
 
 #[test]
 fn bridge_sink_rejection_records_failure_diagnostics_with_slice_identity() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -28,9 +32,12 @@ fn bridge_sink_rejection_records_failure_diagnostics_with_slice_identity() {
     );
 
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("route should plan before sink rejection");
     let expected_slice_identity = route
         .lowering_summary()
@@ -38,7 +45,7 @@ fn bridge_sink_rejection_records_failure_diagnostics_with_slice_identity() {
         .clone();
 
     let error = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect_err("delivery should surface the sink rejection");
 
     assert_eq!(error.kind(), BridgeDeliveryErrorKind::SignalSinkRejection);

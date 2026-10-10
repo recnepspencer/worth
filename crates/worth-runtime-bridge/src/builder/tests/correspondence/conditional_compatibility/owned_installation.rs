@@ -112,7 +112,7 @@ fn bridge_allocates_and_executes_source_free_initial_conditional() {
                 &signal_basis,
                 &relational,
             ),
-        )
+         request_execution)
         .unwrap_err();
     assert_eq!(
         mismatch.kind(),
@@ -123,6 +123,7 @@ fn bridge_allocates_and_executes_source_free_initial_conditional() {
             crate::facade::BridgeConditionalEvaluationAdmissionRequest::source_free_at_signal_basis(
                 &signal_basis,
             ),
+            request_execution,
         )
         .expect("source-free admission needs no relational reader");
     let evidence = owner

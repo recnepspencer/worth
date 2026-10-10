@@ -153,9 +153,11 @@ impl WorthQueryLowerRuntimeClosureTest {
     }
 }
 
-pub fn worth_query_lower_runtime_closure_test() -> WorthQueryLowerRuntimeClosureTest {
-    let certification_bundle = certify_lower_runtime_routing();
-    let acceptance_suite = worth_query_lower_runtime_acceptance_suite();
+pub fn worth_query_lower_runtime_closure_test(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryLowerRuntimeClosureTest {
+    let certification_bundle = certify_lower_runtime_routing(resource_request);
+    let acceptance_suite = worth_query_lower_runtime_acceptance_suite(resource_request);
     let boundary_reconciliation = worth_query_lower_runtime_boundary_reconciliation_report();
     let proof_shape_audit = worth_query_lower_runtime_proof_shape_audit();
 
@@ -261,7 +263,12 @@ mod tests {
 
     #[test]
     fn closure_test_has_named_control_hostile_and_parity_lanes() {
-        let suite = worth_query_lower_runtime_closure_test();
+        let host_request =
+            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+                .serial_request(worth_execution::CancellationToken::new(), None);
+        let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+        let suite = worth_query_lower_runtime_closure_test(resource_request);
 
         assert_eq!(suite.name(), LOWER_RUNTIME_CLOSURE_TEST_NAME);
         assert_eq!(suite.rows().len(), 4);
@@ -293,7 +300,12 @@ mod tests {
 
     #[test]
     fn closure_test_binds_downstream_boundary_lane_to_certified_row() {
-        let suite = worth_query_lower_runtime_closure_test();
+        let host_request =
+            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+                .serial_request(worth_execution::CancellationToken::new(), None);
+        let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+        let suite = worth_query_lower_runtime_closure_test(resource_request);
 
         assert_eq!(
             suite
@@ -312,7 +324,12 @@ mod tests {
 
     #[test]
     fn closure_test_hostile_lane_aggregates_phase_seven_hostile_obligations() {
-        let suite = worth_query_lower_runtime_closure_test();
+        let host_request =
+            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+                .serial_request(worth_execution::CancellationToken::new(), None);
+        let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+        let suite = worth_query_lower_runtime_closure_test(resource_request);
         let former_specialist = suite
             .certification_bundle()
             .rows()

@@ -98,8 +98,14 @@ fn certification_ordering_hostility_preserves_canonical_bundle_meaning() {
 
 #[test]
 fn certification_bundle_assembly_consumes_plan_cost_profile_and_scratch() {
-    let (runtime, _active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, _active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let manifest = runtime
         .declare_subscription_reference_workload_manifest(
             product_ids(),
@@ -208,8 +214,14 @@ fn certification_bundle_assembly_consumes_plan_cost_profile_and_scratch() {
 
 #[test]
 fn certification_bundle_assembly_rejects_budget_mismatch_before_draft_exists() {
-    let (runtime, _active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, _active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let manifest = runtime
         .declare_subscription_reference_workload_manifest(
             product_ids(),

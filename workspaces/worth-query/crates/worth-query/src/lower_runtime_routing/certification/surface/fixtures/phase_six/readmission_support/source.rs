@@ -59,6 +59,7 @@ impl CommittedPatchSource for TestRelationalSource {
     fn load_committed_patch(
         &self,
         request: worth_runtime_bridge::facade::RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         self.state
             .read()
@@ -79,6 +80,7 @@ impl SnapshotReadSource for TestRelationalSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         let records = self
             .state
@@ -104,6 +106,7 @@ impl TruthBranchHeadSource for TestRelationalSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         let state = self
             .state

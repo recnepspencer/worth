@@ -224,6 +224,7 @@ impl CommittedPatchSource for PlanningTestSource {
     fn load_committed_patch(
         &self,
         _request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         unreachable!("planning artifact test plans explicit envelopes")
     }
@@ -233,6 +234,7 @@ impl SnapshotReadSource for PlanningTestSource {
     fn open_snapshot(
         &self,
         _identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         unreachable!("planning artifact test does not materialize snapshots")
     }

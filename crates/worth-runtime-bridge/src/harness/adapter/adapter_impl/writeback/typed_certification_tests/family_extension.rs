@@ -4,11 +4,18 @@ use super::*;
 
 #[test]
 fn family_extension_certification_retains_typed_family_and_mapper_proof() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let WritebackHarnessExecution::ExtensibleFamilyCertification {
         family_extension_digest,
         family_extension_matrix,
         counter_snapshot,
-    } = certified_execution(WritebackHarnessTarget::ExtensibleFamilyCertification)
+    } = certified_execution(
+        WritebackHarnessTarget::ExtensibleFamilyCertification,
+        resource_request,
+    )
     else {
         panic!("family extension should produce family typed matrix");
     };

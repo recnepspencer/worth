@@ -4,13 +4,14 @@ pub(in crate::harness::adapter::adapter_impl::writeback) fn execute_multi_family
     runtime: &crate::harness::adapter::BridgeHarnessSession,
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WritebackHarnessExecution, BridgeHarnessError> {
     let _ = runtime;
     let lowered_policy_bundle = lowered_policy(runtime_bridge)?;
     let causality = writeback_causality_basis(
         "harness:writeback-family-admission-boundary-causality",
         "family-admission-boundary",
-        route_digest_for_first_patch(runtime_bridge, fixture)?,
+        route_digest_for_first_patch(runtime_bridge, fixture, resource_request)?,
         "family-admission-boundary",
         "family-admission-boundary",
     );

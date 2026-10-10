@@ -9,6 +9,10 @@ use crate::harness::fixtures::{
 
 #[test]
 fn bridge_snapshot_contract_rejects_missing_required_reads() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -26,12 +30,12 @@ fn bridge_snapshot_contract_rejects_missing_required_reads() {
     );
 
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
         .expect("bridge should plan before validating snapshot reads");
     let expected_target_identity = route.read_packet().reads()[0].target_identity().clone();
 
     let error = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect_err("bridge should reject incomplete snapshot read results");
 
     assert_eq!(
@@ -68,6 +72,10 @@ fn bridge_snapshot_contract_rejects_missing_required_reads() {
 
 #[test]
 fn leased_route_surfaces_cancellation_before_snapshot_reads() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -83,14 +91,14 @@ fn leased_route_surfaces_cancellation_before_snapshot_reads() {
         vec![field_aspect_registration()],
     );
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
         .unwrap();
     let cancellation = worth_execution::CancellationSource::new();
     cancellation.cancel();
     let lease = crate::snapshot::test_execution_lease(cancellation.token());
 
     let error = runtime
-        .deliver_invalidation_with_lease(route, &lease)
+        .deliver_invalidation(route, worth_execution::ExecutionRequest::leased(&lease))
         .expect_err("cancelled lease must deny the read");
     assert_eq!(
         error.kind(),

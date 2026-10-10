@@ -18,6 +18,7 @@ impl RuntimeBridge {
         &self,
         declaration: HistoricalEvaluationDeclaration,
         read_packet: SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PlannedTruthViewPacket, BridgeDeliveryError> {
         let resolved_policy = match self.resolve_truth_view_policy(&declaration) {
             BridgeTruthViewPolicyResolution::Admitted(policy) => policy,
@@ -41,19 +42,19 @@ impl RuntimeBridge {
                 ));
             }
         };
-        let authority_basis = match self.resolve_truth_view_authority_basis(declaration.selector())
-        {
-            Ok(authority_basis) => authority_basis,
-            Err(error) => {
-                self.record_historical_evaluation_failure(
-                    &declaration,
-                    historical_failure_class_for_delivery_error(&error),
-                    error.to_string(),
-                    historical_failure_counters_for_delivery_error(&declaration, &error),
-                );
-                return Err(error);
-            }
-        };
+        let authority_basis =
+            match self.resolve_truth_view_authority_basis(declaration.selector(), execution) {
+                Ok(authority_basis) => authority_basis,
+                Err(error) => {
+                    self.record_historical_evaluation_failure(
+                        &declaration,
+                        historical_failure_class_for_delivery_error(&error),
+                        error.to_string(),
+                        historical_failure_counters_for_delivery_error(&declaration, &error),
+                    );
+                    return Err(error);
+                }
+            };
         Ok(PlannedTruthViewPacket::new(
             declaration,
             resolved_policy,
@@ -65,6 +66,7 @@ impl RuntimeBridge {
     pub(super) fn resolve_truth_view_authority_basis(
         &self,
         selector: &BridgeTruthViewSelector,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeTruthViewAuthorityBasis, BridgeDeliveryError> {
         match selector.view_kind() {
             BridgeTruthViewKind::CommittedSnapshot | BridgeTruthViewKind::BranchSnapshot => {
@@ -85,7 +87,7 @@ impl RuntimeBridge {
                     .load_committed_patch(RelationalCommittedPatchRequest::on_branch(
                         commit_identity.clone(),
                         selector.branch_identity().clone(),
-                    ))
+                    ), execution)
                     .map_err(|error| {
                         BridgeDeliveryError::new(
                             BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable,
@@ -109,7 +111,7 @@ impl RuntimeBridge {
                     )
                 })?;
                 let envelope = source
-                    .load_branch_head_patch(selector.branch_identity())
+                    .load_branch_head_patch(selector.branch_identity(), execution)
                     .map_err(|error| {
                         BridgeDeliveryError::new(
                             BridgeDeliveryErrorKind::HistoricalTruthViewUnavailable,

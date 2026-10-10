@@ -10,17 +10,20 @@ use super::super::*;
 
 pub(crate) fn temporal_async_closeout_request(
     runtime: &RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeSubscriptionTemporalAsyncCertificationCloseoutRequest {
-    temporal_async_closeout_request_with_seed(runtime, "a")
+    temporal_async_closeout_request_with_seed(runtime, "a", resource_request)
 }
 
 pub(crate) fn temporal_async_closeout_request_with_seed(
     runtime: &RuntimeBridge,
     seed: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeSubscriptionTemporalAsyncCertificationCloseoutRequest {
-    let equivalent = temporal_async_bundle_equivalent_comparison(seed);
-    let diagnostics_delta = temporal_async_bundle_diagnostics_delta_comparison(seed);
-    let divergent = temporal_async_bundle_divergent_comparison(seed);
+    let equivalent = temporal_async_bundle_equivalent_comparison(seed, resource_request);
+    let diagnostics_delta =
+        temporal_async_bundle_diagnostics_delta_comparison(seed, resource_request);
+    let divergent = temporal_async_bundle_divergent_comparison(seed, resource_request);
 
     BridgeSubscriptionTemporalAsyncCertificationCloseoutRequest::new(
         runtime.certify_subscription_certification_cost_posture(),
@@ -42,8 +45,9 @@ pub(crate) fn temporal_async_closeout_request_with_seed(
 
 pub(crate) fn divergent_closeout_request(
     runtime: &RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeSubscriptionTemporalAsyncCertificationCloseoutRequest {
-    let divergent = temporal_async_bundle_divergent_comparison("incomplete");
+    let divergent = temporal_async_bundle_divergent_comparison("incomplete", resource_request);
 
     BridgeSubscriptionTemporalAsyncCertificationCloseoutRequest::new(
         runtime.certify_subscription_certification_cost_posture(),

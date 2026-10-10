@@ -5,6 +5,9 @@ use super::*;
 #[test]
 fn workflow_restore_rejection_after_admission_is_terminal_even_after_clean_release() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
@@ -12,6 +15,7 @@ fn workflow_restore_rejection_after_admission_is_terminal_even_after_clean_relea
         let (yielded, bridge, runtime, _producer) = yielded_workflow(
             execution,
             YieldProvider::checkpoint_restore_reject_after_admission(7),
+            resource_request,
         );
         let prior_release_count = yielded
             .inspection()

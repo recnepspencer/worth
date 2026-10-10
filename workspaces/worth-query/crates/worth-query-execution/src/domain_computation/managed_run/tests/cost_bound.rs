@@ -8,10 +8,21 @@ const UNRELATED_RUN_COUNT: usize = 12;
 
 #[test]
 fn managed_run_work_is_invariant_to_unrelated_live_authority_width() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let disposed = Arc::new(AtomicUsize::new(0));
     let runtime = query_runtime();
     let unrelated = (0..UNRELATED_RUN_COUNT)
-        .map(|index| unrelated_artifact_run_in_runtime(&runtime, index, Arc::clone(&disposed)))
+        .map(|index| {
+            unrelated_artifact_run_in_runtime(
+                &runtime,
+                index,
+                Arc::clone(&disposed),
+                resource_request,
+            )
+        })
         .collect::<Vec<_>>();
 
     let plan = admitted_plan("cost-bound-target", 8);
@@ -22,7 +33,7 @@ fn managed_run_work_is_invariant_to_unrelated_live_authority_width() {
     let lower = causal_fixture::managed_admission_context();
     let admitted = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("target run should admit independently of unrelated authority width");
 
     assert_exact_admission_work(admitted.counters());
@@ -38,7 +49,7 @@ fn managed_run_work_is_invariant_to_unrelated_live_authority_width() {
     assert!(cleanup.inspection().resources_released());
     assert_eq!(disposed.load(Ordering::Acquire), 0);
 
-    assert_rejection_work_is_constant_with_unrelated_authority();
+    assert_rejection_work_is_constant_with_unrelated_authority(resource_request);
     assert_eq!(disposed.load(Ordering::Acquire), 0);
 
     drop(unrelated);
@@ -48,21 +59,25 @@ fn managed_run_work_is_invariant_to_unrelated_live_authority_width() {
 #[test]
 fn readmission_work_is_invariant_to_same_runtime_unrelated_authority_width() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let direct_empty = direct_readmission_work(execution, 0);
-        let direct_wide = direct_readmission_work(execution, UNRELATED_RUN_COUNT);
+        let direct_empty = direct_readmission_work(execution, 0, resource_request);
+        let direct_wide = direct_readmission_work(execution, UNRELATED_RUN_COUNT, resource_request);
         assert_eq!(direct_empty, direct_wide);
         assert_exact_direct_readmission_work(direct_wide);
 
-        let workflow_empty = workflow_readmission_work(execution, 0);
-        let workflow_wide = workflow_readmission_work(execution, UNRELATED_RUN_COUNT);
+        let workflow_empty = workflow_readmission_work(execution, 0, resource_request);
+        let workflow_wide =
+            workflow_readmission_work(execution, UNRELATED_RUN_COUNT, resource_request);
         assert_eq!(workflow_empty, workflow_wide);
         assert_exact_workflow_readmission_work(workflow_wide);
 
-        let denial_empty = denied_readmission_work(execution, 0);
-        let denial_wide = denied_readmission_work(execution, UNRELATED_RUN_COUNT);
+        let denial_empty = denied_readmission_work(execution, 0, resource_request);
+        let denial_wide = denied_readmission_work(execution, UNRELATED_RUN_COUNT, resource_request);
         assert_eq!(denial_empty, denial_wide);
         assert_exact_preflight_denial_work(denial_wide);
     });
@@ -71,18 +86,20 @@ fn readmission_work_is_invariant_to_same_runtime_unrelated_authority_width() {
 pub(super) fn unrelated_artifact_run(
     index: usize,
     disposed: Arc<AtomicUsize>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryRunningWorkflowRun,
     crate::domain_computation::artifact_owner::WorthQueryMoveOnlyArtifactHandle,
 ) {
     let runtime = query_runtime();
-    unrelated_artifact_run_in_runtime(&runtime, index, disposed)
+    unrelated_artifact_run_in_runtime(&runtime, index, disposed, resource_request)
 }
 
 fn unrelated_artifact_run_in_runtime(
     runtime: &WorthQueryExecutionRuntime,
     index: usize,
     disposed: Arc<AtomicUsize>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryRunningWorkflowRun,
     crate::domain_computation::artifact_owner::WorthQueryMoveOnlyArtifactHandle,
@@ -105,7 +122,7 @@ fn unrelated_artifact_run_in_runtime(
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
+        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
         .expect("unrelated workflow should admit")
         .start()
         .expect("unrelated workflow should start");
@@ -135,11 +152,13 @@ fn unrelated_artifact_run_in_runtime(
 fn direct_readmission_work(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     unrelated_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryReadmissionEvidence {
     let active_request = execution;
 
-    let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct(execution);
-    let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
+    let (yielded, bridge, runtime) =
+        super::readmission_direct::yielded_direct(execution, resource_request);
+    let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width, resource_request);
     let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
         WorthQueryDirectReadmissionOutcome::Readmitted(readmitted) => readmitted,
         _ => panic!("direct cost target should readmit"),
@@ -159,14 +178,16 @@ fn direct_readmission_work(
 fn workflow_readmission_work(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     unrelated_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryReadmissionEvidence {
     let active_request = execution;
 
     let (yielded, bridge, runtime, old_producer) = super::readmission_workflow::yielded_workflow(
         execution,
         super::yield_fixture::YieldProvider::installed(7),
+        resource_request,
     );
-    let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
+    let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width, resource_request);
     let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
         WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => readmitted,
         _ => panic!("workflow cost target should readmit"),
@@ -188,11 +209,13 @@ fn workflow_readmission_work(
 fn denied_readmission_work(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     unrelated_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryReadmissionEvidence {
     let active_request = execution;
 
-    let (yielded, bridge, runtime) = super::readmission_direct::yielded_direct(execution);
-    let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width);
+    let (yielded, bridge, runtime) =
+        super::readmission_direct::yielded_direct(execution, resource_request);
+    let (unrelated, disposed) = unrelated_authority(&runtime, unrelated_width, resource_request);
     let foreign = query_runtime();
     let denial = match yielded.readmit_same_runtime(active_request, &foreign, &bridge) {
         WorthQueryDirectReadmissionOutcome::Denied(denial) => denial,
@@ -207,6 +230,7 @@ fn denied_readmission_work(
 fn unrelated_authority(
     runtime: &WorthQueryExecutionRuntime,
     width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     Vec<(
         WorthQueryRunningWorkflowRun,
@@ -216,7 +240,14 @@ fn unrelated_authority(
 ) {
     let disposed = Arc::new(AtomicUsize::new(0));
     let unrelated = (0..width)
-        .map(|index| unrelated_artifact_run_in_runtime(runtime, index, Arc::clone(&disposed)))
+        .map(|index| {
+            unrelated_artifact_run_in_runtime(
+                runtime,
+                index,
+                Arc::clone(&disposed),
+                resource_request,
+            )
+        })
         .collect();
     (unrelated, disposed)
 }
@@ -290,7 +321,9 @@ pub(super) fn assert_exact_admission_work(counters: &super::super::WorthQueryMan
     assert_eq!(counters.semantic_basis_check_count(), 1);
 }
 
-fn assert_rejection_work_is_constant_with_unrelated_authority() {
+fn assert_rejection_work_is_constant_with_unrelated_authority(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) {
     let owner = query_runtime();
     let foreign = query_runtime();
     let plan = admitted_plan("cost-bound-rejection", 8);
@@ -301,6 +334,7 @@ fn assert_rejection_work_is_constant_with_unrelated_authority() {
     let lower = causal_fixture::causal_lower_execution_basis(
         operation.binding_identity(),
         attempt.attempt_identity().as_str(),
+        resource_request,
     );
     let rejection =
         match foreign.admit_direct_run(&operation, attempt, lower.bridge, lower.relational) {

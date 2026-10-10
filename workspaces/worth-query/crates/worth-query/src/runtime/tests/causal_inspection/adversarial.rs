@@ -145,11 +145,16 @@ fn future_explanation_families_deny_without_bridge_assembly() {
 
 #[test]
 fn redaction_and_materialization_policy_matrix_preserves_causal_identity() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::causal_truth_commit_identity(
-            "commit-causal-adversarial-policy",
-        ))
+        .route(
+            super::causal_truth_commit_identity("commit-causal-adversarial-policy"),
+            resource_request,
+        )
         .unwrap();
     let mut causal_identity_digest = None;
     let mut policy_digests = Vec::new();

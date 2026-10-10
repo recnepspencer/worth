@@ -73,8 +73,9 @@ impl BridgeOwnedSignalRuntime {
     pub fn admit_conditional_evaluation(
         &self,
         request: BridgeConditionalEvaluationAdmissionRequest<'_>,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalEvaluationSession, BridgeConditionalDenial> {
-        self.admit_conditional_evaluation_with_record(request, None)
+        self.admit_conditional_evaluation_with_record(request, None, execution)
     }
 
     pub(super) fn admit_conditional_evaluation_with_record(
@@ -83,6 +84,7 @@ impl BridgeOwnedSignalRuntime {
         managed_source_record: Option<
             crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
         >,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalEvaluationSession, BridgeConditionalDenial> {
         let bridge_snapshot_identity = match request.source {
             BridgeConditionalEvaluationSource::Relational(identity) => Some(identity),
@@ -111,7 +113,9 @@ impl BridgeOwnedSignalRuntime {
         let observation_baselines =
             super::observation_retention::BridgeObservationBaselines::new(&self.retention)?;
         let source_snapshot = bridge_snapshot_identity
-            .map(|identity| crate::delivery::open_planned_snapshot(&self.bridge, identity))
+            .map(|identity| {
+                crate::delivery::open_planned_snapshot(&self.bridge, identity, execution)
+            })
             .transpose()
             .map_err(|error| {
                 BridgeConditionalDenial::new(

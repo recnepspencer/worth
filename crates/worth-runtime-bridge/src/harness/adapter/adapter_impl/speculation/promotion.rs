@@ -5,6 +5,7 @@ use crate::routing::canonicalization::digest_string;
 pub(super) fn execute_promotion_certification(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<SpeculationHarnessExecution, BridgeHarnessError> {
     let promotion_session_identity =
         crate::speculation::BridgePreviewSessionIdentity::admit_bridge_owned(
@@ -88,7 +89,8 @@ pub(super) fn execute_promotion_certification(
             BridgeHarnessError::new(format!("speculation sibling replay failed: {error}"))
         })?;
 
-    let routing_digest = shared::first_commit_routing_digest(runtime_bridge, fixture)?;
+    let routing_digest =
+        shared::first_commit_routing_digest(runtime_bridge, fixture, resource_request)?;
     let diagnostics_digest = digest_string(
         "speculation-diagnostics-digest",
         &format!(

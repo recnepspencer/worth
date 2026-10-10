@@ -39,37 +39,52 @@ struct WorkflowPendingRecovery {
 #[test]
 fn direct_readmission_cleanup_pending_retry_preserves_the_exact_epoch() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        complete_direct_pending(direct_pending(direct_cleanup_required(execution)));
+        complete_direct_pending(direct_pending(direct_cleanup_required(
+            execution,
+            resource_request,
+        )));
     });
 }
 
 #[test]
 fn workflow_readmission_cleanup_pending_retry_preserves_the_exact_epoch() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        complete_workflow_pending(workflow_pending(workflow_cleanup_required(execution)));
+        complete_workflow_pending(workflow_pending(workflow_cleanup_required(
+            execution,
+            resource_request,
+        )));
     });
 }
 
 #[test]
 fn same_scope_and_stage_terminal_recovery_peers_keep_their_cleanup_owners() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let direct_a = direct_pending(direct_cleanup_required(execution));
-        let direct_b = direct_pending(direct_cleanup_required(execution));
+        let direct_a = direct_pending(direct_cleanup_required(execution, resource_request));
+        let direct_b = direct_pending(direct_cleanup_required(execution, resource_request));
         assert_ne!(direct_a.epoch_identity, direct_b.epoch_identity);
         complete_direct_pending(direct_a);
         complete_direct_pending(direct_b);
 
-        let workflow_a = workflow_pending(workflow_cleanup_required(execution));
-        let workflow_b = workflow_pending(workflow_cleanup_required(execution));
+        let workflow_a = workflow_pending(workflow_cleanup_required(execution, resource_request));
+        let workflow_b = workflow_pending(workflow_cleanup_required(execution, resource_request));
         assert_ne!(workflow_a.epoch_identity, workflow_b.epoch_identity);
         complete_workflow_pending(workflow_a);
         complete_workflow_pending(workflow_b);
@@ -78,6 +93,7 @@ fn same_scope_and_stage_terminal_recovery_peers_keep_their_cleanup_owners() {
 
 fn direct_cleanup_required(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> RecoveryCleanup<WorthQueryDirectConvergenceReadmissionCleanupRequired> {
     let active_request = execution;
 
@@ -89,7 +105,7 @@ fn direct_cleanup_required(
         managed,
         graph,
         bridge,
-    } = direct_admission_fixture(FixtureDisposition::YieldThenRestorePanic);
+    } = direct_admission_fixture(FixtureDisposition::YieldThenRestorePanic, resource_request);
     let epoch = runtime
         .admit_direct_convergence_epoch(&operation, contract, managed, graph)
         .unwrap_or_else(|_| panic!("direct cleanup fixture authorities must admit"))
@@ -120,6 +136,7 @@ fn direct_cleanup_required(
 
 fn workflow_cleanup_required(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> RecoveryCleanup<WorthQueryWorkflowConvergenceReadmissionCleanupRequired> {
     let active_request = execution;
 
@@ -130,7 +147,7 @@ fn workflow_cleanup_required(
         managed,
         graph,
         bridge,
-    } = workflow_admission_fixture(FixtureDisposition::YieldThenRestorePanic);
+    } = workflow_admission_fixture(FixtureDisposition::YieldThenRestorePanic, resource_request);
     let admitted = runtime
         .admit_workflow_convergence_epoch(&operation, contract, managed, graph)
         .unwrap_or_else(|_| panic!("workflow cleanup fixture authorities must admit"));

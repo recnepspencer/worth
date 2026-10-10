@@ -5,6 +5,9 @@ use super::*;
 #[test]
 fn workflow_yield_cleanup_waits_for_retained_artifact_owners() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -50,7 +53,10 @@ fn workflow_yield_cleanup_waits_for_retained_artifact_owners() {
             output,
         );
         let running = super::super::workflow_provider_steps::admitted_workflow(
-            &runtime, &operation, resources,
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
         );
         let production = running
             .artifacts()

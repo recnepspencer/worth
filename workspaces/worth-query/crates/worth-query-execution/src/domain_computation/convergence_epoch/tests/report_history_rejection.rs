@@ -14,11 +14,15 @@ use crate::domain_computation::{
 #[test]
 fn invalid_incumbent_transition_preserves_committed_direct_and_workflow_history() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (direct_fixture, direct_probe) = direct_admission_fixture_with_report_history_probe(
             FixtureDisposition::HistoryInvalidTransition,
+            resource_request,
         );
         let direct_epoch =
             match advance_direct(execution, direct_fixture.admit(), "direct-history-valid") {
@@ -46,6 +50,7 @@ fn invalid_incumbent_transition_preserves_committed_direct_and_workflow_history(
         let (workflow_fixture, workflow_probe) =
             workflow_admission_fixture_with_report_history_probe(
                 FixtureDisposition::HistoryInvalidTransition,
+                resource_request,
             );
         let workflow_epoch = match advance_workflow(
             execution,
@@ -82,11 +87,15 @@ fn invalid_incumbent_transition_preserves_committed_direct_and_workflow_history(
 #[test]
 fn invalid_domain_report_preserves_the_previously_committed_history() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (fixture, probe) = direct_admission_fixture_with_report_history_probe(
             FixtureDisposition::HistoryInvalidDomain,
+            resource_request,
         );
         let epoch = match advance_direct(execution, fixture.admit(), "domain-history-valid") {
             WorthQueryDirectConvergenceIterationOutcome::Continue(epoch) => epoch,

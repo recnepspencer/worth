@@ -22,6 +22,10 @@ use super::support::{
 
 #[test]
 fn runtime_bridge_relational_source_exposes_latest_publication_bundle_authoritatively() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime_with_test_schema();
     create_entity_outcome(&runtime, "alice");
 
@@ -47,10 +51,10 @@ fn runtime_bridge_relational_source_exposes_latest_publication_bundle_authoritat
         .expect("retained publication observation");
     let expected_snapshot_identity = lease.snapshot_identity().clone();
     let envelope = source
-        .load_committed_patch(expected_commit_identity)
+        .load_committed_patch(expected_commit_identity, execution)
         .expect("runtime bridge committed patch");
     let reader = source
-        .open_snapshot(&expected_snapshot_identity)
+        .open_snapshot(&expected_snapshot_identity, execution)
         .expect("runtime bridge snapshot reader");
 
     assert_eq!(envelope.snapshot_identity(), &expected_snapshot_identity);
@@ -73,6 +77,10 @@ fn relational_source_graph_role_is_explicit_and_validated() {
 
 #[test]
 fn partition_source_filters_the_real_commit_and_retains_exact_partition_provenance() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime_with_test_schema();
     let entity = |partition_id, key: &str| {
         MutationIntent::Create(CreateIntent::Entity(EntitySpec {
@@ -135,9 +143,12 @@ fn partition_source_filters_the_real_commit_and_retains_exact_partition_provenan
         .retain_branch_basis_for_bridge(&basis)
         .expect("retained partition observation");
     let envelope = source
-        .load_committed_patch(RelationalCommittedPatchRequest::new(
-            TruthCommitIdentity::from_relational_commit_id(committed.commit.commit_id.0),
-        ))
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::new(TruthCommitIdentity::from_relational_commit_id(
+                committed.commit.commit_id.0,
+            )),
+            execution,
+        )
         .unwrap();
 
     let provenance = envelope.producer_metadata().authoritative_source().unwrap();
@@ -151,7 +162,9 @@ fn partition_source_filters_the_real_commit_and_retains_exact_partition_provenan
             .is_some_and(|record| record.partition_id() == 0)
     }));
 
-    let reader = source.open_snapshot(envelope.snapshot_identity()).unwrap();
+    let reader = source
+        .open_snapshot(envelope.snapshot_identity(), execution)
+        .unwrap();
     let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(
         RelationalBridgeRecordIdentityParts::entity(
             secondary.partition_id.0,
@@ -171,6 +184,10 @@ fn partition_source_filters_the_real_commit_and_retains_exact_partition_provenan
 #[test]
 fn runtime_bridge_relational_source_drives_public_bridge_delivery_with_canonical_snapshot_authority(
 ) {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime_with_test_schema();
     create_entity_outcome(&runtime, "alice");
 
@@ -194,9 +211,10 @@ fn runtime_bridge_relational_source_drives_public_bridge_delivery_with_canonical
         .expect("retained delivery observation");
     let expected_snapshot_identity = lease.snapshot_identity().clone();
     let envelope = source
-        .load_committed_patch(RelationalCommittedPatchRequest::new(
-            commit_identity.clone(),
-        ))
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::new(commit_identity.clone()),
+            execution,
+        )
         .expect("runtime bridge committed patch");
     let first_patch_item = envelope
         .patch_body()
@@ -221,10 +239,10 @@ fn runtime_bridge_relational_source_drives_public_bridge_delivery_with_canonical
         .expect("runtime bridge should build from runtime-backed relational source");
 
     let route = bridge
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_identity))
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_identity), execution)
         .expect("runtime-backed relational bridge route");
     let result = bridge
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("runtime-backed relational bridge delivery");
 
     assert_eq!(
@@ -239,6 +257,10 @@ fn runtime_bridge_relational_source_drives_public_bridge_delivery_with_canonical
 
 #[test]
 fn runtime_bridge_replays_historical_commit_after_newer_publication_arrives() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
     let source =
         RuntimeBridgeRelationalSource::for_shared_graph_role(Arc::clone(&runtime), "model")
@@ -291,7 +313,7 @@ fn runtime_bridge_replays_historical_commit_after_newer_publication_arrives() {
         TruthCommitIdentity::from_relational_commit_id(historical_commit_id.0),
     );
     let envelope = source
-        .load_committed_patch(historical_commit_identity.clone())
+        .load_committed_patch(historical_commit_identity.clone(), execution)
         .expect("historical bridge committed patch");
     let expected_snapshot_identity = envelope.snapshot_identity().clone();
     assert_eq!(
@@ -321,19 +343,20 @@ fn runtime_bridge_replays_historical_commit_after_newer_publication_arrives() {
         .expect("runtime bridge should build from runtime-backed relational source");
 
     let planned = bridge
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            historical_commit_identity.commit_identity().clone(),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(historical_commit_identity.commit_identity().clone()),
+            execution,
+        )
         .expect("historical route should still plan after newer publication");
     let result = bridge
-        .deliver_invalidation(planned)
+        .deliver_invalidation(planned, execution)
         .expect("historical route should still deliver after newer publication");
     let canonical = bridge
         .diagnostics()
         .last_canonical_route_record()
         .expect("historical route record");
     let replay = bridge
-        .replay_canonical_record(&canonical)
+        .replay_canonical_record(&canonical, execution)
         .expect("historical replay should remain reconstructable");
 
     assert_eq!(

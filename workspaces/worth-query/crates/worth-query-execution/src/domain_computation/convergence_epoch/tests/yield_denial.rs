@@ -31,11 +31,14 @@ struct CompletedPeer {
 #[test]
 fn same_scope_direct_denials_resume_their_exact_epochs() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let first = direct_denied_peer(execution);
-        let second = direct_denied_peer(execution);
+        let first = direct_denied_peer(execution, resource_request);
+        let second = direct_denied_peer(execution, resource_request);
         assert_ne!(first.epoch_identity, second.epoch_identity);
 
         let second = complete_direct_peer(execution, second);
@@ -48,11 +51,14 @@ fn same_scope_direct_denials_resume_their_exact_epochs() {
 #[test]
 fn same_stage_workflow_denials_resume_their_exact_epochs() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let first = workflow_denied_peer(execution);
-        let second = workflow_denied_peer(execution);
+        let first = workflow_denied_peer(execution, resource_request);
+        let second = workflow_denied_peer(execution, resource_request);
         assert_ne!(first.epoch_identity, second.epoch_identity);
 
         let second = complete_workflow_peer(execution, second);
@@ -64,8 +70,9 @@ fn same_stage_workflow_denials_resume_their_exact_epochs() {
 
 fn direct_denied_peer(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> DirectDeniedPeer {
-    let (fixture, probe) = direct_yield_denial_admission_fixture();
+    let (fixture, probe) = direct_yield_denial_admission_fixture(resource_request);
     let DirectAdmissionFixture {
         runtime,
         operation,
@@ -101,8 +108,9 @@ fn direct_denied_peer(
 
 fn workflow_denied_peer(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorkflowDeniedPeer {
-    let (fixture, probe) = workflow_yield_denial_admission_fixture();
+    let (fixture, probe) = workflow_yield_denial_admission_fixture(resource_request);
     let WorkflowAdmissionFixture {
         runtime,
         operation,

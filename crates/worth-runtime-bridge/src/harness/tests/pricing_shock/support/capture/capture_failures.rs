@@ -6,6 +6,7 @@ use crate::facade::{
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_replay_bundle(
     policy: BridgeRuntimePolicy,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingRestartReplayBundle {
     let original_runtime = build_pricing_runtime_with_policy(
         pricing_reference_source(),
@@ -13,9 +14,10 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_replay_b
         policy,
     );
     original_runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-main",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
+            execution,
+        )
         .expect("pricing restart control route should succeed");
     let canonical_record = original_runtime
         .diagnostics()
@@ -28,7 +30,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_replay_b
         policy,
     );
     let replay = restarted_runtime
-        .replay_canonical_record(&canonical_record)
+        .replay_canonical_record(&canonical_record, execution)
         .expect("pricing restart replay should preserve canonical truth across rebuild");
 
     PricingRestartReplayBundle {
@@ -40,15 +42,17 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_replay_b
 }
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_failure_bundle(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingRestartFailureBundle {
     let original_runtime = build_pricing_runtime(
         pricing_reference_source(),
         RecordingSignalBridgeSink::default(),
     );
     original_runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-main",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
+            execution,
+        )
         .expect("pricing restart mismatch control route should succeed");
     let canonical_record = original_runtime
         .diagnostics()
@@ -112,7 +116,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_restart_failure_
         build_pricing_runtime(drifted_source, RecordingSignalBridgeSink::default());
 
     let error = restarted_runtime
-        .replay_canonical_record(&canonical_record)
+        .replay_canonical_record(&canonical_record, execution)
         .expect_err("pricing restart replay should reject route drift after truth change");
     let failure_record = restarted_runtime
         .diagnostics()

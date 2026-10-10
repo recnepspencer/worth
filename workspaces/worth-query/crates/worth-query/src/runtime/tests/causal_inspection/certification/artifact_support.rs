@@ -8,11 +8,13 @@ use super::super::materialization::*;
 
 pub(super) fn admitted_artifact(
     commit_identity: TruthCommitIdentity,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> QueryCausalInspectionArtifact {
     admitted_artifact_for(
         commit_identity,
         CausalObservationOutcome::Changed,
         CausalInspectionReason::ChangedResult,
+        resource_request,
     )
 }
 
@@ -20,9 +22,10 @@ pub(super) fn admitted_artifact_for(
     commit_identity: TruthCommitIdentity,
     outcome: CausalObservationOutcome,
     reason: CausalInspectionReason,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> QueryCausalInspectionArtifact {
     let runtime = bridge_runtime();
-    let routed = runtime.route(commit_identity).unwrap();
+    let routed = runtime.route(commit_identity, resource_request).unwrap();
     let reference_set = reference_set_for(routed.route_identity(), outcome, reason);
     let flow = admit_causal_inspection(request_for(
         reference_set,
@@ -69,9 +72,10 @@ pub(super) fn admitted_artifact_for(
 
 pub(super) fn advisory_artifacts(
     commit_identity: TruthCommitIdentity,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (QueryCausalInspectionArtifact, QueryCausalInspectionArtifact) {
     let runtime = bridge_runtime();
-    let routed = runtime.route(commit_identity).unwrap();
+    let routed = runtime.route(commit_identity, resource_request).unwrap();
     let reference_set = changed_reference_set(routed.route_identity());
     let flow = admit_causal_inspection(request_for(
         reference_set,
@@ -123,12 +127,15 @@ pub(super) fn advisory_artifacts(
     (full, redacted)
 }
 
-pub(super) fn denied_artifact_and_missing_evidence() -> (QueryCausalInspectionArtifact, String) {
+pub(super) fn denied_artifact_and_missing_evidence(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> (QueryCausalInspectionArtifact, String) {
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-query-cert-denied",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-query-cert-denied"),
+            resource_request,
+        )
         .unwrap();
     let reference_set = changed_reference_set(routed.route_identity());
     let missing_resolution = resolve_causal_evidence_references(

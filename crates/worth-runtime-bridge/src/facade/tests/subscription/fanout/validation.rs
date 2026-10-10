@@ -2,9 +2,14 @@ use super::super::support::*;
 
 #[test]
 fn fanout_projection_validation_accepts_matching_layout_and_rejects_layout_drift() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let plan = runtime
         .plan_shared_subscription_fanout(&active, vec![canonical_consumer_contract(&runtime)])

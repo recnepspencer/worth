@@ -98,8 +98,9 @@ pub(super) fn execute_structural_request(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     target: StructuralHarnessTarget,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StructuralHarnessExecution, BridgeHarnessError> {
-    execution_flows::execute_structural_request(runtime_bridge, fixture, target)
+    execution_flows::execute_structural_request(runtime_bridge, fixture, target, resource_request)
 }
 
 fn admitted_contract(

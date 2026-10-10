@@ -6,25 +6,6 @@ impl RuntimeBridge {
         RuntimeBridgeBuilder::new()
     }
 
-    /// Routes one authoritative truth change through the standard path.
-    ///
-    /// This is the everyday front door for:
-    ///
-    /// - ingesting committed truth change
-    /// - planning invalidation
-    /// - delivering invalidation to the bound compute sink
-    ///
-    /// Prefer this over the lower-level ingest/plan/deliver sequence unless the
-    /// job explicitly needs advanced control.
-    pub fn route(
-        &self,
-        request: impl Into<BridgeRouteRequest>,
-    ) -> Result<BridgeRoute, BridgeStandardRouteError> {
-        let planned = self.plan_committed_patch(request.into())?;
-        let result = self.deliver_invalidation(planned.clone())?;
-        Ok(BridgeRoute::new(planned, result))
-    }
-
     /// Returns the runtime policy frozen into this bridge instance.
     ///
     /// Reach for this when you need to explain or verify runtime-wide replay,
@@ -33,42 +14,17 @@ impl RuntimeBridge {
         &self.policy
     }
 
-    /// Evaluates the current bridge-visible result for a routed target.
-    ///
-    /// This is the standard answer to "what should the compute side see now for
-    /// the thing that was just routed?"
-    pub fn evaluate_current(
-        &self,
-        target: BridgeEvaluationTarget,
-    ) -> Result<BridgeSignalEvaluationRequest, BridgeDeliveryError> {
-        self.prepare_signal_evaluation(target.into_planned_route())
-    }
-
-    /// Evaluates an explicit truth view.
-    ///
-    /// Use this when branch head, branch snapshot, or historical commit basis
-    /// is part of the job rather than an internal detail.
-    pub fn evaluate(
-        &self,
-        request: BridgeTruthViewEvaluationRequest,
-    ) -> Result<BridgeTruthViewEvaluation, BridgeDeliveryError> {
-        let planned = self.plan_truth_view_packet(request.declaration(), request.read_packet())?;
-        let observation = self.materialize_truth_view_observation(planned)?;
-        let canonical_record = self.canonicalize_historical_evaluation_record(&observation);
-        Ok(BridgeTruthViewEvaluation::new(
-            observation,
-            canonical_record,
-        ))
-    }
-
     /// Specialist ingress step that turns a route request into a committed-patch envelope.
     pub fn ingest_committed_patch(
         &self,
         request: BridgeRouteRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, BridgeRouteError> {
-        Ok(crate::input::source::ingest_committed_patch(self, request)?
-            .envelope()
-            .clone())
+        Ok(
+            crate::input::source::ingest_committed_patch(self, request, execution)?
+                .envelope()
+                .clone(),
+        )
     }
 
     /// Plans one already-ingested committed-patch envelope with default mapping context.
@@ -121,8 +77,13 @@ impl RuntimeBridge {
     pub fn plan_committed_patch(
         &self,
         request: BridgeRouteRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgePlannedRoute, BridgeRouteError> {
-        self.plan_committed_patch_with_mapping_context(request, BridgeMappingContext::default())
+        self.plan_committed_patch_with_mapping_context(
+            request,
+            BridgeMappingContext::default(),
+            execution,
+        )
     }
 
     /// Plans one committed patch with explicit mapping context.
@@ -130,8 +91,9 @@ impl RuntimeBridge {
         &self,
         request: BridgeRouteRequest,
         mapping_context: BridgeMappingContext,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgePlannedRoute, BridgeRouteError> {
-        let ingested = crate::input::source::ingest_committed_patch(self, request)?;
+        let ingested = crate::input::source::ingest_committed_patch(self, request, execution)?;
         crate::routing::planning::plan_ingested_patch(
             self,
             ingested.with_mapping_context(mapping_context),
@@ -143,11 +105,13 @@ impl RuntimeBridge {
         &self,
         request: BridgeRouteRequest,
         route_policy: &BridgeRoutePlanningPolicy,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgePlannedRoute, BridgeRouteError> {
         self.plan_committed_patch_with_mapping_context_and_route_policy(
             request,
             BridgeMappingContext::default(),
             route_policy,
+            execution,
         )
     }
 
@@ -157,9 +121,10 @@ impl RuntimeBridge {
         request: BridgeRouteRequest,
         mapping_context: BridgeMappingContext,
         route_policy: &BridgeRoutePlanningPolicy,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgePlannedRoute, BridgeRouteError> {
         self.ensure_route_planning_policy_coherent(route_policy)?;
-        let ingested = crate::input::source::ingest_committed_patch(self, request)?;
+        let ingested = crate::input::source::ingest_committed_patch(self, request, execution)?;
         crate::routing::planning::plan_ingested_patch(
             self,
             ingested
@@ -176,8 +141,9 @@ impl RuntimeBridge {
         request: BridgeRouteRequest,
         mapping_context: BridgeMappingContext,
         route_policy_digest: &str,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgePlannedRoute, BridgeRouteError> {
-        let ingested = crate::input::source::ingest_committed_patch(self, request)?;
+        let ingested = crate::input::source::ingest_committed_patch(self, request, execution)?;
         crate::routing::planning::plan_ingested_patch(
             self,
             ingested
@@ -194,8 +160,9 @@ impl RuntimeBridge {
         request: BridgeRouteRequest,
         mapping_context: BridgeMappingContext,
         route_policy: &BridgeRoutePlanningPolicy,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgePlannedRoute, BridgeRouteError> {
-        let ingested = crate::input::source::ingest_committed_patch(self, request)?;
+        let ingested = crate::input::source::ingest_committed_patch(self, request, execution)?;
         crate::routing::planning::plan_ingested_patch(
             self,
             ingested
@@ -214,8 +181,9 @@ impl RuntimeBridge {
     pub fn plan_bulk_workload(
         &self,
         request: BridgeBulkWorkloadRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeBulkWorkloadPlan, BridgeRouteError> {
-        crate::routing::planning::plan_bulk_workload(self, request)
+        crate::routing::planning::plan_bulk_workload(self, request, execution)
     }
 
     /// Plans a bulk bridge workload under an explicit route policy.
@@ -223,9 +191,15 @@ impl RuntimeBridge {
         &self,
         request: BridgeBulkWorkloadRequest,
         route_policy: &BridgeRoutePlanningPolicy,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeBulkWorkloadPlan, BridgeRouteError> {
         self.ensure_route_planning_policy_coherent(route_policy)?;
-        crate::routing::planning::plan_bulk_workload_with_route_policy(self, request, route_policy)
+        crate::routing::planning::plan_bulk_workload_with_route_policy(
+            self,
+            request,
+            route_policy,
+            execution,
+        )
     }
 
     /// Canonicalizes and records a bulk workload plan for replay and diagnostics.
@@ -242,8 +216,9 @@ impl RuntimeBridge {
     pub fn deliver_invalidation(
         &self,
         route: BridgePlannedRoute,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeRouteResult, BridgeDeliveryError> {
-        crate::delivery::deliver_planned_route(self, route)
+        crate::delivery::deliver_planned_route(self, route, execution)
     }
 
     /// Prepares a planned route for later delivery.
@@ -255,39 +230,44 @@ impl RuntimeBridge {
     pub fn deliver_prepared(
         &self,
         prepared: BridgePreparedDeliveryRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeRouteResult, BridgeDeliveryError> {
-        crate::delivery::deliver_prepared_route(self, prepared)
+        crate::delivery::deliver_prepared_route(self, prepared, execution)
     }
 
     /// Delivers a previously planned bulk workload.
     pub fn deliver_bulk_workload_plan(
         &self,
         plan: BridgeBulkWorkloadPlan,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeBulkWorkloadResult, BridgeDeliveryError> {
-        crate::delivery::deliver_bulk_workload_plan(self, plan)
+        crate::delivery::deliver_bulk_workload_plan(self, plan, execution)
     }
 
     /// Prepares a signal evaluation request from a planned route.
     pub fn prepare_signal_evaluation(
         &self,
         route: BridgePlannedRoute,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeSignalEvaluationRequest, BridgeDeliveryError> {
-        crate::delivery::prepare_signal_evaluation(self, route)
+        crate::delivery::prepare_signal_evaluation(self, route, execution)
     }
 
     /// Replays and verifies a canonical route record.
     pub fn replay_canonical_record(
         &self,
         record: &BridgeCanonicalRouteRecord,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeReplaySummary, BridgeReplayError> {
         let route_record = record.decode()?;
-        crate::routing::replay_route_record(self, &route_record)
+        crate::routing::replay_route_record(self, &route_record, execution)
     }
 
     /// Replays and verifies a canonical bulk workload record.
     pub fn replay_canonical_bulk_plan_record(
         &self,
         record: &BridgeCanonicalBulkPlanRecord,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeBulkWorkloadPlan, BridgeReplayError> {
         if !self.policy.allow_replay_artifacts() {
             return Err(BridgeReplayError::new(
@@ -298,7 +278,7 @@ impl RuntimeBridge {
 
         let record = record.decode()?;
         let replayed =
-            self.plan_bulk_workload(record.request().clone())
+            self.plan_bulk_workload(record.request().clone(), execution)
                 .map_err(|error| {
                     BridgeReplayError::new(
                 BridgeReplayErrorKind::BulkPlanReplayMismatch,

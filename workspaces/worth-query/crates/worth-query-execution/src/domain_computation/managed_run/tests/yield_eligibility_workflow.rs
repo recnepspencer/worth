@@ -7,6 +7,9 @@ use super::*;
 #[test]
 fn over_ceiling_workflow_artifacts_deny_yield_without_consuming_the_run() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -49,8 +52,12 @@ fn over_ceiling_workflow_artifacts_deny_yield_without_consuming_the_run() {
             WorthQueryOperationGraphAccess::Observe,
             output,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let production = running
             .artifacts()
             .production_authority("producer")

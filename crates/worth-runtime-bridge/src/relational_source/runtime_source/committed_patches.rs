@@ -190,7 +190,12 @@ impl CommittedPatchSource for RuntimeBridgeRelationalSource {
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
+        crate::snapshot::BridgeSnapshotReadError::checkpoint(execution).map_err(|denial| {
+            RelationalBridgeSourceError::new(format!("Bridge source request refused: {denial:?}"))
+        })?;
+
         let commit_id = parse_bridge_commit_identity(request.commit_identity())?;
         let publication = match request.snapshot_identity() {
             Some(snapshot) => {

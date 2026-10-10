@@ -7,13 +7,19 @@ use super::slot_support::artifact_with_lower_runtime_slot_evidence;
 
 #[test]
 fn causal_inspection_representative_rows_expose_digest_inventory() {
-    let changed = admitted_artifact(super::super::causal_truth_commit_identity(
-        "commit-query-cert-row-digest-changed",
-    ));
-    let (_, redacted) = advisory_artifacts(super::super::causal_truth_commit_identity(
-        "commit-query-cert-row-digest-redacted",
-    ));
-    let (denied, _) = denied_artifact_and_missing_evidence();
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let changed = admitted_artifact(
+        super::super::causal_truth_commit_identity("commit-query-cert-row-digest-changed"),
+        resource_request,
+    );
+    let (_, redacted) = advisory_artifacts(
+        super::super::causal_truth_commit_identity("commit-query-cert-row-digest-redacted"),
+        resource_request,
+    );
+    let (denied, _) = denied_artifact_and_missing_evidence(resource_request);
     let row = CausalInspectionRepresentativeEvidence::from_query_artifact(
         CausalInspectionRepresentativeKind::ChangedResult,
         &changed,
@@ -46,6 +52,7 @@ fn causal_inspection_representative_rows_expose_digest_inventory() {
 
     let slot_artifact = artifact_with_lower_runtime_slot_evidence(
         super::super::causal_truth_commit_identity("commit-query-cert-row-digest-slots"),
+        resource_request,
     );
     let slot_row = CausalInspectionRepresentativeEvidence::from_query_artifact(
         CausalInspectionRepresentativeKind::ChangedResult,
@@ -97,7 +104,7 @@ fn causal_inspection_representative_rows_expose_digest_inventory() {
         .has_signal_evaluation_forensic_replay_lineage_provenance_reference_coverage());
     assert!(slot_digest_set.has_replay_posture_coverage());
 
-    let matrix = representative_matrix(&changed, &redacted, &denied);
+    let matrix = representative_matrix(&changed, &redacted, &denied, resource_request);
     assert_eq!(matrix.representative_digests().len(), 25);
     assert_eq!(matrix.row_digest_set_digests().len(), 25);
 }

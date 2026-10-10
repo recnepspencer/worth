@@ -13,11 +13,16 @@ use crate::domain_computation::{
 #[test]
 fn direct_report_origin_matches_the_installed_provider_observation() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (fixture, probe) =
-            direct_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
+        let (fixture, probe) = direct_admission_fixture_with_report_history_probe(
+            FixtureDisposition::Converged,
+            resource_request,
+        );
         let started = fixture
             .admit()
             .begin_iteration(execution, request("direct-report-origin"))
@@ -41,11 +46,16 @@ fn direct_report_origin_matches_the_installed_provider_observation() {
 #[test]
 fn workflow_report_origin_matches_the_installed_provider_observation() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (fixture, probe) =
-            workflow_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
+        let (fixture, probe) = workflow_admission_fixture_with_report_history_probe(
+            FixtureDisposition::Converged,
+            resource_request,
+        );
         let started = fixture
             .admit()
             .begin_stage_iteration(execution, WORKFLOW_STAGE, request("workflow-report-origin"))

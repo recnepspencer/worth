@@ -17,12 +17,16 @@ use crate::domain_computation::{
 #[test]
 fn exact_invariant_progression_is_consumed_by_provider_commit() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let state = provider_state();
         let requirements = blocking_requirements();
-        let (mut running, graph) = invariant_run(Arc::clone(&state), requirements);
+        let (mut running, graph) =
+            invariant_run(Arc::clone(&state), requirements, resource_request);
         let inspection = proposed_inspection(execution, &mut running, &graph);
         let receipt = execute_installed_invariant(&inspection);
         let progression = inspection
@@ -54,11 +58,14 @@ fn exact_invariant_progression_is_consumed_by_provider_commit() {
 #[test]
 fn identical_provider_text_cannot_substitute_for_terminal_owner_binding() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let first = committed_provider_session(execution);
-        let second = committed_provider_session(execution);
+        let first = committed_provider_session(execution, resource_request);
+        let second = committed_provider_session(execution, resource_request);
 
         assert_eq!(first.provider_description(), second.provider_description());
         assert!(
@@ -73,11 +80,18 @@ fn identical_provider_text_cannot_substitute_for_terminal_owner_binding() {
 #[test]
 fn relevant_drift_stales_before_provider_commit() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let state = provider_state();
-        let (mut running, graph) = invariant_run(Arc::clone(&state), blocking_requirements());
+        let (mut running, graph) = invariant_run(
+            Arc::clone(&state),
+            blocking_requirements(),
+            resource_request,
+        );
         let inspection = proposed_inspection(execution, &mut running, &graph);
         let receipt = execute_installed_invariant(&inspection);
         let progression = inspection.admit_invariant_progression([receipt]).unwrap();
@@ -105,12 +119,18 @@ fn relevant_drift_stales_before_provider_commit() {
 #[test]
 fn equivalent_proposal_from_another_session_rejects_foreign_progression() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let first_state = provider_state();
-        let (mut first_run, first_graph) =
-            invariant_run(Arc::clone(&first_state), blocking_requirements());
+        let (mut first_run, first_graph) = invariant_run(
+            Arc::clone(&first_state),
+            blocking_requirements(),
+            resource_request,
+        );
         let first = proposed_inspection(execution, &mut first_run, &first_graph);
         let receipt = execute_installed_invariant(&first);
         let progression = first.admit_invariant_progression([receipt]).unwrap();
@@ -118,8 +138,11 @@ fn equivalent_proposal_from_another_session_rejects_foreign_progression() {
         cleanup(first_run);
 
         let second_state = provider_state();
-        let (mut second_run, second_graph) =
-            invariant_run(Arc::clone(&second_state), blocking_requirements());
+        let (mut second_run, second_graph) = invariant_run(
+            Arc::clone(&second_state),
+            blocking_requirements(),
+            resource_request,
+        );
         let second = proposed_inspection(execution, &mut second_run, &second_graph);
         let (denial, second) = match second.bind_invariant_progression(progression) {
             Ok(_) => panic!("equivalent state from another session needs its own progression"),
@@ -183,9 +206,14 @@ fn provider_state() -> Arc<Mutex<ProvisionalProviderState>> {
 
 fn committed_provider_session(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::domain_computation::WorthQueryCommittedProviderSession {
     let state = provider_state();
-    let (mut running, graph) = invariant_run(Arc::clone(&state), blocking_requirements());
+    let (mut running, graph) = invariant_run(
+        Arc::clone(&state),
+        blocking_requirements(),
+        resource_request,
+    );
     let inspection = proposed_inspection(execution, &mut running, &graph);
     let receipt = execute_installed_invariant(&inspection);
     let progression = inspection.admit_invariant_progression([receipt]).unwrap();

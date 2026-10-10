@@ -249,6 +249,10 @@ fn runtime_live_read_receipt_retains_time_only_materialized_posture() {
 
 #[test]
 fn runtime_live_read_receipt_retains_async_and_mixed_cause_posture_precedence() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut async_runtime = stateful_bridge_task_runtime();
     let async_view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = async_runtime
         .declare_live_view("external.tasks.async", task_live_request(), task_schema())
@@ -286,7 +290,8 @@ fn runtime_live_read_receipt_retains_async_and_mixed_cause_posture_precedence() 
 
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
-    let truth_plus_time = authoritative_truth_plus_time_cause(&bridge, &truth_patch);
+    let truth_plus_time =
+        authoritative_truth_plus_time_cause(&bridge, &truth_patch, resource_request);
     let async_completion = admitted_async_completion(
         &bridge,
         worth_signal::facade::NodeId::new(243, 0),

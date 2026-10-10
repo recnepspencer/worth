@@ -9,6 +9,10 @@ use crate::facade::{
 
 #[test]
 fn bridge_harness_subscription_suite_32_continuation_identity_evolution_is_typed() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = runtime(BridgeRuntimePolicy::development());
     let detail = detail_subscription(&bridge);
     let active = active_subscription_for(
@@ -16,6 +20,7 @@ fn bridge_harness_subscription_suite_32_continuation_identity_evolution_is_typed
         &detail,
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         1,
+        resource_request,
     );
     let candidates = vec![
         BridgeSubscriptionContinuationCandidateInput::one_to_one_replace(
@@ -91,6 +96,7 @@ fn bridge_harness_subscription_suite_32_continuation_identity_evolution_is_typed
         &unrelated_collection,
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         1,
+        resource_request,
     );
     let unrelated_rejection = bridge
         .plan_subscription_continuation(&unrelated_active, &index, 3)
@@ -123,6 +129,7 @@ fn bridge_harness_subscription_suite_32_continuation_identity_evolution_is_typed
         &restart_detail,
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         1,
+        resource_request,
     );
     let restart_index = restart_runtime
         .build_subscription_continuation_index(&restart_active, candidates)

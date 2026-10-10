@@ -1,5 +1,9 @@
 #[test]
 fn bridge_bulk_canonical_workload_request_carries_canonical_member_sets() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -30,14 +34,17 @@ fn bridge_bulk_canonical_workload_request_carries_canonical_member_sets() {
     );
 
     let planned = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            )),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-            )),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                )),
+            ]),
+            execution,
+        )
         .expect("bulk workload should plan");
 
     assert_eq!(
@@ -127,6 +134,10 @@ fn bridge_bulk_canonical_workload_request_carries_canonical_member_sets() {
 
 #[test]
 fn bridge_bulk_normalized_summary_derives_shared_workload_facts_once() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -157,14 +168,17 @@ fn bridge_bulk_normalized_summary_derives_shared_workload_facts_once() {
     );
 
     let planned = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            )),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-            )),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                )),
+            ]),
+            execution,
+        )
         .expect("bulk workload should plan");
 
     assert_eq!(
@@ -182,6 +196,10 @@ fn bridge_bulk_normalized_summary_derives_shared_workload_facts_once() {
 
 #[test]
 fn bridge_bulk_execution_plan_selects_serial_for_single_route_workload() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -201,11 +219,14 @@ fn bridge_bulk_execution_plan_selects_serial_for_single_route_workload() {
     );
 
     let planned = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            )),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![BridgeBulkWorkloadSegment::new(
+                BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                ),
+            )]),
+            execution,
+        )
         .expect("single-route bulk workload should plan");
 
     assert_eq!(

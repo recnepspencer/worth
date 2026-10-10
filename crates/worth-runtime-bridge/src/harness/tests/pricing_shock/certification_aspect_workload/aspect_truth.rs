@@ -6,7 +6,12 @@ use super::EXPECTED_COST_USD_TARGET_BASIS;
 
 #[test]
 fn pricing_shock_aspect_lane_preserves_fine_grained_truth_and_history() {
-    let aspect = capture_pricing_aspect_bundle(BridgeRuntimePolicy::development());
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let aspect =
+        capture_pricing_aspect_bundle(BridgeRuntimePolicy::development(), resource_request);
 
     assert_eq!(
         aspect.snapshot,

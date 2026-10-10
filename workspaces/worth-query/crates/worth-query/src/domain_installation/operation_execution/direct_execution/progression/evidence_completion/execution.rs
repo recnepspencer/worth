@@ -110,6 +110,9 @@ where
         admitted: WorthQueryAdmittedDirectOperation<D, O, F, L>,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
     ) -> Result<Self, super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output>> {
+        let resource_request = execution
+            .execution_request_for(&workspace.advancement_owner())
+            .expect("direct admission uses its workspace advancement");
         let mut counters = WorthQueryOperationExecutionCounters {
             runtime_authority_checks: 1,
             ..Default::default()
@@ -151,6 +154,7 @@ where
             bound.execution_authority(),
             bound.product(),
             resource_attempt,
+            resource_request,
         ) {
             Ok(managed) => managed,
             Err(failure) => {

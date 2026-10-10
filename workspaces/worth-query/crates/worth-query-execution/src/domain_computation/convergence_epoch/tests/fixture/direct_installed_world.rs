@@ -34,8 +34,9 @@ use super::resource_contract::resource_contract;
 
 pub(crate) fn direct_epoch_fixture(
     disposition: FixtureDisposition,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryIteratingDirectConvergenceEpoch {
-    direct_admission_fixture(disposition).admit()
+    direct_admission_fixture(disposition, resource_request).admit()
 }
 
 pub(crate) struct DirectAdmissionFixture {
@@ -62,38 +63,53 @@ impl DirectAdmissionFixture {
     }
 }
 
-pub(crate) fn direct_admission_fixture(disposition: FixtureDisposition) -> DirectAdmissionFixture {
-    direct_admission_fixture_with_contract(disposition, FixtureConvergenceContract::Bounded)
+pub(crate) fn direct_admission_fixture(
+    disposition: FixtureDisposition,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> DirectAdmissionFixture {
+    direct_admission_fixture_with_contract(
+        disposition,
+        FixtureConvergenceContract::Bounded,
+        resource_request,
+    )
 }
 
 pub(crate) fn direct_admission_fixture_with_domain_port_probe(
     disposition: FixtureDisposition,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (DirectAdmissionFixture, FixtureDomainPortProbe) {
     let probe = FixtureDomainPortProbe::default();
     let provider = ConvergentProvider::new(disposition).with_domain_port_probe(probe.clone());
     (
-        direct_admission_fixture_with_provider(FixtureConvergenceContract::Bounded, provider),
+        direct_admission_fixture_with_provider(
+            FixtureConvergenceContract::Bounded,
+            provider,
+            resource_request,
+        ),
         probe,
     )
 }
 
 pub(crate) fn direct_admission_fixture_with_report_history_probe(
     disposition: FixtureDisposition,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (DirectAdmissionFixture, FixtureReportHistoryProbe) {
     direct_admission_fixture_with_contract_and_report_history_probe(
         disposition,
         FixtureConvergenceContract::Bounded,
+        resource_request,
     )
 }
 
 pub(crate) fn direct_admission_fixture_with_contract_and_report_history_probe(
     disposition: FixtureDisposition,
     convergence_contract: FixtureConvergenceContract,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (DirectAdmissionFixture, FixtureReportHistoryProbe) {
     let probe = FixtureReportHistoryProbe::default();
     let provider = ConvergentProvider::new(disposition).with_report_history_probe(probe.clone());
     (
-        direct_admission_fixture_with_provider(convergence_contract, provider),
+        direct_admission_fixture_with_provider(convergence_contract, provider, resource_request),
         probe,
     )
 }
@@ -101,31 +117,43 @@ pub(crate) fn direct_admission_fixture_with_contract_and_report_history_probe(
 pub(crate) fn direct_admission_fixture_with_contract(
     disposition: FixtureDisposition,
     convergence_contract: FixtureConvergenceContract,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> DirectAdmissionFixture {
     direct_admission_fixture_with_provider(
         convergence_contract,
         ConvergentProvider::new(disposition),
+        resource_request,
     )
 }
 
 pub(crate) fn direct_yield_recovery_admission_fixture(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (DirectAdmissionFixture, FixtureYieldRecoveryProbe) {
     let disposition = FixtureDisposition::YieldThenSuspensionFailure;
     let probe = FixtureYieldRecoveryProbe::default();
     let provider = ConvergentProvider::new(disposition).with_yield_recovery_probe(probe.clone());
     (
-        direct_admission_fixture_with_provider(FixtureConvergenceContract::Bounded, provider),
+        direct_admission_fixture_with_provider(
+            FixtureConvergenceContract::Bounded,
+            provider,
+            resource_request,
+        ),
         probe,
     )
 }
 
 pub(crate) fn direct_yield_denial_admission_fixture(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (DirectAdmissionFixture, FixtureYieldRecoveryProbe) {
     let disposition = FixtureDisposition::YieldThenCheckpointUnavailable;
     let probe = FixtureYieldRecoveryProbe::default();
     let provider = ConvergentProvider::new(disposition).with_yield_recovery_probe(probe.clone());
     (
-        direct_admission_fixture_with_provider(FixtureConvergenceContract::Bounded, provider),
+        direct_admission_fixture_with_provider(
+            FixtureConvergenceContract::Bounded,
+            provider,
+            resource_request,
+        ),
         probe,
     )
 }
@@ -133,6 +161,7 @@ pub(crate) fn direct_yield_denial_admission_fixture(
 fn direct_admission_fixture_with_provider(
     convergence_contract: FixtureConvergenceContract,
     provider: ConvergentProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> DirectAdmissionFixture {
     let installer = WorthQueryExecutionRuntimeInstaller::new();
     let anchor = Arc::new(WorthQueryGraphProviderAnchor::install_convergent::<
@@ -234,7 +263,7 @@ fn direct_admission_fixture_with_provider(
     let lower = causal_fixture::managed_admission_context();
     let managed = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&bound, attempt, lower.read_request())
+        .admit_direct(&bound, attempt, lower.read_request(), resource_request)
         .expect("fixture managed run must admit through Bridge and Relational authorities");
     DirectAdmissionFixture {
         runtime,

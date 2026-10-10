@@ -47,14 +47,14 @@ fn retained_sessions_execute_b_a_b_without_reopening_sources_or_readmitting_slot
             crate::facade::BridgeConditionalEvaluationAdmissionRequest::source_present_at_signal_basis(
                 &signal_basis, &source_b,
             ),
-        )
+         request_execution)
         .unwrap();
     let session_a = owner
         .admit_conditional_evaluation(
             crate::facade::BridgeConditionalEvaluationAdmissionRequest::source_present_at_signal_basis(
                 &signal_basis, &source_a,
             ),
-        )
+         request_execution)
         .unwrap();
     let execute = |session: &crate::facade::BridgeConditionalEvaluationSession,
                    source: &TruthSnapshotIdentity,

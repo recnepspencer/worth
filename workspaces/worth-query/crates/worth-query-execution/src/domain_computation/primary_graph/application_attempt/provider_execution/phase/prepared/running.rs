@@ -67,7 +67,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     Input,
     Scope,
 >(
-    _phase: &WorthQueryAdvancementPhase<'_>,
+    phase: &WorthQueryAdvancementPhase<'_>,
 
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     prepared: WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope>,
@@ -97,7 +97,11 @@ where
         lease.product(),
     )
     .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
-    let operation = bind_execution_operation(application, &admission, &lease, effect_posture)?;
+    let execution = phase
+        .execution_request_for(&application.product_runtime)
+        .map_err(|_| denied(DenialStage::ResourceAdmission))?;
+    let operation =
+        bind_execution_operation(application, &admission, &lease, effect_posture, execution)?;
     let reserved = admission
         .graph_work_mut()
         .take_operation_capacity()
@@ -117,10 +121,10 @@ where
         .managed_run_admission(&request_bridge, &application.product_runtime.source);
     let running = match boundary {
         WorthQueryExecutionBoundary::Atomic => {
-            run_admission.admit_atomic_direct(&operation, attempt, read_request)
+            run_admission.admit_atomic_direct(&operation, attempt, read_request, execution)
         }
         WorthQueryExecutionBoundary::BoundedStep => {
-            run_admission.admit_direct(&operation, attempt, read_request)
+            run_admission.admit_direct(&operation, attempt, read_request, execution)
         }
     }
     .map_err(|failure| {
@@ -155,6 +159,7 @@ fn bind_execution_operation<Schema, Operation, Input, Scope>(
     admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
     effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryExecutionBoundOperationAuthority, WorthQueryApplicationCommitOutcome>
 where
     Schema: ApplicationSchema,
@@ -180,6 +185,7 @@ where
                 BridgeDeliveryIntent::PrepareSignalEvaluation,
             ),
             SnapshotReadPacket::new(Vec::new()),
+            execution,
         )
         .map_err(|_| denied(DenialStage::BridgePlanning))?;
     let basis = basis_lifecycle()

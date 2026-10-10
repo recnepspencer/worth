@@ -33,8 +33,9 @@ impl RuntimeBridge {
     ///     bridge: &RuntimeBridge,
     ///     contract: &AdmittedStructuralComparisonContract,
     ///     packet: SnapshotReadPacket,
+    ///     execution: worth_execution::ExecutionRequest<'_, '_>,
     /// ) -> Result<(), Box<dyn std::error::Error>> {
-    ///     let planned = bridge.plan_structural_branch_comparison_from_read_packet(contract, packet)?;
+    ///     let planned = bridge.plan_structural_branch_comparison_from_read_packet(contract, packet, execution)?;
     ///     let reduced = bridge.reduce_structural_match_set(&planned)?;
     ///     let artifact = bridge.publish_branch_comparison_artifact(&reduced)?;
     ///     let _record = bridge.canonicalize_structural_branch_comparison_record(

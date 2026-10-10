@@ -22,7 +22,12 @@ impl TruthBranchHeadSource for RuntimeBridgeRelationalSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
+        crate::snapshot::BridgeSnapshotReadError::checkpoint(execution).map_err(|denial| {
+            RelationalBridgeSourceError::new(format!("Bridge source request refused: {denial:?}"))
+        })?;
+
         let selected_commit = self.select_branch_head(branch_identity)?;
 
         match self.publish_commit_for_selected_observation(selected_commit) {

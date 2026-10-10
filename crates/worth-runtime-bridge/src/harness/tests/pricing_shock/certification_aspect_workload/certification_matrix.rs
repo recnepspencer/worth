@@ -8,10 +8,15 @@ use super::super::support::{
 
 #[test]
 fn pricing_shock_certification_matrix_distinguishes_control_replay_and_hostile_lanes() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let scenario = generated_pricing_scenario();
     let control = capture_pricing_certification_matrix(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-certification-control"),
+        resource_request,
     );
 
     let hostile_source = InMemoryRelationalBridgeSource::default();
@@ -26,7 +31,8 @@ fn pricing_shock_certification_matrix_distinguishes_control_replay_and_hostile_l
     ));
     let hostile_runtime =
         build_pricing_runtime(hostile_source, RecordingSignalBridgeSink::default());
-    let hostile = capture_pricing_missing_snapshot_failure_bundle(&hostile_runtime);
+    let hostile =
+        capture_pricing_missing_snapshot_failure_bundle(&hostile_runtime, resource_request);
 
     assert_eq!(
         control.reference.route_snapshot,

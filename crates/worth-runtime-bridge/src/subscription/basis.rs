@@ -95,10 +95,11 @@ impl ValidatedSubscriptionBasisBinding {
         runtime: &RuntimeBridge,
         declaration: &BridgeSubscriptionDeclaration,
         request: &BridgeSubscriptionBasisRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, BridgeSubscriptionBasisResolutionFailure> {
         let (basis_kind, branch_identity, commit_identity, snapshot_identity) = match request {
             BridgeSubscriptionBasisRequest::Snapshot { snapshot_identity } => {
-                bind_snapshot_basis(runtime, snapshot_identity)?;
+                bind_snapshot_basis(runtime, snapshot_identity, execution)?;
                 (
                     BridgeSubscriptionBasisKind::Snapshot,
                     None,
@@ -113,7 +114,7 @@ impl ValidatedSubscriptionBasisBinding {
                         "Bridge runtime cannot bind branch-head subscription basis because no branch-head source is configured.",
                     )
                 })?;
-                let patch = source.load_branch_head_patch(branch_identity).map_err(|error| {
+                let patch = source.load_branch_head_patch(branch_identity, execution).map_err(|error| {
                     BridgeTypedError::new(
                         BridgeSubscriptionBasisResolutionFailureKind::BranchHeadResolutionFailure,
                         format!(
@@ -134,7 +135,7 @@ impl ValidatedSubscriptionBasisBinding {
                         ),
                     ));
                 }
-                bind_snapshot_basis(runtime, patch.snapshot_identity())?;
+                bind_snapshot_basis(runtime, patch.snapshot_identity(), execution)?;
                 (
                     BridgeSubscriptionBasisKind::BranchHead,
                     Some(branch_identity.clone()),
@@ -212,8 +213,9 @@ impl ValidatedSubscriptionBasisBinding {
 fn bind_snapshot_basis(
     runtime: &RuntimeBridge,
     snapshot_identity: &TruthSnapshotIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), BridgeSubscriptionBasisResolutionFailure> {
-    open_planned_snapshot(runtime, snapshot_identity)
+    open_planned_snapshot(runtime, snapshot_identity, execution)
         .map(|_| ())
         .map_err(|error| match error.kind() {
             BridgeDeliveryErrorKind::SnapshotAcquisitionFailure => BridgeTypedError::new(

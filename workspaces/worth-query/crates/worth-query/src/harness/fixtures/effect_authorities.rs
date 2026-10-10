@@ -273,6 +273,7 @@ impl CommittedPatchSource for TestBridgeSource {
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(BridgeCommittedPatchEnvelope::new(
             worth_runtime_bridge::facade::BridgeCommittedPatchEnvelopeIdentity::new(
@@ -328,6 +329,7 @@ impl SnapshotReadSource for TestBridgeSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         Ok(Box::new(TestSnapshotReader {
             identity: identity.clone(),

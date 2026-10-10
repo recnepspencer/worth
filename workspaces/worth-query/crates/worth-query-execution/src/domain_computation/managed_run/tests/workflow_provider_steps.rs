@@ -109,6 +109,9 @@ impl WorthQueryArtifactProviderResource for StepArtifactResource {
 #[test]
 fn workflow_stage_provider_call_uses_stage_resources_and_receipt_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -135,7 +138,7 @@ fn workflow_stage_provider_call_uses_stage_resources_and_receipt_evidence() {
             &graph,
             WorthQueryOperationGraphAccess::Project,
         );
-        let running = admitted_workflow(&runtime, &operation, resources);
+        let running = admitted_workflow(&runtime, &operation, resources, resource_request);
         let active = running
             .begin_stage_graph_execution(
                 execution,
@@ -185,6 +188,9 @@ fn workflow_stage_provider_call_uses_stage_resources_and_receipt_evidence() {
 #[test]
 fn workflow_step_derives_artifact_and_checkpoint_evidence_from_governed_ports() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -218,7 +224,7 @@ fn workflow_step_derives_artifact_and_checkpoint_evidence_from_governed_ports() 
             WorthQueryOperationGraphAccess::Observe,
             output,
         );
-        let running = admitted_workflow(&runtime, &operation, resources);
+        let running = admitted_workflow(&runtime, &operation, resources, resource_request);
         let active = running
             .begin_stage_graph_execution(
                 execution,
@@ -308,6 +314,7 @@ pub(super) fn admitted_workflow(
     runtime: &WorthQueryExecutionRuntime,
     operation: &crate::domain_computation::WorthQueryExecutionBoundOperationAuthority,
     resources: WorthQueryAdmittedWorkflowResourcePlan,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::domain_computation::WorthQueryRunningWorkflowRun {
     let attempt = runtime
         .start_workflow_resource_attempt(operation, resources)
@@ -315,7 +322,7 @@ pub(super) fn admitted_workflow(
     let lower = causal_fixture::managed_admission_context();
     runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(operation, attempt, lower.read_request())
+        .admit_workflow(operation, attempt, lower.read_request(), resource_request)
         .expect("workflow graph run should admit")
         .start()
         .expect("workflow graph run should start")

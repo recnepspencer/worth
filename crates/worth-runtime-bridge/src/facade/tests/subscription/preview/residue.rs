@@ -2,7 +2,12 @@ use super::super::support::*;
 
 #[test]
 fn preview_discard_emits_zero_residue_proof_for_all_categories() {
-    let (runtime, preview_active) = preview_active_detail_subscription("discard-zero");
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, preview_active) =
+        preview_active_detail_subscription("discard-zero", resource_request);
     let preview_active_identity = preview_active
         .preview_active_subscription_identity()
         .clone();
@@ -103,7 +108,12 @@ fn expected_work_record_digest_for_residue_category(
 
 #[test]
 fn preview_discard_rejects_nonzero_authoritative_residue() {
-    let (runtime, preview_active) = preview_active_detail_subscription("discard-nonzero");
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, preview_active) =
+        preview_active_detail_subscription("discard-nonzero", resource_request);
     let residue_index = runtime.build_subscription_preview_residue_scope_index(
         &preview_active,
         preview_residue_inputs_with_count(
@@ -145,7 +155,12 @@ fn preview_discard_rejects_nonzero_authoritative_residue() {
 
 #[test]
 fn preview_discard_rejects_missing_residue_category() {
-    let (runtime, preview_active) = preview_active_detail_subscription("discard-missing-category");
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, preview_active) =
+        preview_active_detail_subscription("discard-missing-category", resource_request);
     let residue_inputs = zero_preview_residue_inputs(&runtime, &preview_active)
         .into_iter()
         .filter(|input| {
@@ -178,8 +193,12 @@ fn preview_discard_rejects_missing_residue_category() {
 
 #[test]
 fn preview_discard_rejects_duplicate_residue_category() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, preview_active) =
-        preview_active_detail_subscription("discard-duplicate-category");
+        preview_active_detail_subscription("discard-duplicate-category", resource_request);
     let mut residue_inputs = zero_preview_residue_inputs(&runtime, &preview_active);
     residue_inputs.push(
         crate::facade::BridgeSubscriptionPreviewResidueArtifactInput::zero_from_preview_work_trace(
@@ -212,9 +231,14 @@ fn preview_discard_rejects_duplicate_residue_category() {
 
 #[test]
 fn preview_discard_rejects_scope_index_drift_before_residue_proof() {
-    let (runtime, preview_active) = preview_active_detail_subscription("discard-scope-a");
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, preview_active) =
+        preview_active_detail_subscription("discard-scope-a", resource_request);
     let (other_runtime, other_preview_active) =
-        preview_active_detail_subscription("discard-scope-b");
+        preview_active_detail_subscription("discard-scope-b", resource_request);
     let other_residue_index = other_runtime.build_subscription_preview_residue_scope_index(
         &other_preview_active,
         zero_preview_residue_inputs(&other_runtime, &other_preview_active),
@@ -238,8 +262,12 @@ fn preview_discard_rejects_scope_index_drift_before_residue_proof() {
 
 #[test]
 fn detail_and_collection_preview_subscriptions_share_residue_proof_path() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (detail_runtime, detail_preview_active) =
-        preview_active_detail_subscription("discard-detail");
+        preview_active_detail_subscription("discard-detail", resource_request);
     let detail_active_identity = detail_preview_active
         .preview_active_subscription_identity()
         .clone();
@@ -252,7 +280,7 @@ fn detail_and_collection_preview_subscriptions_share_residue_proof_path() {
         .expect("detail preview discard should prove zero residue");
 
     let (collection_runtime, collection_preview_active) =
-        preview_active_collection_subscription("discard-collection");
+        preview_active_collection_subscription("discard-collection", resource_request);
     let collection_active_identity = collection_preview_active
         .preview_active_subscription_identity()
         .clone();

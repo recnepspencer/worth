@@ -5,17 +5,20 @@ use super::*;
 #[test]
 fn same_scope_and_stage_running_recovery_peers_keep_their_own_epochs() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (direct_a_identity, direct_a) = direct_paused(
             execution,
-            direct_admission_fixture(FixtureDisposition::YieldThenConverged),
+            direct_admission_fixture(FixtureDisposition::YieldThenConverged, resource_request),
             "shared-yield-recovery-scope",
         );
         let (direct_b_identity, direct_b) = direct_paused(
             execution,
-            direct_admission_fixture(FixtureDisposition::YieldThenConverged),
+            direct_admission_fixture(FixtureDisposition::YieldThenConverged, resource_request),
             "shared-yield-recovery-scope",
         );
         assert_ne!(direct_a_identity, direct_b_identity);
@@ -36,12 +39,12 @@ fn same_scope_and_stage_running_recovery_peers_keep_their_own_epochs() {
 
         let (workflow_a_identity, workflow_a) = workflow_paused(
             execution,
-            workflow_admission_fixture(FixtureDisposition::YieldThenConverged),
+            workflow_admission_fixture(FixtureDisposition::YieldThenConverged, resource_request),
             "shared-yield-recovery-stage-scope",
         );
         let (workflow_b_identity, workflow_b) = workflow_paused(
             execution,
-            workflow_admission_fixture(FixtureDisposition::YieldThenConverged),
+            workflow_admission_fixture(FixtureDisposition::YieldThenConverged, resource_request),
             "shared-yield-recovery-stage-scope",
         );
         assert_ne!(workflow_a_identity, workflow_b_identity);

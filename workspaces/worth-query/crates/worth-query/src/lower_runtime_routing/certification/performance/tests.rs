@@ -10,7 +10,11 @@ use crate::lower_runtime_routing::certification::surface::worth_query_lower_runt
 
 #[test]
 fn scenario_profiles_are_monotonic_across_width_variants() {
-    let surface = worth_query_lower_runtime_representative_surface();
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let surface = worth_query_lower_runtime_representative_surface(resource_request);
     let report = certify_lower_runtime_performance_slopes(&surface);
     let profiles = report.profiles();
 
@@ -43,7 +47,11 @@ fn scenario_profiles_are_monotonic_across_width_variants() {
 
 #[test]
 fn slope_report_emits_all_phase_seven_outputs_from_observed_profiles() {
-    let surface = worth_query_lower_runtime_representative_surface();
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let surface = worth_query_lower_runtime_representative_surface(resource_request);
     let report = certify_lower_runtime_performance_slopes(&surface);
 
     assert_eq!(report.rows().len(), 6);
@@ -62,7 +70,11 @@ fn slope_report_emits_all_phase_seven_outputs_from_observed_profiles() {
 
 #[test]
 fn full_profile_counter_snapshot_matches_exact_producer_widths() {
-    let surface = worth_query_lower_runtime_representative_surface();
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let surface = worth_query_lower_runtime_representative_surface(resource_request);
     let report = certify_lower_runtime_performance_slopes(&surface);
     let full = report.full_profile().counters();
 

@@ -22,6 +22,10 @@ use super::runtime_bridge_fixture::runtime;
 
 #[test]
 fn retained_snapshot_request_admits_and_resolves_retained_path() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::branch_snapshot(
@@ -76,6 +80,7 @@ fn retained_snapshot_request_admits_and_resolves_retained_path() {
                 TruthSnapshotIdentity::from_bridge_harness_label("snapshot-a"),
             )
             .with_replay_mode(BridgeReplayMode::Disabled),
+            resource_request,
         )
         .expect("snapshot evaluation should succeed");
     let lowered = lower_materialization_from_artifact(
@@ -114,6 +119,10 @@ fn retained_snapshot_request_admits_and_resolves_retained_path() {
 
 #[test]
 fn replay_request_admits_and_resolves_replay_path() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::historical_commit(
@@ -159,6 +168,7 @@ fn replay_request_admits_and_resolves_replay_path() {
                 TruthCommitIdentity::from_bridge_harness_label("commit-a"),
             )
             .with_replay_mode(BridgeReplayMode::Required),
+            resource_request,
         )
         .expect("historical evaluation should succeed");
     let lowered = lower_materialization_from_decision_log(evaluation.record().decision_log())

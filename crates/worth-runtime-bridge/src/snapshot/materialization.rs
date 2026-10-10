@@ -31,7 +31,6 @@ pub struct MaterializedTruthViewObservation {
     snapshot_token: BridgeSnapshotToken,
     materialization_path: crate::diagnostics::BridgeHistoricalMaterializationPath,
     snapshot_reader: TruthViewObservationReader,
-    execution_policy: crate::policy::BridgeExecutionPolicyBaseline,
 }
 
 impl MaterializedTruthViewObservation {
@@ -40,19 +39,13 @@ impl MaterializedTruthViewObservation {
         snapshot_token: BridgeSnapshotToken,
         materialization_path: crate::diagnostics::BridgeHistoricalMaterializationPath,
         snapshot: AdmittedSnapshotContext<Box<dyn TruthSnapshotReader>>,
-        execution_policy: crate::policy::BridgeExecutionPolicyBaseline,
     ) -> Self {
         Self {
             planned,
             snapshot_token,
             materialization_path,
             snapshot_reader: TruthViewObservationReader::new(snapshot),
-            execution_policy,
         }
-    }
-
-    pub(crate) fn execution_policy(&self) -> crate::policy::BridgeExecutionPolicyBaseline {
-        self.execution_policy
     }
 
     pub fn planned(&self) -> &PlannedTruthViewPacket {

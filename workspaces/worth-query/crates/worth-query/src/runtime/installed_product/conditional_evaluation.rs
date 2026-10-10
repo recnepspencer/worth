@@ -93,7 +93,7 @@ impl WorthQueryConditionalEvaluationRegistry {
             )
             .map_err(|_| admission_capacity_stop())?;
         let session = loop {
-            match entry.admit_session(installed) {
+            match entry.admit_session(installed, execution) {
                 Ok(session) => break session,
                 Err(denial)
                     if denial.kind()

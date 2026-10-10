@@ -19,6 +19,7 @@ pub(super) fn admit_live_managed_basis<Schema>(
     live: &worth_query_installation::facade::WorthQueryInstalledApplicationLiveContract,
     graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     subject: &str,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryManagedLowerExecutionBasis, WorthQueryApplicationLiveOpenDenial> {
     let descriptor = graph_work
         .query_basis()
@@ -43,6 +44,7 @@ pub(super) fn admit_live_managed_basis<Schema>(
         &application.product_runtime.source,
         binding,
         request,
+        execution,
     )
     .map_err(|failure| {
         open_denial(

@@ -7,6 +7,10 @@ use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBr
 
 #[test]
 fn bridge_replay_rejects_subscription_slice_drift() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let original_source = InMemoryRelationalBridgeSource::default();
     original_source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -27,12 +31,15 @@ fn bridge_replay_rejects_subscription_slice_drift() {
     );
 
     let route = original_runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("original route should plan before replay certification");
     original_runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("original route should deliver before replay certification");
     let canonical_record = original_runtime
         .diagnostics()
@@ -63,7 +70,7 @@ fn bridge_replay_rejects_subscription_slice_drift() {
     );
 
     let error = restarted_runtime
-        .replay_canonical_record(&canonical_record)
+        .replay_canonical_record(&canonical_record, execution)
         .expect_err("replay should reject subscription slice identity drift");
     let canonical_route_record = canonical_record
         .decode()

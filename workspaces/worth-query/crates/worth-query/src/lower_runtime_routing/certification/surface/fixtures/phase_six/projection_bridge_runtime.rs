@@ -73,6 +73,7 @@ impl worth_runtime_bridge::facade::CommittedPatchSource for ProjectionBridgeSour
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(native_projection_patch_envelope(
             request.commit_identity().clone(),
@@ -139,6 +140,7 @@ impl SnapshotReadSource for ProjectionBridgeSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         if identity.relational_snapshot_parts().is_some() {
             Ok(Box::new(ProjectionBridgeSnapshotReader {
@@ -157,6 +159,7 @@ impl TruthBranchHeadSource for ProjectionBridgeSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(native_projection_patch_envelope(
             TruthCommitIdentity::from_relational_commit_id(80),
@@ -183,11 +186,12 @@ impl BridgeSourceAdapter for ProjectionBridgeSourceAdapter {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         ProjectionBridgeSource {
             rows: self.rows.clone(),
         }
-        .open_snapshot(identity)
+        .open_snapshot(identity, _execution)
     }
 }
 

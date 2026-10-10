@@ -7,6 +7,10 @@ use crate::truth_identity_fixtures::{
 
 #[test]
 fn bridge_diagnostics_retain_queryable_bulk_records_by_workload_identity() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         truth_commit_fixture("commit-a"),
@@ -37,14 +41,17 @@ fn bridge_diagnostics_retain_queryable_bulk_records_by_workload_identity() {
         .expect("bridge runtime with bounded diagnostics retention");
 
     let plan = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(truth_commit_fixture(
-                "commit-a",
-            ))),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(truth_commit_fixture(
-                "commit-b",
-            ))),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    truth_commit_fixture("commit-a"),
+                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    truth_commit_fixture("commit-b"),
+                )),
+            ]),
+            execution,
+        )
         .expect("bulk workload should plan before diagnostics retention");
     let record = runtime.canonicalize_bulk_workload_plan(&plan);
 

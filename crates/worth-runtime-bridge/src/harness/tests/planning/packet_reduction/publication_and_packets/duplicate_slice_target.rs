@@ -6,6 +6,10 @@ use super::{
 
 #[test]
 fn bridge_bulk_packet_reduction_collapses_duplicate_slice_targets() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -25,14 +29,17 @@ fn bridge_bulk_packet_reduction_collapses_duplicate_slice_targets() {
     );
 
     let planned = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            )),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            )),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                )),
+            ]),
+            execution,
+        )
         .expect("duplicate workload should plan");
 
     assert_eq!(planned.packet_set().routing_packets().len(), 2);

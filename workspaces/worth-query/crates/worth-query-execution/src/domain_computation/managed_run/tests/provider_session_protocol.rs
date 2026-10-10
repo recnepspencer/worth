@@ -194,11 +194,19 @@ impl WorthQueryProviderSessionLifecycle for SessionProtocolProvider {
 #[test]
 fn sealed_plan_prepares_session_binds_work_and_aborts() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let calls = Arc::new(SessionCallCounts::default());
-        let (mut running, graph) = session_run(SessionFailurePoint::None, Arc::clone(&calls), true);
+        let (mut running, graph) = session_run(
+            SessionFailurePoint::None,
+            Arc::clone(&calls),
+            true,
+            resource_request,
+        );
         let expected_run = running.identity().to_owned();
         let expected_basis = running
             .provider_plan_bridge_basis()
@@ -252,23 +260,28 @@ fn sealed_plan_prepares_session_binds_work_and_aborts() {
 #[test]
 fn independently_admitted_sessions_carry_distinct_opaque_affinities() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         assert_ne!(
-            closed_session_affinity(execution,),
-            closed_session_affinity(execution,)
+            closed_session_affinity(execution, resource_request),
+            closed_session_affinity(execution, resource_request)
         );
     });
 }
 
 fn closed_session_affinity(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryProviderSessionAffinityIdentity {
     let (mut running, graph) = session_run(
         SessionFailurePoint::None,
         Arc::new(SessionCallCounts::default()),
         true,
+        resource_request,
     );
     let staged = staged_session(execution, &mut running, &graph);
     let affinity = staged.provider_session_affinity();
@@ -284,8 +297,15 @@ fn closed_session_affinity(
 
 #[test]
 fn provider_without_session_lifecycle_is_denied_before_any_protocol_call() {
-    let (mut running, graph) =
-        managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, GraphOnlyProvider);
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut running, graph) = managed_graph_run_with_provider(
+        WorthQueryOperationGraphAccess::Observe,
+        GraphOnlyProvider,
+        resource_request,
+    );
     let failure = running
         .admit_provider_execution_plan(&graph)
         .expect_err("one-shot-only provider must not enter the session lane");
@@ -323,6 +343,7 @@ pub(super) fn session_run(
     failure: SessionFailurePoint,
     calls: Arc<SessionCallCounts>,
     touch: bool,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryRunningDirectRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -331,6 +352,7 @@ pub(super) fn session_run(
         WorthQueryOperationGraphAccess::Observe,
         SessionProtocolProvider { failure, calls },
         touch,
+        resource_request,
     )
 }
 

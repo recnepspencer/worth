@@ -119,6 +119,7 @@ pub(crate) fn deliver_change_stream_window(
     runtime: &RuntimeBridge,
     contract: &AdmittedConsumerContract,
     window: &PlannedChangeStreamWindow,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StreamWindowDeliveryResult, BridgeStreamError> {
     if contract.consumer_shape() != StreamConsumerShape::RoutingConsumer {
         return Err(BridgeStreamError::new(
@@ -157,15 +158,17 @@ pub(crate) fn deliver_change_stream_window(
         .iter()
         .cloned()
         .map(|route| {
-            runtime.deliver_invalidation(route).map_err(|error| {
-                BridgeStreamError::new(
-                    BridgeStreamErrorKind::StreamDeliveryRejected,
-                    format!(
-                        "Failed to deliver lowered stream work for stream window `{}`: {error}",
-                        window.stream_window_identity().as_str()
-                    ),
-                )
-            })
+            runtime
+                .deliver_invalidation(route, execution)
+                .map_err(|error| {
+                    BridgeStreamError::new(
+                        BridgeStreamErrorKind::StreamDeliveryRejected,
+                        format!(
+                            "Failed to deliver lowered stream work for stream window `{}`: {error}",
+                            window.stream_window_identity().as_str()
+                        ),
+                    )
+                })
         })
         .collect::<Result<Vec<_>, _>>()?;
     let delivered_target_count = route_results

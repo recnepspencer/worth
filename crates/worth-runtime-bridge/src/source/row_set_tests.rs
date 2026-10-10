@@ -95,13 +95,26 @@ fn observation_with_reader_and_packet(
         ),
         BridgeHistoricalMaterializationPath::CommitEnvelopeSnapshot,
         admitted,
-        crate::policy::BridgeExecutionPolicyBaseline::development(),
     )
 }
 
 #[test]
 fn bridge_row_set_preserves_multi_row_truth() {
-    let row_set = materialize_bridge_row_set(&observation()).expect("row set");
+    let policy = crate::policy::BridgeExecutionPolicyBaseline::operational().request_policy();
+    let lease = crate::snapshot::test_execution_lease_for_policy(
+        policy,
+        worth_execution::CancellationToken::new(),
+    );
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+
+    let row_set = execution
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(8_000_000),
+            |_| materialize_bridge_row_set(&observation(), execution),
+        )
+        .expect("active leased scope")
+        .0
+        .expect("row set");
 
     assert_eq!(row_set.rows().len(), 2);
     assert_eq!(row_set.rows()[0].row_identity().as_str(), "entity-1");
@@ -173,10 +186,15 @@ fn bridge_row_set_preserves_multi_row_truth() {
 
 #[test]
 fn bridge_row_set_digest_is_derived_from_validated_aspect_values() {
-    let baseline = materialize_bridge_row_set(&observation()).expect("baseline row set");
-    let changed = materialize_bridge_row_set(&observation_with_reader(
-        Box::new(ChangedStatusReader) as Box<dyn TruthSnapshotReader>,
-    ))
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
+    let baseline = materialize_bridge_row_set(&observation(), execution).expect("baseline row set");
+    let changed = materialize_bridge_row_set(
+        &observation_with_reader(Box::new(ChangedStatusReader) as Box<dyn TruthSnapshotReader>),
+        execution,
+    )
     .expect("changed row set");
 
     assert_ne!(baseline.digest(), changed.digest());
@@ -184,10 +202,16 @@ fn bridge_row_set_digest_is_derived_from_validated_aspect_values() {
 
 #[test]
 fn bridge_row_set_omits_authoritatively_absent_fields_without_panicking() {
-    let row_set = materialize_bridge_row_set(&observation_with_reader(Box::new(
-        AuthoritativeAbsenceReader,
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
+    let row_set = materialize_bridge_row_set(
+        &observation_with_reader(
+            Box::new(AuthoritativeAbsenceReader) as Box<dyn TruthSnapshotReader>
+        ),
+        execution,
     )
-        as Box<dyn TruthSnapshotReader>))
     .expect("authoritative absence is a lawful row-set posture");
 
     assert_eq!(row_set.rows().len(), 2);
@@ -199,9 +223,14 @@ fn bridge_row_set_omits_authoritatively_absent_fields_without_panicking() {
 
 #[test]
 fn bridge_row_set_preserves_typed_snapshot_read_contract_failure() {
-    let error = materialize_bridge_row_set(&observation_with_reader(
-        Box::new(MissingRecordReader) as Box<dyn TruthSnapshotReader>
-    ))
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
+    let error = materialize_bridge_row_set(
+        &observation_with_reader(Box::new(MissingRecordReader) as Box<dyn TruthSnapshotReader>),
+        execution,
+    )
     .expect_err("row-set materialization must fail before assembling partial rows");
 
     match error {
@@ -219,6 +248,10 @@ fn bridge_row_set_preserves_typed_snapshot_read_contract_failure() {
 
 #[test]
 fn bridge_row_set_rejects_duplicate_materialized_field_identity() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let packet = SnapshotReadPacket::new(vec![
         SnapshotReadRequest::for_coarse(
             "entity-1",
@@ -234,10 +267,13 @@ fn bridge_row_set_rejects_duplicate_materialized_field_identity() {
         ),
     ]);
 
-    let error = materialize_bridge_row_set(&observation_with_reader_and_packet(
-        Box::new(FixtureReader) as Box<dyn TruthSnapshotReader>,
-        packet,
-    ))
+    let error = materialize_bridge_row_set(
+        &observation_with_reader_and_packet(
+            Box::new(FixtureReader) as Box<dyn TruthSnapshotReader>,
+            packet,
+        ),
+        execution,
+    )
     .expect_err("row assembly must not overwrite duplicate materialized fields");
 
     assert!(matches!(

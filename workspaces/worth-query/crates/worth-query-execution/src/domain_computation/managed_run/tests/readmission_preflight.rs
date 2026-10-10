@@ -4,11 +4,14 @@ use super::*;
 #[test]
 fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime) = yielded_direct(execution);
+        let (yielded, bridge, runtime) = yielded_direct(execution, resource_request);
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let foreign_bridge = super::causal_fixture::managed_admission_context().bridge;
@@ -62,12 +65,15 @@ fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry
 #[test]
 fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (first, first_bridge, first_runtime) = yielded_direct(execution);
-        let (second, second_bridge, second_runtime) = yielded_direct(execution);
+        let (first, first_bridge, first_runtime) = yielded_direct(execution, resource_request);
+        let (second, second_bridge, second_runtime) = yielded_direct(execution, resource_request);
 
         let first = match first.readmit_same_runtime(active_request, &first_runtime, &second_bridge)
         {
@@ -122,11 +128,14 @@ fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
 #[test]
 fn successor_installation_denies_stale_yield_before_any_fresh_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, _bridge, mut runtime) = yielded_direct(execution);
+        let (yielded, _bridge, mut runtime) = yielded_direct(execution, resource_request);
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         runtime
             .commit_successor_installation(Arc::new(

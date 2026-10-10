@@ -15,13 +15,20 @@ use crate::domain_computation::{
 #[test]
 fn same_semantic_direct_peers_bind_distinct_report_histories() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (left_fixture, left_probe) =
-            direct_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
-        let (right_fixture, right_probe) =
-            direct_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
+        let (left_fixture, left_probe) = direct_admission_fixture_with_report_history_probe(
+            FixtureDisposition::Converged,
+            resource_request,
+        );
+        let (right_fixture, right_probe) = direct_admission_fixture_with_report_history_probe(
+            FixtureDisposition::Converged,
+            resource_request,
+        );
         let left_started = left_fixture
             .admit()
             .begin_iteration(execution, request("same-report-scope"))
@@ -49,13 +56,20 @@ fn same_semantic_direct_peers_bind_distinct_report_histories() {
 #[test]
 fn same_stage_workflow_peers_bind_distinct_report_histories() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (left_fixture, left_probe) =
-            workflow_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
-        let (right_fixture, right_probe) =
-            workflow_admission_fixture_with_report_history_probe(FixtureDisposition::Converged);
+        let (left_fixture, left_probe) = workflow_admission_fixture_with_report_history_probe(
+            FixtureDisposition::Converged,
+            resource_request,
+        );
+        let (right_fixture, right_probe) = workflow_admission_fixture_with_report_history_probe(
+            FixtureDisposition::Converged,
+            resource_request,
+        );
         let left_started = left_fixture
             .admit()
             .begin_stage_iteration(

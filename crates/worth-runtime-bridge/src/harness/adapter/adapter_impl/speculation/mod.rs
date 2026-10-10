@@ -41,16 +41,17 @@ pub(super) fn execute_speculation_request(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &crate::harness::fixtures::BridgeHarnessFixture,
     target: SpeculationHarnessTarget,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<SpeculationHarnessExecution, BridgeHarnessError> {
     match target {
         SpeculationHarnessTarget::DiscardCertification => {
-            discard::execute_discard_certification(runtime_bridge, fixture)
+            discard::execute_discard_certification(runtime_bridge, fixture, resource_request)
         }
         SpeculationHarnessTarget::PromotionCertification => {
-            promotion::execute_promotion_certification(runtime_bridge, fixture)
+            promotion::execute_promotion_certification(runtime_bridge, fixture, resource_request)
         }
         SpeculationHarnessTarget::ChurnCertification => {
-            churn::execute_churn_certification(runtime_bridge, fixture)
+            churn::execute_churn_certification(runtime_bridge, fixture, resource_request)
         }
     }
 }

@@ -130,7 +130,7 @@ fn installed_source_dependency_denies_missing_or_mismatched_reader_before_comput
             crate::facade::BridgeConditionalEvaluationAdmissionRequest::source_present_at_signal_basis(
                 &product, &exact,
             ),
-        )
+         request_execution)
         .expect("source-present product admission uses the exact source and Signal basis");
     let evidence = owner
         .execute_admitted_conditional(

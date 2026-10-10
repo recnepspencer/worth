@@ -2,9 +2,14 @@ use super::support::*;
 
 #[test]
 fn runtime_seals_shared_delivery_bundle_from_ordered_window_and_fanout() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
 
     let bundle = shared_delivery_bundle(
@@ -35,9 +40,14 @@ fn runtime_seals_shared_delivery_bundle_from_ordered_window_and_fanout() {
 
 #[test]
 fn runtime_rejects_preview_lane_window_for_authoritative_shared_delivery() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let fanout_plan = runtime
         .plan_shared_subscription_fanout(&active, vec![canonical_consumer_contract(&runtime)])
@@ -78,9 +88,14 @@ fn runtime_rejects_preview_lane_window_for_authoritative_shared_delivery() {
 
 #[test]
 fn runtime_projects_shared_delivery_and_admits_acknowledgement_frontier() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let bundle = shared_delivery_bundle(
         &runtime,
@@ -107,9 +122,14 @@ fn runtime_projects_shared_delivery_and_admits_acknowledgement_frontier() {
 
 #[test]
 fn runtime_rejects_shared_delivery_acknowledgement_for_descriptor_bundle() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let bundle = shared_delivery_bundle(
         &runtime,
@@ -132,9 +152,14 @@ fn runtime_rejects_shared_delivery_acknowledgement_for_descriptor_bundle() {
 
 #[test]
 fn runtime_preserves_canonical_bundle_truth_across_sparse_and_coalesced_delivery_posture() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let sparse_bundle = shared_delivery_bundle(
         &runtime,
@@ -160,9 +185,14 @@ fn runtime_preserves_canonical_bundle_truth_across_sparse_and_coalesced_delivery
 
 #[test]
 fn runtime_rejects_shared_delivery_acknowledgement_from_wrong_bundle_projection() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let first_bundle = shared_delivery_bundle(
         &runtime,

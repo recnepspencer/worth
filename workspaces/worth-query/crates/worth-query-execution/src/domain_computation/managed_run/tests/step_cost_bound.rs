@@ -85,11 +85,14 @@ struct StepCostEvidence {
 #[test]
 fn one_provider_step_has_constant_work_under_unrelated_authority_width() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let baseline = execute_target(execution, 0);
-        let wide = execute_target(execution, UNRELATED_WIDTH);
+        let baseline = execute_target(execution, 0, resource_request);
+        let wide = execute_target(execution, UNRELATED_WIDTH, resource_request);
         assert_eq!(baseline, wide);
         assert_eq!(
             baseline,
@@ -112,11 +115,14 @@ fn one_provider_step_has_constant_work_under_unrelated_authority_width() {
 #[test]
 fn admitted_chunk_count_has_only_the_declared_linear_step_cost() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let one_chunk = execute_target_with_chunks(execution, 0, 1);
-        let four_chunks = execute_target_with_chunks(execution, 0, 4);
+        let one_chunk = execute_target_with_chunks(execution, 0, 1, resource_request);
+        let four_chunks = execute_target_with_chunks(execution, 0, 4, resource_request);
         assert_eq!(
             one_chunk,
             StepCostEvidence {
@@ -181,8 +187,9 @@ fn isolated_provider_step_allocation_slope_probe() {
 fn execute_target(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     unrelated_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> StepCostEvidence {
-    execute_target_with_chunks(execution, unrelated_width, 1)
+    execute_target_with_chunks(execution, unrelated_width, 1, resource_request)
 }
 
 fn execute_target_with_chunks(
@@ -190,9 +197,14 @@ fn execute_target_with_chunks(
 
     unrelated_width: usize,
     admitted_chunk_count: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> StepCostEvidence {
-    let (active, unrelated, advances) =
-        prepared_target(execution, unrelated_width, admitted_chunk_count);
+    let (active, unrelated, advances) = prepared_target(
+        execution,
+        unrelated_width,
+        admitted_chunk_count,
+        resource_request,
+    );
     let completion = complete_target(execution, active);
     assert_eq!(advances.load(Ordering::Relaxed), admitted_chunk_count);
     let terminal = completion.into_running().completed().unwrap();
@@ -239,6 +251,7 @@ fn prepared_target(
 
     unrelated_width: usize,
     admitted_chunk_count: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryActiveDirectGraphExecution,
     Vec<(
@@ -249,7 +262,13 @@ fn prepared_target(
 ) {
     let disposed = Arc::new(AtomicUsize::new(0));
     let unrelated = (0..unrelated_width)
-        .map(|index| super::cost_bound::unrelated_artifact_run(index, Arc::clone(&disposed)))
+        .map(|index| {
+            super::cost_bound::unrelated_artifact_run(
+                index,
+                Arc::clone(&disposed),
+                resource_request,
+            )
+        })
         .collect();
     let advances = Arc::new(AtomicUsize::new(0));
     let (running, graph) = managed_graph_run_with_provider(
@@ -258,6 +277,7 @@ fn prepared_target(
             advances: Arc::clone(&advances),
             chunk_count: admitted_chunk_count,
         },
+        resource_request,
     );
     let active = running
         .begin_graph_execution(

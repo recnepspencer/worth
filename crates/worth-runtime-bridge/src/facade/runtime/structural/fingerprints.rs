@@ -9,6 +9,7 @@ impl RuntimeBridge {
         &self,
         contract: &AdmittedStructuralComparisonContract,
         read_packet: SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<StructuralFingerprint, BridgeDeliveryError> {
         let declaration = contract.validated_declaration().declaration();
         let selector = match declaration.truth_view_basis() {
@@ -24,31 +25,30 @@ impl RuntimeBridge {
             }
         };
 
-        let observation = self.materialize_truth_view_observation(self.plan_truth_view_packet(
-            HistoricalEvaluationDeclaration::new(
-                selector,
-                BridgeReplayMode::Enabled,
-                BridgeDiagnosticsTier::Standard,
-                BridgeDeliveryIntent::PrepareSignalEvaluation,
-            ),
-            read_packet,
-        )?)?;
+        let observation = self.materialize_truth_view_observation(
+            self.plan_truth_view_packet(
+                HistoricalEvaluationDeclaration::new(
+                    selector,
+                    BridgeReplayMode::Enabled,
+                    BridgeDiagnosticsTier::Standard,
+                    BridgeDeliveryIntent::PrepareSignalEvaluation,
+                ),
+                read_packet,
+                execution,
+            )?,
+            execution,
+        )?;
 
-        let serial = self
-            .policy()
-            .execution()
-            .serial_request(worth_execution::CancellationToken::new(), None);
-        StructuralFingerprint::from_observation(
-            contract,
-            &observation,
-            worth_execution::ExecutionRequest::serial(&serial),
+        StructuralFingerprint::from_observation(contract, &observation, execution).map_err(
+            |error| {
+                BridgeDeliveryError::new(
+                    error.delivery_kind(BridgeDeliveryErrorKind::SnapshotReadContractViolation),
+                    format!(
+                        "Structural fingerprint materialization could not validate reads: {error}"
+                    ),
+                )
+            },
         )
-        .map_err(|error| {
-            BridgeDeliveryError::new(
-                error.delivery_kind(BridgeDeliveryErrorKind::SnapshotReadContractViolation),
-                format!("Structural fingerprint materialization could not validate reads: {error}"),
-            )
-        })
     }
 
     /// Materializes the left and right structural fingerprints for a branch-pair contract.
@@ -56,6 +56,7 @@ impl RuntimeBridge {
         &self,
         contract: &AdmittedStructuralComparisonContract,
         read_packet: SnapshotReadPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(StructuralFingerprint, StructuralFingerprint), BridgeDeliveryError> {
         let declaration = contract.validated_declaration().declaration();
         let (left_selector, right_selector) = match declaration.truth_view_basis() {
@@ -75,30 +76,33 @@ impl RuntimeBridge {
             }
         };
 
-        let left = self.materialize_truth_view_observation(self.plan_truth_view_packet(
-            HistoricalEvaluationDeclaration::new(
-                left_selector,
-                BridgeReplayMode::Enabled,
-                BridgeDiagnosticsTier::Standard,
-                BridgeDeliveryIntent::PrepareSignalEvaluation,
-            ),
-            read_packet.clone(),
-        )?)?;
-        let right = self.materialize_truth_view_observation(self.plan_truth_view_packet(
-            HistoricalEvaluationDeclaration::new(
-                right_selector,
-                BridgeReplayMode::Enabled,
-                BridgeDiagnosticsTier::Standard,
-                BridgeDeliveryIntent::PrepareSignalEvaluation,
-            ),
-            read_packet,
-        )?)?;
+        let left = self.materialize_truth_view_observation(
+            self.plan_truth_view_packet(
+                HistoricalEvaluationDeclaration::new(
+                    left_selector,
+                    BridgeReplayMode::Enabled,
+                    BridgeDiagnosticsTier::Standard,
+                    BridgeDeliveryIntent::PrepareSignalEvaluation,
+                ),
+                read_packet.clone(),
+                execution,
+            )?,
+            execution,
+        )?;
+        let right = self.materialize_truth_view_observation(
+            self.plan_truth_view_packet(
+                HistoricalEvaluationDeclaration::new(
+                    right_selector,
+                    BridgeReplayMode::Enabled,
+                    BridgeDiagnosticsTier::Standard,
+                    BridgeDeliveryIntent::PrepareSignalEvaluation,
+                ),
+                read_packet,
+                execution,
+            )?,
+            execution,
+        )?;
 
-        let serial = self
-            .policy()
-            .execution()
-            .serial_request(worth_execution::CancellationToken::new(), None);
-        let execution = worth_execution::ExecutionRequest::serial(&serial);
         let left =
             StructuralFingerprint::from_observation(contract, &left, execution).map_err(
                 |error| {

@@ -87,6 +87,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for CountingProvider {
 #[test]
 fn signal_cancellation_stops_before_the_next_provider_step() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -100,6 +103,7 @@ fn signal_cancellation_stops_before_the_next_provider_step() {
                 exceed_work_budget: false,
                 reject_work: false,
             },
+            resource_request,
         );
         let active = start_observe(execution, running, &graph, "cancel-before-step");
         active
@@ -123,6 +127,9 @@ fn signal_cancellation_stops_before_the_next_provider_step() {
 #[test]
 fn signal_timeout_stops_before_the_next_provider_step() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -136,6 +143,7 @@ fn signal_timeout_stops_before_the_next_provider_step() {
                 exceed_work_budget: false,
                 reject_work: false,
             },
+            resource_request,
         );
         let active = start_observe(execution, running, &graph, "timeout-before-step");
         bridge
@@ -167,6 +175,9 @@ fn signal_timeout_stops_before_the_next_provider_step() {
 #[test]
 fn signal_rejection_degrades_before_the_next_provider_step() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -180,6 +191,7 @@ fn signal_rejection_degrades_before_the_next_provider_step() {
                 exceed_work_budget: false,
                 reject_work: false,
             },
+            resource_request,
         );
         let active = start_observe(execution, running, &graph, "reject-before-step");
         active
@@ -201,6 +213,9 @@ fn signal_rejection_degrades_before_the_next_provider_step() {
 #[test]
 fn provider_cannot_advance_after_exceeding_the_governed_work_port() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -214,6 +229,7 @@ fn provider_cannot_advance_after_exceeding_the_governed_work_port() {
                 exceed_work_budget: true,
                 reject_work: false,
             },
+            resource_request,
         );
         let active = start_observe(execution, running, &graph, "over-budget-step");
         let terminal = match active.advance(execution) {
@@ -237,6 +253,9 @@ fn provider_cannot_advance_after_exceeding_the_governed_work_port() {
 #[test]
 fn rejected_work_closure_cannot_claim_a_completed_unit() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -250,6 +269,7 @@ fn rejected_work_closure_cannot_claim_a_completed_unit() {
                 exceed_work_budget: false,
                 reject_work: true,
             },
+            resource_request,
         );
         let terminal =
             match start_observe(execution, running, &graph, "rejected-work").advance(execution) {

@@ -2,12 +2,19 @@ use super::*;
 
 #[test]
 fn feedback_certification_retains_typed_convergence_proof() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let WritebackHarnessExecution::FeedbackLoopCertification {
         feedback_loop_digest,
         feedback_route_identity,
         feedback_origin_matrix,
         counter_snapshot,
-    } = certified_execution(WritebackHarnessTarget::FeedbackLoopCertification)
+    } = certified_execution(
+        WritebackHarnessTarget::FeedbackLoopCertification,
+        resource_request,
+    )
     else {
         panic!("feedback certification should produce feedback-loop typed matrix");
     };

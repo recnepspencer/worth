@@ -60,6 +60,7 @@ impl CommittedPatchSource for InMemoryRelationalBridgeSource {
     fn load_committed_patch(
         &self,
         request: crate::adapter::RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         self.state
             .read()
@@ -80,6 +81,7 @@ impl SnapshotReadSource for InMemoryRelationalBridgeSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         let snapshot = self
             .state
@@ -102,6 +104,7 @@ impl TruthBranchHeadSource for InMemoryRelationalBridgeSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &crate::facade::TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         let state = self.state.read().expect("bridge source lock poisoned");
         let commit_identity = state.branch_heads.get(branch_identity).ok_or_else(|| {

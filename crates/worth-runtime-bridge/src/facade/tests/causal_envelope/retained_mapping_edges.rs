@@ -12,12 +12,17 @@ use crate::facade::{
 
 #[test]
 fn causal_envelope_maps_source_failure_by_exact_failure_identity() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime =
         runtime_with_source_adapter(BridgeRuntimePolicy::default(), RejectingSourceAdapter);
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-source-failure",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-source-failure"),
+            execution,
+        )
         .expect("route should succeed");
     let contract = runtime
         .admit_source(registered_source(
@@ -36,7 +41,7 @@ fn causal_envelope_maps_source_failure_by_exact_failure_identity() {
         .expect("source should admit");
     assert!(
         runtime
-            .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
+            .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]), execution)
             .is_err(),
         "rejecting adapter should produce a retained source failure"
     );
@@ -92,11 +97,18 @@ fn causal_envelope_maps_source_failure_by_exact_failure_identity() {
 
 #[test]
 fn causal_envelope_denies_missing_retained_expansion_record_without_unindexed_scan() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-missing-retained-expansion",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-causal-missing-retained-expansion",
+            ),
+            execution,
+        )
         .expect("route should succeed");
     let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(
         crate::facade::BridgeCausalInspectionAdmissionSummary::admitted(
@@ -147,6 +159,10 @@ fn causal_envelope_denies_missing_retained_expansion_record_without_unindexed_sc
 
 #[test]
 fn causal_envelope_source_materialization_lookup_cost_ignores_unrelated_records() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut envelope_identities = Vec::new();
 
     for unrelated_records in [0, 3, 8] {
@@ -177,19 +193,20 @@ fn causal_envelope_source_materialization_lookup_cost_ignores_unrelated_records(
                     ),
                 )]);
             let observation = runtime
-                .materialize_source_packet(&contract, packet)
+                .materialize_source_packet(&contract, packet, execution)
                 .expect("noise source should materialize");
             runtime
                 .canonicalize_source_materialization_record(&contract, &observation)
                 .expect("noise source should canonicalize");
         }
         let routed = runtime
-            .route(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-causal-source-scale",
-            ))
+            .route(
+                crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-source-scale"),
+                execution,
+            )
             .expect("route should succeed");
         let target_observation = runtime
-            .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
+            .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]), execution)
             .expect("target source should materialize");
         let target_record = runtime
             .canonicalize_source_materialization_record(&contract, &target_observation)

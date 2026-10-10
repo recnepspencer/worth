@@ -1,13 +1,22 @@
+mod admission_boundary;
+
 use super::*;
 
 #[test]
 fn authority_denial_certification_retains_typed_zero_residue_proof() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let WritebackHarnessExecution::AuthorityDenialCertification {
         failure_digest,
         authority_denial,
         zero_residue_report,
         counter_snapshot,
-    } = certified_execution(WritebackHarnessTarget::AuthorityDenialCertification)
+    } = certified_execution(
+        WritebackHarnessTarget::AuthorityDenialCertification,
+        resource_request,
+    )
     else {
         panic!("authority-denial certification should produce authority-denial typed matrix");
     };
@@ -171,11 +180,18 @@ fn authority_denial_certification_retains_typed_zero_residue_proof() {
 
 #[test]
 fn replay_mismatch_certification_retains_typed_effect_intent_proof() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let WritebackHarnessExecution::ReplayMismatchCertification {
         replay_validation_digest,
         replay_mismatch_matrix,
         counter_snapshot,
-    } = certified_execution(WritebackHarnessTarget::ReplayMismatchCertification)
+    } = certified_execution(
+        WritebackHarnessTarget::ReplayMismatchCertification,
+        resource_request,
+    )
     else {
         panic!("replay mismatch should produce replay typed matrix");
     };
@@ -252,143 +268,4 @@ fn replay_mismatch_certification_retains_typed_effect_intent_proof() {
     );
     assert_eq!(counter_snapshot.writeback_replay_request_count, 2);
     assert_eq!(counter_snapshot.writeback_replay_mismatch_count, 2);
-}
-
-#[test]
-fn admission_boundary_certification_retains_typed_family_admission_proof() {
-    let WritebackHarnessExecution::MultiFamilyAdmissionBoundaryCertification {
-        admission_boundary_matrix,
-        counter_snapshot,
-        ..
-    } = certified_execution(WritebackHarnessTarget::MultiFamilyAdmissionBoundaryCertification)
-    else {
-        panic!("admission boundary should produce typed matrix");
-    };
-
-    assert!(admission_boundary_matrix
-        .family_admission_proof()
-        .projected_family_admitted());
-    assert!(admission_boundary_matrix
-        .family_admission_proof()
-        .aspect_family_admitted());
-    assert!(admission_boundary_matrix
-        .family_admission_proof()
-        .family_digest_separated());
-    assert_eq!(
-        admission_boundary_matrix
-            .projected_family()
-            .contract_digest(),
-        admission_boundary_matrix
-            .projected_family()
-            .contract()
-            .digest()
-    );
-    assert_eq!(
-        admission_boundary_matrix.aspect_family().contract_digest(),
-        admission_boundary_matrix
-            .aspect_family()
-            .contract()
-            .digest()
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .family_admission_proof()
-            .projected_contract_digest(),
-        admission_boundary_matrix
-            .family_admission_proof()
-            .projected_contract()
-            .digest()
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .family_admission_proof()
-            .aspect_contract_digest(),
-        admission_boundary_matrix
-            .family_admission_proof()
-            .aspect_contract()
-            .digest()
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .projected_family()
-            .effect_intent_digest(),
-        admission_boundary_matrix
-            .projected_family()
-            .effect()
-            .effect_intent_digest()
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .projected_family()
-            .effect_intent_patch_canonical_basis(),
-        admission_boundary_matrix
-            .projected_family()
-            .effect()
-            .effect_intent()
-            .patch_canonical_basis()
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .projected_family()
-            .idempotence_digest(),
-        admission_boundary_matrix
-            .projected_family()
-            .idempotence()
-            .digest()
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .projected_family()
-            .replay_bundle_digest(),
-        admission_boundary_matrix
-            .projected_family()
-            .replay_bundle()
-            .digest()
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .aspect_family()
-            .effect_intent_digest(),
-        admission_boundary_matrix
-            .aspect_family()
-            .effect()
-            .effect_intent_digest()
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .aspect_family()
-            .replay_semantic_digest(),
-        admission_boundary_matrix
-            .aspect_family()
-            .replay_bundle()
-            .semantic_digest()
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .shadow_protocol_rejection()
-            .failure_kind(),
-        crate::facade::BridgeWritebackErrorKind::FamilyBindingMismatch
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .authority_boundary_proof()
-            .projected_authority_commit_digest(),
-        admission_boundary_matrix
-            .authority_boundary_proof()
-            .projected_authority_outcome()
-            .authoritative_artifact_digest()
-    );
-    assert_eq!(
-        admission_boundary_matrix
-            .authority_boundary_proof()
-            .aspect_authority_commit_digest(),
-        admission_boundary_matrix
-            .authority_boundary_proof()
-            .aspect_authority_outcome()
-            .authoritative_artifact_digest()
-    );
-    assert!(admission_boundary_matrix
-        .authority_boundary_proof()
-        .distinct_authority_artifacts());
-    assert_eq!(counter_snapshot.writeback_family_lookup_count, 2);
 }

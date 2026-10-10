@@ -72,7 +72,7 @@ fn performed_definition_successor_isolated_from_sibling_product_and_pinned_gener
             worth_runtime_bridge::facade::BridgeConditionalEvaluationAdmissionRequest::source_free_at_signal_basis(
                 &sibling_binding,
             ),
-        )
+         execution)
         .expect("the sibling's D0 session is admitted before the successor publication");
     let predecessor_generation = fixture.lowering.signal_definition_generation();
     let prepared_world = fixture
@@ -169,7 +169,7 @@ fn performed_definition_successor_isolated_from_sibling_product_and_pinned_gener
             worth_runtime_bridge::facade::BridgeConditionalEvaluationAdmissionRequest::source_free_at_signal_basis(
                 &successor_binding,
             ),
-        )
+         execution)
         .unwrap();
     execute_source_free(&fixture.bridge, &next.1, &successor_session, 2);
 
@@ -218,7 +218,7 @@ fn performed_definition_successor_isolated_from_sibling_product_and_pinned_gener
             worth_runtime_bridge::facade::BridgeConditionalEvaluationAdmissionRequest::source_free_at_signal_basis(
                 &sibling_successor_binding,
             ),
-        )
+         execution)
         .unwrap();
     execute_source_free(
         &fixture.bridge,

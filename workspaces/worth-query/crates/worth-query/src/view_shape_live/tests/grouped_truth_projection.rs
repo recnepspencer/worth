@@ -105,6 +105,7 @@ fn registered_source() -> SourceDeclaration {
 
 pub(super) fn grouped_truth_view(
     plan: &ViewShapePlanArtifact,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> worth_runtime_bridge::facade::BridgeGroupedTruthViewArtifact {
     grouped_truth_view_with_rows(
         plan,
@@ -114,6 +115,7 @@ pub(super) fn grouped_truth_view(
         ],
         "identity.id",
         None,
+        resource_request,
     )
 }
 
@@ -122,6 +124,7 @@ pub(super) fn grouped_truth_view_with_rows(
     rows: &[GroupedRowFixture],
     identity_field: &str,
     grouping_field_override: Option<&str>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> worth_runtime_bridge::facade::BridgeGroupedTruthViewArtifact {
     let runtime = runtime(rows);
     let contract = runtime
@@ -129,9 +132,9 @@ pub(super) fn grouped_truth_view_with_rows(
         .expect("registered source should admit");
     let packet = grouped_rows_packet(rows);
     let observation = runtime
-        .materialize_source_packet(&contract, packet.clone())
+        .materialize_source_packet(&contract, packet.clone(), resource_request)
         .expect("grouped source packet should materialize");
-    let row_set = materialize_bridge_row_set(&observation).expect("row set");
+    let row_set = materialize_bridge_row_set(&observation, resource_request).expect("row set");
     let relational_result = grouped_rows_result(rows, &packet);
     let relational_row_set =
         materialize_relational_authoritative_row_set(&packet, &relational_result)

@@ -5,6 +5,10 @@ use crate::domain_computation::{
 
 #[test]
 fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let plan = admitted_plan("foreign-bridge-adapter", 8);
     let operation = direct_authority(&runtime, &plan);
@@ -19,7 +23,7 @@ fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission()
 
     let rejection = match runtime
         .managed_run_admission(&context.foreign_bridge, &context.relational)
-        .admit_direct(&operation, attempt, request)
+        .admit_direct(&operation, attempt, request, resource_request)
     {
         Ok(_) => panic!("same-runtime foreign adapter joined a Relational lease"),
         Err(rejection) => rejection,
@@ -37,7 +41,7 @@ fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission()
     );
     let admitted = runtime
         .managed_run_admission(&context.exact_bridge, &context.relational)
-        .admit_direct(&operation, attempt, request)
+        .admit_direct(&operation, attempt, request, resource_request)
         .expect("the exact adapter should admit the untouched resource attempt");
     let cleanup = admitted
         .start()
@@ -50,6 +54,10 @@ fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission()
 
 #[test]
 fn foreign_query_runtime_denies_before_resource_or_lower_basis_checks() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let owner = query_runtime();
     let foreign = query_runtime();
     let plan = admitted_plan("foreign-query-runtime", 8);
@@ -60,6 +68,7 @@ fn foreign_query_runtime_denies_before_resource_or_lower_basis_checks() {
     let lower = causal_fixture::causal_lower_execution_basis(
         operation.binding_identity(),
         attempt.attempt_identity().as_str(),
+        resource_request,
     );
 
     let rejection =
@@ -79,6 +88,10 @@ fn foreign_query_runtime_denies_before_resource_or_lower_basis_checks() {
 
 #[test]
 fn stale_installation_generation_denies_before_resource_or_lower_basis_checks() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = query_runtime();
     let plan = admitted_plan("stale-managed-run", 8);
     let operation = direct_authority(&runtime, &plan);
@@ -93,6 +106,7 @@ fn stale_installation_generation_denies_before_resource_or_lower_basis_checks() 
     let lower = causal_fixture::causal_lower_execution_basis(
         operation.binding_identity(),
         attempt.attempt_identity().as_str(),
+        resource_request,
     );
 
     let rejection =
@@ -110,6 +124,10 @@ fn stale_installation_generation_denies_before_resource_or_lower_basis_checks() 
 
 #[test]
 fn independently_valid_resource_attempt_cannot_substitute_for_the_operation() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let operation_plan = admitted_plan("managed-operation-a", 8);
     let operation = direct_authority(&runtime, &operation_plan);
@@ -121,6 +139,7 @@ fn independently_valid_resource_attempt_cannot_substitute_for_the_operation() {
     let lower = causal_fixture::causal_lower_execution_basis(
         operation.binding_identity(),
         attempt.attempt_identity().as_str(),
+        resource_request,
     );
 
     let rejection =
@@ -153,6 +172,10 @@ fn independently_valid_resource_attempt_cannot_substitute_for_the_operation() {
 
 #[test]
 fn bridge_attempt_for_a_different_run_intent_cannot_substitute() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let plan = admitted_plan("bridge-intent-substitution", 8);
     let operation = direct_authority(&runtime, &plan);
@@ -162,6 +185,7 @@ fn bridge_attempt_for_a_different_run_intent_cannot_substitute() {
     let lower = causal_fixture::causal_lower_execution_basis(
         "independently-valid-operation",
         attempt.attempt_identity().as_str(),
+        resource_request,
     );
 
     let rejection =
@@ -179,6 +203,10 @@ fn bridge_attempt_for_a_different_run_intent_cannot_substitute() {
 
 #[test]
 fn independently_valid_relational_runtime_cannot_substitute_for_bridge_source() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let plan = admitted_plan("foreign-relational-runtime", 8);
     let operation = direct_authority(&runtime, &plan);
@@ -188,10 +216,12 @@ fn independently_valid_relational_runtime_cannot_substitute_for_bridge_source() 
     let bridge_owner = causal_fixture::causal_lower_execution_basis(
         operation.binding_identity(),
         attempt.attempt_identity().as_str(),
+        resource_request,
     );
     let foreign_relational = causal_fixture::causal_lower_execution_basis(
         operation.binding_identity(),
         attempt.attempt_identity().as_str(),
+        resource_request,
     );
 
     let rejection = match runtime.admit_direct_run(
@@ -214,6 +244,10 @@ fn independently_valid_relational_runtime_cannot_substitute_for_bridge_source() 
 
 #[test]
 fn independently_valid_snapshot_lease_cannot_substitute_within_one_runtime() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let plan = admitted_plan("mismatched-relational-snapshot", 8);
     let operation = direct_authority(&runtime, &plan);
@@ -223,6 +257,7 @@ fn independently_valid_snapshot_lease_cannot_substitute_within_one_runtime() {
     let lower = causal_fixture::mismatched_snapshot_lower_execution_basis(
         operation.binding_identity(),
         attempt.attempt_identity().as_str(),
+        resource_request,
     );
 
     let rejection =

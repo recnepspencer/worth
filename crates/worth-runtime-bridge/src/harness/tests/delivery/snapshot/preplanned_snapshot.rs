@@ -79,6 +79,10 @@ fn bridge_snapshot_delivery_remains_stable_after_newer_truth_arrives() {
 
 #[test]
 fn bridge_delivery_keeps_preplanned_snapshot_after_newer_truth_arrives_during_delivery() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -92,7 +96,7 @@ fn bridge_delivery_keeps_preplanned_snapshot_after_newer_truth_arrives_during_de
     let runtime = build_runtime(source.clone(), sink.clone(), vec![registration()]);
 
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
         .expect("bridge should plan from the original committed artifact");
 
     source.insert_committed_patch(committed_patch(
@@ -105,7 +109,7 @@ fn bridge_delivery_keeps_preplanned_snapshot_after_newer_truth_arrives_during_de
     source.insert_snapshot(snapshot(snapshot_b(), "bob"));
 
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("bridge should deliver the preplanned route against its original snapshot");
 
     assert_eq!(
@@ -143,6 +147,10 @@ fn bridge_delivery_keeps_preplanned_snapshot_after_newer_truth_arrives_during_de
 
 #[test]
 fn leased_facade_delivery_carries_the_lease_to_the_signal_sink() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -154,18 +162,22 @@ fn leased_facade_delivery_carries_the_lease_to_the_signal_sink() {
     let sink = RecordingSignalBridgeSink::default();
     let runtime = build_runtime(source, sink.clone(), vec![registration()]);
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
         .unwrap();
     let lease = crate::snapshot::test_execution_lease(worth_execution::CancellationToken::new());
 
     runtime
-        .deliver_invalidation_with_lease(route, &lease)
+        .deliver_invalidation(route, worth_execution::ExecutionRequest::leased(&lease))
         .expect("leased route should reach the Signal sink");
     assert!(sink.last_delivery().unwrap().leased);
 }
 
 #[test]
 fn bridge_prepares_signal_evaluation_with_snapshot_context_without_sink_delivery() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -179,10 +191,10 @@ fn bridge_prepares_signal_evaluation_with_snapshot_context_without_sink_delivery
     let runtime = build_runtime(source, sink.clone(), vec![registration()]);
 
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
         .expect("bridge should plan the route");
     let evaluation = runtime
-        .prepare_signal_evaluation(route)
+        .prepare_signal_evaluation(route, execution)
         .expect("bridge should prepare signal evaluation");
 
     assert_eq!(
@@ -199,6 +211,10 @@ fn bridge_prepares_signal_evaluation_with_snapshot_context_without_sink_delivery
 
 #[test]
 fn bridge_prepared_signal_evaluation_keeps_preplanned_snapshot_after_newer_truth_arrives() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -212,7 +228,7 @@ fn bridge_prepared_signal_evaluation_keeps_preplanned_snapshot_after_newer_truth
     let runtime = build_runtime(source.clone(), sink, vec![registration()]);
 
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
         .expect("bridge should plan the route");
 
     source.insert_committed_patch(committed_patch(
@@ -225,7 +241,7 @@ fn bridge_prepared_signal_evaluation_keeps_preplanned_snapshot_after_newer_truth
     source.insert_snapshot(snapshot(snapshot_b(), "bob"));
 
     let evaluation = runtime
-        .prepare_signal_evaluation(route)
+        .prepare_signal_evaluation(route, execution)
         .expect("bridge should prepare signal evaluation");
 
     assert_eq!(

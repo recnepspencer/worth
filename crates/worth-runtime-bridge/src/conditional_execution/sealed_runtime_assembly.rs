@@ -1,3 +1,4 @@
+mod conditional_dispatch;
 mod owned_async;
 
 use worth_signal::facade::branch::SignalOwnerServicePorts;
@@ -93,8 +94,10 @@ impl BridgeSealedRuntimeAssembly {
     pub fn admit_conditional_evaluation(
         &self,
         request: super::BridgeConditionalEvaluationAdmissionRequest<'_>,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<super::BridgeConditionalEvaluationSession, BridgeConditionalDenial> {
-        self.runtime.admit_conditional_evaluation(request)
+        self.runtime
+            .admit_conditional_evaluation(request, execution)
     }
 
     pub fn admit_conditional_signal_basis(
@@ -119,17 +122,6 @@ impl BridgeSealedRuntimeAssembly {
         request: super::BridgeConditionalEvaluationReadmissionRequest<'_>,
     ) -> Result<super::BridgeConditionalEvaluationSession, BridgeConditionalDenial> {
         self.runtime.readmit_conditional_evaluation(request)
-    }
-
-    pub fn execute_admitted_conditional(
-        &self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-        session: &super::BridgeConditionalEvaluationSession,
-        request: super::BridgeConditionalExecutionRequest<'_>,
-        compute_context: &mut dyn std::any::Any,
-    ) -> Result<super::BridgeConditionalDecisionEvidence, BridgeConditionalDenial> {
-        self.runtime
-            .execute_admitted_conditional(execution, session, request, compute_context)
     }
 
     pub(super) fn from_sealed_runtime(
@@ -294,62 +286,8 @@ impl BridgeSealedRuntimeAssembly {
         self.runtime.observe_managed_clock(parts)
     }
 
-    pub fn execute_managed_due_wake(
-        &self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-        request: super::BridgeManagedConditionalExecutionRequest<'_>,
-        compute_context: &mut dyn std::any::Any,
-    ) -> Result<super::BridgeConditionalDecisionEvidence, BridgeConditionalDenial> {
-        self.runtime
-            .execute_managed_due_wake(execution, request, compute_context)
-    }
-
-    pub fn deliver_authoritative_change(
-        &self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-
-        signal_basis: &super::BridgeConditionalSignalBasisBinding,
-        dependency_ordinal: usize,
-        request: crate::adapter::RelationalCommittedPatchRequest,
-    ) -> Result<crate::correspondence::CorrespondenceDeliveryOutcome, BridgeConditionalDenial> {
-        self.runtime.deliver_authoritative_change(
-            execution,
-            signal_basis,
-            dependency_ordinal,
-            request,
-        )
-    }
-
     pub fn conditional_lifecycle_probe(&self) -> super::BridgeConditionalRuntimeLifecycleProbe {
         self.runtime.conditional_lifecycle_probe()
-    }
-
-    pub fn execute(
-        &self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-        signal_basis: &super::BridgeConditionalSignalBasisBinding,
-        request: super::BridgeConditionalExecutionRequest<'_>,
-        compute_context: &mut dyn std::any::Any,
-    ) -> Result<super::BridgeConditionalDecisionEvidence, BridgeConditionalDenial> {
-        self.runtime
-            .execute(execution, signal_basis, request, compute_context)
-    }
-
-    pub fn execute_for_source_record(
-        &self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-        signal_basis: &super::BridgeConditionalSignalBasisBinding,
-        request: super::BridgeConditionalExecutionRequest<'_>,
-        source_record: crate::relational_source::identity_parts::RelationalBridgeRecordIdentityParts,
-        compute_context: &mut dyn std::any::Any,
-    ) -> Result<super::BridgeConditionalDecisionEvidence, BridgeConditionalDenial> {
-        self.runtime.execute_with_managed_source_record(
-            execution,
-            signal_basis,
-            request,
-            Some(source_record),
-            compute_context,
-        )
     }
 
     pub fn reenter_retained_conditional_decision(

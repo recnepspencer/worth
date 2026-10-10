@@ -208,8 +208,9 @@ impl RuntimeBridge {
         &self,
         contract: &AdmittedConsumerContract,
         window: &PlannedChangeStreamWindow,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<StreamWindowDeliveryResult, BridgeStreamError> {
-        crate::stream::deliver_change_stream_window(self, contract, window)
+        crate::stream::deliver_change_stream_window(self, contract, window, execution)
     }
 
     /// Delivers a replay-audit stream window and retains its proof artifacts.

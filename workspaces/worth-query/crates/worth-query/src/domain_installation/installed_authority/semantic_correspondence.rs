@@ -50,8 +50,9 @@ impl<D, O, F, G> WorthQueryInstalledSemanticCorrespondence<D, O, F, G> {
         &self,
         graph: &mut worth_runtime_bridge::facade::BridgeSignalGraphBinding<'_, '_>,
         request: worth_runtime_bridge::facade::RelationalCommittedPatchRequest,
+        resource_request: worth_execution::ExecutionRequest<'_, '_>,
     ) -> worth_runtime_bridge::facade::CorrespondenceDeliveryOutcome {
-        graph.deliver_installed_correspondence(&self.bridge, request)
+        graph.deliver_installed_correspondence(&self.bridge, request, resource_request)
     }
 
     pub fn graph_participation_identity(&self) -> &str {

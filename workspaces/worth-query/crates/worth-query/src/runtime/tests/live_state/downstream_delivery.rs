@@ -100,9 +100,14 @@ fn runtime_downstream_delivery_projects_time_only_contract_with_explicit_resume_
 
 #[test]
 fn runtime_downstream_delivery_projects_mixed_cause_and_async_truth_without_reclassification() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
-    let truth_plus_time = authoritative_truth_plus_time_cause(&bridge, &truth_patch);
+    let truth_plus_time =
+        authoritative_truth_plus_time_cause(&bridge, &truth_patch, resource_request);
     let async_completion = admitted_async_completion(
         &bridge,
         worth_signal::facade::NodeId::new(301, 0),

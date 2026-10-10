@@ -5,6 +5,7 @@ impl RuntimeBridge {
     pub fn replay_source_materialization_record(
         &self,
         record: &SourceMaterializationRecord,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<SourceMaterializationRecord, BridgeReplayError> {
         let contract = self
             .source_registry
@@ -45,8 +46,8 @@ impl RuntimeBridge {
         }
 
         let observation = self
-            .plan_source_packet_set_from_packets(contract, record.read_packets().to_vec())
-            .and_then(|planned_packet_set| self.materialize_source(&planned_packet_set))
+            .plan_source_packet_set_from_packets(contract, record.read_packets().to_vec(), execution)
+            .and_then(|planned_packet_set| self.materialize_source(&planned_packet_set, execution))
             .map_err(|error| {
                 BridgeReplayError::new(
                     BridgeReplayErrorKind::HistoricalEvaluationAuthorityMismatch,

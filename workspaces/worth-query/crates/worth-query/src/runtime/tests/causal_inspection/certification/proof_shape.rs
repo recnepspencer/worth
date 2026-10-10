@@ -6,14 +6,20 @@ use super::matrix_support::representative_matrix;
 
 #[test]
 fn causal_inspection_proof_shape_binds_runtime_path_inputs() {
-    let changed = admitted_artifact(super::super::causal_truth_commit_identity(
-        "commit-query-proof-shape-changed",
-    ));
-    let (_, redacted) = advisory_artifacts(super::super::causal_truth_commit_identity(
-        "commit-query-proof-shape-redacted",
-    ));
-    let (denied, _) = denied_artifact_and_missing_evidence();
-    let representatives = representative_matrix(&changed, &redacted, &denied);
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let changed = admitted_artifact(
+        super::super::causal_truth_commit_identity("commit-query-proof-shape-changed"),
+        resource_request,
+    );
+    let (_, redacted) = advisory_artifacts(
+        super::super::causal_truth_commit_identity("commit-query-proof-shape-redacted"),
+        resource_request,
+    );
+    let (denied, _) = denied_artifact_and_missing_evidence(resource_request);
+    let representatives = representative_matrix(&changed, &redacted, &denied, resource_request);
     let boundary_audit =
         CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&changed);
 
@@ -40,10 +46,12 @@ fn causal_inspection_proof_shape_binds_runtime_path_inputs() {
         boundary_audit.audit_digest()
     );
 
-    let (_, alternate_redacted) = advisory_artifacts(super::super::causal_truth_commit_identity(
-        "commit-query-proof-shape-alternate-redacted",
-    ));
-    let alternate_representatives = representative_matrix(&changed, &alternate_redacted, &denied);
+    let (_, alternate_redacted) = advisory_artifacts(
+        super::super::causal_truth_commit_identity("commit-query-proof-shape-alternate-redacted"),
+        resource_request,
+    );
+    let alternate_representatives =
+        representative_matrix(&changed, &alternate_redacted, &denied, resource_request);
     let alternate_matrix_proof = CausalInspectionProofShapeCertification::from_runtime_path(
         &changed,
         &alternate_representatives,
@@ -66,9 +74,10 @@ fn causal_inspection_proof_shape_binds_runtime_path_inputs() {
         alternate_matrix_proof.proof_shape_digest()
     );
 
-    let alternate_changed = admitted_artifact(super::super::causal_truth_commit_identity(
-        "commit-query-proof-shape-alternate-changed",
-    ));
+    let alternate_changed = admitted_artifact(
+        super::super::causal_truth_commit_identity("commit-query-proof-shape-alternate-changed"),
+        resource_request,
+    );
     let alternate_boundary =
         CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&alternate_changed);
     let alternate_artifact_proof = CausalInspectionProofShapeCertification::from_runtime_path(
@@ -92,14 +101,20 @@ fn causal_inspection_proof_shape_binds_runtime_path_inputs() {
 
 #[test]
 fn causal_inspection_certification_rejects_worthd_proof_shape() {
-    let changed = admitted_artifact(super::super::causal_truth_commit_identity(
-        "commit-query-proof-shape-worthd-changed",
-    ));
-    let (full, redacted) = advisory_artifacts(super::super::causal_truth_commit_identity(
-        "commit-query-proof-shape-worthd-redacted",
-    ));
-    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence();
-    let representatives = representative_matrix(&changed, &redacted, &denied);
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let changed = admitted_artifact(
+        super::super::causal_truth_commit_identity("commit-query-proof-shape-worthd-changed"),
+        resource_request,
+    );
+    let (full, redacted) = advisory_artifacts(
+        super::super::causal_truth_commit_identity("commit-query-proof-shape-worthd-redacted"),
+        resource_request,
+    );
+    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence(resource_request);
+    let representatives = representative_matrix(&changed, &redacted, &denied, resource_request);
     let boundary_audit =
         CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&changed);
     let proof_shape = CausalInspectionProofShapeCertification::worthd_for_tests(
@@ -143,14 +158,20 @@ fn causal_inspection_certification_rejects_worthd_proof_shape() {
 
 #[test]
 fn causal_inspection_certification_rejects_stale_proof_shape_digest() {
-    let changed = admitted_artifact(super::super::causal_truth_commit_identity(
-        "commit-query-proof-shape-stale-changed",
-    ));
-    let (full, redacted) = advisory_artifacts(super::super::causal_truth_commit_identity(
-        "commit-query-proof-shape-stale-redacted",
-    ));
-    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence();
-    let representatives = representative_matrix(&changed, &redacted, &denied);
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let changed = admitted_artifact(
+        super::super::causal_truth_commit_identity("commit-query-proof-shape-stale-changed"),
+        resource_request,
+    );
+    let (full, redacted) = advisory_artifacts(
+        super::super::causal_truth_commit_identity("commit-query-proof-shape-stale-redacted"),
+        resource_request,
+    );
+    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence(resource_request);
+    let representatives = representative_matrix(&changed, &redacted, &denied, resource_request);
     let boundary_audit =
         CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&changed);
     let proof_shape = CausalInspectionProofShapeCertification::stale_digest_for_tests(

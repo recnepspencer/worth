@@ -49,6 +49,7 @@ pub(in crate::harness::milestone_eight_certification) fn table_live_bundle(
 
 pub(in crate::harness::milestone_eight_certification) fn grouped_live_bundle(
     delta_bound: bool,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> MilestoneEightCertificationBundle {
     let canonical = direct_collection_canonical();
     let plan = view_plan(
@@ -57,7 +58,7 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_live_bundle(
         ViewShapeDescriptor::kanban_grouped(aspect_key("status")),
     );
     let basis = runtime_basis(plan.validated().query().schema_basis().clone());
-    let truth_view = grouped_truth_view_for_plan(&plan);
+    let truth_view = grouped_truth_view_for_plan(&plan, resource_request);
     let grouped_execution =
         materialize_grouped_execution_surface_from_truth_view(&plan, basis.clone(), &truth_view)
             .unwrap();
@@ -102,6 +103,7 @@ pub(in crate::harness::milestone_eight_certification) fn grouped_live_bundle(
                 grouped_row("task-1", "Ada", "doing"),
                 grouped_row("task-2", "Bea", "doing"),
             ],
+            resource_request,
         );
         materialize_grouped_execution_surface_from_truth_view(
             &plan,

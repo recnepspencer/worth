@@ -20,9 +20,11 @@ use super::readmission_support::{
     subscription_runtime, PHASE_SIX_MAIN_BRANCH,
 };
 
-pub(crate) fn representative_subscription_continuity_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_subscription_continuity_row(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
     let runtime = continuity_runtime();
-    let continuity = delivered_continuity(&runtime);
+    let continuity = delivered_continuity(&runtime, resource_request);
     let record = continuity.canonical_record();
     let continuity_evidence =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
@@ -110,12 +112,17 @@ pub(crate) fn representative_subscription_continuity_row() -> RepresentativeArti
     }
 }
 
-pub(crate) fn representative_basis_truth_view_readmission_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_basis_truth_view_readmission_row(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
     let runtime = observation_runtime();
     let evaluation = runtime
-        .evaluate(BridgeTruthViewEvaluationRequest::for_branch_head(
-            TruthBranchIdentity::from_relational_branch_id(PHASE_SIX_MAIN_BRANCH),
-        ))
+        .evaluate(
+            BridgeTruthViewEvaluationRequest::for_branch_head(
+                TruthBranchIdentity::from_relational_branch_id(PHASE_SIX_MAIN_BRANCH),
+            ),
+            resource_request,
+        )
         .expect("truth-view readmission fixture should evaluate branch head");
     let selector = evaluation.record().declaration().selector();
     let truth_view_evidence =
@@ -170,9 +177,11 @@ pub(crate) fn representative_basis_truth_view_readmission_row() -> Representativ
     )
 }
 
-pub(crate) fn representative_basis_subscription_readmission_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_basis_subscription_readmission_row(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
     let runtime = subscription_runtime();
-    let admitted = detail_subscription(&runtime);
+    let admitted = detail_subscription(&runtime, resource_request);
     let subscription_evidence =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_value(

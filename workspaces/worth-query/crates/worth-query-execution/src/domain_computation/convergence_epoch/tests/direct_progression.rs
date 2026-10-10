@@ -8,10 +8,13 @@ use crate::domain_computation::{
 #[test]
 fn real_installed_direct_authorities_progress_to_converged_and_cleanup() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let epoch = direct_epoch_fixture(FixtureDisposition::Converged);
+        let epoch = direct_epoch_fixture(FixtureDisposition::Converged, resource_request);
         let started = match epoch.begin_iteration(
             execution,
             WorthQueryManagedGraphCallRequest::new(
@@ -64,11 +67,14 @@ fn real_installed_direct_authorities_progress_to_converged_and_cleanup() {
 #[test]
 fn same_semantic_candidate_in_real_direct_peers_has_distinct_occurrences() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let first = start_direct_peer(execution, "direct-peer");
-        let second = start_direct_peer(execution, "direct-peer");
+        let first = start_direct_peer(execution, "direct-peer", resource_request);
+        let second = start_direct_peer(execution, "direct-peer", resource_request);
         let first = complete_direct_peer(execution, first);
         let second = complete_direct_peer(execution, second);
 
@@ -79,8 +85,9 @@ fn same_semantic_candidate_in_real_direct_peers_has_distinct_occurrences() {
 fn start_direct_peer(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     scope: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryStartedDirectConvergenceIteration {
-    let epoch = direct_epoch_fixture(FixtureDisposition::Converged);
+    let epoch = direct_epoch_fixture(FixtureDisposition::Converged, resource_request);
     epoch
         .begin_iteration(
             execution,
@@ -119,10 +126,13 @@ fn complete_direct_peer(
 #[test]
 fn epoch_owned_iteration_bound_terminalizes_continue_as_exhausted() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let mut epoch = direct_epoch_fixture(FixtureDisposition::Continue);
+        let mut epoch = direct_epoch_fixture(FixtureDisposition::Continue, resource_request);
         for ordinal in 1..=3 {
             let started = match epoch.begin_iteration(
                 execution,

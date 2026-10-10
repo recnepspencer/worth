@@ -94,7 +94,7 @@ impl BridgeOwnedSignalRuntime {
             match self
                 .bridge
                 .committed_patch_source
-                .load_committed_patch(request)
+                .load_committed_patch(request, execution)
             {
                 Ok(envelope) => envelope,
                 Err(_) => return Ok(TransitionOutcome::Failed(

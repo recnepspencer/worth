@@ -92,6 +92,10 @@ fn installed_operation_and_exact_graph_participation_mint_the_candidate() {
 
 #[test]
 fn bound_query_facade_installs_correspondence_with_operation_authority() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let workspace = conditional_workspace(
         "installed-correspondence-owner",
         node(
@@ -161,8 +165,12 @@ fn bound_query_facade_installs_correspondence_with_operation_authority() {
         assert_eq!(installed.installation_generation(), 1);
         assert_eq!(installed.target_count(), 1);
         assert!(!installed.graph_participation_identity().is_empty());
-        let worth_proof::TransitionOutcome::Success(counters) =
-            installed.deliver_authoritative_change(&mut graph_binding, publication_request)
+        let worth_proof::TransitionOutcome::Success(counters) = installed
+            .deliver_authoritative_change(
+                &mut graph_binding,
+                publication_request,
+                resource_request,
+            )
         else {
             panic!("the real Relational publication should drive Signal invalidation")
         };

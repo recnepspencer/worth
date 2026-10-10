@@ -6,6 +6,10 @@ use crate::facade::{
 
 #[test]
 fn equivalent_temporal_async_subscription_bundles_compare_equal() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let left_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let right_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let left = left_runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
@@ -13,6 +17,7 @@ fn equivalent_temporal_async_subscription_bundles_compare_equal() {
         BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
         "temporal-commit-a",
         "temporal-snapshot-a",
+        resource_request,
     ));
     let right =
         right_runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
@@ -20,6 +25,7 @@ fn equivalent_temporal_async_subscription_bundles_compare_equal() {
             BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
             "temporal-commit-a",
             "temporal-snapshot-a",
+            resource_request,
         ));
 
     let comparison = left_runtime.compare_temporal_async_certification_bundles(&left, &right);
@@ -34,6 +40,10 @@ fn equivalent_temporal_async_subscription_bundles_compare_equal() {
 
 #[test]
 fn diagnostics_richness_does_not_change_semantic_bundle_parity() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let minimal_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let rich_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let minimal =
@@ -42,12 +52,14 @@ fn diagnostics_richness_does_not_change_semantic_bundle_parity() {
             BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
             "temporal-commit-a",
             "temporal-snapshot-a",
+            resource_request,
         ));
     let rich = rich_runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
         &rich_runtime,
         BridgeTemporalAsyncCertificationDiagnosticsRichness::Rich,
         "temporal-commit-a",
         "temporal-snapshot-a",
+        resource_request,
     ));
 
     let comparison = minimal_runtime.compare_temporal_async_certification_bundles(&minimal, &rich);
@@ -61,6 +73,10 @@ fn diagnostics_richness_does_not_change_semantic_bundle_parity() {
 
 #[test]
 fn temporal_basis_change_breaks_bundle_parity() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let left_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let right_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let left = left_runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
@@ -68,6 +84,7 @@ fn temporal_basis_change_breaks_bundle_parity() {
         BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
         "temporal-commit-a",
         "temporal-snapshot-a",
+        resource_request,
     ));
     let right =
         right_runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
@@ -75,6 +92,7 @@ fn temporal_basis_change_breaks_bundle_parity() {
             BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
             "temporal-commit-b",
             "temporal-snapshot-b",
+            resource_request,
         ));
 
     let comparison = left_runtime.compare_temporal_async_certification_bundles(&left, &right);
@@ -94,12 +112,17 @@ fn temporal_basis_change_breaks_bundle_parity() {
 
 #[test]
 fn inspection_and_export_preserve_section_traceability() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = crate::facade::tests::source::support::runtime_with_authority();
     let bundle = runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
         &runtime,
         BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
         "temporal-commit-a",
         "temporal-snapshot-a",
+        resource_request,
     ));
 
     let inspection = runtime.inspect_temporal_async_certification_bundle(&bundle);
@@ -130,6 +153,10 @@ fn inspection_and_export_preserve_section_traceability() {
 
 #[test]
 fn shared_delivery_consumer_identity_change_breaks_bundle_parity() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let left_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let right_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let left = left_runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
@@ -137,8 +164,9 @@ fn shared_delivery_consumer_identity_change_breaks_bundle_parity() {
         BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
         "temporal-commit-a",
         "temporal-snapshot-a",
+        resource_request,
     ));
-    let ready = activation_ready_detail_subscription_in_runtime(&right_runtime);
+    let ready = activation_ready_detail_subscription_in_runtime(&right_runtime, resource_request);
     let cost_profile = right_runtime
         .admit_subscription_delivery_cost_profile(
             crate::facade::BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
@@ -195,6 +223,10 @@ fn shared_delivery_consumer_identity_change_breaks_bundle_parity() {
 
 #[test]
 fn diagnostics_richness_changes_export_name_without_changing_semantic_parity() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let minimal_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let rich_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let minimal =
@@ -203,12 +235,14 @@ fn diagnostics_richness_changes_export_name_without_changing_semantic_parity() {
             BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
             "temporal-commit-a",
             "temporal-snapshot-a",
+            resource_request,
         ));
     let rich = rich_runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
         &rich_runtime,
         BridgeTemporalAsyncCertificationDiagnosticsRichness::Rich,
         "temporal-commit-a",
         "temporal-snapshot-a",
+        resource_request,
     ));
 
     let minimal_export = minimal_runtime.export_temporal_async_certification_bundle(&minimal);

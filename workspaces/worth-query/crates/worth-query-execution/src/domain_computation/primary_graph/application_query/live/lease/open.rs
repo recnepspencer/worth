@@ -1,3 +1,5 @@
+mod initial_read;
+use initial_read::execute_live_initial_read;
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::{
@@ -13,20 +15,16 @@ use self::managed_basis_admission::admit_live_managed_basis;
 use super::super::{
     controls::WorthQueryApplicationLiveControls,
     outcome::{WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind},
-    scope_identity::read_scope_identity,
 };
 use super::validation::{
-    open_admission_denial, open_denial, open_read_denial, validate_live_binding,
-    validate_live_resource_controls,
+    open_admission_denial, open_denial, validate_live_binding, validate_live_resource_controls,
 };
 use super::WorthQueryApplicationLiveLease;
 use crate::domain_computation::primary_graph::{
     application_query::{
         admission::prepare_governed_access,
-        authorized_read::{execute_authorized_read, refresh_governed_authorization},
-        disclosure::WorthQueryPendingApplicationQueryGovernance,
-        WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessContext,
-        WorthQueryApplicationQueryControls,
+        disclosure::WorthQueryPendingApplicationQueryGovernance, WorthQueryApplicationProjection,
+        WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryControls,
     },
     live_delivery::WorthQueryLiveCauseQueue,
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
@@ -51,15 +49,6 @@ struct WorthQueryApplicationLiveOpenRequest<
     product: crate::basis::WorthQueryProductBranchLease,
     application_basis: super::super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
     pending_governance: Option<WorthQueryPendingApplicationQueryGovernance>,
-}
-
-struct WorthQueryApplicationLiveInitialRead {
-    governance: crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
-    scope_identity: worth_foundational::facade::AspectValue,
-    graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
-    read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
-    initial_read_work: crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork,
-    basis_release: super::super::super::WorthQueryApplicationBasisReleaseReceipt,
 }
 
 impl<'runtime, Schema>
@@ -308,8 +297,31 @@ where
             )
             .map_err(open_admission_denial)?;
         let initial_read = execute_live_initial_read(self, plan, request.query.name())?;
-        let basis =
-            admit_live_managed_basis(self, live, &initial_read.graph_work, request.query.name())?;
+        let basis = self
+            .with_application_advancement(request.controls.request(), |phase| {
+                let execution =
+                    phase
+                        .execution_request_for(&self.product_runtime)
+                        .map_err(|_| {
+                            open_denial(
+                                WorthQueryApplicationLiveOpenDenialKind::BridgeBasisRejected,
+                                request.query.name(),
+                            )
+                        })?;
+                admit_live_managed_basis(
+                    self,
+                    live,
+                    &initial_read.graph_work,
+                    request.query.name(),
+                    execution,
+                )
+            })
+            .map_err(|_| {
+                open_denial(
+                    WorthQueryApplicationLiveOpenDenialKind::BridgeBasisRejected,
+                    request.query.name(),
+                )
+            })??;
         let buffer_capacity = request.controls.buffer_capacity();
         let queue = WorthQueryLiveCauseQueue::open(
             &self.primary_provider.live_delivery,
@@ -336,51 +348,4 @@ where
             _thread_affinity: PhantomData,
         })
     }
-}
-
-fn execute_live_initial_read<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
->(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    mut plan: crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan<
-        '_, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope,
-    >,
-    subject: &str,
-) -> Result<WorthQueryApplicationLiveInitialRead, WorthQueryApplicationLiveOpenDenial>
-where
-    Schema: ApplicationSchema,
-{
-    refresh_governed_authorization(application, &mut plan)
-        .map_err(|denial| open_read_denial(denial, subject))?;
-    application.runtime.primary_graph().ok_or_else(|| {
-        open_denial(
-            WorthQueryApplicationLiveOpenDenialKind::ScopeIdentityUnavailable,
-            subject,
-        )
-    })?;
-    let ((scope_identity, initial_read_work), _, read_proof) =
-        execute_authorized_read(application, &plan, read_scope_identity)
-            .map_err(|denial| open_read_denial(denial, subject))?;
-    let governance = plan.take_governance();
-    let basis_release = plan.basis.release();
-    if !basis_release.released() {
-        return Err(open_denial(
-            WorthQueryApplicationLiveOpenDenialKind::BasisReleaseFailed,
-            subject,
-        ));
-    }
-    Ok(WorthQueryApplicationLiveInitialRead {
-        governance,
-        scope_identity,
-        graph_work: plan.graph_work,
-        read_proof,
-        initial_read_work,
-        basis_release,
-    })
 }

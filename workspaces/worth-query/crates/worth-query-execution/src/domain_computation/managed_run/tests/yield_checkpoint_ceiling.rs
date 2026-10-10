@@ -4,6 +4,9 @@ use super::*;
 #[test]
 fn checkpoint_memory_mismatch_preserves_exact_release_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -19,7 +22,8 @@ fn checkpoint_memory_mismatch_preserves_exact_release_evidence() {
                 "workflow-checkpoint-memory-mismatch-drop-panic",
             ),
         ] {
-            let paused = paused_workflow_checkpoint_target(execution, provider, label);
+            let paused =
+                paused_workflow_checkpoint_target(execution, provider, label, resource_request);
             let recovery = match paused.yield_run() {
                 crate::domain_computation::WorthQueryWorkflowYieldOutcome::RecoveryRequired(
                     recovery,
@@ -77,6 +81,7 @@ fn paused_workflow_checkpoint_target(
 
     provider: YieldProvider,
     label: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::domain_computation::WorthQueryPausedWorkflowGraphExecution {
     let installer = WorthQueryExecutionRuntimeInstaller::new();
     let provider_anchor = Arc::new(
@@ -108,8 +113,12 @@ fn paused_workflow_checkpoint_target(
         &graph,
         WorthQueryOperationGraphAccess::Observe,
     );
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let running = super::workflow_provider_steps::admitted_workflow(
+        &runtime,
+        &operation,
+        resources,
+        resource_request,
+    );
     let active = running
         .begin_stage_graph_execution(
             execution,

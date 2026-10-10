@@ -11,6 +11,9 @@ use worth_query_installation::facade::{WorthQueryDecisionFactFamily, WorthQueryD
 #[test]
 fn invalid_completeness_and_kind_deny_before_provider_contact() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -31,6 +34,7 @@ fn invalid_completeness_and_kind_deny_before_provider_contact() {
                 versions: Arc::clone(&versions),
             },
             families,
+            resource_request,
         );
         let staged = staged(execution, &mut running, &graph);
         let reads = staged.read_authority();
@@ -72,6 +76,9 @@ fn invalid_completeness_and_kind_deny_before_provider_contact() {
 #[test]
 fn exact_family_count_and_duplicate_discovery_are_prevalidated_canonically() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -86,6 +93,7 @@ fn exact_family_count_and_duplicate_discovery_are_prevalidated_canonically() {
                 versions: Arc::clone(&versions),
             },
             vec![family],
+            resource_request,
         );
         let staged = staged(execution, &mut running, &graph);
         let reads = staged.read_authority();
@@ -111,6 +119,9 @@ fn exact_family_count_and_duplicate_discovery_are_prevalidated_canonically() {
 #[test]
 fn duplicate_discovery_for_one_fact_calls_the_provider_once() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -121,6 +132,7 @@ fn duplicate_discovery_for_one_fact_calls_the_provider_once() {
                 versions: Arc::clone(&versions),
             },
             vec![WorthQueryDecisionFactFamily::new("family-0", kind.clone()).unwrap()],
+            resource_request,
         );
         let staged = staged(execution, &mut running, &graph);
         let reads = staged.read_authority();
@@ -144,6 +156,9 @@ fn duplicate_discovery_for_one_fact_calls_the_provider_once() {
 #[test]
 fn bounded_family_accepts_attempt_exact_sets_only_within_installed_ceiling() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -158,6 +173,7 @@ fn bounded_family_accepts_attempt_exact_sets_only_within_installed_ceiling() {
                 versions: Arc::clone(&versions),
             },
             vec![family],
+            resource_request,
         );
         let staged = staged(execution, &mut running, &graph);
         let reads = staged.read_authority();

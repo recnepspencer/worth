@@ -1,5 +1,9 @@
 #[test]
 fn bridge_continuity_planning_requires_explicit_lineage_context() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -18,10 +22,14 @@ fn bridge_continuity_planning_requires_explicit_lineage_context() {
     let result = runtime
         .deliver_invalidation(
             runtime
-                .plan_committed_patch(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ))
+                .plan_committed_patch(
+                    BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    ),
+                    execution,
+                )
                 .expect("route should plan"),
+            execution,
         )
         .expect("delivery should succeed");
     let route_record = runtime
@@ -41,6 +49,10 @@ fn bridge_continuity_planning_requires_explicit_lineage_context() {
 
 #[test]
 fn bridge_historical_lineage_packet_uses_planned_continuity_requests() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -73,10 +85,11 @@ fn bridge_historical_lineage_packet_uses_planned_continuity_requests() {
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("route should plan");
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = runtime
         .diagnostics()
@@ -115,6 +128,10 @@ fn bridge_historical_lineage_packet_uses_planned_continuity_requests() {
 
 #[test]
 fn bridge_continuity_planning_rejects_branch_mismatch_against_route_truth() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -147,10 +164,11 @@ fn bridge_continuity_planning_rejects_branch_mismatch_against_route_truth() {
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("route should plan");
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = runtime
         .diagnostics()
@@ -169,6 +187,10 @@ fn bridge_continuity_planning_rejects_branch_mismatch_against_route_truth() {
 
 #[test]
 fn bridge_historical_lineage_packet_rejects_mismatched_returned_authority_basis() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -201,10 +223,11 @@ fn bridge_historical_lineage_packet_rejects_mismatched_returned_authority_basis(
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("route should plan");
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = runtime
         .diagnostics()
@@ -226,6 +249,10 @@ fn bridge_historical_lineage_packet_rejects_mismatched_returned_authority_basis(
 
 #[test]
 fn bridge_historical_lineage_packet_preserves_typed_unsupported_class_failure() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -258,10 +285,11 @@ fn bridge_historical_lineage_packet_preserves_typed_unsupported_class_failure() 
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("route should plan");
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = runtime
         .diagnostics()
@@ -283,6 +311,10 @@ fn bridge_historical_lineage_packet_preserves_typed_unsupported_class_failure() 
 
 #[test]
 fn bridge_continuity_planning_deduplicates_prior_slices_before_lineage_resolution() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -317,10 +349,11 @@ fn bridge_continuity_planning_deduplicates_prior_slices_before_lineage_resolutio
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 ),
             )),
+            execution,
         )
         .expect("route should plan");
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = runtime
         .diagnostics()

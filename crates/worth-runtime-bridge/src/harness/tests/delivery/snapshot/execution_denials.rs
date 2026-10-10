@@ -101,6 +101,10 @@ impl InvalidationSink for RefusingSink {
 
 #[test]
 fn every_sink_resource_cause_survives_delivery_to_the_caller() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     for refusal in [
         Refusal::Workers,
         Refusal::MemoryLimit,
@@ -120,11 +124,11 @@ fn every_sink_resource_cause_survives_delivery_to_the_caller() {
         source.insert_snapshot(snapshot(snapshot_a(), "alice"));
         let runtime = build_runtime(source, RefusingSink(refusal), vec![registration()]);
         let route = runtime
-            .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+            .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
             .unwrap();
         let lease = crate::snapshot::test_execution_lease(CancellationToken::new());
         let error = runtime
-            .deliver_invalidation_with_lease(route, &lease)
+            .deliver_invalidation(route, worth_execution::ExecutionRequest::leased(&lease))
             .unwrap_err();
         let BridgeDeliveryErrorKind::ExecutionDenied(denial) = error.kind() else {
             panic!("the caller must receive a typed resource denial: {error:?}");
@@ -157,7 +161,10 @@ fn serial_request(memory: u64) -> worth_execution::SerialRequest {
     )
 }
 
-fn serial_delivery(request: &worth_execution::SerialRequest) -> crate::facade::BridgeDeliveryError {
+fn serial_delivery(
+    request: &worth_execution::SerialRequest,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::facade::BridgeDeliveryError {
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -169,10 +176,10 @@ fn serial_delivery(request: &worth_execution::SerialRequest) -> crate::facade::B
     let sink = crate::harness::fixtures::RecordingSignalBridgeSink::default();
     let runtime = build_runtime(source, sink.clone(), vec![registration()]);
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
         .unwrap();
     let error = runtime
-        .deliver_invalidation_with_request(route, ExecutionRequest::serial(request))
+        .deliver_invalidation(route, ExecutionRequest::serial(request))
         .unwrap_err();
     assert!(sink.last_delivery().is_none());
     error
@@ -180,7 +187,11 @@ fn serial_delivery(request: &worth_execution::SerialRequest) -> crate::facade::B
 
 #[test]
 fn serial_delivery_refuses_memory_before_sink_delivery() {
-    let error = serial_delivery(&serial_request(1));
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let error = serial_delivery(&serial_request(1), resource_request);
     assert!(
         matches!(error.kind(), BridgeDeliveryErrorKind::ExecutionDenied(
         BridgeExecutionDenial::MemoryExhausted(memory)) if memory.admitted == 1)
@@ -189,24 +200,32 @@ fn serial_delivery_refuses_memory_before_sink_delivery() {
 
 #[test]
 fn serial_delivery_preserves_cancellation_as_its_own_cause() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = worth_execution::CancellationSource::new();
     source.cancel();
     let mut request = serial_request(4096);
     request = request.with_cancellation(source.token());
     assert_eq!(
-        serial_delivery(&request).kind(),
+        serial_delivery(&request, resource_request).kind(),
         BridgeDeliveryErrorKind::ExecutionDenied(BridgeExecutionDenial::Cancelled)
     );
 }
 
 #[test]
 fn serial_delivery_preserves_elapsed_deadline_as_its_own_cause() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut request = serial_request(4096);
     request = request.with_deadline(Some(
         std::time::Instant::now() - std::time::Duration::from_secs(1),
     ));
     assert_eq!(
-        serial_delivery(&request).kind(),
+        serial_delivery(&request, resource_request).kind(),
         BridgeDeliveryErrorKind::ExecutionDenied(BridgeExecutionDenial::DeadlineElapsed)
     );
 }

@@ -18,6 +18,10 @@ use super::support::{bridge_envelopes_at_current_observation, runtime_with_test_
 
 #[test]
 fn real_entity_and_relation_transactions_preserve_semantic_binding_surfaces() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source = changed_entities(&create_entity_outcome(&runtime, "source"))[0];
     let target = changed_entities(&create_entity_outcome(&runtime, "target"))[0];
@@ -29,7 +33,7 @@ fn real_entity_and_relation_transactions_preserve_semantic_binding_surfaces() {
         .unwrap()
         .commit
         .commit_id;
-    let envelope = bridge_envelopes_at_current_observation(runtime, [commit])
+    let envelope = bridge_envelopes_at_current_observation(runtime, [commit], resource_request)
         .pop()
         .expect("relation publication");
     let items = envelope.patch_body().canonical_items();
@@ -64,6 +68,10 @@ fn real_entity_and_relation_transactions_preserve_semantic_binding_surfaces() {
 
 #[test]
 fn real_entity_transaction_preserves_field_lifecycle_and_structural_surfaces() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
@@ -133,8 +141,11 @@ fn real_entity_transaction_preserves_field_lifecycle_and_structural_surfaces() {
         .expect("real struct-field update")
         .commit
         .commit_id;
-    let mut envelopes =
-        bridge_envelopes_at_current_observation(runtime, [structural_commit, field_commit]);
+    let mut envelopes = bridge_envelopes_at_current_observation(
+        runtime,
+        [structural_commit, field_commit],
+        resource_request,
+    );
     let field_publication = envelopes.pop().expect("field publication");
     let structural_publication = envelopes.pop().expect("structural publication");
     let items = structural_publication.patch_body().canonical_items();

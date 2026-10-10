@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn public_delivery_loads_through_the_registered_source_authority() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let envelope = field_change_envelope_for_source_role("model");
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
@@ -23,6 +27,7 @@ fn public_delivery_loads_through_the_registered_source_authority() {
         &correspondence,
         &mut graph,
         crate::facade::RelationalCommittedPatchRequest::new(truth_commit(1)),
+        execution,
     ) else {
         panic!("registered source publication should drive delivery")
     };
@@ -37,6 +42,10 @@ fn public_delivery_loads_through_the_registered_source_authority() {
 
 #[test]
 fn public_delivery_rejects_harness_envelopes_from_a_registered_source() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let runtime = runtime_with_delivery_source(
@@ -60,7 +69,7 @@ fn public_delivery_rejects_harness_envelopes_from_a_registered_source() {
             &correspondence,
             &mut graph,
             crate::facade::RelationalCommittedPatchRequest::new(truth_commit(1)),
-        ),
+         execution),
         TransitionOutcome::Denied(denial)
             if denial.kind()
                 == crate::facade::BridgeCorrespondenceDenialKind::AuthoritativeSourceMismatch
@@ -74,6 +83,10 @@ fn public_delivery_rejects_harness_envelopes_from_a_registered_source() {
 
 #[test]
 fn registered_source_cannot_substitute_another_commit_for_the_request() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
     let runtime = runtime_with_delivery_source(
@@ -97,7 +110,7 @@ fn registered_source_cannot_substitute_another_commit_for_the_request() {
             &correspondence,
             &mut graph,
             crate::facade::RelationalCommittedPatchRequest::new(truth_commit(2)),
-        ),
+         execution),
         TransitionOutcome::Denied(denial)
             if denial.kind()
                 == crate::facade::BridgeCorrespondenceDenialKind::CommittedPatchRequestMismatch

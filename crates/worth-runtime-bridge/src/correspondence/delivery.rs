@@ -28,12 +28,16 @@ impl RuntimeBridge {
         correspondence: &BridgeInstalledSemanticCorrespondence,
         graph: &mut SignalGraph,
         request: crate::adapter::RelationalCommittedPatchRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> CorrespondenceDeliveryOutcome {
         if let Some(outcome) = preflight(self, correspondence, graph) {
             return outcome;
         }
         let requested_commit = request.commit_identity().clone();
-        let envelope = match self.committed_patch_source.load_committed_patch(request) {
+        let envelope = match self
+            .committed_patch_source
+            .load_committed_patch(request, execution)
+        {
             Ok(envelope) => envelope,
             Err(_) => {
                 return TransitionOutcome::Failed(

@@ -10,12 +10,13 @@ pub trait BridgeSourceAdapter: Send + Sync + 'static {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError>;
 
     fn materialize_packet(
         &self,
         planned: crate::snapshot::PlannedTruthViewPacket,
-        execution_policy: crate::policy::BridgeExecutionPolicyBaseline,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<MaterializedTruthViewObservation, BridgeDeliveryError> {
         let snapshot_identity = planned
             .authority_basis()
@@ -31,16 +32,18 @@ pub trait BridgeSourceAdapter: Send + Sync + 'static {
                 )
             })?;
 
-        let snapshot_reader = self.open_snapshot(&snapshot_identity).map_err(|error| {
-            BridgeDeliveryError::new(
-                BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
-                format!(
-                    "Bridge source adapter failed to open snapshot `{}`: {error}",
-                    snapshot_identity.as_str()
-                ),
-            )
-            .with_context(BridgeErrorContext::snapshot(snapshot_identity.clone()))
-        })?;
+        let snapshot_reader =
+            self.open_snapshot(&snapshot_identity, execution)
+                .map_err(|error| {
+                    BridgeDeliveryError::new(
+                        BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
+                        format!(
+                            "Bridge source adapter failed to open snapshot `{}`: {error}",
+                            snapshot_identity.as_str()
+                        ),
+                    )
+                    .with_context(BridgeErrorContext::snapshot(snapshot_identity.clone()))
+                })?;
         let snapshot = BridgeSnapshotContext::bind(snapshot_reader);
         let admitted = AdmittedSnapshotContext::admit_for(snapshot, &snapshot_identity).map_err(
             |bound_snapshot_identity| {
@@ -69,20 +72,19 @@ pub trait BridgeSourceAdapter: Send + Sync + 'static {
             snapshot_token,
             source_materialization_path_for(&planned),
             admitted,
-            execution_policy,
         ))
     }
 
     fn materialize_packets(
         &self,
         planned_packet_set: &PlannedSourceReadPacketSet,
-        execution_policy: crate::policy::BridgeExecutionPolicyBaseline,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<MaterializedTruthViewPacketSet, BridgeDeliveryError> {
         let observations = planned_packet_set
             .packets()
             .iter()
             .cloned()
-            .map(|planned| self.materialize_packet(planned, execution_policy))
+            .map(|planned| self.materialize_packet(planned, execution))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(MaterializedTruthViewPacketSet::new(
             planned_packet_set.clone(),

@@ -19,6 +19,10 @@ use super::support::runtime_with_test_schema;
 
 #[test]
 fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
     let source =
         RuntimeBridgeRelationalSource::for_shared_graph_role(Arc::clone(&runtime), "model")
@@ -81,9 +85,12 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
         .retain_branch_basis_for_bridge(&basis)
         .expect("source must retain the live owner observation");
     let envelope = source
-        .load_committed_patch(RelationalCommittedPatchRequest::new(
-            TruthCommitIdentity::from_relational_commit_id(committed.commit.commit_id.0),
-        ))
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::new(TruthCommitIdentity::from_relational_commit_id(
+                committed.commit.commit_id.0,
+            )),
+            execution,
+        )
         .expect("source must observe commits made after its construction");
     let reader = source
         .clone()
@@ -112,13 +119,21 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
             "alice".into()
         ))
     );
-    assert!(source.open_snapshot(envelope.snapshot_identity()).is_ok());
+    assert!(source
+        .open_snapshot(envelope.snapshot_identity(), execution)
+        .is_ok());
     drop(reader);
-    assert!(source.open_snapshot(envelope.snapshot_identity()).is_err());
+    assert!(source
+        .open_snapshot(envelope.snapshot_identity(), execution)
+        .is_err());
 }
 
 #[test]
 fn exact_reader_rejects_a_foreign_lease_despite_equal_snapshot_descriptors() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     fn retained_source() -> (
         RuntimeBridgeRelationalSource,
         crate::relational_source::RelationalBridgeObservationLease,
@@ -144,17 +159,17 @@ fn exact_reader_rejects_a_foreign_lease_despite_equal_snapshot_descriptors() {
     let (second, second_lease) = retained_source();
     let snapshot = first_lease.snapshot_identity().clone();
     assert_eq!(snapshot, *second_lease.snapshot_identity());
-    assert!(second.open_snapshot(&snapshot).is_ok());
+    assert!(second.open_snapshot(&snapshot, resource_request).is_ok());
 
     let denial = second.open_retained_snapshot(first_lease).unwrap_err();
     assert!(denial
         .to_string()
         .contains("another source registration owner"));
-    assert!(first.open_snapshot(&snapshot).is_err());
+    assert!(first.open_snapshot(&snapshot, resource_request).is_err());
 
     let valid = second.open_retained_snapshot(second_lease).unwrap();
     assert_eq!(valid.snapshot_identity(), snapshot);
-    assert!(second.open_snapshot(&snapshot).is_ok());
+    assert!(second.open_snapshot(&snapshot, resource_request).is_ok());
     drop(valid);
-    assert!(second.open_snapshot(&snapshot).is_err());
+    assert!(second.open_snapshot(&snapshot, resource_request).is_err());
 }

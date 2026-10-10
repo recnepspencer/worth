@@ -122,6 +122,7 @@ fn cold_source_recomputes_and_a_live_slot_forces_typed_capacity_denial() {
                 &signal_basis,
                 &source,
             ),
+            request_execution,
         )
         .unwrap();
     let mut computes = AtomicUsize::new(0);
@@ -152,6 +153,7 @@ fn cold_source_recomputes_and_a_live_slot_forces_typed_capacity_denial() {
                 &signal_basis,
                 &source,
             ),
+            request_execution,
         )
         .expect_err("the retained first session must hold the only installed Signal slot");
     assert_eq!(
@@ -187,6 +189,7 @@ fn rejected_affinity_does_not_manufacture_a_later_slot_reuse() {
                 &signal_basis,
                 &source,
             ),
+            request_execution,
         )
         .unwrap();
     let mut computes = AtomicUsize::new(0);
@@ -258,6 +261,7 @@ fn concurrent_busy_denial_does_not_claim_slot_reuse() {
                     &signal_basis,
                     &source,
                 ),
+                request_execution,
             )
             .unwrap(),
     );

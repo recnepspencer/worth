@@ -12,6 +12,10 @@ use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBr
 
 #[test]
 fn replayed_slice_route_matches_original_canonical_slice_artifact() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -34,10 +38,14 @@ fn replayed_slice_route_matches_original_canonical_slice_artifact() {
     let result = runtime
         .deliver_invalidation(
             runtime
-                .plan_committed_patch(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ))
+                .plan_committed_patch(
+                    BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    ),
+                    execution,
+                )
                 .expect("slice route should plan"),
+            execution,
         )
         .expect("slice route should deliver");
     let canonical = runtime
@@ -45,7 +53,7 @@ fn replayed_slice_route_matches_original_canonical_slice_artifact() {
         .last_canonical_route_record()
         .expect("canonical route record should be retained");
     let replay = runtime
-        .replay_canonical_record(&canonical)
+        .replay_canonical_record(&canonical, execution)
         .expect("canonical slice route should replay");
 
     assert_eq!(
@@ -64,6 +72,10 @@ fn replayed_slice_route_matches_original_canonical_slice_artifact() {
 
 #[test]
 fn replayed_policy_scoped_route_preserves_route_policy_digest_in_route_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -106,8 +118,10 @@ fn replayed_policy_scoped_route_preserves_route_policy_digest_in_route_record() 
                         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
                     ),
                     &route_policy,
+                    execution,
                 )
                 .expect("policy scoped route should plan"),
+            execution,
         )
         .expect("policy scoped route should deliver");
     let canonical = runtime
@@ -115,7 +129,7 @@ fn replayed_policy_scoped_route_preserves_route_policy_digest_in_route_record() 
         .last_canonical_route_record()
         .expect("canonical route record should be retained");
     let replay = runtime
-        .replay_canonical_record(&canonical)
+        .replay_canonical_record(&canonical, execution)
         .expect("policy scoped route should replay");
     let record = runtime
         .diagnostics()

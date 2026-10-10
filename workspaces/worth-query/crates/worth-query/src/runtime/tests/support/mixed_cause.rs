@@ -53,8 +53,9 @@ pub(in crate::runtime::tests) fn canonical_truth_patch(
 
 pub(in crate::runtime::tests) fn authoritative_time_only_cause(
     runtime: &RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeTemporalCauseRecord {
-    let admitted = admitted_detail_subscription(runtime);
+    let admitted = admitted_detail_subscription(runtime, resource_request);
     let temporal = runtime
         .admit_temporal_subscription(
             &admitted,
@@ -76,8 +77,9 @@ pub(in crate::runtime::tests) fn authoritative_time_only_cause(
 pub(in crate::runtime::tests) fn authoritative_truth_plus_time_cause(
     runtime: &RuntimeBridge,
     truth_patch: &BridgeCommittedPatchEnvelope,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeTemporalCauseRecord {
-    let admitted = admitted_detail_subscription(runtime);
+    let admitted = admitted_detail_subscription(runtime, resource_request);
     let temporal = runtime
         .admit_temporal_subscription(
             &admitted,
@@ -99,8 +101,9 @@ pub(in crate::runtime::tests) fn authoritative_truth_plus_time_cause(
 pub(in crate::runtime::tests) fn preview_time_only_cause(
     runtime: &RuntimeBridge,
     suffix: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> BridgeTemporalCauseRecord {
-    let admitted = admitted_detail_subscription(runtime);
+    let admitted = admitted_detail_subscription(runtime, resource_request);
     let preview_basis = admitted_preview_basis_for_truth(
         runtime,
         suffix,
@@ -182,7 +185,10 @@ pub(in crate::runtime::tests) fn admitted_async_completion_for_request(
     completion
 }
 
-fn admitted_detail_subscription(runtime: &RuntimeBridge) -> AdmittedBridgeSubscription {
+fn admitted_detail_subscription(
+    runtime: &RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> AdmittedBridgeSubscription {
     let declaration = runtime
         .declare_subscription(
             BridgeSubscriptionDeclarationFamilyKind::DetailExact,
@@ -202,6 +208,7 @@ fn admitted_detail_subscription(runtime: &RuntimeBridge) -> AdmittedBridgeSubscr
             BridgeSubscriptionBasisRequest::snapshot(
                 TruthSnapshotIdentity::from_bridge_harness_label("snapshot-a"),
             ),
+            resource_request,
         )
         .expect("bridge subscription should admit")
 }

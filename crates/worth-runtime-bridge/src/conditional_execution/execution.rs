@@ -103,6 +103,7 @@ impl BridgeOwnedSignalRuntime {
                     }
                 },
                 managed_source_record,
+                execution_request,
             )
             .map_err(|denial| {
                 if denial.kind() == BridgeConditionalDenialKind::StaleLowering {

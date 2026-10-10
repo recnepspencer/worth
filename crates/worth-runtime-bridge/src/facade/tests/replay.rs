@@ -1,5 +1,9 @@
 #[test]
 fn runtime_replays_canonical_historical_evaluation_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::branch_head(crate::truth_identity_fixtures::truth_branch_fixture(
@@ -12,14 +16,15 @@ fn runtime_replays_canonical_historical_evaluation_record() {
     let observation = runtime
         .materialize_truth_view_observation(
             runtime
-                .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+                .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), execution)
                 .expect("branch-head declaration should plan"),
+            execution,
         )
         .expect("branch-head declaration should materialize");
     let record = runtime.canonicalize_historical_evaluation_record(&observation);
 
     let replay = runtime
-        .replay_canonical_historical_evaluation_record(&record)
+        .replay_canonical_historical_evaluation_record(&record, execution)
         .expect("historical record replay should succeed");
 
     assert_eq!(replay.record_identity(), record.record_identity());
@@ -33,6 +38,10 @@ fn runtime_replays_canonical_historical_evaluation_record() {
 
 #[test]
 fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     #[derive(Clone)]
     struct DriftSource;
 
@@ -40,6 +49,7 @@ fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
         fn load_committed_patch(
             &self,
             request: crate::adapter::RelationalCommittedPatchRequest,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::input::envelope::BridgeCommittedPatchEnvelope,
             crate::adapter::RelationalBridgeSourceError,
@@ -81,6 +91,7 @@ fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
         fn open_snapshot(
             &self,
             identity: &TruthSnapshotIdentity,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             Box<dyn crate::snapshot::TruthSnapshotReader>,
             crate::adapter::RelationalBridgeSourceError,
@@ -99,6 +110,7 @@ fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
         fn load_branch_head_patch(
             &self,
             branch_identity: &TruthBranchIdentity,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::input::envelope::BridgeCommittedPatchEnvelope,
             crate::adapter::RelationalBridgeSourceError,
@@ -145,8 +157,13 @@ fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
         &original
             .materialize_truth_view_observation(
                 original
-                    .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+                    .plan_truth_view_packet(
+                        declaration,
+                        SnapshotReadPacket::new(vec![]),
+                        resource_request,
+                    )
                     .expect("original historical declaration should plan"),
+                resource_request,
             )
             .expect("original historical declaration should materialize"),
     );
@@ -201,7 +218,7 @@ fn runtime_replay_rejects_historical_authority_drift_as_authority_mismatch() {
         .expect("drifted runtime should build");
 
     let error = drifted
-        .replay_canonical_historical_evaluation_record(&record)
+        .replay_canonical_historical_evaluation_record(&record, resource_request)
         .expect_err("historical replay should reject authority drift");
 
     assert_eq!(

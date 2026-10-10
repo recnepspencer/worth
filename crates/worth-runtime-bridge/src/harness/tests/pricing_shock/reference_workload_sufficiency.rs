@@ -2,12 +2,19 @@ use super::support::*;
 
 #[test]
 fn pricing_shock_end_to_end_temporal_async_reference_workload_is_sufficient() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let pricing_skin = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-reference-workload-skin"),
+        resource_request,
     );
-    let sufficiency =
-        capture_pricing_reference_workload_sufficiency(BridgeRuntimePolicy::development());
+    let sufficiency = capture_pricing_reference_workload_sufficiency(
+        BridgeRuntimePolicy::development(),
+        resource_request,
+    );
     let report = sufficiency.report();
 
     assert!(!pricing_skin.digest().is_empty());

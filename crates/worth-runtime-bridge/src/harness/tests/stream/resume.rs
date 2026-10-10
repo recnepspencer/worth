@@ -10,6 +10,10 @@ use super::super::support::{build_runtime, committed_patch, registration, snapsh
 
 #[test]
 fn resume_from_checkpoint_preserves_routing_semantics_against_control_run() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -50,9 +54,12 @@ fn resume_from_checkpoint_preserves_routing_semantics_against_control_run() {
         .plan_change_stream_window(
             &contract,
             vec![runtime
-                .ingest_committed_patch(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ))
+                .ingest_committed_patch(
+                    BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    ),
+                    execution,
+                )
                 .expect("first envelope should ingest")],
         )
         .expect("first window should plan");
@@ -60,12 +67,15 @@ fn resume_from_checkpoint_preserves_routing_semantics_against_control_run() {
         .plan_change_stream_window(
             &contract,
             vec![runtime
-                .ingest_committed_patch(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-                ))
+                .ingest_committed_patch(
+                    BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                    ),
+                    execution,
+                )
                 .expect("second envelope should ingest")],
         )
-        .and_then(|window| runtime.deliver_change_stream_window(&contract, &window))
+        .and_then(|window| runtime.deliver_change_stream_window(&contract, &window, execution))
         .expect("control delivery should succeed");
     let checkpoint = runtime.publish_consumer_checkpoint(
         &contract,
@@ -79,15 +89,18 @@ fn resume_from_checkpoint_preserves_routing_semantics_against_control_run() {
         .resume_stream_window_from_checkpoint(
             &contract,
             vec![runtime
-                .ingest_committed_patch(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-                ))
+                .ingest_committed_patch(
+                    BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                    ),
+                    execution,
+                )
                 .expect("second envelope should ingest")],
             checkpoint.checkpoint_token_identity(),
         )
         .expect("resume should succeed");
     let resumed_delivery = runtime
-        .deliver_change_stream_window(&contract, resumed.resumed_window())
+        .deliver_change_stream_window(&contract, resumed.resumed_window(), execution)
         .expect("resumed delivery should succeed");
 
     assert_eq!(

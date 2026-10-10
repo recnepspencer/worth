@@ -69,9 +69,17 @@ fn duplicate_completion_becomes_explicit_noop() {
 
 #[test]
 fn preview_origin_completion_is_rejected() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_authority();
-    let completion =
-        admitted_preview_subscription_backed_completion(&runtime, NodeId::new(512, 0), "preview");
+    let completion = admitted_preview_subscription_backed_completion(
+        &runtime,
+        NodeId::new(512, 0),
+        "preview",
+        resource_request,
+    );
     let rejection = runtime
         .admit_async_writeback(authoritative_writeback_request(
             &completion,

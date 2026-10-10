@@ -41,8 +41,9 @@ impl RuntimeBridge {
         &self,
         declaration: &BridgeSubscriptionDeclaration,
         basis_request: BridgeSubscriptionBasisRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<AdmittedBridgeSubscription, BridgeSubscriptionAdmissionRejection> {
-        AdmittedBridgeSubscription::admit(self, declaration, basis_request)
+        AdmittedBridgeSubscription::admit(self, declaration, basis_request, execution)
     }
 
     /// Prepares an admitted subscription for activation without performing any

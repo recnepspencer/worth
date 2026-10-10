@@ -25,6 +25,7 @@ pub(super) fn certification_output_digests(
     non_bypass: &WorthQueryLowerRuntimeNonBypassAudit,
     slopes: &WorthQueryLowerRuntimePerformanceSlopeReport,
     certification_rows: &[WorthQueryLowerRuntimeCertificationRow],
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Vec<WorthQueryLowerRuntimeCertificationOutputDigest> {
     let crossings = worth_query_lower_runtime_crossing_inventory();
     let gaps = worth_query_lower_runtime_gap_registry();
@@ -118,13 +119,13 @@ pub(super) fn certification_output_digests(
         ),
         output(
             "route_synthetic_tail_report_digest",
-            worth_query_lower_runtime_synthetic_tail_report()
+            worth_query_lower_runtime_synthetic_tail_report(resource_request)
                 .report_digest()
                 .to_string(),
         ),
         output(
             "route_synthetic_tail_justification_digest",
-            worth_query_lower_runtime_synthetic_tail_report()
+            worth_query_lower_runtime_synthetic_tail_report(resource_request)
                 .justification_digest()
                 .to_string(),
         ),
@@ -215,7 +216,7 @@ pub(super) fn certification_output_digests(
         ),
         output(
             "route_synthetic_tail_width",
-            worth_query_lower_runtime_synthetic_tail_report()
+            worth_query_lower_runtime_synthetic_tail_report(resource_request)
                 .rows()
                 .len()
                 .to_string(),

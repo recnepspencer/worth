@@ -38,6 +38,7 @@ fn admit_source_session(
     owner: &crate::facade::BridgeSealedRuntimeAssembly,
     lowering: &Arc<BridgeInstalledConditionalLowering>,
     source: &crate::snapshot::TruthSnapshotIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeConditionalEvaluationSession {
     let signal_basis = owner
         .admit_conditional_signal_basis(lowering, owner.admitted_signal_basis())
@@ -48,7 +49,7 @@ fn admit_source_session(
                 &signal_basis,
                 source,
             ),
-        )
+         execution)
         .unwrap()
 }
 
@@ -60,7 +61,7 @@ fn owned_correspondence_delivery_and_execution_share_the_sealed_signal_root() {
 
     let (owner, lowering) = install(always_eligible_contract("query:one"), "bridge-main");
     let source = crate::truth_identity_fixtures::truth_snapshot(1, 1);
-    let pinned = admit_source_session(&owner, &lowering, &source);
+    let pinned = admit_source_session(&owner, &lowering, &source, request_execution);
     let first = execute_session(&owner, &lowering, &pinned, 1);
     assert_eq!(
         first.signal().class(),
@@ -146,7 +147,7 @@ fn successor_admission_recomputes_affected_lowering_and_reuses_unaffected_loweri
     let owner = owner.seal().unwrap();
     let source = crate::truth_identity_fixtures::truth_snapshot(1, 1);
     let admit = |lowering: &Arc<BridgeInstalledConditionalLowering>| {
-        admit_source_session(&owner, lowering, &source)
+        admit_source_session(&owner, lowering, &source, request_execution)
     };
     let affected_initial = admit(&affected);
     let unaffected_initial = admit(&unaffected);
@@ -196,7 +197,7 @@ fn successor_readmission_requires_the_exact_ordered_chain_and_allows_fresh_fallb
 
     let (owner, lowering) = install(always_eligible_contract("query:one"), "bridge-main");
     let source = crate::truth_identity_fixtures::truth_snapshot(1, 1);
-    let a = admit_source_session(&owner, &lowering, &source);
+    let a = admit_source_session(&owner, &lowering, &source, request_execution);
     execute_session(&owner, &lowering, &a, 1);
     let signal_basis = owner
         .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
@@ -267,7 +268,7 @@ fn successor_readmission_requires_the_exact_ordered_chain_and_allows_fresh_fallb
         "the old A admission remains executable after later deliveries"
     );
 
-    let fresh = admit_source_session(&owner, &lowering, &source);
+    let fresh = admit_source_session(&owner, &lowering, &source, request_execution);
     assert_eq!(
         execute_session(&owner, &lowering, &fresh, 4)
             .bridge_execution_counters()

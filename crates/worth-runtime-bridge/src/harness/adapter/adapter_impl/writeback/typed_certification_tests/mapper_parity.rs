@@ -2,11 +2,18 @@ use super::*;
 
 #[test]
 fn mapper_parity_certification_retains_typed_shadow_rejection_proof() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let WritebackHarnessExecution::HostMapperParityCertification {
         mapper_parity_matrix,
         counter_snapshot,
         ..
-    } = certified_execution(WritebackHarnessTarget::HostMapperParityCertification)
+    } = certified_execution(
+        WritebackHarnessTarget::HostMapperParityCertification,
+        resource_request,
+    )
     else {
         panic!("mapper parity should produce typed matrix");
     };

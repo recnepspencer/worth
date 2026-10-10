@@ -5,6 +5,7 @@ impl RuntimeBridge {
     pub fn replay_canonical_structural_remap_record(
         &self,
         record: &BridgeCanonicalStructuralRemapRecord,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeStructuralRemapReplaySummary, BridgeReplayError> {
         let record = record.decode()?;
         let reconstructed_contract = self
@@ -40,7 +41,7 @@ impl RuntimeBridge {
             .materialize_structural_fingerprint(
                 &reconstructed_contract,
                 target_fingerprint.read_packet().clone(),
-            )
+             execution)
             .map_err(|error| {
                 BridgeReplayError::new(
                     BridgeReplayErrorKind::PlanningContractMismatch,
@@ -78,7 +79,7 @@ impl RuntimeBridge {
                 .materialize_structural_fingerprint(
                     &reconstructed_contract,
                     fingerprint.read_packet().clone(),
-                )
+                 execution)
                 .map_err(|error| {
                     BridgeReplayError::new(
                         BridgeReplayErrorKind::PlanningContractMismatch,
@@ -110,7 +111,7 @@ impl RuntimeBridge {
                     .iter()
                     .map(|fingerprint| fingerprint.read_packet().clone())
                     .collect(),
-            )
+             execution)
             .map_err(|error| {
                 BridgeReplayError::new(
                     BridgeReplayErrorKind::PlanningContractMismatch,
@@ -188,6 +189,7 @@ impl RuntimeBridge {
     pub fn replay_canonical_structural_branch_comparison_record(
         &self,
         record: &BridgeCanonicalStructuralBranchComparisonRecord,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeStructuralBranchComparisonReplaySummary, BridgeReplayError> {
         let record = record.decode()?;
         let reconstructed_contract = self
@@ -233,7 +235,7 @@ impl RuntimeBridge {
             .materialize_structural_branch_fingerprints(
                 &reconstructed_contract,
                 left_fingerprint.read_packet().clone(),
-            )
+             execution)
             .map_err(|error| {
                 BridgeReplayError::new(
                     BridgeReplayErrorKind::PlanningContractMismatch,
@@ -269,7 +271,7 @@ impl RuntimeBridge {
             .plan_structural_branch_comparison_from_read_packet(
                 &reconstructed_contract,
                 left_fingerprint.read_packet().clone(),
-            )
+             execution)
             .map_err(|error| {
                 BridgeReplayError::new(
                     BridgeReplayErrorKind::PlanningContractMismatch,

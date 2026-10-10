@@ -11,6 +11,10 @@ use worth_harness::runtime::{HarnessAdapter, ReplayHarnessAdapter};
 
 #[test]
 fn bridge_harness_replays_historical_record() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let adapter = BridgeHarnessAdapter;
     let fixture = ScenarioPlan::new(
         "bridge-historical-replay",
@@ -63,12 +67,16 @@ fn bridge_harness_replays_historical_record() {
         .expect("historical replay capture should succeed");
 
     let record = last_historical_record(&session);
-    let replay_summary = replay_historical_record(&session, &record);
+    let replay_summary = replay_historical_record(&session, &record, resource_request);
     assert_historical_replay_summary(&replay_summary, &record, "snapshot-a");
 }
 
 #[test]
 fn bridge_harness_replays_historical_record_after_newer_publication_arrives() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let adapter = BridgeHarnessAdapter;
     let fixture = ScenarioPlan::new(
         "bridge-historical-replay-stability",
@@ -140,6 +148,6 @@ fn bridge_harness_replays_historical_record_after_newer_publication_arrives() {
         .expect("historical replay should remain pinned to the original record");
 
     let record = last_historical_record(&session);
-    let replay_summary = replay_historical_record(&session, &record);
+    let replay_summary = replay_historical_record(&session, &record, resource_request);
     assert_historical_replay_summary(&replay_summary, &record, "snapshot-a");
 }

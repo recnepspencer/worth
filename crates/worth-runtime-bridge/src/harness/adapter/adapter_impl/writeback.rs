@@ -100,6 +100,7 @@ pub(super) fn execute_writeback_request(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     target: WritebackHarnessTarget,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WritebackHarnessExecution, BridgeHarnessError> {
     match target {
         WritebackHarnessTarget::DuplicateCertification => {
@@ -107,6 +108,7 @@ pub(super) fn execute_writeback_request(
                 runtime,
                 runtime_bridge,
                 fixture,
+                resource_request,
             )
         }
         WritebackHarnessTarget::AuthorityDenialCertification => {
@@ -114,6 +116,7 @@ pub(super) fn execute_writeback_request(
                 runtime,
                 runtime_bridge,
                 fixture,
+                resource_request,
             )
         }
         WritebackHarnessTarget::FeedbackLoopCertification => {
@@ -121,6 +124,7 @@ pub(super) fn execute_writeback_request(
                 runtime,
                 runtime_bridge,
                 fixture,
+                resource_request,
             )
         }
         WritebackHarnessTarget::ReplayMismatchCertification => {
@@ -128,6 +132,7 @@ pub(super) fn execute_writeback_request(
                 runtime,
                 runtime_bridge,
                 fixture,
+                resource_request,
             )
         }
         WritebackHarnessTarget::ExtensibleFamilyCertification => {
@@ -135,6 +140,7 @@ pub(super) fn execute_writeback_request(
                 runtime,
                 runtime_bridge,
                 fixture,
+                resource_request,
             )
         }
         WritebackHarnessTarget::MultiFamilyAdmissionBoundaryCertification => {
@@ -142,6 +148,7 @@ pub(super) fn execute_writeback_request(
                 runtime,
                 runtime_bridge,
                 fixture,
+                resource_request,
             )
         }
         WritebackHarnessTarget::CrossFamilyReplayLoopIsolationCertification => {
@@ -149,6 +156,7 @@ pub(super) fn execute_writeback_request(
                 runtime,
                 runtime_bridge,
                 fixture,
+                resource_request,
             )
         }
         WritebackHarnessTarget::HostMapperParityCertification => {
@@ -156,6 +164,7 @@ pub(super) fn execute_writeback_request(
                 runtime,
                 runtime_bridge,
                 fixture,
+                resource_request,
             )
         }
     }
@@ -211,6 +220,7 @@ fn lowered_policy(
 fn route_digest_for_first_patch(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<String, BridgeHarnessError> {
     let commit_identity = fixture
         .committed_patches()
@@ -222,15 +232,17 @@ fn route_digest_for_first_patch(
     let result = runtime_bridge
         .deliver_invalidation(
             runtime_bridge
-                .plan_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                    commit_identity.clone(),
-                ))
+                .plan_committed_patch(
+                    crate::facade::BridgeRouteRequest::for_commit(commit_identity.clone()),
+                    execution,
+                )
                 .map_err(|error| {
                     BridgeHarnessError::new(format!(
                         "writeback harness failed to plan committed patch `{}`: {error}",
                         commit_identity.as_str()
                     ))
                 })?,
+            execution,
         )
         .map_err(|error| {
             BridgeHarnessError::new(format!(
@@ -248,19 +260,22 @@ fn route_digest_for_first_patch(
 fn route_identity_for_commit(
     runtime_bridge: &crate::facade::RuntimeBridge,
     commit_identity: crate::facade::TruthCommitIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<crate::facade::BridgeRouteIdentity, BridgeHarnessError> {
     let result = runtime_bridge
         .deliver_invalidation(
             runtime_bridge
-                .plan_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                    commit_identity.clone(),
-                ))
+                .plan_committed_patch(
+                    crate::facade::BridgeRouteRequest::for_commit(commit_identity.clone()),
+                    execution,
+                )
                 .map_err(|error| {
                     BridgeHarnessError::new(format!(
                         "writeback harness failed to plan committed patch `{}`: {error}",
                         commit_identity.as_str()
                     ))
                 })?,
+            execution,
         )
         .map_err(|error| {
             BridgeHarnessError::new(format!(
@@ -323,8 +338,10 @@ fn authority_denial_causality(
     identity: &'static str,
     commit_identity: crate::facade::TruthCommitIdentity,
     evidence_class: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<crate::facade::BridgeWritebackNativeCausalityInputs, BridgeHarnessError> {
-    let route_identity = route_identity_for_commit(runtime_bridge, commit_identity.clone())?;
+    let route_identity =
+        route_identity_for_commit(runtime_bridge, commit_identity.clone(), resource_request)?;
     let truth_view_basis = fixture
         .snapshots()
         .first()

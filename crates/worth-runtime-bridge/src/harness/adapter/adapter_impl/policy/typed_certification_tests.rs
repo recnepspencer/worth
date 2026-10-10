@@ -118,12 +118,17 @@ fn snapshot(snapshot_identity: TruthSnapshotIdentity, value: &str) -> SnapshotFi
 
 #[test]
 fn provenance_certification_retains_typed_policy_route_and_counter_evidence() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_policy(BridgeRuntimePolicy::development());
     let fixture = fixture_with_policy(BridgeRuntimePolicy::development());
     let execution = execute_policy_request(
         &runtime,
         &fixture,
         PolicyHarnessTarget::ProvenanceCertification,
+        resource_request,
     )
     .expect("provenance certification should execute");
 
@@ -186,12 +191,17 @@ fn provenance_certification_retains_typed_policy_route_and_counter_evidence() {
 
 #[test]
 fn rejection_certification_retains_typed_rejection_rows_and_zero_authority_escape_evidence() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_policy(BridgeRuntimePolicy::development());
     let fixture = fixture_with_policy(BridgeRuntimePolicy::development());
     let execution = execute_policy_request(
         &runtime,
         &fixture,
         PolicyHarnessTarget::RejectionCertification,
+        resource_request,
     )
     .expect("rejection certification should execute");
 
@@ -234,12 +244,17 @@ fn rejection_certification_retains_typed_rejection_rows_and_zero_authority_escap
 
 #[test]
 fn ambient_leak_certification_retains_typed_request_equivalence_evidence() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_policy(BridgeRuntimePolicy::development());
     let fixture = fixture_with_policy(BridgeRuntimePolicy::development());
     let execution = execute_policy_request(
         &runtime,
         &fixture,
         PolicyHarnessTarget::AmbientLeakCertification,
+        resource_request,
     )
     .expect("ambient leak certification should execute");
 

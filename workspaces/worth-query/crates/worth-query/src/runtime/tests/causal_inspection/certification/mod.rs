@@ -15,14 +15,20 @@ use matrix_support::representative_matrix;
 
 #[test]
 fn causal_inspection_certification_bundle_closes_runtime_backed_rows() {
-    let changed = admitted_artifact(super::causal_truth_commit_identity(
-        "commit-query-cert-changed",
-    ));
-    let (full, redacted) = advisory_artifacts(super::causal_truth_commit_identity(
-        "commit-query-cert-redacted",
-    ));
-    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence();
-    let representatives = representative_matrix(&changed, &redacted, &denied);
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let changed = admitted_artifact(
+        super::causal_truth_commit_identity("commit-query-cert-changed"),
+        resource_request,
+    );
+    let (full, redacted) = advisory_artifacts(
+        super::causal_truth_commit_identity("commit-query-cert-redacted"),
+        resource_request,
+    );
+    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence(resource_request);
+    let representatives = representative_matrix(&changed, &redacted, &denied, resource_request);
     assert_eq!(representatives.representative_digests().len(), 25);
     assert_eq!(representatives.missing_evidence_row_count(), 3);
     let boundary_audit =
@@ -136,14 +142,20 @@ fn causal_inspection_certification_bundle_closes_runtime_backed_rows() {
 
 #[test]
 fn causal_inspection_certification_rejects_bridge_envelope_slope_drift() {
-    let changed = admitted_artifact(super::causal_truth_commit_identity(
-        "commit-query-cert-bridge-slope-changed",
-    ));
-    let (full, redacted) = advisory_artifacts(super::causal_truth_commit_identity(
-        "commit-query-cert-bridge-slope-redacted",
-    ));
-    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence();
-    let representatives = representative_matrix(&changed, &redacted, &denied);
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let changed = admitted_artifact(
+        super::causal_truth_commit_identity("commit-query-cert-bridge-slope-changed"),
+        resource_request,
+    );
+    let (full, redacted) = advisory_artifacts(
+        super::causal_truth_commit_identity("commit-query-cert-bridge-slope-redacted"),
+        resource_request,
+    );
+    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence(resource_request);
+    let representatives = representative_matrix(&changed, &redacted, &denied, resource_request);
     let boundary_audit =
         CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&changed);
     let proof_shape = CausalInspectionProofShapeCertification::from_runtime_path(
@@ -188,17 +200,24 @@ fn causal_inspection_certification_rejects_bridge_envelope_slope_drift() {
 
 #[test]
 fn causal_inspection_certification_rejects_redaction_identity_drift() {
-    let changed = admitted_artifact(super::causal_truth_commit_identity(
-        "commit-query-cert-drift-changed",
-    ));
-    let unrelated_full = admitted_artifact(super::causal_truth_commit_identity(
-        "commit-query-cert-drift-unrelated",
-    ));
-    let (_, redacted) = advisory_artifacts(super::causal_truth_commit_identity(
-        "commit-query-cert-drift-redacted",
-    ));
-    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence();
-    let representatives = representative_matrix(&changed, &redacted, &denied);
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let changed = admitted_artifact(
+        super::causal_truth_commit_identity("commit-query-cert-drift-changed"),
+        resource_request,
+    );
+    let unrelated_full = admitted_artifact(
+        super::causal_truth_commit_identity("commit-query-cert-drift-unrelated"),
+        resource_request,
+    );
+    let (_, redacted) = advisory_artifacts(
+        super::causal_truth_commit_identity("commit-query-cert-drift-redacted"),
+        resource_request,
+    );
+    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence(resource_request);
+    let representatives = representative_matrix(&changed, &redacted, &denied, resource_request);
     let boundary_audit =
         CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&changed);
     let proof_shape = CausalInspectionProofShapeCertification::from_runtime_path(
@@ -242,9 +261,14 @@ fn causal_inspection_certification_rejects_redaction_identity_drift() {
 
 #[test]
 fn causal_inspection_certification_rejects_incomplete_representative_matrix() {
-    let changed = admitted_artifact(super::causal_truth_commit_identity(
-        "commit-query-cert-matrix-changed",
-    ));
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let changed = admitted_artifact(
+        super::causal_truth_commit_identity("commit-query-cert-matrix-changed"),
+        resource_request,
+    );
     let rows = [CausalInspectionRepresentativeEvidence::from_query_artifact(
         CausalInspectionRepresentativeKind::ChangedResult,
         &changed,
@@ -349,9 +373,14 @@ fn causal_inspection_certification_failure_evidence_names_forbidden_and_debt_pos
 
 #[test]
 fn causal_inspection_certification_rejects_rich_slot_row_without_named_slots() {
-    let changed = admitted_artifact(super::causal_truth_commit_identity(
-        "commit-query-cert-thin-rich-row",
-    ));
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let changed = admitted_artifact(
+        super::causal_truth_commit_identity("commit-query-cert-thin-rich-row"),
+        resource_request,
+    );
     for kind in [
         CausalInspectionRepresentativeKind::BridgeRouteAndSignalEvidenceBindSameObservation,
         CausalInspectionRepresentativeKind::BridgeRecordsBindThroughExistingDiagnostics,

@@ -73,6 +73,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for StageQueueContractPr
 #[test]
 fn stage_contract_wider_than_the_signal_queue_denies_before_provider_construction() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -113,8 +116,12 @@ fn stage_contract_wider_than_the_signal_queue_denies_before_provider_constructio
             &graph,
             WorthQueryOperationGraphAccess::Project,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let failure = match running.begin_stage_graph_execution(
             execution,
             "stage",

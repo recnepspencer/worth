@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn causal_lower_authorities_admit_one_managed_direct_run_and_cleanup_every_owner() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let plan = admitted_plan("managed-direct", 8);
     let operation = direct_authority(&runtime, &plan);
@@ -12,7 +16,7 @@ fn causal_lower_authorities_admit_one_managed_direct_run_and_cleanup_every_owner
 
     let admitted = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("managed admission should compose its lower authorities");
     assert_eq!(admitted.counters().query_runtime_check_count(), 1);
     assert_eq!(admitted.counters().resource_attempt_check_count(), 1);
@@ -44,6 +48,10 @@ fn causal_lower_authorities_admit_one_managed_direct_run_and_cleanup_every_owner
 
 #[test]
 fn cleanup_thread_failure_returns_all_authority_for_owner_thread_retry() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let plan = admitted_plan("cleanup-retry", 8);
     let operation = direct_authority(&runtime, &plan);
@@ -53,7 +61,7 @@ fn cleanup_thread_failure_returns_all_authority_for_owner_thread_retry() {
     let lower = causal_fixture::managed_admission_context();
     let terminal = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("managed run should admit")
         .start()
         .completed()

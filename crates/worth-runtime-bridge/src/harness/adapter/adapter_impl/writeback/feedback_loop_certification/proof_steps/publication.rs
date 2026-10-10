@@ -14,6 +14,7 @@ pub(in crate::harness::adapter::adapter_impl::writeback::feedback_loop_certifica
     runtime_bridge: &crate::facade::RuntimeBridge,
     original_commit: &crate::facade::BridgeCommittedPatchEnvelope,
     feedback_context: &crate::facade::BridgeWritebackFeedbackContext,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<FeedbackPublicationProof, BridgeHarnessError> {
     let feedback_commit_identity =
         crate::truth_identity_fixtures::truth_commit_fixture("commit-feedback");
@@ -43,20 +44,22 @@ pub(in crate::harness::adapter::adapter_impl::writeback::feedback_loop_certifica
             original_commit,
         ));
     let ordinary_route_identity =
-        route_identity_for_commit(runtime_bridge, ordinary_commit_identity.clone())?;
+        route_identity_for_commit(runtime_bridge, ordinary_commit_identity.clone(), execution)?;
     runtime.source.insert_committed_patch(feedback_commit);
 
     let feedback_result = runtime_bridge
         .deliver_invalidation(
             runtime_bridge
-                .plan_committed_patch(crate::facade::BridgeRouteRequest::for_commit(
-                    feedback_commit_identity.clone(),
-                ))
+                .plan_committed_patch(
+                    crate::facade::BridgeRouteRequest::for_commit(feedback_commit_identity.clone()),
+                    execution,
+                )
                 .map_err(|error| {
                     BridgeHarnessError::new(format!(
                         "writeback feedback certification failed to plan feedback commit: {error}"
                     ))
                 })?,
+            execution,
         )
         .map_err(|error| {
             BridgeHarnessError::new(format!(

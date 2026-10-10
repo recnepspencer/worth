@@ -126,12 +126,16 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for FailingProvider {
 #[test]
 fn bounded_provider_steps_stream_exact_terminal_work_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Project,
             TwoStepProvider,
+            resource_request,
         );
         let active = running
             .begin_graph_execution(
@@ -227,12 +231,16 @@ fn bounded_provider_steps_stream_exact_terminal_work_evidence() {
 #[test]
 fn provider_failure_preserves_governed_work_and_recovery_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Observe,
             FailingProvider,
+            resource_request,
         );
         let active = running
             .begin_graph_execution(

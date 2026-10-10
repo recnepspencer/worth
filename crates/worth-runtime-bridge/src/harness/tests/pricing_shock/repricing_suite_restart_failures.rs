@@ -54,9 +54,14 @@ fn pricing_shock_repricing_signal_is_delta_driven_not_always_on() {
 
 #[test]
 fn pricing_shock_suites_25_through_27_emit_canonical_machine_checkable_artifacts() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-workload-suites"),
+        resource_request,
     );
     let suite_25 = bundle.suite_25_digest_evidence();
     let suite_26 = bundle.suite_26_digest_evidence();
@@ -105,12 +110,17 @@ fn pricing_shock_suites_25_through_27_emit_canonical_machine_checkable_artifacts
 
 #[test]
 fn pricing_shock_can_emit_ml_pipeline_export_file_when_requested() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let Some(path) = std::env::var_os("WORTH_PRICING_SHOWCASE_EXPORT_PATH") else {
         return;
     };
     let bundle = capture_pricing_workload_certification_bundle(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-ml-export-file"),
+        resource_request,
     );
     std::fs::write(&path, bundle.ml_pipeline_export_pretty_json())
         .expect("ml pipeline export file should write");
@@ -118,10 +128,16 @@ fn pricing_shock_can_emit_ml_pipeline_export_file_when_requested() {
 
 #[test]
 fn pricing_shock_restart_replay_preserves_canonical_truth_across_rebuild() {
-    let restart = capture_pricing_restart_replay_bundle(BridgeRuntimePolicy::development());
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let restart =
+        capture_pricing_restart_replay_bundle(BridgeRuntimePolicy::development(), resource_request);
     let replay = capture_pricing_certification_matrix(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:preview-restart-parity"),
+        resource_request,
     )
     .replay;
 
@@ -133,7 +149,11 @@ fn pricing_shock_restart_replay_preserves_canonical_truth_across_rebuild() {
 
 #[test]
 fn pricing_shock_restart_replay_rejects_route_drift_after_truth_change() {
-    let restart_failure = capture_pricing_restart_failure_bundle();
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let restart_failure = capture_pricing_restart_failure_bundle(resource_request);
 
     assert_eq!(
         restart_failure.error_kind,
@@ -144,6 +164,10 @@ fn pricing_shock_restart_replay_rejects_route_drift_after_truth_change() {
 
 #[test]
 fn pricing_shock_missing_snapshot_fails_with_typed_delivery_record() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(pricing_patch(
         pricing_patch_envelope_identity(
@@ -157,7 +181,7 @@ fn pricing_shock_missing_snapshot_fails_with_typed_delivery_record() {
 
     let sink = RecordingSignalBridgeSink::default();
     let runtime = build_pricing_runtime(source, sink);
-    let failure = capture_pricing_missing_snapshot_failure_bundle(&runtime);
+    let failure = capture_pricing_missing_snapshot_failure_bundle(&runtime, resource_request);
 
     assert_eq!(
         failure.error_kind,

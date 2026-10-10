@@ -2,13 +2,18 @@ use super::*;
 
 #[test]
 fn safe_points_project_exact_signal_lifecycle_and_queue_pressure() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let mut basis = runtime
         .admit_managed_execution_basis(
             managed_intent("safe-point-attempt"),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("managed execution should admit");
     let available = basis
@@ -66,13 +71,18 @@ fn safe_points_project_exact_signal_lifecycle_and_queue_pressure() {
 
 #[test]
 fn queue_overflow_denies_without_mutating_signal_pressure() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let mut basis = runtime
         .admit_managed_execution_basis(
             managed_intent("queue-contract-attempt"),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("managed execution should admit");
 
@@ -97,13 +107,18 @@ fn queue_overflow_denies_without_mutating_signal_pressure() {
 
 #[test]
 fn execution_basis_cannot_finalize_while_queue_occupancy_is_outstanding() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let mut basis = runtime
         .admit_managed_execution_basis(
             managed_intent("queue-finalization-attempt"),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("managed execution should admit");
     let admission = basis

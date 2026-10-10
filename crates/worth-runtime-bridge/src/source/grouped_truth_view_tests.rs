@@ -15,8 +15,12 @@ use support::{
 
 #[test]
 fn grouped_truth_view_preserves_row_and_lane_pairing() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let grouped = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set(),
+        &row_set(resource_request),
         &projection(
             "snapshot-a",
             "identity.id",
@@ -66,7 +70,11 @@ fn grouped_truth_view_preserves_row_and_lane_pairing() {
 
 #[test]
 fn grouped_truth_view_digest_is_derived_from_projection_contract_evidence() {
-    let source_row_set = row_set();
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let source_row_set = row_set(resource_request);
     let status_grouped = materialize_bridge_grouped_truth_view_from_projection(
         &source_row_set,
         &projection(
@@ -94,8 +102,12 @@ fn grouped_truth_view_digest_is_derived_from_projection_contract_evidence() {
 
 #[test]
 fn grouped_truth_view_rejects_basis_snapshot_mismatch() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let error = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set(),
+        &row_set(resource_request),
         &projection(
             "snapshot-b",
             "identity.id",
@@ -113,8 +125,12 @@ fn grouped_truth_view_rejects_basis_snapshot_mismatch() {
 
 #[test]
 fn grouped_truth_view_rejects_projection_row_count_mismatch() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let error = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set(),
+        &row_set(resource_request),
         &projection(
             "snapshot-a",
             "identity.id",
@@ -132,8 +148,12 @@ fn grouped_truth_view_rejects_projection_row_count_mismatch() {
 
 #[test]
 fn grouped_truth_view_rejects_missing_projection_row() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let error = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set(),
+        &row_set(resource_request),
         &projection(
             "snapshot-a",
             "identity.id",
@@ -162,8 +182,12 @@ fn grouped_truth_view_rejects_missing_projection_row() {
 
 #[test]
 fn grouped_truth_view_rejects_identity_and_grouping_parity_mismatches() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let identity_error = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set(),
+        &row_set(resource_request),
         &projection(
             "snapshot-a",
             "identity.id",
@@ -189,7 +213,7 @@ fn grouped_truth_view_rejects_identity_and_grouping_parity_mismatches() {
     ));
 
     let grouping_error = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set(),
+        &row_set(resource_request),
         &projection(
             "snapshot-a",
             "identity.id",
@@ -217,8 +241,12 @@ fn grouped_truth_view_rejects_identity_and_grouping_parity_mismatches() {
 
 #[test]
 fn grouped_truth_view_rejects_missing_identity_and_grouping_aspects() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let identity_error = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set(),
+        &row_set(resource_request),
         &projection(
             "snapshot-a",
             "identity.missing",
@@ -233,7 +261,7 @@ fn grouped_truth_view_rejects_missing_identity_and_grouping_aspects() {
     ));
 
     let grouping_error = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set(),
+        &row_set(resource_request),
         &projection(
             "snapshot-a",
             "identity.id",
@@ -250,8 +278,12 @@ fn grouped_truth_view_rejects_missing_identity_and_grouping_aspects() {
 
 #[test]
 fn grouped_truth_view_rejects_ambiguous_whole_aspect_grouping_binding() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let error = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set_with_ambiguous_grouping_binding(),
+        &row_set_with_ambiguous_grouping_binding(resource_request),
         &projection(
             "snapshot-a",
             "identity.id",
@@ -273,8 +305,12 @@ fn grouped_truth_view_rejects_ambiguous_whole_aspect_grouping_binding() {
 
 #[test]
 fn grouped_truth_view_rejects_struct_identity_binding_before_member_materialization() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let error = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set_with_struct_identity_binding(),
+        &row_set_with_struct_identity_binding(resource_request),
         &projection(
             "snapshot-a",
             "identity.id",
@@ -299,8 +335,12 @@ fn grouped_truth_view_rejects_struct_identity_binding_before_member_materializat
 
 #[test]
 fn grouped_truth_view_rejects_struct_grouping_binding_before_member_materialization() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let error = materialize_bridge_grouped_truth_view_from_projection(
-        &row_set_with_struct_grouping_binding(),
+        &row_set_with_struct_grouping_binding(resource_request),
         &projection(
             "snapshot-a",
             "identity.id",

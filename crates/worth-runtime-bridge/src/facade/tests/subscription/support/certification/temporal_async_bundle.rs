@@ -18,6 +18,7 @@ use super::super::*;
 
 pub(crate) fn temporal_async_bundle_equivalent_comparison(
     seed: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeTemporalAsyncCertificationBundleComparison {
     let left_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let right_runtime = crate::facade::tests::source::support::runtime_with_authority();
@@ -26,6 +27,7 @@ pub(crate) fn temporal_async_bundle_equivalent_comparison(
         BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
         &format!("temporal-commit-{seed}"),
         &format!("temporal-snapshot-{seed}"),
+        resource_request,
     ));
     let right =
         right_runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
@@ -33,12 +35,14 @@ pub(crate) fn temporal_async_bundle_equivalent_comparison(
             BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
             &format!("temporal-commit-{seed}"),
             &format!("temporal-snapshot-{seed}"),
+            resource_request,
         ));
     left_runtime.compare_temporal_async_certification_bundles(&left, &right)
 }
 
 pub(crate) fn temporal_async_bundle_diagnostics_delta_comparison(
     seed: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeTemporalAsyncCertificationBundleComparison {
     let base_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let rich_runtime = crate::facade::tests::source::support::runtime_with_authority();
@@ -47,18 +51,21 @@ pub(crate) fn temporal_async_bundle_diagnostics_delta_comparison(
         BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
         &format!("temporal-commit-{seed}"),
         &format!("temporal-snapshot-{seed}"),
+        resource_request,
     ));
     let rich = rich_runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
         &rich_runtime,
         BridgeTemporalAsyncCertificationDiagnosticsRichness::Rich,
         &format!("temporal-commit-{seed}"),
         &format!("temporal-snapshot-{seed}"),
+        resource_request,
     ));
     base_runtime.compare_temporal_async_certification_bundles(&base, &rich)
 }
 
 pub(crate) fn temporal_async_bundle_divergent_comparison(
     seed: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeTemporalAsyncCertificationBundleComparison {
     let left_runtime = crate::facade::tests::source::support::runtime_with_authority();
     let right_runtime = crate::facade::tests::source::support::runtime_with_authority();
@@ -67,6 +74,7 @@ pub(crate) fn temporal_async_bundle_divergent_comparison(
         BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
         &format!("temporal-commit-{seed}-left"),
         &format!("temporal-snapshot-{seed}-left"),
+        resource_request,
     ));
     let right =
         right_runtime.seal_temporal_async_certification_bundle(temporal_async_bundle_draft(
@@ -74,14 +82,16 @@ pub(crate) fn temporal_async_bundle_divergent_comparison(
             BridgeTemporalAsyncCertificationDiagnosticsRichness::Minimal,
             &format!("temporal-commit-{seed}-right"),
             &format!("temporal-snapshot-{seed}-right"),
+            resource_request,
         ));
     left_runtime.compare_temporal_async_certification_bundles(&left, &right)
 }
 
 pub(crate) fn active_detail_subscription_in_runtime(
     runtime: &RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeActiveSubscription {
-    let ready = activation_ready_detail_subscription_in_runtime(runtime);
+    let ready = activation_ready_detail_subscription_in_runtime(runtime, resource_request);
     let cost_profile = runtime
         .admit_subscription_delivery_cost_profile(
             BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
@@ -102,8 +112,9 @@ pub(crate) fn temporal_async_bundle_draft(
     diagnostics_richness: BridgeTemporalAsyncCertificationDiagnosticsRichness,
     temporal_commit: &str,
     temporal_snapshot: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeTemporalAsyncCertificationBundleDraft {
-    let active = active_detail_subscription_in_runtime(runtime);
+    let active = active_detail_subscription_in_runtime(runtime, resource_request);
     let shared_bundle = shared_delivery_bundle(
         runtime,
         &active,

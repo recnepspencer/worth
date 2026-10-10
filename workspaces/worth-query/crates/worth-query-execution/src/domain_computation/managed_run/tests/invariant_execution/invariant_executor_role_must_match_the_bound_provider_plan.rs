@@ -5,6 +5,9 @@ use super::*;
 #[test]
 fn invariant_executor_role_must_match_the_bound_provider_plan() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -26,6 +29,7 @@ fn invariant_executor_role_must_match_the_bound_provider_plan() {
             vec![requirement],
             "closed-loop",
             [locator("base")],
+            resource_request,
         )
         .err()
         .expect("foreign executor role must deny before state load");

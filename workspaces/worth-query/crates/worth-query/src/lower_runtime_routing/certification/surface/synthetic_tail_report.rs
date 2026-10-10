@@ -88,9 +88,10 @@ impl WorthQueryLowerRuntimeSyntheticTailReport {
     }
 }
 
-pub fn worth_query_lower_runtime_synthetic_tail_report() -> WorthQueryLowerRuntimeSyntheticTailReport
-{
-    let surface = worth_query_lower_runtime_representative_surface();
+pub fn worth_query_lower_runtime_synthetic_tail_report(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryLowerRuntimeSyntheticTailReport {
+    let surface = worth_query_lower_runtime_representative_surface(resource_request);
     let rows = allowed_phase_six_synthetic_seams()
         .iter()
         .map(|row| {
@@ -133,7 +134,12 @@ mod tests {
 
     #[test]
     fn synthetic_tail_report_matches_allowlist_exactly() {
-        let report = worth_query_lower_runtime_synthetic_tail_report();
+        let host_request =
+            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+                .serial_request(worth_execution::CancellationToken::new(), None);
+        let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+        let report = worth_query_lower_runtime_synthetic_tail_report(resource_request);
 
         assert_eq!(
             report.rows().len(),
@@ -149,7 +155,12 @@ mod tests {
 
     #[test]
     fn synthetic_tail_report_rows_stay_inventory_synthesized() {
-        let report = worth_query_lower_runtime_synthetic_tail_report();
+        let host_request =
+            worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+                .serial_request(worth_execution::CancellationToken::new(), None);
+        let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+        let report = worth_query_lower_runtime_synthetic_tail_report(resource_request);
 
         for row in report.rows() {
             assert_eq!(

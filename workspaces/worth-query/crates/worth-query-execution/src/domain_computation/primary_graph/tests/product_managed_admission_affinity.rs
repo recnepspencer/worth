@@ -16,6 +16,10 @@ use crate::domain_computation::{
 
 #[test]
 fn direct_admission_rejects_a_same_relational_different_signal_product() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let (exact, substitute) = hostile_product_twins(&world.application);
     let plan = admitted_plan("direct-product-affinity", 8);
@@ -43,6 +47,7 @@ fn direct_admission_rejects_a_same_relational_different_signal_product() {
                 &substitute,
                 SnapshotReadPacket::new(Vec::new()),
             ),
+            resource_request,
         ) {
         Ok(_) => panic!("a different Signal occurrence reached lower admission"),
         Err(rejection) => rejection,
@@ -60,6 +65,10 @@ fn direct_admission_rejects_a_same_relational_different_signal_product() {
 
 #[test]
 fn workflow_admission_rejects_a_same_relational_different_signal_product() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let (exact, substitute) = hostile_product_twins(&world.application);
     let operation_plan = admitted_plan("workflow-product-affinity", 8);
@@ -94,6 +103,7 @@ fn workflow_admission_rejects_a_same_relational_different_signal_product() {
                 &substitute,
                 SnapshotReadPacket::new(Vec::new()),
             ),
+            resource_request,
         ) {
         Ok(_) => panic!("a different Signal occurrence reached lower admission"),
         Err(rejection) => rejection,

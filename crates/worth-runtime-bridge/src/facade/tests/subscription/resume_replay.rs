@@ -2,8 +2,14 @@ use super::support::*;
 
 #[test]
 fn resume_admission_accepts_matching_active_subscription_and_plans_next_sequence() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let sealed = sealed_window_with_members(
         &runtime,
         &active,
@@ -37,8 +43,14 @@ fn resume_admission_accepts_matching_active_subscription_and_plans_next_sequence
 
 #[test]
 fn resume_admission_rejects_checkpoint_for_different_active_subscription() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let sealed = sealed_window_with_members(
         &runtime,
         &active,
@@ -55,6 +67,7 @@ fn resume_admission_rejects_checkpoint_for_different_active_subscription() {
     );
     let (_other_runtime, other_active) = active_detail_subscription(
         BridgeSubscriptionDeliveryDensityPosture::BoundedCoalescedWindow,
+        resource_request,
     );
 
     let rejection = runtime
@@ -69,8 +82,14 @@ fn resume_admission_rejects_checkpoint_for_different_active_subscription() {
 
 #[test]
 fn delivery_replay_plan_admits_ordered_retained_windows_after_checkpoint() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let checkpoint_window = sealed_window_with_members(
         &runtime,
         &active,
@@ -108,8 +127,14 @@ fn delivery_replay_plan_admits_ordered_retained_windows_after_checkpoint() {
 
 #[test]
 fn delivery_replay_plan_rejects_empty_retained_seed_set() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let checkpoint = checkpoint_from_sealed(
         &runtime,
         &active,
@@ -139,8 +164,14 @@ fn delivery_replay_plan_rejects_empty_retained_seed_set() {
 
 #[test]
 fn delivery_replay_plan_rejects_stale_checkpoint_window_seed() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let checkpoint_window = sealed_window_with_members(
         &runtime,
         &active,
@@ -172,8 +203,14 @@ fn delivery_replay_plan_rejects_stale_checkpoint_window_seed() {
 
 #[test]
 fn delivery_replay_plan_rejects_ambiguous_duplicate_window_sequences() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let checkpoint_window = sealed_window_with_members(
         &runtime,
         &active,
@@ -218,8 +255,14 @@ fn delivery_replay_plan_rejects_ambiguous_duplicate_window_sequences() {
 
 #[test]
 fn delivery_replay_plan_rejects_retained_delivery_family_drift() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let checkpoint_window = sealed_window_with_members(
         &runtime,
         &active,
@@ -257,8 +300,14 @@ fn delivery_replay_plan_rejects_retained_delivery_family_drift() {
 
 #[test]
 fn delivery_replay_plan_rejects_retained_window_blocked_by_replay_readiness() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let checkpoint_window = sealed_window_with_members(
         &runtime,
         &active,

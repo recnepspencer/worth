@@ -5,12 +5,16 @@ use worth_runtime_bridge::facade::BridgeExecutionBasisSignalTerminal;
 #[test]
 fn direct_yield_retains_exact_authorities_and_releases_them_explicitly() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph, _bridge) = managed_graph_run_with_provider_and_bridge(
             WorthQueryOperationGraphAccess::Observe,
             YieldProvider::installed(5),
+            resource_request,
         );
         let logical_run_identity = running.logical_run_identity().to_owned();
         let attempt_identity = running.identity().to_owned();
@@ -75,12 +79,16 @@ fn direct_yield_retains_exact_authorities_and_releases_them_explicitly() {
 #[test]
 fn direct_yield_denials_preserve_the_paused_execution_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Observe,
             YieldProvider::without_installed_yield(),
+            resource_request,
         );
         let active = running
             .begin_graph_execution(
@@ -116,12 +124,16 @@ fn direct_yield_denials_preserve_the_paused_execution_authority() {
 #[test]
 fn checkpoint_claim_is_required_even_when_yield_is_installed() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Observe,
             YieldProvider::without_checkpoint_evidence(),
+            resource_request,
         );
         let active = running
             .begin_graph_execution(
@@ -161,12 +173,16 @@ fn checkpoint_claim_is_required_even_when_yield_is_installed() {
 #[test]
 fn suspension_failure_terminalizes_signal_but_preserves_cleanup_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Observe,
             YieldProvider::suspension_failure(),
+            resource_request,
         );
         let active = running
             .begin_graph_execution(
@@ -216,6 +232,9 @@ fn suspension_failure_terminalizes_signal_but_preserves_cleanup_authority() {
 #[test]
 fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -258,7 +277,7 @@ fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
         ),
     ] {
         let (running, graph) =
-            managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, provider);
+            managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, provider, resource_request);
         let active = running
             .begin_graph_execution(execution,
                 &graph,
@@ -291,11 +310,16 @@ fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
 #[test]
 fn direct_yield_preserves_exact_applied_effect_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (running, graph) =
-            managed_graph_effect_run_with_provider(YieldProvider::installed_with_partial_effect(5));
+        let (running, graph) = managed_graph_effect_run_with_provider(
+            YieldProvider::installed_with_partial_effect(5),
+            resource_request,
+        );
         let active = running
             .begin_graph_execution(
                 execution,

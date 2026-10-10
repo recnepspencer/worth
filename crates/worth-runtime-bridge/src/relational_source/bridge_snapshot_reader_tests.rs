@@ -19,6 +19,10 @@ use super::RuntimeBridgeRelationalSource;
 
 #[test]
 fn runtime_bridge_snapshot_reader_prefers_retained_observation_over_later_commit_id_collision() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
     let source =
         RuntimeBridgeRelationalSource::for_shared_graph_role(Arc::clone(&runtime), "model")
@@ -44,11 +48,13 @@ fn runtime_bridge_snapshot_reader_prefers_retained_observation_over_later_commit
     replace_entity_after_snapshot(&mut runtime.lock().expect("test runtime lock"), &created);
 
     let reader = source
-        .open_snapshot(&active_snapshot_identity)
+        .open_snapshot(&active_snapshot_identity, execution)
         .expect("active snapshot should remain bridge-readable after later commit id collision");
     drop(basis);
     assert!(lease.release().released());
-    assert!(source.open_snapshot(&active_snapshot_identity).is_err());
+    assert!(source
+        .open_snapshot(&active_snapshot_identity, execution)
+        .is_err());
     // The already opened reader owns the selected root. This proves exact
     // reading after registration removal, not retention accounting or close.
     let packet = crate::facade::SnapshotReadPacket::new(vec![
@@ -74,6 +80,10 @@ fn runtime_bridge_snapshot_reader_prefers_retained_observation_over_later_commit
 
 #[test]
 fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "managed");
     let branch_id = created.snapshot.branch_id().clone();
@@ -98,9 +108,9 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
     let identity = lease.snapshot_identity().clone();
 
     let reader = source
-        .open_snapshot(&identity)
+        .open_snapshot(&identity, execution)
         .expect("retained observation should authorize Bridge snapshot access");
-    let second_reader = source.open_snapshot(&identity).unwrap();
+    let second_reader = source.open_snapshot(&identity, execution).unwrap();
     let opened = retention(&runtime, &branch_identity);
     assert_eq!(opened.observation_acquires, before.observation_acquires + 1);
     assert_eq!(
@@ -127,7 +137,7 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
     );
 
     assert!(lease.release().released());
-    assert!(source.open_snapshot(&identity).is_err());
+    assert!(source.open_snapshot(&identity, execution).is_err());
     let unregistered = retention(&runtime, &branch_identity);
     assert_eq!(
         unregistered.external_pin_releases,

@@ -10,6 +10,9 @@ use super::*;
 #[test]
 fn workflow_yield_retains_operation_and_stage_capacity_until_cleanup() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -46,8 +49,12 @@ fn workflow_yield_retains_operation_and_stage_capacity_until_cleanup() {
             &graph,
             WorthQueryOperationGraphAccess::Observe,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let logical_run_identity = running.logical_run_identity().to_owned();
         let attempt_identity = running.identity().to_owned();
         let active = running
@@ -124,6 +131,9 @@ fn workflow_yield_retains_operation_and_stage_capacity_until_cleanup() {
 #[test]
 fn workflow_suspension_failure_returns_terminalized_release_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -162,8 +172,12 @@ fn workflow_suspension_failure_returns_terminalized_release_authority() {
             &graph,
             WorthQueryOperationGraphAccess::Observe,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let active = running
             .begin_stage_graph_execution(
                 execution,

@@ -114,6 +114,10 @@ fn runtime_classifies_width_sensitive_backpressure_without_changing_window_truth
 
 #[test]
 fn runtime_stream_identities_are_invariant_across_diagnostics_tiers() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let standard = crate::stream::ChangeStreamDeclaration::new(
         crate::stream::StreamConsumerShape::RoutingConsumer,
@@ -179,10 +183,10 @@ fn runtime_stream_identities_are_invariant_across_diagnostics_tiers() {
         exhaustive_window.member_set_digest()
     );
     let standard_delivery = runtime
-        .deliver_change_stream_window(&standard_contract, &standard_window)
+        .deliver_change_stream_window(&standard_contract, &standard_window, execution)
         .expect("standard delivery should succeed");
     let exhaustive_delivery = runtime
-        .deliver_change_stream_window(&exhaustive_contract, &exhaustive_window)
+        .deliver_change_stream_window(&exhaustive_contract, &exhaustive_window, execution)
         .expect("exhaustive delivery should succeed");
 
     assert_eq!(

@@ -25,6 +25,7 @@ impl worth_runtime_bridge::facade::CommittedPatchSource for MaterializationSourc
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(BridgeCommittedPatchEnvelope::new(
             worth_runtime_bridge::facade::BridgeCommittedPatchEnvelopeIdentity::new(
@@ -56,6 +57,7 @@ impl SnapshotReadSource for MaterializationSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         Ok(Box::new(MaterializationSnapshotReader::new(
             identity.clone(),
@@ -67,6 +69,7 @@ impl TruthBranchHeadSource for MaterializationSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(BridgeCommittedPatchEnvelope::new(
             worth_runtime_bridge::facade::BridgeCommittedPatchEnvelopeIdentity::new(
@@ -178,6 +181,7 @@ impl BridgeSourceAdapter for MaterializationSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         Ok(Box::new(MaterializationSnapshotReader::new(
             identity.clone(),

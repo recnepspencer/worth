@@ -114,7 +114,11 @@ fn subscription_preview_basis_rejects_mismatched_execution_record() {
 
 #[test]
 fn preview_subscription_activation_binds_preview_basis_and_activation_ready_proof() {
-    let (runtime, ready) = activation_ready_detail_subscription();
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, ready) = activation_ready_detail_subscription(resource_request);
     let admitted_preview = runtime
         .admit_preview_session(
             crate::speculation::BridgePreviewSessionIdentity::admit_bridge_owned(

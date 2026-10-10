@@ -9,11 +9,16 @@ use super::support::*;
 
 #[test]
 fn denied_query_causal_artifact_carries_boundary_context_without_bridge_envelope() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-query-denied",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-query-denied"),
+            resource_request,
+        )
         .unwrap();
     let reference_set = changed_reference_set(routed.route_identity());
     let receipt = reference_set.anchor().observation_receipt();
@@ -66,11 +71,16 @@ fn denied_query_causal_artifact_carries_boundary_context_without_bridge_envelope
 
 #[test]
 fn denied_query_causal_artifact_carries_bridge_denial_posture_and_counters() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-query-bridge-denied",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-query-bridge-denied"),
+            resource_request,
+        )
         .unwrap();
     let reference_set = changed_reference_set(routed.route_identity());
     let receipt = reference_set.anchor().observation_receipt();

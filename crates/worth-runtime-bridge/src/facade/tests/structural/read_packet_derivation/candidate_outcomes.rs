@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn runtime_derives_structural_candidates_from_read_packets() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = registered_structural(
         "structural:analysis-snapshot",
@@ -36,6 +40,7 @@ fn runtime_derives_structural_candidates_from_read_packets() {
                     ),
                 ),
             ])],
+            execution,
         )
         .expect("structural candidates should derive from read packets");
     let reduced = runtime
@@ -54,6 +59,10 @@ fn runtime_derives_structural_candidates_from_read_packets() {
 }
 #[test]
 fn runtime_derives_identity_authority_conflict_from_same_snapshot_same_structure() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = registered_structural(
         "structural:analysis-snapshot",
@@ -88,6 +97,7 @@ fn runtime_derives_identity_authority_conflict_from_same_snapshot_same_structure
                     ),
                 ),
             ])],
+            execution,
         )
         .expect("structural candidates should derive from read packets");
     let reduced = runtime

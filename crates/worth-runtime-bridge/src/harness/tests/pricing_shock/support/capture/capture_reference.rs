@@ -3,11 +3,13 @@ use super::*;
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_reference_bundle(
     runtime: &RuntimeBridge,
     preview_session_identity: BridgePreviewSessionIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingReferenceBundle {
     let route = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-main",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
+            execution,
+        )
         .expect("pricing reference route should succeed");
     let route_record = runtime
         .diagnostics()
@@ -19,6 +21,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_reference_bundle
                 crate::truth_identity_fixtures::truth_branch_fixture("main"),
             )
             .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .expect("pricing main evaluation should succeed");
     let comparison = runtime
@@ -36,6 +39,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_reference_bundle
             comparison
                 .speculative_evaluation_request()
                 .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .expect("pricing speculative evaluation should succeed");
 
@@ -62,6 +66,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_reference_bundle
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_aspect_bundle(
     policy: BridgeRuntimePolicy,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingAspectBundle {
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(pricing_patch(
@@ -82,9 +87,10 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_aspect_bundle(
     let runtime =
         build_pricing_runtime_with_aspects(source, RecordingSignalBridgeSink::default(), policy);
     let route = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-aspect",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-aspect"),
+            execution,
+        )
         .expect("aspect-aware pricing route should succeed");
 
     let route_record = runtime
@@ -121,11 +127,13 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_aspect_bundle(
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_missing_snapshot_failure_bundle(
     runtime: &RuntimeBridge,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingFailureBundle {
     let error = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-missing-snapshot",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-missing-snapshot"),
+            execution,
+        )
         .expect_err("pricing route should fail when the source snapshot is absent");
     let error_kind = match error {
         BridgeStandardRouteError::Delivery(error) => error.kind(),
@@ -149,18 +157,20 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_missing_snapshot
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_replay_bundle(
     runtime: &RuntimeBridge,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingReplayBundle {
     runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-main",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main"),
+            execution,
+        )
         .expect("pricing replay control route should succeed");
     let canonical_record = runtime
         .diagnostics()
         .last_canonical_route_record()
         .expect("pricing route should retain a canonical replay record");
     let replay = runtime
-        .replay_canonical_record(&canonical_record)
+        .replay_canonical_record(&canonical_record, execution)
         .expect("pricing route replay should preserve canonical main-branch truth");
 
     PricingReplayBundle {
@@ -174,6 +184,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_replay_bundle(
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_certification_matrix(
     policy: BridgeRuntimePolicy,
     preview_session_identity: BridgePreviewSessionIdentity,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingCertificationMatrix {
     let runtime = build_pricing_runtime_with_policy(
         pricing_reference_source(),
@@ -182,7 +193,11 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_certification_ma
     );
 
     PricingCertificationMatrix {
-        reference: capture_pricing_reference_bundle(&runtime, preview_session_identity),
-        replay: capture_pricing_replay_bundle(&runtime),
+        reference: capture_pricing_reference_bundle(
+            &runtime,
+            preview_session_identity,
+            resource_request,
+        ),
+        replay: capture_pricing_replay_bundle(&runtime, resource_request),
     }
 }

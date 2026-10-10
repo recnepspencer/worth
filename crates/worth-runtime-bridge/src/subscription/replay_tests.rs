@@ -56,6 +56,7 @@ impl crate::adapter::CommittedPatchSource for StaticSource {
     fn load_committed_patch(
         &self,
         request: crate::adapter::RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, crate::adapter::RelationalBridgeSourceError> {
         BridgeCommittedPatchEnvelope::new(
             BridgeCommittedPatchEnvelopeIdentity::new(
@@ -74,6 +75,7 @@ impl crate::adapter::SnapshotReadSource for StaticSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, crate::adapter::RelationalBridgeSourceError> {
         if snapshot_matches_replay_fixture(identity) {
             Ok(Box::new(StaticSnapshotReader))
@@ -90,6 +92,7 @@ impl crate::adapter::TruthBranchHeadSource for StaticSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, crate::adapter::RelationalBridgeSourceError> {
         BridgeCommittedPatchEnvelope::new(
             BridgeCommittedPatchEnvelopeIdentity::new(
@@ -209,12 +212,17 @@ fn declare_collection(
 
 #[test]
 fn replay_rejects_lifecycle_admitted_mismatch() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let detail = declare_detail(&runtime);
     let detail_admitted = runtime
         .admit_subscription(
             &detail,
             BridgeSubscriptionBasisRequest::snapshot(REPLAY_SNAPSHOT()),
+            execution,
         )
         .expect("detail admission should succeed");
     let collection = declare_collection(&runtime);
@@ -222,6 +230,7 @@ fn replay_rejects_lifecycle_admitted_mismatch() {
         .admit_subscription(
             &collection,
             BridgeSubscriptionBasisRequest::branch_head(REPLAY_BRANCH()),
+            execution,
         )
         .expect("collection admission should succeed");
 

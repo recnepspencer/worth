@@ -9,10 +9,11 @@ impl RuntimeBridge {
     pub fn replay_canonical_historical_evaluation_record(
         &self,
         record: &BridgeCanonicalHistoricalEvaluationRecord,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalEvaluationReplaySummary, BridgeReplayError> {
         let record = record.decode()?;
         let planned = self
-            .plan_truth_view_packet(record.declaration().clone(), record.read_packet().clone())
+            .plan_truth_view_packet(record.declaration().clone(), record.read_packet().clone(), execution)
             .map_err(|error| {
                 let replay_error = BridgeReplayError::new(
                     BridgeReplayErrorKind::HistoricalEvaluationDeclarationMismatch,
@@ -81,7 +82,7 @@ impl RuntimeBridge {
         }
 
         let observation = self
-            .materialize_truth_view_observation(planned)
+            .materialize_truth_view_observation(planned, execution)
             .map_err(|error| {
                 let replay_error = BridgeReplayError::new(
                     BridgeReplayErrorKind::HistoricalEvaluationAuthorityMismatch,

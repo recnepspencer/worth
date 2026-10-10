@@ -22,6 +22,10 @@ use super::{PublicationBridgeCatalog, PublicationBridgeSnapshot};
 
 #[test]
 fn publication_bridge_catalog_exposes_committed_patch_and_snapshot() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let catalog = PublicationBridgeCatalog::default();
     catalog
         .register_patch(
@@ -80,12 +84,13 @@ fn publication_bridge_catalog_exposes_committed_patch_and_snapshot() {
     ));
 
     let envelope = catalog
-        .load_committed_patch(RelationalCommittedPatchRequest::new(
-            TruthCommitIdentity::from_relational_commit_id(7),
-        ))
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::new(TruthCommitIdentity::from_relational_commit_id(7)),
+            execution,
+        )
         .expect("registered publication patch");
     let reader = catalog
-        .open_snapshot(&snapshot_identity)
+        .open_snapshot(&snapshot_identity, execution)
         .expect("registered publication snapshot");
 
     assert_eq!(

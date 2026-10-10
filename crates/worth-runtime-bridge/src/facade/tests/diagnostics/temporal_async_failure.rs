@@ -91,8 +91,12 @@ fn equivalent_stale_completion_localizations_seal_equal_offline_bundles() {
 
 #[test]
 fn preview_discard_and_promotion_mismatch_localize_to_distinct_subcodes() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (discard_runtime, discard_preview_active) =
-        preview_active_detail_subscription("phase15-preview-discard");
+        preview_active_detail_subscription("phase15-preview-discard", resource_request);
     let discard_work_trace = preview_work_trace(
         &discard_runtime,
         &discard_preview_active,
@@ -119,7 +123,7 @@ fn preview_discard_and_promotion_mismatch_localize_to_distinct_subcodes() {
         .expect("discard failure should localize");
 
     let (promotion_runtime, promotion_preview_active, promotion_record, _ready) =
-        preview_promotion_detail_subscription("phase15-preview-promotion");
+        preview_promotion_detail_subscription("phase15-preview-promotion", resource_request);
     let promotion_work_trace = preview_work_trace(
         &promotion_runtime,
         &promotion_preview_active,
@@ -178,8 +182,14 @@ fn preview_discard_and_promotion_mismatch_localize_to_distinct_subcodes() {
 
 #[test]
 fn resume_basis_rejection_localizes_without_live_diagnostics_handle() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let checkpoint = checkpoint_from_sealed(
         &runtime,
         &active,

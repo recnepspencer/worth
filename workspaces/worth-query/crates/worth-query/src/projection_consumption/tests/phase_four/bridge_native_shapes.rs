@@ -25,14 +25,19 @@ use super::support::{admitted, binding};
 
 #[test]
 fn bridge_row_set_preserves_complete_struct_values_through_consumption() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let contract = runtime
         .admit_source(source_declaration())
         .expect("registered struct source should admit");
     let observation = runtime
-        .materialize_source_packet(&contract, read_packet())
+        .materialize_source_packet(&contract, read_packet(), resource_request)
         .expect("struct source packet should materialize");
-    let row_set = materialize_bridge_row_set(&observation).expect("bridge row set should build");
+    let row_set = materialize_bridge_row_set(&observation, resource_request)
+        .expect("bridge row set should build");
     let consumption = admitted(
         ProjectionConsumptionSource::from_bridge_truth_view_row_set(&row_set),
         binding(&["profile"]),
@@ -138,6 +143,7 @@ impl CommittedPatchSource for StructSource {
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(patch_envelope(
             request.commit_identity().clone(),
@@ -151,6 +157,7 @@ impl SnapshotReadSource for StructSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         if identity == &snapshot_identity() {
             Ok(Box::new(StructSnapshotReader))
@@ -164,6 +171,7 @@ impl TruthBranchHeadSource for StructSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(patch_envelope(
             TruthCommitIdentity::from_relational_commit_id(42),
@@ -184,8 +192,9 @@ impl BridgeSourceAdapter for StructSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        SnapshotReadSource::open_snapshot(self, identity)
+        SnapshotReadSource::open_snapshot(self, identity, _execution)
     }
 }
 

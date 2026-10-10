@@ -132,30 +132,38 @@ impl GroupedProjectionSource for TestProjection {
     }
 }
 
-pub(super) fn row_set() -> crate::source::BridgeMaterializedRowSetArtifact {
+pub(super) fn row_set(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::source::BridgeMaterializedRowSetArtifact {
     row_set_with_binding_shapes(
         FixtureBindingValueShape::Scalar,
         FixtureBindingValueShape::Scalar,
+        resource_request,
     )
 }
 
 pub(super) fn row_set_with_struct_identity_binding(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::source::BridgeMaterializedRowSetArtifact {
     row_set_with_binding_shapes(
         FixtureBindingValueShape::Struct,
         FixtureBindingValueShape::Scalar,
+        resource_request,
     )
 }
 
 pub(super) fn row_set_with_struct_grouping_binding(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::source::BridgeMaterializedRowSetArtifact {
     row_set_with_binding_shapes(
         FixtureBindingValueShape::Scalar,
         FixtureBindingValueShape::Struct,
+        resource_request,
     )
 }
 
 pub(super) fn row_set_with_ambiguous_grouping_binding(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::source::BridgeMaterializedRowSetArtifact {
     row_set_from_packet(
         SnapshotReadPacket::new(vec![
@@ -167,12 +175,14 @@ pub(super) fn row_set_with_ambiguous_grouping_binding(
         ]),
         FixtureBindingValueShape::Scalar,
         FixtureBindingValueShape::Scalar,
+        resource_request,
     )
 }
 
 fn row_set_with_binding_shapes(
     identity_binding_shape: FixtureBindingValueShape,
     grouping_binding_shape: FixtureBindingValueShape,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::source::BridgeMaterializedRowSetArtifact {
     row_set_from_packet(
         SnapshotReadPacket::new(vec![
@@ -183,6 +193,7 @@ fn row_set_with_binding_shapes(
         ]),
         identity_binding_shape,
         grouping_binding_shape,
+        resource_request,
     )
 }
 
@@ -190,6 +201,7 @@ fn row_set_from_packet(
     read_packet: SnapshotReadPacket,
     identity_binding_shape: FixtureBindingValueShape,
     grouping_binding_shape: FixtureBindingValueShape,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::source::BridgeMaterializedRowSetArtifact {
     let declaration = HistoricalEvaluationDeclaration::new(
         BridgeTruthViewSelector::historical_commit(
@@ -232,9 +244,8 @@ fn row_set_from_packet(
         ),
         BridgeHistoricalMaterializationPath::CommitEnvelopeSnapshot,
         admitted,
-        crate::policy::BridgeExecutionPolicyBaseline::development(),
     );
-    materialize_bridge_row_set(&observation).expect("row set")
+    materialize_bridge_row_set(&observation, execution).expect("row set")
 }
 
 pub(super) fn projection(

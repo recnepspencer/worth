@@ -14,6 +14,10 @@ use super::support::{linear_ancestry_work, runtime_with_test_schema};
 
 #[test]
 fn exact_selection_is_constant_and_historical_selection_uses_exact_ancestry() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
     let ancestor = create_entity_outcome(&runtime.lock().unwrap(), "deep-head-ancestor");
     let ancestor_commit_id = ancestor.commit.commit_id;
@@ -38,15 +42,18 @@ fn exact_selection_is_constant_and_historical_selection_uses_exact_ancestry() {
     let branch = TruthBranchIdentity::from_relational_branch_id("main");
 
     source
-        .load_branch_head_patch(&branch)
+        .load_branch_head_patch(&branch, execution)
         .expect("exact branch head publication");
     assert_eq!(source.selection_work_totals(), (1, 0));
 
     source
-        .load_committed_patch(RelationalCommittedPatchRequest::on_branch(
-            TruthCommitIdentity::from_relational_commit_id(ancestor_commit_id.0),
-            branch.clone(),
-        ))
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::on_branch(
+                TruthCommitIdentity::from_relational_commit_id(ancestor_commit_id.0),
+                branch.clone(),
+            ),
+            execution,
+        )
         .expect("visible historical ancestor");
     assert_eq!(source.selection_work_totals(), (2, ancestry_work));
 
@@ -54,10 +61,13 @@ fn exact_selection_is_constant_and_historical_selection_uses_exact_ancestry() {
     let future_commit_id = future.commit.commit_id;
     release_test_commit_snapshot(&runtime.lock().unwrap(), &future);
     let denial = source
-        .load_committed_patch(RelationalCommittedPatchRequest::on_branch(
-            TruthCommitIdentity::from_relational_commit_id(future_commit_id.0),
-            branch,
-        ))
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::on_branch(
+                TruthCommitIdentity::from_relational_commit_id(future_commit_id.0),
+                branch,
+            ),
+            execution,
+        )
         .expect_err("a commit beyond the bound head is unreachable");
     assert!(denial.to_string().contains("cannot see requested commit"));
     assert!(head_commit < future_commit_id);

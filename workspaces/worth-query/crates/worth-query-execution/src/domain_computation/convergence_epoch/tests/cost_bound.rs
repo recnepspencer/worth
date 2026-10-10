@@ -9,10 +9,13 @@ use worth_runtime_bridge::facade::BridgeManagedExecutionCancellationReason;
 #[test]
 fn epoch_counters_are_exact_and_isolated_from_unrelated_epochs() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let terminal = converged_terminal(execution);
+        let terminal = converged_terminal(execution, resource_request);
         let counters = terminal.counters();
         assert_eq!(counters.operation_authority_check_count(), 1);
         assert_eq!(counters.contract_authority_check_count(), 1);
@@ -37,7 +40,7 @@ fn epoch_counters_are_exact_and_isolated_from_unrelated_epochs() {
         assert_eq!(domain_work.progress_check_count(), 1);
         assert_eq!(domain_work.repeated_state_probe_count(), 1);
 
-        let unrelated = stable_without_proof_terminal(execution);
+        let unrelated = stable_without_proof_terminal(execution, resource_request);
         assert_eq!(terminal.counters(), counters);
         assert_eq!(unrelated.counters().iteration_count(), 1);
 
@@ -56,10 +59,13 @@ fn epoch_counters_are_exact_and_isolated_from_unrelated_epochs() {
 #[test]
 fn late_terminal_reconciles_cumulative_convergence_work_without_double_counting() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let epoch = direct_epoch_fixture(FixtureDisposition::Continue);
+        let epoch = direct_epoch_fixture(FixtureDisposition::Continue, resource_request);
         let started = match epoch.begin_iteration(execution, call("completed-before-cancellation"))
         {
             Ok(started) => started,

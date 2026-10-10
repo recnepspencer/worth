@@ -12,10 +12,13 @@ use crate::domain_computation::{
 #[test]
 fn foreign_runtime_cannot_admit_an_exact_operation_contract_and_run() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let fixture = direct_admission_fixture(FixtureDisposition::Converged);
+        let fixture = direct_admission_fixture(FixtureDisposition::Converged, resource_request);
         let foreign = WorthQueryExecutionRuntimeInstaller::new()
             .install(
                 worth_query_installation::facade::WorthQueryInstallationGeneration::initial(),
@@ -50,11 +53,14 @@ fn foreign_runtime_cannot_admit_an_exact_operation_contract_and_run() {
 #[test]
 fn copied_contract_meaning_cannot_substitute_for_installed_contract_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let first = direct_admission_fixture(FixtureDisposition::Converged);
-        let second = direct_admission_fixture(FixtureDisposition::Converged);
+        let first = direct_admission_fixture(FixtureDisposition::Converged, resource_request);
+        let second = direct_admission_fixture(FixtureDisposition::Converged, resource_request);
         let DirectAdmissionFixture {
             runtime: first_runtime,
             operation: first_operation,
@@ -109,11 +115,14 @@ fn copied_contract_meaning_cannot_substitute_for_installed_contract_authority() 
 #[test]
 fn managed_run_and_graph_authorities_cannot_cross_installed_worlds() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let first = direct_admission_fixture(FixtureDisposition::Converged);
-        let second = direct_admission_fixture(FixtureDisposition::Converged);
+        let first = direct_admission_fixture(FixtureDisposition::Converged, resource_request);
+        let second = direct_admission_fixture(FixtureDisposition::Converged, resource_request);
         let DirectAdmissionFixture {
             runtime: first_runtime,
             operation: first_operation,
@@ -182,6 +191,9 @@ fn managed_run_and_graph_authorities_cannot_cross_installed_worlds() {
 #[test]
 fn same_installed_operation_cannot_substitute_a_different_semantic_basis() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -193,7 +205,7 @@ fn same_installed_operation_cannot_substitute_a_different_semantic_basis() {
             managed,
             graph,
             bridge: _,
-        } = direct_admission_fixture(FixtureDisposition::Converged);
+        } = direct_admission_fixture(FixtureDisposition::Converged, resource_request);
         assert_ne!(
             operation.binding_identity(),
             alternate_basis_operation.binding_identity()
@@ -230,6 +242,10 @@ fn same_installed_operation_cannot_substitute_a_different_semantic_basis() {
 
 #[test]
 fn stale_operation_generation_denies_before_graph_or_provider_work() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let DirectAdmissionFixture {
         mut runtime,
         operation,
@@ -238,7 +254,7 @@ fn stale_operation_generation_denies_before_graph_or_provider_work() {
         managed,
         graph,
         bridge: _,
-    } = direct_admission_fixture(FixtureDisposition::Converged);
+    } = direct_admission_fixture(FixtureDisposition::Converged, resource_request);
     let successor = Arc::new(runtime.installed_packages().successor_generation());
     runtime
         .commit_successor_installation(successor)
@@ -263,6 +279,10 @@ fn stale_operation_generation_denies_before_graph_or_provider_work() {
 
 #[test]
 fn every_installed_provider_family_mismatch_denies_before_epoch_construction() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     for mismatch in [
         FixtureFamilyMismatch::Universe,
         FixtureFamilyMismatch::Termination,
@@ -281,7 +301,10 @@ fn every_installed_provider_family_mismatch_denies_before_epoch_construction() {
             managed,
             graph,
             bridge: _,
-        } = direct_admission_fixture(FixtureDisposition::FamilyMismatch(mismatch));
+        } = direct_admission_fixture(
+            FixtureDisposition::FamilyMismatch(mismatch),
+            resource_request,
+        );
 
         let rejection =
             match runtime.admit_direct_convergence_epoch(&operation, contract, managed, graph) {

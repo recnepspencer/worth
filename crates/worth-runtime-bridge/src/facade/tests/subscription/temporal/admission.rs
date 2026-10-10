@@ -2,8 +2,12 @@ use super::super::support::*;
 
 #[test]
 fn runtime_admits_wake_driven_temporal_subscription_for_current_snapshot_basis() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::authoritative(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -48,8 +52,12 @@ fn runtime_admits_wake_driven_temporal_subscription_for_current_snapshot_basis()
 
 #[test]
 fn runtime_admits_historical_temporal_subscription_against_snapshot_bound_basis() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::historical(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-historical"),
@@ -76,8 +84,12 @@ fn runtime_admits_historical_temporal_subscription_against_snapshot_bound_basis(
 
 #[test]
 fn runtime_rejects_temporal_subscription_when_family_does_not_support_basis_kind() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::historical(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-historical"),
@@ -104,8 +116,12 @@ fn runtime_rejects_temporal_subscription_when_family_does_not_support_basis_kind
 
 #[test]
 fn runtime_rejects_temporal_subscription_when_branch_head_basis_drifts_by_branch() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = branch_head_detail_subscription_in_runtime(&runtime);
+    let admitted = branch_head_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::branch_head(
         crate::truth_identity_fixtures::truth_branch_fixture("wrong-branch"),
         crate::truth_identity_fixtures::truth_commit_fixture("head-wrong"),
@@ -128,8 +144,12 @@ fn runtime_rejects_temporal_subscription_when_branch_head_basis_drifts_by_branch
 
 #[test]
 fn runtime_rejects_temporal_subscription_when_snapshot_identity_drifts() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::authoritative(
         crate::truth_identity_fixtures::truth_branch_fixture("analysis"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),

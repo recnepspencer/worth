@@ -2,8 +2,14 @@ use super::super::support::*;
 
 #[test]
 fn fanout_width_over_cost_profile_rejects_before_layout() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let additional = canonical_consumer_contract(&runtime);
 
     let rejection = runtime
@@ -18,9 +24,14 @@ fn fanout_width_over_cost_profile_rejects_before_layout() {
 
 #[test]
 fn fanout_layout_binds_ordered_consumer_slots_deterministically() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         3,
+        resource_request,
     );
     let second = canonical_consumer_contract(&runtime);
     let third = canonical_consumer_contract(&runtime);
@@ -62,9 +73,14 @@ fn fanout_layout_binds_ordered_consumer_slots_deterministically() {
 
 #[test]
 fn delivery_projection_preserves_canonical_truth_without_rich_materialization() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let plan = runtime
         .plan_shared_subscription_fanout(&active, vec![canonical_consumer_contract(&runtime)])
@@ -121,9 +137,14 @@ fn delivery_projection_preserves_canonical_truth_without_rich_materialization() 
 
 #[test]
 fn fanout_counters_prove_zero_hot_path_scans() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let plan = runtime
         .plan_shared_subscription_fanout(&active, vec![canonical_consumer_contract(&runtime)])
@@ -153,9 +174,14 @@ fn fanout_counters_prove_zero_hot_path_scans() {
 
 #[test]
 fn fanout_projection_rejects_delivery_family_drift() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::BoundedCoalescedWindow,
         2,
+        resource_request,
     );
     let plan = runtime
         .plan_shared_subscription_fanout(&active, vec![canonical_consumer_contract(&runtime)])

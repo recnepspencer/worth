@@ -115,6 +115,9 @@ impl WorthQueryProviderSessionLifecycle for TokenSubstitutionProvider {
 #[test]
 fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -126,7 +129,12 @@ fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
             &world.graph,
             WorthQueryOperationGraphAccess::Observe,
         );
-        let mut first = start_run(&world.runtime, &first_operation, first_plan);
+        let mut first = start_run(
+            &world.runtime,
+            &first_operation,
+            first_plan,
+            resource_request,
+        );
         let first_identity = first.identity().to_owned();
         let first_failure = first
             .admit_provider_execution_plan(&world.graph)
@@ -146,7 +154,12 @@ fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
             &world.graph,
             WorthQueryOperationGraphAccess::Observe,
         );
-        let mut second = start_run(&world.runtime, &second_operation, second_plan);
+        let mut second = start_run(
+            &world.runtime,
+            &second_operation,
+            second_plan,
+            resource_request,
+        );
         assert_ne!(second.identity(), first_identity);
         let substitution = second
             .admit_provider_execution_plan(&world.graph)
@@ -218,6 +231,7 @@ fn start_run(
     runtime: &WorthQueryExecutionRuntime,
     operation: &crate::domain_computation::WorthQueryExecutionBoundOperationAuthority,
     plan: worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryRunningDirectRun {
     let attempt = runtime
         .start_direct_resource_attempt(operation, plan)
@@ -225,7 +239,7 @@ fn start_run(
     let lower = causal_fixture::managed_admission_context();
     runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(operation, attempt, lower.read_request())
+        .admit_direct(operation, attempt, lower.read_request(), resource_request)
         .expect("substitution run should admit")
         .start()
 }

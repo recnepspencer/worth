@@ -23,8 +23,16 @@ pub(crate) fn admit_managed_execution_basis(
     step_contract: BridgeManagedExecutionStepContract,
     truth_basis: BridgeAsyncRequestTruthViewBasis,
     planned: PlannedTruthViewPacket,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeBoundExecutionBasis, BridgeExecutionBasisDenial> {
-    admit_execution_basis(runtime, intent, Some(step_contract), truth_basis, planned)
+    admit_execution_basis(
+        runtime,
+        intent,
+        Some(step_contract),
+        truth_basis,
+        planned,
+        execution,
+    )
 }
 
 pub(crate) fn admit_atomic_execution_basis(
@@ -32,8 +40,9 @@ pub(crate) fn admit_atomic_execution_basis(
     intent: BridgeManagedExecutionIntent,
     truth_basis: BridgeAsyncRequestTruthViewBasis,
     planned: PlannedTruthViewPacket,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeBoundExecutionBasis, BridgeExecutionBasisDenial> {
-    admit_execution_basis(runtime, intent, None, truth_basis, planned)
+    admit_execution_basis(runtime, intent, None, truth_basis, planned, execution)
 }
 
 fn admit_execution_basis(
@@ -42,6 +51,7 @@ fn admit_execution_basis(
     step_contract: Option<BridgeManagedExecutionStepContract>,
     truth_basis: BridgeAsyncRequestTruthViewBasis,
     planned: PlannedTruthViewPacket,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeBoundExecutionBasis, BridgeExecutionBasisDenial> {
     let mut counters = BridgeExecutionBasisCounters::default();
     counters.checked_managed_intent();
@@ -53,7 +63,7 @@ fn admit_execution_basis(
     let reservation = reserve_intent(runtime, &intent, &counters)?;
     counters.materialized_truth();
     let observation = runtime
-        .materialize_truth_view_observation(planned)
+        .materialize_truth_view_observation(planned, execution)
         .map_err(|error| {
             denial(
                 BridgeExecutionBasisDenialKind::TruthMaterializationFailed,

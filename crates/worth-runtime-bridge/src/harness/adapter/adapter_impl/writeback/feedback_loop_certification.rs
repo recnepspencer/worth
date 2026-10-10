@@ -12,13 +12,15 @@ pub(super) fn execute_feedback_loop_certification(
     runtime: &crate::harness::adapter::BridgeHarnessSession,
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WritebackHarnessExecution, BridgeHarnessError> {
-    let origin = establish_feedback_origin_proof(runtime_bridge, fixture)?;
+    let origin = establish_feedback_origin_proof(runtime_bridge, fixture, resource_request)?;
     let publication = publish_interleaved_feedback_proof(
         runtime,
         runtime_bridge,
         &origin.original_commit,
         &origin.feedback_context,
+        resource_request,
     )?;
     let replay_context = verify_replayed_feedback_context(
         runtime_bridge,

@@ -12,6 +12,7 @@ fn install_temporal_async_and_mixed_residue(
     temporal_view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
     async_view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
     mixed_view: &WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
     runtime
         .emit_time_only_delivery(
@@ -39,7 +40,8 @@ fn install_temporal_async_and_mixed_residue(
 
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
-    let truth_plus_time = authoritative_truth_plus_time_cause(&bridge, &truth_patch);
+    let truth_plus_time =
+        authoritative_truth_plus_time_cause(&bridge, &truth_patch, resource_request);
     let async_completion = admitted_async_completion(
         &bridge,
         worth_signal::facade::NodeId::new(310, 0),
@@ -71,6 +73,10 @@ fn install_temporal_async_and_mixed_residue(
 
 #[test]
 fn preview_discard_closeout_tracks_temporal_async_and_mixed_residue_parity() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = stateful_bridge_task_runtime();
     let temporal_view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view("tasks.preview-temporal", task_live_request(), task_schema())
@@ -86,6 +92,7 @@ fn preview_discard_closeout_tracks_temporal_async_and_mixed_residue_parity() {
         &temporal_view,
         &async_view,
         &mixed_view,
+        resource_request,
     );
 
     let outcome = {
@@ -127,6 +134,10 @@ fn preview_discard_closeout_tracks_temporal_async_and_mixed_residue_parity() {
 
 #[test]
 fn preview_promotion_closeout_records_rebinding_for_temporal_async_and_mixed_handles() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = stateful_bridge_task_runtime();
     let temporal_view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view("tasks.promote-temporal", task_live_request(), task_schema())
@@ -149,6 +160,7 @@ fn preview_promotion_closeout_records_rebinding_for_temporal_async_and_mixed_han
         &temporal_view,
         &async_view,
         &mixed_view,
+        resource_request,
     );
 
     let outcome = {
@@ -216,6 +228,10 @@ fn preview_promotion_closeout_records_rebinding_for_temporal_async_and_mixed_han
 
 #[test]
 fn preview_discard_retains_crossed_preview_completion_residue_typed() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = stateful_bridge_task_runtime();
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
@@ -226,7 +242,8 @@ fn preview_discard_retains_crossed_preview_completion_residue_typed() {
         .expect("live view should declare");
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
-    let preview_cause = preview_time_only_cause(&bridge, "preview-crossed-completion");
+    let preview_cause =
+        preview_time_only_cause(&bridge, "preview-crossed-completion", resource_request);
     let ordering = bridge.order_mixed_causes(&BridgeMixedCauseOrderingRequest::new(
         BridgeMixedCauseOrderingLaneKind::Authoritative,
         vec![

@@ -10,6 +10,9 @@ use crate::domain_computation::{
 #[test]
 fn provider_overlay_must_match_every_and_only_lowered_staged_change() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -19,7 +22,7 @@ fn provider_overlay_must_match_every_and_only_lowered_staged_change() {
         ] {
             let state = state();
             state.lock().unwrap().provisional_stage_outcome = outcome;
-            let (mut running, graph) = provisional_run(Arc::clone(&state));
+            let (mut running, graph) = provisional_run(Arc::clone(&state), resource_request);
             let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
             let program = final_program(&staged, &fresh);
             let failure = staged
@@ -47,6 +50,9 @@ fn provider_overlay_must_match_every_and_only_lowered_staged_change() {
 #[test]
 fn duplicate_proposed_fact_identities_deny_before_provider_staging() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -69,7 +75,7 @@ fn duplicate_proposed_fact_identities_deny_before_provider_staging() {
             ],
         ] {
             let state = state();
-            let (mut running, graph) = provisional_run(Arc::clone(&state));
+            let (mut running, graph) = provisional_run(Arc::clone(&state), resource_request);
             let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
             let failure = staged
                 .effect_authority()
@@ -90,12 +96,15 @@ fn duplicate_proposed_fact_identities_deny_before_provider_staging() {
 #[test]
 fn provider_staging_panic_is_typed_and_aborts_the_live_session() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let state = state();
         state.lock().unwrap().provisional_stage_outcome = ProvisionalStageFixtureOutcome::Panic;
-        let (mut running, graph) = provisional_run(Arc::clone(&state));
+        let (mut running, graph) = provisional_run(Arc::clone(&state), resource_request);
         let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
         let program = final_program(&staged, &fresh);
         let failure = staged
@@ -118,12 +127,15 @@ fn provider_staging_panic_is_typed_and_aborts_the_live_session() {
 #[test]
 fn provider_discard_panic_is_typed_and_the_guard_retries_cleanup() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let state = state();
         state.lock().unwrap().discard_panics_remaining = 1;
-        let (mut running, graph) = provisional_run(Arc::clone(&state));
+        let (mut running, graph) = provisional_run(Arc::clone(&state), resource_request);
         let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
         let program = final_program(&staged, &fresh);
         let outcome = staged
@@ -150,6 +162,9 @@ fn provider_discard_panic_is_typed_and_the_guard_retries_cleanup() {
 #[test]
 fn rejected_overlay_discard_panic_is_typed_and_retried_by_the_guard() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -159,7 +174,7 @@ fn rejected_overlay_discard_panic_is_typed_and_retried_by_the_guard() {
             state_guard.provisional_stage_outcome = ProvisionalStageFixtureOutcome::OmitStagedFact;
             state_guard.discard_panics_remaining = 1;
         }
-        let (mut running, graph) = provisional_run(Arc::clone(&state));
+        let (mut running, graph) = provisional_run(Arc::clone(&state), resource_request);
         let (staged, fresh) = staged_with_fresh_read_set(execution, &mut running, &graph);
         let program = final_program(&staged, &fresh);
         let failure = staged

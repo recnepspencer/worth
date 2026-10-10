@@ -4,6 +4,7 @@ use crate::harness::fixtures::BridgeHarnessFixture;
 pub(super) fn execute_discard_certification(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<SpeculationHarnessExecution, BridgeHarnessError> {
     let admitted = runtime_bridge
         .admit_preview_session(
@@ -40,7 +41,8 @@ pub(super) fn execute_discard_certification(
             ],
         )
         .map_err(|error| BridgeHarnessError::new(format!("speculation discard failed: {error}")))?;
-    let routing_digest = shared::first_commit_routing_digest(runtime_bridge, fixture)?;
+    let routing_digest =
+        shared::first_commit_routing_digest(runtime_bridge, fixture, resource_request)?;
 
     Ok(SpeculationHarnessExecution::Discard {
         execution_record,

@@ -69,12 +69,17 @@ fn capture_pricing_bundle_with_harness_profile(
     preview_session_identity: BridgePreviewSessionIdentity,
     profile: ExecutionProfile,
     request_name: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     PricingWorkloadCertificationBundle,
     PricingSourceProbeEvidence,
 ) {
     (
-        capture_pricing_workload_certification_bundle(policy, preview_session_identity),
+        capture_pricing_workload_certification_bundle(
+            policy,
+            preview_session_identity,
+            resource_request,
+        ),
         execute_pricing_harness_source_probe(policy, profile, request_name),
     )
 }
@@ -82,11 +87,16 @@ fn capture_pricing_bundle_with_harness_profile(
 #[test]
 fn pricing_shock_suite_25_through_27_parity_holds_across_direct_and_wrapped_source_adapter_shapes()
 {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (direct_bundle, direct_probe) = capture_pricing_bundle_with_harness_profile(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:adapter-direct"),
         ExecutionProfile::development("pricing-direct"),
         "pricing-source-direct",
+        resource_request,
     );
     let (wrapped_bundle, wrapped_probe) = capture_pricing_bundle_with_harness_profile(
         BridgeRuntimePolicy::development(),
@@ -94,6 +104,7 @@ fn pricing_shock_suite_25_through_27_parity_holds_across_direct_and_wrapped_sour
         ExecutionProfile::development("pricing-wrapped")
             .with_metadata("source_adapter_shape", "wrapped"),
         "pricing-source-wrapped",
+        resource_request,
     );
 
     assert_eq!(
@@ -131,12 +142,17 @@ fn pricing_shock_suite_25_through_27_parity_holds_across_direct_and_wrapped_sour
 
 #[test]
 fn pricing_shock_suite_25_through_27_parity_holds_across_source_and_policy_builder_load_orders() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let baseline_profile = ExecutionProfile::development("pricing-load-order-baseline");
     let (baseline_bundle, baseline_probe) = capture_pricing_bundle_with_harness_profile(
         BridgeRuntimePolicy::development(),
         BridgePreviewSessionIdentity::admit_bridge_owned("pricing:load-order"),
         baseline_profile,
         "pricing-load-order-baseline",
+        resource_request,
     );
 
     let variant_profiles = [
@@ -157,6 +173,7 @@ fn pricing_shock_suite_25_through_27_parity_holds_across_source_and_policy_build
             BridgePreviewSessionIdentity::admit_bridge_owned("pricing:load-order"),
             profile,
             &format!("pricing-load-order-{index}"),
+            resource_request,
         );
 
         assert_eq!(

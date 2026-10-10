@@ -120,11 +120,14 @@ struct YieldCostEvidence {
 #[test]
 fn yield_transition_work_is_invariant_to_unrelated_live_authority_width() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let baseline = execute_target(execution, 0);
-        let wide = execute_target(execution, UNRELATED_WIDTH);
+        let baseline = execute_target(execution, 0, resource_request);
+        let wide = execute_target(execution, UNRELATED_WIDTH, resource_request);
         assert_eq!(baseline, wide);
         assert_eq!(
             baseline,
@@ -189,9 +192,10 @@ fn workflow_yield_transition_allocation_is_unrelated_authority_invariant() {
 fn execute_target(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     unrelated_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> YieldCostEvidence {
     let (paused, unrelated, suspension_count, retained_probe_count) =
-        prepared_target(execution, unrelated_width);
+        prepared_target(execution, unrelated_width, resource_request);
     let yielded = yield_target(paused);
     let work = yielded.inspection().provider_work();
     let evidence = YieldCostEvidence {
@@ -218,6 +222,7 @@ fn prepared_target(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 
     unrelated_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryPausedDirectGraphExecution,
     Vec<(
@@ -229,7 +234,13 @@ fn prepared_target(
 ) {
     let disposed = Arc::new(AtomicUsize::new(0));
     let unrelated = (0..unrelated_width)
-        .map(|index| super::cost_bound::unrelated_artifact_run(index, Arc::clone(&disposed)))
+        .map(|index| {
+            super::cost_bound::unrelated_artifact_run(
+                index,
+                Arc::clone(&disposed),
+                resource_request,
+            )
+        })
         .collect();
     let suspension_count = Arc::new(AtomicUsize::new(0));
     let retained_probe_count = Arc::new(AtomicUsize::new(0));
@@ -239,6 +250,7 @@ fn prepared_target(
             suspension_count: Arc::clone(&suspension_count),
             retained_probe_count: Arc::clone(&retained_probe_count),
         },
+        resource_request,
     );
     let active = running
         .begin_graph_execution(

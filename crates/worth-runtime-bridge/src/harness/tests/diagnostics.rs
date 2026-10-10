@@ -15,6 +15,10 @@ use crate::truth_identity_fixtures::{
 
 #[test]
 fn bridge_diagnostics_respect_route_record_retention_budget() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         truth_commit_fixture("commit-a"),
@@ -54,10 +58,13 @@ fn bridge_diagnostics_respect_route_record_retention_budget() {
 
     for commit in ["commit-a", "commit-b", "commit-c"] {
         let route = runtime
-            .plan_committed_patch(BridgeRouteRequest::for_commit(truth_commit_fixture(commit)))
+            .plan_committed_patch(
+                BridgeRouteRequest::for_commit(truth_commit_fixture(commit)),
+                execution,
+            )
             .expect("bridge should plan route for retention test");
         runtime
-            .deliver_invalidation(route)
+            .deliver_invalidation(route, execution)
             .expect("bridge should deliver route for retention test");
     }
 
@@ -79,6 +86,10 @@ fn bridge_diagnostics_respect_route_record_retention_budget() {
 }
 #[test]
 fn bridge_diagnostics_respect_failure_record_retention_budget() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         truth_commit_fixture("commit-a"),
@@ -115,10 +126,13 @@ fn bridge_diagnostics_respect_failure_record_retention_budget() {
 
     for commit in ["commit-a", "commit-b", "commit-c"] {
         let route = runtime
-            .plan_committed_patch(BridgeRouteRequest::for_commit(truth_commit_fixture(commit)))
+            .plan_committed_patch(
+                BridgeRouteRequest::for_commit(truth_commit_fixture(commit)),
+                execution,
+            )
             .expect("bridge should plan route for failure retention test");
         let error = runtime
-            .deliver_invalidation(route)
+            .deliver_invalidation(route, execution)
             .expect_err("bridge should fail delivery when the planned snapshot is absent");
         assert_eq!(
             error.kind(),
@@ -144,6 +158,10 @@ fn bridge_diagnostics_respect_failure_record_retention_budget() {
 }
 #[test]
 fn bridge_route_record_captures_slice_counters_and_slice_entries() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         truth_commit_fixture("commit-a"),
@@ -164,12 +182,13 @@ fn bridge_route_record_captures_slice_counters_and_slice_entries() {
     );
 
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(truth_commit_fixture(
-            "commit-a",
-        )))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(truth_commit_fixture("commit-a")),
+            execution,
+        )
         .expect("bridge should plan route with fine-grained aspect registration");
     runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("bridge should deliver route before diagnostics capture");
 
     let record = runtime
@@ -184,6 +203,10 @@ fn bridge_route_record_captures_slice_counters_and_slice_entries() {
 }
 #[test]
 fn bridge_diagnostics_retain_canonical_continuity_records() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         truth_commit_fixture("commit-a"),
@@ -221,10 +244,11 @@ fn bridge_diagnostics_retain_canonical_continuity_records() {
                     crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
                 )),
             ),
+            execution,
         )
         .expect("route should plan");
     let result = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("delivery should succeed");
     let route_record = runtime
         .diagnostics()
@@ -260,6 +284,10 @@ fn bridge_diagnostics_retain_canonical_continuity_records() {
 
 #[test]
 fn bridge_diagnostics_retain_queryable_historical_records_by_record_and_decision_log_identity() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -297,8 +325,9 @@ fn bridge_diagnostics_retain_queryable_historical_records_by_record_and_decision
     let observation = runtime
         .materialize_truth_view_observation(
             runtime
-                .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]))
+                .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), execution)
                 .expect("historical declaration should plan"),
+            execution,
         )
         .expect("historical declaration should materialize");
     let record = runtime.canonicalize_historical_evaluation_record(&observation);

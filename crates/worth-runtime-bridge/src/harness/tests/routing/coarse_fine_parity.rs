@@ -8,6 +8,10 @@ use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBr
 
 #[test]
 fn coarse_and_fine_routes_remain_parity_safe_for_shared_scope() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let left_source = InMemoryRelationalBridgeSource::default();
     left_source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -49,19 +53,27 @@ fn coarse_and_fine_routes_remain_parity_safe_for_shared_scope() {
     let left_result = left_runtime
         .deliver_invalidation(
             left_runtime
-                .plan_committed_patch(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ))
+                .plan_committed_patch(
+                    BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    ),
+                    execution,
+                )
                 .expect("left route should plan"),
+            execution,
         )
         .expect("left route should deliver");
     let right_result = right_runtime
         .deliver_invalidation(
             right_runtime
-                .plan_committed_patch(BridgeRouteRequest::for_commit(
-                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-                ))
+                .plan_committed_patch(
+                    BridgeRouteRequest::for_commit(
+                        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                    ),
+                    execution,
+                )
                 .expect("right route should plan"),
+            execution,
         )
         .expect("right route should deliver");
 

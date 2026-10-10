@@ -2,11 +2,16 @@ use super::*;
 
 #[test]
 fn common_changed_observation_plans_and_materializes_admitted() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-causal-dx-changed",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-causal-dx-changed"),
+            resource_request,
+        )
         .unwrap();
     let plan = CausalInspection::for_test_observation(receipt_with_route(
         CausalObservationOutcome::Changed,
@@ -50,11 +55,16 @@ fn common_changed_observation_plans_and_materializes_admitted() {
 
 #[test]
 fn common_suppressed_observation_uses_reason_helper() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-causal-dx-suppressed",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-causal-dx-suppressed"),
+            resource_request,
+        )
         .unwrap();
     let plan = CausalInspection::for_test_observation(receipt_with_route(
         CausalObservationOutcome::Suppressed,
@@ -75,11 +85,16 @@ fn common_suppressed_observation_uses_reason_helper() {
 
 #[test]
 fn materialized_detail_common_path_is_advisory_before_bridge_materialization() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-causal-dx-advisory",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-causal-dx-advisory"),
+            resource_request,
+        )
         .unwrap();
     let plan = CausalInspection::for_test_observation(receipt_with_route(
         CausalObservationOutcome::Changed,
@@ -113,11 +128,16 @@ fn materialized_detail_common_path_is_advisory_before_bridge_materialization() {
 
 #[test]
 fn common_path_preserves_core_digests_from_explicit_pipeline() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::causal_truth_commit_identity(
-            "commit-causal-dx-parity",
-        ))
+        .route(
+            super::super::causal_truth_commit_identity("commit-causal-dx-parity"),
+            resource_request,
+        )
         .unwrap();
     let receipt = receipt_with_route(
         CausalObservationOutcome::Changed,

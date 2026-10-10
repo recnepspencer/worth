@@ -4,13 +4,20 @@ use super::*;
 
 #[test]
 fn duplicate_certification_retains_typed_authority_matrix() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let WritebackHarnessExecution::DuplicateCertification {
         repeated_bundle_digest,
         replay_bundle_digest,
         duplicate_authority_matrix,
         counter_snapshot,
         ..
-    } = certified_execution(WritebackHarnessTarget::DuplicateCertification)
+    } = certified_execution(
+        WritebackHarnessTarget::DuplicateCertification,
+        resource_request,
+    )
     else {
         panic!("duplicate certification should produce duplicate typed matrix");
     };

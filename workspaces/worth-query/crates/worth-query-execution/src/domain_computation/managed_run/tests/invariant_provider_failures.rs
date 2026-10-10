@@ -10,6 +10,9 @@ use worth_query_installation::facade::WorthQueryInvariantEnforcement;
 #[test]
 fn provider_cannot_replay_a_retained_verdict_admission_into_another_attempt() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -24,6 +27,7 @@ fn provider_cannot_replay_a_retained_verdict_admission_into_another_attempt() {
             )],
             "closed-loop",
             [locator("base")],
+            resource_request,
         )
         .err()
         .expect("hostile provider must retain the first admission");
@@ -42,6 +46,7 @@ fn provider_cannot_replay_a_retained_verdict_admission_into_another_attempt() {
             )],
             "closed-loop",
             [locator("base")],
+            resource_request,
         )
         .err()
         .expect("retained admission must not authorize another attempt");
@@ -55,6 +60,9 @@ fn provider_cannot_replay_a_retained_verdict_admission_into_another_attempt() {
 #[test]
 fn provider_panics_during_load_and_execution_are_typed() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -72,6 +80,7 @@ fn provider_panics_during_load_and_execution_are_typed() {
                 )],
                 "closed-loop",
                 [locator("base")],
+                resource_request,
             )
             .err()
             .expect("provider panic must become a typed invariant failure");

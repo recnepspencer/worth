@@ -2,8 +2,14 @@ use super::super::support::*;
 
 #[test]
 fn diagnostics_reference_emits_without_rich_hot_path_materialization() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let sealed = sealed_window(
         &runtime,
         &active,
@@ -28,8 +34,14 @@ fn diagnostics_reference_emits_without_rich_hot_path_materialization() {
 
 #[test]
 fn detail_and_collection_families_both_deliver_through_phase_one_path() {
-    let (runtime, detail_active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, detail_active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let detail = sealed_window(
         &runtime,
         &detail_active,
@@ -38,6 +50,7 @@ fn detail_and_collection_families_both_deliver_through_phase_one_path() {
 
     let (runtime, collection_active) = active_collection_subscription(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
     );
     let collection = sealed_window(
         &runtime,

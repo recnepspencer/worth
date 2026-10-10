@@ -7,6 +7,10 @@ use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBr
 
 #[test]
 fn bridge_delivery_fails_when_newer_truth_arrives_without_required_snapshot() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         commit_a(),
@@ -22,7 +26,7 @@ fn bridge_delivery_fails_when_newer_truth_arrives_without_required_snapshot() {
     );
 
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()))
+        .plan_committed_patch(BridgeRouteRequest::for_commit(commit_a()), execution)
         .expect("bridge should plan the route");
 
     source.insert_committed_patch(committed_patch(
@@ -35,7 +39,7 @@ fn bridge_delivery_fails_when_newer_truth_arrives_without_required_snapshot() {
     source.insert_snapshot(snapshot(snapshot_b(), "bob"));
 
     let error = runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect_err("delivery should still require the original planned snapshot");
 
     assert_eq!(

@@ -19,6 +19,10 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meaning() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let note = optional_note_contract();
     let summary = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
     let summary_contract = summary.contract.clone();
@@ -114,6 +118,7 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
     let mut publications = bridge_envelopes_at_current_observation(
         runtime,
         [created_commit, updated.commit.commit_id],
+        resource_request,
     );
     let publication = publications.pop().expect("clear publication");
     let created_publication = publications.pop().expect("whole-set publication");

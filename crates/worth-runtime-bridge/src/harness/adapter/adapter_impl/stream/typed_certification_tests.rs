@@ -124,12 +124,17 @@ fn native_window_rejects_empty_stream_window_before_execution() {
 
 #[test]
 fn routing_and_replay_audit_executions_retain_typed_stream_member_truth() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_stream_source();
     let routing_execution = execute_stream_request(
         &runtime,
         StreamHarnessTarget::RoutingWindow {
             window: native_stream_window(),
         },
+        resource_request,
     )
     .expect("routing stream execution should succeed");
     let replay_execution = execute_stream_request(
@@ -137,6 +142,7 @@ fn routing_and_replay_audit_executions_retain_typed_stream_member_truth() {
         StreamHarnessTarget::ReplayAuditWindow {
             window: native_stream_window(),
         },
+        resource_request,
     )
     .expect("replay stream execution should succeed");
 
@@ -202,6 +208,10 @@ fn routing_and_replay_audit_executions_retain_typed_stream_member_truth() {
 
 #[test]
 fn replay_audit_execution_is_deterministic_from_typed_records() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let first_runtime = runtime_with_stream_source();
     let second_runtime = runtime_with_stream_source();
     let first_execution = execute_stream_request(
@@ -209,6 +219,7 @@ fn replay_audit_execution_is_deterministic_from_typed_records() {
         StreamHarnessTarget::ReplayAuditWindow {
             window: native_stream_window(),
         },
+        resource_request,
     )
     .expect("first replay stream execution should succeed");
     let second_execution = execute_stream_request(
@@ -216,6 +227,7 @@ fn replay_audit_execution_is_deterministic_from_typed_records() {
         StreamHarnessTarget::ReplayAuditWindow {
             window: native_stream_window(),
         },
+        resource_request,
     )
     .expect("second replay stream execution should succeed");
 
@@ -251,12 +263,17 @@ fn replay_audit_execution_is_deterministic_from_typed_records() {
 
 #[test]
 fn routing_execution_retains_typed_pressure_and_counter_evidence() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_stream_source();
     let execution = execute_stream_request(
         &runtime,
         StreamHarnessTarget::RoutingWindow {
             window: native_stream_window(),
         },
+        resource_request,
     )
     .expect("routing stream execution should succeed");
 

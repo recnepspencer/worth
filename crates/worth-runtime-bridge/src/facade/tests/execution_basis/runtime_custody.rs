@@ -4,10 +4,14 @@ use crate::source::runtime_storage_for_test;
 
 #[test]
 fn terminal_observer_retains_its_request_runtime_and_releases_it_on_drop() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let installed = runtime(BridgeRuntimePolicy::development());
     let lane = installed.fork_managed_request_lane();
     let key = lane.signal_runtime_key;
-    let basis = admit(&lane);
+    let basis = admit(&lane, resource_request);
     let observer = basis.lifecycle_observer();
     drop(lane);
 
@@ -26,11 +30,15 @@ fn terminal_observer_retains_its_request_runtime_and_releases_it_on_drop() {
 
 #[test]
 fn managed_request_runtime_lives_until_its_last_request_holder() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let installed = runtime(BridgeRuntimePolicy::development());
     for _ in 0..64 {
         let lane = installed.fork_managed_request_lane();
         let key = lane.signal_runtime_key;
-        let basis = admit(&lane);
+        let basis = admit(&lane, resource_request);
         let request = basis.request().clone();
         drop(lane);
         assert_eq!(runtime_storage_for_test(key), (true, true, false, true));
@@ -45,11 +53,15 @@ fn managed_request_runtime_lives_until_its_last_request_holder() {
 
 #[test]
 fn yielded_and_abandoned_requests_release_their_runtime_after_custody_ends() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let installed = runtime(BridgeRuntimePolicy::development());
     for yielded in [false, true] {
         let lane = installed.fork_managed_request_lane();
         let key = lane.signal_runtime_key;
-        let basis = admit(&lane);
+        let basis = admit(&lane, resource_request);
         drop(lane);
         if yielded {
             let yielded = basis.yield_execution_basis().unwrap();
@@ -64,10 +76,14 @@ fn yielded_and_abandoned_requests_release_their_runtime_after_custody_ends() {
 
 #[test]
 fn foreign_last_drop_queues_affine_destruction_for_the_next_owner_access() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let installed = runtime(BridgeRuntimePolicy::development());
     let lane = installed.fork_managed_request_lane();
     let key = lane.signal_runtime_key;
-    admit(&lane)
+    admit(&lane, resource_request)
         .finalize(BridgeExecutionBasisTerminalDisposition::Completed)
         .unwrap();
     let foreign = lane.clone();
@@ -84,12 +100,16 @@ fn foreign_last_drop_queues_affine_destruction_for_the_next_owner_access() {
     assert_eq!(runtime_storage_for_test(key), (false, false, false, false));
 }
 
-fn admit(lane: &RuntimeBridge) -> crate::facade::BridgeBoundExecutionBasis {
+fn admit(
+    lane: &RuntimeBridge,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::facade::BridgeBoundExecutionBasis {
     lane.admit_managed_execution_basis(
         managed_intent("custody-attempt"),
         step_contract(),
         truth_basis("snapshot-a"),
-        planned_truth_view(lane),
+        planned_truth_view(lane, execution),
+        execution,
     )
     .unwrap()
 }

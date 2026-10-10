@@ -17,12 +17,19 @@ use super::support::{runtime_bridge_for_envelope, runtime_with_test_schema};
 
 #[test]
 fn retained_fork_observation_includes_ancestors_and_excludes_later_authoring_branch_events() {
-    assert_retained_fork_excludes_later_event(BranchId("main".to_owned()));
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_retained_fork_excludes_later_event(BranchId("main".to_owned()), resource_request);
 }
 
-fn assert_retained_fork_excludes_later_event(later_branch: BranchId) {
-    let fixture = retained_fork_fixture();
-    let before = fixture.lineage_authority();
+fn assert_retained_fork_excludes_later_event(
+    later_branch: BranchId,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let fixture = retained_fork_fixture(resource_request);
+    let before = fixture.lineage_authority(resource_request);
     assert_eq!(before.traversed_event_ids().len(), 1);
 
     replace_entity_on_branch(
@@ -32,7 +39,7 @@ fn assert_retained_fork_excludes_later_event(later_branch: BranchId) {
         later_branch,
     );
 
-    assert_eq!(fixture.lineage_authority(), before);
+    assert_eq!(fixture.lineage_authority(resource_request), before);
 }
 
 struct RetainedForkFixture {
@@ -45,12 +52,16 @@ struct RetainedForkFixture {
 }
 
 impl RetainedForkFixture {
-    fn lineage_authority(&self) -> BridgeHistoricalLineageAuthority {
+    fn lineage_authority(
+        &self,
+        resource_request: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> BridgeHistoricalLineageAuthority {
         let packet = plan_lineage_packet(
             &self.bridge,
             self.commit.clone(),
             TruthBranchIdentity::from_relational_branch_id("feature"),
             self.snapshot.clone(),
+            resource_request,
         )
         .expect("retained fork lineage must resolve");
         packet
@@ -63,7 +74,9 @@ impl RetainedForkFixture {
     }
 }
 
-fn retained_fork_fixture() -> RetainedForkFixture {
+fn retained_fork_fixture(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> RetainedForkFixture {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&runtime, "fork-source");
     let entity = changed_entities(&created)[0];
@@ -97,10 +110,10 @@ fn retained_fork_fixture() -> RetainedForkFixture {
     let snapshot = lease.snapshot_identity().clone();
     let commit = TruthCommitIdentity::from_relational_commit_id(inherited.commit.commit_id.0);
     let envelope = source
-        .load_committed_patch(RelationalCommittedPatchRequest::at_snapshot(
-            commit.clone(),
-            snapshot.clone(),
-        ))
+        .load_committed_patch(
+            RelationalCommittedPatchRequest::at_snapshot(commit.clone(), snapshot.clone()),
+            execution,
+        )
         .expect("feature observation must authorize its inherited commit");
     assert_eq!(
         envelope.branch_identity().relational_branch_id(),
@@ -122,12 +135,17 @@ pub(super) fn plan_lineage_packet(
     commit: TruthCommitIdentity,
     branch: TruthBranchIdentity,
     snapshot: TruthSnapshotIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeHistoricalLineagePacket, String> {
     let context = BridgeMappingContext::default().with_lineage_context(BridgeLineageContext::new(
         BridgeContinuityAuthorityBasis::new(branch, snapshot),
     ));
     let route = bridge
-        .plan_committed_patch_with_mapping_context(BridgeRouteRequest::for_commit(commit), context)
+        .plan_committed_patch_with_mapping_context(
+            BridgeRouteRequest::for_commit(commit),
+            context,
+            execution,
+        )
         .map_err(|error| error.to_string())?;
     let requests = bridge
         .plan_continuity_requests_from_planned_route(&route)

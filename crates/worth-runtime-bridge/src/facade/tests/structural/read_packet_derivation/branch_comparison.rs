@@ -2,6 +2,13 @@ use super::*;
 
 #[test]
 fn runtime_derives_branch_comparison_candidates_from_branch_pair_reads() {
+    let policy = crate::policy::BridgeExecutionPolicyBaseline::operational().request_policy();
+    let lease = crate::snapshot::test_execution_lease_for_policy(
+        policy,
+        worth_execution::CancellationToken::new(),
+    );
+    let resource_request = worth_execution::ExecutionRequest::leased(&lease);
+
     #[derive(Clone)]
     struct BranchDiffSource;
 
@@ -43,6 +50,7 @@ fn runtime_derives_branch_comparison_candidates_from_branch_pair_reads() {
         fn load_committed_patch(
             &self,
             request: crate::adapter::RelationalCommittedPatchRequest,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::input::envelope::BridgeCommittedPatchEnvelope,
             crate::adapter::RelationalBridgeSourceError,
@@ -79,6 +87,7 @@ fn runtime_derives_branch_comparison_candidates_from_branch_pair_reads() {
         fn open_snapshot(
             &self,
             identity: &TruthSnapshotIdentity,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             Box<dyn crate::snapshot::TruthSnapshotReader>,
             crate::adapter::RelationalBridgeSourceError,
@@ -106,6 +115,7 @@ fn runtime_derives_branch_comparison_candidates_from_branch_pair_reads() {
         fn load_branch_head_patch(
             &self,
             branch_identity: &TruthBranchIdentity,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::input::envelope::BridgeCommittedPatchEnvelope,
             crate::adapter::RelationalBridgeSourceError,
@@ -211,18 +221,28 @@ fn runtime_derives_branch_comparison_candidates_from_branch_pair_reads() {
     let contract = runtime
         .admit_structural_comparison(declaration)
         .expect("branch comparison declaration should be admitted");
-    let planned = runtime
-        .plan_structural_branch_comparison_from_read_packet(
-            &contract,
-            SnapshotReadPacket::new(vec![crate::snapshot::SnapshotReadRequest::for_coarse(
-                "entity-1",
-                crate::snapshot::SnapshotReadContract::scalar(
-                    worth_foundational::facade::AspectKey::new("profile")
-                        .expect("valid snapshot aspect key"),
-                    worth_foundational::facade::ScalarAspectType::String,
-                ),
-            )]),
+    let planned = resource_request
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(8_000_000),
+            |_| {
+                runtime.plan_structural_branch_comparison_from_read_packet(
+                    &contract,
+                    SnapshotReadPacket::new(vec![
+                        crate::snapshot::SnapshotReadRequest::for_coarse(
+                            "entity-1",
+                            crate::snapshot::SnapshotReadContract::scalar(
+                                worth_foundational::facade::AspectKey::new("profile")
+                                    .expect("valid snapshot aspect key"),
+                                worth_foundational::facade::ScalarAspectType::String,
+                            ),
+                        ),
+                    ]),
+                    resource_request,
+                )
+            },
         )
+        .expect("active leased scope")
+        .0
         .expect("branch comparison should derive candidates from paired reads");
     let reduced = runtime
         .reduce_structural_match_set(&planned)

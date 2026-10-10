@@ -14,10 +14,13 @@ use crate::domain_computation::{
 #[test]
 fn direct_yield_cleanup_preserves_its_closed_epoch_receipt() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let yielded = direct_yield(execution, "direct-yield-cleanup");
+        let yielded = direct_yield(execution, "direct-yield-cleanup", resource_request);
         let epoch_identity = yielded.epoch_identity().to_owned();
         let cleanup = match yielded.cleanup() {
             WorthQueryDirectConvergenceYieldCleanupOutcome::Complete(cleanup) => cleanup,
@@ -39,10 +42,13 @@ fn direct_yield_cleanup_preserves_its_closed_epoch_receipt() {
 #[test]
 fn workflow_yield_cleanup_preserves_its_closed_epoch_receipt() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let yielded = workflow_yield(execution, "workflow-yield-cleanup");
+        let yielded = workflow_yield(execution, "workflow-yield-cleanup", resource_request);
         let epoch_identity = yielded.epoch_identity().to_owned();
         let cleanup = match yielded.cleanup() {
             WorthQueryWorkflowConvergenceYieldCleanupOutcome::Complete(cleanup) => cleanup,
@@ -67,6 +73,9 @@ fn workflow_yield_cleanup_preserves_its_closed_epoch_receipt() {
 #[test]
 fn direct_yield_closed_recovery_counts_the_cleanup_as_complete() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -74,6 +83,7 @@ fn direct_yield_closed_recovery_counts_the_cleanup_as_complete() {
             execution,
             FixtureDisposition::YieldThenCheckpointDropPanic,
             "direct-yield-closed-recovery",
+            resource_request,
         );
         let receipt = match yielded.cleanup() {
             WorthQueryDirectConvergenceYieldCleanupOutcome::RecoveryRequired(receipt) => receipt,
@@ -92,6 +102,9 @@ fn direct_yield_closed_recovery_counts_the_cleanup_as_complete() {
 #[test]
 fn workflow_yield_closed_recovery_counts_the_cleanup_as_complete() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -99,6 +112,7 @@ fn workflow_yield_closed_recovery_counts_the_cleanup_as_complete() {
             execution,
             FixtureDisposition::YieldThenCheckpointDropPanic,
             "workflow-yield-closed-recovery",
+            resource_request,
         );
         let receipt = match yielded.cleanup() {
             WorthQueryWorkflowConvergenceYieldCleanupOutcome::RecoveryRequired(receipt) => receipt,
@@ -120,11 +134,17 @@ fn workflow_yield_closed_recovery_counts_the_cleanup_as_complete() {
 #[test]
 fn workflow_yield_pending_then_retry_counts_two_attempts_and_one_completion() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (yielded, artifact) =
-            workflow_yield_with_pending_artifact(execution, "workflow-yield-pending");
+        let (yielded, artifact) = workflow_yield_with_pending_artifact(
+            execution,
+            "workflow-yield-pending",
+            resource_request,
+        );
         let borrowed = artifact
             .borrow("convergence cleanup pending proof")
             .expect("installed candidate contract must admit shared observation");
@@ -149,11 +169,14 @@ fn workflow_yield_pending_then_retry_counts_two_attempts_and_one_completion() {
 #[test]
 fn same_scope_direct_cleanup_peers_keep_their_own_epochs() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let first = direct_yield(execution, "same-direct-cleanup-scope");
-        let second = direct_yield(execution, "same-direct-cleanup-scope");
+        let first = direct_yield(execution, "same-direct-cleanup-scope", resource_request);
+        let second = direct_yield(execution, "same-direct-cleanup-scope", resource_request);
         let first_identity = first.epoch_identity().to_owned();
         let second_identity = second.epoch_identity().to_owned();
         assert_ne!(first_identity, second_identity);
@@ -180,15 +203,21 @@ fn same_scope_direct_cleanup_peers_keep_their_own_epochs() {
 #[test]
 fn same_stage_workflow_pending_and_complete_peers_do_not_cross_pair() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (first, artifact) =
-            workflow_yield_with_pending_artifact(execution, "same-workflow-cleanup-scope");
+        let (first, artifact) = workflow_yield_with_pending_artifact(
+            execution,
+            "same-workflow-cleanup-scope",
+            resource_request,
+        );
         let borrowed = artifact
             .borrow("interleaved cleanup association proof")
             .expect("installed candidate contract must admit shared observation");
-        let second = workflow_yield(execution, "same-workflow-cleanup-scope");
+        let second = workflow_yield(execution, "same-workflow-cleanup-scope", resource_request);
         let first_identity = first.epoch_identity().to_owned();
         let second_identity = second.epoch_identity().to_owned();
         assert_ne!(first_identity, second_identity);
@@ -224,11 +253,12 @@ fn workflow_yield_with_pending_artifact(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 
     call_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryYieldedWorkflowConvergenceIteration,
     WorthQueryMoveOnlyArtifactHandle,
 ) {
-    let (fixture, artifact_receiver) = workflow_yield_pending_admission_fixture();
+    let (fixture, artifact_receiver) = workflow_yield_pending_admission_fixture(resource_request);
     let WorkflowAdmissionFixture {
         runtime,
         operation,
@@ -263,11 +293,13 @@ fn workflow_yield_with_pending_artifact(
 fn direct_yield(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     call_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryYieldedDirectConvergenceIteration {
     direct_yield_with_disposition(
         execution,
         FixtureDisposition::YieldThenConverged,
         call_identity,
+        resource_request,
     )
 }
 
@@ -276,6 +308,7 @@ fn direct_yield_with_disposition(
 
     disposition: FixtureDisposition,
     call_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryYieldedDirectConvergenceIteration {
     let DirectAdmissionFixture {
         runtime,
@@ -285,7 +318,7 @@ fn direct_yield_with_disposition(
         managed,
         graph,
         bridge: _,
-    } = direct_admission_fixture(disposition);
+    } = direct_admission_fixture(disposition, resource_request);
     let epoch = runtime
         .admit_direct_convergence_epoch(&operation, contract, managed, graph)
         .unwrap_or_else(|_| panic!("direct convergence authorities must admit"))
@@ -306,11 +339,13 @@ fn direct_yield_with_disposition(
 fn workflow_yield(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     call_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryYieldedWorkflowConvergenceIteration {
     workflow_yield_with_disposition(
         execution,
         FixtureDisposition::YieldThenConverged,
         call_identity,
+        resource_request,
     )
 }
 
@@ -319,6 +354,7 @@ fn workflow_yield_with_disposition(
 
     disposition: FixtureDisposition,
     call_identity: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryYieldedWorkflowConvergenceIteration {
     let WorkflowAdmissionFixture {
         runtime,
@@ -327,7 +363,7 @@ fn workflow_yield_with_disposition(
         managed,
         graph,
         bridge: _,
-    } = workflow_admission_fixture(disposition);
+    } = workflow_admission_fixture(disposition, resource_request);
     let admitted = runtime
         .admit_workflow_convergence_epoch(&operation, contract, managed, graph)
         .unwrap_or_else(|_| panic!("workflow convergence authorities must admit"));

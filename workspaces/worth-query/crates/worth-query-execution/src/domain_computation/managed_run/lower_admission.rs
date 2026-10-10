@@ -60,6 +60,7 @@ pub(in crate::domain_computation) fn admit_managed_lower_execution_basis(
     relational: &RuntimeBridgeRelationalSource,
     binding: WorthQueryManagedLowerBinding<'_>,
     request: WorthQueryManagedTruthReadRequest,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryManagedLowerExecutionBasis, WorthQueryManagedLowerAdmissionFailure> {
     admit_lower_execution_basis(
         bridge,
@@ -67,6 +68,7 @@ pub(in crate::domain_computation) fn admit_managed_lower_execution_basis(
         binding,
         request,
         WorthQueryExecutionBoundary::BoundedStep,
+        execution,
     )
 }
 
@@ -75,6 +77,7 @@ pub(in crate::domain_computation) fn admit_atomic_lower_execution_basis(
     relational: &RuntimeBridgeRelationalSource,
     binding: WorthQueryManagedLowerBinding<'_>,
     request: WorthQueryManagedTruthReadRequest,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryManagedLowerExecutionBasis, WorthQueryManagedLowerAdmissionFailure> {
     admit_lower_execution_basis(
         bridge,
@@ -82,6 +85,7 @@ pub(in crate::domain_computation) fn admit_atomic_lower_execution_basis(
         binding,
         request,
         WorthQueryExecutionBoundary::Atomic,
+        execution,
     )
 }
 
@@ -91,6 +95,7 @@ fn admit_lower_execution_basis(
     binding: WorthQueryManagedLowerBinding<'_>,
     request: WorthQueryManagedTruthReadRequest,
     boundary: WorthQueryExecutionBoundary,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryManagedLowerExecutionBasis, WorthQueryManagedLowerAdmissionFailure> {
     if binding.resource_envelope.boundary() != boundary {
         return Err(WorthQueryManagedLowerAdmissionFailure {
@@ -137,7 +142,7 @@ fn admit_lower_execution_basis(
         delivery,
     );
     let planned = bridge
-        .plan_truth_view_packet(declaration, packet)
+        .plan_truth_view_packet(declaration, packet, execution)
         .map_err(|failure| WorthQueryManagedLowerAdmissionFailure {
             kind: WorthQueryManagedLowerAdmissionFailureKind::BridgePlanning,
             detail: Arc::from(format!("{failure:?}")),
@@ -149,11 +154,17 @@ fn admit_lower_execution_basis(
     let truth_basis = BridgeAsyncRequestTruthViewBasis::branch_head(branch, snapshot);
     let bridge_basis = match boundary {
         WorthQueryExecutionBoundary::Atomic => {
-            bridge.admit_atomic_execution_basis(intent, truth_basis, planned)
+            bridge.admit_atomic_execution_basis(intent, truth_basis, planned, execution)
         }
         WorthQueryExecutionBoundary::BoundedStep => {
             let bridge_step = lower_installed_step_contract(binding.resource_envelope)?;
-            bridge.admit_managed_execution_basis(intent, bridge_step, truth_basis, planned)
+            bridge.admit_managed_execution_basis(
+                intent,
+                bridge_step,
+                truth_basis,
+                planned,
+                execution,
+            )
         }
     }
     .map_err(|denial| WorthQueryManagedLowerAdmissionFailure {

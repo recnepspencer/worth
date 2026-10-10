@@ -4,6 +4,10 @@ use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBr
 
 #[test]
 fn bridge_replay_accepts_versioned_canonical_route_record() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -23,12 +27,15 @@ fn bridge_replay_accepts_versioned_canonical_route_record() {
     );
 
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("bridge should plan route before canonical replay capture");
     runtime
-        .deliver_invalidation(route)
+        .deliver_invalidation(route, execution)
         .expect("bridge should deliver route before canonical replay capture");
     let canonical_record = runtime
         .diagnostics()
@@ -36,7 +43,7 @@ fn bridge_replay_accepts_versioned_canonical_route_record() {
         .expect("bridge should expose a versioned canonical route record");
 
     let replay = runtime
-        .replay_canonical_record(&canonical_record)
+        .replay_canonical_record(&canonical_record, execution)
         .expect("bridge should replay a supported canonical route record");
 
     assert_eq!(

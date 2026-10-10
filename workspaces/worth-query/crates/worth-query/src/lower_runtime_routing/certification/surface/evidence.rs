@@ -192,6 +192,7 @@ impl WorthQueryLowerRuntimeRepresentativeSurface {
 }
 
 pub fn worth_query_lower_runtime_representative_surface(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryLowerRuntimeRepresentativeSurface {
     let concrete_rows = vec![
         representative_compose_read_row(),
@@ -204,11 +205,11 @@ pub fn worth_query_lower_runtime_representative_surface(
         representative_public_live_view_declaration_row(),
         representative_runtime_live_installation_orchestration_row(),
         representative_subscription_activation_row(),
-        representative_subscription_continuity_row(),
+        representative_subscription_continuity_row(resource_request),
         representative_preview_basis_row(),
-        representative_basis_truth_view_readmission_row(),
-        representative_basis_subscription_readmission_row(),
-        representative_historical_bridge_lowering_row(),
+        representative_basis_truth_view_readmission_row(resource_request),
+        representative_basis_subscription_readmission_row(resource_request),
+        representative_historical_bridge_lowering_row(resource_request),
         representative_effect_relational_mutation_row(),
         representative_effect_relational_merge_row(),
         representative_effect_bridge_writeback_row(),
@@ -218,7 +219,7 @@ pub fn worth_query_lower_runtime_representative_surface(
         representative_intent_runtime_execution_row(),
         representative_projection_query_receipts_row(),
         representative_projection_relational_row(),
-        representative_projection_bridge_row(),
+        representative_projection_bridge_row(resource_request),
         representative_causal_bridge_materialization_row(),
         representative_frontier_evidence_row(),
     ];

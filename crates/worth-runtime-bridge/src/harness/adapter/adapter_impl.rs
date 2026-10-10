@@ -103,150 +103,178 @@ impl HarnessAdapter for BridgeHarnessAdapter {
         request: &ExecutionRequest<Self::TargetId>,
         profile: &ExecutionProfile,
     ) -> Result<RunRecord<Self::TargetId>, Self::Error> {
-        let runtime_bridge = runtime
-            .runtime
-            .as_ref()
-            .ok_or_else(|| BridgeHarnessError::new("bridge runtime not loaded"))?;
-        let target = request
-            .targets
-            .first()
-            .ok_or_else(|| BridgeHarnessError::new("bridge execution requires one target"))?;
-        let harness_target = harness_target_from_id(target)?;
-        let mapping_context = fixture
-            .fixture
-            .lineage_context()
-            .cloned()
-            .map(|lineage_context| {
-                BridgeMappingContext::default().with_lineage_context(lineage_context)
-            })
-            .unwrap_or_default();
-        let scenario_id_value = worth_harness::facade::scenario_id(&fixture.name);
-        let run_id_value = run_id(&scenario_id_value, &profile.name, &request.name);
+        crate::host_execution::with_declared_request(
+            fixture.fixture.policy().execution(),
+            |resource_request| {
+                let runtime_bridge = runtime
+                    .runtime
+                    .as_ref()
+                    .ok_or_else(|| BridgeHarnessError::new("bridge runtime not loaded"))?;
+                let target = request.targets.first().ok_or_else(|| {
+                    BridgeHarnessError::new("bridge execution requires one target")
+                })?;
+                let harness_target = harness_target_from_id(target)?;
+                let mapping_context = fixture
+                    .fixture
+                    .lineage_context()
+                    .cloned()
+                    .map(|lineage_context| {
+                        BridgeMappingContext::default().with_lineage_context(lineage_context)
+                    })
+                    .unwrap_or_default();
+                let scenario_id_value = worth_harness::facade::scenario_id(&fixture.name);
+                let run_id_value = run_id(&scenario_id_value, &profile.name, &request.name);
 
-        let execution = match harness_target {
-            HarnessTarget::CommittedRoute { commit_identity } => {
-                let route = runtime_bridge
-                    .plan_committed_patch_with_mapping_context(
-                        BridgeRouteRequest::for_commit(commit_identity),
-                        mapping_context,
-                    )
-                    .map_err(|error| {
-                        BridgeHarnessError::new(format!("bridge planning failed: {error}"))
-                    })?;
-                let result = runtime_bridge
-                    .deliver_invalidation(route)
-                    .map_err(|error| {
-                        BridgeHarnessError::new(format!("bridge delivery failed: {error}"))
-                    })?;
-                let continuity_summary =
-                    runtime_bridge
-                        .diagnostics()
-                        .last_route_record()
-                        .and_then(|route_record| {
-                            let requests = runtime_bridge
-                                .plan_continuity_requests(&route_record)
-                                .ok()?;
-                            let packet = runtime_bridge
-                                .plan_historical_lineage_packet(&requests)
-                                .ok()?;
-                            let resolved =
-                                runtime_bridge.resolve_lineage_continuity(&packet).ok()?;
-                            let artifact = runtime_bridge.lower_continuity_artifact(&resolved);
-                            let canonical = runtime_bridge.canonicalize_continuity_record(
-                                &route_record,
-                                &requests,
-                                &artifact,
-                            );
-                            Some((artifact, canonical))
-                        });
-                HarnessExecution::Route {
-                    result,
-                    continuity_summary,
-                }
-            }
-            HarnessTarget::Stream(stream_target) => {
-                HarnessExecution::Stream(execute_stream_request(runtime_bridge, stream_target)?)
-            }
-            HarnessTarget::Source(source_target) => HarnessExecution::Source(
-                execute_source_request(runtime_bridge, &fixture.fixture, source_target)?,
-            ),
-            HarnessTarget::Merge(merge_target) => HarnessExecution::Merge(execute_merge_request(
-                runtime_bridge,
-                &fixture.fixture,
-                merge_target,
-            )?),
-            HarnessTarget::Policy(policy_target) => HarnessExecution::Policy(
-                execute_policy_request(runtime_bridge, &fixture.fixture, policy_target)?,
-            ),
-            HarnessTarget::Speculation(speculation_target) => HarnessExecution::Speculation(
-                execute_speculation_request(runtime_bridge, &fixture.fixture, speculation_target)?,
-            ),
-            HarnessTarget::Structural(structural_target) => HarnessExecution::Structural(
-                execute_structural_request(runtime_bridge, &fixture.fixture, structural_target)?,
-            ),
-            HarnessTarget::Writeback(writeback_target) => {
-                HarnessExecution::Writeback(execute_writeback_request(
-                    runtime,
-                    runtime_bridge,
-                    &fixture.fixture,
-                    writeback_target,
-                )?)
-            }
-            HarnessTarget::HistoricalCommit {
-                branch_identity,
-                commit_identity,
-            } => execute_historical_request(
-                runtime_bridge,
-                HistoricalEvaluationDeclaration::new(
-                    BridgeTruthViewSelector::historical_commit(branch_identity, commit_identity),
-                    BridgeReplayMode::Enabled,
-                    fixture.fixture.policy().diagnostics_tier(),
-                    BridgeDeliveryIntent::PrepareSignalEvaluation,
-                ),
-            )?,
-            HarnessTarget::BranchHead { branch_identity } => execute_historical_request(
-                runtime_bridge,
-                HistoricalEvaluationDeclaration::new(
-                    BridgeTruthViewSelector::branch_head(branch_identity),
-                    BridgeReplayMode::Enabled,
-                    fixture.fixture.policy().diagnostics_tier(),
-                    BridgeDeliveryIntent::PrepareSignalEvaluation,
-                ),
-            )?,
-        };
+                let execution = match harness_target {
+                    HarnessTarget::CommittedRoute { commit_identity } => {
+                        let route = runtime_bridge
+                            .plan_committed_patch_with_mapping_context(
+                                BridgeRouteRequest::for_commit(commit_identity),
+                                mapping_context,
+                                resource_request,
+                            )
+                            .map_err(|error| {
+                                BridgeHarnessError::new(format!("bridge planning failed: {error}"))
+                            })?;
+                        let result = runtime_bridge
+                            .deliver_invalidation(route, resource_request)
+                            .map_err(|error| {
+                                BridgeHarnessError::new(format!("bridge delivery failed: {error}"))
+                            })?;
+                        let continuity_summary = runtime_bridge
+                            .diagnostics()
+                            .last_route_record()
+                            .and_then(|route_record| {
+                                let requests = runtime_bridge
+                                    .plan_continuity_requests(&route_record)
+                                    .ok()?;
+                                let packet = runtime_bridge
+                                    .plan_historical_lineage_packet(&requests)
+                                    .ok()?;
+                                let resolved =
+                                    runtime_bridge.resolve_lineage_continuity(&packet).ok()?;
+                                let artifact = runtime_bridge.lower_continuity_artifact(&resolved);
+                                let canonical = runtime_bridge.canonicalize_continuity_record(
+                                    &route_record,
+                                    &requests,
+                                    &artifact,
+                                );
+                                Some((artifact, canonical))
+                            });
+                        HarnessExecution::Route {
+                            result,
+                            continuity_summary,
+                        }
+                    }
+                    HarnessTarget::Stream(stream_target) => HarnessExecution::Stream(
+                        execute_stream_request(runtime_bridge, stream_target, resource_request)?,
+                    ),
+                    HarnessTarget::Source(source_target) => {
+                        HarnessExecution::Source(execute_source_request(
+                            runtime_bridge,
+                            &fixture.fixture,
+                            source_target,
+                            resource_request,
+                        )?)
+                    }
+                    HarnessTarget::Merge(merge_target) => HarnessExecution::Merge(
+                        execute_merge_request(runtime_bridge, &fixture.fixture, merge_target)?,
+                    ),
+                    HarnessTarget::Policy(policy_target) => {
+                        HarnessExecution::Policy(execute_policy_request(
+                            runtime_bridge,
+                            &fixture.fixture,
+                            policy_target,
+                            resource_request,
+                        )?)
+                    }
+                    HarnessTarget::Speculation(speculation_target) => {
+                        HarnessExecution::Speculation(execute_speculation_request(
+                            runtime_bridge,
+                            &fixture.fixture,
+                            speculation_target,
+                            resource_request,
+                        )?)
+                    }
+                    HarnessTarget::Structural(structural_target) => {
+                        HarnessExecution::Structural(execute_structural_request(
+                            runtime_bridge,
+                            &fixture.fixture,
+                            structural_target,
+                            resource_request,
+                        )?)
+                    }
+                    HarnessTarget::Writeback(writeback_target) => {
+                        HarnessExecution::Writeback(execute_writeback_request(
+                            runtime,
+                            runtime_bridge,
+                            &fixture.fixture,
+                            writeback_target,
+                            resource_request,
+                        )?)
+                    }
+                    HarnessTarget::HistoricalCommit {
+                        branch_identity,
+                        commit_identity,
+                    } => execute_historical_request(
+                        runtime_bridge,
+                        HistoricalEvaluationDeclaration::new(
+                            BridgeTruthViewSelector::historical_commit(
+                                branch_identity,
+                                commit_identity,
+                            ),
+                            BridgeReplayMode::Enabled,
+                            fixture.fixture.policy().diagnostics_tier(),
+                            BridgeDeliveryIntent::PrepareSignalEvaluation,
+                        ),
+                        resource_request,
+                    )?,
+                    HarnessTarget::BranchHead { branch_identity } => execute_historical_request(
+                        runtime_bridge,
+                        HistoricalEvaluationDeclaration::new(
+                            BridgeTruthViewSelector::branch_head(branch_identity),
+                            BridgeReplayMode::Enabled,
+                            fixture.fixture.policy().diagnostics_tier(),
+                            BridgeDeliveryIntent::PrepareSignalEvaluation,
+                        ),
+                        resource_request,
+                    )?,
+                };
 
-        Ok(RunRecord {
-            schema_version: RecordSchemaVersion::V1,
-            run_id: run_id_value,
-            scenario_id: scenario_id_value,
-            adapter_name: self.adapter_name().to_string(),
-            scenario_name: fixture.name.clone(),
-            profile_name: profile.name.clone(),
-            time_marker: profile.time_marker.clone(),
-            feed_batch: request.feed_batch.clone(),
-            execution_mode: profile.execution_mode,
-            diagnostics_level: profile.diagnostics_level,
-            status: RunStatus::Succeeded,
-            outcome: RunOutcome::Completed,
-            budget_usage: None,
-            requested_targets: request.targets.clone(),
-            target_statuses: request
-                .targets
-                .iter()
-                .map(|target| TargetStatusRecord {
-                    target: target.clone(),
-                    status: ObservationStatus::Validated,
-                    detail: None,
+                Ok(RunRecord {
+                    schema_version: RecordSchemaVersion::V1,
+                    run_id: run_id_value,
+                    scenario_id: scenario_id_value,
+                    adapter_name: self.adapter_name().to_string(),
+                    scenario_name: fixture.name.clone(),
+                    profile_name: profile.name.clone(),
+                    time_marker: profile.time_marker.clone(),
+                    feed_batch: request.feed_batch.clone(),
+                    execution_mode: profile.execution_mode,
+                    diagnostics_level: profile.diagnostics_level,
+                    status: RunStatus::Succeeded,
+                    outcome: RunOutcome::Completed,
+                    budget_usage: None,
+                    requested_targets: request.targets.clone(),
+                    target_statuses: request
+                        .targets
+                        .iter()
+                        .map(|target| TargetStatusRecord {
+                            target: target.clone(),
+                            status: ObservationStatus::Validated,
+                            detail: None,
+                        })
+                        .collect(),
+                    changed_targets: request.targets.clone(),
+                    attachments: Vec::new(),
+                    summary: terminal_report_export::execution_summary_json(&execution),
+                    extensions: terminal_report_export::execution_extensions_json(
+                        &execution,
+                        runtime_bridge,
+                    ),
                 })
-                .collect(),
-            changed_targets: request.targets.clone(),
-            attachments: Vec::new(),
-            summary: terminal_report_export::execution_summary_json(&execution),
-            extensions: terminal_report_export::execution_extensions_json(
-                &execution,
-                runtime_bridge,
-            ),
-        })
+            },
+        )
     }
 
     fn capture_snapshot(

@@ -1,3 +1,5 @@
+mod delivery_window;
+
 use super::support::*;
 use crate::facade::tests::source::support::{
     admit_request_response_completion, denied_request_response_completion_with_displacing_identity,
@@ -17,6 +19,10 @@ mod async_result;
 
 #[test]
 fn runtime_orders_mixed_causes_canonically_across_shuffled_input_order() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let truth_patch = committed_patch(
         crate::truth_identity_fixtures::truth_branch_fixture("truth-main"),
@@ -24,8 +30,9 @@ fn runtime_orders_mixed_causes_canonically_across_shuffled_input_order() {
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
         crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
     );
-    let truth_plus_time = authoritative_truth_plus_time_cause(&runtime, &truth_patch);
-    let time_only = authoritative_time_only_cause(&runtime);
+    let truth_plus_time =
+        authoritative_truth_plus_time_cause(&runtime, &truth_patch, resource_request);
+    let time_only = authoritative_time_only_cause(&runtime, resource_request);
     let async_completion = admit_request_response_completion(
         &runtime,
         NodeId::new(241, 0),
@@ -167,8 +174,12 @@ fn runtime_suppresses_duplicate_mixed_cause_digests_explicitly() {
 
 #[test]
 fn runtime_denies_preview_local_causes_in_authoritative_mixed_window() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let preview_basis = admitted_preview_basis_for_truth(
         &runtime,
         "mixed-preview",
@@ -308,44 +319,11 @@ fn assert_denied_async_transitions(ordering: &BridgeMixedCauseOrdering) {
     ));
 }
 
-#[test]
-fn runtime_plans_delivery_window_from_ordered_mixed_causes_only() {
-    let runtime = runtime(BridgeRuntimePolicy::development());
-    let truth_patch = committed_patch(
-        crate::truth_identity_fixtures::truth_branch_fixture("truth-main"),
-        crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
-        crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        crate::truth_identity_fixtures::truth_patch_fixture("patch-a"),
-    );
-    let ordering = runtime.order_mixed_causes(&BridgeMixedCauseOrderingRequest::new(
-        BridgeMixedCauseOrderingLaneKind::Authoritative,
-        vec![BridgeMixedCauseOrderingInput::TruthPatch(truth_patch)],
-    ));
-
-    let window = runtime
-        .plan_mixed_cause_delivery_window(
-            &ordering,
-            BridgeSubscriptionDeliveryFamilyKind::RouteFocusedDescriptor,
-        )
-        .expect("delivery window should plan");
-
-    assert_eq!(window.ordered_causes().len(), 1);
-    assert_eq!(
-        window.ordered_causes()[0].family_kind(),
-        BridgeMixedCauseOrderFamilyKind::TruthPatch
-    );
-    assert_eq!(
-        window
-            .counters()
-            .subscription_mixed_cause_delivery_window_plan_count(),
-        1
-    );
-}
-
 fn authoritative_time_only_cause(
     runtime: &crate::facade::RuntimeBridge,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeTemporalCauseRecord {
-    let admitted = admitted_detail_subscription_in_runtime(runtime);
+    let admitted = admitted_detail_subscription_in_runtime(runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::authoritative(
         crate::truth_identity_fixtures::truth_branch_fixture("truth-main"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -368,8 +346,9 @@ fn authoritative_time_only_cause(
 fn authoritative_truth_plus_time_cause(
     runtime: &crate::facade::RuntimeBridge,
     truth_patch: &crate::facade::BridgeCommittedPatchEnvelope,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeTemporalCauseRecord {
-    let admitted = admitted_detail_subscription_in_runtime(runtime);
+    let admitted = admitted_detail_subscription_in_runtime(runtime, resource_request);
     let temporal_basis = admitted_temporal_basis(BridgeTemporalTruthViewBasis::authoritative(
         crate::truth_identity_fixtures::truth_branch_fixture("truth-main"),
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),

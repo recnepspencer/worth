@@ -2,7 +2,12 @@ use super::super::support::*;
 
 #[test]
 fn preview_lifecycle_discard_requires_zero_residue_across_all_lifecycle_kinds() {
-    let (runtime, preview_active) = preview_active_detail_subscription("preview-lifecycle-discard");
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, preview_active) =
+        preview_active_detail_subscription("preview-lifecycle-discard", resource_request);
     let preview_identity = preview_active
         .preview_active_subscription_identity()
         .clone();
@@ -30,7 +35,12 @@ fn preview_lifecycle_discard_requires_zero_residue_across_all_lifecycle_kinds() 
 
 #[test]
 fn preview_lifecycle_discard_rejects_nonzero_completion_residue() {
-    let (runtime, preview_active) = preview_active_detail_subscription("preview-lifecycle-nonzero");
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, preview_active) =
+        preview_active_detail_subscription("preview-lifecycle-nonzero", resource_request);
     let work_trace = preview_work_trace(&runtime, &preview_active, "preview-lifecycle-nonzero");
     let residue_envelope = runtime
         .capture_preview_lifecycle_residue_envelope(
@@ -60,8 +70,12 @@ fn preview_lifecycle_discard_rejects_nonzero_completion_residue() {
 
 #[test]
 fn preview_lifecycle_promotion_re_admits_authoritative_boundary() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, preview_active, promotion_record, promoted_ready) =
-        preview_promotion_detail_subscription("preview-lifecycle-promote");
+        preview_promotion_detail_subscription("preview-lifecycle-promote", resource_request);
     let preview_identity = preview_active
         .preview_active_subscription_identity()
         .clone();
@@ -118,8 +132,12 @@ fn preview_lifecycle_promotion_re_admits_authoritative_boundary() {
 
 #[test]
 fn preview_lifecycle_promotion_rejects_preview_crossed_completion() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, preview_active, promotion_record, _promoted_ready) =
-        preview_promotion_detail_subscription("preview-lifecycle-completion");
+        preview_promotion_detail_subscription("preview-lifecycle-completion", resource_request);
     let work_trace = preview_work_trace(&runtime, &preview_active, "preview-lifecycle-completion");
     let residue_envelope = runtime
         .capture_preview_lifecycle_residue_envelope(
@@ -156,8 +174,12 @@ fn preview_lifecycle_promotion_rejects_preview_crossed_completion() {
 
 #[test]
 fn preview_lifecycle_promotion_rejects_temporal_evidence_drift() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, preview_active, promotion_record, _promoted_ready) =
-        preview_promotion_detail_subscription("preview-lifecycle-temporal-drift");
+        preview_promotion_detail_subscription("preview-lifecycle-temporal-drift", resource_request);
     let work_trace = preview_work_trace(
         &runtime,
         &preview_active,
@@ -196,8 +218,12 @@ fn preview_lifecycle_promotion_rejects_temporal_evidence_drift() {
 
 #[test]
 fn preview_lifecycle_promotion_rejects_residue_envelope_from_another_work_trace() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, preview_active, promotion_record, _promoted_ready) =
-        preview_promotion_detail_subscription("preview-lifecycle-envelope-drift");
+        preview_promotion_detail_subscription("preview-lifecycle-envelope-drift", resource_request);
     let work_trace = preview_work_trace(
         &runtime,
         &preview_active,

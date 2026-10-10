@@ -2,11 +2,16 @@ use super::*;
 
 #[test]
 fn advisory_materialization_rejects_mismatched_query_observation_binding() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::super::causal_truth_commit_identity(
-            "commit-query-observation-mismatch",
-        ))
+        .route(
+            super::super::super::causal_truth_commit_identity("commit-query-observation-mismatch"),
+            resource_request,
+        )
         .unwrap();
     let reference_set = changed_reference_set(routed.route_identity());
     let flow = admit_causal_inspection(request_for(
@@ -67,11 +72,18 @@ fn advisory_materialization_rejects_mismatched_query_observation_binding() {
 
 #[test]
 fn advisory_replay_materialization_rejects_missing_requested_replay_posture() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = bridge_runtime();
     let routed = runtime
-        .route(super::super::super::causal_truth_commit_identity(
-            "commit-query-advisory-replay-posture-missing",
-        ))
+        .route(
+            super::super::super::causal_truth_commit_identity(
+                "commit-query-advisory-replay-posture-missing",
+            ),
+            resource_request,
+        )
         .unwrap();
     let signal_replay_cursor = "signal-replay-cursor:advisory-missing-posture";
     let flow = admitted_replay_flow_requesting_signal_cursor(

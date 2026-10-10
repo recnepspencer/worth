@@ -6,6 +6,10 @@ use worth_runtime_bridge::facade::{RelationalCommittedPatchRequest, TruthCommitI
 
 #[test]
 fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let records = CargoRecords::install(true);
     let mut graph = SignalGraph::new();
     let nodes = RouteGraph::install(&mut graph);
@@ -47,7 +51,7 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
         let delivery = bridge
             .bind_signal_graph(&mut graph)
             .unwrap()
-            .deliver_installed_correspondence(&installed, request);
+            .deliver_installed_correspondence(&installed, request, resource_request);
         let TransitionOutcome::Success(receipt) = delivery else {
             panic!("installed Bridge delivery: {delivery:?}")
         };

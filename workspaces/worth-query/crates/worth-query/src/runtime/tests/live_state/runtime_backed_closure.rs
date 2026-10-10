@@ -59,6 +59,10 @@ fn remasked_runtime(projection: WorthQueryRuntimeRemaskProjection) -> WorthQuery
 
 #[test]
 fn runtime_backed_reference_workload_exercises_temporal_async_preview_causal_and_follow_on_lanes() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut time_only_runtime = stateful_bridge_task_runtime();
     let time_view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = time_only_runtime
         .declare_live_view(
@@ -84,7 +88,8 @@ fn runtime_backed_reference_workload_exercises_temporal_async_preview_causal_and
 
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
-    let truth_plus_time = authoritative_truth_plus_time_cause(&bridge, &truth_patch);
+    let truth_plus_time =
+        authoritative_truth_plus_time_cause(&bridge, &truth_patch, resource_request);
     let async_completion = admitted_async_completion(
         &bridge,
         worth_signal::facade::NodeId::new(301, 0),
@@ -211,7 +216,7 @@ fn runtime_backed_reference_workload_exercises_temporal_async_preview_causal_and
 
     let preview_artifact = MilestoneFivePointTwoPreviewCertificationAdapter::
         preview_session_basis_and_promotion_parity_artifact();
-    let causal_bundle = runtime_backed_causal_certification_bundle();
+    let causal_bundle = runtime_backed_causal_certification_bundle(resource_request);
     let subscription_summary = runtime_backed_subscription_certification_summary();
     let continuation_summary = runtime_backed_continuation_closure_summary();
 
@@ -296,6 +301,10 @@ fn runtime_backed_reference_workload_exercises_temporal_async_preview_causal_and
 
 #[test]
 fn runtime_backed_closure_matrix_preserves_equivalent_and_distinct_public_meaning() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = stateful_bridge_task_runtime();
     let runtime_contract = runtime.public_downstream_delivery_contract();
     let workspace = stateful_bridge_task_runtime()
@@ -306,7 +315,7 @@ fn runtime_backed_closure_matrix_preserves_equivalent_and_distinct_public_meanin
     let support_row = support_matrix
         .row("downstream-delivery-contract")
         .expect("downstream delivery contract row should stay explicit");
-    let causal_bundle = runtime_backed_causal_certification_bundle();
+    let causal_bundle = runtime_backed_causal_certification_bundle(resource_request);
     let preview_artifact = MilestoneFivePointTwoPreviewCertificationAdapter::
         preview_session_basis_and_promotion_parity_artifact();
 

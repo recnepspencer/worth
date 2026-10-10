@@ -49,8 +49,13 @@ impl<'runtime, 'graph> BridgeSignalGraphBinding<'runtime, 'graph> {
         &mut self,
         correspondence: &BridgeInstalledSemanticCorrespondence,
         request: RelationalCommittedPatchRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> CorrespondenceDeliveryOutcome {
-        self.runtime
-            .deliver_installed_correspondence(correspondence, self.graph, request)
+        self.runtime.deliver_installed_correspondence(
+            correspondence,
+            self.graph,
+            request,
+            execution,
+        )
     }
 }

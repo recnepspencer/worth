@@ -14,6 +14,7 @@ use super::super::RuntimeBridgeRelationalSource;
 pub(super) fn bridge_envelopes_at_current_observation(
     runtime: worth_relational::facade::runtime::RelationalRuntime,
     commit_ids: impl IntoIterator<Item = worth_relational::facade::history::CommitId>,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Vec<BridgeCommittedPatchEnvelope> {
     use crate::facade::{
         CommittedPatchSource, RelationalCommittedPatchRequest, TruthCommitIdentity,
@@ -42,10 +43,13 @@ pub(super) fn bridge_envelopes_at_current_observation(
         .into_iter()
         .map(|commit_id| {
             source
-                .load_committed_patch(RelationalCommittedPatchRequest::at_snapshot(
-                    TruthCommitIdentity::from_relational_commit_id(commit_id.0),
-                    _lease.snapshot_identity().clone(),
-                ))
+                .load_committed_patch(
+                    RelationalCommittedPatchRequest::at_snapshot(
+                        TruthCommitIdentity::from_relational_commit_id(commit_id.0),
+                        _lease.snapshot_identity().clone(),
+                    ),
+                    execution,
+                )
                 .expect("exact observed Bridge publication")
         })
         .collect()

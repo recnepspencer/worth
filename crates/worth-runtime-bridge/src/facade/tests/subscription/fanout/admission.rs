@@ -2,9 +2,14 @@ use super::super::support::*;
 
 #[test]
 fn equivalent_detail_consumers_share_one_active_subscription() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let additional = canonical_consumer_contract(&runtime);
 
@@ -29,9 +34,14 @@ fn equivalent_detail_consumers_share_one_active_subscription() {
 
 #[test]
 fn equivalent_collection_consumers_share_one_active_subscription() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_collection_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let additional = canonical_consumer_contract(&runtime);
 
@@ -48,9 +58,14 @@ fn equivalent_collection_consumers_share_one_active_subscription() {
 
 #[test]
 fn shared_and_separate_equivalent_consumers_preserve_canonical_delivery_truth() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, shared_active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let additional = canonical_consumer_contract(&runtime);
     let plan = runtime
@@ -72,6 +87,7 @@ fn shared_and_separate_equivalent_consumers_preserve_canonical_delivery_truth() 
     let (separate_runtime, separate_active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let separate_window = sealed_window(
         &separate_runtime,
@@ -98,9 +114,14 @@ fn shared_and_separate_equivalent_consumers_preserve_canonical_delivery_truth() 
 
 #[test]
 fn divergent_replay_audit_consumer_rejects_shared_fanout() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let replay_audit = runtime
         .admit_subscription_consumer_contract(
@@ -130,9 +151,14 @@ fn divergent_replay_audit_consumer_rejects_shared_fanout() {
 
 #[test]
 fn mismatched_coalescing_rejects_shared_fanout() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let non_coalescing = runtime
         .admit_subscription_consumer_contract(
@@ -156,9 +182,14 @@ fn mismatched_coalescing_rejects_shared_fanout() {
 
 #[test]
 fn mismatched_pacing_and_backpressure_reject_shared_fanout() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let lag_bounded = runtime
         .admit_subscription_consumer_contract(
@@ -193,6 +224,7 @@ fn mismatched_pacing_and_backpressure_reject_shared_fanout() {
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
         lag_bounded_primary,
+        resource_request,
     );
     let independent_cursor = runtime
         .admit_subscription_consumer_contract(

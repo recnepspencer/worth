@@ -138,6 +138,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_writeback_bundle
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_merge_bundle_from_source(
     source: InMemoryRelationalBridgeSource,
     policy: BridgeRuntimePolicy,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingMergeBundle {
     let runtime =
         build_pricing_runtime_with_merge(source, RecordingSignalBridgeSink::default(), policy);
@@ -152,9 +153,10 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_merge_bundle_fro
         .replay_canonical_merge_record(&canonical_record)
         .expect("pricing merge canonical replay should succeed");
     runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:pricing-merged-aspect",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:pricing-merged-aspect"),
+            execution,
+        )
         .expect("pricing merged aspect route should succeed");
     let merged_source_commit = runtime
         .diagnostics()
@@ -179,6 +181,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_merge_bundle_fro
                 crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main"),
             )
             .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .expect("main premerge evaluation should succeed");
     let speculative_eval = runtime
@@ -188,6 +191,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_merge_bundle_fro
                 crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
             )
             .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .expect("speculative evaluation should succeed");
     let merged_eval = runtime
@@ -197,6 +201,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_merge_bundle_fro
                 crate::truth_identity_fixtures::truth_commit_fixture("commit:pricing-merged"),
             )
             .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .expect("merged historical evaluation should succeed");
 
@@ -237,13 +242,15 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_merge_bundle_fro
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_merge_bundle(
     policy: BridgeRuntimePolicy,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingMergeBundle {
-    capture_pricing_merge_bundle_from_source(pricing_merge_source(), policy)
+    capture_pricing_merge_bundle_from_source(pricing_merge_source(), policy, resource_request)
 }
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_workload_certification_bundle(
     policy: BridgeRuntimePolicy,
     preview_session_identity: BridgePreviewSessionIdentity,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingWorkloadCertificationBundle {
     let hostile_source = InMemoryRelationalBridgeSource::default();
     hostile_source.insert_committed_patch(pricing_patch(
@@ -262,22 +269,29 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_workload_certifi
     );
 
     PricingWorkloadCertificationBundle {
-        matrix: capture_pricing_certification_matrix(policy, preview_session_identity),
-        aspect: capture_pricing_aspect_bundle(policy),
-        discard: capture_pricing_discard_bundle(),
-        promotion: capture_pricing_promotion_bundle(),
-        fanout: capture_pricing_fanout_bundle(),
-        restart_replay: capture_pricing_restart_replay_bundle(policy),
-        restart_failure: capture_pricing_restart_failure_bundle(),
+        matrix: capture_pricing_certification_matrix(
+            policy,
+            preview_session_identity,
+            resource_request,
+        ),
+        aspect: capture_pricing_aspect_bundle(policy, resource_request),
+        discard: capture_pricing_discard_bundle(resource_request),
+        promotion: capture_pricing_promotion_bundle(resource_request),
+        fanout: capture_pricing_fanout_bundle(resource_request),
+        restart_replay: capture_pricing_restart_replay_bundle(policy, resource_request),
+        restart_failure: capture_pricing_restart_failure_bundle(resource_request),
         writeback: capture_pricing_writeback_bundle(policy),
-        merge: capture_pricing_merge_bundle(policy),
-        provenance: capture_pricing_historical_provenance_bundle(policy),
+        merge: capture_pricing_merge_bundle(policy, resource_request),
+        provenance: capture_pricing_historical_provenance_bundle(policy, resource_request),
         portfolio: capture_pricing_portfolio_blast_radius_bundle(),
         crisis: capture_pricing_crisis_bundle(),
         strategy: capture_pricing_strategy_bundle(),
         simulation: capture_pricing_simulation_suite(),
         trust_attacks: capture_pricing_trust_attack_bundle(),
-        hostile_failure: capture_pricing_missing_snapshot_failure_bundle(&hostile_runtime),
+        hostile_failure: capture_pricing_missing_snapshot_failure_bundle(
+            &hostile_runtime,
+            resource_request,
+        ),
     }
 }
 

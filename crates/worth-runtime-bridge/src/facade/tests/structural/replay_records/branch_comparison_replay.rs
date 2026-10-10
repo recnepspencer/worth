@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn runtime_canonicalizes_and_replays_structural_branch_comparison_record() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     #[derive(Clone)]
     struct BranchDiffSource;
 
@@ -43,6 +47,7 @@ fn runtime_canonicalizes_and_replays_structural_branch_comparison_record() {
         fn load_committed_patch(
             &self,
             request: crate::adapter::RelationalCommittedPatchRequest,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::input::envelope::BridgeCommittedPatchEnvelope,
             crate::adapter::RelationalBridgeSourceError,
@@ -79,6 +84,7 @@ fn runtime_canonicalizes_and_replays_structural_branch_comparison_record() {
         fn open_snapshot(
             &self,
             identity: &TruthSnapshotIdentity,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             Box<dyn crate::snapshot::TruthSnapshotReader>,
             crate::adapter::RelationalBridgeSourceError,
@@ -106,6 +112,7 @@ fn runtime_canonicalizes_and_replays_structural_branch_comparison_record() {
         fn load_branch_head_patch(
             &self,
             branch_identity: &TruthBranchIdentity,
+            _execution: worth_execution::ExecutionRequest<'_, '_>,
         ) -> Result<
             crate::input::envelope::BridgeCommittedPatchEnvelope,
             crate::adapter::RelationalBridgeSourceError,
@@ -222,6 +229,7 @@ fn runtime_canonicalizes_and_replays_structural_branch_comparison_record() {
                     worth_foundational::facade::ScalarAspectType::String,
                 ),
             )]),
+            resource_request,
         )
         .expect("branch diff candidate should plan");
     let reduced = runtime
@@ -234,7 +242,7 @@ fn runtime_canonicalizes_and_replays_structural_branch_comparison_record() {
         .canonicalize_structural_branch_comparison_record(&contract, &planned, &reduced, &artifact);
 
     let replay = runtime
-        .replay_canonical_structural_branch_comparison_record(&record)
+        .replay_canonical_structural_branch_comparison_record(&record, resource_request)
         .expect("structural branch comparison replay should succeed");
     let explanation = runtime
         .diagnostics()

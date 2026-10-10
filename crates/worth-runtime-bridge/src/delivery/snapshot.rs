@@ -9,17 +9,19 @@ use crate::snapshot::{
 pub(crate) fn open_planned_snapshot(
     runtime: &RuntimeBridge,
     snapshot_identity: &crate::snapshot::TruthSnapshotIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<AdmittedSnapshotContext<Box<dyn TruthSnapshotReader>>, BridgeDeliveryError> {
-    let snapshot_reader = open_snapshot_reader(runtime, snapshot_identity).map_err(|error| {
-        BridgeDeliveryError::new(
-            BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
-            format!(
-                "Bridge failed to open snapshot `{}`: {error}",
-                snapshot_identity.as_str()
-            ),
-        )
-        .with_context(BridgeErrorContext::snapshot(snapshot_identity.clone()))
-    })?;
+    let snapshot_reader =
+        open_snapshot_reader(runtime, snapshot_identity, execution).map_err(|error| {
+            BridgeDeliveryError::new(
+                BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
+                format!(
+                    "Bridge failed to open snapshot `{}`: {error}",
+                    snapshot_identity.as_str()
+                ),
+            )
+            .with_context(BridgeErrorContext::snapshot(snapshot_identity.clone()))
+        })?;
     let snapshot = BridgeSnapshotContext::bind(snapshot_reader);
     let admitted = AdmittedSnapshotContext::admit_for(snapshot, snapshot_identity).map_err(
         |bound_snapshot_identity| {
@@ -53,16 +55,17 @@ pub(crate) fn open_planned_snapshot(
 pub(super) fn open_snapshot_reader(
     runtime: &RuntimeBridge,
     snapshot_identity: &crate::snapshot::TruthSnapshotIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Box<dyn TruthSnapshotReader>, crate::adapter::RelationalBridgeSourceError> {
     if let Some(pool) = runtime.snapshot_reader_pool.as_ref() {
         let pool = std::sync::Arc::clone(pool);
-        let reader = pool.acquire(snapshot_identity)?;
+        let reader = pool.acquire(snapshot_identity, execution)?;
         return Ok(Box::new(PooledTruthSnapshotReader::new(pool, reader)));
     }
 
     runtime
         .snapshot_read_source
-        .open_snapshot(snapshot_identity)
+        .open_snapshot(snapshot_identity, execution)
 }
 
 struct PooledTruthSnapshotReader {

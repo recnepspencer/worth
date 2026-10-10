@@ -14,6 +14,9 @@ use worth_runtime_bridge::facade::BridgeManagedExecutionCancellationReason;
 #[test]
 fn installed_domain_semantics_preserve_distinct_terminal_kinds() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -40,7 +43,7 @@ fn installed_domain_semantics_preserve_distinct_terminal_kinds() {
             ),
         ];
         for (fixture, expected, incumbent_count) in cases {
-            match direct_terminal_outcome(execution, fixture) {
+            match direct_terminal_outcome(execution, fixture, resource_request) {
                 WorthQueryDirectConvergenceIterationOutcome::Converged(terminal) => {
                     assert_semantic_terminal(terminal, expected, incumbent_count)
                 }
@@ -62,10 +65,17 @@ fn installed_domain_semantics_preserve_distinct_terminal_kinds() {
 #[test]
 fn incoherent_terminal_semantics_become_indeterminate_without_becoming_a_report() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let terminal = indeterminate_terminal(execution, FixtureDisposition::IncoherentStable);
+        let terminal = indeterminate_terminal(
+            execution,
+            FixtureDisposition::IncoherentStable,
+            resource_request,
+        );
         assert_eq!(
             terminal.kind(),
             WorthQueryConvergenceTerminalKind::Indeterminate
@@ -90,10 +100,14 @@ fn incoherent_terminal_semantics_become_indeterminate_without_becoming_a_report(
 #[test]
 fn stalled_progress_remains_explicit_domain_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let terminal = indeterminate_terminal(execution, FixtureDisposition::Stalled);
+        let terminal =
+            indeterminate_terminal(execution, FixtureDisposition::Stalled, resource_request);
         assert_eq!(
             terminal.kind(),
             WorthQueryConvergenceTerminalKind::Indeterminate
@@ -120,11 +134,17 @@ fn stalled_progress_remains_explicit_domain_evidence() {
 #[test]
 fn indeterminate_comparison_retains_each_indeterminate_semantic_axis() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let terminal =
-            indeterminate_terminal(execution, FixtureDisposition::IndeterminateComparison);
+        let terminal = indeterminate_terminal(
+            execution,
+            FixtureDisposition::IndeterminateComparison,
+            resource_request,
+        );
         assert_eq!(
             terminal.kind(),
             WorthQueryConvergenceTerminalKind::Indeterminate
@@ -156,10 +176,17 @@ fn indeterminate_comparison_retains_each_indeterminate_semantic_axis() {
 #[test]
 fn comparator_failure_retains_exact_attempted_work_without_admitting_a_report() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let terminal = indeterminate_terminal(execution, FixtureDisposition::ComparatorFailure);
+        let terminal = indeterminate_terminal(
+            execution,
+            FixtureDisposition::ComparatorFailure,
+            resource_request,
+        );
         assert_eq!(
             terminal.kind(),
             WorthQueryConvergenceTerminalKind::Indeterminate
@@ -185,10 +212,13 @@ fn comparator_failure_retains_exact_attempted_work_without_admitting_a_report() 
 #[test]
 fn managed_signal_cancellation_remains_a_distinct_convergence_terminal() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let epoch = direct_epoch_fixture(FixtureDisposition::Converged);
+        let epoch = direct_epoch_fixture(FixtureDisposition::Converged, resource_request);
         let started = match epoch.begin_iteration(
             execution,
             WorthQueryManagedGraphCallRequest::new(

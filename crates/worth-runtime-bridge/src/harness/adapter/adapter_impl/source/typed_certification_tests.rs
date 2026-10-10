@@ -132,6 +132,7 @@ fn snapshot(snapshot_identity: TruthSnapshotIdentity, text: &str) -> SnapshotFix
 fn execute_typed_source(
     profile: ExecutionProfile,
     target: SourceHarnessTarget,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> SourceHarnessExecution {
     let adapter = BridgeHarnessAdapter;
     let fixture = source_fixture("typed-source-certification");
@@ -143,7 +144,7 @@ fn execute_typed_source(
         .load_fixture(&mut session, &fixture)
         .expect("source harness load fixture");
     let runtime_bridge = loaded_runtime_bridge(&session);
-    execute_source_request(runtime_bridge, &fixture.fixture, target)
+    execute_source_request(runtime_bridge, &fixture.fixture, target, resource_request)
         .expect("typed source execution should succeed")
 }
 
@@ -156,6 +157,10 @@ fn loaded_runtime_bridge(session: &BridgeHarnessSession) -> &crate::facade::Runt
 
 #[test]
 fn materialize_and_replay_retain_typed_source_certification_truth() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let materialized = execute_typed_source(
         ExecutionProfile::development("typed-materialize"),
         SourceHarnessTarget::Materialize {
@@ -163,6 +168,7 @@ fn materialize_and_replay_retain_typed_source_certification_truth() {
                 "source:analysis-history",
             ),
         },
+        resource_request,
     );
     let replayed = execute_typed_source(
         ExecutionProfile::development("typed-replay"),
@@ -171,6 +177,7 @@ fn materialize_and_replay_retain_typed_source_certification_truth() {
                 "source:analysis-history",
             ),
         },
+        resource_request,
     );
 
     let SourceHarnessExecution::Materialize {
@@ -231,6 +238,10 @@ fn materialize_and_replay_retain_typed_source_certification_truth() {
 
 #[test]
 fn batch_materialization_retains_typed_packet_set_counter_evidence() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let execution = execute_typed_source(
         ExecutionProfile::development("typed-batch"),
         SourceHarnessTarget::MaterializeBatch {
@@ -238,6 +249,7 @@ fn batch_materialization_retains_typed_packet_set_counter_evidence() {
                 "source:analysis-history",
             ),
         },
+        resource_request,
     );
 
     let SourceHarnessExecution::Materialize { contract, record } = execution else {
@@ -257,6 +269,10 @@ fn batch_materialization_retains_typed_packet_set_counter_evidence() {
 
 #[test]
 fn unregistered_source_rejection_retains_typed_failure_evidence() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let execution = execute_typed_source(
         ExecutionProfile::development("typed-unregistered"),
         SourceHarnessTarget::RejectUnregistered {
@@ -264,6 +280,7 @@ fn unregistered_source_rejection_retains_typed_failure_evidence() {
                 "source:hostile-missing",
             ),
         },
+        resource_request,
     );
 
     let SourceHarnessExecution::Rejected { failure } = execution else {
@@ -290,6 +307,10 @@ fn unregistered_source_rejection_retains_typed_failure_evidence() {
 
 #[test]
 fn adapter_snapshot_failures_retain_typed_failure_kind_and_zero_success_residue() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let open_failure = execute_typed_source(
         ExecutionProfile::development("typed-open-rejection")
             .with_metadata("source_adapter_behavior", "reject_open_snapshot"),
@@ -298,6 +319,7 @@ fn adapter_snapshot_failures_retain_typed_failure_kind_and_zero_success_residue(
                 "source:analysis-history",
             ),
         },
+        resource_request,
     );
     let drift_failure = execute_typed_source(
         ExecutionProfile::development("typed-drift-rejection")
@@ -307,6 +329,7 @@ fn adapter_snapshot_failures_retain_typed_failure_kind_and_zero_success_residue(
                 "source:analysis-history",
             ),
         },
+        resource_request,
     );
 
     assert_typed_source_failure(

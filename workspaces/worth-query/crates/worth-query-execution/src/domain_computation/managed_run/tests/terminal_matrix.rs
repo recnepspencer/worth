@@ -31,8 +31,12 @@ impl NonCompletionTerminal {
 
 #[test]
 fn direct_noncompletion_terminals_cancel_signal_and_release_every_owner() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     for terminal in NonCompletionTerminal::ALL {
-        let running = running_direct("direct-terminal-matrix");
+        let running = running_direct("direct-terminal-matrix", resource_request);
         let terminal_authority = running.terminal(terminal.expected_kind());
         assert_eq!(terminal_authority.kind(), terminal.expected_kind());
         let cleanup = terminal_authority
@@ -50,8 +54,12 @@ fn direct_noncompletion_terminals_cancel_signal_and_release_every_owner() {
 
 #[test]
 fn workflow_noncompletion_terminals_cancel_signal_and_release_every_owner() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     for terminal in NonCompletionTerminal::ALL {
-        let running = running_workflow("workflow-terminal-matrix");
+        let running = running_workflow("workflow-terminal-matrix", resource_request);
         let terminal_authority = running.terminal(terminal.expected_kind());
         assert_eq!(terminal_authority.kind(), terminal.expected_kind());
         let cleanup = match terminal_authority.cleanup() {
@@ -74,7 +82,10 @@ fn workflow_noncompletion_terminals_cancel_signal_and_release_every_owner() {
     }
 }
 
-fn running_direct(label: &str) -> WorthQueryRunningDirectRun {
+fn running_direct(
+    label: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRunningDirectRun {
     let runtime = query_runtime();
     let plan = admitted_plan(label, 8);
     let operation = direct_authority(&runtime, &plan);
@@ -84,12 +95,15 @@ fn running_direct(label: &str) -> WorthQueryRunningDirectRun {
     let lower = causal_fixture::managed_admission_context();
     runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("terminal-matrix direct run should admit")
         .start()
 }
 
-fn running_workflow(label: &str) -> crate::domain_computation::WorthQueryRunningWorkflowRun {
+fn running_workflow(
+    label: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::domain_computation::WorthQueryRunningWorkflowRun {
     let runtime = query_runtime();
     let operation_resources = admitted_plan(label, 8);
     let stage_resources = admitted_plan(&format!("{label}:stage"), 4);
@@ -104,7 +118,7 @@ fn running_workflow(label: &str) -> crate::domain_computation::WorthQueryRunning
     let lower = causal_fixture::managed_admission_context();
     runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
+        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
         .expect("terminal-matrix workflow run should admit")
         .start()
         .expect("terminal-matrix workflow should start")

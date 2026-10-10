@@ -33,6 +33,7 @@ impl SnapshotReadSource for ReusableReaderSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         self.0.fetch_add(1, Ordering::SeqCst);
         let value = if identity == &crate::truth_identity_fixtures::truth_snapshot(1, 1) {
@@ -161,6 +162,7 @@ impl SnapshotReadSource for SingleReaderSource {
     fn open_snapshot(
         &self,
         _: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         if self
             .0
@@ -181,8 +183,9 @@ impl SnapshotReaderPool for SingleReaderSource {
     fn acquire(
         &self,
         identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        self.open_snapshot(identity)
+        self.open_snapshot(identity, execution)
     }
 
     fn release(&self, reader: Box<dyn TruthSnapshotReader>) {

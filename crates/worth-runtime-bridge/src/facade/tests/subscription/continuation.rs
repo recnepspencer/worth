@@ -2,8 +2,14 @@ use super::support::*;
 
 #[test]
 fn continuation_index_plans_one_to_one_replace_without_registry_scan() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
 
     let index = runtime
         .build_subscription_continuation_index(
@@ -44,8 +50,14 @@ fn continuation_index_plans_one_to_one_replace_without_registry_scan() {
 
 #[test]
 fn continuation_split_emits_attributable_child_records() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let index = runtime
         .build_subscription_continuation_index(
             &active,
@@ -76,8 +88,14 @@ fn continuation_split_emits_attributable_child_records() {
 
 #[test]
 fn continuation_closed_table_admits_unchanged_merge_like_and_branch_local() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let index = runtime
         .build_subscription_continuation_index(
             &active,
@@ -126,8 +144,14 @@ fn continuation_closed_table_admits_unchanged_merge_like_and_branch_local() {
 
 #[test]
 fn continuation_closed_table_rejects_unsupported_ambiguous_authority_denied_and_branch_leak() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let index = runtime
         .build_subscription_continuation_index(
             &active,
@@ -174,8 +198,14 @@ fn continuation_closed_table_rejects_unsupported_ambiguous_authority_denied_and_
 
 #[test]
 fn continuation_rejects_structurally_invalid_split_before_delivery() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let index = runtime
         .build_subscription_continuation_index(
             &active,
@@ -201,8 +231,14 @@ fn continuation_rejects_structurally_invalid_split_before_delivery() {
 
 #[test]
 fn continuation_rejects_active_subscription_drift() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let index = runtime
         .build_subscription_continuation_index(
             &active,
@@ -217,6 +253,7 @@ fn continuation_rejects_active_subscription_drift() {
         .expect("replace continuation index should build");
     let (other_runtime, other_active) = active_detail_subscription(
         BridgeSubscriptionDeliveryDensityPosture::BoundedCoalescedWindow,
+        resource_request,
     );
 
     let rejection = other_runtime

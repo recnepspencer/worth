@@ -56,10 +56,13 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for WorkflowAbandonProvi
 #[test]
 fn workflow_active_abandonment_releases_provider_execution() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (running, graph) = workflow_abandon_world();
+        let (running, graph) = workflow_abandon_world(resource_request);
         let active =
             begin_workflow_projection(execution, running, &graph, "workflow-active-abandon");
         let terminal = failed_terminal(active.abandon());
@@ -78,10 +81,13 @@ fn workflow_active_abandonment_releases_provider_execution() {
 #[test]
 fn workflow_pending_and_paused_abandonment_release_output_and_queue() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (running, graph) = workflow_abandon_world();
+        let (running, graph) = workflow_abandon_world(resource_request);
         let active =
             begin_workflow_projection(execution, running, &graph, "workflow-pending-abandon");
         let pending = match active.advance(execution) {
@@ -93,7 +99,7 @@ fn workflow_pending_and_paused_abandonment_release_output_and_queue() {
         assert_eq!(terminal.provider_work().retained_bytes(), 0);
         assert!(terminal.provider_work().peak_retained_bytes() > 0);
 
-        let (running, graph) = workflow_abandon_world();
+        let (running, graph) = workflow_abandon_world(resource_request);
         let active =
             begin_workflow_projection(execution, running, &graph, "workflow-paused-abandon");
         let pending = match active.advance(execution) {
@@ -110,7 +116,9 @@ fn workflow_pending_and_paused_abandonment_release_output_and_queue() {
     });
 }
 
-fn workflow_abandon_world() -> (
+fn workflow_abandon_world(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> (
     crate::domain_computation::WorthQueryRunningWorkflowRun,
     WorthQueryInstalledGraphParticipationAuthority,
 ) {
@@ -146,8 +154,12 @@ fn workflow_abandon_world() -> (
         &graph,
         WorthQueryOperationGraphAccess::Project,
     );
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let running = super::workflow_provider_steps::admitted_workflow(
+        &runtime,
+        &operation,
+        resources,
+        resource_request,
+    );
     (running, graph)
 }
 

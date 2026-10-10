@@ -11,15 +11,23 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn one_missing_batch_slot_denies_before_world_or_bridge_movement() {
-    assert_live_reservation_denial(0, u64::MAX, "slot-short", 211);
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_live_reservation_denial(0, u64::MAX, "slot-short", 211, resource_request);
 }
 
 #[test]
 fn one_missing_payload_byte_denies_before_world_or_bridge_movement() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let payload = "byte-short".to_owned();
     let required = AccountActivityBinding::retained_bytes(&payload);
     assert!(required > 0);
-    assert_live_reservation_denial(1, required - 1, &payload, 212);
+    assert_live_reservation_denial(1, required - 1, &payload, 212, resource_request);
 }
 
 fn assert_live_reservation_denial(
@@ -27,6 +35,7 @@ fn assert_live_reservation_denial(
     byte_capacity: u64,
     payload: &str,
     identity: u8,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let world = installed_authorization_world(true);
     let request = live_scope();
@@ -35,7 +44,7 @@ fn assert_live_reservation_denial(
     let branch = world.application.current_world();
     let selected = world.application.on_branch(branch).select().unwrap();
     let product_before = selected.product().selected_commit().clone();
-    let bridge_before = bridge_head_commit(&world);
+    let bridge_before = bridge_head_commit(&world, resource_request);
     let _live = world
         .application
         .primary_provider
@@ -72,7 +81,7 @@ fn assert_live_reservation_denial(
     ));
     let product_after = world.application.on_branch(branch).select().unwrap();
     assert_eq!(product_after.product().selected_commit(), &product_before);
-    assert_eq!(bridge_head_commit(&world), bridge_before);
+    assert_eq!(bridge_head_commit(&world, resource_request), bridge_before);
     assert_eq!(
         world
             .application
@@ -85,6 +94,7 @@ fn assert_live_reservation_denial(
 
 fn bridge_head_commit(
     world: &crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> worth_runtime_bridge::facade::TruthCommitIdentity {
     world
         .application
@@ -93,6 +103,7 @@ fn bridge_head_commit(
         .relational_bridge_source()
         .load_branch_head_patch(
             &crate::domain_computation::primary_graph::primary_truth_branch_identity(),
+            resource_request,
         )
         .expect("the bridge truth head remains available")
         .commit_identity()

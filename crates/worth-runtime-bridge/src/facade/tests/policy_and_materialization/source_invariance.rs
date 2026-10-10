@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn source_builder_order_does_not_change_materialized_source_truth() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let first = RuntimeBridgeBuilder::new()
         .with_policy(BridgeRuntimePolicy::default())
         .with_relational_source(StaticSource)
@@ -115,7 +119,11 @@ fn source_builder_order_does_not_change_materialized_source_truth() {
         .canonicalize_source_materialization_record(
             &first_contract,
             &first
-                .materialize_source_packet(&first_contract, SnapshotReadPacket::new(vec![]))
+                .materialize_source_packet(
+                    &first_contract,
+                    SnapshotReadPacket::new(vec![]),
+                    execution,
+                )
                 .expect("first source packet should materialize"),
         )
         .expect("first source record should canonicalize");
@@ -123,7 +131,11 @@ fn source_builder_order_does_not_change_materialized_source_truth() {
         .canonicalize_source_materialization_record(
             &second_contract,
             &second
-                .materialize_source_packet(&second_contract, SnapshotReadPacket::new(vec![]))
+                .materialize_source_packet(
+                    &second_contract,
+                    SnapshotReadPacket::new(vec![]),
+                    execution,
+                )
                 .expect("second source packet should materialize"),
         )
         .expect("second source record should canonicalize");
@@ -137,6 +149,10 @@ fn source_builder_order_does_not_change_materialized_source_truth() {
 
 #[test]
 fn source_diagnostics_richness_preserves_source_truth() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let minimal = runtime(BridgeRuntimePolicy::operational());
     let exhaustive = runtime(BridgeRuntimePolicy::forensic());
     let declaration = registered_source(
@@ -164,7 +180,11 @@ fn source_diagnostics_richness_preserves_source_truth() {
         .canonicalize_source_materialization_record(
             &minimal_contract,
             &minimal
-                .materialize_source_packet(&minimal_contract, SnapshotReadPacket::new(vec![]))
+                .materialize_source_packet(
+                    &minimal_contract,
+                    SnapshotReadPacket::new(vec![]),
+                    execution,
+                )
                 .expect("minimal diagnostics source should materialize"),
         )
         .expect("minimal diagnostics source record should canonicalize");
@@ -172,7 +192,11 @@ fn source_diagnostics_richness_preserves_source_truth() {
         .canonicalize_source_materialization_record(
             &exhaustive_contract,
             &exhaustive
-                .materialize_source_packet(&exhaustive_contract, SnapshotReadPacket::new(vec![]))
+                .materialize_source_packet(
+                    &exhaustive_contract,
+                    SnapshotReadPacket::new(vec![]),
+                    execution,
+                )
                 .expect("exhaustive diagnostics source should materialize"),
         )
         .expect("exhaustive diagnostics source record should canonicalize");

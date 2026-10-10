@@ -7,6 +7,10 @@ use crate::facade::{
 
 #[test]
 fn bridge_harness_subscription_suite_33_checkpoint_resume_and_replay_are_exact() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     for build_declaration in [
         detail_subscription as fn(&RuntimeBridge) -> crate::facade::BridgeSubscriptionDeclaration,
         collection_subscription,
@@ -18,6 +22,7 @@ fn bridge_harness_subscription_suite_33_checkpoint_resume_and_replay_are_exact()
             &declaration,
             BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
             1,
+            resource_request,
         );
         let first_window = sealed_window_with_members(
             &bridge,
@@ -93,6 +98,7 @@ fn bridge_harness_subscription_suite_33_checkpoint_resume_and_replay_are_exact()
             &restart_declaration,
             BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
             1,
+            resource_request,
         );
         let restart_checkpoint_window = sealed_window_with_members(
             &restart_bridge,
@@ -149,6 +155,7 @@ fn bridge_harness_subscription_suite_33_checkpoint_resume_and_replay_are_exact()
                 &other_declaration,
                 BridgeSubscriptionDeliveryDensityPosture::BoundedCoalescedWindow,
                 1,
+                resource_request,
             );
             (other_runtime, other_active)
         };

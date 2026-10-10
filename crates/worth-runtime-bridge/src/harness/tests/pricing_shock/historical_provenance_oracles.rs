@@ -2,6 +2,10 @@ use super::support::*;
 
 #[test]
 fn pricing_shock_historical_commit_reads_bridge_visible_provenance_from_truth() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let scenario = generated_pricing_scenario();
     let runtime = build_pricing_runtime(
         pricing_reference_source(),
@@ -15,6 +19,7 @@ fn pricing_shock_historical_commit_reads_bridge_visible_provenance_from_truth() 
                 crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
             )
             .with_read_packet(pricing_provenance_read_packet("rubber")),
+            execution,
         )
         .expect("historical pricing shock provenance should materialize");
     let provenance_texts = read_pricing_provenance_aspect_text_packet(&historical);
@@ -68,6 +73,10 @@ fn pricing_shock_historical_commit_reads_bridge_visible_provenance_from_truth() 
 
 #[test]
 fn pricing_shock_historical_provenance_corruption_is_detectable_against_independent_oracle() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let scenario = generated_pricing_scenario();
     let runtime = build_pricing_runtime(
         pricing_reference_source_with_corrupted_shock_provenance("shock-delta", "999999"),
@@ -81,6 +90,7 @@ fn pricing_shock_historical_provenance_corruption_is_detectable_against_independ
                 crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
             )
             .with_read_packet(pricing_provenance_read_packet("rubber")),
+            execution,
         )
         .expect("corrupted historical provenance should still materialize as truth");
     let cost_eval = runtime
@@ -90,6 +100,7 @@ fn pricing_shock_historical_provenance_corruption_is_detectable_against_independ
                 crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
             )
             .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .expect("historical component cost should still materialize");
     let provenance_texts = read_pricing_provenance_aspect_text_packet(&provenance_eval);
@@ -130,6 +141,10 @@ fn pricing_shock_historical_provenance_corruption_is_detectable_against_independ
 
 #[test]
 fn pricing_shock_provenance_mutation_sweep_is_detectable_against_independent_oracle() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let scenario = generated_pricing_scenario();
     let shock = scenario
         .commit_attributions
@@ -191,6 +206,7 @@ fn pricing_shock_provenance_mutation_sweep_is_detectable_against_independent_ora
                     crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
                 )
                 .with_read_packet(pricing_provenance_read_packet("rubber")),
+                execution,
             )
             .expect("corrupted provenance field should still materialize");
         let provenance_texts = read_pricing_provenance_aspect_text_packet(&historical);

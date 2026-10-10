@@ -9,6 +9,7 @@ use super::BridgeRouteSourceSummary;
 pub(crate) fn replay_route_record(
     runtime: &RuntimeBridge,
     record: &BridgeRouteRecord,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BridgeReplaySummary, BridgeReplayError> {
     let planned_result = match record.contract_proof().route_planning_policy() {
         Some(route_policy) => runtime
@@ -16,6 +17,7 @@ pub(crate) fn replay_route_record(
                 BridgeRouteRequest::for_commit(record.source_commit().clone()),
                 record.mapping_context().clone(),
                 route_policy,
+                execution,
             ),
         None => match record.contract_proof().route_planning_policy_digest() {
             Some(route_policy_digest) => runtime
@@ -23,10 +25,12 @@ pub(crate) fn replay_route_record(
                     BridgeRouteRequest::for_commit(record.source_commit().clone()),
                     record.mapping_context().clone(),
                     route_policy_digest,
+                    execution,
                 ),
             None => runtime.plan_committed_patch_with_mapping_context(
                 BridgeRouteRequest::for_commit(record.source_commit().clone()),
                 record.mapping_context().clone(),
+                execution,
             ),
         },
     };

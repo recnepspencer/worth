@@ -2,8 +2,14 @@ use super::support::*;
 
 #[test]
 fn equivalent_retained_resume_basis_prepares_equal_replay_readiness() {
-    let (left_runtime, left_active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (left_runtime, left_active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let left_checkpoint = checkpoint_from_sealed(
         &left_runtime,
         &left_active,
@@ -48,8 +54,10 @@ fn equivalent_retained_resume_basis_prepares_equal_replay_readiness() {
         .expect("left resume basis should admit");
     let left_readiness = left_runtime.prepare_subscription_replay_readiness(&left_admitted);
 
-    let (right_runtime, right_active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let (right_runtime, right_active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let right_checkpoint = checkpoint_from_sealed(
         &right_runtime,
         &right_active,
@@ -128,8 +136,14 @@ fn retained_temporal_resume_basis_distinguishes_pending_from_ready_wakes() {
 
 #[test]
 fn resume_basis_rejects_missing_inflight_async_generation() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let checkpoint = checkpoint_from_sealed(
         &runtime,
         &active,
@@ -172,9 +186,14 @@ fn resume_basis_rejects_missing_inflight_async_generation() {
 
 #[test]
 fn fanout_checkpoint_requires_explicit_delivery_resume_basis() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let fanout_plan = runtime
         .plan_shared_subscription_fanout(&active, vec![canonical_consumer_contract(&runtime)])
@@ -210,8 +229,14 @@ fn fanout_checkpoint_requires_explicit_delivery_resume_basis() {
 
 #[test]
 fn resume_basis_rejects_cross_branch_temporal_and_async_basis() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let checkpoint = checkpoint_from_sealed(
         &runtime,
         &active,
@@ -262,9 +287,14 @@ fn resume_basis_rejects_cross_branch_temporal_and_async_basis() {
 
 #[test]
 fn replay_readiness_carries_shared_delivery_acknowledgement_frontier() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let fanout_plan = runtime
         .plan_shared_subscription_fanout(&active, vec![canonical_consumer_contract(&runtime)])
@@ -320,8 +350,14 @@ fn replay_readiness_carries_shared_delivery_acknowledgement_frontier() {
 
 #[test]
 fn retained_resume_basis_lowers_into_existing_replay_resume_admission() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let sealed = sealed_window_with_members(
         &runtime,
         &active,

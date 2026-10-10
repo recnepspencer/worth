@@ -2,6 +2,7 @@ use super::*;
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_historical_provenance_bundle(
     policy: BridgeRuntimePolicy,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingHistoricalProvenanceBundle {
     let runtime = build_pricing_runtime_with_policy(
         pricing_reference_source(),
@@ -21,6 +22,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_historical_prove
                 crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-main"),
             )
             .with_read_packet(pricing_provenance_read_packet("rubber")),
+            execution,
         )
         .expect("historical main provenance should materialize");
     let shock_eval = runtime
@@ -30,6 +32,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_historical_prove
                 crate::truth_identity_fixtures::truth_commit_fixture("commit:rubber-shock"),
             )
             .with_read_packet(pricing_provenance_read_packet("rubber")),
+            execution,
         )
         .expect("historical shock provenance should materialize");
     let main_provenance_texts = read_pricing_provenance_aspect_text_packet(&main);

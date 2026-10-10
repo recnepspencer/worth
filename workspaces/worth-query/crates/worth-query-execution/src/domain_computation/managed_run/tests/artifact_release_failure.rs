@@ -2,7 +2,11 @@ use super::*;
 
 #[test]
 fn workflow_cleanup_contains_artifact_disposal_and_destructor_panics() {
-    let world = double_panicking_artifact_world("artifact-double-panic");
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = double_panicking_artifact_world("artifact-double-panic", resource_request);
 
     let terminal = world
         .running
@@ -51,7 +55,11 @@ fn workflow_cleanup_contains_artifact_disposal_and_destructor_panics() {
 
 #[test]
 fn surviving_borrow_delays_and_then_contains_both_artifact_release_panics() {
-    let world = double_panicking_artifact_world("artifact-delayed-double-panic");
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = double_panicking_artifact_world("artifact-delayed-double-panic", resource_request);
     let borrowed = world
         .handle
         .borrow("delayed double-panic release")
@@ -115,10 +123,13 @@ fn surviving_borrow_delays_and_then_contains_both_artifact_release_panics() {
 #[test]
 fn yielded_cleanup_maps_double_artifact_release_panic_into_recovery_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let world = double_panicking_yield_world("yielded-artifact-double-panic");
+        let world = double_panicking_yield_world("yielded-artifact-double-panic", resource_request);
         let active = world
             .running
             .begin_stage_graph_execution(
@@ -193,7 +204,10 @@ struct DoublePanickingYieldWorld {
     destructor_attempts: Arc<AtomicUsize>,
 }
 
-fn double_panicking_artifact_world(label: &str) -> DoublePanickingArtifactWorld {
+fn double_panicking_artifact_world(
+    label: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> DoublePanickingArtifactWorld {
     let runtime = query_runtime();
     let operation_resources = admitted_plan(label, 8);
     let stage_label = format!("{label}:producer");
@@ -212,7 +226,7 @@ fn double_panicking_artifact_world(label: &str) -> DoublePanickingArtifactWorld 
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
+        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
         .expect("double-panic workflow should admit")
         .start()
         .expect("double-panic workflow should start");
@@ -249,7 +263,10 @@ fn double_panicking_artifact_world(label: &str) -> DoublePanickingArtifactWorld 
     }
 }
 
-fn double_panicking_yield_world(label: &str) -> DoublePanickingYieldWorld {
+fn double_panicking_yield_world(
+    label: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> DoublePanickingYieldWorld {
     let installer = WorthQueryExecutionRuntimeInstaller::new();
     let provider_anchor = Arc::new(
         crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::install::<ManagedGraph, _>(
@@ -286,8 +303,12 @@ fn double_panicking_yield_world(label: &str) -> DoublePanickingYieldWorld {
         WorthQueryOperationGraphAccess::Observe,
         output,
     );
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let running = super::workflow_provider_steps::admitted_workflow(
+        &runtime,
+        &operation,
+        resources,
+        resource_request,
+    );
     let production = running
         .artifacts()
         .production_authority("producer")

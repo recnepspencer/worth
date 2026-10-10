@@ -2,8 +2,12 @@ use super::support::*;
 
 #[test]
 fn pricing_shock_discard_stays_zero_residue_under_interleaved_main_churn() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let scenario = generated_pricing_scenario();
-    let discard = capture_pricing_discard_bundle();
+    let discard = capture_pricing_discard_bundle(resource_request);
 
     assert_eq!(
         discard.live_main_snapshot,
@@ -37,8 +41,12 @@ fn pricing_shock_discard_stays_zero_residue_under_interleaved_main_churn() {
 
 #[test]
 fn pricing_shock_promotion_stays_distinct_from_interleaved_main_truth() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let scenario = generated_pricing_scenario();
-    let promotion = capture_pricing_promotion_bundle();
+    let promotion = capture_pricing_promotion_bundle(resource_request);
 
     assert_eq!(
         promotion.main_snapshot,
@@ -79,8 +87,12 @@ fn pricing_shock_promotion_stays_distinct_from_interleaved_main_truth() {
 
 #[test]
 fn pricing_shock_live_graph_shared_input_fans_out_across_one_hundred_products() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let scenario = generated_pricing_scenario();
-    let fanout = capture_pricing_fanout_bundle();
+    let fanout = capture_pricing_fanout_bundle(resource_request);
 
     assert_eq!(fanout.total_deliveries, 2);
     assert_eq!(fanout.first_delivery_target_count, 100);
@@ -149,8 +161,12 @@ fn pricing_shock_writeback_lane_preserves_authority_boundary_and_noop_classifica
 
 #[test]
 fn pricing_shock_merge_lane_preserves_aspect_reconciliation_history_and_revisitability() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let scenario = generated_pricing_scenario();
-    let merge = capture_pricing_merge_bundle(BridgeRuntimePolicy::development());
+    let merge = capture_pricing_merge_bundle(BridgeRuntimePolicy::development(), resource_request);
 
     assert_eq!(
         merge.bridge_class,
@@ -203,10 +219,15 @@ fn pricing_shock_merge_lane_preserves_aspect_reconciliation_history_and_revisita
 
 #[test]
 fn pricing_shock_merge_snapshot_identity_conflict_is_detectable_against_independent_oracle() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let scenario = generated_pricing_scenario();
     let merge = capture_pricing_merge_bundle_from_source(
         pricing_merge_source_with_conflicting_merged_snapshot_identity(),
         BridgeRuntimePolicy::development(),
+        resource_request,
     );
 
     assert_eq!(

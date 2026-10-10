@@ -13,6 +13,10 @@ use crate::harness::fixtures::{InMemoryRelationalBridgeSource, RecordingSignalBr
 
 #[test]
 fn field_surface_invalidates_only_registered_field_slice() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     let name_field = worth_foundational::facade::FieldKey::new("name".to_owned())
         .expect("valid harness field key");
@@ -34,9 +38,12 @@ fn field_surface_invalidates_only_registered_field_slice() {
     );
 
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("field-scoped route should plan");
 
     assert_eq!(route.subscription_slices().len(), 1);
@@ -89,6 +96,10 @@ fn region_mapping_registration_with_signal_scope(
 
 #[test]
 fn region_surface_invalidates_only_registered_region_slice() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_region_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -119,9 +130,12 @@ fn region_surface_invalidates_only_registered_region_slice() {
     );
 
     let route = runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-a",
+            )),
+            execution,
+        )
         .expect("region-scoped route should plan");
 
     assert_eq!(route.subscription_slices().len(), 1);
@@ -146,6 +160,10 @@ fn region_surface_invalidates_only_registered_region_slice() {
 
 #[test]
 fn invalidation_target_identity_changes_with_surface_proof_even_for_shared_signal_scope() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let field_source = InMemoryRelationalBridgeSource::default();
     let name_field = worth_foundational::facade::FieldKey::new("name".to_owned())
         .expect("valid harness field key");
@@ -198,14 +216,20 @@ fn invalidation_target_identity_changes_with_surface_proof_even_for_shared_signa
     );
 
     let field_route = field_runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-field"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-field",
+            )),
+            execution,
+        )
         .expect("field route should plan");
     let region_route = region_runtime
-        .plan_committed_patch(BridgeRouteRequest::for_commit(
-            crate::truth_identity_fixtures::truth_commit_fixture("commit-region"),
-        ))
+        .plan_committed_patch(
+            BridgeRouteRequest::for_commit(crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-region",
+            )),
+            execution,
+        )
         .expect("region route should plan");
 
     let field_target = &field_route.invalidation_targets().targets()[0];

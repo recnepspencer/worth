@@ -106,10 +106,13 @@ impl WorthQueryProviderSessionLifecycle for WorkflowSessionProvider {
 #[test]
 fn workflow_stage_uses_stage_resources_and_scope_in_the_same_protocol() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (mut running, graph) = workflow_session_run("workflow-session");
+        let (mut running, graph) = workflow_session_run("workflow-session", resource_request);
         {
             let plan = running
                 .admit_stage_provider_execution_plan("stage", &graph)
@@ -134,6 +137,10 @@ fn workflow_stage_uses_stage_resources_and_scope_in_the_same_protocol() {
 
 #[test]
 fn workflow_plan_carries_the_exact_installed_artifact_contract() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let output =
         crate::domain_computation::artifact_owner::installed_artifact_contract_for_managed_run();
     let expected = format!(
@@ -141,8 +148,11 @@ fn workflow_plan_carries_the_exact_installed_artifact_contract() {
         output.admission_identity().render_support_hex(),
         output.contract().identity().as_str(),
     );
-    let (mut running, graph) =
-        workflow_session_run_with_output("workflow-artifact-session", Some(output));
+    let (mut running, graph) = workflow_session_run_with_output(
+        "workflow-artifact-session",
+        Some(output),
+        resource_request,
+    );
     let plan = running
         .admit_stage_provider_execution_plan("stage", &graph)
         .expect("stage with an exact installed output artifact should admit");
@@ -153,8 +163,12 @@ fn workflow_plan_carries_the_exact_installed_artifact_contract() {
 
 #[test]
 fn foreign_graph_and_wrong_stage_deny_before_provider_readmission() {
-    let (mut first, first_graph) = workflow_session_run("first-session");
-    let (mut second, second_graph) = workflow_session_run("second-session");
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut first, first_graph) = workflow_session_run("first-session", resource_request);
+    let (mut second, second_graph) = workflow_session_run("second-session", resource_request);
     let foreign = first
         .admit_stage_provider_execution_plan("stage", &second_graph)
         .expect_err("foreign installed graph authority must not substitute");
@@ -175,10 +189,15 @@ fn foreign_graph_and_wrong_stage_deny_before_provider_readmission() {
 
 #[test]
 fn protocol_work_is_constant_while_closure_copy_tracks_only_declared_width() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (mut direct, direct_graph) = managed_session_graph_run_with_provider(
         WorthQueryOperationGraphAccess::Observe,
         WorkflowSessionProvider,
         false,
+        resource_request,
     );
     let direct_counters = direct
         .admit_provider_execution_plan(&direct_graph)
@@ -188,6 +207,7 @@ fn protocol_work_is_constant_while_closure_copy_tracks_only_declared_width() {
         WorthQueryOperationGraphAccess::Observe,
         WorkflowSessionProvider,
         true,
+        resource_request,
     );
     let effect_counters = effect
         .admit_provider_execution_plan(&effect_graph)
@@ -205,11 +225,12 @@ fn protocol_work_is_constant_while_closure_copy_tracks_only_declared_width() {
 
 fn workflow_session_run(
     label: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryRunningWorkflowRun,
     WorthQueryInstalledGraphParticipationAuthority,
 ) {
-    workflow_session_run_with_output(label, None)
+    workflow_session_run_with_output(label, None, resource_request)
 }
 
 fn workflow_session_run_with_output(
@@ -217,6 +238,7 @@ fn workflow_session_run_with_output(
     output: Option<
         Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>,
     >,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryRunningWorkflowRun,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -242,8 +264,12 @@ fn workflow_session_run_with_output(
             WorthQueryOperationGraphAccess::Project,
         ),
     };
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let running = super::workflow_provider_steps::admitted_workflow(
+        &runtime,
+        &operation,
+        resources,
+        resource_request,
+    );
     (running, graph)
 }
 

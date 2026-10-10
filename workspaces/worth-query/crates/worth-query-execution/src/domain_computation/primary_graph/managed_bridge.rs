@@ -246,11 +246,12 @@ impl BridgeSourceAdapter for WorthQueryApplicationBridgeSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         Box<dyn TruthSnapshotReader>,
         worth_runtime_bridge::facade::RelationalBridgeSourceError,
     > {
-        SnapshotReadSource::open_snapshot(&self.source, identity)
+        SnapshotReadSource::open_snapshot(&self.source, identity, execution)
     }
 }
 

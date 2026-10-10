@@ -74,6 +74,7 @@ pub(crate) fn admitted_preview_subscription_backed_completion(
     runtime: &RuntimeBridge,
     node: NodeId,
     suffix: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> AdmittedBridgeAsyncCompletion {
     let preview_active = preview_active_subscription_with_basis(
         runtime,
@@ -82,6 +83,7 @@ pub(crate) fn admitted_preview_subscription_backed_completion(
         crate::truth_identity_fixtures::truth_snapshot_fixture(format!(
             "snapshot-preview:{suffix}"
         )),
+        resource_request,
     );
     let truth_basis = BridgeAsyncRequestTruthViewBasis::preview(&preview_active);
     let subscription_instance = BridgeAsyncRequestSubscriptionInstance::preview(&preview_active);

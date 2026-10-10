@@ -9,6 +9,7 @@ impl CommittedPatchSource for StaticSource {
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(native_grouped_patch_envelope(
             request.commit_identity().clone(),
@@ -64,6 +65,7 @@ impl SnapshotReadSource for StaticSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         if identity.relational_snapshot_parts() == Some(milestone_eight_snapshot_parts()) {
             Ok(Box::new(StaticSnapshotReader {
@@ -81,6 +83,7 @@ impl TruthBranchHeadSource for StaticSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(native_grouped_patch_envelope(
             milestone_eight_head_commit_identity(branch_identity),
@@ -107,6 +110,7 @@ impl BridgeSourceAdapter for StaticSourceAdapter {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         if identity.relational_snapshot_parts() == Some(milestone_eight_snapshot_parts()) {
             Ok(Box::new(StaticSnapshotReader {

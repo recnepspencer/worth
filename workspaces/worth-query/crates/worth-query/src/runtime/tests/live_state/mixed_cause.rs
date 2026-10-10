@@ -8,10 +8,15 @@ use worth_runtime_bridge::facade::{
 
 #[test]
 fn runtime_mixed_cause_delivery_replays_canonically_across_shuffled_bridge_input_order() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
-    let truth_plus_time = authoritative_truth_plus_time_cause(&bridge, &truth_patch);
-    let time_only = authoritative_time_only_cause(&bridge);
+    let truth_plus_time =
+        authoritative_truth_plus_time_cause(&bridge, &truth_patch, resource_request);
+    let time_only = authoritative_time_only_cause(&bridge, resource_request);
     let async_completion = admitted_async_completion(
         &bridge,
         worth_signal::facade::NodeId::new(241, 0),
@@ -165,9 +170,13 @@ fn runtime_mixed_cause_delivery_retains_duplicate_suppression_explicitly() {
 
 #[test]
 fn runtime_mixed_cause_delivery_preserves_denied_preview_boundary_without_coalescing_it() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
-    let preview_cause = preview_time_only_cause(&bridge, "mixed-preview");
+    let preview_cause = preview_time_only_cause(&bridge, "mixed-preview", resource_request);
     let ordering = bridge.order_mixed_causes(&BridgeMixedCauseOrderingRequest::new(
         BridgeMixedCauseOrderingLaneKind::Authoritative,
         vec![
@@ -219,9 +228,14 @@ fn runtime_mixed_cause_delivery_preserves_denied_preview_boundary_without_coales
 
 #[test]
 fn runtime_state_and_inspection_retain_mixed_cause_delivery_projection_after_drain() {
+    let host_request = worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
-    let truth_plus_time = authoritative_truth_plus_time_cause(&bridge, &truth_patch);
+    let truth_plus_time =
+        authoritative_truth_plus_time_cause(&bridge, &truth_patch, resource_request);
     let async_completion = admitted_async_completion(
         &bridge,
         worth_signal::facade::NodeId::new(242, 0),

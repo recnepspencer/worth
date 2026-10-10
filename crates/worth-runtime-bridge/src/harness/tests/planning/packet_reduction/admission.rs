@@ -1,5 +1,9 @@
 #[test]
 fn bridge_bulk_execution_plan_rejects_parallel_preparation_for_shared_truth_view_targets() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -19,14 +23,17 @@ fn bridge_bulk_execution_plan_rejects_parallel_preparation_for_shared_truth_view
     );
 
     let planned = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            )),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            )),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                )),
+            ]),
+            execution,
+        )
         .expect("shared truth-view workload should plan");
 
     assert_eq!(
@@ -89,6 +96,10 @@ fn bridge_bulk_execution_plan_rejects_parallel_preparation_for_shared_truth_view
 
 #[test]
 fn bridge_bulk_execution_plan_rejects_parallel_preparation_for_continuity_remap_workloads() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -119,20 +130,23 @@ fn bridge_bulk_execution_plan_rejects_parallel_preparation_for_continuity_remap_
     ));
 
     let planned = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            ))
-            .with_mapping_context(
-                BridgeMappingContext::default().with_lineage_context(lineage_context.clone()),
-            ),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-            ))
-            .with_mapping_context(
-                BridgeMappingContext::default().with_lineage_context(lineage_context),
-            ),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                ))
+                .with_mapping_context(
+                    BridgeMappingContext::default().with_lineage_context(lineage_context.clone()),
+                ),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                ))
+                .with_mapping_context(
+                    BridgeMappingContext::default().with_lineage_context(lineage_context),
+                ),
+            ]),
+            execution,
+        )
         .expect("continuity remap workload should plan");
 
     assert_eq!(

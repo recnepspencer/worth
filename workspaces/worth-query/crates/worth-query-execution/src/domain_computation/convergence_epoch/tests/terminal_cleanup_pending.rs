@@ -12,10 +12,14 @@ use crate::domain_computation::{
 #[test]
 fn workflow_terminal_cleanup_pending_retries_the_same_epoch_after_artifact_release() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (terminal, artifact_receiver) = workflow_terminal_with_live_cleanup_artifact(execution);
+        let (terminal, artifact_receiver) =
+            workflow_terminal_with_live_cleanup_artifact(execution, resource_request);
         let artifact = artifact_receiver
             .recv()
             .expect("production provider step must issue the move-only artifact handle");
@@ -48,11 +52,12 @@ fn workflow_terminal_cleanup_pending_retries_the_same_epoch_after_artifact_relea
 
 fn workflow_terminal_with_live_cleanup_artifact(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     WorthQueryWorkflowConvergenceTerminal<WorthQueryConverged>,
     Receiver<WorthQueryMoveOnlyArtifactHandle>,
 ) {
-    let (fixture, artifact_receiver) = workflow_yield_pending_admission_fixture();
+    let (fixture, artifact_receiver) = workflow_yield_pending_admission_fixture(resource_request);
     let WorkflowAdmissionFixture {
         runtime,
         operation,

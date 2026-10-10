@@ -11,11 +11,17 @@ use crate::domain_computation::managed_run::tests::yield_fixture::YieldProvider;
 #[test]
 fn bridge_cleanup_failure_returns_exact_owner_retry_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (yielded, bridge, runtime) =
-            yielded_direct_with_provider(execution, YieldProvider::checkpoint_restore_failure(7));
+        let (yielded, bridge, runtime) = yielded_direct_with_provider(
+            execution,
+            YieldProvider::checkpoint_restore_failure(7),
+            resource_request,
+        );
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let (pending, progress) = match prepare_direct_provider_restore(yielded, &runtime, &bridge)
         {
