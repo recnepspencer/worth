@@ -27,10 +27,19 @@ impl WorthQueryWorkspace {
                 product,
                 worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
             );
-        self.runtime
+        use worth_query_declaration::facade::domain_computation::WorthQueryExecutionBoundary;
+        let admission = self
+            .runtime
             .installed_product
-            .managed_run_admission(&self.runtime.execution_runtime)
-            .admit_direct(operation, attempt, request)
+            .managed_run_admission(&self.runtime.execution_runtime);
+        match attempt.resources().envelope().boundary() {
+            WorthQueryExecutionBoundary::Atomic => {
+                admission.admit_atomic_direct(operation, attempt, request)
+            }
+            WorthQueryExecutionBoundary::BoundedStep => {
+                admission.admit_direct(operation, attempt, request)
+            }
+        }
     }
 
     pub(crate) fn admit_managed_workflow_run(
