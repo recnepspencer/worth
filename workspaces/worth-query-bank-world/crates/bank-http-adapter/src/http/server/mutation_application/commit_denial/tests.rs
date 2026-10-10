@@ -10,7 +10,7 @@ use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind
 fn preparation_and_pending_execution_next_actions_are_explicit_per_cause() {
     use BankHttpNextAction::{ContactOperator as Operator, CorrectRequest as Correct, Retry};
     let resources = [
-        ("WorkerLimitExceedsParent", Resource::WorkerLimit, Correct),
+        ("WorkerLimitExceedsParent", Resource::WorkerLimit, Operator),
         (
             "MemoryLimitExceedsParent",
             Resource::PolicyMemoryLimit,
@@ -111,7 +111,7 @@ fn preparation_and_pending_execution_next_actions_are_explicit_per_cause() {
             Session::ExecutionNestedPatternStopped {
                 partition_identity: Some(7),
             },
-            Operator,
+            Retry,
         ),
         (
             "WorkerFailed",
