@@ -15,6 +15,7 @@ pub trait WorthQueryApplicationProgramRoots<Schema>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
 {
+    /// Membership only; this set must not be iterated for output or cost.
     fn append_required_bindings(bindings: &mut std::collections::BTreeSet<std::any::TypeId>);
 }
 

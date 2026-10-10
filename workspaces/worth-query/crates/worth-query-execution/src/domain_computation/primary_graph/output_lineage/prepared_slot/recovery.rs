@@ -1,7 +1,6 @@
 #[cfg(test)]
 use super::PreparedComputationCustody;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
-use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use std::any::TypeId;
 
 use worth_runtime_world::facade::PlannedProductReferenceSuccessor;
@@ -96,6 +95,7 @@ impl PreparedOutputLineageSlot {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
     use crate::domain_computation::primary_graph::{
         application_contribution::{
             sealed_run_for_lineage_test, PriorAbsence, SealedComputationRetention,

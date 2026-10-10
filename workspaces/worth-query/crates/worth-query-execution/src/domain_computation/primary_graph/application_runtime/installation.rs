@@ -182,11 +182,6 @@ where
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        lineage.install_binding_identities(
-            installed_schema
-                .installed_mutation_binding_inventory()
-                .map(|binding| (binding.binding_type(), binding.identity())),
-        );
         lineage.install_output_families(producers.output_family_bindings());
     }
     let graph = seal_application_graph(graph)
@@ -323,6 +318,16 @@ where
         resource_support,
         runtime.branch_coordination_resource_profile(),
     );
+    primary_provider
+        .graph
+        .output_lineage
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .install_binding_identities(
+            installed_schema
+                .installed_mutation_binding_inventory()
+                .map(|binding| (binding.binding_type(), binding.identity())),
+        );
     let primary_graph_authority =
         super::graph_participation::install(&authority, truth_partition_role, provider_anchor)?;
     Ok(PublishedApplicationGraph {

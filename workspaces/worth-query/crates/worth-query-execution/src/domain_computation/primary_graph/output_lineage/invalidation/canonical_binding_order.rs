@@ -4,24 +4,24 @@ use std::{any::TypeId, collections::BTreeMap};
 
 struct A;
 struct B;
-struct C;
-struct D;
 
 fn reverse_bindings() -> [(TypeId, &'static str); 2] {
-    let declared = [
-        (TypeId::of::<A>(), "alpha-binding"),
-        (TypeId::of::<B>(), "bravo-binding"),
-        (TypeId::of::<C>(), "charlie-binding"),
-        (TypeId::of::<D>(), "delta-binding"),
+    // Two independently declared fixture schemas put the same Rust markers in
+    // opposite named roles. Exactly one reverses their build-specific order.
+    let schemas = [
+        [
+            (TypeId::of::<A>(), "alpha-binding"),
+            (TypeId::of::<B>(), "zulu-binding"),
+        ],
+        [
+            (TypeId::of::<B>(), "alpha-binding"),
+            (TypeId::of::<A>(), "zulu-binding"),
+        ],
     ];
-    for (i, left) in declared.iter().enumerate() {
-        for right in &declared[i + 1..] {
-            if left.0 > right.0 {
-                return [*left, *right];
-            }
-        }
-    }
-    panic!("fixture needs a declared-order inversion in this build");
+    schemas
+        .into_iter()
+        .find(|bindings| bindings[0].0 > bindings[1].0)
+        .unwrap()
 }
 
 #[test]

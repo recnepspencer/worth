@@ -23,6 +23,7 @@ mod authority_value_gate_scan;
 mod authority_value_identity;
 mod blanket_launder;
 mod callable_surface;
+mod canonical_order;
 mod compiled_library_surface;
 mod crate_modules;
 mod dependency_authority;
@@ -71,7 +72,7 @@ pub(super) fn validate(
     query_audience: &QueryAudienceContract,
     facade_exports: &FacadeVocabularyAuthority<'_>,
 ) -> Result<Vec<Diagnostic>, String> {
-    let mut diagnostics = Vec::new();
+    let mut diagnostics = canonical_order::validate(root)?;
     let query_vocabulary = query_fence::QueryVocabulary::load(query_audience, facade_exports);
     let crates = governed_crates::discover_governed_crates(root, subworkspaces)?;
     for governed in crates {
