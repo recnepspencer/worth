@@ -237,6 +237,17 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
     }
 }
 
+// Independent fixture oracle: one seed/kind/partition, two entities and one
+// relation. Their record bounds are 819, 601 and 257 bytes; the fragment's
+// 2021 retained bytes fit one chunk. Visit digests use ceil((4*b+1024)/4096),
+// final digests use ceil(b/4096). No request report supplies these units.
+pub(super) const PRINCIPAL_TARGET_READ_WORK: u64 = {
+    let preparation = 1 + 1 + 1 + 1 + 2;
+    let traversal = 1 + 2 + 1;
+    let completion = 1 + 1 + (2 + 1 + 1) + 3 + 2 * 3 + 3;
+    preparation + traversal + completion
+};
+
 #[test]
 fn mutation_handler_and_inline_commit_remain_in_one_request() {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
@@ -253,16 +264,14 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
         .unwrap();
     let before = observed.receipt().inspect().basis().version();
     let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
-    // This handler has no managed computation, and the ordinary Relational
-    // reads are inline until part two. One is the least positive opening
-    // allowance. This mutation reaches no Signal dispatch: Relational commit
-    // carriage (and its exhaustion probe) belongs to part two.
+    // This handler has no managed computation or Signal dispatch. Its one
+    // principal-target traversal pays the same read law as every backing.
     let restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(worth_foundational::ExecutionBudget::new(
             NonZeroUsize::MIN,
             policy.charged_memory_bytes(),
-            1,
+            PRINCIPAL_TARGET_READ_WORK,
         ))),
     );
     let contacts = crate::handler::handler_contacts();
@@ -288,7 +297,10 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
     assert!(matches!(outcome, Outcome::Committed { .. }));
     let opened = reports();
     assert_eq!(opened.len(), 1);
-    assert_eq!(opened[0].as_ref().unwrap().charged_work(), 0);
+    assert_eq!(
+        opened[0].as_ref().unwrap().charged_work(),
+        PRINCIPAL_TARGET_READ_WORK
+    );
     drop(restore);
     let after = request
         .query(PlanarRead {

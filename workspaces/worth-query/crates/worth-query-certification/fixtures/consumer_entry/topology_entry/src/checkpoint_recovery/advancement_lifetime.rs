@@ -79,12 +79,15 @@ fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
         query_units, 0,
         "this producer invokes no managed computation"
     );
+    // This advance's plan sequence contains ten principal-target traversals;
+    // each has the seeded shape used by the independent read-work oracle.
+    let relational_units = 10 * super::advancement_custody::PRINCIPAL_TARGET_READ_WORK;
     assert_eq!(
         charged,
-        query_units + signal_units,
-        "the parent includes the separately observed Query and Signal owners exactly"
+        query_units + signal_units + relational_units,
+        "the parent includes Query, Signal and native read work exactly"
     );
-    let bridge_units = charged - query_units - signal_units;
+    let bridge_units = charged - query_units - signal_units - relational_units;
     assert_eq!(
         bridge_units, 0,
         "Bridge adds no checkpoint work on this path"
