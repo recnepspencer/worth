@@ -34,16 +34,14 @@ where
                 // caller's request still admits this owner contact; no new
                 // backing, speculative work reserve or post-effect refusal is
                 // introduced around the prepared publication.
-                execution
-                    .run(worth_execution::ExecutionWorkCeiling::new(0), |_| {
-                        let candidate = attempt
-                            .take_relational_candidate()
-                            .ok_or_else(|| pre_effect_failure(NoEffectCause::PreEffectFailure))?;
-                        attempt.counters_mut().record_relational_owner_contact();
-                        self.publish_relational_candidate(attempt, candidate)
-                    })
-                    .map_err(|denial| pre_effect_failure(NoEffectCause::ExecutionRequest(denial)))?
-                    .0
+                let candidate = attempt
+                    .take_relational_candidate()
+                    .ok_or_else(|| pre_effect_failure(NoEffectCause::PreEffectFailure))?;
+                execution.consult().map_err(|denial| {
+                    pre_effect_failure(NoEffectCause::ExecutionRequest(denial))
+                })?;
+                attempt.counters_mut().record_relational_owner_contact();
+                self.publish_relational_candidate(attempt, candidate)
             }
             crate::publication::RelationalComponentPlanPosture::AdoptSettled => attempt
                 .take_settled_relational_adoption()
