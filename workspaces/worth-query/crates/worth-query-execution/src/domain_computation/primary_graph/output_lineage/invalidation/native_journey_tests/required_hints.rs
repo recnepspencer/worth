@@ -292,8 +292,8 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                 resources.retained_capacity_bytes(),
                 main_hint + fork_hint * (allowed_hints - 1)
             );
-            let selected_main = registry
-                .next_required_work_for_selected(
+            let mut selected_main = registry
+                .next_required_claim_for_selected(
                     product.read_lease_ref(),
                     &main_root,
                     owner,
@@ -301,6 +301,10 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                 )
                 .unwrap()
                 .expect("main-cell hint remains selectable behind fork-cell hint");
+            let selected_main = registry.select_required_claim(
+                &mut selected_main, &main_root, &mut owner.edit_admission(),
+            ).unwrap().expect("the inspected main-branch claim selects its current cause");
+
             assert!(matches!(
                 selected_main.kind(),
                 SelectedRequiredWorkKind::Native { branch, .. } if branch.branch_id() == &main

@@ -5,6 +5,8 @@ pub(in crate::domain_computation::primary_graph) use wave_admission::{
     AdmittedRequiredWave, PreparedRequiredInputs,
 };
 mod branch_selection;
+mod claim;
+pub(in crate::domain_computation::primary_graph) use claim::RequiredWorkClaim;
 mod discontinuity;
 mod interest_readmission;
 mod native_hints;
@@ -63,6 +65,7 @@ impl std::fmt::Debug for RequiredWorkMembership {
 struct MembershipState {
     active: bool,
     queued: bool,
+    claimed: bool,
     version: u64,
     version_exhausted: bool,
     marked: bool,

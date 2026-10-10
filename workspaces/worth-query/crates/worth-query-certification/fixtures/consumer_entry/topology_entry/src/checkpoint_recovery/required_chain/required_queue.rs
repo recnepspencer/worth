@@ -157,6 +157,7 @@ macro_rules! chain_with_unrelated {
 
 #[macro_use]
 mod capacity_setup;
+mod selection_at_inspection;
 
 #[test]
 fn an_unrelated_required_advance_progresses_the_dirty_required_set() {

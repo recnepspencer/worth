@@ -16,14 +16,14 @@ impl DeclaredRequiredPredecessors {
     /// or invents a requirement from a name in the application declaration.
     pub(in crate::domain_computation::primary_graph) fn contains_occurrence(
         &self,
-        selected: &SelectedReadyReadmission,
+        selected: &WorthQueryOutputDemandKey,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         for key in &self.keys {
             admission
                 .charge_external_work(10)
                 .map_err(|_| work_denial())?;
-            if key.same_occurrence(selected.key()) {
+            if key.same_occurrence(selected) {
                 return Ok(true);
             }
         }
@@ -38,7 +38,7 @@ impl WorthQueryOutputDemandRegistry {
         selected: &SelectedReadyReadmission,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Vec<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
-        let declared = self.declared_required_predecessors(selected, admission)?;
+        let declared = self.declared_required_predecessors(selected.key(), admission)?;
         let count = declared.keys.len();
         let bytes = count
             .checked_mul(std::mem::size_of::<SelectedReadyReadmission>())
@@ -79,15 +79,15 @@ impl WorthQueryOutputDemandRegistry {
     }
     pub(in crate::domain_computation::primary_graph) fn declared_required_predecessors(
         &self,
-        selected: &SelectedReadyReadmission,
+        selected: &WorthQueryOutputDemandKey,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<DeclaredRequiredPredecessors, WorthQueryOutputDemandDenial> {
         let state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(selected.key(), admission)?;
-        let Some(record) = state.records.get(selected.key()) else {
+        state.charge_record_lookup(selected, admission)?;
+        let Some(record) = state.records.get(selected) else {
             return Ok(DeclaredRequiredPredecessors { keys: Vec::new() });
         };
         let count = record.prerequisites.len();

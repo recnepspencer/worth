@@ -77,7 +77,9 @@ impl super::WorthQueryOutputDemandRegistry {
 
 fn selected(queue: &RequiredWorkQueue) -> SelectedRequiredWork {
     match queue.pop() {
-        RequiredWorkPop::Selected(selected) => selected,
+        RequiredWorkPop::Claimed(claim) => claim
+            .select_without_advance()
+            .expect("a live claim selects its current cause"),
         RequiredWorkPop::Empty | RequiredWorkPop::Stale => panic!("expected selected work"),
     }
 }
@@ -177,4 +179,39 @@ fn requeued_last_cause_becomes_one_stale_pop() {
     assert!(first.acknowledge().is_some());
     assert!(matches!(queue.pop(), RequiredWorkPop::Stale));
     assert!(matches!(queue.pop(), RequiredWorkPop::Empty));
+}
+
+#[test]
+fn a_claim_selects_newer_causes_and_current_acknowledges_the_row_once() {
+    let (_lineage, [earlier, later]) = registry_fixture::recorded_settlement_pair();
+    let queue = Arc::new(RequiredWorkQueue::new(Arc::new(test_record_capacity())));
+    let member = Arc::new(RequiredWorkMembership::new(
+        Arc::new(key("claimed-output", 1, 1)),
+        &queue,
+        test_record_capacity(),
+    ));
+    member.set_required(true);
+    drop(member.mark_local_required(earlier));
+    let RequiredWorkPop::Claimed(mut claim) = queue.pop() else {
+        panic!("a marked row is claimed")
+    };
+    drop(member.mark_local_required(Arc::clone(&later)));
+    assert!(
+        matches!(queue.pop(), RequiredWorkPop::Empty),
+        "a live claim prevents another visit in this advance"
+    );
+    let selected = claim.select().unwrap();
+    assert!(
+        matches!(selected.kind(), SelectedRequiredWorkKind::Local { settlement } if Arc::ptr_eq(settlement, &later)),
+        "inspection selects the live cause, not the popped one"
+    );
+    assert!(selected
+        .acknowledge_current_admitted(&mut super::record_admission())
+        .unwrap()
+        .is_some());
+    drop(claim);
+    assert!(
+        matches!(queue.pop(), RequiredWorkPop::Empty),
+        "one Current proof covers this row's local and initial causes"
+    );
 }

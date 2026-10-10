@@ -19,7 +19,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 {
     Empty,
     Stale,
-    Selected(SelectedRequiredWork),
+    Claimed(RequiredWorkClaim),
 }
 
 impl RequiredWorkQueue {
@@ -50,7 +50,7 @@ impl RequiredWorkQueue {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !member.active || !member.marked || member.queued {
+        if !member.active || !member.marked || member.queued || member.claimed {
             return;
         }
         member.queued = true;
@@ -96,33 +96,14 @@ impl RequiredWorkQueue {
             drop(head);
             return RequiredWorkPop::Stale;
         }
-        let kind = if let Some(hint) = member.native_hints.as_ref() {
-            SelectedRequiredWorkKind::Native {
-                observer: hint.observer.clone(),
-                branch: Arc::clone(&hint.branch),
-            }
-        } else if let Some(settlement) = member.local_settlement.as_ref() {
-            SelectedRequiredWorkKind::Local {
-                settlement: Arc::clone(settlement),
-            }
-        } else if member.discontinuity_pending {
-            SelectedRequiredWorkKind::Discontinuity
-        } else {
-            assert!(
-                member.unresolved_initial,
-                "queued required work has one cause"
-            );
-            SelectedRequiredWorkKind::UnresolvedInitial
-        };
-        let selected = SelectedRequiredWork {
+        member.claimed = true;
+        let claim = RequiredWorkClaim {
             membership: Arc::clone(&head),
-            version: member.version,
-            kind,
             armed: true,
         };
         drop(member);
         drop(queue);
-        RequiredWorkPop::Selected(selected)
+        RequiredWorkPop::Claimed(claim)
     }
 }
 

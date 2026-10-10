@@ -23,6 +23,7 @@ pub(super) fn collect<'owner, 'custody, Schema, Family>(
     request: &WorthQueryRequestScope,
     wave: &'owner RequiredWaveSelection<'owner, Schema>,
     frontier: &mut RequiredFrontier,
+    queue: &mut QueuedRequiredRoots,
     resolved: &mut ResolvedOnWave,
     caller_storage: &mut PreparedContinuationWave<'custody, Schema>,
     queue_storage: &mut PreparedContinuationWave<'custody, Schema>,
@@ -57,12 +58,12 @@ where
             {
                 let declared = runtime
                     .output_demands
-                    .declared_required_predecessors(&frontier.members[index].ready, admission)?;
+                    .declared_required_predecessors(frontier.members[index].key(), admission)?;
                 let mut pending = None;
                 for (upstream, member) in frontier.members.iter().enumerate() {
                     if upstream != index
                         && !member.state.is_done()
-                        && declared.contains_occurrence(&member.ready, admission)?
+                        && declared.contains_occurrence(member.key(), admission)?
                     {
                         pending = Some(upstream);
                         break;
@@ -72,6 +73,24 @@ where
                     frontier.wait_for(index, upstream);
                     index += 1;
                     continue;
+                }
+            }
+            let queued = frontier.members[index].queued;
+            let successor = frontier.members[index].resolved_successor;
+            if let MemberInput::Queued { claim, ready } = &mut frontier.members[index].ready {
+                let queued = queued.expect("a claim has queue custody");
+                if successor {
+                    queue.select_successor_cause(queued, claim, runtime, wave, admission)?;
+                } else {
+                    let Some(selected) =
+                        queue.inspect_claim(queued, claim, runtime, wave, admission)?
+                    else {
+                        frontier.members[index].state = MemberState::Pending;
+                        frontier.members[index].queued = None;
+                        index += 1;
+                        continue;
+                    };
+                    *ready = Some(selected);
                 }
             }
             admission
@@ -84,7 +103,7 @@ where
             let caller = member.caller;
             let queued = member.queued;
             if caller && wave.target == RequiredWaveTarget::Caller {
-                member.ready.completion().advanced_in(authority);
+                member.ready.selected().completion().advanced_in(authority);
             }
             let contacts = if index == 0 && wave.target == RequiredWaveTarget::Caller {
                 caller_contacts
@@ -115,7 +134,7 @@ where
                 principal,
                 request,
                 wave,
-                &member.ready,
+                member.ready.selected(),
                 (index == 0
                     && wave.target == RequiredWaveTarget::Caller
                     && !member.caller_successor)
@@ -141,9 +160,7 @@ where
                         &mut *queue_storage
                     };
                     storage.release_unused();
-                    runtime
-                        .output_demands
-                        .clear_required_stop(member.ready.key());
+                    runtime.output_demands.clear_required_stop(member.key());
                     let refresh = member.resolved_successor;
                     if !caller && queued.is_some() && !required_by_member {
                         // A reached Current row is not a newly resolved read.
@@ -153,7 +170,7 @@ where
                     }
                     if queued.is_none() || refresh || required_by_member {
                         resolved.push(
-                            member.ready.retain(admission)?,
+                            member.ready.selected().retain(admission)?,
                             Arc::clone(&settlement),
                             admission,
                         )?;
@@ -171,7 +188,7 @@ where
                     frontier.members[index].dependency_schedule =
                         DependencySchedule::PendingConsumed;
                     let prerequisites = runtime.output_demands.declared_required_readmissions(
-                        &frontier.members[index].ready,
+                        frontier.members[index].ready.selected(),
                         admission,
                     )?;
                     let mut held = false;
@@ -221,7 +238,7 @@ where
                     };
                     let key = RequiredMemberKey::retain(
                         index,
-                        &frontier.members[index].ready,
+                        frontier.members[index].ready.selected(),
                         admission,
                     )?;
                     let slot_bytes = std::mem::size_of::<(

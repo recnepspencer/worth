@@ -2,7 +2,7 @@
 use super::*;
 fn member() -> RequiredMember<()> {
     RequiredMember {
-        ready: (),
+        ready: MemberInput::Selected(()),
         caller: false,
         caller_successor: false,
         resolved_successor: false,

@@ -68,7 +68,7 @@ where
         demand,
         super::super::caller::CurrentCaller {
             anchor_ready: &wave.anchor_ready,
-            selected: &caller.ready,
+            selected: caller.ready.selected(),
             continues_caller: caller.caller_successor,
             caller_current: !caller.caller_successor,
             current_contacts: demand.producer_contacts_in_this_demand,

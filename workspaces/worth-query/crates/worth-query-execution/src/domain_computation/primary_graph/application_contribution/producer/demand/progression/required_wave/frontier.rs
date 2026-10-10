@@ -1,5 +1,7 @@
 //! Required members and their actual unresolved consumed-output edges.
 use super::*;
+mod selection;
+pub(super) use selection::MemberInput;
 
 pub(super) enum MemberState {
     Inspect,
@@ -34,7 +36,7 @@ pub(super) enum DependencySchedule {
 }
 
 pub(super) struct RequiredMember<Ready = SelectedReadyReadmission> {
-    pub ready: Ready,
+    pub ready: MemberInput<Ready>,
     pub caller: bool,
     pub caller_successor: bool,
     pub resolved_successor: bool,
@@ -63,14 +65,19 @@ impl RequiredFrontier {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<RequiredUpstream, WorthQueryOutputDemandDenial> {
         for (index, member) in self.members.iter_mut().enumerate() {
-            if ready.same_record(&member.ready, admission)? {
+            let same = match &member.ready {
+                MemberInput::Selected(current) => ready.same_record(current, admission)?,
+                MemberInput::Queued { claim, .. } => claim.same_record(&ready, admission)?,
+            };
+            if same {
                 if let MemberState::AcceptedCaller = member.state {
                     return Ok(RequiredUpstream::HeldCaller);
                 }
                 // Membership identifies the physical row, not its current
                 // readmission binding. Keep the exact pin the owner just issued.
-                if !ready.same_ready_cell(&member.ready, admission)? {
-                    member.ready = ready;
+                if matches!(&member.ready, MemberInput::Selected(current) if !ready.same_ready_cell(current, admission)?)
+                {
+                    member.ready.rebind(ready);
                     member.state = MemberState::Inspect;
                 }
                 member.caller |= caller;
@@ -81,6 +88,25 @@ impl RequiredFrontier {
                 return Ok(RequiredUpstream::Member(index));
             }
         }
+        self.reserve_slot(admission)?;
+        let index = self.members.len();
+        self.members.push(RequiredMember {
+            ready: MemberInput::Selected(ready),
+            caller,
+            queued,
+            caller_successor: false,
+            resolved_successor: false,
+            contacts: 0,
+            state: MemberState::Inspect,
+            dependency_schedule: DependencySchedule::OwnSelection,
+        });
+        Ok(RequiredUpstream::Member(index))
+    }
+
+    fn reserve_slot(
+        &mut self,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
         let item = std::mem::size_of::<RequiredMember>();
         if self.members.len() == self.members.capacity() {
             let next = self
@@ -129,18 +155,7 @@ impl RequiredFrontier {
         admission
             .charge_external_work(u64::try_from(item + 1).map_err(|_| work_denial())?)
             .map_err(|_| work_denial())?;
-        let index = self.members.len();
-        self.members.push(RequiredMember {
-            ready,
-            caller,
-            queued,
-            caller_successor: false,
-            resolved_successor: false,
-            contacts: 0,
-            state: MemberState::Inspect,
-            dependency_schedule: DependencySchedule::OwnSelection,
-        });
-        Ok(RequiredUpstream::Member(index))
+        Ok(())
     }
 
     /// An issued prerequisite or observed pending edge can defer a member. A cycle

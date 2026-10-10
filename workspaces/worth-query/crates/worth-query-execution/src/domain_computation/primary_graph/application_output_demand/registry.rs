@@ -172,6 +172,7 @@ pub(in crate::domain_computation::primary_graph) use held_successor::HeldRequire
 pub(in crate::domain_computation::primary_graph) use required_work::PendingUpstream;
 pub(in crate::domain_computation::primary_graph) use required_work::ReplacedRequiredWorkHint;
 pub(in crate::domain_computation::primary_graph) use required_work::RequestedOutputReadClaims;
+pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkClaim;
 pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedReadyReadmission;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredRefreshClaim;

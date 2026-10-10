@@ -44,20 +44,52 @@ impl SelectedRequiredWork {
         Ok(())
     }
 
-    /// Acknowledge the selected cause after a Current proof at a head that the
-    /// selected hint's publication had already reached. The member's other
-    /// hints on that branch are covered too when they were stamped settled at
-    /// this selection. Any newer mark moves the version and leaves every hint
-    /// in place.
-    pub(in crate::domain_computation::primary_graph) fn acknowledge_subsumed_admitted(
+    /// A Current inspection covers this row's selected local/initial causes as
+    /// well as its settled same-branch hints. Newer marks remain unacknowledged.
+    pub(in crate::domain_computation::primary_graph) fn acknowledge_current_admitted(
+        self,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
+        charge_acknowledgement(admission)?;
+        admission
+            .charge_external_work(4)
+            .map_err(|_| required_ack_work_denial())?;
+        let extra = {
+            let mut state = self
+                .membership
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if state.version == self.version && !state.version_exhausted {
+                match self.kind {
+                    SelectedRequiredWorkKind::Native { .. } => {
+                        state.unresolved_initial = false;
+                        state.local_settlement.take()
+                    }
+                    SelectedRequiredWorkKind::Local { .. } => {
+                        state.unresolved_initial = false;
+                        None
+                    }
+                    SelectedRequiredWorkKind::UnresolvedInitial
+                    | SelectedRequiredWorkKind::Discontinuity => state.local_settlement.take(),
+                }
+            } else {
+                None
+            }
+        };
+        let result = self.acknowledge_subsumed(admission);
+        drop(extra);
+        result
+    }
+
+    fn acknowledge_subsumed(
         mut self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
         let SelectedRequiredWorkKind::Native { branch, .. } = &self.kind else {
-            return self.acknowledge_admitted(admission);
+            return Ok(self.acknowledge());
         };
         let branch = Arc::clone(branch);
-        charge_acknowledgement(admission)?;
         let cleared =
             self.membership
                 .acknowledge_branch(self.version, branch.branch_id(), admission);

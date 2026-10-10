@@ -24,6 +24,7 @@ pub(super) fn run<'owner, Schema, Family>(
     frontier: &mut RequiredFrontier,
     resolved: &mut ResolvedOnWave,
     queue_custody: &mut RequiredContinuations<Schema>,
+    queue: &mut QueuedRequiredRoots,
     performed: &'owner std::cell::RefCell<super::super::performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<WaveProgress, WorthQueryOutputDemandDenial>
@@ -40,6 +41,7 @@ where
         request,
         wave,
         frontier,
+        queue,
         resolved,
         &mut caller_storage,
         &mut queue_storage,
@@ -113,7 +115,7 @@ where
                                 .clear_required_stop(successor.interest().key());
                             moved |= committed_ready(&ready, admission)
                                 .map_err(|stop| MemberStop { index, stop })?;
-                            member.ready = ready;
+                            member.ready.rebind(ready);
                             member.resolved_successor = true;
                             member.caller_successor |= index == 0;
                             member.state = MemberState::Inspect;

@@ -5,7 +5,9 @@ use super::super::super::required_continuations::{
 use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
-use super::frontier::{DependencySchedule, MemberState, RequiredFrontier, RequiredUpstream};
+use super::frontier::{
+    DependencySchedule, MemberInput, MemberState, RequiredFrontier, RequiredUpstream,
+};
 use super::queued::QueuedRequiredRoots;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
@@ -41,8 +43,8 @@ where
         // their issued prerequisites together during readiness collection.
         let caller_was_current = queue.draining();
         if wave.target == RequiredWaveTarget::Caller && caller_was_current {
-            while let Some((queued, ready)) = queue.next_root(runtime, &wave, admission)? {
-                frontier.insert(ready, false, Some(queued), admission)?;
+            while let Some((queued, claim)) = queue.next_claim(runtime, &wave, admission)? {
+                frontier.insert_claim(claim, queued, admission)?;
             }
         }
         let result = wave_execution::run::<Schema, Family>(
@@ -56,21 +58,11 @@ where
             &mut frontier,
             &mut resolved,
             queue_custody,
+            queue,
             performed,
             admission,
         )?;
-        let mut selection_changed = false;
         for member in &mut frontier.members {
-            if let Some(index) = member.queued {
-                if !member.resolved_successor
-                    && !queue.retains_selection(runtime, index, &member.ready, admission)?
-                {
-                    member.queued = None;
-                    member.state = MemberState::Pending;
-                    selection_changed = true;
-                    continue;
-                }
-            }
             if matches!(member.state, MemberState::Current(_)) {
                 if let Some(index) = member.queued.take() {
                     queue.acknowledge_root(index, admission)?;
@@ -117,7 +109,7 @@ where
                 custody,
                 &mut stop,
                 requested_refusal::RequestedDependency {
-                    selected: &member.ready,
+                    selected: member.ready.selected(),
                     wave: &wave,
                     resolved: &resolved,
                 },
@@ -144,7 +136,7 @@ where
                 requested_refusal::RequestedRefusal::Unavailable => {
                     runtime
                         .output_demands
-                        .record_required_stop(member.ready.key(), &stop);
+                        .record_required_stop(member.key(), &stop);
                     if member.caller {
                         return Err(stop);
                     }
@@ -170,8 +162,24 @@ where
                 }
             }
         }
-        if selection_changed
-            || result.prepared
+        if result.moved {
+            for member in &mut frontier.members {
+                if !member.resolved_successor
+                    && matches!(
+                        member.state,
+                        MemberState::Inspect | MemberState::Waiting(_) | MemberState::Held(_)
+                    )
+                {
+                    if let MemberInput::Queued { ready, .. } = &mut member.ready {
+                        if let Some(index) = member.queued {
+                            queue.discard_selection(index);
+                            *ready = None;
+                        }
+                    }
+                }
+            }
+        }
+        if result.prepared
             || frontier.awaken()
             || (!caller_was_current
                 && wave.target == RequiredWaveTarget::Caller
