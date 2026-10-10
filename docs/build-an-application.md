@@ -457,12 +457,51 @@ function can therefore yield a stale reused result. `complete` receives the redu
 back on the caller thread. Preparation precedes kernel dispatch; completion
 follows successful computation and reduction.
 
+Partition reuse applies only to the runs of a producer. A producer is a
+`WorthQueryApplicationProducerBinding` registered with `setup.producer`; its
+`Operation` is the mutation the producer runs. Installation decides retention
+once, from the owner's `Operation` type. When a declared producer runs that
+operation, a run made under that producer leaves its partition state on the
+record its attempt publishes. When no declared producer runs it, a run is never
+retained: no input or item digest is taken, and every run gathers and computes
+every partition.
+
+A retained computation still gathers and computes every partition when any of
+these holds:
+
+- No output record is published at the run's address: the first run.
+- The operation is invoked outside a producer invocation, or an earlier
+  partitioned computation in the same handler already took the kept state. A
+  handler that runs several partitioned computations in one attempt keeps none
+  of them.
+- The installed owner differs, the installed producer edition differs, or the
+  input value's canonical encoding differs. A reinstalled owner with the same
+  types is a different installation.
+- Observing the kept facts could exceed the declared work the run has left.
+- The selected record holds no computation state. A run that stopped before it
+  completed, whose charge could not be measured, or whose reservation was
+  refused leaves none. A previous attempt that ran no partitioned computation
+  leaves none. Checkpoint restoration and republication carry none.
+
+Otherwise the run names and keys again only what changed, and gathers and
+computes again only the partitions whose members or facts changed. A partition
+is carried only when every fact its owner calls read in the previous run has
+the same content at this attempt's snapshot; a fact that cannot be observed
+counts as changed. An outcome never depends on reuse: carried charges replay in
+a full run's order, `charged_work()` counts every partition's kernel and every
+combine whether the partition was computed again or carried, and a work ceiling
+names the partition a full run would name.
+
 The example groups warehouse quantities by storage zone and sums them. Stable
 item IDs identify inventory lines; the zone key defines partition membership.
 Neither depends on worker assignment. The generic schema, feature, artifact,
 and operation parameters stand for your application's declarations. The
 `Reuse` marker names declaration vocabulary; partition reuse depends on the
-state kept from the previous run and the purity contract above.
+state kept from the previous run and the purity contract above. The compiled
+counterpart is the consumer fixture at
+`workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition.rs`
+(declaration) and `.../checkpoint_recovery/computation_partition/owner.rs`
+(owner, installation, and run).
 
 ```rust
 use std::marker::PhantomData;
@@ -485,6 +524,9 @@ pub struct InventoryLine {
 }
 impl ChargedBytes for InventoryLine {
     fn additional_charged_bytes(&self) -> u64 { 0 }
+}
+impl ApplicationComputationPartition for InventoryLine {
+    const IDENTITY: &'static str = "inventory.line.v1";
 }
 
 pub struct InventoryInput;
@@ -639,18 +681,243 @@ where
 }
 ```
 
-The feature builder also needs the input, output, action, and policy declarations
-of its enclosing application; this computation does not supply them. Supply a
-unique, stable ID for every line: duplicate item identities are denied. Keys
-use canonical encoding, and partitions are ordered by the identity derived
-from that encoding, not by the numeric order of zones. The reducer fixes its
-association tree, so floating-point reduction preserves the same result bits
-at every admitted worker count.
+A managed computation declares only itself. `managed_computation` adds its
+declaration to the feature; the feature's operations, ports, and artifacts are
+declared on the same builder. Program validation refuses a computation whose
+output artifact its feature does not declare
+(`MissingManagedComputationArtifact`), whose partition key does not fit its
+execution posture (`MismatchedManagedComputationPartition`), whose resource
+ceiling has a zero (`InvalidManagedComputationResources`), or whose identity
+repeats within the feature (`DuplicateManagedComputation`). Installation
+refuses, with a `WorthQueryPrimaryGraphInstallationDenial`, an owner installed
+through the call for the other execution posture, a computation whose
+determinism contract is `ContractEquivalent`, and a second owner for one
+computation.
+
+Supply a unique, stable ID for every line: duplicate item identities are
+denied. Keys use canonical encoding, and partitions are ordered by the
+identity derived from that encoding, not by the numeric order of zones. The
+reducer fixes its association tree, so floating-point reduction preserves the
+same result bits at every admitted worker count.
 
 `checkpoint.advance` charges kernel work and checks interruption. Framework
 planning and reduction also contribute charged work; `charged_work()` reports
 the computation's total. Handle the typed denial before authoring a candidate
 from the result. Computing and completing a value do not commit it.
+
+`prepare`, `compute`, and `complete` each fail with a
+`WorthQueryPartitionedComputationDenial<Stopped>`, where `Stopped` is the
+owner's own stop type. A denied run has no result. Handle every variant:
+
+| Denial | What it reports |
+|---|---|
+| `Owner(stopped)` | The owner refused to name the input's items, to key one, or to complete the reduced result. |
+| `Read(..)` | A read was refused while the owner named the items or keyed one. |
+| `Partition { partition, cause }` | One partition stopped. `cause` is a `WorthQueryComputationPartitionStop`: `Owner(stopped)`, `Read(..)`, `Panicked`, `Resource(..)`, `Interrupted(..)`, or `NestedPatternStopped`. When several partitions stop, the one with the least partition identity is reported. No partition is computed unless every partition gathers. |
+| `PartitionIdentityCollision { partition }` | Two different keys derive one partition identity. Every run is denied while both keys are in the input. |
+| `DuplicateItem { item }` | The plan named one item identity twice; the least such identity is reported. |
+| `InputNotEncodable(..)`, `ItemNotEncodable { item, denial }` | The input value or an item refused canonical encoding, so a retained run has no digest for it. |
+| `KeyNotEncodable { item, denial }` | An item's partition key refused canonical encoding. |
+| `Resource(..)` | A `WorthQueryManagedComputationResourceDenial`: planning, deriving partition identities, or reducing did not fit the declared work or bytes, or the request's execution refused it. |
+| `Interrupted(..)` | `Cancelled` or `DeadlineExceeded`: the request was canceled or ran out of time outside any one partition. |
+| `NestedPatternStopped` | A pattern started inside a partition's kernel stopped, outside any one partition. |
+| `ReducerPanicked` | The reducer panicked. |
+| `ReducedEncodingInvalid` | A reduced value's canonical bits disagree with the length it declares. |
+| `ReductionInputInvalid(..)` | The reduction refused the identities or values it was given. The platform builds both from one canonical list, so no run produces it; match it for exhaustiveness. |
+
+Inside `compute_partition`, `checkpoint.advance(work)?` converts a refused
+checkpoint (`WorthQueryManagedComputationCheckpointDenial`: `Resource`,
+`Interrupted`, or `NestedPatternStopped`) into the kernel's
+`WorthQueryManagedComputationDenial`. A refusal attributed to a partition
+surfaces as `Partition { partition, cause }`; one that belongs to no partition
+surfaces as the top-level `Resource`, `Interrupted`, or `NestedPatternStopped`.
+
+A second example, from sensor telemetry, keeps the same traits and changes the
+item, the key, and the reducer. It groups readings by station, takes each
+station's peak, and reduces the peaks to one maximum. Integer maximum is exact,
+so the reducer needs no floating-point care.
+
+```rust
+use std::marker::PhantomData;
+use serde::Serialize;
+use worth_query_host::facade::{
+    application_contribution::*,
+    declaration::{
+        application_operation::ApplicationMutationBinding,
+        application_program::*,
+        application_schema::ApplicationSchema,
+    },
+    primary_graph::{DecisionReader, WorthQueryPrimaryGraphInstallationDenial},
+};
+
+#[derive(Clone, Serialize)]
+pub struct Reading {
+    id: u64,
+    station: u32,
+    millivolts: u64,
+}
+impl ChargedBytes for Reading {
+    fn additional_charged_bytes(&self) -> u64 { 0 }
+}
+impl ApplicationComputationPartition for Reading {
+    const IDENTITY: &'static str = "telemetry.reading.v1";
+}
+
+pub struct TelemetryInput;
+impl ApplicationComputationInput for TelemetryInput {
+    type Value = Vec<Reading>;
+    const IDENTITY: &'static str = "telemetry.input.v1";
+}
+#[derive(Serialize)]
+pub struct Station(u32);
+impl ApplicationComputationPartition for Station {
+    const IDENTITY: &'static str = "telemetry.station.v1";
+}
+pub struct TelemetryReuse;
+impl ApplicationComputationReuse for TelemetryReuse {
+    const IDENTITY: &'static str = "telemetry.reuse.v1";
+}
+pub struct TelemetryStopped;
+impl ApplicationComputationStopped for TelemetryStopped {
+    const IDENTITY: &'static str = "telemetry.stopped.v1";
+}
+
+pub struct PeakReading<A>(PhantomData<fn() -> A>);
+impl<S, F, A> ApplicationManagedComputation<S, F> for PeakReading<A>
+where
+    S: ApplicationSchema,
+    F: ApplicationFeature<S>,
+    A: ApplicationDerivedArtifact<S, F>,
+{
+    type Input = TelemetryInput;
+    type Output = A;
+    type Partition = Station;
+    type Reuse = TelemetryReuse;
+    type Stopped = TelemetryStopped;
+    const IDENTITY: &'static str = "telemetry.peak.v1";
+    const EXECUTION: ApplicationComputationExecution =
+        ApplicationComputationExecution::DeterministicPartitioned;
+    const RESOURCES: ApplicationComputationResourceCeiling =
+        ApplicationComputationResourceCeiling::new(100_000, 1_048_576);
+}
+
+pub struct PeakOwner<Op>(PhantomData<fn() -> Op>);
+impl<S, F, A, Op> WorthQueryPartitionedComputationOwner<S, F, PeakReading<A>>
+    for PeakOwner<Op>
+where
+    S: ApplicationSchema,
+    F: ApplicationFeature<S>,
+    A: ApplicationDerivedArtifact<S, F>,
+    Op: 'static,
+{
+    type Operation = Op;
+    type Item = Reading;
+    type Gathered = Vec<u64>;
+    type PartitionResult = u64;
+    type Output = u64;
+    type Stopped = u32;
+
+    fn partitions(
+        &self,
+        _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
+        input: &Vec<Reading>,
+    ) -> Result<WorthQueryComputationPartitionPlan<Reading>,
+                WorthQueryComputationInputDenial<u32>> {
+        Ok(WorthQueryComputationPartitionPlan::keyed(
+            input.iter().cloned(), |reading| PartitionItemId(reading.id),
+        ))
+    }
+
+    fn partition_key(
+        &self,
+        _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
+        _input: &Vec<Reading>,
+        item: &Reading,
+    ) -> Result<Station, WorthQueryComputationInputDenial<u32>> {
+        Ok(Station(item.station))
+    }
+
+    fn gather(
+        &self,
+        _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
+        _input: &Vec<Reading>,
+        partition: WorthQueryComputationPartitionMembers<'_, Station, Reading>,
+    ) -> Result<Vec<u64>, WorthQueryComputationInputDenial<u32>> {
+        Ok(partition.items().map(|(_, reading)| reading.millivolts).collect())
+    }
+
+    fn compute_partition(
+        &self,
+        partition: WorthQueryComputationPartitionView<'_, Station, Vec<u64>>,
+        checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
+    ) -> Result<u64, WorthQueryManagedComputationDenial<u32>> {
+        let mut peak = 0_u64;
+        for millivolts in partition.gathered() {
+            checkpoint.advance(1)?;
+            peak = peak.max(*millivolts);
+        }
+        Ok(peak)
+    }
+
+    fn reducer(&self) -> WorthQueryDeterministicReducer<u64> {
+        WorthQueryDeterministicReducer::canonical(
+            || 0, |left, right| (*left).max(*right),
+        )
+    }
+
+    fn complete(&self, reduced: u64) -> Result<u64, u32> { Ok(reduced) }
+}
+
+pub fn declare_peak<S, F, A>() -> ApplicationFeatureSpec
+where
+    S: ApplicationSchema,
+    F: ApplicationFeature<S>,
+    A: ApplicationDerivedArtifact<S, F>,
+{
+    ApplicationFeatureSpec::root::<S, F>()
+        .derived_artifact::<A>()
+        .managed_computation::<PeakReading<A>>()
+        .finish()
+}
+
+pub fn install_peak<S, F, A, Op>(
+    setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
+) -> Result<
+    WorthQueryInstalledPartitionedComputation<S, F, PeakReading<A>, PeakOwner<Op>>,
+    WorthQueryPrimaryGraphInstallationDenial,
+>
+where
+    S: ApplicationSchema,
+    F: ApplicationFeature<S>,
+    A: ApplicationDerivedArtifact<S, F>,
+    Op: 'static,
+{
+    setup.partitioned_computation::<F, PeakReading<A>, _>(PeakOwner(PhantomData))
+}
+
+pub fn run_peak<S, F, A, Op, B>(
+    installed: &WorthQueryInstalledPartitionedComputation<
+        S, F, PeakReading<A>, PeakOwner<Op>,
+    >,
+    reader: &mut DecisionReader<'_, '_, '_, S, B>,
+    input: &Vec<Reading>,
+) -> Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>
+where
+    S: ApplicationSchema,
+    F: ApplicationFeature<S>,
+    A: ApplicationDerivedArtifact<S, F>,
+    Op: 'static,
+    B: ApplicationMutationBinding<S, Operation = Op>,
+{
+    let computed = installed.prepare(reader, input)?
+        .compute(reader.managed_computation_execution())?;
+    let charged_work = computed.charged_work();
+    Ok((computed.complete()?, charged_work))
+}
+```
+
+Planning does not depend on the order the input holds its readings in: items
+are met in item identity order and partitions in partition identity order.
 
 ---
 
@@ -859,11 +1126,11 @@ An opening refusal is `ExecutionRequest`, not a handler failure: no handler ran.
 `ExecutionRequest` also carries resource and misuse refusals encountered while
 an admitted request is executing.
 An interruption observed after admission keeps the executing owner's cancellation
-or timeout outcome, including that owner's promised restoration and refunds.
+or timeout outcome.
 For an output demand refresh these are `Cancelled` and `TimedOut`; they are
 separate from admission's `ExecutionRequest(Interrupted(..))` refusals.
 Zero memory reports `PolicyMemoryLimit` at serial placement and a policy
-`MemoryLimit { requested, admitted: 0 }` at leased placement.
+`MemoryLimit { requested, admitted: 0, level }` at leased placement.
 
 A **request scope** carries only a deadline and a cancellation token. It is
 not an entity and grants nothing:
@@ -1083,8 +1350,9 @@ performed.required_output_mut().advance(&runtime, &request)?; // Pending, later 
 Output progress is `WorthQueryApplicationProgramOutputProgress::{Pending, Settled}`.
 The owned continuation can outlive the starting request. Each advance supplies
 the original installed runtime and a freshly authenticated request. An unpublished
-source retains its original preparation and native recovery owner; recovery and
-promotion reuse those effects without invoking the original handler again.
+source retains its original preparation and native partial; recovery continues
+it under fresh authorization and never prepares a candidate or invokes the
+original handler again.
 
 ---
 

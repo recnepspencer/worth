@@ -126,6 +126,20 @@ explained). Rust names are given where a type embodies the term.
 : A pure predicate over declared inputs. In a workflow, a condition node
   decides a branch in the graph. It is never an effect.
 
+**Conflict group**
+: In Signal, one unit of ready graph work that may run beside the other
+  units of its batch because their worker-local effects are proven not to
+  overlap. The planner lowers a stage into ordered groups
+  (`DisjointApplyGroup`, one per task). The batch that admits them
+  (`DisjointGraphBatch`) is created only by the invalidation progression
+  owner, which derives every member node's full set of proposal surfaces
+  (state, dependencies, produced aspects, subscriptions, snapshot, lineage,
+  observation, diagnostic) and refuses the batch when two members overlap.
+  The plan reduces group results in stage task order.
+  **Not** an execution partition: a conflict group proves that graph effects
+  do not collide and carries no data identity.
+  **See** *Partition (execution)*.
+
 **Contribution**
 : One named slice of an application schema, plus the host setup it needs:
   handlers, invariants, and conditional nodes
@@ -141,7 +155,9 @@ explained). Rust names are given where a type embodies the term.
 
 **Currentness**
 : Whether a basis still matches the owner's live state. Currentness is part
-  of authority: stronger operations accept only a current basis.
+  of authority: stronger operations accept only a current basis. In Proof,
+  an execution-ready recipe exposes its strong basis only when that basis
+  carries `CurrentValidity`.
   **Not** residency: a retained basis can be available and not current.
 
 **Custody**
@@ -233,8 +249,10 @@ explained). Rust names are given where a type embodies the term.
 
 **Footprint**
 : The recorded set of entities, field revisions, and adjacency revisions that
-  an observed source read. At admission, an edit outside the footprint does
-  not invalidate the source.
+  an observed source read, carried inside the opaque
+  `WorthQueryObservedSource`. At admission, the source is checked against
+  the facts built from its footprint and no others, so an edit outside the
+  footprint does not invalidate the source.
 
 **Freshness**
 : How current a basis is, recorded in its type: `CurrentValidity`,
@@ -282,6 +300,10 @@ explained). Rust names are given where a type embodies the term.
   charged-memory, and work ceilings from admitted policy; descendants can
   narrow them and share ancestor and process accounting. A residency lease
   instead keeps a selected basis available. Neither grants mutation authority.
+  A residency lease (`RelationalBranchRetentionLease`,
+  `SignalBranchRetentionLease`) is an owner-issued obligation that is
+  released or dropped exactly once and exposes no read or mutation
+  capability.
 
 **Lineage**
 : (1) A continuity claim about evidence (attested, replay-derived, restored,
@@ -310,6 +332,10 @@ explained). Rust names are given where a type embodies the term.
   dirty, and every settlement that consumed its output is marked
   pending-upstream. Marks are per branch lineage, and an unmarked settlement on
   a continuous basis is current without re-running its source query.
+  A settlement recorded before a delivery discontinuity, or one that carries
+  a recorded verification requirement, is not current and requires full
+  verification. Marking that exceeds its installed ceiling or its retained
+  capacity becomes such a discontinuity instead of refusing the writer.
   **See** [How WORTH Works §10.5](how-it-works.md#105-marking-and-currentness).
 
 ## O
@@ -337,11 +363,23 @@ explained). Rust names are given where a type embodies the term.
   order. Its identity does not depend on the worker. It is distinct from a
   Signal observation scope selected by `whole_partition`, which matches a
   subtree of scope paths.
+  **Not** a Signal *conflict group* (`DisjointApplyGroup`): a conflict group
+  is ready graph work admitted because its effects do not overlap another
+  group's, and it carries no data identity.
+  **Not** the `WholePartition` scope lane: a Signal subscription built by
+  `PartitionSubscription::whole_partition` selects the subtree of scope paths
+  under one partition segment. That lane decides which subscriptions a
+  changed region reaches. It names no unit of work.
+  **See** *Conflict group* and *Scope path*.
 
 **Partitioner**
 : The owner of the rule assigning stable item identities to execution
   partitions. An application computation plan offers keyed grouping. The
-  execution layer also offers a component partitioner for connected items.
+  execution layer also offers a component partitioner for connected items
+  and a bisection partitioner (`Bisection`), which recursively bisects a
+  weighted item graph under a maximum leaf weight, identifies each leaf by
+  its root-to-leaf cut path, and re-cuts only an overloaded leaf or an
+  ancestor outside tolerance.
   Worker placement does not define partition membership.
 
 **Performed**
@@ -415,11 +453,14 @@ explained). Rust names are given where a type embodies the term.
 
 **Residency (retention)**
 : Keeping a basis available in memory under a lease. A resident basis is not
-  necessarily current.
+  necessarily current: the lease holds the root its observation selected,
+  and a root the branch has retired is reclaimed only once no lease
+  reserves it.
 
 **Reverse index**
 : Query's index from consumed facts (field revisions, index keys, selection
-  and absence facts) to the settlements that read them. It is filled when a
+  and absence facts, and also entity lifecycle, relation membership, and
+  adjacency facts) to the settlements that read them. It is filled when a
   settlement is recorded and consulted by *marking*, so marking selects matched
   settlements and their downstream closure without scanning every settlement.
 
@@ -439,6 +480,13 @@ explained). Rust names are given where a type embodies the term.
   can select an exact path or its subtree. A whole-partition subscription
   selects the subtree under one partition segment; this observation scope is
   distinct from an execution partition.
+  A path has one to eight non-empty segments (`ScopePath::MAX_DEPTH`); a
+  longer path is refused. The Bridge lowers each change it delivers into
+  changed regions on these paths. A partition-local dependency yields the
+  change's own scope or the target partition's subtree. A record-local
+  dependency yields the change's own scope or the exact path of the target
+  partition and the changed record. A whole-graph dependency, or a
+  correspondence with `DeclaredWidening` precision, yields no region.
 
 **Settled**
 : Performed, and also made durable and published by Query. A commit that
@@ -450,7 +498,9 @@ explained). Rust names are given where a type embodies the term.
 
 **Shard**
 : A placement unit for storage or execution. Its placement does not determine
-  which facts changed or which consumers require recomputation.
+  which facts changed or which consumers require recomputation: the *touched
+  graph* names what changed, and the *reverse index* names the settlements
+  that consumed it.
 
 **Signal**
 : The runtime for deterministic, incremental derived computation. Signal
@@ -476,16 +526,25 @@ explained). Rust names are given where a type embodies the term.
 **Touched graph**
 : The exact changes sealed by a commit: changed records, aspect field paths,
   adjacency changes, observable revision bumps, and old/new index membership.
-  It supplies both performed evidence and the cause of invalidation. Declared
-  dependencies determine which consumers intersect those changes. A producer
-  that declares coarser precision carries and reports that widening.
+  It supplies both performed evidence and the cause of invalidation. The
+  facts each settlement consumed, recorded in the *reverse index* when the
+  settlement is registered, determine which consumers intersect those
+  changes. A declared dependency does not: marking matches recorded facts
+  only. A commit sealed without an exact graph (`Unavailable`) cannot assert
+  that nothing changed. It is delivered as a discontinuity, and a
+  settlement recorded before it requires full verification.
+  Coarser precision is declared on the Bridge *correspondence*, never
+  inferred from the touched graph: a correspondence admitted with
+  `DeclaredWidening` precision is counted as a widened match and delivers
+  its changes to Signal with no narrowing region.
   **See** [How WORTH Works §10](how-it-works.md#10-the-touched-graph).
 
 **Touched records**
 : The record layer of the *touched graph* exposed on a receipt
-  (`WorthQueryTouchedRecordIdentity`, read with
-  `receipt.mutation_work().touched_records()`). Sealed by the commit and never
-  supplied by a caller. Undo depends on them.
+  (`WorthQueryTouchedRecordIdentity`). `receipt.mutation_work()` returns an
+  `Option`; read the records from the evidence it holds, as in
+  `receipt.mutation_work().map(|work| work.touched_records())`. Sealed by the
+  commit and never supplied by a caller. Undo depends on them.
   **See** [How WORTH Works §10.3](how-it-works.md#103-layer-3-commit-sealed-records).
 
 **Truth**
