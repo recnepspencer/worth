@@ -15,27 +15,27 @@ note: associated function defined here
   |            ^^^^^^^^^^
 
 error[E0277]: the trait bound `BridgeRouteRequest: From<&str>` is not satisfied
- --> tests/ui/route_request_requires_truth_commit_identity.rs:8:27
-  |
-8 |     let _ = runtime.route(sealed_authority_placeholder::<&str>());
-  |                     ----- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `From<&str>` is not implemented for `BridgeRouteRequest`
-  |                     |
-  |                     required by a bound introduced by this call
-  |
+  --> tests/ui/route_request_requires_truth_commit_identity.rs:11:27
+   |
+11 |     let _ = runtime.route(sealed_authority_placeholder::<&str>(), execution);
+   |                     ----- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `From<&str>` is not implemented for `BridgeRouteRequest`
+   |                     |
+   |                     required by a bound introduced by this call
+   |
 help: the following other types implement trait `From<T>`
- --> src/facade/request.rs
-  |
-  | impl From<crate::adapter::RelationalCommittedPatchRequest> for BridgeRouteRequest {
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `BridgeRouteRequest` implements `From<RelationalCommittedPatchRequest>`
+  --> src/facade/request.rs
+   |
+   | impl From<crate::adapter::RelationalCommittedPatchRequest> for BridgeRouteRequest {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `BridgeRouteRequest` implements `From<RelationalCommittedPatchRequest>`
 ...
-  | impl From<crate::input::envelope::TruthCommitIdentity> for BridgeRouteRequest {
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `BridgeRouteRequest` implements `From<worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>>`
-  = note: required for `&str` to implement `Into<BridgeRouteRequest>`
-note: required by a bound in `facade::runtime::routing_and_bulk::<impl worth_runtime_bridge::facade::RuntimeBridge>::route`
- --> src/facade/runtime/routing_and_bulk.rs
-  |
-  |     pub fn route(
-  |            ----- required by a bound in this associated function
-  |         &self,
-  |         request: impl Into<BridgeRouteRequest>,
-  |                       ^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `facade::runtime::routing_and_bulk::<impl RuntimeBridge>::route`
+   | impl From<crate::input::envelope::TruthCommitIdentity> for BridgeRouteRequest {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `BridgeRouteRequest` implements `From<worth_runtime_bridge::identity::BridgeIdentity<worth_runtime_bridge::identity::TruthCommitTag>>`
+   = note: required for `&str` to implement `Into<BridgeRouteRequest>`
+note: required by a bound in `facade::runtime::execution_entries::<impl worth_runtime_bridge::facade::RuntimeBridge>::route`
+  --> src/facade/runtime/execution_entries.rs
+   |
+   |     pub fn route(
+   |            ----- required by a bound in this associated function
+   |         &self,
+   |         request: impl Into<BridgeRouteRequest>,
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `facade::runtime::execution_entries::<impl RuntimeBridge>::route`

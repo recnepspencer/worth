@@ -28,9 +28,9 @@ note: associated function defined here
    |                   ^^^
 
 error[E0624]: associated function `new` is private
-  --> tests/ui/builder_requires_signal_sink_before_build.rs:17:34
+  --> tests/ui/builder_requires_signal_sink_before_build.rs:22:34
    |
-17 |           SignalInvalidationScope::new("signal.profile"),
+22 |           SignalInvalidationScope::new("signal.profile"),
    |                                    ^^^ private associated function
    |
   ::: src/identity.rs
@@ -41,9 +41,9 @@ error[E0624]: associated function `new` is private
    | |_____________- private associated function defined here
 
 error[E0308]: mismatched types
-  --> tests/ui/builder_requires_signal_sink_before_build.rs:17:38
+  --> tests/ui/builder_requires_signal_sink_before_build.rs:22:38
    |
-17 |         SignalInvalidationScope::new("signal.profile"),
+22 |         SignalInvalidationScope::new("signal.profile"),
    |         ---------------------------- ^^^^^^^^^^^^^^^^ expected `FoundationalAuthorityIdentity<..., ..., ...>`, found `&str`
    |         |
    |         arguments to this function are incorrect
@@ -57,9 +57,9 @@ note: associated function defined here
    |                   ^^^
 
 error[E0599]: no method named `build` found for struct `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::PresentCommittedPatchSource, worth_runtime_bridge::builder::states::PresentSnapshotReadSource, worth_runtime_bridge::builder::states::MissingSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>` in the current scope
-  --> tests/ui/builder_requires_signal_sink_before_build.rs:47:21
+  --> tests/ui/builder_requires_signal_sink_before_build.rs:53:21
    |
-47 |     let _ = builder.build();
+53 |     let _ = builder.build();
    |                     ^^^^^ method not found in `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::PresentCommittedPatchSource, worth_runtime_bridge::builder::states::PresentSnapshotReadSource, worth_runtime_bridge::builder::states::MissingSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>`
    |
    = note: the method was found for

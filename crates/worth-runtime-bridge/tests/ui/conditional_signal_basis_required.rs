@@ -5,6 +5,7 @@ use worth_runtime_bridge::facade::{
 
 fn lowering_cannot_select_signal_basis(
     bridge: &BridgeSealedRuntimeAssembly,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     lowering: &BridgeInstalledConditionalLowering,
     snapshot: &TruthSnapshotIdentity,
     patch: RelationalCommittedPatchRequest,
@@ -12,7 +13,7 @@ fn lowering_cannot_select_signal_basis(
     let _ = BridgeConditionalEvaluationAdmissionRequest::source_present_at_signal_basis(
         lowering, snapshot,
     );
-    let _ = bridge.deliver_authoritative_change(lowering, 0, patch);
+    let _ = bridge.deliver_authoritative_change(execution, lowering, 0, patch);
 }
 
 fn main() {}
