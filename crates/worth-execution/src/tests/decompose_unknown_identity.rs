@@ -3,7 +3,6 @@ use super::*;
 use crate::{
     DecomposeCertificationFailure, DecomposeFailure, DecomposeInputDenial, DecomposeKernelEditions,
     ExecutionDecompose, ExecutionMap, InterfaceSolution, InteriorResult, MapPartition,
-    NestedComputationStop,
 };
 
 #[test]
@@ -77,6 +76,7 @@ fn unknown_rerun(certify: bool) {
     let mut checkpoint = Ok(());
     let mut taken = None;
     let mut inner_succeeded = false;
+    let charged_before = lease.charged_memory_bytes();
     let outer = crate::backend::run_scope(None, 0, 0, |grandparent| {
         let inner = crate::backend::run_scope(None, 0, 0, |kernel| {
             let result = if certify {
@@ -91,6 +91,7 @@ fn unknown_rerun(certify: bool) {
                     .run(Some(&lease), &changed, editions, interior, interface, back)
                     .err()
             };
+            assert_eq!(lease.charged_memory_bytes(), charged_before);
             denial = result.and_then(|failure| match failure.cause {
                 DecomposeFailure::Input(cause) => Some(cause),
                 _ => None,
@@ -103,10 +104,8 @@ fn unknown_rerun(certify: bool) {
         assert_eq!(grandparent.take_nested_computation_stop(), None);
         Ok::<_, KernelFailure<()>>(())
     });
-    assert!(matches!(
-        taken,
-        None | Some(NestedComputationStop::DomainFailure)
-    ));
+    assert_eq!(taken, None);
+    assert_eq!(lease.charged_memory_bytes(), charged_before);
     assert_eq!(
         (denial, checkpoint, inner_succeeded, outer.result.is_ok()),
         (

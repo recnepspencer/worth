@@ -19,11 +19,13 @@
 //! | Charged-byte and size counters | Fact: latch | `LeaseDenial::charged_bytes_overflow` |
 //!
 //! Handed refusals mark the invoking run; framework narrowing marks nothing.
-//! A door holds the request's lease: there an overflowed work, span or byte counter
-//! latches immediately; structural-metric mismatches mark nothing.
+//! Fact doors latch overflowed work, span or byte counters on the active invoking
+//! kernel's meter, even without a lease; structural-metric mismatches mark nothing.
 //! Constructing a batch, map, scan, rounds input or keyed edit holds no lease and
-//! charges nothing: overflow is a typed value denial, and the first lease holder
-//! turning it into a stop latches.
+//! charges nothing: overflow is a typed value denial. Reduction batch admission
+//! converts byte overflow through `LeaseDenial::charged_bytes_overflow` to a latch;
+//! decompose's interface and back map admissions surface as computation-owned
+//! domain failures.
 //! An overflowing sum compared against declared capacity exceeds that capacity;
 //! an encoding whose length cannot be taken is invalid: both are computation-owned.
 
