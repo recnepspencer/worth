@@ -1,3 +1,4 @@
+mod installed_budgets;
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
@@ -15,6 +16,9 @@ use worth_query_installation::facade::{
 #[test]
 fn blocking_and_advisory_receipts_retain_their_installed_posture() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -31,6 +35,7 @@ fn blocking_and_advisory_receipts_retain_their_installed_posture() {
             vec![blocking],
             "closed-loop",
             [locator("base")],
+            resource_request,
         )
         .unwrap();
         let WorthQueryInvariantReceipt::Passed(passed) = passed else {
@@ -48,6 +53,7 @@ fn blocking_and_advisory_receipts_retain_their_installed_posture() {
             vec![advisory],
             "recommended-density",
             [locator("base")],
+            resource_request,
         )
         .unwrap();
         let WorthQueryInvariantReceipt::Advisory(advisory) = advisory else {
@@ -60,6 +66,9 @@ fn blocking_and_advisory_receipts_retain_their_installed_posture() {
 #[test]
 fn progression_requires_the_exact_complete_installed_invariant_set() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -72,6 +81,7 @@ fn progression_requires_the_exact_complete_installed_invariant_set() {
             state(),
             requirements.clone(),
             ["closed-loop"],
+            resource_request,
         )
         .expect_err("one passed receipt cannot progress a two-slot contract");
         assert_eq!(
@@ -83,6 +93,7 @@ fn progression_requires_the_exact_complete_installed_invariant_set() {
             state(),
             requirements,
             ["closed-loop", "manifold"],
+            resource_request,
         )
         .expect("the exact passed slot set should progress");
         assert_eq!(complete.receipt_identities().len(), 2);
@@ -92,6 +103,9 @@ fn progression_requires_the_exact_complete_installed_invariant_set() {
 #[test]
 fn each_selected_blocking_invariant_observes_corruption_and_cannot_progress() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -111,6 +125,7 @@ fn each_selected_blocking_invariant_observes_corruption_and_cannot_progress() {
                 ],
                 slot,
                 [locator("untouched")],
+                resource_request,
             )
             .unwrap();
             let WorthQueryInvariantReceipt::Violated(receipt) = receipt else {
@@ -124,6 +139,9 @@ fn each_selected_blocking_invariant_observes_corruption_and_cannot_progress() {
 #[test]
 fn regional_and_full_validation_agree_or_return_indeterminate() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -137,6 +155,7 @@ fn regional_and_full_validation_agree_or_return_indeterminate() {
             )],
             "closed-loop",
             [locator("base")],
+            resource_request,
         );
         assert!(!valid.full_invalid);
         let valid = valid.result.unwrap();
@@ -158,6 +177,7 @@ fn regional_and_full_validation_agree_or_return_indeterminate() {
             )],
             "closed-loop",
             [locator("untouched")],
+            resource_request,
         );
         assert!(matching.full_invalid);
         let matching = matching.result.unwrap();
@@ -179,6 +199,7 @@ fn regional_and_full_validation_agree_or_return_indeterminate() {
             )],
             "closed-loop",
             [locator("base")],
+            resource_request,
         );
         assert!(!proposed_state_wins.full_invalid);
         let proposed_state_wins = proposed_state_wins.result.unwrap();
@@ -203,6 +224,7 @@ fn regional_and_full_validation_agree_or_return_indeterminate() {
             )],
             "closed-loop",
             [locator("base")],
+            resource_request,
         );
         assert!(mismatch.full_invalid);
         let mismatch = mismatch.result.unwrap();
@@ -216,6 +238,9 @@ fn regional_and_full_validation_agree_or_return_indeterminate() {
 #[test]
 fn empty_or_undeclared_state_loads_never_reach_validator_execution() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -230,6 +255,7 @@ fn empty_or_undeclared_state_loads_never_reach_validator_execution() {
             )],
             "closed-loop",
             [locator("base")],
+            resource_request,
         )
         .err()
         .expect("empty provider load must deny");
@@ -250,6 +276,7 @@ fn empty_or_undeclared_state_loads_never_reach_validator_execution() {
             )],
             "closed-loop",
             [WorthQueryInvariantStateLocator::new("foreign", "base").unwrap()],
+            resource_request,
         )
         .err()
         .expect("undeclared load family must deny");
@@ -261,82 +288,23 @@ fn empty_or_undeclared_state_loads_never_reach_validator_execution() {
     });
 }
 
-#[test]
-fn installed_budgets_never_degrade_into_success() {
-    crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
-        let phase = &active_phase;
-        let execution = phase;
-
-        let state_load = state();
-        let failure = execute_invariant(
-            execution,
-            state_load,
-            vec![requirement(
-                "closed-loop",
-                WorthQueryInvariantEnforcement::Blocking,
-                1,
-            )],
-            "closed-loop",
-            [locator("base"), locator("old")],
-        )
-        .err()
-        .expect("oversized state load must deny");
-        assert_eq!(
-            failure.kind(),
-            WorthQueryInvariantExecutionDenialKind::StateLoadBudgetExceeded
-        );
-        assert_eq!(
-            failure.posture(),
-            WorthQueryInvariantExecutionFailurePosture::Exhausted
-        );
-
-        for (outcome, expected) in [
-            (
-                InvariantFixtureOutcome::Exhausted,
-                "execution budget exhaustion",
-            ),
-            (
-                InvariantFixtureOutcome::Indeterminate,
-                "incomplete execution evidence",
-            ),
-        ] {
-            let receipt = execute_invariant(
-                execution,
-                state_with_outcome(outcome),
-                vec![requirement(
-                    "closed-loop",
-                    WorthQueryInvariantEnforcement::Blocking,
-                    4,
-                )],
-                "closed-loop",
-                [locator("base")],
-            )
-            .unwrap();
-            match outcome {
-                InvariantFixtureOutcome::Exhausted => {
-                    assert!(
-                        matches!(receipt, WorthQueryInvariantReceipt::Exhausted(_)),
-                        "{expected}"
-                    )
-                }
-                InvariantFixtureOutcome::Indeterminate => assert!(
-                    matches!(receipt, WorthQueryInvariantReceipt::Indeterminate(_)),
-                    "{expected}"
-                ),
-                _ => unreachable!(),
-            }
-        }
-    });
-}
-
 pub(super) fn execute_invariant(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
     slot: &str,
     locators: impl IntoIterator<Item = WorthQueryInvariantStateLocator>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryInvariantReceipt, WorthQueryInvariantExecutionFailure> {
-    invariant_fixture::execute_invariant(execution, state, requirements, slot, locators).result
+    invariant_fixture::execute_invariant(
+        execution,
+        state,
+        requirements,
+        slot,
+        locators,
+        resource_request,
+    )
+    .result
 }
 
 pub(super) fn requirement(

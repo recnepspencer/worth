@@ -4,6 +4,7 @@ pub(super) fn execute_duplicate_certification(
     _runtime: &crate::harness::adapter::BridgeHarnessSession,
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WritebackHarnessExecution, BridgeHarnessError> {
     let lowered_policy_bundle = lowered_policy(runtime_bridge)?;
     let declaration = crate::facade::BridgeWritebackDeclaration::writeback_capable(
@@ -33,7 +34,8 @@ pub(super) fn execute_duplicate_certification(
                 "writeback duplicate certification fixture requires one committed patch",
             )
         })?;
-    let route_identity = route_identity_for_commit(runtime_bridge, commit_identity.clone())?;
+    let route_identity =
+        route_identity_for_commit(runtime_bridge, commit_identity.clone(), resource_request)?;
     let causality = writeback_causality_basis(
         "harness:writeback-causality",
         commit_identity.as_str(),

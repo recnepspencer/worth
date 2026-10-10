@@ -9,7 +9,7 @@ pub(super) enum WorthQuerySettlementReentry {
         WorthQueryApplicationSettlementDeferred,
         crate::domain_computation::WorthQueryProviderSessionDenialKind,
     ),
-    Indeterminate(String),
+    Indeterminate(super::super::WorthQueryConditionalReentryFailure),
     Deferred(WorthQueryApplicationSettlementDeferred),
     SnapshotBackpressured(WorthQueryApplicationSettlementDeferred, usize),
     RetentionBackpressured(WorthQueryApplicationSettlementDeferred),
@@ -31,12 +31,12 @@ where
         Ok(_) => WorthQuerySettlementReentry::AlreadyCommitted,
         Err(WorthQueryApplicationSettlementRecoveryError::IdempotencyAbsent) => {
             WorthQuerySettlementReentry::Indeterminate(
-                "settled temporal commit has no exact idempotency evidence".to_string(),
+                super::super::WorthQueryConditionalReentryFailure::SettlementIdempotencyAbsent,
             )
         }
         Err(WorthQueryApplicationSettlementRecoveryError::IdempotencyDrift) => {
             WorthQuerySettlementReentry::Indeterminate(
-                "settled temporal commit has drifting idempotency evidence".to_string(),
+                super::super::WorthQueryConditionalReentryFailure::SettlementIdempotencyDrift,
             )
         }
         Err(

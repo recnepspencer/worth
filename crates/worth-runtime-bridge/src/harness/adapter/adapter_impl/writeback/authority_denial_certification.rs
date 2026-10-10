@@ -5,6 +5,7 @@ pub(super) fn execute_authority_denial_certification(
     runtime: &crate::harness::adapter::BridgeHarnessSession,
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WritebackHarnessExecution, BridgeHarnessError> {
     let declaration = crate::facade::BridgeWritebackDeclaration::writeback_capable(
         crate::facade::BridgeWritebackDeclarationIdentity::admit_bridge_owned(
@@ -50,6 +51,7 @@ pub(super) fn execute_authority_denial_certification(
         "harness:writeback-authority-denial:causality",
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
         "unbound-authority",
+        resource_request,
     )?;
     let authority_effect = unbound_runtime.lower_writeback_effect(
         &authority_contract,
@@ -120,6 +122,7 @@ pub(super) fn execute_authority_denial_certification(
         "harness:writeback-authority-denial:merge-rejected:causality",
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
         "merge-rejected",
+        resource_request,
     )?;
     let merge_effect = merge_rejecting_runtime.lower_writeback_effect(
         &merge_contract,
@@ -181,6 +184,7 @@ pub(super) fn execute_authority_denial_certification(
         "harness:writeback-authority-denial:unsafe-feedback:causality",
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
         "unsafe-feedback",
+        resource_request,
     )?;
     let unsafe_feedback_effect = unsafe_feedback_runtime.lower_writeback_effect(
         &unsafe_feedback_contract,

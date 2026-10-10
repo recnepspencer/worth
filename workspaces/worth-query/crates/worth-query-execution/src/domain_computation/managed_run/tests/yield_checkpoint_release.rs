@@ -7,6 +7,9 @@ use super::*;
 #[test]
 fn suspension_and_execution_destructor_panics_are_independently_contained() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -25,7 +28,7 @@ fn suspension_and_execution_destructor_panics_are_independently_contained() {
         ),
     ] {
         let (running, graph) =
-            managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, provider);
+            managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, provider, resource_request);
         let active = running
             .begin_graph_execution(execution,
                 &graph,
@@ -83,6 +86,9 @@ fn suspension_and_execution_destructor_panics_are_independently_contained() {
 #[test]
 fn execution_destructor_panic_releases_returned_checkpoint_with_exact_disposition() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -101,6 +107,7 @@ fn execution_destructor_panic_releases_returned_checkpoint_with_exact_dispositio
             let (running, graph) = managed_graph_run_with_provider(
                 WorthQueryOperationGraphAccess::Observe,
                 YieldProvider::checkpoint_and_execution_drop_panic(checkpoint_drop_panics),
+                resource_request,
             );
             let active = running
                 .begin_graph_execution(
@@ -162,6 +169,9 @@ fn execution_destructor_panic_releases_returned_checkpoint_with_exact_dispositio
 #[test]
 fn checkpoint_probe_failure_preserves_its_own_release_disposition() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -175,8 +185,11 @@ fn checkpoint_probe_failure_preserves_its_own_release_disposition() {
                 crate::domain_computation::WorthQueryProviderCheckpointReleaseDisposition::Panicked,
             ),
         ] {
-            let (running, graph) =
-                managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, provider);
+            let (running, graph) = managed_graph_run_with_provider(
+                WorthQueryOperationGraphAccess::Observe,
+                provider,
+                resource_request,
+            );
             let active = running
                 .begin_graph_execution(
                     execution,
@@ -219,12 +232,16 @@ fn checkpoint_probe_failure_preserves_its_own_release_disposition() {
 #[test]
 fn direct_cleanup_contains_and_reports_checkpoint_destructor_panic() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Observe,
             YieldProvider::checkpoint_drop_panic(),
+            resource_request,
         );
         let active = running
             .begin_graph_execution(
@@ -268,6 +285,9 @@ fn direct_cleanup_contains_and_reports_checkpoint_destructor_panic() {
 #[test]
 fn workflow_cleanup_returns_recovery_required_after_checkpoint_destructor_panic() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -308,8 +328,12 @@ fn workflow_cleanup_returns_recovery_required_after_checkpoint_destructor_panic(
             &graph,
             WorthQueryOperationGraphAccess::Observe,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let active = running
             .begin_stage_graph_execution(
                 execution,

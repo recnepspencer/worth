@@ -55,7 +55,7 @@ impl BridgeOwnedSignalRuntime {
         for receipt in request.transitions {
             let transition = receipt.conditional_transition().ok_or_else(|| {
                 BridgeConditionalDenial::new(
-                    BridgeConditionalDenialKind::ConditionalTransitionChainMismatch,
+                    BridgeConditionalDenialKind::ConditionalTransitionMissing,
                     "delivery receipt does not retain a conditional successor transition",
                 )
             })?;
@@ -103,33 +103,25 @@ fn map_signal_readmission_denial(
     denial: worth_signal::facade::branch::SignalConditionalEvaluationReadmissionDenial,
 ) -> BridgeConditionalDenial {
     use worth_signal::facade::branch::SignalConditionalEvaluationReadmissionDenial as Denial;
+    let detail = format!("Signal conditional successor readmission was denied: {denial:?}");
     let kind = match denial {
-        Denial::PredecessorNotExecuted => {
-            BridgeConditionalDenialKind::ConditionalPredecessorNotExecuted
-        }
-        Denial::TransitionChainIncomplete => {
-            BridgeConditionalDenialKind::ConditionalTransitionChainIncomplete
-        }
-        Denial::TransitionChainMismatch | Denial::DefinitionMismatch => {
-            BridgeConditionalDenialKind::ConditionalTransitionChainMismatch
-        }
-        Denial::SlotBusy => BridgeConditionalDenialKind::ConditionalEvaluationBusy,
-        Denial::SlotPoisoned => BridgeConditionalDenialKind::ConditionalEvaluationPoisoned,
-        Denial::UnconsumedUnwind => BridgeConditionalDenialKind::ConditionalEvaluationUnwindPending,
-        Denial::AdmissionCapacityExhausted => {
-            BridgeConditionalDenialKind::ConditionalEvaluationAdmissionCapacity
-        }
-        Denial::StaleBasisAdmission | Denial::DefinitionReadmissionRequired => {
-            BridgeConditionalDenialKind::StaleLowering
-        }
-        Denial::OwnerUnavailable(_)
-        | Denial::OwnerAdmission(_)
-        | Denial::EvaluationIdentityExhausted
-        | Denial::AdmissionUnavailable => BridgeConditionalDenialKind::SignalExecution,
         Denial::SlotAdmission(ref cause) => super::signal_execution_denial::kind(cause),
+        native @ (Denial::OwnerUnavailable(_)
+        | Denial::OwnerAdmission(_)
+        | Denial::StaleBasisAdmission
+        | Denial::DefinitionReadmissionRequired
+        | Denial::DefinitionMismatch
+        | Denial::TransitionChainIncomplete
+        | Denial::TransitionChainMismatch
+        | Denial::PredecessorNotExecuted
+        | Denial::EvaluationIdentityExhausted
+        | Denial::AdmissionCapacityExhausted
+        | Denial::AdmissionUnavailable
+        | Denial::SlotBusy
+        | Denial::SlotPoisoned
+        | Denial::UnconsumedUnwind) => BridgeConditionalDenialKind::SignalExecution(
+            super::BridgeSignalDenial::EvaluationReadmission(native),
+        ),
     };
-    BridgeConditionalDenial::new(
-        kind,
-        format!("Signal conditional successor readmission was denied: {denial:?}"),
-    )
+    BridgeConditionalDenial::new(kind, detail)
 }

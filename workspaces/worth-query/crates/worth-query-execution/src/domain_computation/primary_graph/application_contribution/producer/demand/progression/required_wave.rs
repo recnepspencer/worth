@@ -254,8 +254,8 @@ where
             selected.completion(),
             admission,
         );
-    // A reason withholds the candidate: the selected Ready is verified in
-    // full.
+    // Without an exact candidate, Ready takes Fresh; this advance's record
+    // refuses a published member unless there is evidence of change.
     let candidate = candidate.map_err(required_settlement_denial)?;
     admission
         .charge_external_work(1)

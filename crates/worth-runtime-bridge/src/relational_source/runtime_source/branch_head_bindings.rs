@@ -56,7 +56,7 @@ impl RelationalBridgeBranchHeadBindings {
     ) -> Result<(CommitId, TruthSnapshotIdentity), RelationalBridgeSourceError> {
         let entries = self.lock_entries();
         let binding = entries.get(branch_identity).ok_or_else(|| {
-            RelationalBridgeSourceError::new(format!(
+            RelationalBridgeSourceError::new(crate::adapter::RelationalBridgeSourceErrorTag::Binding(crate::adapter::BridgeSourceBindingDenial::BranchHeadNotBound), format!(
                 "relational Bridge branch `{branch_identity:?}` has no explicitly admitted head basis"
             ))
         })?;
@@ -74,7 +74,7 @@ impl RelationalBridgeBranchHeadBindings {
             .map(|binding| binding.snapshot_identity.clone());
         let first = matching.next();
         if matching.next().is_some() {
-            return Err(RelationalBridgeSourceError::new(format!(
+            return Err(RelationalBridgeSourceError::new(crate::adapter::RelationalBridgeSourceErrorTag::Binding(crate::adapter::BridgeSourceBindingDenial::AmbiguousBranchHead), format!(
                 "relational commit `{}` is the admitted head of multiple branches; an exact branch-head request is required",
                 commit_id.0
             )));

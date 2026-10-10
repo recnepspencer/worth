@@ -6,7 +6,7 @@ use crate::state::{SignalBranchId, SignalSnapshotId};
 
 use super::{SignalBranchRetentionAcquisitionDenial, SignalOwnerUnavailable};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignalBranchBasisObservationDenial {
     OwnerUnavailable(SignalOwnerUnavailable),
     OperationCapacityExhausted {

@@ -1,6 +1,7 @@
 use super::*;
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_discard_bundle(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingDiscardBundle {
     let scenario = generated_pricing_scenario();
     let source = pricing_reference_source();
@@ -30,15 +31,17 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_discard_bundle(
     source.insert_snapshot(scenario.live_main_snapshot);
 
     let live_main_route = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-main-live",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-main-live"),
+            execution,
+        )
         .expect("main branch should keep routing during speculative churn");
     let speculative_eval = runtime
         .evaluate(
             comparison
                 .speculative_evaluation_request()
                 .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .expect("speculative branch should still see shock pricing");
 
@@ -56,6 +59,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_discard_bundle(
                 crate::truth_identity_fixtures::truth_branch_fixture("main"),
             )
             .with_read_packet(pricing_component_read_packet("steel")),
+            execution,
         )
         .expect("main branch should still evaluate after discard");
     let replay_bundle = runtime
@@ -81,6 +85,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_discard_bundle(
 }
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_promotion_bundle(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingPromotionBundle {
     let scenario = generated_pricing_scenario();
     let source = pricing_reference_source();
@@ -118,6 +123,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_promotion_bundle
                     "main",
                 ))
                 .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .expect("interleaved main branch should remain independently readable");
     let speculative_eval = runtime
@@ -125,6 +131,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_promotion_bundle
             comparison
                 .speculative_evaluation_request()
                 .with_read_packet(pricing_component_read_packet("rubber")),
+            execution,
         )
         .expect("speculative branch should keep its isolated shock view");
 
@@ -162,6 +169,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_promotion_bundle
 }
 
 pub(in crate::harness::tests::pricing_shock) fn capture_pricing_fanout_bundle(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> PricingFanoutBundle {
     let scenario = generated_pricing_scenario();
     let source = InMemoryRelationalBridgeSource::default();
@@ -180,9 +188,10 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_fanout_bundle(
     let runtime = build_high_fanout_pricing_runtime(source.clone(), sink.clone(), 100);
 
     let first_route = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-fanout-a",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-fanout-a"),
+            execution,
+        )
         .expect("first steel fanout route should succeed");
 
     source.insert_committed_patch(pricing_patch(
@@ -197,12 +206,13 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_fanout_bundle(
     source.insert_snapshot(scenario.fanout_second_snapshot);
 
     let second_route = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit:steel-fanout-b",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit:steel-fanout-b"),
+            execution,
+        )
         .expect("second steel fanout route should succeed");
     let second_eval = runtime
-        .evaluate_current(second_route.target())
+        .evaluate_current(second_route.target(), execution)
         .expect("second steel fanout route should prepare evaluation");
     let branch_eval = runtime
         .evaluate(
@@ -210,6 +220,7 @@ pub(in crate::harness::tests::pricing_shock) fn capture_pricing_fanout_bundle(
                 crate::truth_identity_fixtures::truth_branch_fixture("main"),
             )
             .with_read_packet(pricing_component_read_packet("steel")),
+            execution,
         )
         .expect("main branch should evaluate after repeated steel churn");
 

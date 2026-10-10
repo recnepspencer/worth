@@ -2,6 +2,7 @@ mod authoritative_delivery;
 mod compatibility;
 mod contract;
 mod decision_evidence;
+mod declared_signal_node;
 mod denial;
 mod evaluation_reuse;
 mod evaluation_session;
@@ -130,4 +131,7 @@ pub use signal_basis_binding::BridgeConditionalSignalBasisBinding;
 
 pub use successor_reconstitution::BridgePreparedConditionalReconstitution;
 
+mod signal_denial;
 mod signal_execution_denial;
+pub use signal_denial::BridgeSignalDenial;
+mod signal_service_denial;

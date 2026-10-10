@@ -62,7 +62,7 @@ impl WorthQueryConditionalExecutionProvenance {
     }
 
     pub fn cause(&self) -> Option<WorthQueryConditionalExecutionCause> {
-        self.cause
+        self.cause.clone()
     }
 
     pub const fn canonical_work(
@@ -137,7 +137,7 @@ fn cause(
                 maximum_active_snapshots: *maximum_active_snapshots,
             }),
             Backpressure::RetentionCapacityExhausted => Some(Cause::RetentionCapacityExhausted),
-            Backpressure::ProviderCommit(kind) => provider_commit_cause(*kind),
+            Backpressure::ProviderCommit(kind) => provider_commit_cause(kind.clone()),
         },
         Decision::OperationControlStopped(_, Control::Cancelled) => Some(Cause::Cancelled),
         Decision::OperationControlStopped(_, Control::TimedOut) => Some(Cause::TimedOut),
@@ -175,13 +175,15 @@ fn cause(
         Decision::Eligible(_)
         | Decision::Suppressed(_)
         | Decision::Deferred(_)
-        | Decision::OperationRetryable(_, _)
-        | Decision::OperationIndeterminate(_, _)
         | Decision::OperationProductUnpublished(_, _)
         | Decision::OperationSettlementDeferred(_, _)
         | Decision::OperationCommitted(_)
-        | Decision::OperationAlreadyCommitted(_)
-        | Decision::Failed(_) => None,
+        | Decision::OperationAlreadyCommitted(_) => None,
+        Decision::OperationRetryable(_, cause) | Decision::OperationIndeterminate(_, cause) => {
+            Some(Cause::Reentry(cause.clone()))
+        }
+        Decision::Failed(denial) => Some(Cause::BridgeConditional(denial.kind())),
+        Decision::InterruptedDuringReentry => Some(Cause::InterruptedDuringReentry),
     }
 }
 
@@ -302,7 +304,8 @@ fn terminal(
         WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_) => {
             WorthQueryConditionalExecutionTerminal::AlreadyCommitted
         }
-        WorthQueryRetainedConditionalDecision::Failed(_) => {
+        WorthQueryRetainedConditionalDecision::Failed(_)
+        | WorthQueryRetainedConditionalDecision::InterruptedDuringReentry => {
             WorthQueryConditionalExecutionTerminal::Failed
         }
     }

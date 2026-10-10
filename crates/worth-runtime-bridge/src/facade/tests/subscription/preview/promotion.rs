@@ -2,8 +2,12 @@ use super::super::support::*;
 
 #[test]
 fn preview_subscription_promotion_emits_authoritative_boundary_record() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, preview_active, promotion_record, promoted_ready) =
-        preview_promotion_detail_subscription("subscription-promote");
+        preview_promotion_detail_subscription("subscription-promote", resource_request);
     let preview_identity = preview_active
         .preview_active_subscription_identity()
         .clone();
@@ -68,10 +72,14 @@ fn preview_subscription_promotion_emits_authoritative_boundary_record() {
 
 #[test]
 fn preview_subscription_promotion_rejects_mismatched_promotion_record() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, preview_active, _promotion_record, promoted_ready) =
-        preview_promotion_detail_subscription("subscription-promote-mismatch-a");
+        preview_promotion_detail_subscription("subscription-promote-mismatch-a", resource_request);
     let (_other_runtime, _other_preview_active, other_promotion_record, _other_promoted_ready) =
-        preview_promotion_detail_subscription("subscription-promote-mismatch-b");
+        preview_promotion_detail_subscription("subscription-promote-mismatch-b", resource_request);
     let work_trace =
         preview_work_trace(&runtime, &preview_active, "subscription-promote-mismatch-a");
 
@@ -98,8 +106,12 @@ fn preview_subscription_promotion_rejects_mismatched_promotion_record() {
 
 #[test]
 fn preview_subscription_promotion_rejects_promoted_subscription_drift() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let (runtime, preview_active, promotion_record, _promoted_ready) =
-        preview_promotion_detail_subscription("subscription-promote-drift");
+        preview_promotion_detail_subscription("subscription-promote-drift", execution);
     let work_trace = preview_work_trace(&runtime, &preview_active, "subscription-promote-drift");
     let drift_declaration = runtime
         .declare_subscription(
@@ -122,6 +134,7 @@ fn preview_subscription_promotion_rejects_promoted_subscription_drift() {
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
             ),
+            execution,
         )
         .expect("drift admission should succeed");
     let drift_ready = runtime.prepare_subscription_activation(&drift_admitted);
@@ -143,10 +156,20 @@ fn preview_subscription_promotion_rejects_promoted_subscription_drift() {
 
 #[test]
 fn preview_subscription_promotion_rejects_preview_work_trace_drift() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, preview_active, promotion_record, promoted_ready) =
-        preview_promotion_detail_subscription("subscription-promote-work-trace-a");
+        preview_promotion_detail_subscription(
+            "subscription-promote-work-trace-a",
+            resource_request,
+        );
     let (other_runtime, other_preview_active, _other_promotion_record, _other_promoted_ready) =
-        preview_promotion_detail_subscription("subscription-promote-work-trace-b");
+        preview_promotion_detail_subscription(
+            "subscription-promote-work-trace-b",
+            resource_request,
+        );
     let other_work_trace = preview_work_trace(
         &other_runtime,
         &other_preview_active,

@@ -84,7 +84,7 @@ fn logically_equivalent_region_orders_produce_identical_provenance_and_replay() 
                     };
                     Ok(result)
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap();
         canonical_runtime_artifacts(graph, target_a)
@@ -234,7 +234,7 @@ fn reordered_dependency_and_region_orders_stay_canonical_across_executor_matrix(
                     };
                     Ok(result)
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap();
         canonical_runtime_artifacts(&graph, target)

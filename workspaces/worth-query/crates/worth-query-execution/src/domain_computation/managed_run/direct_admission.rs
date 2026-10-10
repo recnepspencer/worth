@@ -42,6 +42,7 @@ impl WorthQueryManagedRunAdmission<'_> {
         operation: &WorthQueryExecutionBoundOperationAuthority,
         resource_attempt: WorthQueryDirectExecutionResourceAttempt,
         request: WorthQueryManagedTruthReadRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryAdmittedDirectRun, WorthQueryManagedDirectRunAdmissionFailure> {
         let counters = match validate_direct_run_head(self.query, operation, &resource_attempt) {
             Ok(counters) => counters,
@@ -73,6 +74,7 @@ impl WorthQueryManagedRunAdmission<'_> {
                 resource_attempt.resources().envelope(),
             ),
             request,
+            execution,
         ) {
             Ok(lower) => lower,
             Err(failure) => {

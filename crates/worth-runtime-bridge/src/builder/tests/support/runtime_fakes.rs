@@ -35,6 +35,7 @@ impl CommittedPatchSource for TestSource {
     fn load_committed_patch(
         &self,
         _request: crate::adapter::RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::input::envelope::BridgeCommittedPatchEnvelope, RelationalBridgeSourceError>
     {
         unreachable!("builder tests do not load committed patch parts")
@@ -45,6 +46,7 @@ impl SnapshotReadSource for TestSource {
     fn open_snapshot(
         &self,
         _identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         Ok(Box::new(TestSnapshotReader))
     }
@@ -54,6 +56,7 @@ impl TruthBranchHeadSource for TestSource {
     fn load_branch_head_patch(
         &self,
         branch_identity: &crate::input::envelope::TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::input::envelope::BridgeCommittedPatchEnvelope, RelationalBridgeSourceError>
     {
         BridgeCommittedPatchEnvelope::new(
@@ -79,7 +82,12 @@ impl TruthBranchHeadSource for TestSource {
                 ),
             ],
         )
-        .map_err(|error| RelationalBridgeSourceError::new(error.to_string()))
+        .map_err(|error| {
+            RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                error.to_string(),
+            )
+        })
     }
 }
 
@@ -160,6 +168,7 @@ impl BridgeSourceAdapter for TestSourceAdapter {
     fn open_snapshot(
         &self,
         _identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         unreachable!("builder tests do not materialize source snapshots")
     }

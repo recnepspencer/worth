@@ -33,6 +33,7 @@ impl SnapshotReadSource for ReusableReaderSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         self.0.fetch_add(1, Ordering::SeqCst);
         let value = if identity == &crate::truth_identity_fixtures::truth_snapshot(1, 1) {
@@ -161,6 +162,7 @@ impl SnapshotReadSource for SingleReaderSource {
     fn open_snapshot(
         &self,
         _: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         if self
             .0
@@ -169,6 +171,7 @@ impl SnapshotReadSource for SingleReaderSource {
             .is_err()
         {
             return Err(RelationalBridgeSourceError::new(
+                crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
                 "one retained reader exhausts source capacity",
             ));
         }
@@ -181,8 +184,9 @@ impl SnapshotReaderPool for SingleReaderSource {
     fn acquire(
         &self,
         identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        self.open_snapshot(identity)
+        self.open_snapshot(identity, execution)
     }
 
     fn release(&self, reader: Box<dyn TruthSnapshotReader>) {
@@ -293,9 +297,17 @@ fn retained_decisions_keep_exact_reader_and_pool_custody_without_reacquisition()
             .execute(request_execution, &signal_basis, request(), &mut ())
             .err()
             .expect("retained reader still occupies capacity");
+        let BridgeConditionalDenialKind::Delivery(delivery) = exhausted.kind() else {
+            panic!("source capacity must preserve delivery admission: {exhausted:?}");
+        };
+        let crate::facade::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(source) =
+            delivery.kind()
+        else {
+            panic!("source capacity must preserve acquisition failure: {delivery:?}");
+        };
         assert_eq!(
-            exhausted.kind(),
-            BridgeConditionalDenialKind::SnapshotAdmission
+            source.kind(),
+            crate::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure
         );
         assert_eq!(
             exhausted

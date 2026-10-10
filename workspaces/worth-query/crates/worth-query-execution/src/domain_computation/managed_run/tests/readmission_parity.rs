@@ -126,11 +126,14 @@ impl crate::domain_computation::WorthQueryGraphProviderCheckpoint for RepeatedYi
 #[test]
 fn repeated_readmission_matches_uninterrupted_semantics_and_structural_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let uninterrupted = execute_repeated_yield_world(execution, false);
-        let resumed = execute_repeated_yield_world(execution, true);
+        let uninterrupted = execute_repeated_yield_world(execution, false, resource_request);
+        let resumed = execute_repeated_yield_world(execution, true, resource_request);
 
         assert_eq!(resumed.readmission_count, 2);
         assert_eq!(resumed.unique_managed_attempt_count, 3);
@@ -147,6 +150,9 @@ fn repeated_readmission_matches_uninterrupted_semantics_and_structural_evidence(
 #[test]
 fn readmission_transfers_saturated_capacity_without_a_second_reservation() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
@@ -159,6 +165,7 @@ fn readmission_transfers_saturated_capacity_without_a_second_reservation() {
                         .map(|_| readmit_capacity_probe(resources))
                         .collect::<Vec<_>>()
                 },
+                resource_request,
             );
         let mut saturation_holders = Vec::new();
         for probe in probes.drain(..8) {
@@ -273,12 +280,14 @@ struct ProviderWorkEvidence {
 fn execute_repeated_yield_world(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     resume_every_safe_point: bool,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> ParityEvidence {
     let active_request = execution;
 
     let (running, graph, bridge, runtime) = managed_graph_run_with_provider_and_runtime(
         WorthQueryOperationGraphAccess::Observe,
         RepeatedYieldProvider { step_count: 3 },
+        resource_request,
     );
     let active = running
         .begin_graph_execution(

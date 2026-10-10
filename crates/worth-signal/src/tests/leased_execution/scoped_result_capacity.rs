@@ -69,7 +69,7 @@ fn attempt(depth: usize, workers: usize, memory_bytes: u64) -> Attempt {
             calls.fetch_add(1, Ordering::SeqCst);
             Ok(output(depth))
         },
-        &lease,
+        worth_execution::ExecutionRequest::leased(&lease),
     );
     match outcome {
         Err(SignalError::ExecutionStopped(stop)) => {

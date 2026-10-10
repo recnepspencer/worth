@@ -64,6 +64,24 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         }
     }
 
+    /// Read cancellation, deadline and exhausted active work without charging
+    /// work, allocating, opening a scope or containing a panic.
+    pub fn consult(self) -> Result<(), WorkCeilingDenial> {
+        use crate::backend::KernelStop;
+        let backing = match self.form {
+            RequestBacking::Leased(lease) => lease.status().stop(),
+            RequestBacking::Serial(request) => request.stop(),
+        };
+        let active = crate::backend::active_stop();
+        let stop =
+            if backing == Some(KernelStop::Cancelled) || active == Some(KernelStop::Cancelled) {
+                Some(KernelStop::Cancelled)
+            } else {
+                backing.or(active)
+            };
+        stop.map_or(Ok(()), |stop| Err(WorkCeilingDenial::Stopped(stop)))
+    }
+
     /// Adapt only within an active bounded scope. Leased carriage adds no scope.
     pub fn in_scope<R>(
         self,

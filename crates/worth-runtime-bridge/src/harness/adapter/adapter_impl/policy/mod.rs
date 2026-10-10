@@ -50,10 +50,15 @@ pub(super) fn execute_policy_request(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     target: PolicyHarnessTarget,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<PolicyHarnessExecution, BridgeHarnessError> {
     match target {
         PolicyHarnessTarget::ProvenanceCertification => {
-            certification_execution::execute_provenance_certification(runtime_bridge, fixture)
+            certification_execution::execute_provenance_certification(
+                runtime_bridge,
+                fixture,
+                resource_request,
+            )
         }
         PolicyHarnessTarget::RejectionCertification => {
             certification_execution::execute_rejection_certification(runtime_bridge)

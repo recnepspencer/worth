@@ -60,7 +60,12 @@ pub(crate) fn parse_bridge_commit_identity(
     identity: &TruthCommitIdentity,
 ) -> Result<CommitId, RelationalBridgeSourceError> {
     let commit_id = identity.relational_commit_id().ok_or_else(|| {
-        RelationalBridgeSourceError::new("unsupported relational bridge commit identity")
+        RelationalBridgeSourceError::new(
+            crate::adapter::RelationalBridgeSourceErrorTag::Binding(
+                crate::adapter::BridgeSourceBindingDenial::UnsupportedCommitIdentity,
+            ),
+            "unsupported relational bridge commit identity",
+        )
     })?;
     Ok(CommitId(commit_id))
 }
@@ -79,7 +84,12 @@ pub(crate) fn parse_bridge_snapshot_identity(
     identity: &TruthSnapshotIdentity,
 ) -> Result<(SnapshotId, VersionId), RelationalBridgeSourceError> {
     let parts = identity.relational_snapshot_parts().ok_or_else(|| {
-        RelationalBridgeSourceError::new("unsupported relational bridge snapshot identity")
+        RelationalBridgeSourceError::new(
+            crate::adapter::RelationalBridgeSourceErrorTag::Binding(
+                crate::adapter::BridgeSourceBindingDenial::UnsupportedSnapshotIdentity,
+            ),
+            "unsupported relational bridge snapshot identity",
+        )
     })?;
     Ok((
         SnapshotId(parts.snapshot_id()),

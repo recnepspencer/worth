@@ -5,6 +5,26 @@ use crate::authority::{CancellationToken, ExecutionResourceLease};
 use super::{activity, KernelMeter, PhysicalActivity, RunLimits, WorkerActivity, ACTIVE_METER};
 
 impl RunLimits {
+    /// The serial map inherits only the active parent's checkpoint lineage.
+    /// Prospective admission must not allocate a replacement run context.
+    pub(crate) fn framework_context_bytes_for_serial_scope(partitions: usize) -> Option<u64> {
+        let (tokens, has_parent) = ACTIVE_METER.with(|active| {
+            let active = active.borrow();
+            (
+                active
+                    .last()
+                    .map_or(0, |parent| parent.borrow().limits.tokens.len()),
+                !active.is_empty(),
+            )
+        });
+        Self::context_bytes_for_tokens(
+            tokens,
+            partitions,
+            1,
+            !has_parent && activity::active_certification_physical().is_none(),
+        )
+    }
+
     pub(crate) fn framework_context_bytes(
         &self,
         partitions: usize,

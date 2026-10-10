@@ -348,10 +348,20 @@ fn conditional_unwind_preserves_first_failure_when_observation_finish_and_drop_p
 
 #[test]
 fn public_conditional_entry_resumes_the_original_provider_panic() {
+    let serial = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution_request = worth_execution::ExecutionRequest::serial(&serial);
+
     let (mut graph, contract) = installed();
     let payload = Arc::new(51_u64);
     let unwind = catch_unwind(AssertUnwindSafe(|| {
         let _ = graph.execute_installed_conditional(
+            execution_request,
             SignalConditionalExecutionRequest::new(&contract, "storage", "public", 1),
             &mut NoPredicate,
             &mut DefaultComparatorPolicyResolver::default(),

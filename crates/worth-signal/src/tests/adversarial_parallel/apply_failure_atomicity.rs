@@ -88,7 +88,7 @@ fn assert_epoch_unchanged(semantic_fault: bool) {
                 EvaluationRequestMode::Default,
                 &(),
                 &|ctx| Ok(version_ab(ctx.read(new_source, ASPECT_A)?, 0)),
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap_err();
         assert!(error.to_string().contains(message), "{error}");

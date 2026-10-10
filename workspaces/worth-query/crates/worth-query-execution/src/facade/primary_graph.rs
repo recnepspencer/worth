@@ -149,14 +149,16 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCompleteApplicationReadSet, WorthQueryCompletedGeneratedOutputReconstruction,
     WorthQueryCompletedInvariantProjection, WorthQueryCompletedMutationCandidate,
     WorthQueryCompletedOperationInvariantProjection,
-    WorthQueryConditionalApplicationRuntimeInstallation, WorthQueryConditionalClockHandle,
+    WorthQueryConditionalApplicationRuntimeInstallation,
+    WorthQueryConditionalAuthoritativeDeliveryFailure, WorthQueryConditionalClockHandle,
     WorthQueryConditionalClockObservationDenial, WorthQueryConditionalClockObservationDenialKind,
     WorthQueryConditionalClockObservationFailure, WorthQueryConditionalClockObservationFailureKind,
     WorthQueryConditionalClockObservationOutcome, WorthQueryConditionalClockObservationPort,
     WorthQueryConditionalClockObservationReceipt, WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryConditionalExecutionCause,
     WorthQueryConditionalExecutionProvenance, WorthQueryConditionalExecutionTerminal,
-    WorthQueryConditionalRuntimeInspection, WorthQueryConditionalRuntimeInstallationDenial,
+    WorthQueryConditionalReentryFailure, WorthQueryConditionalRuntimeInspection,
+    WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryConditionalRuntimeLifecycleProbe,
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,
     WorthQueryCorrelatedInboundOccurrence, WorthQueryCurrentOutputDenial,
@@ -315,3 +317,7 @@ pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryI
 
 /// Owns passive execution observation without granting request authority.
 pub use crate::domain_computation::execution_observation::WorthQueryExecutionObservation;
+/// Native delivery causes carried by the Query host audience.
+pub use worth_runtime_bridge::facade::{
+    BridgeConditionalDenialKind, BridgeCorrespondenceDeliveryStop,
+};

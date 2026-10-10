@@ -64,7 +64,7 @@ pub enum WorthQueryWorkflowAdvanceDenialKind {
     NonDeterministicLowering,
     ParallelProvider(String),
     ParallelNotAdmitted(worth_signal::facade::adapters::FrontierRouteSerialFallbackReason),
-    ConditionalExecution(worth_runtime_bridge::facade::BridgeConditionalDenialKind),
+    ConditionalExecution(crate::domain_installation::WorthQueryConditionalExecutionDenialKind),
     ConditionalReentry(crate::domain_installation::WorthQueryConditionalAdmissionDenial),
 }
 

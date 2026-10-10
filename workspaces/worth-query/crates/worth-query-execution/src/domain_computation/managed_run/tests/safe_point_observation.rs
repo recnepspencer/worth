@@ -5,6 +5,9 @@ use worth_runtime_bridge::facade::{
 use super::*;
 #[test]
 fn direct_run_observes_signal_and_pressure_through_its_bound_bridge_basis() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let plan = admitted_plan("direct-safe-point", 8);
     let operation = direct_authority(&runtime, &plan);
@@ -14,7 +17,7 @@ fn direct_run_observes_signal_and_pressure_through_its_bound_bridge_basis() {
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("direct safe-point run should admit")
         .start();
 
@@ -52,6 +55,9 @@ fn direct_run_observes_signal_and_pressure_through_its_bound_bridge_basis() {
 
 #[test]
 fn workflow_run_uses_the_same_managed_safe_point_authority() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = query_runtime();
     let operation_resources = admitted_plan("workflow-safe-point", 8);
     let stage_resources = admitted_plan("workflow-safe-point:stage", 4);
@@ -66,7 +72,7 @@ fn workflow_run_uses_the_same_managed_safe_point_authority() {
     let lower = causal_fixture::managed_admission_context();
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
+        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
         .expect("workflow safe-point run should admit")
         .start()
         .expect("workflow artifact authority should start");
@@ -122,9 +128,11 @@ fn isolated_managed_safe_point_allocation_probe() {
         .start_direct_resource_attempt(&operation, plan)
         .expect("allocation probe attempt should reserve");
     let lower = causal_fixture::managed_admission_context();
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_direct(&operation, attempt, lower.read_request())
+        .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("allocation probe run should admit")
         .start();
 

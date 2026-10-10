@@ -126,7 +126,14 @@ where
             .bridge
             .conditional()
             .prepare_conditional_reconstitution(truth.signal_basis())
-            .map_err(|denial| bridge_denial(denial.detail()))?;
+            .map_err(|denial| {
+                WorthQueryConditionalRuntimeInstallationDenial::new(
+                    WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(
+                        denial.kind(),
+                    ),
+                    denial.detail(),
+                )
+            })?;
         let mut registry = self
             .conditional_operations
             .get_mut()
@@ -146,7 +153,14 @@ where
             .bridge
             .conditional_lifecycle()
             .activate_conditional_reconstitution(bridge_candidate)
-            .map_err(|denial| bridge_denial(denial.detail()))?;
+            .map_err(|denial| {
+                WorthQueryConditionalRuntimeInstallationDenial::new(
+                    WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(
+                        denial.kind(),
+                    ),
+                    denial.detail(),
+                )
+            })?;
         registry.apply_derived_runtime_reinstallation(prepared);
         self.granular_invalidation.advance_runtime_generation();
         let work = registry.reconstruction_work();

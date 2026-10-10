@@ -6,7 +6,7 @@ use crate::data::conditional_execution::InstalledSignalConditionalContract;
 use crate::data::error::SignalError;
 use crate::data::handle::NodeId;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignalConditionalInstallationChangeDenial {
     OwnerUnavailable(SignalOwnerUnavailable),
     OwnerAdmission(SignalBranchBasisObservationDenial),

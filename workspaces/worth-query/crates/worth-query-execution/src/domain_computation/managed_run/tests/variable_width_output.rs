@@ -99,12 +99,16 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for CumulativeOutputProv
 #[test]
 fn one_variable_width_row_cannot_escape_the_retained_memory_ceiling() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Project,
             VariableWidthProvider,
+            resource_request,
         );
         let active = running
             .begin_graph_execution(
@@ -133,6 +137,9 @@ fn one_variable_width_row_cannot_escape_the_retained_memory_ceiling() {
 #[test]
 fn acknowledged_chunks_remain_cumulatively_bounded_until_receipt_seal() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -142,6 +149,7 @@ fn acknowledged_chunks_remain_cumulatively_bounded_until_receipt_seal() {
             CumulativeOutputProvider {
                 advances: Arc::clone(&advances),
             },
+            resource_request,
         );
         let mut outcome = running
             .begin_graph_execution(

@@ -1,38 +1,81 @@
+mod replay;
 use super::*;
 use crate::structural::{
     StructuralIdentityDeclarationIdentity, StructuralMatchCandidate, StructuralMatchCandidateKind,
 };
+use replay::{execute_branch_replay, execute_remap_replay};
 
 pub(super) fn execute_structural_request(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     target: StructuralHarnessTarget,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StructuralHarnessExecution, BridgeHarnessError> {
     match target {
         StructuralHarnessTarget::RemapExact {
             declaration_identity,
-        } => execute_exact_remap(runtime_bridge, fixture, &declaration_identity),
+        } => execute_exact_remap(
+            runtime_bridge,
+            fixture,
+            &declaration_identity,
+            resource_request,
+        ),
         StructuralHarnessTarget::RemapAmbiguous {
             declaration_identity,
-        } => execute_ambiguous_remap(runtime_bridge, fixture, &declaration_identity),
+        } => execute_ambiguous_remap(
+            runtime_bridge,
+            fixture,
+            &declaration_identity,
+            resource_request,
+        ),
         StructuralHarnessTarget::RemapNoSafeMatch {
             declaration_identity,
-        } => execute_no_safe_match_remap(runtime_bridge, fixture, &declaration_identity),
+        } => execute_no_safe_match_remap(
+            runtime_bridge,
+            fixture,
+            &declaration_identity,
+            resource_request,
+        ),
         StructuralHarnessTarget::RemapLineageDivergence {
             declaration_identity,
-        } => execute_lineage_divergence_remap(runtime_bridge, fixture, &declaration_identity),
+        } => execute_lineage_divergence_remap(
+            runtime_bridge,
+            fixture,
+            &declaration_identity,
+            resource_request,
+        ),
         StructuralHarnessTarget::RemapIdentityConflict {
             declaration_identity,
-        } => execute_identity_conflict_remap(runtime_bridge, fixture, &declaration_identity),
+        } => execute_identity_conflict_remap(
+            runtime_bridge,
+            fixture,
+            &declaration_identity,
+            resource_request,
+        ),
         StructuralHarnessTarget::RemapReplay {
             declaration_identity,
-        } => execute_remap_replay(runtime_bridge, fixture, &declaration_identity),
+        } => execute_remap_replay(
+            runtime_bridge,
+            fixture,
+            &declaration_identity,
+            resource_request,
+        ),
         StructuralHarnessTarget::BranchCompare {
             declaration_identity,
-        } => execute_branch_compare(runtime_bridge, fixture, &declaration_identity),
+        } => execute_branch_compare(
+            runtime_bridge,
+            fixture,
+            &declaration_identity,
+            resource_request,
+        ),
         StructuralHarnessTarget::BranchReplay {
             declaration_identity,
-        } => execute_branch_replay(runtime_bridge, fixture, &declaration_identity),
+        } => execute_branch_replay(
+            runtime_bridge,
+            fixture,
+            &declaration_identity,
+            resource_request,
+        ),
     }
 }
 
@@ -40,6 +83,7 @@ fn execute_exact_remap(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     declaration_identity: &StructuralIdentityDeclarationIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StructuralHarnessExecution, BridgeHarnessError> {
     let contract = admitted_contract(runtime_bridge, fixture, declaration_identity)?;
     let planned = runtime_bridge
@@ -47,6 +91,7 @@ fn execute_exact_remap(
             &contract,
             remap_target_packet(),
             vec![remap_target_packet()],
+            execution,
         )
         .map_err(|error| {
             BridgeHarnessError::new(format!("bridge structural remap planning failed: {error}"))
@@ -78,10 +123,11 @@ fn execute_ambiguous_remap(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     declaration_identity: &StructuralIdentityDeclarationIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StructuralHarnessExecution, BridgeHarnessError> {
     let contract = admitted_contract(runtime_bridge, fixture, declaration_identity)?;
     let fingerprint = runtime_bridge
-        .materialize_structural_fingerprint(&contract, remap_target_packet())
+        .materialize_structural_fingerprint(&contract, remap_target_packet(), execution)
         .map_err(|error| {
             BridgeHarnessError::new(format!(
                 "bridge structural ambiguity fingerprint materialization failed: {error}"
@@ -130,6 +176,7 @@ fn execute_no_safe_match_remap(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     declaration_identity: &StructuralIdentityDeclarationIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StructuralHarnessExecution, BridgeHarnessError> {
     let contract = admitted_contract(runtime_bridge, fixture, declaration_identity)?;
     let planned = runtime_bridge
@@ -137,6 +184,7 @@ fn execute_no_safe_match_remap(
             &contract,
             remap_target_packet(),
             vec![no_safe_match_packet()],
+            execution,
         )
         .map_err(|error| {
             BridgeHarnessError::new(format!(
@@ -161,10 +209,11 @@ fn execute_lineage_divergence_remap(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     declaration_identity: &StructuralIdentityDeclarationIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StructuralHarnessExecution, BridgeHarnessError> {
     let contract = admitted_contract(runtime_bridge, fixture, declaration_identity)?;
     let fingerprint = runtime_bridge
-        .materialize_structural_fingerprint(&contract, remap_target_packet())
+        .materialize_structural_fingerprint(&contract, remap_target_packet(), execution)
         .map_err(|error| {
             BridgeHarnessError::new(format!(
                 "bridge structural lineage-divergence fingerprint materialization failed: {error}"
@@ -204,6 +253,7 @@ fn execute_identity_conflict_remap(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     declaration_identity: &StructuralIdentityDeclarationIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StructuralHarnessExecution, BridgeHarnessError> {
     let contract = admitted_contract(runtime_bridge, fixture, declaration_identity)?;
     let planned = runtime_bridge
@@ -211,6 +261,7 @@ fn execute_identity_conflict_remap(
             &contract,
             remap_target_packet(),
             vec![identity_conflict_packet()],
+            execution,
         )
         .map_err(|error| {
             BridgeHarnessError::new(format!(
@@ -231,45 +282,15 @@ fn execute_identity_conflict_remap(
     })
 }
 
-fn execute_remap_replay(
-    runtime_bridge: &crate::facade::RuntimeBridge,
-    fixture: &BridgeHarnessFixture,
-    declaration_identity: &StructuralIdentityDeclarationIdentity,
-) -> Result<StructuralHarnessExecution, BridgeHarnessError> {
-    let execution = execute_exact_remap(runtime_bridge, fixture, declaration_identity)?;
-    let StructuralHarnessExecution::Remap {
-        contract,
-        planned,
-        reduced,
-        artifact,
-        record,
-    } = execution
-    else {
-        unreachable!("exact remap execution must produce a remap record");
-    };
-    let replayed = runtime_bridge
-        .replay_canonical_structural_remap_record(&record)
-        .map_err(|error| {
-            BridgeHarnessError::new(format!("bridge structural remap replay failed: {error}"))
-        })?;
-    Ok(StructuralHarnessExecution::RemapReplay {
-        contract,
-        planned,
-        reduced,
-        artifact,
-        record,
-        replayed,
-    })
-}
-
 fn execute_branch_compare(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     declaration_identity: &StructuralIdentityDeclarationIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<StructuralHarnessExecution, BridgeHarnessError> {
     let contract = admitted_contract(runtime_bridge, fixture, declaration_identity)?;
     let planned = runtime_bridge
-        .plan_structural_branch_comparison_from_read_packet(&contract, branch_packet())
+        .plan_structural_branch_comparison_from_read_packet(&contract, branch_packet(), execution)
         .map_err(|error| {
             BridgeHarnessError::new(format!(
                 "bridge structural branch comparison planning failed: {error}"
@@ -297,39 +318,6 @@ fn execute_branch_compare(
         reduced,
         artifact,
         record,
-    })
-}
-
-fn execute_branch_replay(
-    runtime_bridge: &crate::facade::RuntimeBridge,
-    fixture: &BridgeHarnessFixture,
-    declaration_identity: &StructuralIdentityDeclarationIdentity,
-) -> Result<StructuralHarnessExecution, BridgeHarnessError> {
-    let execution = execute_branch_compare(runtime_bridge, fixture, declaration_identity)?;
-    let StructuralHarnessExecution::Branch {
-        contract,
-        planned,
-        reduced,
-        artifact,
-        record,
-    } = execution
-    else {
-        unreachable!("branch execution must produce a branch record");
-    };
-    let replayed = runtime_bridge
-        .replay_canonical_structural_branch_comparison_record(&record)
-        .map_err(|error| {
-            BridgeHarnessError::new(format!(
-                "bridge structural branch comparison replay failed: {error}"
-            ))
-        })?;
-    Ok(StructuralHarnessExecution::BranchReplay {
-        contract,
-        planned,
-        reduced,
-        artifact,
-        record,
-        replayed,
     })
 }
 

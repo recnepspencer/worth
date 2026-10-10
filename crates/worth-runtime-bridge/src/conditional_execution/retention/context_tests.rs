@@ -25,9 +25,12 @@ pub(crate) fn assert_context_retention(
         Arc<BridgeInstalledConditionalLowering>,
     ),
 ) {
-    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
-        .serial_request(worth_execution::CancellationToken::new(), None);
-    let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
+    let policy = crate::policy::BridgeExecutionPolicyBaseline::operational().request_policy();
+    let lease = crate::snapshot::test_execution_lease_for_policy(
+        policy,
+        worth_execution::CancellationToken::new(),
+    );
+    let request_execution = worth_execution::ExecutionRequest::leased(&lease);
 
     let baseline = arc_layout::<observation_retention::BridgeObservationBaselines>();
     let decision = arc_layout::<retained_decision::BridgeRetainedConditionalDecisionCore>()
@@ -67,24 +70,33 @@ pub(crate) fn assert_context_retention(
                 BridgeConditionalEvaluationAdmissionRequest::source_present_at_signal_basis(
                     &basis, &source,
                 ),
+                request_execution,
             )
             .unwrap();
         assert_eq!(ledger.usage(), (0, 0, baseline));
-        let result = owner.execute_admitted_conditional(
-            request_execution,
-            &session,
-            BridgeConditionalExecutionRequest {
-                lowering: &lowering,
-                query_binding_identity: "query-binding",
-                query_capability_identity: 1,
-                snapshot_identity: "snapshot-label",
-                truth_branch_identity: Some("main"),
-                bridge_snapshot_identity: Some(&source),
-                execution_identity: "execution",
-                attempt: 1,
-            },
-            &mut (),
-        );
+        let result = request_execution
+            .run(
+                worth_execution::ExecutionWorkCeiling::new(8_000_000),
+                |_| {
+                    owner.execute_admitted_conditional(
+                        request_execution,
+                        &session,
+                        BridgeConditionalExecutionRequest {
+                            lowering: &lowering,
+                            query_binding_identity: "query-binding",
+                            query_capability_identity: 1,
+                            snapshot_identity: "snapshot-label",
+                            truth_branch_identity: Some("main"),
+                            bridge_snapshot_identity: Some(&source),
+                            execution_identity: "execution",
+                            attempt: 1,
+                        },
+                        &mut (),
+                    )
+                },
+            )
+            .expect("active leased scope")
+            .0;
         if ceiling != exact {
             let denial = result.err().expect("one missing byte must deny admission");
             assert_eq!(

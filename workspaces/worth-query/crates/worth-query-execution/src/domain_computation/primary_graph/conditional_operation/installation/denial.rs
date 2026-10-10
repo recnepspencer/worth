@@ -1,7 +1,10 @@
 /// Why installing, reinstalling, or admitting a conditional runtime was
 /// refused.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
+    /// Bridge retained the native conditional or Signal refusal.
+    BridgeConditional(worth_runtime_bridge::facade::BridgeConditionalDenialKind),
+    ManagedTemporal(worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind),
     /// The application schema or runtime publication was rejected.
     PrimaryGraphPublication,
     /// A binding does not belong to this installation.
@@ -19,7 +22,9 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     /// The reconstruction query was refused.
     ReconstructionQuery,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// No capacity remains to retain a basis.
     RetentionCapacityExhausted,
     /// The runtime ran out of basis-retention identities.
@@ -56,7 +61,7 @@ impl WorthQueryConditionalRuntimeInstallationDenial {
     }
 
     pub fn kind(&self) -> WorthQueryConditionalRuntimeInstallationDenialKind {
-        self.kind
+        self.kind.clone()
     }
 
     pub fn subject(&self) -> &str {

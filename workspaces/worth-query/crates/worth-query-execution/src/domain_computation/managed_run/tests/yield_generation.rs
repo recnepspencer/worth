@@ -9,12 +9,16 @@ use super::*;
 #[test]
 fn successor_installation_after_direct_safe_point_denies_yield() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph, _bridge, mut runtime) = managed_graph_run_with_provider_and_runtime(
             WorthQueryOperationGraphAccess::Observe,
             YieldProvider::installed(5),
+            resource_request,
         );
         let active = running
             .begin_graph_execution(
@@ -56,6 +60,9 @@ fn successor_installation_after_direct_safe_point_denies_yield() {
 #[test]
 fn successor_installation_after_workflow_safe_point_denies_yield() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -94,8 +101,12 @@ fn successor_installation_after_workflow_safe_point_denies_yield() {
             &graph,
             WorthQueryOperationGraphAccess::Observe,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let active = running
             .begin_stage_graph_execution(
                 execution,

@@ -8,8 +8,15 @@ impl RuntimeBridge {
         intent: BridgeManagedExecutionIntent,
         truth_basis: BridgeAsyncRequestTruthViewBasis,
         planned: PlannedTruthViewPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeBoundExecutionBasis, BridgeExecutionBasisDenial> {
-        crate::execution_basis::admit_atomic_execution_basis(self, intent, truth_basis, planned)
+        crate::execution_basis::admit_atomic_execution_basis(
+            self,
+            intent,
+            truth_basis,
+            planned,
+            execution,
+        )
     }
 
     /// Binds one lowered bridge async source declaration to one explicit
@@ -61,6 +68,7 @@ impl RuntimeBridge {
         step_contract: BridgeManagedExecutionStepContract,
         truth_basis: BridgeAsyncRequestTruthViewBasis,
         planned: PlannedTruthViewPacket,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeBoundExecutionBasis, BridgeExecutionBasisDenial> {
         crate::execution_basis::admit_managed_execution_basis(
             self,
@@ -68,6 +76,7 @@ impl RuntimeBridge {
             step_contract,
             truth_basis,
             planned,
+            execution,
         )
     }
 }

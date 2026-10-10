@@ -91,6 +91,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for ForeignSafePointProv
 #[test]
 fn compatible_but_independently_minted_provider_support_denies_before_provider_start() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -105,6 +108,7 @@ fn compatible_but_independently_minted_provider_support_denies_before_provider_s
                 binding_identity: "managed-graph-binding",
             },
             independently_minted_support,
+            resource_request,
         );
         let failure = match running.begin_graph_execution(
             execution,
@@ -136,10 +140,13 @@ fn compatible_but_independently_minted_provider_support_denies_before_provider_s
 #[test]
 fn workflow_stage_safe_point_family_must_match_the_running_bridge_basis() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (running, graph, begins) = foreign_safe_point_workflow();
+        let (running, graph, begins) = foreign_safe_point_workflow(resource_request);
         let failure = match running.begin_stage_graph_execution(
             execution,
             "stage",
@@ -170,7 +177,9 @@ fn workflow_stage_safe_point_family_must_match_the_running_bridge_basis() {
     });
 }
 
-fn foreign_safe_point_workflow() -> (
+fn foreign_safe_point_workflow(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> (
     crate::domain_computation::WorthQueryRunningWorkflowRun,
     WorthQueryInstalledGraphParticipationAuthority,
     Arc<AtomicUsize>,
@@ -210,8 +219,12 @@ fn foreign_safe_point_workflow() -> (
         &graph,
         WorthQueryOperationGraphAccess::Observe,
     );
-    let running =
-        super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+    let running = super::workflow_provider_steps::admitted_workflow(
+        &runtime,
+        &operation,
+        resources,
+        resource_request,
+    );
     (running, graph, begins)
 }
 

@@ -40,7 +40,7 @@ fn final_preparation_work_exhaustion_after_evaluation_preserves_the_epoch() {
             EvaluationRequestMode::Default,
             &(),
             &|_| Ok(AspectVersion::zero().with(VALUE, 37)),
-            &lease,
+            worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap();
     let complete_work = complete.execution.last().unwrap().charged_work();
@@ -80,7 +80,7 @@ fn final_preparation_work_exhaustion_after_evaluation_preserves_the_epoch() {
                     calls.fetch_add(1, Ordering::SeqCst);
                     Ok(AspectVersion::zero().with(VALUE, 37))
                 },
-                &lease,
+                worth_execution::ExecutionRequest::leased(&lease),
             )
             .unwrap_err();
         let SignalError::ExecutionStopped(stop) = error else {

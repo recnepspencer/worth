@@ -50,29 +50,42 @@ pub(super) fn execute_source_request(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     target: SourceHarnessTarget,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<SourceHarnessExecution, BridgeHarnessError> {
     match target {
         SourceHarnessTarget::Materialize {
             declaration_identity,
         } => {
-            let (contract, record) =
-                materialize_source_record(runtime_bridge, fixture, &declaration_identity)?;
+            let (contract, record) = materialize_source_record(
+                runtime_bridge,
+                fixture,
+                &declaration_identity,
+                execution,
+            )?;
             Ok(SourceHarnessExecution::Materialize { contract, record })
         }
         SourceHarnessTarget::MaterializeBatch {
             declaration_identity,
         } => {
-            let (contract, record) =
-                materialize_source_batch_record(runtime_bridge, fixture, &declaration_identity)?;
+            let (contract, record) = materialize_source_batch_record(
+                runtime_bridge,
+                fixture,
+                &declaration_identity,
+                execution,
+            )?;
             Ok(SourceHarnessExecution::Materialize { contract, record })
         }
         SourceHarnessTarget::Replay {
             declaration_identity,
         } => {
-            let (contract, record) =
-                materialize_source_record(runtime_bridge, fixture, &declaration_identity)?;
+            let (contract, record) = materialize_source_record(
+                runtime_bridge,
+                fixture,
+                &declaration_identity,
+                execution,
+            )?;
             let replayed = runtime_bridge
-                .replay_source_materialization_record(&record)
+                .replay_source_materialization_record(&record, execution)
                 .map_err(|error| {
                     BridgeHarnessError::new(format!("bridge source replay failed: {error}"))
                 })?;
@@ -91,7 +104,8 @@ pub(super) fn execute_source_request(
             runtime_bridge,
             fixture,
             &declaration_identity,
-            crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure,
+            |kind| matches!(kind, crate::error::BridgeDeliveryErrorKind::SnapshotAcquisitionFailure(cause) if cause.kind() == crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure),
+            execution,
         ),
         SourceHarnessTarget::RejectSnapshotDrift {
             declaration_identity,
@@ -99,7 +113,13 @@ pub(super) fn execute_source_request(
             runtime_bridge,
             fixture,
             &declaration_identity,
-            crate::error::BridgeDeliveryErrorKind::SnapshotIdentityMismatch,
+            |kind| {
+                matches!(
+                    kind,
+                    crate::error::BridgeDeliveryErrorKind::SnapshotIdentityMismatch
+                )
+            },
+            execution,
         ),
     }
 }
@@ -108,6 +128,7 @@ fn materialize_source_record(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     declaration_identity: &SourceDeclarationIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(AdmittedSourceContract, SourceMaterializationRecord), BridgeHarnessError> {
     let declaration = fixture
         .source_declarations()
@@ -124,7 +145,7 @@ fn materialize_source_record(
         BridgeHarnessError::new(format!("bridge source admission failed: {error}"))
     })?;
     let observation = runtime_bridge
-        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
+        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]), execution)
         .map_err(|error| {
             BridgeHarnessError::new(format!("bridge source materialization failed: {error}"))
         })?;
@@ -142,6 +163,7 @@ fn materialize_source_batch_record(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     declaration_identity: &SourceDeclarationIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(AdmittedSourceContract, SourceMaterializationRecord), BridgeHarnessError> {
     let declaration = fixture
         .source_declarations()
@@ -178,6 +200,7 @@ fn materialize_source_batch_record(
                     ),
                 )]),
             ],
+            execution,
         )
         .map_err(|error| {
             BridgeHarnessError::new(format!(
@@ -233,7 +256,8 @@ fn reject_source_materialization(
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
     declaration_identity: &SourceDeclarationIdentity,
-    expected_error_kind: crate::error::BridgeDeliveryErrorKind,
+    expected_error_kind: fn(&crate::error::BridgeDeliveryErrorKind) -> bool,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<SourceHarnessExecution, BridgeHarnessError> {
     let declaration = fixture
         .source_declarations()
@@ -249,13 +273,15 @@ fn reject_source_materialization(
     let contract = runtime_bridge.admit_source(declaration).map_err(|error| {
         BridgeHarnessError::new(format!("bridge source admission failed: {error}"))
     })?;
-    let error = match runtime_bridge
-        .materialize_source_packet(&contract, SnapshotReadPacket::new(vec![]))
-    {
+    let error = match runtime_bridge.materialize_source_packet(
+        &contract,
+        SnapshotReadPacket::new(vec![]),
+        execution,
+    ) {
         Ok(_) => panic!("hostile source materialization should fail"),
         Err(error) => error,
     };
-    if error.kind() != expected_error_kind {
+    if !expected_error_kind(&error.kind()) {
         return Err(BridgeHarnessError::new(format!(
             "hostile source materialization yielded unexpected error kind `{:?}`",
             error.kind()

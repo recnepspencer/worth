@@ -24,9 +24,9 @@ pub(super) fn apply_provider_commit_deferred(
         } => {
             wake.decision = WorthQueryRetainedConditionalDecision::OperationRetryable(
                 evidence,
-                format!(
-                    "temporal publication candidate exceeded its {maximum_lifetime_millis}ms lifetime and must be prepared again"
-                ),
+                super::super::WorthQueryConditionalReentryFailure::CandidateLifetimeExpired {
+                    maximum_lifetime_millis,
+                },
             );
             counts.failed += 1;
         }

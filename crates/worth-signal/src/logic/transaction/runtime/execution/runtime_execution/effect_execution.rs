@@ -44,7 +44,9 @@ where
         self.admit_temporal_wakes_for_plan(plan)?;
         self.promote_due_temporal_wakes_ready()?;
         let temporal_lowering = self.temporal_lowering_context_for_plan(plan);
-        let serial = self.graph.bounded_serial_request();
+        let serial = crate::data::host_execution::declared_serial_request(
+            self.graph.installed_runtime_policy().requested_policy(),
+        );
         let report = execute_plan_with_runtime_config(
             &mut self.graph,
             &self.config,

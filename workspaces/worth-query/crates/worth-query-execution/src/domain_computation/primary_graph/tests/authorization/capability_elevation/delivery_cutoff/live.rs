@@ -21,6 +21,10 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
     let capability = context.elevated_access();
     let mut lease = context
         .world
+        .application
+        .with_application_advancement(&context.request, |phase| {
+            context
+        .world
         .selected_product()
         .open_governed_application_query_live::<
             ElevatedAccountActivityQuery,
@@ -35,6 +39,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
             _,
             _,
         >(
+ &phase,
             context.query,
             &context.principal,
             context.account,
@@ -43,6 +48,8 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
             WorthQueryApplicationLiveControls::bounded(context.request.clone(), 4, 16, 2_048)
                 .unwrap(),
         )
+        .unwrap()
+        })
         .unwrap();
     commit_live_activity(&context.world, &context.committer, &context.request);
     let approved = context.approved.take().unwrap();
@@ -70,6 +77,10 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
     let capability = context.elevated_access();
     let mut lease = context
         .world
+        .application
+        .with_application_advancement(&context.request, |phase| {
+            context
+        .world
         .selected_product()
         .open_governed_application_query_live::<
             ElevatedAccountActivityQuery,
@@ -84,6 +95,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
             _,
             _,
         >(
+ &phase,
             context.query,
             &context.principal,
             context.account,
@@ -92,6 +104,8 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
             WorthQueryApplicationLiveControls::bounded(context.request.clone(), 4, 16, 2_048)
                 .unwrap(),
         )
+        .unwrap()
+        })
         .unwrap();
     commit_live_activity(&context.world, &context.committer, &context.request);
 

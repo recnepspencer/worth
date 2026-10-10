@@ -54,6 +54,10 @@ fn equivalent_request_response_fulfilled_completions_admit_identically() {
 
 #[test]
 fn equivalent_subscription_backed_fulfilled_completions_admit_identically() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let first_runtime = runtime(BridgeRuntimePolicy::development());
     let second_runtime = runtime(BridgeRuntimePolicy::development());
     let first = admit_subscription_backed_completion(
@@ -65,6 +69,7 @@ fn equivalent_subscription_backed_fulfilled_completions_admit_identically() {
             crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
         ),
         48,
+        resource_request,
     )
     .expect("subscription-backed completion should admit");
     let second = admit_subscription_backed_completion(
@@ -76,6 +81,7 @@ fn equivalent_subscription_backed_fulfilled_completions_admit_identically() {
             crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
         ),
         48,
+        resource_request,
     )
     .expect("equivalent subscription-backed completion should admit");
     let first = first

@@ -9,6 +9,10 @@ use crate::speculation::BridgePreviewSessionIdentity;
 
 #[test]
 fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_explicit() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let detail = detail_subscription(&runtime);
     let collection = collection_subscription(&runtime);
@@ -40,6 +44,7 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
                 )),
             },
             declaration,
+            resource_request,
         );
         let preview_identity = preview_active
             .preview_active_subscription_identity()
@@ -144,6 +149,7 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
             ),
         },
         &detail,
+        resource_request,
     );
     let duplicate_rejection = runtime
         .record_preview_subscription_work(
@@ -194,6 +200,7 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
             ),
         },
         &detail,
+        resource_request,
     );
     let mismatch_rejection = runtime
         .record_preview_subscription_work(
@@ -211,7 +218,7 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
         BridgeSubscriptionPreviewWorkTraceRejectionKind::PreviewWorkEvidenceMismatch
     );
 
-    let promotion_ready = activation_ready_for(&runtime, &detail);
+    let promotion_ready = activation_ready_for(&runtime, &detail, resource_request);
     let admitted_preview = runtime
         .admit_preview_session(
             BridgePreviewSessionIdentity::admit_bridge_owned(
@@ -259,7 +266,7 @@ fn bridge_harness_subscription_suite_34_preview_zero_residue_and_promotion_are_e
     let (_promoted_session, speculation_promotion) = runtime
         .promote_preview_session(active_preview_session, &execution_record, &proof)
         .expect("speculation promotion should succeed");
-    let promoted_ready = activation_ready_for(&runtime, &detail);
+    let promoted_ready = activation_ready_for(&runtime, &detail, resource_request);
     let preview_identity = preview_active
         .preview_active_subscription_identity()
         .clone();

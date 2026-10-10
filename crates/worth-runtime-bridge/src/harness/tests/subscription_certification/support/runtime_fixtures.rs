@@ -90,6 +90,7 @@ pub(crate) fn collection_subscription(
 pub(crate) fn activation_ready_for(
     runtime: &RuntimeBridge,
     declaration: &crate::facade::BridgeSubscriptionDeclaration,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeSubscriptionActivationReady {
     let admitted = runtime
         .admit_subscription(
@@ -97,6 +98,7 @@ pub(crate) fn activation_ready_for(
             BridgeSubscriptionBasisRequest::snapshot(
                 crate::truth_identity_fixtures::truth_snapshot_fixture("snapshot-a"),
             ),
+            execution,
         )
         .expect("subscription admission should succeed");
     runtime.prepare_subscription_activation(&admitted)
@@ -119,8 +121,9 @@ pub(crate) fn active_subscription_for(
     declaration: &crate::facade::BridgeSubscriptionDeclaration,
     posture: BridgeSubscriptionDeliveryDensityPosture,
     max_fanout_width: usize,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::BridgeActiveSubscription {
-    let ready = activation_ready_for(runtime, declaration);
+    let ready = activation_ready_for(runtime, declaration, resource_request);
     let cost_profile = runtime
         .admit_subscription_delivery_cost_profile(posture, 4, 4, max_fanout_width)
         .expect("cost profile should admit");

@@ -39,7 +39,7 @@ pub(super) enum WorthQueryTemporalReentryOutcome {
     Committed,
     AlreadyCommitted,
     Obsolete,
-    RetryableFailure(String),
+    RetryableFailure(super::WorthQueryConditionalReentryFailure),
     RetryableCommitFailure(
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
     ),
@@ -58,7 +58,7 @@ pub(super) enum WorthQueryTemporalReentryOutcome {
     SettlementDeferred(
         crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
     ),
-    Indeterminate(String),
+    Indeterminate(super::WorthQueryConditionalReentryFailure),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -241,9 +241,9 @@ where
             Ok(idempotency) => idempotency,
             Err(denial) => {
                 return WorthQueryTemporalReentryAttempt {
-                    outcome: WorthQueryTemporalReentryOutcome::RetryableFailure(format!(
-                        "temporal idempotency admission denied: {denial:?}"
-                    )),
+                    outcome: WorthQueryTemporalReentryOutcome::RetryableFailure(
+                        super::WorthQueryConditionalReentryFailure::Idempotency(denial),
+                    ),
                     admission_canonical_work:
                         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
                 }

@@ -81,8 +81,8 @@ impl AcceptedCurrentCandidate {
 
 impl WorthQueryApplicationOutputLineage {
     /// The exact accepted row for `completion`. A stop is the outer error. A
-    /// reason the row cannot be certified exactly is the inner one, and the
-    /// reader then verifies the output in full.
+    /// reason is the inner one: without a candidate, Ready takes Fresh, where
+    /// this advance's record refuses a published member without evidence of change.
     #[allow(clippy::type_complexity)]
     pub(in crate::domain_computation::primary_graph) fn resolve_required_settlement(
         &self,

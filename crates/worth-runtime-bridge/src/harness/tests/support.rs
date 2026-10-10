@@ -278,7 +278,10 @@ impl InvalidationSink for RejectingSignalSink {
         _delivery: crate::facade::BridgeSignalInvalidationDelivery,
         _lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::facade::BridgeDeliveryReceipt, SignalBridgeSinkError> {
-        Err(SignalBridgeSinkError::new("forced sink rejection"))
+        Err(SignalBridgeSinkError::new(
+            crate::adapter::SignalBridgeSinkErrorKind::ExternalSinkFailure,
+            "forced sink rejection",
+        ))
     }
 }
 
@@ -311,12 +314,13 @@ impl SnapshotReaderPool for CountingSnapshotReaderPool {
     fn acquire(
         &self,
         identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         Box<dyn crate::facade::TruthSnapshotReader>,
         crate::facade::RelationalBridgeSourceError,
     > {
         self.acquire_count.fetch_add(1, Ordering::SeqCst);
-        crate::facade::SnapshotReadSource::open_snapshot(&self.source, identity)
+        crate::facade::SnapshotReadSource::open_snapshot(&self.source, identity, execution)
     }
 
     fn release(&self, _reader: Box<dyn crate::facade::TruthSnapshotReader>) {

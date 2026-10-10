@@ -64,6 +64,7 @@ impl BridgeOwnedSignalRuntime {
         let mut session = self.admit_conditional_evaluation_with_record(
             admission,
             Some(request.due_wake.source_record_identity()),
+            execution,
         )?;
         session.observation_baselines = Arc::clone(&request.due_wake.observation_baselines);
         let mut evidence = self.execute_admitted_conditional(

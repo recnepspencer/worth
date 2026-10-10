@@ -6,19 +6,25 @@ use super::*;
 
 fn shared_yielded_workflow_peers(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     RuntimeBridge,
     WorthQueryExecutionRuntime,
 ) {
-    shared_yielded_workflow_peers_with_provider(execution, YieldProvider::installed(5))
+    shared_yielded_workflow_peers_with_provider(
+        execution,
+        YieldProvider::installed(5),
+        resource_request,
+    )
 }
 
 pub(super) fn shared_yielded_workflow_peers_with_provider(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 
     provider: YieldProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
     crate::domain_computation::WorthQueryYieldedWorkflowRun,
@@ -47,6 +53,7 @@ pub(super) fn shared_yielded_workflow_peers_with_provider(
         &lower,
         provider_support.clone(),
         "workflow-peer",
+        resource_request,
     );
     let second = yield_peer(
         execution,
@@ -55,6 +62,7 @@ pub(super) fn shared_yielded_workflow_peers_with_provider(
         &lower,
         provider_support,
         "workflow-peer",
+        resource_request,
     );
     (first, second, lower.bridge, runtime)
 }
@@ -67,6 +75,7 @@ fn yield_peer(
     lower: &causal_fixture::CausalManagedAdmissionContext,
     provider_support: worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupport,
     label: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::domain_computation::WorthQueryYieldedWorkflowRun {
     let operation_resources =
         crate::domain_computation::provider_session::admitted_yield_plan("workflow-association", 8);
@@ -92,7 +101,7 @@ fn yield_peer(
         .expect("shared workflow peer resource attempt should start");
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request())
+        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
         .expect("shared workflow peer should admit")
         .start()
         .expect("shared workflow peer should start");
@@ -117,10 +126,14 @@ fn yield_peer(
 #[test]
 fn interleaved_workflow_peers_keep_session_ledger_artifact_and_lower_bases_associated() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let (first, second, bridge, runtime) = shared_yielded_workflow_peers(execution);
+        let (first, second, bridge, runtime) =
+            shared_yielded_workflow_peers(execution, resource_request);
         let first_binding = first.inspection().operation_binding_identity().to_owned();
         let second_binding = second.inspection().operation_binding_identity().to_owned();
         let first_logical = first.inspection().logical_run_identity().to_owned();
@@ -193,11 +206,15 @@ fn interleaved_workflow_peers_keep_session_ledger_artifact_and_lower_bases_assoc
 #[test]
 fn foreign_bridge_denial_preserves_both_workflow_peers_without_fresh_query_work() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (first, second, bridge, runtime) = shared_yielded_workflow_peers(execution);
+        let (first, second, bridge, runtime) =
+            shared_yielded_workflow_peers(execution, resource_request);
         let first_inspection = first.inspection().clone();
         let second_inspection = second.inspection().clone();
         assert_eq!(

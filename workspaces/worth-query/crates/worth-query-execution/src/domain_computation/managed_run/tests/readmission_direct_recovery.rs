@@ -4,12 +4,18 @@ use super::yield_fixture::YieldProvider;
 #[test]
 fn provider_restore_panic_remains_typed_recovery_with_retained_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
 
-        let (yielded, bridge, runtime) =
-            yielded_direct_with_provider(execution, YieldProvider::checkpoint_restore_panic(7));
+        let (yielded, bridge, runtime) = yielded_direct_with_provider(
+            execution,
+            YieldProvider::checkpoint_restore_panic(7),
+            resource_request,
+        );
         let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
                 recovery,
@@ -51,6 +57,9 @@ fn provider_restore_panic_remains_typed_recovery_with_retained_authority() {
 #[test]
 fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
@@ -58,6 +67,7 @@ fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
         let (yielded, bridge, runtime) = yielded_direct_with_provider(
             execution,
             YieldProvider::checkpoint_restore_reject_after_admission(7),
+            resource_request,
         );
         let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(
@@ -114,6 +124,9 @@ fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
 #[test]
 fn restore_panic_and_replacement_destructor_panic_flow_into_terminal_cleanup() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
         let active_request = execution;
@@ -121,6 +134,7 @@ fn restore_panic_and_replacement_destructor_panic_flow_into_terminal_cleanup() {
         let (yielded, bridge, runtime) = yielded_direct_with_provider(
             execution,
             YieldProvider::checkpoint_restore_panic_after_admission(7),
+            resource_request,
         );
         let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
             crate::domain_computation::WorthQueryDirectReadmissionOutcome::RecoveryRequired(

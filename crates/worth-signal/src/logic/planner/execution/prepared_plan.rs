@@ -38,7 +38,9 @@ where
         fallback: crate::data::comparator::VersionComparatorPolicy::Exact,
         custom: &mut comparator,
     };
-    let serial = graph.bounded_serial_request();
+    let serial = crate::data::host_execution::declared_serial_request(
+        graph.installed_runtime_policy().requested_policy(),
+    );
     execute_prepared_plan_with_policy(
         graph,
         plan,

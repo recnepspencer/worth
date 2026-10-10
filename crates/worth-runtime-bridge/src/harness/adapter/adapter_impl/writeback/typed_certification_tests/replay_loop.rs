@@ -4,11 +4,18 @@ use super::*;
 
 #[test]
 fn replay_loop_certification_retains_typed_isolation_proof() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let WritebackHarnessExecution::CrossFamilyReplayLoopIsolationCertification {
         replay_loop_matrix,
         counter_snapshot,
         ..
-    } = certified_execution(WritebackHarnessTarget::CrossFamilyReplayLoopIsolationCertification)
+    } = certified_execution(
+        WritebackHarnessTarget::CrossFamilyReplayLoopIsolationCertification,
+        resource_request,
+    )
     else {
         panic!("replay loop should produce typed matrix");
     };

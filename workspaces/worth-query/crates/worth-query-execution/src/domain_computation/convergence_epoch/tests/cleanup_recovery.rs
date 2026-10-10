@@ -6,10 +6,13 @@ use crate::domain_computation::{
 #[test]
 fn direct_cleanup_recovery_preserves_epoch_evidence_and_counts_the_retry() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let terminal = converged_terminal(execution);
+        let terminal = converged_terminal(execution, resource_request);
         let identity = terminal.identity().to_owned();
         let failure = std::thread::spawn(move || match terminal.cleanup() {
             Ok(_) => panic!("foreign thread finalized the convergence Signal basis"),
@@ -41,10 +44,13 @@ fn direct_cleanup_recovery_preserves_epoch_evidence_and_counts_the_retry() {
 #[test]
 fn workflow_cleanup_recovery_preserves_epoch_evidence_and_counts_the_retry() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let terminal = workflow_converged_terminal(execution);
+        let terminal = workflow_converged_terminal(execution, resource_request);
         let identity = terminal.identity().to_owned();
         let failure = std::thread::spawn(move || match terminal.cleanup() {
             WorthQueryWorkflowConvergenceCleanupOutcome::RecoveryRequired(failure) => failure,

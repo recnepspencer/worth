@@ -109,6 +109,15 @@ fn unitful_threshold_meaning_survives_signal_installation_without_numeric_flatte
 
 #[test]
 fn installed_condition_defers_pending_dependency_before_filtering() {
+    let serial = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(
+            crate::runtime_policy::SignalRuntimePolicy::operational().serial_memory_bytes,
+        ),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution_request = worth_execution::ExecutionRequest::serial(&serial);
+
     use crate::data::comparator::DefaultComparatorPolicyResolver;
     use crate::data::dependency::DependencyEdge;
     use crate::facade::mark_dirty;
@@ -153,6 +162,7 @@ fn installed_condition_defers_pending_dependency_before_filtering() {
     let mut compute_contacts = 0;
     let evidence = graph
         .execute_installed_conditional(
+            execution_request,
             super::SignalConditionalExecutionRequest::new(&contract, "snapshot", "attempt", 1),
             &mut UnexpectedInstalledConditionResolver,
             &mut DefaultComparatorPolicyResolver::default(),

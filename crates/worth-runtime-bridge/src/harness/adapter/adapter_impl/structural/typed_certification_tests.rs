@@ -14,7 +14,10 @@ use std::collections::BTreeSet;
 use worth_harness::facade::{ExecutionProfile, ScenarioPlan};
 use worth_harness::runtime::HarnessAdapter;
 
-fn execute(target: StructuralHarnessTarget) -> StructuralHarnessExecution {
+fn execute(
+    target: StructuralHarnessTarget,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> StructuralHarnessExecution {
     let adapter = crate::harness::adapter::BridgeHarnessAdapter;
     let fixture = structural_fixture();
     let mut runtime = adapter.create_runtime().expect("structural runtime");
@@ -26,18 +29,25 @@ fn execute(target: StructuralHarnessTarget) -> StructuralHarnessExecution {
         .load_fixture(&mut runtime, &fixture)
         .expect("structural fixture");
     let runtime_bridge = runtime.runtime.as_ref().expect("runtime bridge");
-    execute_structural_request(runtime_bridge, &fixture.fixture, target)
+    execute_structural_request(runtime_bridge, &fixture.fixture, target, resource_request)
         .expect("typed structural execution")
 }
 
 #[test]
 fn structural_remap_certification_is_typed_before_terminal_export() {
-    let execution = execute(StructuralHarnessTarget::RemapExact {
-        declaration_identity:
-            crate::structural::StructuralIdentityDeclarationIdentity::admit_bridge_owned(
-                "structural:analysis-remap",
-            ),
-    });
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let execution = execute(
+        StructuralHarnessTarget::RemapExact {
+            declaration_identity:
+                crate::structural::StructuralIdentityDeclarationIdentity::admit_bridge_owned(
+                    "structural:analysis-remap",
+                ),
+        },
+        resource_request,
+    );
     let summary = execution.summary();
     let bundle = execution.certification_bundle();
 
@@ -235,12 +245,19 @@ fn fingerprint_contract(
 
 #[test]
 fn structural_ambiguity_certification_retains_typed_rejection_evidence() {
-    let execution = execute(StructuralHarnessTarget::RemapAmbiguous {
-        declaration_identity:
-            crate::structural::StructuralIdentityDeclarationIdentity::admit_bridge_owned(
-                "structural:analysis-remap",
-            ),
-    });
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let execution = execute(
+        StructuralHarnessTarget::RemapAmbiguous {
+            declaration_identity:
+                crate::structural::StructuralIdentityDeclarationIdentity::admit_bridge_owned(
+                    "structural:analysis-remap",
+                ),
+        },
+        resource_request,
+    );
     let summary = execution.summary();
     let bundle = execution.certification_bundle();
     let ambiguity = bundle
@@ -276,12 +293,19 @@ fn structural_ambiguity_certification_retains_typed_rejection_evidence() {
 
 #[test]
 fn structural_branch_certification_retains_typed_diff_and_replay_evidence() {
-    let execution = execute(StructuralHarnessTarget::BranchReplay {
-        declaration_identity:
-            crate::structural::StructuralIdentityDeclarationIdentity::admit_bridge_owned(
-                "structural:analysis-branch-compare",
-            ),
-    });
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let execution = execute(
+        StructuralHarnessTarget::BranchReplay {
+            declaration_identity:
+                crate::structural::StructuralIdentityDeclarationIdentity::admit_bridge_owned(
+                    "structural:analysis-branch-compare",
+                ),
+        },
+        resource_request,
+    );
     let summary = execution.summary();
     let bundle = execution.certification_bundle();
     let diff = bundle

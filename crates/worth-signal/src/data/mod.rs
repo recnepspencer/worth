@@ -27,6 +27,7 @@ pub(crate) mod persistent_ord_map;
 pub(crate) mod persistent_ord_set;
 pub(crate) mod persistent_paged_vector;
 pub(crate) mod persistent_vector;
+pub(crate) mod prepared_request_map;
 pub mod proof;
 pub(crate) mod request_preparation;
 pub mod resource;
@@ -39,3 +40,5 @@ pub mod temporal;
 pub mod tier;
 pub mod tier_policy_table;
 pub mod trace;
+
+pub(crate) mod host_execution;

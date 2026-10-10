@@ -124,6 +124,17 @@ impl<'a> ExecutionResourceLease<'a> {
 }
 
 impl ExecutionLeaseStatus {
+    pub(crate) fn stop(&self) -> Option<crate::backend::KernelStop> {
+        use crate::backend::KernelStop;
+        if self.is_cancelled() {
+            Some(KernelStop::Cancelled)
+        } else if self.deadline_elapsed() {
+            Some(KernelStop::DeadlineElapsed)
+        } else {
+            None
+        }
+    }
+
     pub fn is_cancelled(&self) -> bool {
         let mut node = Some(self.node.as_ref());
         while let Some(current) = node {

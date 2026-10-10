@@ -152,6 +152,9 @@ impl WorthQueryDecisionFactProvider for DecisionProvider {
 #[test]
 fn all_fact_families_capture_canonically_and_compare_without_false_conflicts() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -163,6 +166,7 @@ fn all_fact_families_capture_canonically_and_compare_without_false_conflicts() {
                 versions: Arc::clone(&versions),
             },
             families,
+            resource_request,
         );
         let staged = staged(execution, &mut running, &graph);
         {
@@ -201,6 +205,9 @@ fn all_fact_families_capture_canonically_and_compare_without_false_conflicts() {
 #[test]
 fn every_relevant_family_stales_independently_while_unrelated_axes_remain_fresh() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -211,6 +218,7 @@ fn every_relevant_family_stales_independently_while_unrelated_axes_remain_fresh(
                 versions: Arc::clone(&versions),
             },
             families(&kinds),
+            resource_request,
         );
         let staged = staged(execution, &mut running, &graph);
         {

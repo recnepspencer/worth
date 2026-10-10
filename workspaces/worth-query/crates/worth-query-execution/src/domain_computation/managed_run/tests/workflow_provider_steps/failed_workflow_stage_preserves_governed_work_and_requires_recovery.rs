@@ -5,6 +5,9 @@ use super::*;
 #[test]
 fn failed_workflow_stage_preserves_governed_work_and_requires_recovery() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -31,7 +34,7 @@ fn failed_workflow_stage_preserves_governed_work_and_requires_recovery() {
             &graph,
             WorthQueryOperationGraphAccess::Project,
         );
-        let running = admitted_workflow(&runtime, &operation, resources);
+        let running = admitted_workflow(&runtime, &operation, resources, resource_request);
         let active = running
             .begin_stage_graph_execution(
                 execution,

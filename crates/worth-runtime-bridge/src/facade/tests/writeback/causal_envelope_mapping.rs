@@ -15,11 +15,16 @@ use crate::facade::{
 
 #[test]
 fn causal_envelope_maps_retained_writeback_records_into_bridge_owned_bindings() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime_with_writeback_authority(BridgeRuntimePolicy::development());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-writeback",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-writeback"),
+            execution,
+        )
         .expect("route should succeed");
     let lowered_policy = lowered_policy(&runtime);
     let contract = runtime
@@ -232,11 +237,18 @@ fn causal_envelope_maps_retained_writeback_records_into_bridge_owned_bindings() 
 
 #[test]
 fn causal_envelope_denies_missing_writeback_replay_without_unindexed_scan() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-missing-writeback-replay",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture(
+                "commit-causal-missing-writeback-replay",
+            ),
+            execution,
+        )
         .expect("route should succeed");
     let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(
         crate::facade::BridgeCausalInspectionAdmissionSummary::admitted(
@@ -287,6 +299,10 @@ fn causal_envelope_denies_missing_writeback_replay_without_unindexed_scan() {
 
 #[test]
 fn causal_envelope_writeback_admission_lookup_cost_ignores_unrelated_records() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut envelope_identities = Vec::new();
 
     for unrelated_records in [0, 3, 8] {
@@ -321,9 +337,12 @@ fn causal_envelope_writeback_admission_lookup_cost_ignores_unrelated_records() {
             )
             .expect("target writeback declaration should admit");
         let routed = runtime
-            .route(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-causal-writeback-scale",
-            ))
+            .route(
+                crate::truth_identity_fixtures::truth_commit_fixture(
+                    "commit-causal-writeback-scale",
+                ),
+                execution,
+            )
             .expect("route should succeed");
         let target_record = runtime
             .diagnostics()

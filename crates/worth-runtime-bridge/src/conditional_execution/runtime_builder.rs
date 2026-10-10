@@ -88,7 +88,7 @@ impl BridgeConditionalRuntimeBuilder {
         for (identity, declaration) in self.managed_clocks {
             let lane = declaration.seal().map_err(|denial| {
                 BridgeConditionalDenial::new(
-                    super::BridgeConditionalDenialKind::SignalExecution,
+                    super::BridgeConditionalDenialKind::ManagedClockAdmission(denial.kind()),
                     denial.detail(),
                 )
             })?;

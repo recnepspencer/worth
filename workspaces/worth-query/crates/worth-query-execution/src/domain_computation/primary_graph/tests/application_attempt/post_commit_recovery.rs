@@ -11,6 +11,9 @@ use crate::facade::runtime::ExecutionAllocationPolicy;
 
 #[test]
 fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidence() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let selected = world.selected_product();
     let _live = world
@@ -101,6 +104,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         .relational_bridge_source()
         .load_branch_head_patch(
             &crate::domain_computation::primary_graph::primary_truth_branch_identity(),
+            resource_request,
         )
         .expect("post-commit recovery binds the exact Bridge head");
     assert_eq!(

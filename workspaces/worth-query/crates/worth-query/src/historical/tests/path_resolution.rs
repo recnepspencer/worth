@@ -139,6 +139,9 @@ fn retained_reuse_counter_only_increments_when_capability_proves_reuse() {
 
 #[test]
 fn bridge_lowering_preserves_decision_log_path_semantics() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let evaluation = runtime
         .evaluate(
@@ -147,6 +150,7 @@ fn bridge_lowering_preserves_decision_log_path_semantics() {
                 TruthCommitIdentity::from_bridge_harness_label("commit-a"),
             )
             .with_replay_mode(BridgeReplayMode::Required),
+            resource_request,
         )
         .expect("historical evaluation should succeed");
     assert_eq!(

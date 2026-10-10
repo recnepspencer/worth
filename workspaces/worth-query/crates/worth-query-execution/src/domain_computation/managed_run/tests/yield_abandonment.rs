@@ -4,6 +4,9 @@ use super::*;
 #[test]
 fn dropping_yielded_workflow_closes_artifacts_despite_surviving_production_authority() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -46,8 +49,12 @@ fn dropping_yielded_workflow_closes_artifacts_despite_surviving_production_autho
             WorthQueryOperationGraphAccess::Observe,
             output,
         );
-        let running =
-            super::workflow_provider_steps::admitted_workflow(&runtime, &operation, resources);
+        let running = super::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
         let production = running
             .artifacts()
             .production_authority("producer")

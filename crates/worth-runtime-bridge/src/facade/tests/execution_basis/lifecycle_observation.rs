@@ -3,13 +3,18 @@ use crate::facade::BridgeExecutionBasisLifecycleSignalStatus;
 
 #[test]
 fn owner_observer_reports_reservation_signal_and_exact_queue_lifecycle() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let mut basis = runtime
         .admit_managed_execution_basis(
             managed_intent("observed-attempt"),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("managed execution should admit");
     let observer = basis.lifecycle_observer();
@@ -70,13 +75,18 @@ fn owner_observer_reports_reservation_signal_and_exact_queue_lifecycle() {
 
 #[test]
 fn owner_observer_sees_drop_cancel_and_release_the_reservation() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let basis = runtime
         .admit_managed_execution_basis(
             managed_intent("dropped-attempt"),
             step_contract(),
             truth_basis("snapshot-a"),
-            planned_truth_view(&runtime),
+            planned_truth_view(&runtime, execution),
+            execution,
         )
         .expect("managed execution should admit");
     let observer = basis.lifecycle_observer();

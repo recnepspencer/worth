@@ -1,4 +1,5 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The precise admission, source, Signal or delivery cause retained by a conditional operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BridgeConditionalDenialKind {
     ExecutionDenied(crate::error::BridgeExecutionDenial),
     ConditionalRetentionCapacity,
@@ -35,19 +36,17 @@ pub enum BridgeConditionalDenialKind {
     DependencyOrdinalMismatch,
     SnapshotMismatch,
     SnapshotAdmission,
+    SnapshotRead(crate::snapshot::BridgeSnapshotReadError),
+    Delivery(crate::error::BridgeDeliveryError),
     MissingSourceObservation,
     SourcePostureMismatch,
     AttemptMismatch,
     ManagedWakeMismatch,
     ManagedClockQuarantined,
-    SignalExecution,
-    ConditionalTransitionChainIncomplete,
-    ConditionalTransitionChainMismatch,
-    ConditionalPredecessorNotExecuted,
-    ConditionalEvaluationBusy,
-    ConditionalEvaluationPoisoned,
-    ConditionalEvaluationUnwindPending,
-    ConditionalEvaluationAdmissionCapacity,
+    SignalExecution(super::BridgeSignalDenial),
+    ManagedClockAdmission(super::BridgeManagedTemporalDenialKind),
+    ConditionalTransitionMissing,
+    ConditionalTargetReferenceExhausted,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -103,8 +102,8 @@ impl BridgeConditionalDenial {
         self.reentry_counters = counters;
         self
     }
-    pub const fn kind(&self) -> BridgeConditionalDenialKind {
-        self.kind
+    pub fn kind(&self) -> BridgeConditionalDenialKind {
+        self.kind.clone()
     }
     pub fn detail(&self) -> &str {
         &self.detail

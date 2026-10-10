@@ -5,15 +5,18 @@ use super::matrix_support::representative_matrix;
 use super::*;
 
 pub(in crate::runtime::tests) fn runtime_backed_causal_certification_bundle(
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> CausalInspectionCertificationBundle {
-    let changed = admitted_artifact(super::super::causal_truth_commit_identity(
-        "commit-query-cert-changed",
-    ));
-    let (full, redacted) = advisory_artifacts(super::super::causal_truth_commit_identity(
-        "commit-query-cert-redacted",
-    ));
-    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence();
-    let representatives = representative_matrix(&changed, &redacted, &denied);
+    let changed = admitted_artifact(
+        super::super::causal_truth_commit_identity("commit-query-cert-changed"),
+        resource_request,
+    );
+    let (full, redacted) = advisory_artifacts(
+        super::super::causal_truth_commit_identity("commit-query-cert-redacted"),
+        resource_request,
+    );
+    let (denied, missing_evidence_digest) = denied_artifact_and_missing_evidence(resource_request);
+    let representatives = representative_matrix(&changed, &redacted, &denied, resource_request);
     let boundary_audit =
         CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&changed);
     let proof_shape = CausalInspectionProofShapeCertification::from_runtime_path(

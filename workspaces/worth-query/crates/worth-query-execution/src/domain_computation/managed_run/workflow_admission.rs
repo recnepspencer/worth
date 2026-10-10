@@ -18,6 +18,7 @@ impl WorthQueryManagedRunAdmission<'_> {
         operation: &WorthQueryExecutionBoundOperationAuthority,
         resource_attempt: WorthQueryWorkflowExecutionResourceAttempt,
         request: WorthQueryManagedTruthReadRequest,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryAdmittedWorkflowRun, WorthQueryManagedWorkflowRunAdmissionFailure> {
         let counters = match validate_workflow_run_head(self.query, operation, &resource_attempt) {
             Ok(counters) => counters,
@@ -45,6 +46,7 @@ impl WorthQueryManagedRunAdmission<'_> {
                 resource_attempt.operation_resources().envelope(),
             ),
             request,
+            execution,
         ) {
             Ok(lower) => lower,
             Err(failure) => {

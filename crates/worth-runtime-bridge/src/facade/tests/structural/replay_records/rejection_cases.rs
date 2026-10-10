@@ -45,6 +45,10 @@ fn runtime_rejects_structural_declaration_with_different_semantics_version() {
 
 #[test]
 fn runtime_replay_rejects_truncated_structural_remap_basis() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let declaration = registered_structural(
         "structural:analysis-snapshot",
@@ -76,7 +80,7 @@ fn runtime_replay_rejects_truncated_structural_remap_basis() {
         runtime.canonicalize_structural_remap_record(&contract, &planned, &reduced, &artifact);
 
     let error = runtime
-        .replay_canonical_structural_remap_record(&record)
+        .replay_canonical_structural_remap_record(&record, execution)
         .expect_err("replay should reject a remap record without retained fingerprint basis");
 
     assert_eq!(
@@ -87,6 +91,10 @@ fn runtime_replay_rejects_truncated_structural_remap_basis() {
 
 #[test]
 fn runtime_replay_rejects_truncated_structural_branch_basis() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let declaration = StructuralIdentityDeclaration::branch_comparison(
         StructuralIdentityDeclarationIdentity::admit_bridge_owned("structural:branch-compare"),
         StructuralSchemaIdentity::admit_bridge_owned("schema:geometry"),
@@ -170,7 +178,7 @@ fn runtime_replay_rejects_truncated_structural_branch_basis() {
         .canonicalize_structural_branch_comparison_record(&contract, &planned, &reduced, &artifact);
 
     let error = runtime
-        .replay_canonical_structural_branch_comparison_record(&record)
+        .replay_canonical_structural_branch_comparison_record(&record, execution)
         .expect_err("replay should reject a branch record without retained fingerprint basis");
 
     assert_eq!(

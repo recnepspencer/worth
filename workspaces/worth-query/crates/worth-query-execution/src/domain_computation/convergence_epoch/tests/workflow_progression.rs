@@ -11,10 +11,13 @@ use crate::domain_computation::{
 #[test]
 fn real_installed_workflow_seals_its_evidence_stage_and_converges() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let epoch = workflow_epoch_fixture(FixtureDisposition::Converged);
+        let epoch = workflow_epoch_fixture(FixtureDisposition::Converged, resource_request);
         let rejection = match epoch.begin_stage_iteration(
             execution,
             "foreign-stage",
@@ -82,11 +85,14 @@ fn real_installed_workflow_seals_its_evidence_stage_and_converges() {
 #[test]
 fn same_semantic_candidate_in_same_stage_workflow_peers_has_distinct_occurrences() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let first = start_workflow_peer(execution, "workflow-peer");
-        let second = start_workflow_peer(execution, "workflow-peer");
+        let first = start_workflow_peer(execution, "workflow-peer", resource_request);
+        let second = start_workflow_peer(execution, "workflow-peer", resource_request);
         let first = complete_workflow_peer(execution, first);
         let second = complete_workflow_peer(execution, second);
 
@@ -97,8 +103,9 @@ fn same_semantic_candidate_in_same_stage_workflow_peers_has_distinct_occurrences
 fn start_workflow_peer(
     execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     scope: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryStartedWorkflowConvergenceIteration {
-    let epoch = workflow_epoch_fixture(FixtureDisposition::Converged);
+    let epoch = workflow_epoch_fixture(FixtureDisposition::Converged, resource_request);
     epoch
         .begin_stage_iteration(
             execution,
@@ -139,10 +146,16 @@ fn complete_workflow_peer(
 #[test]
 fn incompatible_stage_queue_contract_denies_before_iteration_and_terminates_cleanly() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
-        let epoch = workflow_epoch_fixture(FixtureDisposition::StageQueueContractMismatch);
+        let epoch = workflow_epoch_fixture(
+            FixtureDisposition::StageQueueContractMismatch,
+            resource_request,
+        );
         let rejection = match epoch.begin_stage_iteration(
             execution,
             WORKFLOW_STAGE,

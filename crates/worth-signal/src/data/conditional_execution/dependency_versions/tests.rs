@@ -54,11 +54,13 @@ fn install(
 }
 
 fn read_clean(
+    request_execution: worth_execution::ExecutionRequest<'_, '_>,
     graph: &mut SignalGraph,
     contract: &InstalledSignalConditionalContract,
 ) -> SignalConditionalDecisionEvidence {
     graph
         .execute_installed_conditional(
+            request_execution,
             SignalConditionalExecutionRequest::new(contract, "source", "read-clean", 2),
             &mut NoPredicate,
             &mut DefaultComparatorPolicyResolver::default(),
@@ -89,6 +91,7 @@ fn conditional_reinstallation_compares_named_aspects_and_preserves_retained_warm
         let original = install(&mut graph, &owner, node, before);
         let first = graph
             .execute_installed_conditional(
+                request_execution,
                 SignalConditionalExecutionRequest::new(&original, "source", "initial", 1),
                 &mut NoPredicate,
                 &mut DefaultComparatorPolicyResolver::default(),
@@ -107,12 +110,12 @@ fn conditional_reinstallation_compares_named_aspects_and_preserves_retained_warm
             assert_eq!(graph.node_version_for_scope(node, aspect, None).unwrap(), 0);
         }
         assert_eq!(
-            read_clean(&mut graph, &original).class(),
+            read_clean(request_execution, &mut graph, &original).class(),
             Class::DependencyUnchanged
         );
         let mut retained = SignalEvaluationPartition::retain_basis_storage(&mut graph);
         let replacement = install(&mut graph, &owner, node, after);
-        let changed = read_clean(&mut graph, &replacement);
+        let changed = read_clean(request_execution, &mut graph, &replacement);
         assert_eq!(
             changed.class(),
             if before == after {
@@ -127,7 +130,7 @@ fn conditional_reinstallation_compares_named_aspects_and_preserves_retained_warm
         );
         assert_eq!(changed.counters().compute_contacts, 0);
         assert_eq!(
-            read_clean(&mut graph, &replacement).class(),
+            read_clean(request_execution, &mut graph, &replacement).class(),
             Class::DependencyUnchanged
         );
         // This is retained storage isolation, not service/source admission.
@@ -151,7 +154,7 @@ fn conditional_reinstallation_compares_named_aspects_and_preserves_retained_warm
         assert_eq!(decision.unwrap().class(), Class::DependencyUnchanged);
         assert!(observation.unwrap().is_none());
         assert_eq!(
-            read_clean(&mut graph, &replacement).class(),
+            read_clean(request_execution, &mut graph, &replacement).class(),
             Class::DependencyUnchanged
         );
     }

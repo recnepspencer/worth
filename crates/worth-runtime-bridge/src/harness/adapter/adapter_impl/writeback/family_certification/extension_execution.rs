@@ -4,12 +4,13 @@ pub(in crate::harness::adapter::adapter_impl::writeback) fn execute_extensible_f
     runtime: &crate::harness::adapter::BridgeHarnessSession,
     runtime_bridge: &crate::facade::RuntimeBridge,
     fixture: &BridgeHarnessFixture,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WritebackHarnessExecution, BridgeHarnessError> {
     let lowered_policy_bundle = lowered_policy(runtime_bridge)?;
     let causality = writeback_causality_basis(
         "harness:writeback-family-extension-causality",
         "family-extension",
-        route_digest_for_first_patch(runtime_bridge, fixture)?,
+        route_digest_for_first_patch(runtime_bridge, fixture, resource_request)?,
         "family-extension",
         "family-extension",
     );

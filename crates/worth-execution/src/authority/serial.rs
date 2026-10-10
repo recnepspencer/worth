@@ -15,6 +15,20 @@ pub struct SerialRequest {
 }
 
 impl SerialRequest {
+    pub(crate) fn stop(&self) -> Option<crate::backend::KernelStop> {
+        use crate::backend::KernelStop;
+        if self.cancellation.is_cancelled() {
+            Some(KernelStop::Cancelled)
+        } else if self
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
+        {
+            Some(KernelStop::DeadlineElapsed)
+        } else {
+            None
+        }
+    }
+
     pub fn from_policy(
         policy: &ExecutionRequestPolicy,
         cancellation: CancellationToken,

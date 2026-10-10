@@ -36,6 +36,10 @@ struct RetainedWritebackChainInput {
 
 #[test]
 fn causal_envelope_full_writeback_chain_lookup_cost_ignores_unrelated_records() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let mut envelope_identities = Vec::new();
 
     for unrelated_records in [0, 2, 5] {
@@ -100,9 +104,12 @@ fn causal_envelope_full_writeback_chain_lookup_cost_ignores_unrelated_records() 
             },
         );
         let routed = runtime
-            .route(crate::truth_identity_fixtures::truth_commit_fixture(
-                "commit-causal-writeback-full-scale",
-            ))
+            .route(
+                crate::truth_identity_fixtures::truth_commit_fixture(
+                    "commit-causal-writeback-full-scale",
+                ),
+                execution,
+            )
             .expect("route should succeed");
         let request = BridgeCausalEnvelopeAssemblyRequest::from_query_admission(
             crate::facade::BridgeCausalInspectionAdmissionSummary::admitted(

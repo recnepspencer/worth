@@ -28,7 +28,6 @@ struct PerformedMember {
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct FreshReadiness
 {
     member: usize,
-    _input: Option<FreshDecisionInput>,
 }
 
 /// Publication permission for an attached member key. Ordinary execution
@@ -38,17 +37,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     member: usize,
 }
 
-enum FreshDecisionInput {
-    Changed,
-}
-impl FreshReadiness {
-    fn for_input(member: usize, evidence: FreshDecisionInput) -> Self {
-        Self {
-            member,
-            _input: Some(evidence),
-        }
-    }
-}
 mod captured_input;
 mod member_keys;
 use captured_input::CapturedDecisionInput;
@@ -112,31 +100,26 @@ impl PerformedMembers {
                     .charge_external_work(4)
                     .map_err(admission_denial)?;
                 entry.source = source;
-                return Ok(Some(FreshReadiness {
-                    member: index,
-                    _input: None,
-                }));
+                return Ok(Some(FreshReadiness { member: index }));
             }
-            let evidence = if !entry.source.same_semantic_source(&source) {
-                Some(FreshDecisionInput::Changed)
+            let changed = if !entry.source.same_semantic_source(&source) {
+                true
             } else {
                 match &entry.input {
-                    CapturedDecisionInput::Accepted(input) => runtime
-                        .changed(input, admission)?
-                        .then_some(FreshDecisionInput::Changed),
-                    CapturedDecisionInput::Withheld | CapturedDecisionInput::Uncaptured => None,
+                    CapturedDecisionInput::Accepted(input) => runtime.changed(input, admission)?,
+                    CapturedDecisionInput::Withheld | CapturedDecisionInput::Uncaptured => false,
                 }
             };
-            let Some(evidence) = evidence else {
+            if !changed {
                 return Ok(None);
-            };
+            }
             admission
                 .charge_external_work(4)
                 .map_err(admission_denial)?;
             entry.source = source;
             entry.input = CapturedDecisionInput::Uncaptured;
             entry.performed = false;
-            return Ok(Some(FreshReadiness::for_input(index, evidence)));
+            return Ok(Some(FreshReadiness { member: index }));
         }
         let item = std::mem::size_of::<PerformedMember>();
         admission
@@ -185,10 +168,7 @@ impl PerformedMembers {
             input: CapturedDecisionInput::Uncaptured,
             performed: false,
         });
-        Ok(Some(FreshReadiness {
-            member: index,
-            _input: None,
-        }))
+        Ok(Some(FreshReadiness { member: index }))
     }
 }
 

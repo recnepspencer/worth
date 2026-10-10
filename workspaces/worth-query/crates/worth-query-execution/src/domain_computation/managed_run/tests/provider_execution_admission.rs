@@ -177,6 +177,9 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for MultipleAdmissionPro
 #[test]
 fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -186,6 +189,7 @@ fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
             ForeignAdmissionProvider {
                 retained: Arc::clone(&retained),
             },
+            resource_request,
         );
         let first_failure = match running.begin_graph_execution(
             execution,
@@ -225,12 +229,16 @@ fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
 #[test]
 fn ignored_second_execution_admission_denies_the_provider_start() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
         let (running, graph) = managed_graph_run_with_provider(
             WorthQueryOperationGraphAccess::Observe,
             MultipleAdmissionProvider,
+            resource_request,
         );
         let failure = match running.begin_graph_execution(
             execution,
@@ -258,6 +266,9 @@ fn ignored_second_execution_admission_denies_the_provider_start() {
 #[test]
 fn rejection_after_admission_releases_the_runtime_owned_execution_explicitly() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -269,6 +280,7 @@ fn rejection_after_admission_releases_the_runtime_owned_execution_explicitly() {
             false,
             Arc::clone(&disposal_attempts),
             Arc::clone(&destructor_attempts),
+            resource_request,
         );
         assert_eq!(
         failure.kind(),
@@ -298,6 +310,9 @@ fn rejection_after_admission_releases_the_runtime_owned_execution_explicitly() {
 #[test]
 fn panic_after_admission_contains_an_independent_destructor_panic() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
         let phase = &active_phase;
         let execution = phase;
 
@@ -309,6 +324,7 @@ fn panic_after_admission_contains_an_independent_destructor_panic() {
             true,
             Arc::clone(&disposal_attempts),
             Arc::clone(&destructor_attempts),
+            resource_request,
         );
         assert_eq!(
         failure.kind(),
@@ -347,6 +363,7 @@ fn post_admission_failure(
     destructor_panics: bool,
     disposal_attempts: Arc<AtomicUsize>,
     destructor_attempts: Arc<AtomicUsize>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::domain_computation::WorthQueryDirectGraphExecutionStartFailure {
     let (running, graph) = managed_graph_run_with_provider(
         WorthQueryOperationGraphAccess::Observe,
@@ -356,6 +373,7 @@ fn post_admission_failure(
             destructor_attempts,
             destructor_panics,
         },
+        resource_request,
     );
     match running.begin_graph_execution(
         execution,

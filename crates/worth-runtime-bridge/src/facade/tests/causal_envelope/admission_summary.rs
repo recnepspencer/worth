@@ -6,11 +6,16 @@ use crate::facade::{
 
 #[test]
 fn causal_envelope_request_carries_advisory_query_admission_summary() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let runtime = runtime(BridgeRuntimePolicy::default());
     let routed = runtime
-        .route(crate::truth_identity_fixtures::truth_commit_fixture(
-            "commit-causal-advisory-summary",
-        ))
+        .route(
+            crate::truth_identity_fixtures::truth_commit_fixture("commit-causal-advisory-summary"),
+            execution,
+        )
         .expect("route should succeed");
     let admission_summary = BridgeCausalInspectionAdmissionSummary::advisory(
         crate::facade::BridgeIdentityEvidence::from_bridge_owner_external_authority(

@@ -2,6 +2,10 @@ use super::*;
 
 #[test]
 fn replayed_bulk_plan_matches_original_canonical_artifact() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let source = InMemoryRelationalBridgeSource::default();
     source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -32,19 +36,22 @@ fn replayed_bulk_plan_matches_original_canonical_artifact() {
     );
 
     let planned = runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            )),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-            )),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                )),
+            ]),
+            execution,
+        )
         .expect("bulk workload should plan before canonical bulk replay");
     let canonical = runtime.canonicalize_bulk_workload_plan(&planned);
 
     let replayed = runtime
-        .replay_canonical_bulk_plan_record(&canonical)
+        .replay_canonical_bulk_plan_record(&canonical, execution)
         .expect("bulk canonical replay should preserve the canonical plan");
 
     assert_eq!(
@@ -68,6 +75,10 @@ fn replayed_bulk_plan_matches_original_canonical_artifact() {
 
 #[test]
 fn bulk_replay_rejects_drift_after_restart_shaped_truth_change() {
+    let serial_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
+
     let original_source = InMemoryRelationalBridgeSource::default();
     original_source.insert_committed_patch(committed_patch(
         crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
@@ -98,14 +109,17 @@ fn bulk_replay_rejects_drift_after_restart_shaped_truth_change() {
     );
 
     let planned = original_runtime
-        .plan_bulk_workload(BridgeBulkWorkloadRequest::new(vec![
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
-            )),
-            BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
-                crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
-            )),
-        ]))
+        .plan_bulk_workload(
+            BridgeBulkWorkloadRequest::new(vec![
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-a"),
+                )),
+                BridgeBulkWorkloadSegment::new(BridgeRouteRequest::for_commit(
+                    crate::truth_identity_fixtures::truth_commit_fixture("commit-b"),
+                )),
+            ]),
+            execution,
+        )
         .expect("original bulk workload should plan");
     let canonical = original_runtime.canonicalize_bulk_workload_plan(&planned);
 
@@ -167,7 +181,7 @@ fn bulk_replay_rejects_drift_after_restart_shaped_truth_change() {
     );
 
     let error = restarted_runtime
-        .replay_canonical_bulk_plan_record(&canonical)
+        .replay_canonical_bulk_plan_record(&canonical, execution)
         .expect_err("bulk replay should reject drift after restart-shaped truth change");
 
     assert_eq!(

@@ -56,9 +56,10 @@ impl PublicationBridgeCatalog {
         ) {
             worth_proof::TransitionOutcome::Success(envelope) => envelope,
             worth_proof::TransitionOutcome::Denied(denial) => {
-                return Err(RelationalBridgeSourceError::new(format!(
-                    "publication patch could not be admitted by Bridge: {denial}"
-                )));
+                return Err(RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    format!("publication patch could not be admitted by Bridge: {denial}"),
+                ));
             }
         };
         self.state
@@ -82,6 +83,7 @@ impl CommittedPatchSource for PublicationBridgeCatalog {
     fn load_committed_patch(
         &self,
         request: RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         self.state
             .read()
@@ -91,6 +93,7 @@ impl CommittedPatchSource for PublicationBridgeCatalog {
             .cloned()
             .ok_or_else(|| {
                 RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
                     "no publication bridge patch registered for commit",
                 )
             })
@@ -101,6 +104,7 @@ impl SnapshotReadSource for PublicationBridgeCatalog {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         let snapshot = self
             .state
@@ -110,7 +114,10 @@ impl SnapshotReadSource for PublicationBridgeCatalog {
             .get(identity)
             .cloned()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new("no publication bridge snapshot registered")
+                RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    "no publication bridge snapshot registered",
+                )
             })?;
         Ok(Box::new(PublicationSnapshotReader { snapshot }))
     }
@@ -120,6 +127,7 @@ impl TruthBranchHeadSource for PublicationBridgeCatalog {
     fn load_branch_head_patch(
         &self,
         branch_identity: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         self.state
             .read()
@@ -130,7 +138,10 @@ impl TruthBranchHeadSource for PublicationBridgeCatalog {
             .cloned()
             .next_back()
             .ok_or_else(|| {
-                RelationalBridgeSourceError::new("no publication bridge branch head registered")
+                RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ExternalSourceFailure,
+                    "no publication bridge branch head registered",
+                )
             })
     }
 }

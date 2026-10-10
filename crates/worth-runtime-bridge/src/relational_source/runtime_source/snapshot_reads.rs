@@ -9,7 +9,12 @@ impl SnapshotReadSource for RuntimeBridgeRelationalSource {
     fn open_snapshot(
         &self,
         identity: &TruthSnapshotIdentity,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
+        execution
+            .consult()
+            .map_err(|denial| RelationalBridgeSourceError::execution_denied(denial.into()))?;
+
         let observation = self.observation_bindings.resolve(identity)?;
         Ok(Box::new(
             RuntimePublicationSnapshotReader::for_observation_authority(

@@ -30,6 +30,7 @@ pub(crate) enum DiagnosticCode {
     Bc7008CertificationConstructionSeal,
     Bc7009ControlSeal,
     Bc9001OneBuild,
+    Bc7008RequestConstruction,
     Bc8001SnapshotBaseline,
     Bc8002FacadeSnapshotDrift,
     Bc8003CrateDagSnapshotDrift,
@@ -39,7 +40,7 @@ pub(crate) enum DiagnosticCode {
 
 impl DiagnosticCode {
     #[cfg(test)]
-    pub(crate) const ALL: [Self; 32] = [
+    pub(crate) const ALL: [Self; 33] = [
         Self::Bc1001IllegalCrateName,
         Self::Bc1002UnreservedDomain,
         Self::Bc2001BandDependencyViolation,
@@ -67,6 +68,7 @@ impl DiagnosticCode {
         Self::Bc7008CertificationConstructionSeal,
         Self::Bc7009ControlSeal,
         Self::Bc9001OneBuild,
+        Self::Bc7008RequestConstruction,
         Self::Bc8001SnapshotBaseline,
         Self::Bc8002FacadeSnapshotDrift,
         Self::Bc8003CrateDagSnapshotDrift,
@@ -103,6 +105,7 @@ impl DiagnosticCode {
             Self::Bc7008CertificationConstructionSeal => "BC7008_CERTIFICATION_CONSTRUCTION_SEAL",
             Self::Bc7009ControlSeal => "BC7009_CONTROL_SEAL",
             Self::Bc9001OneBuild => "BC9001_ONE_BUILD",
+            Self::Bc7008RequestConstruction => "BC7008_REQUEST_CONSTRUCTION",
             Self::Bc8001SnapshotBaseline => "BC8001_SNAPSHOT_BASELINE",
             Self::Bc8002FacadeSnapshotDrift => "BC8002_FACADE_SNAPSHOT_DRIFT",
             Self::Bc8003CrateDagSnapshotDrift => "BC8003_CRATE_DAG_SNAPSHOT_DRIFT",
@@ -132,6 +135,7 @@ impl DiagnosticCode {
             Self::Bc7008CertificationConstructionSeal => "tools/boundary-check/config/certification-construction-callers.txt; sealed construction references belong only to owners and the closed caller paths",
             Self::Bc7009ControlSeal => "tools/boundary-check/config/control-files.txt; Law 1, reach: control references belong only to owners and closed test/certification callers",
             Self::Bc9001OneBuild => "tools/boundary-check/src/one_build.rs; remove the build predicate or feature declaration and use an owned inert control",
+            Self::Bc7008RequestConstruction => "tools/boundary-check/config/road1.toml [[request_constructor_denials]]; borrow the caller request or construct backing only at the declared policy-taking host entry",
             Self::Bc8001SnapshotBaseline | Self::Bc8002FacadeSnapshotDrift | Self::Bc8003CrateDagSnapshotDrift => "tools/boundary-check/snapshots/; regenerate the governed snapshot explicitly with boundary-check --update-snapshots",
             Self::Bc8004FacadeDocMissing | Self::Bc8005FacadeDocDebtStale => "tools/boundary-check/snapshots/facade-doc-debt.toml; document the named definition with a `///` comment, or delete the paid debt entry",
         };

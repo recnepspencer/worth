@@ -61,7 +61,7 @@ pub(super) fn map_memory_requirement(
     prior: &[ApplyMemberBasis],
     candidate: &ApplyMemberBasis,
     result_grant: u64,
-    lease: &ExecutionResourceLease<'_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Option<u64> {
     let width = prior.len().checked_add(1)?;
     let mut scratch = 0_u64;
@@ -93,8 +93,15 @@ pub(super) fn map_memory_requirement(
     let access = access_per_group
         .and_then(|bytes| bytes.checked_mul(width))
         .and_then(|bytes| u64::try_from(bytes).ok())?;
-    ExecutionMap::<usize, GraphProposalKey>::declared_memory_requirement_for_lease::<
-        GroupLocalApplyPacket,
-        SignalError,
-    >(lease, width, 0, scratch, result, access)
+    if let Some(lease) = lease {
+        ExecutionMap::<usize, GraphProposalKey>::declared_memory_requirement_for_lease::<
+            GroupLocalApplyPacket,
+            SignalError,
+        >(lease, width, 0, scratch, result, access)
+    } else {
+        ExecutionMap::<usize, GraphProposalKey>::declared_memory_requirement_in_serial_scope::<
+            GroupLocalApplyPacket,
+            SignalError,
+        >(width, 0, scratch, result, access)
+    }
 }

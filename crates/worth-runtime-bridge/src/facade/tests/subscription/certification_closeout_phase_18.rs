@@ -7,10 +7,15 @@ use crate::facade::{
 
 #[test]
 fn phase_18_closeout_seals_all_required_suite_rows() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let artifact = runtime
         .seal_subscription_temporal_async_certification_closeout(temporal_async_closeout_request(
             &runtime,
+            resource_request,
         ))
         .expect("phase 18 closeout should seal");
     let matrix =
@@ -58,16 +63,22 @@ fn phase_18_closeout_seals_all_required_suite_rows() {
 
 #[test]
 fn equivalent_closeout_inputs_produce_equal_digests() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let left_runtime = runtime(BridgeRuntimePolicy::development());
     let right_runtime = runtime(BridgeRuntimePolicy::development());
     let left = left_runtime
         .seal_subscription_temporal_async_certification_closeout(temporal_async_closeout_request(
             &left_runtime,
+            resource_request,
         ))
         .expect("left closeout should seal");
     let right = right_runtime
         .seal_subscription_temporal_async_certification_closeout(temporal_async_closeout_request(
             &right_runtime,
+            resource_request,
         ))
         .expect("right closeout should seal");
 
@@ -80,16 +91,20 @@ fn equivalent_closeout_inputs_produce_equal_digests() {
 
 #[test]
 fn different_temporal_async_parity_bands_produce_unequal_closeout_digests() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let left_runtime = runtime(BridgeRuntimePolicy::development());
     let right_runtime = runtime(BridgeRuntimePolicy::development());
     let left = left_runtime
         .seal_subscription_temporal_async_certification_closeout(
-            temporal_async_closeout_request_with_seed(&left_runtime, "left"),
+            temporal_async_closeout_request_with_seed(&left_runtime, "left", resource_request),
         )
         .expect("left closeout should seal");
     let right = right_runtime
         .seal_subscription_temporal_async_certification_closeout(
-            temporal_async_closeout_request_with_seed(&right_runtime, "right"),
+            temporal_async_closeout_request_with_seed(&right_runtime, "right", resource_request),
         )
         .expect("right closeout should seal");
 
@@ -102,10 +117,15 @@ fn different_temporal_async_parity_bands_produce_unequal_closeout_digests() {
 
 #[test]
 fn incomplete_temporal_async_parity_band_rejects_closeout() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
     let rejection = runtime
         .seal_subscription_temporal_async_certification_closeout(divergent_closeout_request(
             &runtime,
+            resource_request,
         ))
         .expect_err("phase 18 closeout must reject incomplete parity band");
 
@@ -117,8 +137,12 @@ fn incomplete_temporal_async_parity_band_rejects_closeout() {
 
 #[test]
 fn suite_48_support_matrix_row_binds_full_temporal_async_parity_band() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let request = temporal_async_closeout_request(&runtime);
+    let request = temporal_async_closeout_request(&runtime, resource_request);
     let expected_band_digest = request.temporal_async_parity_band_digest();
     let artifact = runtime
         .seal_subscription_temporal_async_certification_closeout(request)

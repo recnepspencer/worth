@@ -26,6 +26,10 @@ pub(super) fn observe(
         admit_touch_account_capability(context.world, context.principal, context.request).unwrap();
     let mut lease = context
         .world
+        .application
+        .with_application_advancement(context.request, |phase| {
+            context
+        .world
         .selected_product()
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
@@ -40,6 +44,7 @@ pub(super) fn observe(
             _,
             _,
         >(
+ &phase,
             query,
             context.principal,
             account,
@@ -53,6 +58,8 @@ pub(super) fn observe(
             )
             .unwrap(),
         )
+        .unwrap()
+        })
         .unwrap();
     let committed =
         commit_live_activity_with_label(context.world, context.committer, context.request, label);

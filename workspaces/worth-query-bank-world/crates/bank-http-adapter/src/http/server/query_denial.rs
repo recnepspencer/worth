@@ -202,6 +202,9 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
 fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
     use BankApplicationOutputSettlementDenialKind as Settlement;
     match kind {
+        Settlement::BridgeConditional(_)
+        | Settlement::CorrespondenceDelivery(_)
+        | Settlement::ProductDelivery(_) => unavailable(),
         Settlement::ExecutionRequest(cause) => super::advancement_denial::advancement(cause),
         Settlement::SourceQueryInstallation(_) => unavailable(),
         Settlement::SourcePrincipal(_) => stale(),

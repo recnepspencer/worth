@@ -30,6 +30,9 @@ use crate::domain_installation::dependency_impact::compiled::{
 
 #[test]
 fn bound_primary_manifest_adds_direct_structural_roles_without_signal_consequences() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     for case in [
         StructuralCase::region(
             BridgeCommittedRecordChangeKind::Created,
@@ -48,7 +51,7 @@ fn bound_primary_manifest_adds_direct_structural_roles_without_signal_consequenc
         ),
     ] {
         let candidate = bridge_candidate(&case);
-        let receipt = deliver_structural_change(&case, candidate.clone());
+        let receipt = deliver_structural_change(&case, candidate.clone(), resource_request);
         assert_eq!(receipt.change_set().changes().len(), 1);
 
         let manifest = manifest(&case, &candidate);
@@ -153,6 +156,7 @@ fn manifest(
 fn deliver_structural_change(
     case: &StructuralCase,
     candidate: BridgeSemanticDependencyCandidate,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt {
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
@@ -229,6 +233,7 @@ fn deliver_structural_change(
         worth_runtime_bridge::facade::RelationalCommittedPatchRequest::new(
             TruthCommitIdentity::from_relational_commit_id(1),
         ),
+        resource_request,
     ) {
         TransitionOutcome::Success(receipt) => receipt,
         TransitionOutcome::Denied(denial) => {
@@ -322,6 +327,7 @@ impl CommittedPatchSource for StructuralSource {
     fn load_committed_patch(
         &self,
         _request: worth_runtime_bridge::facade::RelationalCommittedPatchRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         Ok(self.0.clone())
     }
@@ -331,6 +337,7 @@ impl SnapshotReadSource for StructuralSource {
     fn open_snapshot(
         &self,
         _identity: &TruthSnapshotIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
         Ok(Box::new(StructuralSnapshotReader))
     }
@@ -340,6 +347,7 @@ impl TruthBranchHeadSource for StructuralSource {
     fn load_branch_head_patch(
         &self,
         _branch: &TruthBranchIdentity,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeCommittedPatchEnvelope, RelationalBridgeSourceError> {
         unreachable!("the court never reads a branch head")
     }

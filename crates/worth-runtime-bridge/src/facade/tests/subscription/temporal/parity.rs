@@ -2,8 +2,12 @@ use super::super::support::*;
 
 #[test]
 fn runtime_replays_equal_temporal_inputs_to_equal_cause_digests() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let left_temporal = runtime
         .admit_temporal_subscription(
             &admitted,
@@ -44,8 +48,12 @@ fn runtime_replays_equal_temporal_inputs_to_equal_cause_digests() {
 
 #[test]
 fn runtime_keeps_truth_plus_time_routing_and_delivery_plan_invariant_to_prior_time_only_order() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
 
     let earlier_temporal = runtime
         .admit_temporal_subscription(

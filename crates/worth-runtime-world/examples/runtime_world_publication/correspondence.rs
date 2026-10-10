@@ -14,6 +14,7 @@ impl InvalidationSink for UnboundDelivery {
         _lease: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
         Err(SignalBridgeSinkError::new(
+            worth_runtime_bridge::facade::SignalBridgeSinkErrorKind::WorldPublicationRequired,
             "example requires exact graph-bound delivery",
         ))
     }

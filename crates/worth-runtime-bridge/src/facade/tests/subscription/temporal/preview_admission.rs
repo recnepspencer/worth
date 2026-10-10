@@ -2,8 +2,12 @@ use super::super::support::*;
 
 #[test]
 fn runtime_admits_preview_temporal_subscription_for_matching_preview_scope() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let preview_basis = admitted_preview_basis_for_truth(
         &runtime,
         "preview-temporal-match",
@@ -54,8 +58,12 @@ fn runtime_admits_preview_temporal_subscription_for_matching_preview_scope() {
 
 #[test]
 fn runtime_rejects_preview_temporal_subscription_when_preview_branch_drifts() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let preview_basis = admitted_preview_basis_for_truth(
         &runtime,
         "preview-temporal-branch-drift",
@@ -89,8 +97,12 @@ fn runtime_rejects_preview_temporal_subscription_when_preview_branch_drifts() {
 
 #[test]
 fn runtime_rejects_preview_temporal_subscription_when_preview_snapshot_drifts() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let preview_basis = admitted_preview_basis_for_truth(
         &runtime,
         "preview-temporal-snapshot-drift",
@@ -120,8 +132,12 @@ fn runtime_rejects_preview_temporal_subscription_when_preview_snapshot_drifts() 
 
 #[test]
 fn runtime_rejects_preview_temporal_subscription_when_family_does_not_support_basis_kind() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime(BridgeRuntimePolicy::development());
-    let admitted = admitted_detail_subscription_in_runtime(&runtime);
+    let admitted = admitted_detail_subscription_in_runtime(&runtime, resource_request);
     let preview_basis = admitted_preview_basis_for_truth(
         &runtime,
         "preview-temporal-family-mismatch",

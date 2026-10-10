@@ -2,8 +2,14 @@ use super::super::support::*;
 
 #[test]
 fn retained_delivery_seed_binds_window_sequence_and_member_truth() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
 
     let first = sealed_window_with_member(
         &runtime,
@@ -80,8 +86,14 @@ fn retained_delivery_seed_binds_window_sequence_and_member_truth() {
 
 #[test]
 fn replay_readiness_blocks_omitted_content_for_canonical_replay() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let sealed = sealed_window_with_member(
         &runtime,
         &active,
@@ -117,8 +129,14 @@ fn replay_readiness_blocks_omitted_content_for_canonical_replay() {
 
 #[test]
 fn descriptor_replay_readiness_ignores_content_omission() {
-    let (runtime, active) =
-        active_detail_subscription(BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery);
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, active) = active_detail_subscription(
+        BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
+        resource_request,
+    );
     let sealed = sealed_window_with_member(
         &runtime,
         &active,
@@ -142,9 +160,14 @@ fn descriptor_replay_readiness_ignores_content_omission() {
 
 #[test]
 fn descriptor_family_retains_descriptor_replay_seed_without_reconstruction() {
+    let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
+        .serial_request(worth_execution::CancellationToken::new(), None);
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let (runtime, active) = active_detail_subscription_with_fanout(
         BridgeSubscriptionDeliveryDensityPosture::SparseMemberDelivery,
         2,
+        resource_request,
     );
     let plan = runtime
         .plan_shared_subscription_fanout(&active, vec![canonical_consumer_contract(&runtime)])

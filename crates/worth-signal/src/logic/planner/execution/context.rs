@@ -11,7 +11,7 @@ use super::diagnostics::record_successful_execution;
 use super::reporting::begin_execution_report;
 use crate::data::request_preparation::SignalPreparationBudget;
 
-pub(crate) struct ExecutionContext<'a, 'work, 'run, 'lease, P, R>
+pub(crate) struct ExecutionContext<'a, 'work, 'run, 'request, P, R>
 where
     P: SignalPrecompute,
     R: ComparatorPolicyResolver,
@@ -21,7 +21,7 @@ where
     pub(crate) precompute: &'a P,
     pub(crate) comparator_resolver: &'a mut R,
     pub(crate) temporal_lowering: TemporalLoweringContext,
-    pub(crate) lease: worth_execution::ExecutionRequest<'a, 'lease>,
+    pub(crate) request: worth_execution::ExecutionRequest<'a, 'request>,
     pub(crate) policy: ResolvedSignalPlannerPolicy,
     pub(crate) request_work: &'a mut MapKernelContext<'work, 'run>,
     pub(crate) preparation: &'a mut SignalPreparationBudget,
@@ -33,7 +33,7 @@ where
     pub(crate) report: ExecutionReport,
 }
 
-impl<'a, 'work, 'run, 'lease, P, R> ExecutionContext<'a, 'work, 'run, 'lease, P, R>
+impl<'a, 'work, 'run, 'request, P, R> ExecutionContext<'a, 'work, 'run, 'request, P, R>
 where
     P: SignalPrecompute,
     R: ComparatorPolicyResolver,
@@ -48,7 +48,7 @@ where
         precompute: &'a P,
         comparator_resolver: &'a mut R,
         temporal_lowering: TemporalLoweringContext,
-        lease: worth_execution::ExecutionRequest<'a, 'lease>,
+        request: worth_execution::ExecutionRequest<'a, 'request>,
         policy: ResolvedSignalPlannerPolicy,
         request_work: &'a mut MapKernelContext<'work, 'run>,
         preparation: &'a mut SignalPreparationBudget,
@@ -61,7 +61,7 @@ where
             precompute,
             comparator_resolver,
             temporal_lowering,
-            lease,
+            request,
             policy,
             request_work,
             preparation,
