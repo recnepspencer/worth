@@ -22,6 +22,8 @@ where
             )),
             MemberState::Inspect
             | MemberState::Waiting(_)
+            | MemberState::WaitingDeclaration(_)
+            | MemberState::UnselectedClaim
             | MemberState::Prepared
             | MemberState::Pending
             | MemberState::AcceptedCaller

@@ -167,7 +167,10 @@ where
                 if !member.resolved_successor
                     && matches!(
                         member.state,
-                        MemberState::Inspect | MemberState::Waiting(_) | MemberState::Held(_)
+                        MemberState::Inspect
+                            | MemberState::Waiting(_)
+                            | MemberState::WaitingDeclaration(_)
+                            | MemberState::Held(_)
                     )
                 {
                     if let MemberInput::Queued { ready, .. } = &mut member.ready {

@@ -7,6 +7,10 @@ pub(super) use selection::MemberInput;
 pub(super) enum MemberState {
     Inspect,
     Waiting(usize),
+    /// A declared predecessor schedules inspection, not a consumed-edge proof.
+    WaitingDeclaration(usize),
+    /// Inspection issued no Ready; this claim cannot be a declared predecessor.
+    UnselectedClaim,
     Prepared,
     // Only the caller keeps its return report. Upstream reports live in the
     // basis-bound resolved set and must die when that basis moves.
@@ -18,10 +22,19 @@ pub(super) enum MemberState {
 }
 
 impl MemberState {
-    /// A decided caller needs no scheduling work; native certification alone
-    /// decides whether its output satisfies a queued member.
-    pub fn is_done(&self) -> bool {
-        matches!(self, Self::Current(_) | Self::AcceptedCaller)
+    /// Only a selected unfinished member defers a declared predecessor. An
+    /// unselected claim grants no readiness; native certification must decide
+    /// whether the dependent actually asks it for work.
+    pub fn is_unfinished_predecessor(&self) -> bool {
+        match self {
+            Self::Inspect
+            | Self::Waiting(_)
+            | Self::WaitingDeclaration(_)
+            | Self::Prepared
+            | Self::Pending
+            | Self::Held(_) => true,
+            Self::Current(_) | Self::AcceptedCaller | Self::UnselectedClaim => false,
+        }
     }
 }
 
@@ -76,8 +89,15 @@ impl RequiredFrontier {
                 }
                 // Membership identifies the physical row, not its current
                 // readmission binding. Keep the exact pin the owner just issued.
-                if matches!(&member.ready, MemberInput::Selected(current) if !ready.same_ready_cell(current, admission)?)
-                {
+                let changed = match &member.ready {
+                    MemberInput::Selected(current)
+                    | MemberInput::Queued {
+                        ready: Some(current),
+                        ..
+                    } => !ready.same_ready_cell(current, admission)?,
+                    MemberInput::Queued { ready: None, .. } => true,
+                };
+                if changed {
                     member.ready.rebind(ready);
                     member.state = MemberState::Inspect;
                 }
@@ -180,6 +200,14 @@ impl RequiredFrontier {
 }
 
 impl<Ready> RequiredFrontier<Ready> {
+    pub fn wait_for_declaration(&mut self, member: usize, upstream: usize) -> bool {
+        if !self.wait_for(member, upstream) {
+            return false;
+        }
+        self.members[member].state = MemberState::WaitingDeclaration(upstream);
+        true
+    }
+
     pub fn wait_for(&mut self, member: usize, upstream: usize) -> bool {
         let mut cursor = upstream;
         for _ in 0..=self.members.len() {
@@ -188,7 +216,7 @@ impl<Ready> RequiredFrontier<Ready> {
                 return false;
             }
             match self.members[cursor].state {
-                MemberState::Waiting(next) => cursor = next,
+                MemberState::Waiting(next) | MemberState::WaitingDeclaration(next) => cursor = next,
                 _ => {
                     self.members[member].state = MemberState::Waiting(upstream);
                     return true;
@@ -202,10 +230,15 @@ impl<Ready> RequiredFrontier<Ready> {
     pub fn awaken(&mut self) -> bool {
         let mut changed = false;
         for index in 0..self.members.len() {
-            let MemberState::Waiting(upstream) = self.members[index].state else {
-                continue;
+            let (upstream, declaration) = match self.members[index].state {
+                MemberState::Waiting(upstream) => (upstream, false),
+                MemberState::WaitingDeclaration(upstream) => (upstream, true),
+                _ => continue,
             };
-            if matches!(self.members[upstream].state, MemberState::Current(_)) {
+            if matches!(self.members[upstream].state, MemberState::Current(_))
+                || (declaration
+                    && matches!(self.members[upstream].state, MemberState::UnselectedClaim))
+            {
                 self.members[index].state = MemberState::Inspect;
                 changed = true;
             }

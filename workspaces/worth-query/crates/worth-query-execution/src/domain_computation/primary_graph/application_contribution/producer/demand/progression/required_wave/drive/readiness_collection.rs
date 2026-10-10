@@ -62,7 +62,7 @@ where
                 let mut pending = None;
                 for (upstream, member) in frontier.members.iter().enumerate() {
                     if upstream != index
-                        && !member.state.is_done()
+                        && member.state.is_unfinished_predecessor()
                         && declared.contains_occurrence(member.key(), admission)?
                     {
                         pending = Some(upstream);
@@ -70,7 +70,7 @@ where
                     }
                 }
                 if let Some(upstream) = pending {
-                    frontier.wait_for(index, upstream);
+                    frontier.wait_for_declaration(index, upstream);
                     index += 1;
                     continue;
                 }
@@ -85,7 +85,7 @@ where
                     let Some(selected) =
                         queue.inspect_claim(queued, claim, runtime, wave, admission)?
                     else {
-                        frontier.members[index].state = MemberState::Pending;
+                        frontier.members[index].state = MemberState::UnselectedClaim;
                         frontier.members[index].queued = None;
                         index += 1;
                         continue;
@@ -186,24 +186,36 @@ where
                         &mut *queue_storage
                     };
                     storage.release_unused();
+                    // A native Upstream asks for work. Preserve the same
+                    // self/caller/resolved cycle decision as a requested edge,
+                    // before declarations can insert or reopen any row.
+                    if super::super::cycles::upstream_cycles(
+                        &ready,
+                        frontier.members[index].ready.selected(),
+                        &wave.anchor_ready,
+                        resolved,
+                        admission,
+                    )? {
+                        frontier.members[index].state = MemberState::Pending;
+                        index += 1;
+                        continue;
+                    }
                     frontier.members[index].dependency_schedule =
                         DependencySchedule::PendingConsumed;
                     let prerequisites = runtime.output_demands.declared_required_readmissions(
                         frontier.members[index].ready.selected(),
                         admission,
                     )?;
-                    let mut held = false;
                     for prerequisite in prerequisites {
-                        held |= matches!(
-                            frontier.require_upstream(prerequisite, caller, admission)?,
-                            RequiredUpstream::HeldCaller
-                        );
+                        // Declared membership schedules inspection; only the
+                        // actual Upstream edge can ask the caller for work.
+                        frontier.insert(prerequisite, caller, None, admission)?;
                     }
                     match frontier.require_upstream(ready, caller, admission)? {
-                        RequiredUpstream::Member(upstream) if !held => {
+                        RequiredUpstream::Member(upstream) => {
                             frontier.wait_for(index, upstream);
                         }
-                        RequiredUpstream::Member(_) | RequiredUpstream::HeldCaller => {
+                        RequiredUpstream::HeldCaller => {
                             frontier.members[index].state = MemberState::Pending;
                         }
                     }
