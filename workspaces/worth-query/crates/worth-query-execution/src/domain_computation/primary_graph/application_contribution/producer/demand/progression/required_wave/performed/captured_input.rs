@@ -1,10 +1,13 @@
-//! Withheld verification is not proof that the published input is unchanged.
+//! A published member runs again only on a different semantic source or accepted
+//! input that compares as changed. Missing or withheld comparisons refuse another
+//! attempt; readers own currentness verification.
 use super::AcceptedCurrentCandidate;
 pub(super) use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
 
 pub(super) enum CapturedDecisionInput {
     Uncaptured,
     Accepted(AcceptedCurrentCandidate),
+    // A withheld first capture cannot be replaced by a later accepted candidate.
     Withheld,
 }
 impl CapturedDecisionInput {
