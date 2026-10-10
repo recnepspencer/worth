@@ -12,19 +12,12 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(super) enum FactPostingKey {
     EntityLifecycle(EntityId),
-    EntityKind(KindId),
-    RelationKind(KindId),
     AspectRevision {
         entity: EntityId,
         aspect: AspectKey,
     },
     FieldRevision {
         entity: EntityId,
-        aspect: AspectKey,
-        path: CanonicalFieldPath,
-    },
-    PredicateField {
-        kind: KindId,
         aspect: AspectKey,
         path: CanonicalFieldPath,
     },
@@ -55,14 +48,11 @@ impl FactPostingKey {
     pub(super) fn owned_payload_capacity_bytes(&self) -> Option<u64> {
         let (aspect, path, value) = match self {
             Self::AspectRevision { aspect, .. } => (Some(aspect), None, None),
-            Self::FieldRevision { aspect, path, .. }
-            | Self::PredicateField { aspect, path, .. } => (Some(aspect), Some(path), None),
+            Self::FieldRevision { aspect, path, .. } => (Some(aspect), Some(path), None),
             Self::IndexMembership {
                 aspect, path, key, ..
             } => (Some(aspect), Some(path), Some(key)),
             Self::EntityLifecycle(_)
-            | Self::EntityKind(_)
-            | Self::RelationKind(_)
             | Self::RelationMembership { .. }
             | Self::Adjacency { .. }
             | Self::IndexDefinition(_) => (None, None, None),
@@ -99,7 +89,7 @@ impl FactPostingKey {
         // partition, slot and generation; its phantom domain has no work.
         match self {
             Self::EntityLifecycle(_) => Some(4),
-            Self::EntityKind(_) | Self::RelationKind(_) | Self::IndexDefinition(_) => Some(2),
+            Self::IndexDefinition(_) => Some(2),
             Self::RelationMembership { .. } => Some(8),
             Self::Adjacency { .. } => Some(6),
             Self::AspectRevision { aspect, .. } => 4_u64.checked_add(text(aspect.as_str())?),
@@ -108,13 +98,6 @@ impl FactPostingKey {
                 path: fields,
                 ..
             } => 4_u64
-                .checked_add(text(aspect.as_str())?)?
-                .checked_add(path(fields)?),
-            Self::PredicateField {
-                aspect,
-                path: fields,
-                ..
-            } => 2_u64
                 .checked_add(text(aspect.as_str())?)?
                 .checked_add(path(fields)?),
             Self::IndexMembership {

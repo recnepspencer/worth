@@ -73,9 +73,6 @@ fn absent_field_and_native_revision_share_exact_addresses_after_admission() {
     assert!(fact_keys.iter().any(
         |key| matches!(key, Key::FieldRevision { entity: observed, .. } if *observed == entity)
     ));
-    assert!(!fact_keys
-        .iter()
-        .any(|key| matches!(key, Key::PredicateField { .. } | Key::EntityKind(_))));
 }
 
 #[test]
@@ -193,9 +190,6 @@ fn indexed_selection_matches_old_key_and_definition_touches() {
     .unwrap();
     assert!(touched.iter().any(|key| fact_keys.contains(key)));
     assert!(fact_keys.contains(&Key::IndexDefinition(index)));
-    assert!(!fact_keys
-        .iter()
-        .any(|key| matches!(key, Key::PredicateField { .. } | Key::EntityKind(_))));
     let indexed = fact_keys
         .iter()
         .find(|key| matches!(key, Key::IndexMembership { .. }))

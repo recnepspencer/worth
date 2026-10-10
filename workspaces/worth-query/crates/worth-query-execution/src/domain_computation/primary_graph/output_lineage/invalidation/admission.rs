@@ -119,12 +119,10 @@ pub(super) trait IndexAdmission {
 pub(super) fn key_traversal_work(key: &super::fact_key::FactPostingKey) -> u64 {
     use super::fact_key::FactPostingKey as Key;
     match key {
-        Key::FieldRevision { path, .. }
-        | Key::PredicateField { path, .. }
-        | Key::IndexMembership { path, .. } => path.fields().len() as u64 + 1,
+        Key::FieldRevision { path, .. } | Key::IndexMembership { path, .. } => {
+            path.fields().len() as u64 + 1
+        }
         Key::EntityLifecycle(_)
-        | Key::EntityKind(_)
-        | Key::RelationKind(_)
         | Key::AspectRevision { .. }
         | Key::RelationMembership { .. }
         | Key::Adjacency { .. }
