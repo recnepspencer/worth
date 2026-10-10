@@ -11,7 +11,7 @@ use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{sync_channel, RecvTimeoutError};
 use std::sync::{Arc, Barrier};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 use super::invariant_oracle_expectations::expected_supply_chain_branch;
@@ -35,9 +35,6 @@ use worth_relational::facade::transactions::{CommitResult, WorkerIntentBatch};
 /// so this is generous headroom rather than a guess, and it keeps a convicted
 /// lane fast enough to read as a test failure instead of a stuck job.
 pub(crate) const OWNER_PHASE_COURT_TIMEOUT: Duration = Duration::from_secs(5);
-
-/// How often a bounded join re-checks a worker it may not block on.
-const WORKER_POLL_INTERVAL: Duration = Duration::from_millis(10);
 
 /// The unrelated Supply Chain branches every locality court forks from one root.
 pub(crate) struct OwnerPhaseCourtBranches {
@@ -232,23 +229,23 @@ impl Drop for OwnerPhasePause {
 ///
 /// Joining a worker whose park is still closed is exactly what turns a failing
 /// court into a hang, so opening first belongs to this call rather than to the
-/// caller's discipline, and the wait itself is polled against a deadline
-/// because `JoinHandle::join` cannot be bounded.
-pub(crate) fn join_paused_worker<T>(
+/// caller's discipline. A join proxy signals completion, including a panic,
+/// so the court can bound its receive without polling the worker.
+pub(crate) fn join_paused_worker<T: Send + 'static>(
     worker: std::thread::JoinHandle<T>,
     pause: &OwnerPhasePause,
     phase: &str,
 ) -> T {
     pause.open();
-    let deadline = Instant::now() + OWNER_PHASE_COURT_TIMEOUT;
-    while !worker.is_finished() {
-        assert!(
-            Instant::now() < deadline,
-            "the storm branch never finished its {phase} after the court opened its pause"
-        );
-        std::thread::sleep(WORKER_POLL_INTERVAL);
-    }
-    match worker.join() {
+    let (finished, completion) = sync_channel(1);
+    std::thread::spawn(move || {
+        let _ = finished.send(worker.join());
+    });
+    match completion
+        .recv_timeout(OWNER_PHASE_COURT_TIMEOUT)
+        .unwrap_or_else(|_| {
+            panic!("the storm branch never finished its {phase} after the court opened its pause")
+        }) {
         Ok(value) => value,
         Err(worker_panic) => std::panic::resume_unwind(worker_panic),
     }

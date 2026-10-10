@@ -5,10 +5,7 @@ use super::super::{
     world::request_scope,
 };
 use super::*;
-use std::{
-    process::{Command, Stdio},
-    time::{Duration, Instant},
-};
+use std::process::Command;
 
 const WIDTH: &str = "WORTH_QUERY_CUSTODY_DIFFERENTIAL_WIDTH";
 const DIGEST: &str = "CUSTODY_DIGEST ";
@@ -31,23 +28,12 @@ fn wake_and_reconsideration_keep_bits_work_and_delivery_order_across_widths() {
     );
     let mut reference = None;
     for width in ["0", "1", "4"] {
-        let mut child = Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
-            .env(WIDTH, width)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .expect("run the same real fixture with fresh live identities");
-        let deadline = Instant::now() + Duration::from_secs(30);
-        while child.try_wait().unwrap().is_none() {
-            if Instant::now() >= deadline {
-                child.kill().unwrap();
-                child.wait().unwrap();
-                panic!("the width fixture exceeded its assertion deadline");
-            }
-            std::thread::sleep(Duration::from_millis(10));
-        }
-        let output = child.wait_with_output().unwrap();
+        let output = crate::process_deadline::output(
+            Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", &test, "--nocapture"])
+                .env(WIDTH, width),
+        )
+        .expect("run the same real fixture with fresh live identities");
         assert!(
             output.status.success(),
             "width {width}: {} {}",

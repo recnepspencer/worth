@@ -11,7 +11,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{sync_channel, RecvTimeoutError};
 use std::sync::{Arc, Barrier};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::owner_service_phase3::{fork_from_main, perform_write_with_control};
 use crate::tests::support::*;
@@ -89,8 +89,12 @@ fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
 
     let settlement = runtime.settlement_port();
     let paused_port = settlement.clone();
-    let paused_thread =
-        std::thread::spawn(move || paused_port.settle_performed_publication(performed));
+    let (settled, settlement_completion) = sync_channel(1);
+    let paused_thread = std::thread::spawn(move || {
+        let result = paused_port.settle_performed_publication(performed);
+        let _ = settled.send(());
+        result
+    });
 
     let (arrived, arrival) = sync_channel(1);
     let arrival_proxy = Arc::clone(&reached);
@@ -179,14 +183,9 @@ fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
     );
 
     park.open();
-    let deadline = Instant::now() + PAUSED_SETTLEMENT_COURT_TIMEOUT;
-    while !paused_thread.is_finished() {
-        assert!(
-            Instant::now() < deadline,
-            "branch A never finished settling after its pause opened"
-        );
-        std::thread::sleep(Duration::from_millis(10));
-    }
+    settlement_completion
+        .recv_timeout(PAUSED_SETTLEMENT_COURT_TIMEOUT)
+        .expect("branch A never finished settling after its pause opened");
     let paused_result = paused_thread
         .join()
         .expect("paused settlement worker joins")

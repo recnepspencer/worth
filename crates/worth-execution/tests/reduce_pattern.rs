@@ -4,8 +4,10 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Mutex, OnceLock,
     },
-    time::Duration,
 };
+
+#[path = "support/reducer_overlap.rs"]
+mod reducer_overlap;
 
 use worth_execution::{
     CancellationToken, CanonicalBits, ChargedBytes, ExecutionAuthority, ExecutionAuthorityConfig,
@@ -82,10 +84,11 @@ fn native_reducer_uses_two_workers_and_matches_one_worker_oracle() {
         .unwrap();
     let active = AtomicUsize::new(0);
     let peak = AtomicUsize::new(0);
+    let overlap = reducer_overlap::ReducerOverlap::new(2);
     let reduce = |left: &u64, right: &u64| {
         let now = active.fetch_add(1, Ordering::AcqRel) + 1;
         peak.fetch_max(now, Ordering::AcqRel);
-        std::thread::sleep(Duration::from_millis(2));
+        overlap.rendezvous();
         active.fetch_sub(1, Ordering::AcqRel);
         left + right
     };
@@ -114,10 +117,11 @@ fn edge_root_exposes_deeper_branches_without_changing_dependency_span() {
         .unwrap();
     let active = AtomicUsize::new(0);
     let peak = AtomicUsize::new(0);
+    let overlap = reducer_overlap::ReducerOverlap::new(2);
     let reducer = |left: &u64, right: &u64| {
         let now = active.fetch_add(1, Ordering::AcqRel) + 1;
         peak.fetch_max(now, Ordering::AcqRel);
-        std::thread::sleep(Duration::from_millis(1));
+        overlap.rendezvous();
         active.fetch_sub(1, Ordering::AcqRel);
         left + right
     };

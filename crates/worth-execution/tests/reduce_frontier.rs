@@ -4,8 +4,10 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Mutex, OnceLock,
     },
-    time::Duration,
 };
+
+#[path = "support/reducer_overlap.rs"]
+mod reducer_overlap;
 
 use worth_execution::{
     CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMap, LeaseRequest,
@@ -147,10 +149,11 @@ fn prove_frontier(count: u64, workers: usize, expected_overlap: usize) {
         .unwrap();
     let active = AtomicUsize::new(0);
     let peak = AtomicUsize::new(0);
+    let overlap = reducer_overlap::ReducerOverlap::new(expected_overlap);
     let combine = |left: &f64, right: &f64| {
         let now = active.fetch_add(1, Ordering::AcqRel) + 1;
         peak.fetch_max(now, Ordering::AcqRel);
-        std::thread::sleep(Duration::from_millis(3));
+        overlap.rendezvous();
         active.fetch_sub(1, Ordering::AcqRel);
         left + right
     };

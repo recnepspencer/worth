@@ -4,8 +4,10 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         OnceLock,
     },
-    time::Duration,
 };
+
+#[path = "support/reducer_overlap.rs"]
+mod reducer_overlap;
 
 use worth_execution::{
     BackInput, CancellationToken, DecomposeKernelEditions, ExecutionAuthority,
@@ -113,10 +115,11 @@ fn leased_full_decomposition_uses_parallel_reduction_frontier() {
 
     let active = AtomicUsize::new(0);
     let peak = AtomicUsize::new(0);
+    let overlap = reducer_overlap::ReducerOverlap::new(3);
     let combine = |left: &u64, right: &u64| {
         let now = active.fetch_add(1, Ordering::AcqRel) + 1;
         peak.fetch_max(now, Ordering::AcqRel);
-        std::thread::sleep(Duration::from_millis(3));
+        overlap.rendezvous();
         active.fetch_sub(1, Ordering::AcqRel);
         left + right
     };
