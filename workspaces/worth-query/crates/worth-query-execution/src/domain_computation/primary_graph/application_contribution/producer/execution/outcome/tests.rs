@@ -134,7 +134,7 @@ fn pending_execution_evidence_keeps_heads_producer_category() {
         observed.kind(),
         WorthQueryOutputDemandDenialKind::ProducerUnavailable
     );
-    assert_eq!(observed.commit_denial_kind(), Some(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::ProviderRejected));
+    assert_eq!(observed.commit_denial_kind(), Some(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::ExecutionWorkerPanicked { partition_identity: Some(7) }));
     assert_eq!(
         observed.commit_execution_denial(),
         Some((Stage::Idempotency, Ok(kind)))

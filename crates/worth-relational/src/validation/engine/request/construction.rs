@@ -1,5 +1,6 @@
+use super::InvariantPreparationControl;
 use crate::transactions::data::MergedCommitPlan;
-use crate::validation::data::{InvariantPlanContract, InvariantViolation};
+use crate::validation::data::InvariantPlanContract;
 use std::collections::BTreeMap;
 
 use super::relation_integrity_scopes::prepare_relation_integrity_scopes;
@@ -28,7 +29,13 @@ impl<'state> InvariantExecutionRequest<'state> {
             view.current_version_id(),
             merged_plan,
             plan_contract,
+            &InvariantPreparationControl::new(
+                crate::mvcc::RelationalOperationControl::uninterrupted(),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+            ),
         )
+        .expect("uninterrupted System scope preparation")
     }
 
     pub(crate) fn from_profile_with_contract_at_current_version<'runtime>(
@@ -39,7 +46,9 @@ impl<'state> InvariantExecutionRequest<'state> {
         current_version_id: crate::identity::data::VersionId,
         merged_plan: Option<&'state MergedCommitPlan>,
         plan_contract: Option<InvariantPlanContract>,
-    ) -> Self {
+        control: &InvariantPreparationControl<'_, '_>,
+    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+        control.check()?;
         debug_assert!(
             profile.supports_observation(observation.kind()),
             "invariant profile {:?} does not support {:?} observation",
@@ -54,26 +63,18 @@ impl<'state> InvariantExecutionRequest<'state> {
         let applicable_groups = plan_contract
             .map(|contract| contract.selected_groups().intersection(consumed_groups))
             .unwrap_or(consumed_groups);
-        let relation_scope_requirements = relation_scope_requirements_for(runtime, profile);
-        let (relation_integrity_scopes, preparation_violation): (
-            Option<super::PreparedRelationIntegrityScopes>,
-            Option<InvariantViolation>,
-        ) = match prepare_relation_integrity_scopes(
+        let relation_scope_requirements =
+            relation_scope_requirements_for(runtime, profile, control)?;
+        let relation_integrity_scopes = prepare_relation_integrity_scopes(
             merged_plan,
             observation.committed_partition_access(),
             version_id,
             relation_scope_requirements,
             &runtime.performance_access(),
-            &runtime.config.execution.relation_integrity_scope_budget,
-        ) {
-            Ok(scopes) => (scopes, None),
-            Err(exceeded) => (
-                None,
-                Some(exceeded.into_violation(profile.execution_point())),
-            ),
-        };
+            control,
+        )?;
         let proposal_identity = observation.proposal_identity().cloned();
-        Self {
+        Ok(Self {
             observation,
             version_id,
             current_version_id,
@@ -84,16 +85,19 @@ impl<'state> InvariantExecutionRequest<'state> {
             plan_contract,
             merged_plan,
             relation_integrity_scopes,
-            preparation_violation,
             proposal_identity,
-        }
+        })
     }
 }
 
 fn relation_scope_requirements_for(
     runtime: &crate::validation::engine::InvariantRuntimeView,
     profile: InvariantRequestProfile,
-) -> BTreeMap<crate::identity::data::KindId, super::RelationScopeRequirement> {
+    control: &InvariantPreparationControl<'_, '_>,
+) -> Result<
+    BTreeMap<crate::identity::data::KindId, super::RelationScopeRequirement>,
+    crate::transactions::data::TransactionCommitError,
+> {
     runtime
         .config
         .schema
@@ -106,23 +110,25 @@ fn relation_scope_requirements_for(
                 .iter()
                 .filter(|registration| registration.execution_point == profile.execution_point()),
         )
-        .filter_map(|registration| super::relation_scope_requirement(&registration.rule))
-        .fold(
-            BTreeMap::new(),
-            |mut requirements, (kind_id, requirement)| {
-                let entry = requirements
-                    .entry(kind_id)
-                    .or_insert_with(super::RelationScopeRequirement::default);
-                entry.requires_global_evaluation |= requirement.requires_global_evaluation;
-                entry.requires_visible_successors |= requirement.requires_visible_successors;
-                entry
-                    .minimum_candidate_kinds
-                    .extend(requirement.minimum_candidate_kinds);
-                entry.scan_existing_source_on_create |= requirement.scan_existing_source_on_create;
-                entry.scan_existing_target_on_create |= requirement.scan_existing_target_on_create;
-                entry.scan_existing_pair_on_create |= requirement.scan_existing_pair_on_create;
-                entry.scan_full_on_create |= requirement.scan_full_on_create;
-                requirements
-            },
-        )
+        .try_fold(BTreeMap::new(), |mut requirements, registration| {
+            control.check()?;
+            let Some((kind_id, requirement)) =
+                super::relation_scope_requirement(&registration.rule)
+            else {
+                return Ok(requirements);
+            };
+            let entry = requirements
+                .entry(kind_id)
+                .or_insert_with(super::RelationScopeRequirement::default);
+            entry.requires_global_evaluation |= requirement.requires_global_evaluation;
+            entry.requires_visible_successors |= requirement.requires_visible_successors;
+            entry
+                .minimum_candidate_kinds
+                .extend(requirement.minimum_candidate_kinds);
+            entry.scan_existing_source_on_create |= requirement.scan_existing_source_on_create;
+            entry.scan_existing_target_on_create |= requirement.scan_existing_target_on_create;
+            entry.scan_existing_pair_on_create |= requirement.scan_existing_pair_on_create;
+            entry.scan_full_on_create |= requirement.scan_full_on_create;
+            Ok(requirements)
+        })
 }

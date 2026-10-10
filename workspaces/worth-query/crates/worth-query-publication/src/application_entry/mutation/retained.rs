@@ -98,7 +98,9 @@ where
                 }
                 self.execute_retained_with_commit(
                     phase,
-                    super::authorization::prepare,
+                    |request, identities, staged| {
+                        super::authorization::prepare(phase, request, identities, staged)
+                    },
                     |application, program, binding| {
                         application.compare_and_commit_application_retained_in_advancement(
                             phase,
@@ -161,7 +163,7 @@ where
                     phase,
                     move |request, identities, staged| {
                         super::authorization::prepare_selected(
-                            request, identities, staged, &selected,
+                            phase, request, identities, staged, &selected,
                         )
                     },
                     |_, program, binding| {

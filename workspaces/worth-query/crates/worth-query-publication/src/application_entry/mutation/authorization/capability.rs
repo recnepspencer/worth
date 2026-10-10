@@ -2,6 +2,7 @@ use super::*;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRef;
 
 pub(in crate::application_entry) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
+    _phase: &AdvancementPhase<'_>,
     request: &Request<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
     identities: &Identities<'_, Schema, Intent>,
     staged: WorthQueryStagedMutation<Schema, Intent>,

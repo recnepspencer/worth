@@ -32,7 +32,7 @@ use worth_query_topology_entry::{
 worth_query_application! {
     pub ConsumerSchema {
         owner: "worth.query.certification.consumer",
-        version: (1, 0),
+        version: (1, 1),
         contributions: [TopologyContribution, ParameterContribution],
     }
 }
@@ -56,7 +56,8 @@ fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 2);
-    assert_eq!(declaration.erased().members().len(), 122);
+    // Seven declarations add the no-source recovery operation to the 122-member schema.
+    assert_eq!(declaration.erased().members().len(), 129);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY
@@ -99,7 +100,7 @@ fn run() {
     assert_eq!(installed.contributions().len(), 2);
     assert!(installed
         .contributions()
-        .get("worth.query.certification.topology.v1")
+        .get("worth.query.certification.topology.v2")
         .is_some());
     assert!(installed
         .contributions()

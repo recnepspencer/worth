@@ -17,7 +17,8 @@ type SelectedWithEntry<'a, Schema> = (
 
 mod recovered_candidates;
 mod selected_basis;
-use selected_basis::{charge, selection_budget_denial, source_basis_is_admitted};
+pub(super) use selected_basis::source_basis_is_admitted;
+use selected_basis::{charge, selection_budget_denial};
 
 #[cfg(test)]
 #[path = "selection/retained_basis_tests.rs"]
@@ -239,13 +240,9 @@ where
             let source_basis_is_admitted = if selected_override.is_some() {
                 true // The exact selected owner check precedes candidate lookup.
             } else {
-                let selected_observation =
-                    crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                        selected.product().observation(),
-                    );
                 source_basis_is_admitted(
                     observation,
-                    &selected_observation,
+                    selected.product().observation(),
                     retained_program_basis.is_some(),
                 )
             };

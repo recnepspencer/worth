@@ -13,6 +13,9 @@ use worth_query_host::facade::primary_graph::{
 
 use super::*;
 
+pub(super) mod contacts;
+pub use contacts::{planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts};
+
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct PlanarSourceAdjustment {
     pub scope_key: String,
@@ -110,6 +113,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarSourceAdjustm
         input: &PlanarSourceAdjustment,
         reader: &mut DecisionReader<'_, '_, '_, Schema, PlanarSourceAdjustmentBinding<Schema>>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial> {
+        contacts::decision(input);
         let entity = match reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
             Ok(entity) => entity,
             Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -141,6 +145,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarSourceAdjustm
         target: WorthQueryInvariantMutationTarget<Schema, Body>,
         writer: &mut CandidateWriter<'_, Schema, PlanarSourceAdjustmentBinding<Schema>>,
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
+        contacts::candidate(input);
         let entity = match writer.projected_entity(&target) {
             Ok(entity) => entity,
             Err(error) => {

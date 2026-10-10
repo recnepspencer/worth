@@ -44,6 +44,10 @@ impl WorthQueryOutputDemandKey {
         self.applicability
     }
 
+    pub(in crate::domain_computation::primary_graph) fn source_epoch(&self) -> &SourceEpoch {
+        &self.source
+    }
+
     pub(super) fn same_occurrence(&self, other: &Self) -> bool {
         self.family == other.family && self.source.same_occurrence(&other.source)
     }

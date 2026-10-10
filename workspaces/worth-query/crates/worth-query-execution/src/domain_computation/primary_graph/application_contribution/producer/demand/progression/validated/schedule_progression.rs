@@ -28,6 +28,7 @@ where
     Selected {
         shared: &'selection SharedSelectedProductOperation<'runtime, Schema>,
         matched_predecessors: Option<MatchedRequiredPredecessors<'selection>>,
+        readiness: super::super::required_wave::performed::FreshReadiness,
     },
 }
 

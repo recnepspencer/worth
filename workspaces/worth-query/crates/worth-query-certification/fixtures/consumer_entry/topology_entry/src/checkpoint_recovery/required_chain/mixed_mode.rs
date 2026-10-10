@@ -68,7 +68,7 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         panic!("real source revision must perform")
     };
     let settled = (0..256)
-        .find_map(|_| match outputs.advance(&request).unwrap() {
+        .find_map(|_| match outputs.advance(&application, &request).unwrap() {
             WorthQueryApplicationProgramOutputProgress::Pending => None,
             WorthQueryApplicationProgramOutputProgress::Settled(v) => Some(v),
         })

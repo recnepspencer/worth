@@ -17,6 +17,11 @@ fn a_new_indexed_match_contacts_the_consumer_with_a_dirty_upstream() {
     journey(true, true);
 }
 
+#[test]
+fn unchanged_indexed_membership_does_not_contact_over_a_dirty_upstream() {
+    journey(false, true);
+}
+
 fn journey(add_match: bool, leave_dirty: bool) {
     let _guard = checkpoint_recovery_test_guard();
     let app = installation::install_with_indexed_decision();
@@ -93,7 +98,9 @@ fn journey(add_match: bool, leave_dirty: bool) {
         );
     }
     dependent_publication::take_calls();
-    if leave_dirty {
+    // An equal upstream left Dirty stales nothing by itself: without a new
+    // match the consumer settles in its one advance below.
+    if leave_dirty && add_match {
         let stopped = consumer.advance(&request);
         assert!(
             matches!(&stopped,
@@ -122,7 +129,8 @@ fn journey(add_match: bool, leave_dirty: bool) {
     );
     assert_eq!(
         contacts,
-        1 + usize::from(add_match) + usize::from(leave_dirty)
+        1 + usize::from(add_match) * (1 + usize::from(leave_dirty)),
+        "the stale contact and the published one both follow the new match"
     );
     assert_eq!(
         read_value(DEPENDENT),

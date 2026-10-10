@@ -11,9 +11,46 @@ use graph::{
 /// mistaken for a fresh commit receipt or a performed delivery obligation.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum ProducerExecutionOutcome
 {
-    Committed(WorthQueryApplicationCommitReceipt),
+    Committed(ProducerCommitReceipt),
     Stable(graph::output_lineage::PublishedStableLineage),
 }
+
+/// The commit owner distinguishes a new effect from a descriptive replay.
+/// Only this conversion constructs the fact used to mark the advance.
+#[derive(Debug)]
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ProducerCommitReceipt
+{
+    receipt: WorthQueryApplicationCommitReceipt,
+    publication: CommitPublication,
+}
+
+#[derive(Debug)]
+enum CommitPublication {
+    PublishedNow,
+    PreviouslyPublished,
+}
+
+impl ProducerCommitReceipt {
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn published_in_this_advance(
+        &self,
+    ) -> bool {
+        matches!(self.publication, CommitPublication::PublishedNow)
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn record_publication(
+        self,
+        record: impl FnOnce(),
+    ) -> WorthQueryApplicationCommitReceipt {
+        match self.publication {
+            CommitPublication::PublishedNow => record(),
+            CommitPublication::PreviouslyPublished => {}
+        }
+        self.receipt
+    }
+}
+
+#[cfg(test)]
+mod publication_record_tests;
 
 /// A successful producer returns its original pre-effect Ready storage.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PreparedProducerExecutionOutcome
@@ -69,10 +106,10 @@ pub(super) fn completed_handler<Value, DomainDenial>(
 }
 
 /// Maps a producer commit to its receipt or to the demand denial it settles as.
-pub(super) fn commit_receipt(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn commit_receipt(
     identity: &str,
     outcome: WorthQueryApplicationCommitOutcome,
-) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial> {
+) -> Result<ProducerCommitReceipt, WorthQueryOutputDemandDenial> {
     // A request refused authorization at commit time stops as that request
     // does anywhere else; the producer did not fail.
     if let WorthQueryApplicationCommitOutcome::Denied(commit_denial) = &outcome {
@@ -86,8 +123,16 @@ pub(super) fn commit_receipt(
         return Err(denial(kind, identity.to_owned()));
     }
     match outcome {
-        WorthQueryApplicationCommitOutcome::Committed(receipt)
-        | WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => Ok(receipt),
+        WorthQueryApplicationCommitOutcome::Committed(receipt) => Ok(ProducerCommitReceipt {
+            receipt,
+            publication: CommitPublication::PublishedNow,
+        }),
+        WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
+            Ok(ProducerCommitReceipt {
+                receipt,
+                publication: CommitPublication::PreviouslyPublished,
+            })
+        }
         WorthQueryApplicationCommitOutcome::Deferred(deferred)
             if matches!(
                 deferred.kind(),
@@ -149,7 +194,6 @@ pub(super) fn commit_receipt(
                 | Kind::RetentionIdentityExhausted
                 | Kind::SnapshotIdentityExhausted
                 | Kind::CandidateIdentityExhausted
-                | Kind::PreparedRootBudgetExhausted { .. }
                 | Kind::IndexMaintenanceBudgetExceeded
                 | Kind::IndexGenerationIdentityExhausted
                 | Kind::IdempotencyReceiptNotRetained { .. }
@@ -219,8 +263,7 @@ fn refused_budget(
         Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
             Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
         }
-        Stop::CellCapacityExhausted { .. }
-        | Stop::PreparationMemoryExhausted { .. }
+        Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
         | Stop::RetainedCompanionCapacityExhausted { .. } => {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)

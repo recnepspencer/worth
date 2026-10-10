@@ -116,7 +116,7 @@ fn publish_initial_output(
         NonZeroUsize::new(8_192).unwrap(),
     );
     let mut outputs = performed
-        .start_required_outputs(request, controls)
+        .start_required_outputs(application, request, controls)
         .unwrap_or_else(|failure| {
             panic!(
                 "the program binds its initial required output: {:?}",
@@ -127,7 +127,7 @@ fn publish_initial_output(
         if matches!(
             outputs
                 .required_output_mut()
-                .advance(request)
+                .advance(application, request)
                 .expect("the initial output advances"),
             WorthQueryApplicationProgramOutputProgress::Settled(_),
         ) {

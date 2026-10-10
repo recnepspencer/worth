@@ -25,7 +25,7 @@ fn settled_checkpoint(
 fn a_restored_world_verifies_each_root_and_decides_each_consumer_once() {
     let _guard = checkpoint_recovery_test_guard();
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     let checkpoint = settled_checkpoint(&mut rings);
 
     let application = install(Some(checkpoint), ring_world::seed::<3>, Retained::AMPLE);
@@ -72,7 +72,7 @@ fn a_restored_world_verifies_each_root_and_decides_each_consumer_once() {
         (1, rings[0].root_output()),
         "{at}: the edited root executes again and publishes what the model computes"
     );
-    take_all_decisions();
+    Reading::decisions();
     for index in 1..rings.len() {
         let (costs, decisions) = court.demand_ring(&mut rings, index, at);
         assert!(
@@ -102,7 +102,7 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3d80);
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     let at = "inside the retained window";
     let mut a = root!(court, rings[0].key("a"), at);
     let mut b = consumer!(court, rings[0].key("b"), at);
@@ -115,6 +115,20 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
     settled!(court, far_a, at);
     settled!(court, far_b, at);
     judge_decisions(&mut rings, at);
+    let far_roots = ["a", "b"].map(|role| {
+        request
+            .query(PlanarOutputRead {
+                body_key: rings[2].key(role),
+            })
+            .execute()
+            .unwrap()
+            .observed_sources()[0]
+            .root_entity_for_test()
+    });
+    let far_reads = || {
+        let counts = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
+        far_roots.map(|root| counts.get(&root).copied().unwrap_or(0))
+    };
 
     // The first ring's edit is followed by more commits than the window
     // retains, all on another ring, before any open chain is demanded again.
@@ -125,22 +139,55 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
         rings[1].a_y = y;
         court.write_y(&rings[1].key("a"), y, at);
     }
-    let refresh = [
-        settled!(court, c, at),
-        settled!(court, b, at),
-        settled!(court, a, at),
-    ];
+    // Only the production advances enter the interval; the court's own reads do not.
+    let mut full_reads = [0_u64; 2];
+    macro_rules! interval_settled {
+        ($demand:ident) => {
+            settled!(court, $demand, at, {
+                let before = far_reads();
+                let answer = $demand.demand.advance(&request);
+                let after = far_reads();
+                for index in 0..2 {
+                    full_reads[index] += after[index] - before[index];
+                }
+                answer
+            })
+        };
+    }
+    let refresh_c = interval_settled!(c);
+    let decisions_c = judge_decisions(&mut rings, at);
+    let after_c = full_reads;
+    let refresh_b = interval_settled!(b);
+    let decisions_b = judge_decisions(&mut rings, at);
+    let after_b = full_reads;
+    let refresh_a = interval_settled!(a);
+    let decisions_a = judge_decisions(&mut rings, at);
+    let after_a = full_reads;
+    let refresh = [refresh_c, refresh_b, refresh_a];
     assert_eq!(
-        refresh.map(|cost| cost.producer_contacts),
+        [decisions_c, decisions_b, decisions_a],
         [1, 0, 0],
-        "{at}: the edited chain refreshes on its first advance: {refresh:?}"
+        "{at}: the middle consumer decides on the first advance, over the new root output"
     );
-    assert!(
-        judge_decisions(&mut rings, at) > 0,
-        "{at}: the middle consumer decides over the new root output"
+    assert_eq!(
+        after_c,
+        [1, 1],
+        "{at}: C's first advance verifies each far member once"
     );
     court.judge_chain(&rings[0], at);
-    let far = [settled!(court, far_b, at), settled!(court, far_a, at)];
+    let before_far_call = full_reads;
+    let far = [interval_settled!(far_b), interval_settled!(far_a)];
+    assert_eq!(
+        full_reads, [1, 1],
+        "{at}: each far member is verified once across every advance; after C/B/A={after_c:?}/{after_b:?}/{after_a:?}; before its calls: {:?}; per-call attribution: {far:?}",
+        before_far_call
+    );
+    assert_eq!(
+        refresh.map(|cost| cost.producer_contacts),
+        [0, 0, 0],
+        "{at}: the edited chain refreshes on its first advance: {refresh:?}"
+    );
+
     let again = [
         settled!(court, far_b, at),
         settled!(court, far_a, at),
@@ -148,11 +195,11 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
         settled!(court, b, at),
         settled!(court, a, at),
     ];
-    // The consumer is demanded first: its one full verification covers the
-    // root it consumed, so the root is already marked clean when demanded.
+    // This per-call vector pins observed attribution for regression. The law
+    // is one full read per far member over the interval, asserted above.
     assert_eq!(
         far.map(|cost| (cost.producer_contacts, cost.source_queries)),
-        [(0, 1), (0, 0)],
+        [(0, 0), (0, 0)],
         "{at}: the unedited chain is verified once in full and reaches no producer: {far:?}"
     );
     assert!(
@@ -181,7 +228,7 @@ fn an_output_demanded_inside_every_window_never_leaves_it() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3dc0);
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     let at = "before the commits";
     let mut far_a = root!(court, rings[2].key("a"), at);
     let mut far_b = consumer!(court, rings[2].key("b"), at);
@@ -229,7 +276,7 @@ fn a_forked_branch_verifies_what_its_parent_settled() {
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3dc0);
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     for index in 0..rings.len() {
         court.demand_ring(&mut rings, index, "on the parent branch");
     }
@@ -269,7 +316,7 @@ fn a_forked_branch_verifies_what_its_parent_settled() {
 fn a_restored_consumer_never_settles_over_a_stale_upstream() {
     let _guard = checkpoint_recovery_test_guard();
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     let checkpoint = settled_checkpoint(&mut rings);
 
     let application = install(Some(checkpoint), ring_world::seed::<3>, Retained::AMPLE);
@@ -310,7 +357,7 @@ fn a_restored_consumer_never_settles_over_a_stale_upstream() {
 fn a_restored_chain_settles_through_its_last_consumer_alone() {
     let _guard = checkpoint_recovery_test_guard();
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
-    take_all_decisions();
+    Reading::decisions();
     let checkpoint = settled_checkpoint(&mut rings);
 
     let application = install(Some(checkpoint), ring_world::seed::<3>, Retained::AMPLE);
@@ -331,8 +378,8 @@ fn a_restored_chain_settles_through_its_last_consumer_alone() {
     settled!(court, c, at);
     assert_eq!(
         judge_decisions(&mut rings, at),
-        2,
-        "{at}: both consumers decide over the new root"
+        1,
+        "{at}: B decides over the new root; its equal output leaves C unchanged"
     );
     court.judge_chain(&rings[0], at);
     let rest = [settled!(court, a, at), settled!(court, b, at)];

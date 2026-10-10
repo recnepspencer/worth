@@ -30,9 +30,8 @@ impl<T: Send + Sync + 'static> PreparedCompanionBranchCell<T> {
     pub(in crate::mvcc::publication::companion) fn new_selected(
         binding: &super::super::preflight::CandidateCompanionBinding,
         initial: Arc<T>,
-        retention: super::super::registration::CompanionCellRetention,
     ) -> Self {
-        let cell = CompanionBranchCell::new_selected(binding, initial, retention);
+        let cell = CompanionBranchCell::new_selected(binding, initial);
         let pending = Arc::downgrade(&cell.core);
         Self {
             cell,

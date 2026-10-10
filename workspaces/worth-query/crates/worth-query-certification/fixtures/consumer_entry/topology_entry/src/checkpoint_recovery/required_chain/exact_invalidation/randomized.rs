@@ -60,7 +60,7 @@ fn run(seed: u64, observations: u64, driven: &mut Driven) {
     let mut checkpoint = None;
     let mut idempotency = seed << 16;
     let mut step = 0;
-    take_all_decisions();
+    Reading::decisions();
     while step < STEPS {
         let opens = if checkpoint.is_some() {
             "restored"

@@ -1,6 +1,9 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
+/// Ten decimal digits; changing text width requires another nine billion instances.
+const FIRST_RUNTIME_INSTANCE_ID: u64 = 1_000_000_000;
+
 #[derive(Debug, Clone)]
 pub(super) struct RuntimeSequenceState {
     runtime_instance_id: u64,
@@ -10,7 +13,7 @@ pub(super) struct RuntimeSequenceState {
 
 impl RuntimeSequenceState {
     pub(super) fn new() -> Self {
-        static NEXT_RUNTIME_INSTANCE_ID: AtomicU64 = AtomicU64::new(1);
+        static NEXT_RUNTIME_INSTANCE_ID: AtomicU64 = AtomicU64::new(FIRST_RUNTIME_INSTANCE_ID);
         Self {
             runtime_instance_id: NEXT_RUNTIME_INSTANCE_ID.fetch_add(1, Ordering::Relaxed),
             next_transaction_id: Arc::new(AtomicU64::new(1)),
@@ -45,8 +48,20 @@ impl Default for RuntimeSequenceState {
 
 #[cfg(test)]
 mod tests {
-    use super::RuntimeSequenceState;
+    use super::{RuntimeSequenceState, FIRST_RUNTIME_INSTANCE_ID};
     use std::sync::atomic::Ordering;
+
+    #[test]
+    fn runtime_instance_ids_keep_branch_reference_text_width() {
+        let first = RuntimeSequenceState::new().runtime_instance_id();
+        let next = RuntimeSequenceState::new().runtime_instance_id();
+        assert!(first >= FIRST_RUNTIME_INSTANCE_ID);
+        assert!(next >= FIRST_RUNTIME_INSTANCE_ID);
+        assert_eq!(
+            format!("relational/{first}/main").len(),
+            format!("relational/{next}/main").len()
+        );
+    }
 
     #[test]
     fn proposal_ordinal_exhaustion_does_not_repeat_the_final_value() {

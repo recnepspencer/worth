@@ -74,6 +74,10 @@ fn check_own_write_recovery(index_loss: bool) {
     handle.with_runtime(|runtime| {
         let snapshot = retained_snapshot;
         let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
+        assert!(candidate
+            .decision_input_changed_at(owner, runtime, &snapshot, &selected, &mut owner.edit_admission())
+            .unwrap(),
+            "the performed own write is evidence of a changed decision input");
         let answer = candidate
             .certify_current(
                 owner,

@@ -30,8 +30,9 @@ pub(super) fn initial_source_identity(
             controls(),
         )
         .expect("the installed current output is selected under fresh admission");
-    let settlement =
-        super::super::settle(|| super::super::settled(output.advance(request).unwrap()));
+    let settlement = super::super::settle(|| {
+        super::super::settled(output.advance(application, request).unwrap())
+    });
     let mut selected = settlement.outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>();
     let (_, final_output) = selected.next().expect("exact final producer output exists");
     assert!(selected.next().is_none());
@@ -76,10 +77,15 @@ pub(super) fn preserved_outputs_remain_read_only(
     };
     let branch = performed.receipt().product_branch();
     let mut performed = performed
-        .start_required_outputs(request, controls())
+        .start_required_outputs(application, request, controls())
         .unwrap_or_else(|_| panic!("the actual preserve producer graph starts"));
     let settlement = super::super::settle(|| {
-        super::super::settled(performed.required_output_mut().advance(request).unwrap())
+        super::super::settled(
+            performed
+                .required_output_mut()
+                .advance(application, request)
+                .unwrap(),
+        )
     });
     assert_eq!(
         settlement

@@ -36,6 +36,7 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
+        readiness: required_wave::performed::FreshReadiness,
         shared: &SharedSelectedProductOperation<'_, Schema>,
         claim: SelectedRequiredRefreshClaim,
         installed: &super::super::super::registry::InstalledProducerProvider<Schema>,
@@ -44,6 +45,7 @@ where
         delivery_branch: crate::basis::WorthQueryProductBranch,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema> + 'static,
@@ -96,6 +98,7 @@ where
                         .and_then(|fresh| {
                             self.advance_validated_required_fresh_on_selected(
                                 phase,
+                                readiness,
                                 &mut successor,
                                 principal,
                                 request_scope,
@@ -106,6 +109,7 @@ where
                                 shared,
                                 matched_predecessors,
                                 admission,
+                                performed,
                             )
                         })
                     }

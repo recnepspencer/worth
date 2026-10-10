@@ -46,8 +46,7 @@ where
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
-        crate::application_entry::WorthQueryApplicationProgramOutputHandle<
-            'application, Schema, Program, Root,
+        crate::application_entry::WorthQueryApplicationProgramOutputHandle<Schema, Program, Root,
         >,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     >
@@ -57,8 +56,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Root::Dependents:
-            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
-                'application, Schema, Program, RootDemand<Schema, Root>,
+            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<Schema, Program, RootDemand<Schema, Root>,
             >,
         RootDemand<Schema, Root>: Clone,
         <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
@@ -97,7 +95,7 @@ where
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
         crate::application_entry::WorthQueryApplicationProgramOutputHandle<
-            'application, Schema, Program, Root,
+            Schema, Program, Root,
         >,
         crate::application_entry::WorthQueryRequiredOutputPreparationDenial,
     >
@@ -108,7 +106,7 @@ where
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Root::Dependents:
             crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
-                'application, Schema, Program, RootDemand<Schema, Root>,
+                Schema, Program, RootDemand<Schema, Root>,
             >,
         RootDemand<Schema, Root>: Clone,
         <RootSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
@@ -140,7 +138,6 @@ where
             .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
         Ok(
             crate::application_entry::WorthQueryApplicationProgramOutputHandle::new_initial(
-                application,
                 crate::application_entry::WorthQueryApplicationReadObservation::new(retained),
                 root,
                 root_demand,
@@ -158,9 +155,7 @@ where
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
-        crate::application_entry::WorthQueryApplicationProgramOutputHandle<
-            'application,
-            Schema,
+        crate::application_entry::WorthQueryApplicationProgramOutputHandle<Schema,
             Program,
             Root,
         >,
@@ -171,9 +166,7 @@ where
         Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Root::Dependents:
-            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
-                'application,
-                Schema,
+            crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<Schema,
                 Program,
                 RootDemand<Schema, Root>,
             >,
@@ -216,7 +209,6 @@ where
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
         crate::application_entry::WorthQueryApplicationProgramOutputHandle<
-            'application,
             Schema,
             Program,
             Root,
@@ -229,7 +221,6 @@ where
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Root::Dependents:
             crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<
-                'application,
                 Schema,
                 Program,
                 RootDemand<Schema, Root>,
@@ -255,15 +246,15 @@ where
                 crate::application_entry::WorthQueryRequiredOutputPreparationDenial::UndeclaredOutputRoot,
             );
         }
-        let (root, observation) = self
+        let (root, observation, preparation) = self
             .demand(root_demand.clone())
             .controls(controls)
             .start_recovery::<Program, Root>(phase, application, source_receipt)
             .map_err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand)?;
         Ok(
             crate::application_entry::WorthQueryApplicationProgramOutputHandle::new(
-                application,
                 source_receipt.clone(),
+                preparation,
                 crate::application_entry::WorthQueryApplicationReadObservation::new(observation),
                 root,
                 root_demand,

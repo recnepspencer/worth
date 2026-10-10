@@ -8,8 +8,8 @@ use crate::commit_strategies::data::{
 };
 use crate::config::data::{
     AdjacencyPolicy, CascadeDeletePolicy, CompiledLanePolicy, CrossContextPolicy, DurabilityPolicy,
-    DurableLogPolicy, MvccConfig, PublicationConfig, RelationIntegrityScopeBudget,
-    RelationalConfigOverride, RelationalRuntimeProfile, StorageLayoutConfig, VisibilityCachePolicy,
+    DurableLogPolicy, MvccConfig, PublicationConfig, RelationalConfigOverride,
+    RelationalRuntimeProfile, StorageLayoutConfig, VisibilityCachePolicy,
 };
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
 use crate::durability::data::{DurabilityMode, DurableStoreLayout};
@@ -210,15 +210,6 @@ impl RelationalRuntimeBuilder {
 
     pub fn compiled_lane_policy(mut self, compiled_lane_policy: CompiledLanePolicy) -> Self {
         self.overrides.execution.compiled_lane_policy = Some(compiled_lane_policy);
-        self
-    }
-
-    pub fn relation_integrity_scope_budget(
-        mut self,
-        relation_integrity_scope_budget: RelationIntegrityScopeBudget,
-    ) -> Self {
-        self.overrides.execution.relation_integrity_scope_budget =
-            Some(relation_integrity_scope_budget);
         self
     }
 

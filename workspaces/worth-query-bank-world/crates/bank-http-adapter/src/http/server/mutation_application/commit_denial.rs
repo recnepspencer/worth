@@ -49,7 +49,6 @@ pub(in crate::http::server) fn commit_denial(
         ),
         Denial::UniqueValueTaken
         | Denial::WorkflowSettlementDenied { .. }
-        | Denial::PreparedRootBudgetExhausted { .. }
         | Denial::ElevationTransitionRequired
         | Denial::ElevationRequestProgramMismatch
         | Denial::ElevationApprovalProgramMismatch

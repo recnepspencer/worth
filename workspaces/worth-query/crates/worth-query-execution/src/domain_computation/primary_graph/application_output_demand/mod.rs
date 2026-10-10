@@ -26,12 +26,12 @@ pub use registry::{
     required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
 };
 pub(super) use registry::{
-    AcceptedCheckpointFactSource, BoundOutputSource, DemandAdmissionKind, OutputRefreshPredecessor,
-    OutputRowStage, PreparedOutputRootKind, PreparedReadyBacking, PreparedSelectedCheckpointFinish,
-    ReadyCompletion, RequiredOutputCustodyCapacity, SelectedCheckpointFinishStop,
-    WorthQueryAcceptedOutputAuthority, WorthQueryAcceptedOutputCheckpointIdentity,
-    WorthQueryAcceptedOutputCheckpointPosture, WorthQueryCompletedOutputDemand,
-    WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity,
+    AcceptedCheckpointFactSource, BoundOutputSource, CheckpointOutputSlot, DemandAdmissionKind,
+    OutputRefreshPredecessor, OutputRowStage, PreparedOutputRootKind, PreparedReadyBacking,
+    PreparedSelectedCheckpointFinish, ReadyCompletion, RequiredOutputCustodyCapacity,
+    SelectedCheckpointFinishStop, WorthQueryAcceptedOutputAuthority,
+    WorthQueryAcceptedOutputCheckpointIdentity, WorthQueryAcceptedOutputCheckpointPosture,
+    WorthQueryCompletedOutputDemand, WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity,
     WorthQueryOutputDemandAdvanceAdmission, WorthQueryOutputDemandInterest,
     WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry, WorthQueryOutputSchedulingResult,
     WorthQueryPendingOutputDelivery, WorthQueryPerformedOutputDemandSource,

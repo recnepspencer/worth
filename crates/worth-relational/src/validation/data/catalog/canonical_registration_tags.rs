@@ -14,7 +14,7 @@ pub(super) fn native_rule_id_tag(value: NativeInvariantRuleId) -> u8 {
         NativeInvariantRuleId::LiveRecordRequiresSidecarEntity => 1,
         NativeInvariantRuleId::LiveRecordRequiresSidecarRelation => 2,
         NativeInvariantRuleId::MaxMergedIntents => 3,
-        NativeInvariantRuleId::RelationIntegrityScopeBudget => 4,
+        // Tag 4 belonged to the retired synthetic preparation quota rule.
         NativeInvariantRuleId::MaxSnapshotEntities => 5,
         NativeInvariantRuleId::UniqueEntityField => 6,
         NativeInvariantRuleId::EndpointKindContract => 7,

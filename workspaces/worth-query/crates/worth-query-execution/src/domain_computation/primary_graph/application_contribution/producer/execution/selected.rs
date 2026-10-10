@@ -1,5 +1,6 @@
 //! Installed producer execution on the required wave's one selected Product.
 
+use super::super::demand::{DecisionInput, PerformedMembers, SelectedDecisionInput};
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::{
@@ -39,6 +40,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
+        performed: &mut PerformedMembers,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
     where
@@ -137,6 +139,7 @@ where
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
+        performed: &mut PerformedMembers,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
     {
@@ -215,10 +218,29 @@ where
                     installed.edition,
                     admission,
                 )?;
+                let Some(readiness) = performed.fresh(
+                    selected.key(),
+                    fresh.source().output_source_epoch().ok_or_else(|| {
+                        denial(
+                            WorthQueryOutputDemandDenialKind::ForeignSource,
+                            Binding::IDENTITY,
+                        )
+                    })?,
+                    &DecisionInput::Selected(&SelectedDecisionInput {
+                        shared,
+                        positioned,
+                        runtime,
+                    }),
+                    admission,
+                )?
+                else {
+                    return Ok(RequiredCueProgress::PendingUnresolved);
+                };
                 let progress = runtime
                     .continue_required_fresh::<Binding::OutputFamily>(
                         phase,
                         fresh,
+                        readiness,
                         shared,
                         claim,
                         installed,
@@ -227,6 +249,7 @@ where
                         delivery_branch,
                         matched_predecessors,
                         admission,
+                        performed,
                     )
                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
                 Ok(RequiredCueProgress::Fresh(progress))

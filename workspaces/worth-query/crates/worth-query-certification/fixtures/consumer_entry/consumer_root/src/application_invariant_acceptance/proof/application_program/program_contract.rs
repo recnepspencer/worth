@@ -6,7 +6,9 @@ pub(super) fn assert_installed(
     connections: &[ApplicationConnectionDeclaration],
     rules: &[ApplicationProgramRuleDeclaration],
 ) {
-    assert_eq!(connections.len(), 10);
+    // The initial no-source recovery tree contributes its own source/output
+    // and output/final connections, alongside the existing ten connections.
+    assert_eq!(connections.len(), 12);
     assert_eq!(rules.len(), 2);
     assert!(rules.iter().any(|rule| {
         rule.identity() == "PositiveParameterCount"

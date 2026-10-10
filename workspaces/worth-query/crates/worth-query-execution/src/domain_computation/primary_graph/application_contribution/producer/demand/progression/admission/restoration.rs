@@ -1,6 +1,7 @@
 use worth_query_installation::facade::ApplicationSchema;
 
 mod fact_denial;
+mod source_basis;
 
 use super::{
     denial, WorthQueryObservedSource, WorthQueryOutputDemandDenial,
@@ -19,6 +20,7 @@ where
         observed_source: &WorthQueryObservedSource<Query>,
         source_epoch: crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        owner_retained_program_basis: bool,
         admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<Option<ReadmittedOutput>, WorthQueryOutputDemandDenial> {
         let preparation_work_before = admission.charged_work();
@@ -100,35 +102,15 @@ where
             .charge_external_work(4)
             .map_err(restoration_resource_denial)?;
         let selected_observation = selected.product().observation();
-        // Both identity/header paths are inspected before measuring the
-        // variable branch names used by the full Product-read comparison.
-        admission
-            .charge_external_work(8)
-            .map_err(restoration_resource_denial)?;
-        let source_width = source_read.branch_identity().name().as_str().len();
-        let selected_width = selected_observation.branch_identity().name().as_str().len();
-        let identity_copies =
-            std::mem::size_of::<crate::basis::WorthQueryProductBranchReadIdentity>()
-                .checked_mul(2)
-                .ok_or_else(|| {
-                    restoration_resource_denial(
-                        worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
-                    )
-                })?;
-        let source_comparison = source_width
-            .checked_add(selected_width)
-            .and_then(|work| work.checked_add(identity_copies))
-            .and_then(|work| work.checked_add(8))
-            .and_then(|work| u64::try_from(work).ok())
-            .ok_or_else(|| {
-                restoration_resource_denial(
-                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
-                )
-            })?;
-        admission
-            .charge_external_work(source_comparison)
-            .map_err(restoration_resource_denial)?;
-        if !source_read.matches_observation(selected_observation) {
+        // Another output may have advanced this branch's head since discovery.
+        // The checkpoint dependency comparison below decides currentness at
+        // that head; retained program custody admits the earlier supplied basis.
+        if !source_basis::admit(
+            source_read,
+            selected_observation,
+            owner_retained_program_basis,
+            admission,
+        )? {
             return Ok(None);
         }
         let comparison = worth_runtime_world::facade::CurrentProductHead::comparison_work_bound(
@@ -342,7 +324,7 @@ where
                         NativeStop::OwnerUnavailable | NativeStop::PublicationPending
                         | NativeStop::RebindRequired | NativeStop::Superseded
                         | NativeStop::IdentityExhausted | NativeStop::ForeignRuntime
-                        | NativeStop::HeadUnavailable | NativeStop::CellCapacityExhausted { .. })) => false,
+                        | NativeStop::HeadUnavailable)) => false,
                 }
             }) {
                 let _ = source_owner.invalidation_owner.establish_verified_root(

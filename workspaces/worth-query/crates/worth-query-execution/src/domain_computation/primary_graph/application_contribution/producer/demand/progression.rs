@@ -22,6 +22,7 @@ mod refresh;
 mod rejoin;
 mod required_fresh;
 mod required_wave;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::{DecisionInput, PerformedMembers, SelectedDecisionInput};
 mod retained_read;
 pub(in crate::domain_computation::primary_graph) use required_wave::{
     MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
@@ -29,6 +30,7 @@ pub(in crate::domain_computation::primary_graph) use required_wave::{
 pub(super) mod resources;
 mod selected_program;
 mod source_recovery;
+mod unavailable;
 mod validated;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -78,7 +80,7 @@ where
                     "foreign advancement phase",
                 )
             })?;
-        self.advance_as_caller(demand, |demand, admission| {
+        self.advance_as_caller(demand, |demand, admission, performed| {
             self.advance_output_demand_with_commit_authority(
                 phase,
                 demand,
@@ -88,6 +90,7 @@ where
                 disclosure,
                 WorthQueryProducerCommitAuthority::Ordinary,
                 admission,
+                performed,
             )
         })
     }
@@ -120,7 +123,7 @@ where
                     "foreign advancement phase",
                 )
             })?;
-        self.advance_as_caller(demand, |demand, admission| {
+        self.advance_as_caller(demand, |demand, admission, performed| {
             self.advance_retained_with_commit_authority(
                 phase,
                 demand,
@@ -129,6 +132,7 @@ where
                 delivery_branch,
                 WorthQueryProducerCommitAuthority::Ordinary,
                 admission,
+                performed,
             )
         })
     }
@@ -145,6 +149,7 @@ where
         delivery_branch: crate::basis::WorthQueryProductBranch,
         commit_authority: WorthQueryProducerCommitAuthority,
         admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -176,6 +181,7 @@ where
             },
             commit_authority,
             admission,
+            performed,
         )
     }
 
@@ -205,7 +211,7 @@ where
                     "the phase belongs to another installed runtime",
                 )
             })?;
-        self.advance_as_caller(demand, |demand, admission| {
+        self.advance_as_caller(demand, |demand, admission, performed| {
             self.advance_output_demand_with_commit_authority(
                 phase,
                 demand,
@@ -215,6 +221,7 @@ where
                 disclosure,
                 WorthQueryProducerCommitAuthority::ProgramOutput,
                 admission,
+                performed,
             )
         })
     }
@@ -228,6 +235,7 @@ where
         advance: impl FnOnce(
             &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
             &mut InvalidationEditAdmission,
+            &mut PerformedMembers,
         )
             -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
@@ -235,7 +243,8 @@ where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         let mut admission = self.demand_request_admission();
-        let stop = match advance(demand, &mut admission) {
+        let mut performed = PerformedMembers::start();
+        let stop = match advance(demand, &mut admission, &mut performed) {
             Ok(progress) => {
                 demand.settled |= matches!(progress, WorthQueryOutputDemandAdvance::Settled(_));
                 #[cfg(feature = "test-query-execution-observer")]
@@ -259,7 +268,7 @@ where
         Err(stop)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn advance_output_demand_with_commit_authority<
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn advance_output_demand_with_commit_authority<
         Family,
     >(
         &self,
@@ -275,6 +284,7 @@ where
         >,
         commit_authority: WorthQueryProducerCommitAuthority,
         request_admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -291,6 +301,7 @@ where
             |_, _| Ok(disclosure.take()),
             commit_authority,
             request_admission,
+            performed,
         )
     }
 }

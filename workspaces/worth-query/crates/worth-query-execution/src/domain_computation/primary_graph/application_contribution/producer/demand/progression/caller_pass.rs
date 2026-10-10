@@ -49,7 +49,7 @@ where
     /// disclose in this call. A caller that reads its retained source again
     /// retries after source replacement or upstream completion; one that handed over its
     /// only disclosure answers `Pending` and discloses on its next advance.
-    pub(in crate::domain_computation::primary_graph) fn advance_output_demand_with_prepared_source<
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn advance_output_demand_with_prepared_source<
         Family,
     >(
         &self,
@@ -67,6 +67,7 @@ where
         >,
         commit_authority: WorthQueryProducerCommitAuthority,
         request_admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -83,6 +84,7 @@ where
                 delivery_branch,
                 &mut disclosure,
                 pass,
+                performed,
                 commit_authority.clone(),
                 request_admission,
             );
@@ -119,6 +121,7 @@ where
             WorthQueryOutputDemandDenial,
         >,
         pass: AdvancePass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        performed: &mut required_wave::performed::PerformedMembers,
         commit_authority: WorthQueryProducerCommitAuthority,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
@@ -209,6 +212,7 @@ where
                 request_scope,
                 delivery_branch,
                 &commit_authority,
+                performed,
                 request_admission,
             )? {
                 return Ok(AdvancePassProgress::Answer(advance));
@@ -247,6 +251,7 @@ where
                         disclosed,
                         entry,
                         commit_authority,
+                        performed,
                         request_admission,
                     )?;
                     match answer {
@@ -274,6 +279,7 @@ where
                         disclosed,
                         entry,
                         commit_authority,
+                        performed,
                         request_admission,
                     )?;
                     match answer {
@@ -315,6 +321,7 @@ where
                         disclosed,
                         entry,
                         commit_authority,
+                        performed,
                         request_admission,
                     )?;
                     match answer {
@@ -337,6 +344,7 @@ where
                         disclosed,
                         entry,
                         commit_authority,
+                        performed,
                         request_admission,
                     )?;
                     match answer {
@@ -358,6 +366,7 @@ where
                 delivery_branch,
                 &requested_authority,
                 &mut stop,
+                performed,
                 request_admission,
             )? {
                 Some(WorthQueryOutputDemandAdvance::Settled(_)) if !final_disclosure => {

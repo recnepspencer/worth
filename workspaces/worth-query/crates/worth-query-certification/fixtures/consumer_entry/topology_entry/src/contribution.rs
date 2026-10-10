@@ -108,6 +108,9 @@ impl TopologyContribution {
         setup.handler::<super::PlanarSourceAdjustmentBinding<Schema>, _>(
             super::PlanarSourceAdjustmentHandler,
         )?;
+        setup.handler::<super::PlanarInitialAdjustmentBinding<Schema>, _>(
+            super::PlanarInitialAdjustmentHandler,
+        )?;
         let final_provider = super::PlanarFinalOutputProvider::default();
         #[cfg(test)]
         let final_provider = if provider.has_uniform_decimal_key_width() {

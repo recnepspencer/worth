@@ -35,6 +35,66 @@ where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
 {
+    /// Checks retained discovered-source custody before a detached continuation
+    /// reads or mutates any program state. This validates existing authority;
+    /// it neither duplicates the prepared token nor recovers roots from a receipt.
+    pub fn validate_discovered_program_source<Root>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        prepared: &WorthQueryPreparedRequiredOutputSource,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        observation: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryOutputDemandDenial>
+    where
+        Root: ApplicationOutputGraphShape<Schema>
+            + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
+        RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
+    {
+        self.require_discovered_root::<Root>()?;
+        if prepared.runtime_authority != self.runtime.runtime.authority_identity().as_u64()
+            || &prepared.source_commit != receipt.committed_product_publication().composite_commit()
+            || &prepared.source_commit != observation.selected_commit()
+            || prepared.product_occurrence != observation.branch_incarnation()
+            || branch.occurrence() != observation.branch_incarnation()
+        {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "discovered continuation differs from its original runtime or publication",
+            ));
+        }
+        self.runtime.output_demands.validate_recovery_root_kind(
+            receipt,
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(std::any::TypeId::of::<Root>()),
+        )?;
+        self.runtime
+            .select_application_read_observation(observation)
+            .map_err(|denial| {
+                WorthQueryOutputDemandDenial::product_selection(
+                    denial,
+                    "discovered continuation observation",
+                )
+            })?;
+        use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
+        let kind = match request.interruption() {
+            Some(WorthQueryRequestInterruption::Cancelled) => Some(WorthQueryOutputDemandDenialKind::Cancelled),
+            Some(WorthQueryRequestInterruption::DeadlineExceeded) => Some(WorthQueryOutputDemandDenialKind::TimedOut),
+            None if self.runtime.authentication_is_expired(principal.valid_until()) => Some(
+                WorthQueryOutputDemandDenialKind::SourcePrincipal(
+                    crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind::ExpiredAuthentication)),
+            None => None,
+        };
+        match kind {
+            Some(kind) => Err(WorthQueryOutputDemandDenial::new(
+                kind,
+                "discovered continuation request",
+            )),
+            None => Ok(()),
+        }
+    }
+
     pub fn retain_discovered_program_source<Root>(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,

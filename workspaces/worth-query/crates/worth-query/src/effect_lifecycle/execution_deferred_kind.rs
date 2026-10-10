@@ -41,7 +41,6 @@ pub(crate) const fn companion_stop_is_transient(stop: &CompanionPreflightStop) -
         // companion deferral is built, so it never reaches this split.
         CompanionPreflightStop::Interrupted(_)
         | CompanionPreflightStop::ForeignCell
-        | CompanionPreflightStop::CellCapacityExhausted { .. }
         | CompanionPreflightStop::WorkExhausted { .. }
         | CompanionPreflightStop::WorkCounterOverflow
         | CompanionPreflightStop::PreparationMemoryExhausted { .. }

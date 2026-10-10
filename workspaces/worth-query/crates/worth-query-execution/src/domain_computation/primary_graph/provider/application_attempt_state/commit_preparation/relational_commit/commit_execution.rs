@@ -102,6 +102,8 @@ pub(super) fn commit(
             &mut publication_admission,
         )
         .map_err(native_output_witness_stop)?;
+    #[cfg(test)]
+    provider.fault_port.candidate_ready_for_native_preparation();
     let mut candidate = provider
         .graph
         .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
@@ -270,6 +272,11 @@ impl WorthQueryCommittedApplicationSession {
             self.attempt.indexed_rebase_work_budget(),
             &mut self.publication_admission,
         )
+    }
+    pub(in crate::domain_computation::primary_graph::provider) fn take_recovered_output_source(
+        &self,
+    ) -> crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource{
+        crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource::take_original(&self.product_publication)
     }
     pub(super) fn take_prepared_touched_records(&mut self) -> PreparedTouchedRecords {
         self.prepared_touched_records

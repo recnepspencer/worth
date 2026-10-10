@@ -25,6 +25,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
+    /// Checks borrowed advancement custody before a Publication entry reader.
+    pub fn validate_application_advancement(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+    ) -> Result<(), WorthQueryForeignAdvancementPhase> {
+        phase
+            .execution_request_for(&self.product_runtime)
+            .map(|_| ())
+    }
+
     /// The higher-ranked callback prevents a phase from escaping in its result.
     /// Custody is per thread: another thread's public call owns its own request.
     /// Zero memory reports `PolicyMemoryLimit` in serial placement and a policy

@@ -39,20 +39,12 @@ fn apply_execution_overrides(
         "execution.compiled_lane_policy",
         section.compiled_lane_policy.is_some(),
     );
-    insert_override_provenance(
-        provenance,
-        "execution.relation_integrity_scope_budget",
-        section.relation_integrity_scope_budget.is_some(),
-    );
 
     if let Some(runtime_name) = &section.runtime_name {
         config.execution.runtime_name = runtime_name.clone();
     }
     if let Some(compiled_lane_policy) = section.compiled_lane_policy {
         config.execution.compiled_lane_policy = compiled_lane_policy;
-    }
-    if let Some(relation_integrity_scope_budget) = &section.relation_integrity_scope_budget {
-        config.execution.relation_integrity_scope_budget = relation_integrity_scope_budget.clone();
     }
 }
 

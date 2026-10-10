@@ -520,7 +520,7 @@ Application usage:
   performed product-change capability is single-use and never recreated.
 
 **Required outputs.** For a program-owned action, required output means the
-complete authored output graph. `performed.start_required_outputs(&request, controls)`
+complete authored output graph. `performed.start_required_outputs(&application, &request, controls)`
 and `request.start_program_outputs(&application, demand, controls)` return
 `WorthQueryApplicationProgramOutputHandle`.
 
@@ -535,10 +535,10 @@ typed action intent + exact installed program
     -> complete program-output settlement
 ```
 
-- `settle(&fresh_request)` performs at most the resolved installed-host
+- `settle(&application, &fresh_request)` performs at most the resolved installed-host
   settlement allowance, optionally narrowed by caller controls, and returns
   `Pending` when that bound is exhausted. `Default::default()` controls use the
-  installed host policy without copied numeric caps. `advance(&fresh_request)` serves hosts that wait on owner
+  installed host policy without copied numeric caps. `advance(&application, &fresh_request)` serves hosts that wait on owner
   notifications between advances. Ordinary consumers never hard-code an
   advance count or rediscover the dependent graph.
 - Settlement of the root and every discovered edge returns one

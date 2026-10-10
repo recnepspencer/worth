@@ -50,7 +50,7 @@ fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
     signal_charges();
     computation_runs();
     let outcome = output
-        .advance(&request)
+        .advance(&application, &request)
         .expect("the consumer shares its advancement request");
     let reports = reports();
     assert_eq!(
@@ -290,7 +290,7 @@ fn signal_reservation_uses_the_advancement_work_ceiling() {
         ))),
     );
     reports();
-    let outcome = output.advance(&request);
+    let outcome = output.advance(&application, &request);
     let reports = reports();
     let denial = match outcome {
         Err(denial) => denial,

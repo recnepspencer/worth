@@ -2,15 +2,14 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::RelationScopeRequirement;
 use super::{PlannedRelationEdge, PreparedRelationIntegrityScope, PreparedRelationIntegrityScopes};
-use crate::config::data::RelationIntegrityScopeBudget;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::overlay::PartitionAccess;
 use crate::transactions::data::{EntityReference, MergedCommitPlan};
 
-mod budget;
 mod incidence_collection;
-pub(crate) use budget::PreparedRelationIntegrityScopeBudgetExceeded;
-use budget::{ensure_relation_integrity_scope_budget, scope_budget_snapshot};
+mod scope_completion;
+use super::preparation_control::InvariantPreparationControl;
+use crate::transactions::data::TransactionCommitError;
 
 pub(crate) fn prepare_relation_integrity_scopes(
     merged_plan: Option<&MergedCommitPlan>,
@@ -18,8 +17,9 @@ pub(crate) fn prepare_relation_integrity_scopes(
     version_id: crate::identity::data::VersionId,
     requirements: BTreeMap<KindId, RelationScopeRequirement>,
     performance: &crate::performance::PerformanceAccess<'_>,
-    budget: &RelationIntegrityScopeBudget,
-) -> Result<Option<PreparedRelationIntegrityScopes>, PreparedRelationIntegrityScopeBudgetExceeded> {
+    control: &InvariantPreparationControl<'_, '_>,
+) -> Result<Option<PreparedRelationIntegrityScopes>, TransactionCommitError> {
+    control.check()?;
     if requirements.is_empty() {
         return Ok(None);
     }
@@ -28,15 +28,15 @@ pub(crate) fn prepare_relation_integrity_scopes(
         version_id,
         requirements,
         performance,
-        budget,
+        control,
     );
     if let Some(merged_plan) = merged_plan {
         accumulator.collect_plan(merged_plan)?;
     }
-    accumulator.ensure_budget()?;
+    accumulator.check_live()?;
     accumulator.scan_touched_relations()?;
     accumulator.scan_required_visible_successors()?;
-    Ok(accumulator.finish())
+    accumulator.finish()
 }
 
 fn include_existing_entity_reference(
@@ -48,31 +48,30 @@ fn include_existing_entity_reference(
     }
 }
 
-struct RelationIntegrityScopeAccumulator<'access, 'runtime> {
+struct RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority> {
     partitions: &'access dyn PartitionAccess,
     state_view: crate::validation::engine::state_view::InvariantStateView<'access>,
     performance: &'access crate::performance::PerformanceAccess<'runtime>,
-    budget: &'access RelationIntegrityScopeBudget,
+    control: &'access InvariantPreparationControl<'scope, 'authority>,
     scopes: BTreeMap<KindId, PreparedRelationIntegrityScope>,
     minimum_candidate_kinds: BTreeMap<KindId, BTreeSet<KindId>>,
     create_scan_directions: BTreeMap<KindId, (bool, bool, bool, bool)>,
-    created_candidate_entities: BTreeSet<crate::transactions::data::CreatedEntityRef>,
-    touched_entities: BTreeSet<EntityId>,
     touched_relation_sources: BTreeSet<EntityId>,
     touched_relation_targets: BTreeSet<EntityId>,
     deleted_entities: BTreeSet<EntityId>,
     deleted_relations: BTreeSet<RelationId>,
     scanned_relations: BTreeSet<RelationId>,
-    planned_edge_count: usize,
 }
 
-impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
+impl<'access, 'runtime, 'scope, 'authority>
+    RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority>
+{
     fn new(
         partitions: &'access dyn PartitionAccess,
         version_id: crate::identity::data::VersionId,
         requirements: BTreeMap<KindId, RelationScopeRequirement>,
         performance: &'access crate::performance::PerformanceAccess<'runtime>,
-        budget: &'access RelationIntegrityScopeBudget,
+        control: &'access InvariantPreparationControl<'scope, 'authority>,
     ) -> Self {
         let minimum_candidate_kinds = requirements
             .iter()
@@ -98,7 +97,7 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
                 partitions, version_id,
             ),
             performance,
-            budget,
+            control,
             scopes: requirements
                 .into_iter()
                 .map(|(kind_id, requirement)| {
@@ -112,24 +111,19 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
                     )
                 })
                 .collect(),
-            touched_entities: BTreeSet::new(),
             minimum_candidate_kinds,
             create_scan_directions,
-            created_candidate_entities: BTreeSet::new(),
             touched_relation_sources: BTreeSet::new(),
             touched_relation_targets: BTreeSet::new(),
             deleted_entities: BTreeSet::new(),
             deleted_relations: BTreeSet::new(),
             scanned_relations: BTreeSet::new(),
-            planned_edge_count: 0,
         }
     }
 
-    fn collect_plan(
-        &mut self,
-        plan: &MergedCommitPlan,
-    ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
+    fn collect_plan(&mut self, plan: &MergedCommitPlan) -> Result<(), TransactionCommitError> {
         for intent in &plan.merged_intents {
+            self.check_live()?;
             self.collect_intent(intent)?;
         }
         Ok(())
@@ -138,7 +132,8 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
     fn collect_intent(
         &mut self,
         intent: &crate::transactions::data::MutationIntent,
-    ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
         use crate::transactions::data::{
             CreateIntent, EntityMutationIntent, MaterializationMutationIntent, MutationIntent,
         };
@@ -159,6 +154,7 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
             }
             MutationIntent::Create(CreateIntent::BulkEntities(spec)) => {
                 for key in &spec.client_keys {
+                    self.check_live()?;
                     self.collect_created_entity(spec.partition_id, spec.kind_id, key.clone())?;
                 }
             }
@@ -213,33 +209,36 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
         partition_id: crate::identity::data::PartitionId,
         kind_id: KindId,
         client_key: crate::symbols::data::ClientKey,
-    ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
         let created = crate::transactions::data::CreatedEntityRef {
             partition_id,
             kind_id,
             client_key,
         };
         for (relation_kind, kinds) in &self.minimum_candidate_kinds {
+            self.check_live()?;
             if kinds.contains(&kind_id) {
                 self.scopes
                     .get_mut(relation_kind)
                     .expect("minimum scope prepared")
                     .created_candidate_entities
                     .insert(created.clone());
-                self.created_candidate_entities.insert(created.clone());
             }
         }
-        self.ensure_budget()
+        self.check_live()
     }
 
     fn collect_revalidated_entity(
         &mut self,
         entity_id: EntityId,
-    ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
         let Some(metadata) = self.state_view.entity_metadata(entity_id) else {
             return Ok(());
         };
         for (relation_kind, kinds) in &self.minimum_candidate_kinds {
+            self.check_live()?;
             if kinds.contains(&metadata.kind_id) {
                 self.scopes
                     .get_mut(relation_kind)
@@ -248,10 +247,9 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
                     .insert(entity_id);
             }
         }
-        self.touched_entities.insert(entity_id);
         self.touched_relation_sources.insert(entity_id);
         self.touched_relation_targets.insert(entity_id);
-        self.ensure_budget()
+        self.check_live()
     }
 
     fn collect_planned_edge(
@@ -259,7 +257,8 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
         kind_id: KindId,
         source: &EntityReference,
         target: &EntityReference,
-    ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
         self.scopes
             .entry(kind_id)
             .or_default()
@@ -268,9 +267,6 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
                 source: source.clone(),
                 target: target.clone(),
             });
-        self.planned_edge_count += 1;
-        include_existing_entity_reference(&mut self.touched_entities, source);
-        include_existing_entity_reference(&mut self.touched_entities, target);
         let (scan_source, scan_target, scan_pair, scan_full) = self
             .create_scan_directions
             .get(&kind_id)
@@ -288,13 +284,14 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
             include_existing_entity_reference(&mut self.touched_relation_targets, source);
             include_existing_entity_reference(&mut self.touched_relation_sources, target);
         }
-        self.ensure_budget()
+        self.check_live()
     }
 
     fn collect_relation_delete(
         &mut self,
         relation_id: RelationId,
-    ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
         self.deleted_relations.insert(relation_id);
         if let Some((kind_id, source, target)) =
             relation_scope_details_for_id(&self.state_view, relation_id)
@@ -308,61 +305,25 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
                 .expect("deleted scope prepared")
                 .minimum_touched_entities
                 .extend([source, target]);
-            self.touched_entities.extend([source, target]);
             self.touched_relation_sources.extend([source, target]);
             self.touched_relation_targets.extend([source, target]);
         }
-        self.ensure_budget()
+        self.check_live()
     }
 
     fn collect_entity_removal(
         &mut self,
         entity_id: EntityId,
-    ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
-        self.touched_entities.insert(entity_id);
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
         self.touched_relation_sources.insert(entity_id);
         self.touched_relation_targets.insert(entity_id);
         self.deleted_entities.insert(entity_id);
-        self.ensure_budget()
+        self.check_live()
     }
 
-    fn ensure_budget(&self) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
-        ensure_relation_integrity_scope_budget(
-            self.budget,
-            scope_budget_snapshot(
-                &self.scopes,
-                &self.touched_entities,
-                self.created_candidate_entities.len(),
-                &self.deleted_entities,
-                &self.scanned_relations,
-                self.planned_edge_count,
-            ),
-        )
-    }
-
-    fn finish(mut self) -> Option<PreparedRelationIntegrityScopes> {
-        for scope in self.scopes.values_mut() {
-            scope.deleted_entities.extend(
-                scope
-                    .minimum_touched_entities
-                    .intersection(&self.deleted_entities)
-                    .copied(),
-            );
-            let planned_edges = std::mem::take(&mut scope.planned_edges);
-            for edge in planned_edges {
-                scope.increment_counts(edge.source.clone(), edge.target.clone());
-                for entity in [&edge.source, &edge.target] {
-                    if let EntityReference::Existing(entity_id) = entity {
-                        if self.deleted_entities.contains(entity_id) {
-                            scope.deleted_entities.insert(*entity_id);
-                        }
-                    }
-                }
-                scope.planned_edges.push(edge);
-            }
-        }
-        self.scopes.retain(|_, scope| scope.should_execute());
-        (!self.scopes.is_empty()).then(|| PreparedRelationIntegrityScopes::new(self.scopes))
+    fn check_live(&self) -> Result<(), TransactionCommitError> {
+        self.control.check()
     }
 }
 

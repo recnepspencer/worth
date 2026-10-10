@@ -42,7 +42,6 @@ pub(crate) fn relational_runtime_with_intent_strategy() -> RelationalRuntime {
             max_transaction_savepoints: 4_096,
             max_prepared_candidates: 1_024,
             candidate_max_lifetime_millis: 30_000,
-            max_prepared_root_bytes: 268_435_456,
         })
         .commit_strategy(
             CommitStrategyRegistration::new(descriptor.clone()).expect("strategy registration"),

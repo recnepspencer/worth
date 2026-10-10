@@ -62,15 +62,19 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
         panic!("real source command must perform")
     };
     let mut outputs = performed
-        .start_required_outputs(&request, Default::default())
+        .start_required_outputs(&application, &request, Default::default())
         .unwrap_or_else(|failure| panic!("actual source output custody: {:?}", failure.denial()));
     let settled = (0..64)
-        .find_map(
-            |_| match outputs.required_output_mut().advance(&request).unwrap() {
+        .find_map(|_| {
+            match outputs
+                .required_output_mut()
+                .advance(&application, &request)
+                .unwrap()
+            {
                 WorthQueryApplicationProgramOutputProgress::Pending => None,
                 WorthQueryApplicationProgramOutputProgress::Settled(value) => Some(value),
-            },
-        )
+            }
+        })
         .expect("actual mixed replacement must settle as current");
     let root = settled
         .root_receipt()

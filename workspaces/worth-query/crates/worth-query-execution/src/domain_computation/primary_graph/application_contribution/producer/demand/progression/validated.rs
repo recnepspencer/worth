@@ -31,6 +31,7 @@ where
         commit_authority: WorthQueryProducerCommitAuthority,
         mut schedule_progression: ScheduleProgression<'_, '_, Schema>,
         request_admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<
         OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
         WorthQueryOutputDemandDenial,
@@ -195,6 +196,38 @@ where
                 Admission::Execute { successor_of } => break successor_of,
             }
         };
+        let ordinary_readiness = if schedule_progression.is_selected() {
+            None
+        } else {
+            let readiness = disclosed_source
+                .output_source_epoch()
+                .ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        Family::IDENTITY,
+                    )
+                })
+                .and_then(|source| {
+                    performed.ordinary(
+                        interest.key(),
+                        source,
+                        self,
+                        delivery_branch,
+                        request_admission,
+                    )
+                });
+            match readiness {
+                Ok(Some(readiness)) => Some(readiness),
+                Ok(None) => {
+                    selected_execution_finish.relinquish();
+                    return Ok(waiting());
+                }
+                Err(stop) => {
+                    selected_execution_finish.relinquish();
+                    return Err(stop);
+                }
+            }
+        };
         let mut required_output = match interest.required_context(
             &self.primary_provider.graph.source_owner.invalidation_owner,
             request_admission,
@@ -252,6 +285,7 @@ where
             ScheduleProgression::Selected {
                 shared,
                 matched_predecessors,
+                ..
             } => entry.executor.execute_on_selected(
                 phase,
                 self,
@@ -269,7 +303,7 @@ where
                 &mut demand.producer_contacts_in_this_demand,
             ),
         });
-        let mut receipt = match result.map(|prepared| prepared.into_parts()) {
+        let receipt = match result.map(|prepared| prepared.into_parts()) {
             Ok((
                 super::super::super::execution::ProducerExecutionOutcome::Committed(receipt),
                 ready_backing,
@@ -316,9 +350,23 @@ where
                 return Err(denial);
             }
         };
+        // The effect is authoritative now; a deferred checkpoint cannot
+        // confer another Fresh turn in this public advance.
+        let readiness = match schedule_progression {
+            ScheduleProgression::Selected { readiness, .. } => readiness,
+            ScheduleProgression::Ordinary => ordinary_readiness
+                .expect("an ordinary effect consumes its admitted publication permission"),
+        };
+        let _published_in_this_advance = receipt.0.published_in_this_advance();
+        let mut receipt = (performed.publication(readiness, receipt.0), receipt.1);
         let publication = OwnPublication(receipt.0.committed_product_publication().clone());
         #[cfg(feature = "test-query-execution-observer")]
-        super::caller_pass_observation::exhaust_after_commit(request_admission);
+        super::caller_pass_observation::exhaust_after_commit(
+            request_admission,
+            _published_in_this_advance,
+            self.runtime.authority_identity().as_u64(),
+            interest.key().source_epoch().root_entity_for_test(),
+        );
         let delivery = receipt.0
             .take_performed_relational_product_change()
             .map_or(

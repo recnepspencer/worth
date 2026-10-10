@@ -108,11 +108,8 @@ impl PublicationCompanionRegistrationPort {
             commit_id,
             position,
         };
-        let retention = registry.reserve_cell()?;
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            install(CompanionBranchCell::new(
-                &selected, generation, initial, retention,
-            ))
+            install(CompanionBranchCell::new(&selected, generation, initial))
         }));
         // Release normally before resuming the caller's unwind: publication
         // exclusion must not be poisoned by arbitrary derived installation.

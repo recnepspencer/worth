@@ -155,7 +155,7 @@ where
                     phase,
                     move |request, identities, staged| {
                         super::authorization::prepare_capability_selected(
-                            request, identities, staged, &selected,
+                            phase, request, identities, staged, &selected,
                         )
                     },
                     |_, program, binding| {

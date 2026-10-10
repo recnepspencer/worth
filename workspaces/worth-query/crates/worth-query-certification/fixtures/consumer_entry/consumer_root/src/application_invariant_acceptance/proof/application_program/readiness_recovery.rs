@@ -50,7 +50,7 @@ pub(super) fn program_demand_rejects_a_foreign_request_and_releases_on_drop(
             controls(),
         )
         .expect("the program root admits its declared output");
-    match demand.advance(&foreign_request) {
+    match demand.advance(&world.application, &foreign_request) {
         Err(WorthQueryRequiredOutputPreparationDenial::Demand(
             WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch,
         )) => {}
@@ -97,7 +97,7 @@ pub(super) fn denied_program_producer_releases_the_shared_claim(
         .producer_authorization_denials
         .store(1, Ordering::SeqCst);
     let denial = (0..64)
-        .find_map(|_| match denied.advance(&request) {
+        .find_map(|_| match denied.advance(&world.application, &request) {
             Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
             Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
                 panic!("the injected producer denial must prevent the first settlement")
@@ -117,12 +117,15 @@ pub(super) fn denied_program_producer_releases_the_shared_claim(
         ),
         "the producer's operation names a scope that does not resolve: {denial:?}"
     );
-    let settled = (0..64).find_map(
-        |_| match peer.advance(&request).expect("the peer resumes") {
+    let settled = (0..64).find_map(|_| {
+        match peer
+            .advance(&world.application, &request)
+            .expect("the peer resumes")
+        {
             WorthQueryApplicationProgramOutputProgress::Pending => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
-        },
-    );
+        }
+    });
     assert!(
         settled.is_some(),
         "the peer must settle within bounded advances"
@@ -149,11 +152,16 @@ pub(super) fn readiness_failure_recovers_exact_pending_output(
         .application
         .fail_next_output_readiness_evaluation_for_test();
     let failure = (0..64)
-        .find_map(|_| match output.required_output_mut().advance(&request) {
-            Err(failure) => Some(failure),
-            Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
-            Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
-                panic!("readiness fault must deny before output settlement")
+        .find_map(|_| {
+            match output
+                .required_output_mut()
+                .advance(&world.application, &request)
+            {
+                Err(failure) => Some(failure),
+                Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
+                Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
+                    panic!("readiness fault must deny before output settlement")
+                }
             }
         })
         .expect("the injected readiness evaluation must fail after output publication");
@@ -181,10 +189,12 @@ pub(super) fn readiness_failure_recovers_exact_pending_output(
             controls(),
         )
         .expect("owner-held readiness custody is recoverable");
-    let settled = settle(|| match recovered.advance(&request).unwrap() {
-        WorthQueryApplicationProgramOutputProgress::Pending => None,
-        WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
-    });
+    let settled = settle(
+        || match recovered.advance(&world.application, &request).unwrap() {
+            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
+        },
+    );
     assert_eq!(
         request
             .at(settled.observation())
@@ -219,7 +229,10 @@ pub(super) fn readiness_snapshot_pressure_keeps_published_output_recoverable(
         .press_next_readiness_with_world_snapshots_for_test();
     let mut failure = None;
     for _ in 0..64 {
-        match output.required_output_mut().advance(&request) {
+        match output
+            .required_output_mut()
+            .advance(&world.application, &request)
+        {
             Err(denial) => {
                 failure = Some(denial);
                 break;
@@ -262,7 +275,10 @@ pub(super) fn readiness_snapshot_pressure_keeps_published_output_recoverable(
         .expect("published readiness remains in Query custody after capacity is released");
     let mut settled = None;
     for _ in 0..64 {
-        match recovered.advance(&request).expect("readiness resumes") {
+        match recovered
+            .advance(&world.application, &request)
+            .expect("readiness resumes")
+        {
             WorthQueryApplicationProgramOutputProgress::Pending => {}
             WorthQueryApplicationProgramOutputProgress::Settled(value) => {
                 settled = Some(value);

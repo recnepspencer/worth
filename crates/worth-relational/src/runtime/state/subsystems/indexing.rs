@@ -4,9 +4,9 @@ use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
 mod admitted_selection;
+mod discard;
 pub(crate) use admitted_selection::ExactLookupInputs;
 mod generation_catalog;
-
 use generation_catalog::GenerationCatalog;
 
 use crate::history::data::{BranchId, CommitId};

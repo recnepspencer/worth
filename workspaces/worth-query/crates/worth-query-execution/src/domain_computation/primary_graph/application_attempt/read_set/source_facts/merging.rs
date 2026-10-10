@@ -135,3 +135,31 @@ fn source_storage_keeps_ordinary_order_and_projected_canonical_order() {
         vec![fact(first), fact(second)]
     );
 }
+
+#[test]
+fn decision_segment_keeps_its_boundary_before_lower_keyed_producer_facts() {
+    let handler = WorthQueryApplicationObservedFact::SourceEntity {
+        entity_id: EntityId::new(PartitionId::main(), 8, 1),
+    };
+    let producer = WorthQueryApplicationObservedFact::SourceEntity {
+        entity_id: EntityId::new(PartitionId::main(), 1, 1),
+    };
+    let merged = merge_source_facts(
+        vec![producer.clone(), handler.clone()],
+        keyed([handler.clone()]),
+        "test",
+        control(),
+    )
+    .unwrap();
+    assert_eq!(
+        merged.handler_len(),
+        1,
+        "the shared key belongs to the decision segment"
+    );
+    assert_eq!(merged.len(), 2, "the producer's shared key is deduplicated");
+    assert_eq!(
+        merged.into_values().collect::<Vec<_>>(),
+        vec![handler, producer],
+        "decision evidence precedes the producer suffix even when its key sorts later"
+    );
+}

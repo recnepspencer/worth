@@ -6,6 +6,7 @@
 //! stop that returned its row to the Ready it reopened ends it instead: the
 //! next wave claims that refresh again, after the entry frees its custody.
 
+use super::progression::PerformedMembers;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::any::{Any, TypeId};
 
@@ -23,6 +24,7 @@ mod prepared;
 mod progress;
 mod promotion;
 mod slot_preparation;
+mod unavailable;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::registry::InstalledProducerProvider,
     application_output_demand::{
@@ -37,7 +39,7 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 
-pub(in crate::domain_computation::primary_graph) use held::{
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use held::{
     resume_held_upstream, ContinuationCustody, HeldUpstream,
 };
 
@@ -86,6 +88,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>;
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
 }
@@ -244,8 +247,11 @@ where
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
+        performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
-        self.run_again(phase, runtime, principal, request, branch, admission)
+        self.run_again(
+            phase, runtime, principal, request, branch, admission, performed,
+        )
     }
 
     fn into_any(self: Box<Self>) -> Box<dyn Any> {

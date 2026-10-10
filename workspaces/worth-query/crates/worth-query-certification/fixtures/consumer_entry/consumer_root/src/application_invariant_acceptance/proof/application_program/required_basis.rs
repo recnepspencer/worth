@@ -55,12 +55,12 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         panic!("the first source publication is fresh")
     };
     let mut first = first
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("the first root starts: {:?}", failure.denial()));
     let first_settled = settle(|| {
         match first
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("first program advances")
         {
             WorthQueryApplicationProgramOutputProgress::Pending => None,
@@ -103,12 +103,12 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         .composite_commit()
         .ordinal();
     let mut second = second
-        .start_required_outputs(&request, controls)
+        .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("unchanged root joins: {:?}", failure.denial()));
     let second_settled = settle(|| {
         match second
             .required_output_mut()
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("later program advances")
         {
             WorthQueryApplicationProgramOutputProgress::Pending => None,
@@ -178,7 +178,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         .expect("the exact later source publication recovers");
     let third_settled = settle(|| {
         match recovered
-            .advance(&request)
+            .advance(&world.application, &request)
             .expect("recovered program advances")
         {
             WorthQueryApplicationProgramOutputProgress::Pending => None,
