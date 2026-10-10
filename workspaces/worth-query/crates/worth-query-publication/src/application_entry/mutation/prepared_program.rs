@@ -291,7 +291,9 @@ where
         match self.prepare_candidate(
             phase,
             move |request, identities, staged| {
-                super::authorization::prepare_selected(request, identities, staged, &selected)
+                super::authorization::prepare_selected(
+                    phase, request, identities, staged, &selected,
+                )
             },
             decision_work,
             allocation_policy,

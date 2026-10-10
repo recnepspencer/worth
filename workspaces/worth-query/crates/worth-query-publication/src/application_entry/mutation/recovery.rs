@@ -31,6 +31,16 @@ pub enum WorthQueryApplicationRecoveryRequestDenial {
     Idempotency(WorthQueryApplicationIdempotencyResolutionDenial),
 }
 
+impl WorthQueryApplicationRecoveryRequestDenial {
+    pub(in crate::application_entry::mutation) fn advancement(
+        cause: worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ) -> Self {
+        Self::Recovery(WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(
+            cause,
+        ))
+    }
+}
+
 impl From<WorthQueryApplicationRequestMutationDenial>
     for WorthQueryApplicationRecoveryRequestDenial
 {
@@ -88,16 +98,23 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        let prepared = self.authorize_recovery(application)?;
-        self.check_recovery_liveness()?;
-        self.request
-            .application
-            .recover_admitted_unpublished_application(
-                recovery,
-                &prepared.admission,
-                prepared.idempotency,
-            )
-            .map_err(WorthQueryApplicationRecoveryRequestDenial::Recovery)
+        let runtime = self.request.application;
+        let scope = self.request.scope.clone();
+        runtime
+            .with_application_advancement(&scope, |phase| {
+                let prepared = self.authorize_recovery(&phase, application)?;
+                self.check_recovery_liveness()?;
+                self.request
+                    .application
+                    .recover_admitted_unpublished_application_in_advancement(
+                        &phase,
+                        recovery,
+                        &prepared.admission,
+                        prepared.idempotency,
+                    )
+                    .map_err(WorthQueryApplicationRecoveryRequestDenial::Recovery)
+            })
+            .map_err(WorthQueryApplicationRecoveryRequestDenial::advancement)?
     }
 
     /// Reads the original keyed outcome through fresh selected-program and
@@ -109,21 +126,34 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        let prepared = self.authorize_recovery(application)?;
-        self.check_recovery_liveness()?;
-        self.request
-            .application
-            .resolve_admitted_application_idempotency(&prepared.admission, prepared.idempotency)
-            .map_err(WorthQueryApplicationRecoveryRequestDenial::Idempotency)
+        let runtime = self.request.application;
+        let scope = self.request.scope.clone();
+        runtime
+            .with_application_advancement(&scope, |phase| {
+                let prepared = self.authorize_recovery(&phase, application)?;
+                self.check_recovery_liveness()?;
+                self.read_recovery_idempotency(&phase, &prepared)
+            })
+            .map_err(WorthQueryApplicationRecoveryRequestDenial::advancement)?
     }
 
     fn authorize_recovery<Program>(
         &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<PreparedMutation<Schema, Intent::Binding>, WorthQueryApplicationRecoveryRequestDenial>
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
+        self.request
+            .application
+            .validate_application_advancement(phase)
+            .map_err(|cause| {
+                WorthQueryApplicationRecoveryRequestDenial::advancement(cause.into())
+            })?;
+
         if <Intent::Binding as ApplicationMutationBinding<Schema>>::WORKFLOW_CONTROL
             || <Intent::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY
             || self.workflow_transition_identity.is_some()
@@ -159,14 +189,38 @@ where
         // Bind the original source identity and partition for recovery matching.
         // The retained attempt already owns its source facts: do not consume the
         // pending expectation into a fresh candidate or invoke the handler.
-        super::authorization::prepare_selected(self, &identities, staged, &selected)
+        super::authorization::prepare_selected(phase, self, &identities, staged, &selected)
             .map_err(WorthQueryApplicationRecoveryRequestDenial::Request)
     }
 
-    fn check_recovery_liveness(&self) -> Result<(), WorthQueryApplicationRecoveryRequestDenial> {
+    pub(in crate::application_entry::mutation) fn read_recovery_idempotency(
+        &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        prepared: &PreparedMutation<Schema, Intent::Binding>,
+    ) -> Result<WorthQueryAdmittedIdempotencyRead, WorthQueryApplicationRecoveryRequestDenial> {
+        self.request
+            .application
+            .validate_application_advancement(phase)
+            .map_err(|cause| {
+                WorthQueryApplicationRecoveryRequestDenial::advancement(cause.into())
+            })?;
+        self.request
+            .application
+            .resolve_admitted_application_idempotency(&prepared.admission, prepared.idempotency)
+            .map_err(WorthQueryApplicationRecoveryRequestDenial::Idempotency)
+    }
+
+    pub(in crate::application_entry::mutation) fn check_recovery_liveness(
+        &self,
+    ) -> Result<(), WorthQueryApplicationRecoveryRequestDenial> {
         match self.request.scope.interruption() {
-            Some(interruption) => Err(WorthQueryApplicationRecoveryRequestDenial::Interrupted(
-                interruption,
+            Some(stop) => Err(WorthQueryApplicationRecoveryRequestDenial::advancement(
+                worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(match stop {
+                    worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled => worth_query_execution::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled,
+                    worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded => worth_query_execution::facade::application_contribution::WorthQueryManagedComputationInterruption::DeadlineExceeded,
+                }),
             )),
             None => Ok(()),
         }

@@ -187,6 +187,7 @@ where
 }
 
 pub(super) fn prepare_selected<Schema, Intent, SourcePreparation>(
+    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     request: &Request<'_, '_, '_, '_, Schema, Intent, SourcePreparation>,
     identities: &Identities<'_, Schema, Intent>,
     staged: WorthQueryStagedMutation<Schema, Intent>,
@@ -201,6 +202,13 @@ where
             <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
+    request
+        .request
+        .application
+        .validate_application_advancement(phase)
+        .map_err(|cause| {
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause.into())
+        })?;
     let authorized = authorize_selected(&request.request, staged.preconditions, selected)?;
     prepare_authorized(request, identities, staged.source, authorized)
 }
