@@ -42,6 +42,7 @@ mod required_cue;
 mod selected;
 mod selected_public;
 mod source_readmission;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use source_readmission::ready_currentness_denial;
 use selected::InstalledSelectedProducerExecutor;
 use super::demand::disclosure::{
     FreshOutputDisclosure, ValidatedOutputDisclosure, ValidatedProducerInput,

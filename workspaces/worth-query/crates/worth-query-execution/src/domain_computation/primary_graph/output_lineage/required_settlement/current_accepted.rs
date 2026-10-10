@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod consumption;
+mod decision_input;
 #[cfg(test)]
 mod own_write_recovery;
 mod recovery;
@@ -259,18 +260,16 @@ impl AcceptedCurrentCandidate {
         if let (Some(FullVerificationReason::RegistrationIncomplete), Some(facts)) =
             (requirement, facts.as_ref())
         {
-            if recorded.consumed_outputs.is_empty() {
-                return self.recover_registration(
-                    computation,
-                    owner,
-                    runtime,
-                    product,
-                    snapshot,
-                    selected,
-                    facts.clone(),
-                    admission,
-                );
-            }
+            return self.recover_registration(
+                computation,
+                owner,
+                runtime,
+                product,
+                snapshot,
+                selected,
+                facts.clone(),
+                admission,
+            );
         }
         let restored = requirement == Some(FullVerificationReason::CheckpointRestore);
         if restored && facts.is_none() {

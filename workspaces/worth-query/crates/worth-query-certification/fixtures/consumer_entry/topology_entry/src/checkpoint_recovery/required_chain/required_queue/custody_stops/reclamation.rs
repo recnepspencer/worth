@@ -45,21 +45,25 @@ pub(super) fn overwrite_middle_output(
 }
 
 /// A chain node republishes the Length its own source reads, so its output
-/// does not vary with the root. A middle output another writer changes
-/// releases the custody it supersedes, so no budget both funds the middle
-/// refresh and reclaims the last consumer; the upper-edge test asserts the
-/// changed value's contact.
+/// does not vary with the root. The case where another writer changes the
+/// middle output also certifies reclaimed rows at a searched custody budget.
 #[test]
 fn a_dependent_whose_row_was_reclaimed_decides_again_over_a_refreshed_upstream() {
     let _guard = checkpoint_recovery_test_guard();
-    support::capacity_region::search(
-        "reclaimed rows",
-        1,
-        64 * primary_graph::required_ready_custody_bytes_for_test(),
-        support::capacity_region::Goal::Hit,
-        |bytes| run_reclamation_budget(bytes, false, true, 20, false),
-    )
-    .require_hit("a reclaimed dependent decides over refreshed upstream");
+    for overwritten in [false, true] {
+        support::capacity_region::search(
+            if overwritten {
+                "reclaimed written rows"
+            } else {
+                "reclaimed rows"
+            },
+            1,
+            64 * primary_graph::required_ready_custody_bytes_for_test(),
+            support::capacity_region::Goal::Hit,
+            |bytes| run_reclamation_budget(bytes, overwritten, true, 20, false),
+        )
+        .require_hit("a reclaimed dependent decides over refreshed upstream");
+    }
 }
 
 #[test]
@@ -176,9 +180,9 @@ fn run_reclamation_budget(
             "the closed chain's named owners"
         );
     }
-    let mut custody = None;
+    let mut custody = [None, None];
     use support::retained_inventory::{Inventory, SteadyCycles};
-    let mut steady = SteadyCycles::new();
+    let mut steady = SteadyCycles::alternating();
     let measured_cycles = cycles.saturating_sub(2 * 8) as usize;
     let warm_up = measured_cycles != 0;
     // Each retained owner has eight version positions. After two windows,
@@ -190,6 +194,11 @@ fn run_reclamation_budget(
     } else {
         cycles
     } {
+        // Queue drainage starts after warm-up; compare equal-parity cycles
+        // within the same phase, rather than undrained and drained inventories.
+        if cycle == steady_start {
+            custody = [None, None];
+        }
         let mut reclaimed_inventory = None;
         let boundary_baseline = invalidation.native_retained_allocations_for_test();
         let at = format!("{budget} bytes, cycle {cycle}, overwritten {overwritten}");
@@ -365,9 +374,9 @@ fn run_reclamation_budget(
         }
         let held = application.required_custody_bytes_for_test();
         assert_eq!(
-            *custody.get_or_insert(held),
+            *custody[cycle as usize % 2].get_or_insert(held),
             held,
-            "{at}: the closed chain holds what it held a cycle before"
+            "{at}: the closed chain holds what it held at the same input parity"
         );
     }
     assert!(

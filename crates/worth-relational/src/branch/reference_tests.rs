@@ -7,6 +7,28 @@ fn empty_cell() -> RelationalBranchReferenceCell {
 }
 
 #[test]
+fn a_checkpoint_with_a_one_digit_runtime_ordinal_still_restores() {
+    let checkpoint = RelationalBranchReferenceCell::empty(9, BranchId("main".to_owned()))
+        .expect("legacy branch identity is valid")
+        .checkpoint();
+    assert_eq!(checkpoint.runtime_instance_id, 9);
+    assert_eq!(
+        checkpoint.observation.branch_id().as_str(),
+        "relational/9/main"
+    );
+    let bytes = rmp_serde::to_vec_named(&checkpoint).expect("legacy image encodes");
+    let decoded = rmp_serde::from_slice(&bytes).expect("legacy image decodes");
+    let restored =
+        RelationalBranchReferenceCell::from_checkpoint_with_root(1_000_000_000, decoded, None)
+            .expect("the saved ordinal validates its own unchanged branch text");
+    assert_eq!(
+        restored.observation().branch_id().as_str(),
+        "relational/1000000000/main"
+    );
+    assert_eq!(restored.truth_version(), RelationalBranchVersion::initial());
+}
+
+#[test]
 fn metadata_movement_advances_generation_without_truth_version() {
     let cell = empty_cell();
     cell.advance_metadata().expect("generation can advance");

@@ -1,4 +1,4 @@
-//! A committed root's derived registration can recover without rerunning it.
+//! A committed member recovers derived registration without another publication.
 
 use super::*;
 
@@ -19,10 +19,10 @@ impl AcceptedCurrentCandidate {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         };
         let requirement = Some(FullVerificationReason::RegistrationIncomplete);
-        let verified = ConsumedOutputEvidence::verify_at_observation(
+        let verified = match ConsumedOutputEvidence::verify_at_observation(
             &recorded.settlement_identity,
             &facts,
-            &[],
+            &recorded.consumed_outputs,
             requirement,
             witness,
             owner,
@@ -30,24 +30,80 @@ impl AcceptedCurrentCandidate {
             snapshot,
             selected,
             admission,
-        )
-        .map_err(CurrentAcceptedStop::Closure)?;
+        ) {
+            Ok(answer) => answer,
+            Err(ConsumedOutputVerificationStop::PendingUpstream) => {
+                return self
+                    .pending_consumed_output(owner, runtime, snapshot, selected, admission)
+                    .map(|pending| match pending {
+                        Some(pending) => CurrentAcceptedResult::PendingExact(pending),
+                        None => CurrentAcceptedResult::PendingUnresolved,
+                    })
+                    .map_err(CurrentAcceptedStop::Closure);
+            }
+            Err(stop) => return Err(CurrentAcceptedStop::Closure(stop)),
+        };
         if verified != ConsumedOutputVerification::Current {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         }
         // Publication already owns the performed facts and sealed output.
         // Recover its derived row, retaining capacity stops on this caller.
-        if !owner
-            .establish_verified_root(
+        if recorded.consumed_outputs.is_empty() {
+            if !owner
+                .establish_verified_root(
+                    selected,
+                    &recorded.settlement_identity,
+                    &facts,
+                    witness.get().expect("selected performed witness is sealed"),
+                    admission,
+                )
+                .map_err(CurrentAcceptedStop::Registration)?
+            {
+                return Ok(CurrentAcceptedResult::NeedsDisclosure);
+            }
+        } else {
+            use crate::domain_computation::primary_graph::invariant_projection::PublicationRecoveryStop;
+            match ConsumedOutputEvidence::recover_missing(
+                owner,
+                &recorded.consumed_outputs,
+                runtime,
+                snapshot,
                 selected,
-                &recorded.settlement_identity,
-                &facts,
-                witness.get().expect("selected performed witness is sealed"),
+                admission,
+            ) {
+                Ok(()) => {}
+                Err(PublicationRecoveryStop::Reason(_)) => {
+                    return Ok(CurrentAcceptedResult::NeedsDisclosure)
+                }
+                Err(PublicationRecoveryStop::Closure(stop)) => {
+                    return Err(CurrentAcceptedStop::Closure(stop))
+                }
+                Err(PublicationRecoveryStop::Registration(stop)) => {
+                    return Err(CurrentAcceptedStop::Registration(stop))
+                }
+                Err(PublicationRecoveryStop::Admission(stop)) => {
+                    return Err(CurrentAcceptedStop::Registration(
+                        SettlementRegistrationStop::Admission(stop),
+                    ))
+                }
+            }
+            let upstream = super::super::super::invalidation::collect_consumed_output_upstream(
+                &*recorded.consumed_outputs,
                 admission,
             )
-            .map_err(CurrentAcceptedStop::Registration)?
-        {
-            return Ok(CurrentAcceptedResult::NeedsDisclosure);
+            .map_err(|stop| {
+                CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(stop))
+            })?;
+            owner
+                .establish_verified_consumed(
+                    selected,
+                    &recorded.settlement_identity,
+                    &facts,
+                    witness.get().expect("selected performed witness is sealed"),
+                    upstream,
+                    admission,
+                )
+                .map_err(CurrentAcceptedStop::Registration)?;
         }
         let Some(prepared) = owner
             .prepare_verified_current(
