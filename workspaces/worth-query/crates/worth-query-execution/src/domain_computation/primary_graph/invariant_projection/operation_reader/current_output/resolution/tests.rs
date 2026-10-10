@@ -29,7 +29,7 @@ fn a_full_ledger_reaches_the_handler_and_projection_as_capacity_exhausted() {
 
 #[test]
 fn index_loss_cannot_certify_own_write_output_at_the_retained_postcommit_observation() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         use crate::domain_computation::primary_graph::{
             output_lineage::own_write_fixture::with_committed_own_write,
             tests::{
@@ -43,6 +43,7 @@ fn index_loss_cannot_certify_own_write_output_at_the_retained_postcommit_observa
         };
         use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
         with_committed_own_write(|world, receipt, _, resources| {
+            world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request();
             let request = live_scope();
             let principal = authenticated_principal(&host_custody, world, &request);
             let account = resolved_account(&host_custody, world, "2", &request);
@@ -92,6 +93,7 @@ fn index_loss_cannot_certify_own_write_output_at_the_retained_postcommit_observa
                 Err(WorthQueryCurrentOutputDenialKind::StaleSource),
                 "rebased x=2 and an unchanged witness cannot certify output computed from x=1"
             );
+        }).expect("the fixture reads borrow their installed world phase");
         });
-    })
+    }
 }
