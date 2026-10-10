@@ -79,6 +79,7 @@ where
     let result = cursor.apply(
         admission,
         |key, outcome, admission| {
+            let mut installed = false;
             let applied = (|| {
                 let mut progress = outcome?;
                 let index = key.index;
@@ -93,6 +94,7 @@ where
                 }
                 member.contacts = progress.producer_contacts();
                 let outcome = storage.install_next(progress);
+                installed = true;
                 match outcome {
                     RequiredFreshOutcome::Refused(stop) => return Err(MemberStop { index, stop }),
                     RequiredFreshOutcome::Advanced => {}
@@ -133,6 +135,23 @@ where
                 Ok(())
             })();
             match applied {
+                Err(failure)
+                    if failure.stop.kind()
+                        == WorthQueryOutputDemandDenialKind::PublicationStale =>
+                {
+                    // The commit owner refused changed read facts. Discard this
+                    // plan and inspect the member again at the current basis.
+                    if installed {
+                        if frontier.members[failure.index].caller {
+                            caller_storage.discard_last();
+                        } else {
+                            queue_storage.discard_last();
+                        }
+                    }
+                    frontier.members[failure.index].state = MemberState::Inspect;
+                    moved = true;
+                    Ok(())
+                }
                 Err(failure) if !frontier.members[failure.index].caller => {
                     frontier.members[failure.index].state = MemberState::Pending;
                     queued_stops.push((failure.index, failure.stop));

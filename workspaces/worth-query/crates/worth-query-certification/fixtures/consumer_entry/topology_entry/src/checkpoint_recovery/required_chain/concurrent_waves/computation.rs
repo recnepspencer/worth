@@ -56,6 +56,12 @@ impl Schedule {
         })
     }
 }
+pub(super) fn ordinary_predecessor(input: &str) -> Option<String> {
+    let armed = ARMED.lock().unwrap();
+    let schedule = armed.as_ref()?;
+    (input == schedule.roots[1]).then(|| schedule.roots[0].clone())
+}
+
 pub(super) fn catches_denial() -> bool {
     ARMED
         .lock()

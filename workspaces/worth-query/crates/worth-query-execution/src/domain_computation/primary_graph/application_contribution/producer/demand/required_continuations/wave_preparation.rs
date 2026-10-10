@@ -32,6 +32,17 @@ impl<Schema: ApplicationSchema + 'static> PreparedContinuationWave<'_, Schema> {
             .expect("a member was installed")
     }
 
+    /// Discard a completed stale plan before inspecting its replaced Ready.
+    /// The successor's final interest restores that Ready through the registry.
+    pub(in super::super) fn discard_last(&mut self) {
+        drop(
+            self.custody
+                .entries
+                .pop()
+                .expect("a refused member was installed"),
+        );
+    }
+
     /// Fund both the future comparison/write and its physical backing before
     /// preparation can replace an interest. Applying a completed member cannot
     /// need an allocation, a capacity admission or another work admission.
