@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -21,7 +21,7 @@ const RETAINED_COMMIT_BATCH_BYTES: u64 = 262_144;
 const RETAINED_DELIVERY_BYTES: u64 =
     RETAINED_COMMIT_BATCH_BYTES * RETAINED_COMMIT_BATCH_CAPACITY as u64;
 
-#[derive(Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct WorthQueryLiveProductKey {
     branch: worth_runtime_world::facade::ProductBranchIdentity,
     incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
@@ -53,7 +53,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveDeliverySo
 
 #[derive(Default)]
 struct WorthQueryLiveDeliverySourceState {
-    partitions: HashMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition>,
+    partitions: BTreeMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition>,
     published_commit_count: usize,
     closed: bool,
 }

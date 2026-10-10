@@ -16,7 +16,7 @@ fn expectation() -> ManagedComputationExpectation {
 
 #[test]
 fn declared_managed_computation_requires_its_exact_owner_inventory() {
-    let declared = HashMap::from([(TypeId::of::<Computation>(), expectation())]);
+    let declared = Vec::from([(TypeId::of::<Computation>(), expectation())]);
     let missing = validate_managed_computation_inventory(&HashMap::new(), &declared)
         .expect_err("a declared computation without its owner must be denied");
     assert_eq!(missing.kind(), DenialKind::MissingManagedComputationOwner);
@@ -86,9 +86,8 @@ fn missing_owners_are_named_in_declared_computation_order() {
         if reverse {
             entries.reverse();
         }
-        let denied =
-            validate_managed_computation_inventory(&HashMap::new(), &HashMap::from(entries))
-                .unwrap_err();
+        let denied = validate_managed_computation_inventory(&HashMap::new(), &Vec::from(entries))
+            .unwrap_err();
         assert_eq!(denied.subject(), "alpha-computation");
     }
 }

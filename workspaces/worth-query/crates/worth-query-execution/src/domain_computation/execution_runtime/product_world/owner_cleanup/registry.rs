@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use super::{
@@ -26,7 +26,7 @@ struct CleanupRegistryState {
     maximum: usize,
     next_identity: u64,
     reserved: usize,
-    entries: HashMap<u64, Arc<CleanupEntry>>,
+    entries: BTreeMap<u64, Arc<CleanupEntry>>,
 }
 
 #[derive(Clone)]
@@ -41,7 +41,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
                 maximum,
                 next_identity: 1,
                 reserved: 0,
-                entries: HashMap::new(),
+                entries: BTreeMap::new(),
             })),
         }
     }
@@ -66,14 +66,6 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
             .next_identity
             .checked_add(1)
             .ok_or(WorthQueryProductBranchOwnerCleanupCapacityExhausted)?;
-        let additional_capacity = state
-            .reserved
-            .checked_add(1)
-            .ok_or(WorthQueryProductBranchOwnerCleanupCapacityExhausted)?;
-        state
-            .entries
-            .try_reserve(additional_capacity)
-            .map_err(|_| WorthQueryProductBranchOwnerCleanupCapacityExhausted)?;
         state.reserved += 1;
         Ok(WorthQueryProductBranchOwnerCleanupReservation {
             registry: self.clone(),

@@ -253,31 +253,38 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema> {
         &self,
         features: &[worth_query_declaration::facade::application_program::ApplicationFeatureDeclaration],
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        let declared = features
+        let mut declared = Vec::new();
+        let mut positions = HashMap::<TypeId, usize>::new();
+        for computation in features
             .iter()
             .flat_map(|feature| feature.managed_computations())
-            .map(|computation| {
-                (
-                    computation.computation_type(),
-                    ManagedComputationExpectation {
-                        identity: computation.identity(),
-                        feature_type: computation.feature_type(),
-                        computation_type: computation.computation_type(),
-                        output_artifact_type: computation.output_artifact_type(),
-                    },
-                )
-            })
-            .collect::<HashMap<_, _>>();
+        {
+            let entry = (
+                computation.computation_type(),
+                ManagedComputationExpectation {
+                    identity: computation.identity(),
+                    feature_type: computation.feature_type(),
+                    computation_type: computation.computation_type(),
+                    output_artifact_type: computation.output_artifact_type(),
+                },
+            );
+            if let Some(position) = positions.get(&entry.0) {
+                declared[*position] = entry;
+            } else {
+                positions.insert(entry.0, declared.len());
+                declared.push(entry);
+            }
+        }
         validate_managed_computation_inventory(&self.computations, &declared)
     }
 }
 
 fn validate_managed_computation_inventory(
     installed: &HashMap<TypeId, InstalledManagedComputationOwner>,
-    declared: &HashMap<TypeId, ManagedComputationExpectation>,
+    declared: &[(TypeId, ManagedComputationExpectation)],
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let mut computations: Vec<_> = declared.iter().collect();
-    computations.sort_unstable_by_key(|(_, computation)| computation.identity);
+    computations.sort_by_key(|(_, computation)| computation.identity);
     for (computation_type, computation) in computations {
         let owner = installed.get(computation_type).ok_or_else(|| {
             denial(
