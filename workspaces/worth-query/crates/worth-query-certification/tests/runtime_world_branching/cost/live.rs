@@ -56,6 +56,9 @@ pub(crate) fn assert_graph_work_capacity_bounds() {
         let scope = live_scope(&below, root, &request);
         below
             .application
+            .with_application_advancement(&request, |phase| {
+                below
+            .application
             .on_branch(root)
             .select()
             .unwrap()
@@ -69,12 +72,15 @@ pub(crate) fn assert_graph_work_capacity_bounds() {
                 TemporalIntent,
                 TemporalIntentLiveCause,
             >(
+                &phase,
                 query,
                 &principal,
                 scope,
                 ApplicationQueryParameterSet::new(),
                 live_controls(&request),
             )
+            })
+            .unwrap()
     };
     let first = open().expect("the installed one-slot limit must admit exactly one lease");
     let denial = match open() {
@@ -116,6 +122,9 @@ fn with_population<Result>(
             let scope = live_scope(world, root, &request);
             world
                 .application
+                .with_application_advancement(&request, |phase| {
+                    world
+                .application
                 .on_branch(root)
                 .select()
                 .unwrap()
@@ -129,12 +138,15 @@ fn with_population<Result>(
                     TemporalIntent,
                     TemporalIntentLiveCause,
                 >(
+                    &phase,
                     query,
                     &principal,
                     scope,
                     ApplicationQueryParameterSet::new(),
                     live_controls(&request),
                 )
+                })
+                .unwrap()
                 .unwrap()
         })
         .collect::<Vec<_>>();
