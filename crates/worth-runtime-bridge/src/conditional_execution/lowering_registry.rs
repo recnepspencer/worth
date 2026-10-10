@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::sync::{Arc, PoisonError, RwLock};
 
 use super::{
@@ -6,8 +6,10 @@ use super::{
 };
 
 mod exact_basis;
+mod exact_basis_index;
 mod key;
 pub(in crate::conditional_execution) use exact_basis::BridgeExactConditionalBasisKey;
+use exact_basis_index::BridgeExactConditionalBasisIndex;
 pub(in crate::conditional_execution) use key::BridgeConditionalLoweringKey;
 
 pub(in crate::conditional_execution) enum BridgeConditionalLoweringSlot {
@@ -18,7 +20,7 @@ pub(in crate::conditional_execution) enum BridgeConditionalLoweringSlot {
 #[derive(Default)]
 pub(super) struct BridgeConditionalLoweringRegistry {
     slots: BTreeMap<BridgeConditionalLoweringKey, BridgeConditionalLoweringSlot>,
-    exact_basis: HashMap<BridgeExactConditionalBasisKey, Arc<BridgeInstalledConditionalLowering>>,
+    exact_basis: BridgeExactConditionalBasisIndex,
     reserved_exact_basis_slots: usize,
 }
 
@@ -82,8 +84,7 @@ impl BridgeConditionalLoweringRegistry {
     ) -> Option<Arc<BridgeInstalledConditionalLowering>> {
         match self.slots.remove(key) {
             Some(BridgeConditionalLoweringSlot::Installed(lowering)) => {
-                self.exact_basis
-                    .retain(|_, retained| !Arc::ptr_eq(retained, &lowering));
+                self.exact_basis.remove_owner(key);
                 Some(lowering)
             }
             Some(BridgeConditionalLoweringSlot::Claimed) | None => None,
@@ -103,7 +104,7 @@ impl BridgeConditionalLoweringRegistry {
 
     pub(super) fn snapshot(
         &self,
-    ) -> HashMap<BridgeConditionalLoweringKey, Arc<BridgeInstalledConditionalLowering>> {
+    ) -> BTreeMap<BridgeConditionalLoweringKey, Arc<BridgeInstalledConditionalLowering>> {
         self.slots
             .iter()
             .filter_map(|(key, slot)| match slot {
@@ -117,7 +118,7 @@ impl BridgeConditionalLoweringRegistry {
 
     pub(super) fn replace_installed(
         &mut self,
-        lowerings: HashMap<BridgeConditionalLoweringKey, Arc<BridgeInstalledConditionalLowering>>,
+        lowerings: BTreeMap<BridgeConditionalLoweringKey, Arc<BridgeInstalledConditionalLowering>>,
     ) {
         self.slots = lowerings
             .into_iter()
@@ -128,7 +129,6 @@ impl BridgeConditionalLoweringRegistry {
         for lowering in installed {
             self.index_exact_basis(&lowering);
         }
-        self.exact_basis.reserve(self.reserved_exact_basis_slots);
     }
 
     pub(super) fn claim(
@@ -142,7 +142,7 @@ impl BridgeConditionalLoweringRegistry {
                 "conditional definition generation is already installed or reserved",
             ));
         }
-        installed.reserve_exact_basis_slot()?;
+        installed.reserve_exact_basis_slot(&key)?;
         installed
             .slots
             .insert(key.clone(), BridgeConditionalLoweringSlot::Claimed);
@@ -183,7 +183,7 @@ impl BridgeConditionalLoweringRegistry {
                 })
                 .cloned(),
         );
-        installed.reserve_exact_basis_slot()?;
+        installed.reserve_exact_basis_slot(super::contract::lowering_key(anchor))?;
         drop(installed);
 
         Ok(BridgeExactConditionalBasisLookup::Unindexed(
@@ -198,13 +198,16 @@ impl BridgeConditionalLoweringRegistry {
         ))
     }
 
-    fn reserve_exact_basis_slot(&mut self) -> Result<(), BridgeConditionalDenial> {
+    fn reserve_exact_basis_slot(
+        &mut self,
+        owner: &BridgeConditionalLoweringKey,
+    ) -> Result<(), BridgeConditionalDenial> {
         let exact_reservations = self
             .reserved_exact_basis_slots
             .checked_add(1)
             .ok_or_else(exact_basis_capacity_denial)?;
         self.exact_basis
-            .try_reserve(exact_reservations)
+            .reserve(owner, exact_reservations)
             .map_err(|_| exact_basis_capacity_denial())?;
         self.reserved_exact_basis_slots = exact_reservations;
         Ok(())
@@ -227,10 +230,11 @@ impl BridgeExactConditionalBasisClaim {
             .registry
             .write()
             .unwrap_or_else(PoisonError::into_inner);
-        registry
-            .exact_basis
-            .entry(self.key.clone())
-            .or_insert_with(|| Arc::clone(lowering));
+        if registry.exact_basis.get(&self.key).is_none() {
+            registry
+                .exact_basis
+                .insert(self.key.clone(), Arc::clone(lowering));
+        }
         registry.reserved_exact_basis_slots = registry
             .reserved_exact_basis_slots
             .checked_sub(1)
