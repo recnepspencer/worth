@@ -43,10 +43,40 @@ impl From<WorthQueryApplicationRequestMutationDenial>
     for WorthQueryApplicationRecoveryRequestDenial
 {
     fn from(denial: WorthQueryApplicationRequestMutationDenial) -> Self {
-        if let WorthQueryApplicationRequestMutationDenial::Authorization(cause) = &denial {
-            if let Some(interruption) = authorization_interruption(cause.kind()) {
-                return Self::advancement(interruption);
+        use worth_query_execution::facade::application_contribution::{
+            WorthQueryAdvancementDenial as Denial,
+            WorthQueryManagedComputationInterruption as Interruption,
+        };
+        use worth_query_execution::facade::primary_graph::{
+            WorthQueryEntityResolutionDenialKind as Scope,
+            WorthQueryPrincipalResolutionDenialKind as Principal,
+        };
+        let interruption = match &denial {
+            WorthQueryApplicationRequestMutationDenial::Authorization(cause) => {
+                authorization_interruption(cause.kind())
             }
+            WorthQueryApplicationRequestMutationDenial::PrincipalResolution(cause) => {
+                match cause.kind() {
+                    Principal::Cancelled => Some(Denial::Interrupted(Interruption::Cancelled)),
+                    Principal::DeadlineExceeded => {
+                        Some(Denial::Interrupted(Interruption::DeadlineExceeded))
+                    }
+                    _ => None,
+                }
+            }
+            WorthQueryApplicationRequestMutationDenial::ScopeResolution(cause) => {
+                match cause.kind() {
+                    Scope::Cancelled => Some(Denial::Interrupted(Interruption::Cancelled)),
+                    Scope::DeadlineExceeded => {
+                        Some(Denial::Interrupted(Interruption::DeadlineExceeded))
+                    }
+                    _ => None,
+                }
+            }
+            _ => None,
+        };
+        if let Some(interruption) = interruption {
+            return Self::advancement(interruption);
         }
         Self::Request(denial)
     }

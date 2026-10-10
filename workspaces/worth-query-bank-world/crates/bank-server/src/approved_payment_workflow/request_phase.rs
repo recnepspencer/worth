@@ -190,3 +190,104 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         admitted(before);
     }
 }
+
+#[test]
+fn committed_owner_custody_is_accepted_in_one_request() {
+    for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
+        let _restore = Restore(place(placement), bound(None));
+        let ready = ReadyPaymentWorld::new("workflow-committed-custody", FaultScript::Succeed);
+        let route = ready
+            .fixture
+            .world
+            .runtime
+            .install_payment_rail_completion_verifier(std::sync::Arc::new(PaymentRailSource))
+            .expect("the payment completion source installs before dispatch");
+        ready
+            .perform()
+            .into_performed()
+            .expect("the real rail completes this payment");
+
+        let token = ready.rail.attempts()[0]
+            .token()
+            .try_into()
+            .expect("the real dispatch token has 32 bytes");
+        ready
+            .fixture
+            .world
+            .runtime
+            .observe_payment_rail_completion(&route, token)
+            .expect("the synchronous transport completion entered the installed terminal owner");
+        let runtime = &ready.fixture.world.runtime;
+        let vocabulary = runtime.approved_payment_workflow_runtime();
+        let perform_key = key("approved-payment:operation:perform");
+        let command_key = key("approved-payment:operation:committed-custody");
+        let mutation = runtime
+            .request(&ready.principal, &ready.scope)
+            .on_branch(ready.operation.branch())
+            .mutate(ApprovedBusinessPaymentApplyIntent {
+                input: ready.authority.clone(),
+            })
+            .idempotency(&perform_key)
+            .for_workflow_operation_recovery(vocabulary, &ready.operation)
+            .unwrap();
+        let prepared = runtime
+            .request(&ready.principal, &ready.scope)
+            .mutate(ApprovedBusinessPaymentAdvanceIntent {
+                input: ready.authority.clone(),
+            })
+            .without_source()
+            .idempotency(&command_key)
+            .prepare_workflow_advance(vocabulary, ready.instance.clone())
+            .unwrap();
+        reports();
+        let before = reads();
+        let outcome = prepared.accept_operation_from_owner(&ready.operation, mutation);
+        assert!(
+            matches!(
+                outcome,
+                Ok(
+                    worth_query_host::facade::application_entry::WorkflowProgressOutcome::Completed(
+                        _
+                    )
+                )
+            ),
+            "committed custody completes acceptance: {outcome:?}"
+        );
+        admitted(before);
+    }
+}
+
+// The installed source enables the real synchronous completion owner. This
+// control authenticates no callback, so it cannot manufacture terminal custody.
+struct PaymentRailSource;
+impl worth_query_host::facade::primary_graph::WorthQueryInboundOccurrenceVerifier
+    for PaymentRailSource
+{
+    fn audience(&self) -> &str {
+        "bank-workflow-committed-custody"
+    }
+    fn source_identity(&self) -> &str {
+        "rail-primary"
+    }
+    fn protocol_identity(&self) -> &worth_foundational::facade::BoundaryProtocolIdentity {
+        static IDENTITY: worth_foundational::facade::BoundaryProtocolIdentity =
+            worth_foundational::facade::BoundaryProtocolIdentity::new(
+                "bank.payment.approved-settlement",
+            );
+        &IDENTITY
+    }
+    fn protocol_version(&self) -> worth_foundational::facade::BoundaryProtocolVersion {
+        worth_foundational::facade::BoundaryProtocolVersion::new(1)
+    }
+    fn verify(
+        &self,
+        _: &[u8],
+        _: u64,
+        _: std::num::NonZeroU64,
+    ) -> Result<
+        worth_query_host::facade::primary_graph::WorthQueryInboundOccurrenceClaims,
+        worth_query_host::facade::primary_graph::WorthQueryInboundVerificationDenial,
+    > {
+        Err(worth_query_host::facade::primary_graph::WorthQueryInboundVerificationDenial::AuthenticationFailed)
+    }
+}
