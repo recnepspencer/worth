@@ -12,10 +12,9 @@ categories = ["data-structures", "database-implementations"]
 default = []
 test-execution-observer = []
 test-operation-control = [
-    "worth-relational/test-operation-control",
     "worth-signal/test-operation-control",
 ]
-test-durability-faults = ["worth-relational/test-durability-faults"]
+test-durability-faults = []
 
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }

@@ -38,5 +38,4 @@ pub use crate::transactions::data::{
     CommitConflict, CommitResult, ConflictClass, TransactionCommitError, WorkerIntentBatch,
 };
 
-#[cfg(feature = "test-operation-control")]
 pub use crate::runtime::RelationalPatchPositionReservationGate;

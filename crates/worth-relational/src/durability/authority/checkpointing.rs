@@ -202,7 +202,6 @@ impl<'runtime> DurabilityAuthority<'runtime> {
     ) -> Result<(), DurabilityError> {
         let envelope = positioned.envelope();
         authority.validate(self.runtime.runtime_instance_id(), envelope)?;
-        #[cfg(any(test, feature = "test-durability-faults"))]
         if self.runtime.durability.take_armed_append_failure() {
             return Err(DurabilityError::new(
                 crate::durability::data::RecoveryFailureClass::DurableIoFailure,

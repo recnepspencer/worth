@@ -50,5 +50,5 @@ workspace = true
 
 [dev-dependencies]
 worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge", features = ["certification-construction"] }
-worth-relational = { path = "../../../../crates/worth-relational", features = ["test-durability-faults"] }
+worth-relational = { path = "../../../../crates/worth-relational" }
 worth-query-installation = { path = "../worth-query-installation", features = ["certification-query-lookup"] }

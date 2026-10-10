@@ -167,7 +167,6 @@ mod tests {
         assert_eq!(restored, interner);
     }
 
-    #[cfg(feature = "allocation-probes")]
     #[test]
     fn detached_clone_allocation_is_flat_in_prior_symbol_population() {
         let output = std::process::Command::new(std::env::current_exe().unwrap())
@@ -184,7 +183,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "allocation-probes")]
     #[test]
     fn isolated_detached_clone_allocation_probe() {
         if std::env::var_os("WORTH_SYMBOL_CLONE_ALLOCATION_PROBE").is_none() {

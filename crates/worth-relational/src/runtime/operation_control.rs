@@ -55,19 +55,13 @@ pub struct RelationalCancellationToken {
 pub struct RelationalOperationControl {
     cancellation: RelationalCancellationToken,
     deadline: Option<Instant>,
-    #[cfg(any(test, feature = "test-operation-control"))]
     injected_interruption: Option<RelationalInjectedInterruption>,
-    #[cfg(any(test, feature = "test-operation-control"))]
     post_linearization_pause: Option<RelationalPostLinearizationPause>,
-    #[cfg(any(test, feature = "test-operation-control"))]
     critical_section_pause: Option<RelationalCriticalSectionPause>,
-    #[cfg(any(test, feature = "test-operation-control"))]
     patch_position_reservation_pause: Option<RelationalPatchPositionReservationPause>,
-    #[cfg(any(test, feature = "test-operation-control"))]
     boundary_pause: Option<RelationalBoundaryPause>,
 }
 
-#[cfg(any(test, feature = "test-operation-control"))]
 #[derive(Debug, Clone)]
 struct RelationalInjectedInterruption {
     boundary: RelationalInterruptionBoundary,
@@ -76,14 +70,12 @@ struct RelationalInjectedInterruption {
     visits: Arc<std::sync::atomic::AtomicUsize>,
 }
 
-#[cfg(any(test, feature = "test-operation-control"))]
 #[derive(Debug, Clone)]
 struct RelationalPostLinearizationPause {
     reached: Arc<std::sync::Barrier>,
     release: Arc<std::sync::Barrier>,
 }
 
-#[cfg(any(test, feature = "test-operation-control"))]
 #[derive(Debug, Clone)]
 struct RelationalCriticalSectionPause {
     reached: Arc<std::sync::Barrier>,
@@ -93,7 +85,6 @@ struct RelationalCriticalSectionPause {
 /// Failure budget for a publisher nobody releases. It is not the ordering
 /// mechanism: the observer opens the gate, and this only bounds the damage when
 /// the observer never gets there.
-#[cfg(any(test, feature = "test-operation-control"))]
 const PATCH_POSITION_RESERVATION_PAUSE_BUDGET: std::time::Duration =
     std::time::Duration::from_secs(60);
 
@@ -101,14 +92,12 @@ const PATCH_POSITION_RESERVATION_PAUSE_BUDGET: std::time::Duration =
 /// observer can free the publisher before it asserts, and waiting is bounded, so
 /// a seam that is moved out of the reservation window fails a run by name
 /// instead of hanging it.
-#[cfg(any(test, feature = "test-operation-control"))]
 #[derive(Debug, Default)]
 pub struct RelationalPatchPositionReservationGate {
     opened: std::sync::Mutex<bool>,
     signal: std::sync::Condvar,
 }
 
-#[cfg(any(test, feature = "test-operation-control"))]
 impl RelationalPatchPositionReservationGate {
     pub fn open(&self) {
         let mut opened = self.opened.lock().expect("the release gate stays usable");
@@ -132,14 +121,12 @@ impl RelationalPatchPositionReservationGate {
     }
 }
 
-#[cfg(any(test, feature = "test-operation-control"))]
 #[derive(Debug, Clone)]
 struct RelationalPatchPositionReservationPause {
     reached: std::sync::mpsc::SyncSender<()>,
     release: Arc<RelationalPatchPositionReservationGate>,
 }
 
-#[cfg(any(test, feature = "test-operation-control"))]
 #[derive(Debug, Clone)]
 struct RelationalBoundaryPause {
     boundary: RelationalInterruptionBoundary,
@@ -187,7 +174,6 @@ impl RelationalOperationControl {
         &self,
         boundary: RelationalInterruptionBoundary,
     ) -> Option<RelationalInterruptionEvent> {
-        #[cfg(any(test, feature = "test-operation-control"))]
         if let Some(pause) = &self.boundary_pause {
             if pause.boundary == boundary
                 && pause
@@ -199,7 +185,6 @@ impl RelationalOperationControl {
                 pause.release.wait();
             }
         }
-        #[cfg(any(test, feature = "test-operation-control"))]
         if let Some(injected) = &self.injected_interruption {
             if injected.boundary == boundary
                 && injected.visits.fetch_add(1, Ordering::AcqRel) + 1 == injected.trigger_on_visit
@@ -217,7 +202,6 @@ impl RelationalOperationControl {
             })
     }
 
-    #[cfg(any(test, feature = "test-operation-control"))]
     pub fn with_injected_interruption(
         mut self,
         boundary: RelationalInterruptionBoundary,
@@ -237,7 +221,6 @@ impl RelationalOperationControl {
         self
     }
 
-    #[cfg(any(test, feature = "test-operation-control"))]
     pub fn with_post_linearization_pause(
         mut self,
         reached: Arc<std::sync::Barrier>,
@@ -247,7 +230,6 @@ impl RelationalOperationControl {
         self
     }
 
-    #[cfg(any(test, feature = "test-operation-control"))]
     pub(crate) fn pause_after_linearization(&self) {
         if let Some(pause) = &self.post_linearization_pause {
             pause.reached.wait();
@@ -255,7 +237,6 @@ impl RelationalOperationControl {
         }
     }
 
-    #[cfg(any(test, feature = "test-operation-control"))]
     pub fn with_critical_section_pause(
         mut self,
         reached: Arc<std::sync::Barrier>,
@@ -265,7 +246,6 @@ impl RelationalOperationControl {
         self
     }
 
-    #[cfg(any(test, feature = "test-operation-control"))]
     pub(crate) fn pause_inside_critical_section(&self) {
         if let Some(pause) = &self.critical_section_pause {
             pause.reached.wait();
@@ -282,7 +262,6 @@ impl RelationalOperationControl {
     /// reached over `reached`, so a seam that never runs is a timed-out receive
     /// rather than a stalled run, and the publisher stops waiting once the
     /// observer is gone.
-    #[cfg(any(test, feature = "test-operation-control"))]
     pub fn with_patch_position_reservation_pause(
         mut self,
         reached: std::sync::mpsc::SyncSender<()>,
@@ -293,7 +272,6 @@ impl RelationalOperationControl {
         self
     }
 
-    #[cfg(any(test, feature = "test-operation-control"))]
     pub(crate) fn pause_holding_patch_position_reservation(&self) {
         if let Some(pause) = &self.patch_position_reservation_pause {
             // A dropped observer is an observer that already gave up, so the
@@ -306,7 +284,6 @@ impl RelationalOperationControl {
         }
     }
 
-    #[cfg(any(test, feature = "test-operation-control"))]
     pub fn with_boundary_pause(
         mut self,
         boundary: RelationalInterruptionBoundary,
@@ -328,15 +305,10 @@ impl From<RelationalCancellationToken> for RelationalOperationControl {
         Self {
             cancellation,
             deadline: None,
-            #[cfg(any(test, feature = "test-operation-control"))]
             injected_interruption: None,
-            #[cfg(any(test, feature = "test-operation-control"))]
             post_linearization_pause: None,
-            #[cfg(any(test, feature = "test-operation-control"))]
             critical_section_pause: None,
-            #[cfg(any(test, feature = "test-operation-control"))]
             patch_position_reservation_pause: None,
-            #[cfg(any(test, feature = "test-operation-control"))]
             boundary_pause: None,
         }
     }
