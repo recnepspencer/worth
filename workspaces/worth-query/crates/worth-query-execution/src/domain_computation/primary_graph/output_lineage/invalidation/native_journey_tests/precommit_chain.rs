@@ -2,7 +2,6 @@
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 
-use std::any::TypeId;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;

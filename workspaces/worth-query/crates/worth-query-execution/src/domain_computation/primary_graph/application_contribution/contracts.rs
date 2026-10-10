@@ -130,6 +130,7 @@ where
     Schema: ApplicationSchema,
 {
     pub(super) fn validate(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        let mut family_types = BTreeMap::new();
         let mut families: BTreeMap<
             (&str, &str),
             (
@@ -141,6 +142,14 @@ where
             validate_identity(&binding.identity)?;
             validate_identity(&binding.source_selector)?;
             validate_identity(&binding.output_family)?;
+            let prior_family_type =
+                family_types.insert(&binding.output_family, binding.output_family_type);
+            if prior_family_type.is_some_and(|prior| prior != binding.output_family_type) {
+                return Err(denial(
+                    DenialKind::ProducerBindingMeaningMismatch,
+                    &binding.output_family,
+                ));
+            }
             validate_identity(&binding.output_role)?;
             validate_identity(&binding.provider_identity)?;
             validate_identity(&binding.resource_policy)?;

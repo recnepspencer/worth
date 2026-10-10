@@ -20,6 +20,56 @@ const PRESERVE: WorthQueryProducerApplicability =
     WorthQueryProducerApplicability::new("rectangle", WorthQueryProducerLifecyclePosture::Preserve);
 
 #[test]
+fn distinct_family_types_cannot_share_one_declared_identity_at_installation() {
+    use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerOutputFamily;
+    use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
+    type FirstFamily = CollidingFamily<0>;
+    type SecondFamily = CollidingFamily<1>;
+    let mut catalog = WorthQueryApplicationContractCatalog::<IdentityExecutionSchema>::default();
+    let mut first = producer("initial", "source", &[INITIAL]);
+    let mut second = producer("preserve", "source", &[PRESERVE]);
+    first.output_family = FirstFamily::IDENTITY.into();
+    second.output_family = SecondFamily::IDENTITY.into();
+    first.supported = vec![INITIAL, PRESERVE];
+    second.supported = first.supported.clone();
+    first.output_family_type = TypeId::of::<FirstFamily>();
+    second.output_family_type = first.output_family_type;
+    catalog.producers.insert("initial".into(), first);
+    catalog.producers.insert("preserve".into(), second);
+    catalog
+        .validate()
+        .expect("one family may have two lifecycle bindings");
+    catalog
+        .producers
+        .get_mut("preserve")
+        .unwrap()
+        .output_family_type = TypeId::of::<SecondFamily>();
+    let denied = catalog
+        .validate()
+        .expect_err("different types cannot declare the same family");
+    assert_eq!(denied.kind(), DenialKind::ProducerBindingMeaningMismatch);
+    assert_eq!(denied.subject(), "family");
+}
+
+struct CollidingFamily<const N: u8>;
+impl<const N: u8>
+    super::super::super::WorthQueryProducerOutputFamily<
+        crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema,
+    > for CollidingFamily<N>
+{
+    type Source =
+        crate::domain_computation::primary_graph::tests::fixture::TestAccountSourceBinding;
+    type Entity = crate::domain_computation::primary_graph::tests::fixture::Account;
+    const IDENTITY: &'static str = "family";
+    const SUPPORTED: &'static [WorthQueryProducerApplicability] = &[INITIAL, PRESERVE];
+    fn profile_kind(
+        _: &crate::domain_computation::primary_graph::tests::fixture::AccountSummaryResult,
+    ) -> &'static str {
+        "rectangle"
+    }
+}
+
+#[test]
 fn output_family_meaning_cannot_change_with_source_binding() {
     let mut catalog = WorthQueryApplicationContractCatalog::<TestSchema>::default();
     catalog.producers.insert(
