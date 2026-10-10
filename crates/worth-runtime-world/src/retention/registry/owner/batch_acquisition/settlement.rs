@@ -148,7 +148,9 @@ where
             state.costs.record_component_contact(request.component());
         }
         let result = catch_unwind(AssertUnwindSafe(|| {
+            let basis_order = super::super::ComponentBasisOrder::from_admitted(request.component());
             self.retain_component(request.component())
+                .map(|lease| (lease, basis_order))
         }))
         .unwrap_or(Err(RetentionObligationDenial::OwnerOperationPanicked));
         let mut state = self.lock();
@@ -163,7 +165,7 @@ where
             .costs
             .record_component_outcome(request.component(), result.is_ok());
         match result {
-            Ok(lease) => {
+            Ok((lease, basis_order)) => {
                 let mut counts = ComponentBasisDependencyCounts::zero();
                 counts
                     .increment(dependency)
@@ -171,6 +173,7 @@ where
                 state.entries.insert(
                     key.clone(),
                     PinEntry {
+                        basis_order,
                         owner_lease: Some(lease),
                         counts,
                         lease_identity,

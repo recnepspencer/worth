@@ -1,3 +1,4 @@
+mod close_order;
 mod installation;
 #[cfg(test)]
 pub(crate) mod installation_unwind;
@@ -296,13 +297,7 @@ impl ProductBranchRegistry {
     /// created branches.
     pub(crate) fn release_non_root_branches(&self) -> usize {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let root = state.root.clone();
-        let branches: Vec<ProductBranchIdentity> = state
-            .entries
-            .keys()
-            .filter(|branch| root.as_ref() != Some(*branch))
-            .cloned()
-            .collect();
+        let branches = close_order::non_root_branches(state.entries.keys(), state.root.as_ref());
         let released: Vec<_> = branches
             .iter()
             .map(|branch| {
@@ -311,7 +306,9 @@ impl ProductBranchRegistry {
             })
             .collect();
         drop(state);
-        drop(released);
+        for entry in released {
+            drop(entry);
+        }
         branches.len()
     }
 }

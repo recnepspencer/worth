@@ -188,9 +188,9 @@ pub(in crate::domain_computation::primary_graph) use capability_world_installati
     installed_elevated_capability_world,
 };
 pub(in crate::domain_computation::primary_graph) use schema_types::*;
+pub(in crate::domain_computation) use world_installation::installed_authorization_world;
 pub(in crate::domain_computation::primary_graph) use world_installation::{
-    installed_authorization_world, installed_authorization_world_with_label,
-    installed_authorization_world_with_product_resources,
+    installed_authorization_world_with_label, installed_authorization_world_with_product_resources,
     installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
     installed_two_principal_authorization_world,
 };

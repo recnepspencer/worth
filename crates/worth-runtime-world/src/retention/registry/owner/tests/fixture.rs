@@ -40,6 +40,7 @@ impl InvalidationSink for AdmissionSink {
 }
 
 pub(super) struct RealFixture {
+    pub(super) budgets: crate::budget::RuntimeWorldBudgets,
     pub(super) owner: RuntimeWorldRetentionOwner<(), (), ()>,
     pub(super) owner_identity: RuntimeWorldOwnerIdentity,
     pub(super) basis: AdmittedCompositeRuntimeWorldBasis,
@@ -209,6 +210,7 @@ pub(super) fn real_fixture(unique_pin_limit: u64, reservation_limit: u64) -> Rea
         budgets.active_observations(),
     );
     RealFixture {
+        budgets,
         owner,
         owner_identity,
         basis,

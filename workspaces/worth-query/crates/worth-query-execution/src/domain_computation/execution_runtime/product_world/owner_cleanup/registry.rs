@@ -174,7 +174,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
     pub(super) fn pending_application_retired_product_occurrences(
         &self,
     ) -> Vec<WorthQueryRetiredProductOccurrence> {
-        lock(&self.state)
+        let mut occurrences: Vec<_> = lock(&self.state)
             .entries
             .values()
             .filter_map(|entry| match &entry.scope {
@@ -183,7 +183,13 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
                 | CleanupScope::Application
                 | CleanupScope::WorkspaceRetirement => None,
             })
-            .collect()
+            .collect();
+        occurrences.sort_by(|left, right| {
+            left.branch()
+                .cmp(right.branch())
+                .then_with(|| left.incarnation().cmp(&right.incarnation()))
+        });
+        occurrences
     }
 
     pub(super) fn retry(
@@ -316,3 +322,7 @@ impl Drop for WorthQueryProductBranchOwnerCleanupReservation {
 fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|error| error.into_inner())
 }
+
+#[cfg(test)]
+#[path = "registry/canonical_retirement.rs"]
+mod canonical_retirement;

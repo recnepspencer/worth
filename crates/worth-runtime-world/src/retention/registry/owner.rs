@@ -24,14 +24,17 @@ use super::super::component_obligation::{
 use super::super::dependency_counts::ComponentBasisDependencyCounts;
 use super::super::unique_component_pin::{ComponentBasisLeaseIdentity, ExactComponentBasisKey};
 use super::super::ComponentBasisDependencyClass;
-use super::{RetentionCostSnapshot, RetentionObligationDenial, RetentionReclamationReport};
+use super::{RetentionCostSnapshot, RetentionObligationDenial};
 
 mod acquisition;
 mod batch_acquisition;
+mod canonical_reclamation;
 mod capacity_reservation;
 mod claim_lifecycle;
+mod component_basis_order;
 mod history_claims;
 mod inspection;
+use component_basis_order::ComponentBasisOrder;
 
 pub(crate) use capacity_reservation::ReservedComponentPinPairCapacity;
 
@@ -45,6 +48,7 @@ enum ComponentOwnerLease {
 
 #[derive(Debug)]
 struct PinEntry {
+    basis_order: ComponentBasisOrder,
     owner_lease: Option<ComponentOwnerLease>,
     counts: ComponentBasisDependencyCounts,
     lease_identity: ComponentBasisLeaseIdentity,
@@ -299,33 +303,6 @@ where
 
     pub(crate) fn cost_snapshot(&self) -> RetentionCostSnapshot {
         self.lock().costs
-    }
-
-    pub(crate) fn reclaim(&self, requested: usize) -> RetentionReclamationReport {
-        let mut state = self.lock();
-        let keys: Vec<_> = state.entries.keys().take(requested).cloned().collect();
-        let mut reclaimed = 0;
-        for key in &keys {
-            let eligible = state.entries.get(key).is_some_and(|entry| {
-                entry.owner_lease.is_none()
-                    && entry.counts.is_zero()
-                    && !state.flights.contains_key(key)
-            });
-            state.costs.reclamation_entries_examined =
-                state.costs.reclamation_entries_examined.saturating_add(1);
-            if eligible && state.entries.remove(key).is_some() {
-                state.unique_slots -= 1;
-                reclaimed += 1;
-                state.costs.reclamation_entries_reclaimed =
-                    state.costs.reclamation_entries_reclaimed.saturating_add(1);
-            }
-        }
-        RetentionReclamationReport {
-            requested,
-            examined: keys.len(),
-            reclaimed,
-            remaining_unique_pins: state.unique_slots,
-        }
     }
 }
 

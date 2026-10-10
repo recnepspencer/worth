@@ -1,0 +1,66 @@
+//! Canonical maintenance selects complete equal-description groups.
+use super::{PinEntry, RuntimeWorldRetentionOwner};
+use crate::retention::registry::RetentionReclamationReport;
+use crate::retention::unique_component_pin::ExactComponentBasisKey;
+use std::collections::HashMap;
+
+impl<D, I, T> RuntimeWorldRetentionOwner<D, I, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    pub(crate) fn reclaim(&self, requested: usize) -> RetentionReclamationReport {
+        let mut state = self.lock();
+        let keys = canonical_candidates(&state.entries, requested);
+        let mut reclaimed = 0;
+        for key in &keys {
+            let eligible = state.entries.get(key).is_some_and(|entry| {
+                entry.owner_lease.is_none()
+                    && entry.counts.is_zero()
+                    && !state.flights.contains_key(key)
+            });
+            state.costs.reclamation_entries_examined =
+                state.costs.reclamation_entries_examined.saturating_add(1);
+            if eligible && state.entries.remove(key).is_some() {
+                state.unique_slots -= 1;
+                reclaimed += 1;
+                state.costs.reclamation_entries_reclaimed =
+                    state.costs.reclamation_entries_reclaimed.saturating_add(1);
+            }
+        }
+        RetentionReclamationReport {
+            requested,
+            examined: keys.len(),
+            reclaimed,
+            remaining_unique_pins: state.unique_slots,
+        }
+    }
+}
+
+fn canonical_candidates(
+    entries: &HashMap<ExactComponentBasisKey, PinEntry>,
+    maximum: usize,
+) -> Vec<ExactComponentBasisKey> {
+    // This explicit maintenance pass reconstructs its order in O(n log n)
+    // time and O(n) scratch. Ordinary pin admission remains hash-indexed.
+    let mut ordered: Vec<_> = entries.iter().collect();
+    ordered.sort_by(|left, right| left.1.basis_order.cmp(&right.1.basis_order));
+    let mut count = 0;
+    while count < ordered.len() {
+        let basis = &ordered[count].1.basis_order;
+        let end =
+            count + ordered[count..].partition_point(|(_, entry)| &entry.basis_order == basis);
+        // Distinct admission tokens can describe the same basis. A bounded
+        // request never chooses one by address: either the whole group fits,
+        // or this prefix stops before it, without exceeding the requested cap.
+        if end > maximum {
+            break;
+        }
+        count = end;
+    }
+    ordered[..count]
+        .iter()
+        .map(|(key, _)| (*key).clone())
+        .collect()
+}
