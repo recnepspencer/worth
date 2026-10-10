@@ -158,58 +158,74 @@ fn prepare_update(
 
 #[test]
 fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         for allowed_hints in [1_u64, 2] {
             let world = installed_authorization_world(true);
-            let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-            );
-            let entity = selected
-                .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
-                    AccountStatus::reference(),
-                    "open".to_owned(),
-                    &live_scope(),
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap()
-                .entity_id();
-            let (_, product, _) = selected.into_parts();
+            let (entity, product) = world
+                .application
+                .with_host_advancement(|phase| {
+                    let host_custody = phase.test_host_request();
+
+                    let selected = world.selected_product(
+                        &(host_custody.phase_for_application(&world.application))
+                            .test_host_request(),
+                    );
+                    let entity = selected
+                        .resolve_entity(
+                            &host_custody.phase_for_application(&world.application),
+                            AccountStatus::reference(),
+                            "open".to_owned(),
+                            &live_scope(),
+                            WorthQueryPrincipalResolutionMode::Ordinary,
+                        )
+                        .unwrap()
+                        .entity_id();
+                    let (_, product, _) = selected.into_parts();
+                    (entity, product)
+                })
+                .expect("the fixture source read owns its host call");
             let registry = WorthQueryOutputDemandRegistry::default();
             let (interest, member) = registry
                 .fixture_admitted_work_membership(product.observation().lifecycle_incarnation());
-            let hint_header = RequiredWorkMembership::native_hint_bytes();
-            let ticket_bytes =
-                super::super::index_capacity::arc_bytes::<RetainedInvalidationCapacity>().unwrap();
-            let main_hint = hint_header
-                + RequiredWorkMembership::native_branch_retained_bytes("main".len()).unwrap()
-                + 2 * ticket_bytes;
-            let fork_hint = hint_header
-                + RequiredWorkMembership::native_branch_retained_bytes("hint-fork".len()).unwrap()
-                + 2 * ticket_bytes;
-            let one_hint = fork_hint;
-            let resources = WorthQueryInvalidationResources::install(
-                WorthQueryInvalidationResourceInstallation::bounded(
-                    1_000_000,
-                    8 * 1024 * 1024,
-                    one_hint * allowed_hints,
-                    8,
-                ),
-            )
-            .unwrap();
-            let graph = world.application.runtime.primary_graph().unwrap();
-            let handle = graph.integration_handle();
-            let owner = &handle.source_owner.invalidation_owner;
-            let status_ref = AccountStatus::reference();
-            let locator = graph
-                .layout()
-                .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
-                .unwrap()
-                .clone();
-            let observers = Arc::new(Mutex::new(Vec::with_capacity(2)));
-            let saw_two_prepared = Arc::new(AtomicBool::new(false));
-            let gate = Arc::new(TwoPrepareGate::default());
-            handle.with_runtime_mut(&host_custody.borrowed_request_for_test(), |runtime| {
+            world
+                .application
+                .with_host_advancement(|phase| {
+                    let host_custody = phase.test_host_request();
+                    let hint_header = RequiredWorkMembership::native_hint_bytes();
+                    let ticket_bytes =
+                        super::super::index_capacity::arc_bytes::<RetainedInvalidationCapacity>()
+                            .unwrap();
+                    let main_hint = hint_header
+                        + RequiredWorkMembership::native_branch_retained_bytes("main".len())
+                            .unwrap()
+                        + 2 * ticket_bytes;
+                    let fork_hint = hint_header
+                        + RequiredWorkMembership::native_branch_retained_bytes("hint-fork".len())
+                            .unwrap()
+                        + 2 * ticket_bytes;
+                    let one_hint = fork_hint;
+                    let resources = WorthQueryInvalidationResources::install(
+                        WorthQueryInvalidationResourceInstallation::bounded(
+                            1_000_000,
+                            8 * 1024 * 1024,
+                            one_hint * allowed_hints,
+                            8,
+                        ),
+                    )
+                    .unwrap();
+                    let graph = world.application.runtime.primary_graph().unwrap();
+                    let handle = graph.integration_handle();
+                    let owner = &handle.source_owner.invalidation_owner;
+                    let status_ref = AccountStatus::reference();
+                    let locator = graph
+                        .layout()
+                        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+                        .unwrap()
+                        .clone();
+                    let observers = Arc::new(Mutex::new(Vec::with_capacity(2)));
+                    let saw_two_prepared = Arc::new(AtomicBool::new(false));
+                    let gate = Arc::new(TwoPrepareGate::default());
+                    handle.with_runtime_mut(&host_custody.borrowed_request_for_test(), |runtime| {
                 let main = BranchId("main".to_owned());
                 let fork = BranchId("hint-fork".to_owned());
                 let (_, source) = runtime.observe_fork_source(&main).unwrap();
@@ -328,55 +344,57 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                 assert!(selected_main.acknowledge().is_some());
                 port.remove_required(&registration).unwrap();
             });
-            assert_eq!(
-                resources.retained_capacity_bytes(),
-                fork_hint * (allowed_hints - 1)
-            );
-            if allowed_hints == 2 {
-                let first = registry
-                    .next_required_work(owner, &mut owner.edit_admission())
-                    .unwrap()
-                    .expect("fork-cell hint remains after main acknowledgement");
-                assert!(matches!(
-                    first.kind(),
-                    SelectedRequiredWorkKind::Native { branch, .. }
-                        if branch.branch_id() == &BranchId("hint-fork".to_owned())
-                ));
-                registry.fixture_requeue_admitted_work(&interest);
-                let stale = registry
-                    .next_required_work(owner, &mut owner.edit_admission())
-                    .unwrap()
-                    .expect("one native hint can have two selected readers");
-                assert!(matches!(
-                    stale.kind(),
-                    SelectedRequiredWorkKind::Native { branch, .. }
-                        if branch.branch_id() == &BranchId("hint-fork".to_owned())
-                ));
-                assert!(first.acknowledge().is_some());
-                assert_eq!(
-                    resources.retained_capacity_bytes(),
-                    RequiredWorkMembership::native_branch_retained_bytes("hint-fork".len())
+                    assert_eq!(
+                        resources.retained_capacity_bytes(),
+                        fork_hint * (allowed_hints - 1)
+                    );
+                    if allowed_hints == 2 {
+                        let first = registry
+                            .next_required_work(owner, &mut owner.edit_admission())
+                            .unwrap()
+                            .expect("fork-cell hint remains after main acknowledgement");
+                        assert!(matches!(
+                            first.kind(),
+                            SelectedRequiredWorkKind::Native { branch, .. }
+                                if branch.branch_id() == &BranchId("hint-fork".to_owned())
+                        ));
+                        registry.fixture_requeue_admitted_work(&interest);
+                        let stale = registry
+                            .next_required_work(owner, &mut owner.edit_admission())
+                            .unwrap()
+                            .expect("one native hint can have two selected readers");
+                        assert!(matches!(
+                            stale.kind(),
+                            SelectedRequiredWorkKind::Native { branch, .. }
+                                if branch.branch_id() == &BranchId("hint-fork".to_owned())
+                        ));
+                        assert!(first.acknowledge().is_some());
+                        assert_eq!(
+                            resources.retained_capacity_bytes(),
+                            RequiredWorkMembership::native_branch_retained_bytes("hint-fork".len())
+                                .unwrap()
+                                + ticket_bytes
+                        );
+                        drop(stale);
+                        assert_eq!(resources.retained_capacity_bytes(), 0);
+                    }
+                    let initial = registry
+                        .next_required_work(owner, &mut owner.edit_admission())
                         .unwrap()
-                        + ticket_bytes
-                );
-                drop(stale);
-                assert_eq!(resources.retained_capacity_bytes(), 0);
-            }
-            let initial = registry
-                .next_required_work(owner, &mut owner.edit_admission())
-                .unwrap()
-                .expect("the original required interest is unresolved");
-            assert!(matches!(
-                initial.kind(),
-                SelectedRequiredWorkKind::UnresolvedInitial
-            ));
-            assert!(initial.acknowledge().is_some());
-            assert!(registry
-                .next_required_work(owner, &mut owner.edit_admission())
-                .unwrap()
-                .is_none());
-            drop(interest);
-            assert_eq!(resources.retained_capacity_bytes(), 0);
+                        .expect("the original required interest is unresolved");
+                    assert!(matches!(
+                        initial.kind(),
+                        SelectedRequiredWorkKind::UnresolvedInitial
+                    ));
+                    assert!(initial.acknowledge().is_some());
+                    assert!(registry
+                        .next_required_work(owner, &mut owner.edit_admission())
+                        .unwrap()
+                        .is_none());
+                    drop(interest);
+                    assert_eq!(resources.retained_capacity_bytes(), 0);
+                })
+                .expect("the required-hints journey owns its installed host call");
         }
-    })
+    }
 }

@@ -6,14 +6,16 @@ use crate::domain_computation::primary_graph::invariant_projection::{
 use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use worth_relational::facade::history::BranchId;
 
-pub(super) fn restored_root_consumption_and_later_writes(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-) {
+pub(super) fn restored_root_consumption_and_later_writes() {
     let world = world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
         maximum_retained_bytes: MAXIMUM_RETAINED_BYTES,
         ..defaults
     });
+    world.application.with_host_advancement(|phase| {
+ let custody = phase.test_host_request();
+ let phase_custody = &custody;
+ let execution = &phase_custody.borrowed_request_for_test();
+
     let entity = resolved_account(
         &(phase_custody).test_host_request(),
         &world,
@@ -129,6 +131,8 @@ pub(super) fn restored_root_consumption_and_later_writes(
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
         runtime.snapshots().release_snapshot(&old_handle).unwrap();
     });
+
+ }).expect("the native journey owns its installed host call")
 }
 
 fn publish_on_fork(

@@ -70,13 +70,9 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement_and_budget() 
             Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
         );
     }) }).expect("the fixture read owns its installed host call");
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            retire_open_account(&phase, &world)
-        })
-        .expect("the fixture read owns its installed host call");
+    {
+        retire_open_account(&world)
+    };
     let retired = world
         .application
         .with_host_advancement(|phase| {

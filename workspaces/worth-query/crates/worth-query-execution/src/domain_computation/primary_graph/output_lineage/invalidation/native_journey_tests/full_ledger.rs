@@ -178,12 +178,12 @@ let selected = world.selected_product(
 
 #[test]
 fn a_full_ledger_does_not_refuse_the_first_source_write_on_a_new_branch() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         let host_request = crate::test_request_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        fork_consumption::restored_root_consumption_and_later_writes(&host_custody, execution);
-    })
+        fork_consumption::restored_root_consumption_and_later_writes();
+    }
 }
 
 /// Derive the exact live capacity from ticket custody, not an observed footprint.

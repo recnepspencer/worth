@@ -24,13 +24,9 @@ fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
                 .0
         })
         .expect("the fixture read owns its installed host call");
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            retire_open_account(&phase, &world)
-        })
-        .expect("the fixture read owns its installed host call");
+    {
+        retire_open_account(&world)
+    };
 
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);

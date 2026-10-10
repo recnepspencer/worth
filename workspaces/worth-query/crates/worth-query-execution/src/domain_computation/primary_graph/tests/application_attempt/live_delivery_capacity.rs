@@ -11,23 +11,22 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn one_missing_batch_slot_denies_before_world_or_bridge_movement() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        assert_live_reservation_denial(&host_custody, 0, u64::MAX, "slot-short", 211);
-    })
+    {
+        assert_live_reservation_denial(0, u64::MAX, "slot-short", 211);
+    }
 }
 
 #[test]
 fn one_missing_payload_byte_denies_before_world_or_bridge_movement() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         let payload = "byte-short".to_owned();
         let required = AccountActivityBinding::retained_bytes(&payload);
         assert!(required > 0);
-        assert_live_reservation_denial(&host_custody, 1, required - 1, &payload, 212);
-    })
+        assert_live_reservation_denial(1, required - 1, &payload, 212);
+    }
 }
 
 fn assert_live_reservation_denial(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     batch_capacity: usize,
     byte_capacity: u64,
     payload: &str,
@@ -35,34 +34,42 @@ fn assert_live_reservation_denial(
 ) {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(phase_custody, &world, &request);
-    let account = resolved_account(phase_custody, &world, "open", &request);
-    let branch = world.application.current_world();
-    let selected = world
+    let (program, branch, product_before, bridge_before, _live) = world
         .application
-        .on_branch(branch)
-        .select(&phase_custody.phase_for_application(&world.application))
-        .unwrap();
-    let product_before = selected.product().selected_commit().clone();
-    let bridge_before = bridge_head_commit(&world);
-    let _live = world
-        .application
-        .primary_provider
-        .observe_application_commit_causality(selected.product());
-    world
-        .application
-        .primary_provider
-        .set_application_commit_causality_limits(batch_capacity, byte_capacity);
-    let program = admitted_program_with_emit(
-        &phase_custody.phase_for_application(&world.application),
-        &world,
-        &principal,
-        &account,
-        &request,
-        "must-not-move",
-        Some(payload),
-    );
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let principal = authenticated_principal(phase_custody, &world, &request);
+            let account = resolved_account(phase_custody, &world, "open", &request);
+            let branch = world.application.current_world();
+            let selected = world
+                .application
+                .on_branch(branch)
+                .select(&phase_custody.phase_for_application(&world.application))
+                .unwrap();
+            let product_before = selected.product().selected_commit().clone();
+            let bridge_before = bridge_head_commit(&world);
+            let _live = world
+                .application
+                .primary_provider
+                .observe_application_commit_causality(selected.product());
+            world
+                .application
+                .primary_provider
+                .set_application_commit_causality_limits(batch_capacity, byte_capacity);
+            let program = admitted_program_with_emit(
+                &phase_custody.phase_for_application(&world.application),
+                &world,
+                &principal,
+                &account,
+                &request,
+                "must-not-move",
+                Some(payload),
+            );
 
+            (program, branch, product_before, bridge_before, _live)
+        })
+        .expect("the fixture decision owns its host call");
     let outcome = world
         .application
         .on_branch(branch)
@@ -82,9 +89,16 @@ fn assert_live_reservation_denial(
     ));
     let product_after = world
         .application
-        .on_branch(branch)
-        .select(&phase_custody.phase_for_application(&world.application))
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            world
+                .application
+                .on_branch(branch)
+                .select(&phase_custody.phase_for_application(&world.application))
+                .unwrap()
+        })
+        .expect("the fixture aftermath read owns its host call");
     assert_eq!(product_after.product().selected_commit(), &product_before);
     assert_eq!(bridge_head_commit(&world), bridge_before);
     assert_eq!(
@@ -94,7 +108,12 @@ fn assert_live_reservation_denial(
             .published_application_commit_count(),
         0
     );
-    resolved_account(phase_custody, &world, "open", &request);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&phase.test_host_request(), &world, "open", &request);
+        })
+        .expect("the fixture entity read owns its host call");
 }
 
 fn bridge_head_commit(

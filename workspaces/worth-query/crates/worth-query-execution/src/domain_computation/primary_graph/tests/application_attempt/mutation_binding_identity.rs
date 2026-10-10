@@ -225,48 +225,66 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
 
 #[test]
 fn handler_contact_is_preserved_after_a_later_execution_denial() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        for status in ["open", "missing"] {
-            let world = installed_authorization_world(true);
-            let request = live_scope();
-            let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                &world,
-                &request,
-            );
-            let account = resolved_account(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                &world,
-                "open",
-                &request,
-            );
-            let operation = world
-                .application
-                .installed_schema()
-                .installed_operation(ProgramRequiredOperation::reference())
-                .unwrap();
-            let admission = world
-                .selected_product(
+    for status in ["open", "missing"] {
+        let world = installed_authorization_world(true);
+        let request = live_scope();
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                authenticated_principal(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                )
-                .authorize_operation(
-                    &host_custody.phase_for_application(&world.application),
-                    &principal,
-                    &account,
-                    &operation,
-                    TypedMutationPreconditions::new(),
+                    &world,
                     &request,
                 )
-                .unwrap();
-            let key = "handler-contact".to_owned();
-            let input = ProgramRequiredInput::new(status);
-            let identities = Identities::encode(&key, &input).unwrap();
-            let mut contacts = 0;
-            let outcome = world
-                .application
-                .with_host_advancement(|active_phase| {
-                    let phase = &active_phase;
-                    world
+            })
+            .expect("the fixture read owns its installed host call");
+        let account = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                resolved_account(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    "open",
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        let operation = world
+            .application
+            .installed_schema()
+            .installed_operation(ProgramRequiredOperation::reference())
+            .unwrap();
+        let admission = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                world
+                    .selected_product(
+                        &(host_custody.phase_for_application(&world.application))
+                            .test_host_request(),
+                    )
+                    .authorize_operation(
+                        &host_custody.phase_for_application(&world.application),
+                        &principal,
+                        &account,
+                        &operation,
+                        TypedMutationPreconditions::new(),
+                        &request,
+                    )
+                    .unwrap()
+            })
+            .expect("the fixture read owns its installed host call");
+        let key = "handler-contact".to_owned();
+        let input = ProgramRequiredInput::new(status);
+        let identities = Identities::encode(&key, &input).unwrap();
+        let mut contacts = 0;
+        let outcome = world
+            .application
+            .with_host_advancement(|active_phase| {
+                let phase = &active_phase;
+                world
                     .application
                     .execute_mutation_handler_observing_contact::<ProgramRequiredMutationBinding>(
                         phase,
@@ -276,13 +294,12 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
                         || contacts += 1,
                         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                     )
-                })
-                .expect("fixture owner admits its advancement");
-            assert_eq!(contacts, 1, "the real decide boundary ran for {status}");
-            assert!(
-                outcome.is_err(),
-                "a later execution denial preserves the actual handler contact"
-            );
-        }
-    })
+            })
+            .expect("fixture owner admits its advancement");
+        assert_eq!(contacts, 1, "the real decide boundary ran for {status}");
+        assert!(
+            outcome.is_err(),
+            "a later execution denial preserves the actual handler contact"
+        );
+    }
 }

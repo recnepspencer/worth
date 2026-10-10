@@ -13,52 +13,37 @@ const WINDOW: usize = 4;
 
 #[test]
 fn an_expired_chain_origin_does_not_block_a_fresh_terminal() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        chain_expiration(
-            &host_custody,
-            &host_custody.borrowed_request_for_test(),
-            false,
-            false,
-        );
-    })
+    {
+        chain_expiration(false, false);
+    }
 }
 
 #[test]
 fn an_expired_chain_terminal_is_compared_and_reestablished_or_changed() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        chain_expiration(
-            &host_custody,
-            &host_custody.borrowed_request_for_test(),
-            true,
-            false,
-        );
-    })
+    {
+        chain_expiration(true, false);
+    }
 }
 
 #[test]
 fn an_expired_chain_detects_a_changed_output_with_an_unchanged_source() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
-        chain_expiration(
-            &host_custody,
-            &host_custody.borrowed_request_for_test(),
-            true,
-            true,
-        );
-    })
+    {
+        chain_expiration(true, true);
+    }
 }
 
-fn chain_expiration(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    expire_terminal: bool,
-    output_only: bool,
-) {
+fn chain_expiration(expire_terminal: bool, output_only: bool) {
     let world = super::marking_ceiling::world_installing(|defaults| {
         WorthQueryInvalidationResourceInstallation {
             maximum_retained_positions: WINDOW,
             ..defaults
         }
     });
+    world.application.with_host_advancement(|phase| {
+ let custody = phase.test_host_request();
+ let phase_custody = &custody;
+ let execution = &phase_custody.borrowed_request_for_test();
+
     let selected = world.selected_product(&(phase_custody).test_host_request());
     let entity = selected
         .resolve_entity(
@@ -244,6 +229,8 @@ fn chain_expiration(
             runtime.snapshots().release_snapshot(&snapshot).unwrap();
         }
     });
+
+ }).expect("the native journey owns its installed host call")
 }
 
 fn expire(runtime: &mut RelationalRuntime, entity: EntityId, label: &AspectFieldLocator) {

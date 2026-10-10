@@ -11,13 +11,13 @@ use worth_relational::facade::{
 
 #[test]
 fn neutral_native_population_keeps_logical_marking_local_and_matches_revision_oracle() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         let host_request = crate::test_request_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
         let mut expected_counts = None;
         for population in [1, 10, 100, 1000] {
-            let counts = run_population(&host_custody, execution, population);
+            let counts = run_population(population);
             assert_eq!(counts.marked_fact_ordinals, 1);
             assert_eq!(counts.visited_vertices, 2);
             assert_eq!(counts.downstream_edges, 1);
@@ -31,15 +31,16 @@ fn neutral_native_population_keeps_logical_marking_local_and_matches_revision_or
                 expected_counts = Some(counts);
             }
         }
-    })
+    }
 }
 
-fn run_population(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    population: usize,
-) -> LogicalMarkingCounts {
+fn run_population(population: usize) -> LogicalMarkingCounts {
     let world = installed_authorization_world(true);
+    world.application.with_host_advancement(|phase| {
+ let custody = phase.test_host_request();
+ let phase_custody = &custody;
+ let execution = &phase_custody.borrowed_request_for_test();
+
     let selected = world.selected_product(&(phase_custody).test_host_request());
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
@@ -165,4 +166,6 @@ fn run_population(
         }
         counts
     })
+
+ }).expect("the native journey owns its installed host call")
 }

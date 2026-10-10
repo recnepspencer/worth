@@ -15,29 +15,26 @@ struct ScopeOutput;
 
 #[test]
 fn a_deep_native_leaf_has_identical_work_with_eight_or_sixty_four_sibling_subtrees() {
-    crate::domain_computation::primary_graph::with_test_advancement(|host_custody| {
+    {
         let mut counts = None;
         for siblings in [8, 64] {
-            let observed = run(
-                &host_custody,
-                &host_custody.borrowed_request_for_test(),
-                siblings,
-            );
+            let observed = run(siblings);
             assert_eq!(
                 *counts.get_or_insert(observed),
                 observed,
                 "the leaf's logical work depends on its ancestor path, not the sibling population"
             );
         }
-    })
+    }
 }
 
-fn run(
-    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    siblings: usize,
-) -> super::super::logical_marking::LogicalMarkingCounts {
+fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
     let world = installed_authorization_world(true);
+    world.application.with_host_advancement(|phase| {
+ let custody = phase.test_host_request();
+ let phase_custody = &custody;
+ let execution = &phase_custody.borrowed_request_for_test();
+
     let (_, product, _) = world
         .selected_product(&(phase_custody).test_host_request())
         .into_parts();
@@ -137,4 +134,6 @@ fn run(
         for snapshot in [before_handle, after_handle] { runtime.snapshots().release_snapshot(&snapshot).unwrap(); }
         counts
     })
+
+ }).expect("the native journey owns its installed host call")
 }

@@ -31,7 +31,7 @@ impl WorthQueryProducerOutputFamily<super::fixture::IdentityExecutionSchema>
 fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
     let world = installed_authorization_world(true);
     let foreign = installed_authorization_world(true);
-    let foreign_account = world
+    let foreign_account = foreign
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
@@ -158,64 +158,68 @@ fn current_output_exhaustion_denies_the_admitted_projection() {
 
 mod current_output_reports_an_obsolete_source_after_authoritative_re;
 
-fn retire_open_account(
-    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-    world: &super::fixture::AuthorizationWorld,
-) {
-    let (request, principal, account, operation) = admitted_touch_parts(
-        phase_custody,
-        &(phase_custody).borrowed_request_for_test(),
-        world,
-    );
-    let admission = world
-        .selected_product(&(phase_custody).test_host_request())
-        .authorize_operation(
-            phase_custody,
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(
-            phase_custody,
-            &admission,
-            |reader, account| {
-                reader
-                    .require_decision_entity(account, Account::reference())
-                    .unwrap();
-                reader
-                    .require_decision_field(account, AccountStatus::reference())
-                    .unwrap();
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
-    let reads = world
+fn retire_open_account(world: &super::fixture::AuthorizationWorld) {
+    let program = world
         .application
-        .begin_projected_application_read_attempt(
-            phase_custody,
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let mut effects = reads
-        .complete_projected_dependencies(
-            phase_custody,
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .begin_effect_program();
-    let account = effects.existing_entity(&account).unwrap();
-    effects
-        .delete_entity(Account::reference(), &account)
-        .unwrap();
-    let program = effects.finish().unwrap();
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+            let (request, principal, account, operation) = admitted_touch_parts(
+                phase_custody,
+                &(phase_custody).borrowed_request_for_test(),
+                world,
+            );
+            let admission = world
+                .selected_product(&(phase_custody).test_host_request())
+                .authorize_operation(
+                    phase_custody,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap();
+            let (_, projection, _) = world
+                .invariant
+                .project_admitted_operation(
+                    phase_custody,
+                    &admission,
+                    |reader, account| {
+                        reader
+                            .require_decision_entity(account, Account::reference())
+                            .unwrap();
+                        reader
+                            .require_decision_field(account, AccountStatus::reference())
+                            .unwrap();
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts();
+            let reads = world
+                .application
+                .begin_projected_application_read_attempt(
+                    phase_custody,
+                    admission,
+                    projection,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            let mut effects = reads
+                .complete_projected_dependencies(
+                    phase_custody,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .begin_effect_program();
+            let account = effects.existing_entity(&account).unwrap();
+            effects
+                .delete_entity(Account::reference(), &account)
+                .unwrap();
+            let program = effects.finish().unwrap();
+            program
+        })
+        .expect("the retirement preparation owns its host call");
     let outcome = world.application.compare_and_commit_application(
         program,
         WorthQueryApplicationIdempotencyBinding::new([201; 32], [202; 32]),
