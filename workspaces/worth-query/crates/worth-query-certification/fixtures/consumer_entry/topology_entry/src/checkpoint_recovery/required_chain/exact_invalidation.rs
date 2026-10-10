@@ -193,9 +193,12 @@ struct Open<Demand> {
 /// and the application never polls or retries. The settlement is then judged
 /// on what it reports.
 macro_rules! settled {
-    ($court:expr, $demand:expr, $at:expr) => {{
+    ($court:expr, $demand:expr, $at:expr) => {
+        settled!($court, $demand, $at, $demand.demand.advance($court.request))
+    };
+    ($court:expr, $demand:expr, $at:expr, $advance:expr) => {{
         let (settlement, cost) = $demand.reading.measure(|| {
-            let settlement = match $demand.demand.advance($court.request) {
+            let settlement = match $advance {
                 Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
                 answer => panic!(
                     "{}: one advance settles the funded demand of {}; it answers {:?}",
