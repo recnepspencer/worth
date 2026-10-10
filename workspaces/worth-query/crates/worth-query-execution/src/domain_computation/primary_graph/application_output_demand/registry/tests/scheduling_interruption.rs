@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::{
 };
 use std::sync::atomic::Ordering;
 
+mod bridge_deferral;
 mod fixture;
 use fixture::Fixture;
 

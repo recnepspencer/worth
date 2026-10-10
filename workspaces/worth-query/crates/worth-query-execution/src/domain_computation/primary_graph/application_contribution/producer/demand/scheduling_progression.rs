@@ -2,7 +2,7 @@ use super::super::{
     schedule_output_producer, schedule_output_producer_on_selected, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQuerySelectedApplicationProducer,
 };
-use super::bridge_denial::bridge_denial;
+use super::bridge_denial::{bridge_denial, is_temporarily_deferred};
 use super::progression::denial;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::{
@@ -275,11 +275,7 @@ where
         let decision = match execute_signal(&bridge, route, signal_basis, query_identity, attempt) {
             Ok(decision) => decision,
             Err(error) => {
-                let denial = bridge_denial(&selected.identity, error);
-                if denial.kind() == WorthQueryOutputDemandDenialKind::SchedulingDeferred {
-                    return Ok(WorthQueryOutputSchedulingResult::Deferred);
-                }
-                return Err(denial);
+                return scheduling_refusal(&selected.identity, error);
             }
         };
         use crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision as Decision;
@@ -316,3 +312,16 @@ fn schedule_admission_denial(
         ),
     }
 }
+
+fn scheduling_refusal(
+    producer_identity: &str,
+    error: BridgeConditionalDenial,
+) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {
+    if is_temporarily_deferred(&error.kind()) {
+        return Ok(WorthQueryOutputSchedulingResult::Deferred);
+    }
+    Err(bridge_denial(producer_identity, error))
+}
+
+#[cfg(test)]
+mod tests;
