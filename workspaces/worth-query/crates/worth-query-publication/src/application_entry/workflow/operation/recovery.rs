@@ -20,6 +20,7 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::owner::{other_custody, WorthQueryWorkflowOperationOwnerPosture};
 use crate::application_entry::mutation::{
     authorization, WorthQueryApplicationMutationRequestWithIdempotency,
+    WorthQueryApplicationRecoveryRequestDenial,
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
@@ -38,6 +39,7 @@ pub enum WorthQueryWorkflowOperationRecoveryPreparationDenial {
     RequirementMismatch,
     RecoveryNotRequired,
     Request(WorthQueryApplicationRequestMutationDenial),
+    Opening(WorthQueryApplicationRecoveryRequestDenial),
     Inspection(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
     ),
@@ -57,6 +59,7 @@ impl std::fmt::Display for WorthQueryWorkflowOperationRecoveryPreparationDenial 
                 formatter.write_str("operation receipt has no unresolved external custody")
             }
             Self::Request(denial) => denial.fmt(formatter),
+            Self::Opening(denial) => denial.fmt(formatter),
             Self::Inspection(denial) => denial.fmt(formatter),
             Self::Owner(posture) => {
                 write!(formatter, "workflow operation owner custody: {posture:?}")
@@ -168,7 +171,29 @@ where
         >,
 {
     pub fn prepare_workflow_operation_recovery_from_owner(
+        self,
+        required: &RequiredWorkflowOperation,
+    ) -> Result<
+        WorthQueryPreparedWorkflowOperationRecovery<'application, Schema, IntentBinding<Schema, Intent>>,
+        WorthQueryWorkflowOperationRecoveryPreparationDenial,
+    >
+    where
+        <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input:
+            Clone + Send + Sync + 'static,
+    {
+        let runtime = self.application_runtime();
+        let scope = self.request_scope().clone();
+        runtime.with_application_advancement(&scope, |phase| {
+            self.prepare_workflow_operation_recovery_in_advancement(&phase, required)
+        }).map_err(|cause| {
+            WorthQueryWorkflowOperationRecoveryPreparationDenial::Opening(
+                WorthQueryApplicationRecoveryRequestDenial::advancement(cause))
+        })?
+    }
+
+    fn prepare_workflow_operation_recovery_in_advancement(
         mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         required: &RequiredWorkflowOperation,
     ) -> Result<
         WorthQueryPreparedWorkflowOperationRecovery<'application, Schema, IntentBinding<Schema, Intent>>,
@@ -196,7 +221,7 @@ where
             return Err(WorthQueryWorkflowOperationRecoveryPreparationDenial::RequirementMismatch);
         }
         let application = self.application_runtime();
-        let prepared = authorization::prepare(&self, &identities, staged)
+        let prepared = authorization::prepare(phase, &self, &identities, staged)
             .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Request)?;
         let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
             application,
@@ -224,6 +249,7 @@ where
             admission: prepared.admission,
             handle,
         })
+
     }
 }
 
