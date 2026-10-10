@@ -220,7 +220,14 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
                 for stage in [Stage::Idempotency, Stage::InvariantExecution] {
                     let application =
                         provider_session_kind_denied(kind, stage, "the refusing owner");
-                    assert_eq!(application.kind(), Application::ProviderRejected);
+                    assert_eq!(
+                        application.kind(),
+                        Application::ExecutionResource {
+                            denial: Resource::WorkExhausted,
+                            partition_identity: Some(1),
+                            policy_ancestor: None
+                        }
+                    );
                     assert_eq!(application.stage(), stage);
                     assert_eq!(
                         application.execution_denial_cause(),
@@ -284,7 +291,7 @@ fn native_cause_context_and_commit_log_survive_application_kind_mapping() {
     .with_native_preparation_error(error.clone());
     let Progression::Denied(denial) = provider_compare_denied(
         crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
-            failure,
+            failure.clone(),
         ),
     ) else {
         panic!("preparation refusal must stay a denial");
@@ -296,6 +303,38 @@ fn native_cause_context_and_commit_log_survive_application_kind_mapping() {
             partition_identity: Some(23),
             policy_ancestor: None,
         }
+    );
+    let cause = Session::ExecutionResource {
+        denial: Resource::WorkExhausted,
+        partition_identity: Some(23),
+        policy_ancestor: None,
+    };
+    assert_eq!(denial.execution_denial_cause(), Some(Ok(cause)));
+    let earlier = provider_session_kind_denied(cause, Stage::Idempotency, error.detail())
+        .with_provider_session_failure(failure);
+    assert_eq!(earlier.kind(), denial.kind());
+    assert_eq!(
+        earlier.execution_denial_cause(),
+        denial.execution_denial_cause()
+    );
+    assert_eq!(earlier.stage(), Stage::Idempotency);
+    assert_eq!(earlier.native_preparation_error(), Some(&error));
+    let invariant_failure = crate::domain_computation::WorthQueryInvariantExecutionFailure::new(
+        crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ExecutionDenied(cause),
+        error.detail(),
+    );
+    let invariant = super::Denial::invariant_execution_denied(
+        Stage::InvariantExecution,
+        invariant_failure.clone(),
+    );
+    assert_eq!(invariant.kind(), denial.kind());
+    assert_eq!(
+        invariant.execution_denial_cause(),
+        denial.execution_denial_cause()
+    );
+    assert_eq!(
+        invariant.invariant_execution_failure(),
+        Some(&invariant_failure)
     );
     assert_eq!(denial.stage(), Stage::ProviderCommit);
     assert_eq!(denial.detail(), Some(error.detail().as_str()));

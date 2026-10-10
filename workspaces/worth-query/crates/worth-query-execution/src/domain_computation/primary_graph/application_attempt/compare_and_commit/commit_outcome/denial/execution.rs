@@ -6,27 +6,21 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
 
 impl Denial {
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_provider_execution_cause(
-        mut self,
-        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
-    ) -> Self {
-        self.cause = Some(Box::new(super::denial_cause::DenialCause::Execution(Ok(
-            kind,
-        ))));
-        self
-    }
     pub(in crate::domain_computation::primary_graph::application_attempt) fn execution_resource(
         denial: Resource,
         partition_identity: Option<u64>,
         policy_ancestor: Option<u32>,
         detail: impl Into<std::sync::Arc<str>>,
     ) -> Self {
-        Self::execution_denial(
-            Kind::ExecutionResource {
-                denial,
-                partition_identity,
-                policy_ancestor,
-            },
+        Self::provider_execution_denied(
+            Stage::ProviderCommit,
+            Ok(
+                crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                    denial,
+                    partition_identity,
+                    policy_ancestor,
+                },
+            ),
             detail,
         )
     }
@@ -34,42 +28,13 @@ impl Denial {
         partition_identity: Option<u64>,
         detail: impl Into<std::sync::Arc<str>>,
     ) -> Self {
-        Self::execution_denial(
-            Kind::ExecutionNestedPatternStopped { partition_identity },
+        Self::provider_execution_denied(
+            Stage::ProviderCommit,
+            Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionNestedPatternStopped {
+                partition_identity,
+            }),
             detail,
         )
-    }
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn execution_worker_panicked(
-        partition_identity: Option<u64>,
-        detail: impl Into<std::sync::Arc<str>>,
-    ) -> Self {
-        Self::execution_denial(Kind::ExecutionWorkerPanicked { partition_identity }, detail)
-    }
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn execution_unchecked_custom_kernel(
-        partition_identity: Option<u64>,
-        detail: impl Into<std::sync::Arc<str>>,
-    ) -> Self {
-        Self::execution_denial(
-            Kind::ExecutionUncheckedCustomKernel { partition_identity },
-            detail,
-        )
-    }
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn execution_identities_not_canonical(
-        partition_identity: Option<u64>,
-        detail: impl Into<std::sync::Arc<str>>,
-    ) -> Self {
-        Self::execution_denial(
-            Kind::ExecutionIdentitiesNotCanonical { partition_identity },
-            detail,
-        )
-    }
-    fn execution_denial(kind: Kind, detail: impl Into<std::sync::Arc<str>>) -> Self {
-        Self {
-            kind,
-            stage: Stage::ProviderCommit,
-            detail: Some(detail.into()),
-            cause: None,
-        }
     }
 }
 
@@ -95,7 +60,8 @@ impl Denial {
             },
             Some(Cause::ProviderSession(failure)) => {
                 use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
-                match failure.kind() {
+                let kind = crate::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(failure).unwrap_or(failure.kind());
+                match kind {
                     kind @ (Session::ExecutionResource { .. }
                     | Session::ExecutionNestedPatternStopped { .. }
                     | Session::ExecutionWorkerPanicked { .. }
@@ -120,11 +86,45 @@ impl Denial {
         detail: impl Into<std::sync::Arc<str>>,
     ) -> Self {
         Self {
-            kind: Kind::ProviderRejected,
+            kind: execution_kind(cause),
             stage,
             detail: Some(detail.into()),
             cause: Some(Box::new(super::denial_cause::DenialCause::Execution(cause))),
         }
+    }
+}
+
+/// Both projections of a preparation refusal carry the same execution category.
+pub(super) fn execution_kind(
+    cause: Result<
+        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    >,
+) -> Kind {
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+    match cause {
+        Ok(Session::ExecutionResource {
+            denial,
+            partition_identity,
+            policy_ancestor,
+        }) => Kind::ExecutionResource {
+            denial,
+            partition_identity,
+            policy_ancestor,
+        },
+        Ok(Session::ExecutionNestedPatternStopped { partition_identity }) => {
+            Kind::ExecutionNestedPatternStopped { partition_identity }
+        }
+        Ok(Session::ExecutionWorkerPanicked { partition_identity }) => {
+            Kind::ExecutionWorkerPanicked { partition_identity }
+        }
+        Ok(Session::ExecutionUncheckedCustomKernel { partition_identity }) => {
+            Kind::ExecutionUncheckedCustomKernel { partition_identity }
+        }
+        Ok(Session::ExecutionIdentitiesNotCanonical { partition_identity }) => {
+            Kind::ExecutionIdentitiesNotCanonical { partition_identity }
+        }
+        _ => Kind::ProviderRejected,
     }
 }
 
