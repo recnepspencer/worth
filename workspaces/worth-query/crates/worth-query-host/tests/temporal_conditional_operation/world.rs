@@ -363,7 +363,7 @@ impl CourtroomWorld {
         let clock = conditional_installation
             .bind_temporal_operation(conditional, execution, reconstruction)
             .unwrap();
-        let application = conditional_installation.publish(&phase.execution_request(), &phase).unwrap();
+        let application = conditional_installation.publish(&phase).unwrap();
         Self {
             application,
             clock,

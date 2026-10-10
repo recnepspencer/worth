@@ -95,7 +95,8 @@ fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
     let before_state = committed_name(execution, &runtime, compliant);
     let before_versions = runtime
         .read_truth()
-        .entity_aspect_versions(compliant)
+        .entity_aspect_versions(execution, compliant)
+        .expect("aspect-version request remains live")
         .expect("aspect versions before the demand");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -126,7 +127,8 @@ fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
     assert_eq!(
         runtime
             .read_truth()
-            .entity_aspect_versions(compliant)
+            .entity_aspect_versions(execution, compliant)
+            .expect("aspect-version request remains live")
             .expect("aspect versions after the demand"),
         before_versions,
         "no aspect version may move for a record nothing was written to"

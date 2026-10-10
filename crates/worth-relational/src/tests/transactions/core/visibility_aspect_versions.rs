@@ -4,11 +4,18 @@ use worth_foundational::facade::AspectKey;
 
 #[test]
 fn visibility_aspect_versions_follow_canonical_delta_truth_and_ignore_undeclared_fields() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&runtime, "alpha");
     let entity = changed_entities(&created)[0];
     let updated = update_entity(&runtime, entity, "beta");
-    let versions = runtime.read_truth().entity_aspect_versions(entity).unwrap();
+    let versions = runtime
+        .read_truth()
+        .entity_aspect_versions(execution, entity)
+        .expect("aspect-version request remains live")
+        .unwrap();
 
     assert_eq!(
         versions
@@ -31,7 +38,8 @@ fn visibility_aspect_versions_follow_canonical_delta_truth_and_ignore_undeclared
     let relation = create_relation(&runtime, entity, entity, "edge");
     let relation_versions = runtime
         .read_truth()
-        .relation_aspect_versions(relation)
+        .relation_aspect_versions(execution, relation)
+        .expect("aspect-version request remains live")
         .unwrap();
     assert_eq!(
         relation_versions
@@ -49,6 +57,9 @@ fn visibility_aspect_versions_follow_canonical_delta_truth_and_ignore_undeclared
 
 #[test]
 fn visibility_aspect_versions_reject_stale_generation_ids() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let entity = create_entity(&runtime, "before");
     let stale = EntityId::new(
@@ -57,10 +68,15 @@ fn visibility_aspect_versions_reject_stale_generation_ids() {
         entity.generation.0 + 1,
     );
 
-    assert!(runtime.read_truth().entity_aspect_versions(stale).is_none());
     assert!(runtime
         .read_truth()
-        .entity_aspect_versions(entity)
+        .entity_aspect_versions(execution, stale)
+        .expect("aspect-version request remains live")
+        .is_none());
+    assert!(runtime
+        .read_truth()
+        .entity_aspect_versions(execution, entity)
+        .expect("aspect-version request remains live")
         .is_some());
 }
 

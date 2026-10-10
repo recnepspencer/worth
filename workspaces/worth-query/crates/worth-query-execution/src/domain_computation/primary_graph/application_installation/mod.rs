@@ -142,7 +142,6 @@ where
     Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     use WorthQueryInMemoryApplicationDenial as Denial;
-    let execution = phase.execution_request();
 
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
         Schema::OWNER,
@@ -291,7 +290,6 @@ where
         if conditionals.is_empty() && producers.is_empty() {
             let application = match authorization_time_source {
                 Some(source) => graph.publish_application_runtime_with_authorization_time_source(
-                    &execution,
                     phase,
                     runtime,
                     authority,
@@ -300,7 +298,6 @@ where
                     source,
                 ),
                 None => graph.publish_application_runtime(
-                    &execution,
                     phase,
                     runtime,
                     authority,
@@ -335,7 +332,7 @@ where
                 .install_all(&producers, &mut publication)
                 .map_err(Denial::ConditionalPublication)?;
             let application = publication
-                .publish(&execution, phase)
+                .publish(phase)
                 .map_err(Denial::ConditionalPublication)?;
             (application, installed_conditionals)
         };

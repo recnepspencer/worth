@@ -15,7 +15,6 @@ impl FinancialCourtroomWorld {
             worth_query_execution::facade::integration::product_world_resources_for_test(1_024);
         with_bootstrap_advancement(resources.execution_policy(), |phase| {
             Self::publish_in_advancement(
-                &phase.execution_request(),
                 &phase,
                 resources,
                 record_identity,
@@ -28,7 +27,6 @@ impl FinancialCourtroomWorld {
     }
 
     fn publish_in_advancement(
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
         resources: runtime::WorthQueryProductWorldResources,
         record_identity: &'static str,
@@ -264,9 +262,7 @@ impl FinancialCourtroomWorld {
                 ),
             )
             .unwrap();
-        let application = conditional_installation
-            .publish(request_execution, phase)
-            .unwrap();
+        let application = conditional_installation.publish(phase).unwrap();
         Self {
             application,
             curve_clock,

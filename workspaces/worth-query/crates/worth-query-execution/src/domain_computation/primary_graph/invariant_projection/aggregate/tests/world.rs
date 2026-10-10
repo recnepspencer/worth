@@ -343,7 +343,6 @@ impl AggregateWorld {
                 worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development();
             let runtime = bootstrap
                 .publish_application_runtime(
-                    &phase.borrowed_request_for_test(),
                     &phase.bootstrap_for_test(),
                     runtime,
                     authority,

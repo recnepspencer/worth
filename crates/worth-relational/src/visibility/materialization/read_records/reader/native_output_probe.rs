@@ -12,6 +12,7 @@ impl VisibilityReadContext<'_> {
     /// An issued-root liveness/kind probe that distinguishes an unavailable
     /// root (outer None) from a missing, retired, or reused entity (inner
     /// None). No schema record or owned branch basis is materialized.
+    /// Metadata read: fixed-key native identity/version probes, with no row iteration; no execution request is needed.
     pub fn exact_snapshot_live_entity_kind_status(
         &self,
         handle: &SnapshotHandle,
@@ -33,6 +34,7 @@ impl VisibilityReadContext<'_> {
 
     /// The kind of a live entity at the root retained by this issued handle.
     /// A retired, reused, foreign, or released handle is unavailable.
+    /// Metadata read: fixed-key native identity/version probes, with no row iteration; no execution request is needed.
     pub fn exact_snapshot_live_entity_kind(
         &self,
         handle: &SnapshotHandle,
@@ -44,6 +46,7 @@ impl VisibilityReadContext<'_> {
 
     /// Native aspect revision at the same issued exact root. An outer `None`
     /// refuses stale identity or unavailable snapshot provenance.
+    /// Metadata read: fixed-key native identity/version probes, with no row iteration; no execution request is needed.
     pub fn exact_snapshot_entity_aspect_version(
         &self,
         handle: &SnapshotHandle,

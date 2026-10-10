@@ -20,7 +20,6 @@ pub(super) fn publish_authorization_world(
     );
     let application = bootstrap
         .publish_application_runtime_with_ports(
-            &phase.borrowed_request_for_test(),
             &phase.bootstrap_for_test(),
             runtime,
             authority,

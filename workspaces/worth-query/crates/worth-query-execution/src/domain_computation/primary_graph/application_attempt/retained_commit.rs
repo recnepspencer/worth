@@ -24,9 +24,9 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Host door: opens the program request once; nested callers use the advancement entry.
     pub fn compare_and_commit_application_retained<Operation, Input, Scope>(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,

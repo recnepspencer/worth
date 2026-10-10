@@ -1,6 +1,7 @@
 use super::*;
 
 impl<'runtime> VisibilityReadContext<'runtime> {
+    /// Metadata read: planning examines descriptors and supplied targets, never stored rows; no execution request is needed.
     pub fn plan_query_packet(
         &self,
         handle: &SnapshotHandle,

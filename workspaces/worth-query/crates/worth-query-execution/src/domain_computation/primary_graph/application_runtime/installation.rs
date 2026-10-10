@@ -42,7 +42,6 @@ where
     }
 }
 pub(super) fn publish_application_runtime_with_clock<Schema>(
-    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
 ) -> Result<
@@ -93,7 +92,6 @@ where
 pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_conditionals<
     Schema,
 >(
-    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
     bindings: Vec<

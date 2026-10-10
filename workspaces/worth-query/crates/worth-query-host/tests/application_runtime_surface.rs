@@ -156,7 +156,7 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
 
                 graph
         .publish_application_runtime(
-            &phase.execution_request(), &phase,
+            &phase,
             runtime,
             authority,
             schema,

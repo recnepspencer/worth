@@ -215,11 +215,11 @@ impl<E, F: FnMut() -> Result<(), E>> EntityFieldCollectionRead<E>
     }
     fn compare(
         &mut self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         _: usize,
     ) -> Result<Option<(KindId, bool)>, Stop<E>> {
-        crate::execution::check_request(self.execution).map_err(|cause| {
+        crate::execution::check_request(execution).map_err(|cause| {
             Stop::Lookup(denied(Denial::Execution(cause), self.prepared.index_id()))
         })?;
         (self.check_live)().map_err(Stop::Admission)?;

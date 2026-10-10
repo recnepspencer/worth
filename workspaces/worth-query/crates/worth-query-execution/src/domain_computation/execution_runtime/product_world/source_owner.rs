@@ -119,6 +119,7 @@ impl WorthQueryRelationalSourceOwner {
 
     pub fn with_runtime<T>(
         &self,
+        // Required caller request proves custody for this callback.
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce(&RelationalRuntime) -> T,
     ) -> T {
@@ -133,6 +134,7 @@ impl WorthQueryRelationalSourceOwner {
 
     pub fn with_runtime_mut<T>(
         &self,
+        // Required caller request proves custody for this callback.
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutate: impl FnOnce(&mut RelationalRuntime) -> T,
     ) -> T {
@@ -158,6 +160,7 @@ impl WorthQueryRelationalSourceOwner {
 
     pub(crate) fn with_runtime_mut_unwind_isolated<T>(
         &self,
+        // Required caller request proves custody for this callback.
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutate: impl FnOnce(&mut RelationalRuntime) -> T,
     ) -> T {

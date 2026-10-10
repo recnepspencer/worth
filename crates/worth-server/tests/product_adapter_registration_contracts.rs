@@ -292,7 +292,7 @@ fn primary_graph_application(
         .expect("test principal must bind");
     graph
         .publish_application_runtime(
-            &phase.execution_request(), &phase,
+            &phase,
             runtime,
             authority,
             schema,

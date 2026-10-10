@@ -52,14 +52,7 @@ impl WorthQueryApplicationObservedFact {
                     .read_truth()
                     .exact_snapshot_entity_aspect_version(snapshot, *entity_id, aspect)
                 else {
-                    return unanswered_probe(
-                        runtime,
-                        execution,
-                        snapshot,
-                        *entity_id,
-                        work,
-                        maximum_work,
-                    );
+                    return unanswered_probe(runtime, snapshot, *entity_id, work, maximum_work);
                 };
                 Ok((current == *native_revision, work))
             }
@@ -75,14 +68,7 @@ impl WorthQueryApplicationObservedFact {
                     .project_snapshot(snapshot, execution)
                     .and_then(|view| view.entity_field_revision(execution, *entity_id, locator))
                 else {
-                    return unanswered_probe(
-                        runtime,
-                        execution,
-                        snapshot,
-                        *entity_id,
-                        1,
-                        maximum_work,
-                    );
+                    return unanswered_probe(runtime, snapshot, *entity_id, 1, maximum_work);
                 };
                 Ok((current == expected, 1))
             }
@@ -111,7 +97,7 @@ impl WorthQueryApplicationObservedFact {
                         comparison.work_units(),
                     )),
                     Err(AdjacencyStructuralRevisionDenial::AnchorUnavailable) => {
-                        unanswered_probe(runtime, execution, snapshot, *anchor, 1, maximum_work)
+                        unanswered_probe(runtime, snapshot, *anchor, 1, maximum_work)
                     }
                     Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded) => {
                         Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
@@ -273,9 +259,9 @@ impl WorthQueryApplicationObservedFact {
 /// longer live at this snapshot: the fact changed. So no fact's answer
 /// depends on the entity fact beside it being read first. Any other silence
 /// is a snapshot that could not be read.
+// Metadata comparison uses one fixed-key native liveness fact, so needs no request.
 fn unanswered_probe(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: worth_relational::facade::identity::EntityId,
     probe_work: usize,

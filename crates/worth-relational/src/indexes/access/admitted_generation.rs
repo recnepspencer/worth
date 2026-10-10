@@ -10,6 +10,7 @@ impl IndexAccess<'_> {
     /// The callback budgets Operation against logical work. OrderedNavigation
     /// is one logical operation plus a capacity-bounded single keyed descent;
     /// fixed validation, candidates, row reads and payload use Operation.
+    /// Metadata read: one selected generation currency lookup; no index entries or rows.
     pub fn has_published_generation_for_observation_admitted<Stop>(
         &self,
         index: DerivedIndexId,

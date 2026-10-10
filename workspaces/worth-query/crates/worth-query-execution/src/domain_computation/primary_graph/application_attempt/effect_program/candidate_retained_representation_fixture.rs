@@ -106,7 +106,6 @@ pub(super) fn installed_world() -> ReservationWorld {
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap
             .publish_application_runtime(
-                &active_phase.borrowed_request_for_test(),
                 &phase,
                 runtime,
                 authority,
