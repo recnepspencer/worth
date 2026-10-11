@@ -115,7 +115,7 @@ pub(in super::super) fn add_custody(
             super::super::SourceCustody {
                 occurrence: receipt.product_branch().occurrence(),
                 root_kind: super::super::PreparedOutputRootKind::Discovered(
-                    std::any::TypeId::of::<()>(),
+                    crate::equality_type_id::EqualityTypeId::of::<()>(),
                 ),
                 source: None,
                 discovery: None,

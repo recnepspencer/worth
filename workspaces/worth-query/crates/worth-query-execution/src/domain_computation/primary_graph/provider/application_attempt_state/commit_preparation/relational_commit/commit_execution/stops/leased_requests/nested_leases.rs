@@ -78,10 +78,11 @@ fn unrelated_lease_through_public_commit() {
                 .unwrap()
                 .expect("public commit produced a denial");
             let CommitExecutionDenialKind::Cause(cause) = denial.kind;
-            let outcome = application_outcome(super::super::relational_execution_stop(
-                cause,
-                denial.partition_identity,
-            ));
+            let stop = super::super::relational_execution_stop(cause, denial.partition_identity);
+            let Stop::PreEffectDenied(failure) = stop else {
+                panic!("nested cause must reach pre-effect refusal");
+            };
+            let outcome = provider_compare_denied(Compare::ProviderSession(failure));
             let Outcome::Denied(failure) = &outcome else {
                 panic!("nested preparation refusal folded");
             };

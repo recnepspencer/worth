@@ -79,10 +79,12 @@ pub(in super::super) fn price_mutation_with_source_allowance<'a>(
         paths = paths.checked_add(*count).ok_or_else(|| kind.denial())?;
         rows = rows.checked_add(inspected).ok_or_else(|| kind.denial())?;
     }
+    let rows = rows
+        .checked_add(allowance.entries)
+        .ok_or_else(|| kind.denial())?;
     let work = paths
         .checked_mul(2)
         .and_then(|price| price.checked_add(rows))
-        .and_then(|price| price.checked_add(allowance.entries))
         .ok_or_else(|| kind.denial())?;
     admission
         .charge_ordered_operations(work, navigation)

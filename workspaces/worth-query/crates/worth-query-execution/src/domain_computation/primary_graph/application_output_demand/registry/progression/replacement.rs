@@ -2,6 +2,15 @@ use super::super::*;
 
 mod preparation;
 
+fn replacement_key_work(
+    replaced: &WorthQueryOutputDemandKey,
+    replacement: &WorthQueryOutputDemandKey,
+) -> Result<usize, WorthQueryOutputDemandDenial> {
+    super::super::key_comparison::comparison_work([replaced, replacement])
+        .and_then(|work| work.total.checked_add(8))
+        .ok_or_else(replacement_work_denial)
+}
+
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn finish_replaced_interest(
         &self,
@@ -10,13 +19,7 @@ impl WorthQueryOutputDemandRegistry {
         subject: &str,
         request_admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let key_work = replaced
-            .key
-            .producer
-            .len()
-            .checked_add(replacement.key.producer.len())
-            .and_then(|work| work.checked_add(8))
-            .ok_or_else(replacement_work_denial)?;
+        let key_work = replacement_key_work(&replaced.key, &replacement.key)?;
         request_admission
             .charge_external_work(u64::try_from(key_work).map_err(|_| replacement_work_denial())?)
             .map_err(|_| replacement_work_denial())?;
@@ -91,4 +94,16 @@ fn replacement_work_denial() -> WorthQueryOutputDemandDenial {
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         "replacement required-member work exceeds the carried request",
     )
+}
+
+#[cfg(test)]
+mod comparison_tests {
+    #[test]
+    fn replacement_compares_whole_declared_keys() {
+        let (short, long) = super::super::super::key_comparison::fixtures::keys();
+        assert_eq!(
+            super::replacement_key_work(&short, &long).unwrap(),
+            (4 + 1 + 1 + 10) + (4 + 15 + 16 + 10) + 8
+        );
+    }
 }

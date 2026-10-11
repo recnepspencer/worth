@@ -13,3 +13,5 @@ pub use product_branch::{
     WorthQueryProductBranchReadIdentity, WorthQueryProductBranchRecoveryDenial,
     WorthQueryProductBranches, WorthQueryProductObservationLease,
 };
+
+pub(crate) use product_branch::WorthQueryProductBranchReadPosition;

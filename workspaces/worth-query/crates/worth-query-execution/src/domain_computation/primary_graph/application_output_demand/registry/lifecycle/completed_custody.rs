@@ -1,4 +1,4 @@
-//! Completed source cleanup visits only its declared source occurrences.
+//! Completed custody sweeps entries and each bound source occurrence.
 use super::super::refreshed_rejoin::OccurrenceSearchCharge;
 use super::super::refreshed_rejoin::{infallible, source_rows};
 use super::*;
@@ -14,6 +14,7 @@ impl DemandRegistryState {
         let mut retired_keys = Vec::new();
 
         self.source_custody.retain(|commit, custody| {
+            infallible(charge.inspect_row());
             if custody.token_count != 0 {
                 return true;
             }

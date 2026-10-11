@@ -48,7 +48,9 @@ fn check(entry: u8) {
             commit.clone(),
             SourceCustody {
                 occurrence: receipt.product_branch().occurrence(),
-                root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
+                root_kind: PreparedOutputRootKind::Discovered(
+                    crate::equality_type_id::EqualityTypeId::of::<()>(),
+                ),
                 source: None,
                 discovery: None,
                 bound_sources: Some(vec![BoundOutputSource {
@@ -133,7 +135,9 @@ fn registry_completed_custody_is_not_swept_after_commit() {
                 commit.clone(),
                 SourceCustody {
                     occurrence: receipt.product_branch().occurrence(),
-                    root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
+                    root_kind: PreparedOutputRootKind::Discovered(
+                        crate::equality_type_id::EqualityTypeId::of::<()>(),
+                    ),
                     source: None,
                     discovery: None,
                     bound_sources: Some(vec![BoundOutputSource {

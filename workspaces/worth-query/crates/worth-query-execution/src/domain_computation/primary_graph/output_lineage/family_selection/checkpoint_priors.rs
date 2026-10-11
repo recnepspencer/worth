@@ -1,9 +1,7 @@
 //! Prior-only checkpoint locators for the selected live product occurrence.
 
-use std::{
-    any::TypeId,
-    collections::{BTreeMap, BTreeSet},
-};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::EntityId;
@@ -65,7 +63,7 @@ impl WorthQueryApplicationOutputLineage {
         generation: u64,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Vec<NativePriorCheckpointOutput<'_>>, Denial> {
-        let mut installed = BTreeMap::<TypeId, (&str, &str)>::new();
+        let mut installed = HashMap::<TypeId, (&str, &str)>::new();
         for (family, bindings) in &self.output_families {
             admission
                 .charge_external_work(1)
@@ -83,6 +81,9 @@ impl WorthQueryApplicationOutputLineage {
                             .map_err(|_| Denial::arithmetic("installed binding row width"))?,
                     )
                     .map_err(|stop| Denial::admission("installed binding scratch", stop))?;
+                installed
+                    .try_reserve(1)
+                    .map_err(|error| Denial::allocation("installed binding scratch", error))?;
                 installed.insert(*binding, (family.as_str(), role.as_str()));
             }
         }
@@ -155,7 +156,7 @@ impl WorthQueryApplicationOutputLineage {
                         EntityId,
                         std::cmp::Reverse<usize>,
                         u64,
-                        std::any::TypeId,
+                        TypeId,
                         ProductCoordinate,
                         usize,
                         &super::super::RecordedOutput,

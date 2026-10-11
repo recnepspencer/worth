@@ -3,11 +3,12 @@ use super::{
     BoundOutputSource, SourceCustody, WorthQueryOutputDemandRegistry,
     WorthQueryPerformedOutputDemandSource,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum PreparedOutputRootKind {
-    Required(std::any::TypeId),
-    Discovered(std::any::TypeId),
+    Required(TypeId),
+    Discovered(TypeId),
 }
 
 #[derive(Default)]
@@ -63,7 +64,7 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn retained_prepared_source_observation(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        root_type: std::any::TypeId,
+        root_type: TypeId,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         let mut state = self
             .state
@@ -174,7 +175,11 @@ impl WorthQueryOutputDemandRegistry {
             .source
             .as_ref()
             .expect("active custody retains source");
-        let occurrence = source.receipt.product_branch().occurrence();
+        let receipt = source.receipt.clone();
+        let occurrence = receipt.product_branch().occurrence();
+        // Completed custody is retained physically until a later drain. This
+        // admission-free reader must resolve it before using bound revisions.
+        super::post_commit::custody_reader::resolve_before_binding(&mut state, &receipt);
         let superseded = sources
             .iter()
             .filter(|source| {
@@ -201,7 +206,13 @@ impl WorthQueryOutputDemandRegistry {
             }
         }
         for source in sources {
-            retire_stale_records(&mut state, occurrence, source.scope, &source.identity);
+            retire_stale_records(
+                &mut state,
+                &receipt,
+                occurrence,
+                source.scope,
+                &source.identity,
+            );
         }
         let mut bound = sources.to_vec();
         bound.sort_by_key(|source| source.identity.clone());

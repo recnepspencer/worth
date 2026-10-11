@@ -2,6 +2,7 @@ use super::super::refreshed_rejoin::infallible;
 use super::super::refreshed_rejoin::OccurrenceSearchCharge;
 use super::walk_charge::PostCommitSweep;
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn release_product_occurrence(
@@ -17,7 +18,7 @@ impl WorthQueryOutputDemandRegistry {
             infallible(sweep.inspect_row());
             if custody.occurrence == occurrence {
                 custody.retire(WorthQueryOutputDemandDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
+                    WorthQueryOutputDemandDenialKind::Closed,
                     "product occurrence retired before required-output custody was consumed",
                 ));
             }
@@ -38,7 +39,7 @@ impl WorthQueryOutputDemandRegistry {
                 continue;
             }
             let denial = WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
+                WorthQueryOutputDemandDenialKind::Closed,
                 "product occurrence retired",
             );
             match &mut record.state {
@@ -131,7 +132,9 @@ mod tests {
                         .clone(),
                     SourceCustody {
                         occurrence: receipt.product_branch().occurrence(),
-                        root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
+                        root_kind: PreparedOutputRootKind::Discovered(
+                            crate::equality_type_id::EqualityTypeId::of::<()>(),
+                        ),
                         source: None,
                         discovery: None,
                         bound_sources: None,

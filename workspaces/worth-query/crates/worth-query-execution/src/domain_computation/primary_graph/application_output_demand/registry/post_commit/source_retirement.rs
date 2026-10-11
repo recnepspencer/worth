@@ -4,17 +4,20 @@ use super::super::source_custody::denial;
 use super::walk_charge::PostCommitSweep;
 use super::*;
 use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenialKind,
+};
 use std::cmp::Ordering;
 pub(in super::super) fn retire_stale_records(
     state: &mut DemandRegistryState,
+    receipt: &WorthQueryApplicationCommitReceipt,
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     successor: &WorthQueryObservedSourceEpoch,
 ) {
     // Custody retirement is source-wide: a changed query source invalidates
     // every producer record that was computed from its older epoch.
-    let mut charge = PostCommitSweep::after_effect();
+    let mut charge = PostCommitSweep::after_source_commit(receipt);
     let keys = infallible(super::super::refreshed_rejoin::source_rows(
         &state.records,
         successor,
@@ -74,8 +77,10 @@ mod tests {
     use super::*;
     #[test]
     fn registry_source_retirement_sweep_names_its_source_coordinate_bound() {
-        let (scope, occurrence) =
-            super::super::super::tests::source_custody::real_scope_and_occurrence();
+        let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::
+            committed_recoverable_application();
+        let scope = receipt.principal_scope().scope();
+        let occurrence = receipt.product_branch().occurrence();
         let mut contacts = Vec::new();
         for producers in [1, 3, 7] {
             let mut state = DemandRegistryState::default();
@@ -87,7 +92,13 @@ mod tests {
                     .insert(key(&format!("source-owner-{producer}"), 1, 1), row);
             }
             let before = super::super::walk_charge::sweep_contacts();
-            retire_stale_records(&mut state, occurrence, scope, &key("unused", 2, 1).source);
+            retire_stale_records(
+                &mut state,
+                &receipt,
+                occurrence,
+                scope,
+                &key("unused", 2, 1).source,
+            );
             contacts.push(super::super::walk_charge::sweep_contacts() - before);
             assert!(state.records.values().all(|row| row.terminal()));
         }

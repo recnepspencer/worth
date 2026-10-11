@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::admission::validate_prepared_source_carrier;
@@ -28,7 +29,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     pub(in crate::domain_computation::primary_graph) fn recover_prepared_output_source(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
-        root_type: std::any::TypeId,
+        root_type: TypeId,
     ) -> Option<(
         std::sync::Arc<WorthQueryApplicationReadObservation>,
         WorthQueryPreparedRequiredOutputSource,

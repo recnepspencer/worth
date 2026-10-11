@@ -1,6 +1,9 @@
 mod custody;
 mod drain;
+mod key_comparison;
 use super::refreshed_rejoin::price_mutation;
+use key_comparison::key_work;
+
 use std::sync::Arc;
 
 use super::{
@@ -332,13 +335,6 @@ impl DemandRecord {
             || matches!(&self.state, super::DemandState::Output(output)
                 if matches!(output.advancement, super::WorthQueryOutputAdvancement::Stopped { .. }))
     }
-}
-
-fn key_work(key: &WorthQueryOutputDemandKey) -> Result<u64, WorthQueryOutputDemandDenial> {
-    1_usize
-        .checked_add(key.producer.len())
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or_else(work_denial)
 }
 
 fn work_denial() -> WorthQueryOutputDemandDenial {

@@ -1,6 +1,7 @@
 //! Completed-effect entries own infallible work; request entries cannot mint its payer.
 use super::*;
 mod advancement;
+pub(super) mod custody_reader;
 pub(super) mod discovery;
 mod product_retirement;
 mod publication;

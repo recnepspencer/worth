@@ -35,7 +35,7 @@ impl WorthQueryConditionalEvaluationAffinity {
     ) -> bool {
         self.identity.branch_identity() == candidate.branch_identity()
             && self.identity.lifecycle_incarnation() == candidate.lifecycle_incarnation()
-            && self.identity < *candidate
+            && self.identity.position() < candidate.position()
     }
 
     pub(super) fn relational_commit_ceiling(

@@ -1,9 +1,12 @@
 //! Honest bounds for work whose owning effect has already happened.
 use super::super::refreshed_rejoin::OccurrenceSearchCharge;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 use core::convert::Infallible;
 
 /// Each walk contacts only the selected producer occurrence's rows. An
 /// owning row may release several prerequisite occurrences; each is a walk.
+/// Discovery also copies its rows' recorded postings; those are separate
+/// from the occurrence-row contact bound.
 pub(super) struct PostCommitWalk {
     _completed: (),
 }
@@ -28,10 +31,16 @@ impl PostCommitWalk {
 /// scans S rows of a source coordinate (potentially several producers), then
 /// O(sum R_upstream) contacts. These synchronous closure sweeps are explicit
 /// debt: admission-free readers must see the closed state immediately.
+/// A binding reader also resolves pending custody: C entries, two source-row
+/// passes, and a stale-owner occurrence walk for each inspected source row.
 pub(super) struct PostCommitSweep {
     _completed: (),
 }
 impl PostCommitSweep {
+    pub(super) fn after_source_commit(_: &WorthQueryApplicationCommitReceipt) -> Self {
+        Self { _completed: () }
+    }
+
     pub(super) fn after_effect() -> Self {
         Self { _completed: () }
     }

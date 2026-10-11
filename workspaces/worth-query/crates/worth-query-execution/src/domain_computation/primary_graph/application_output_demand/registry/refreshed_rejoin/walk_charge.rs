@@ -143,8 +143,9 @@ impl OccurrenceSearchCharge for InvalidationEditAdmission {
     type Refusal = WorthQueryOutputDemandDenial;
 
     fn occurrence_path(&mut self, records: usize) -> Result<(), Self::Refusal> {
-        let path = u64::from(usize::BITS - records.leading_zeros())
-            .checked_mul(11)
+        let levels = (usize::BITS - records.leading_zeros()) as usize;
+        let path = super::super::key_comparison::ordered_comparisons(levels, usize::MAX)
+            .and_then(|price| u64::try_from(price).ok())
             .and_then(|n| n.checked_add(1))
             .ok_or_else(work_denial)?;
         self.charge_ordered_operations(2, path.checked_mul(2).ok_or_else(work_denial)?)

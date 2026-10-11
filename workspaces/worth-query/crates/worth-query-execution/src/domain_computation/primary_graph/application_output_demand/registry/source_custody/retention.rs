@@ -1,4 +1,5 @@
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn retain_performed_source(
@@ -145,7 +146,7 @@ impl WorthQueryOutputDemandRegistry {
     >(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        root_type: std::any::TypeId,
+        root_type: TypeId,
     ) -> Result<
         (
             Discovery,

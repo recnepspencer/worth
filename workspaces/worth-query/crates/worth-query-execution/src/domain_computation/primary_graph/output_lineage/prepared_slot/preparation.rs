@@ -13,8 +13,8 @@ use crate::domain_computation::primary_graph::output_lineage::{
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::{
-    any::TypeId,
     mem::size_of,
     sync::{Arc, Mutex, OnceLock},
 };

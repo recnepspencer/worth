@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
     application_program::{
@@ -218,7 +219,7 @@ where
             <Demand::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::IDENTITY;
         match self.program.artifact_posture(
             connection.target_instance(),
-            std::any::TypeId::of::<Connection::TargetFeature>(),
+            TypeId::of::<Connection::TargetFeature>().into_external(),
             producer_family,
         ) {
             WorthQueryProgramArtifactPosture::Legacy => Ok(None),

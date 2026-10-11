@@ -1,6 +1,6 @@
 //! Bounded selection of retained output families and bindings.
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 

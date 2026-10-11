@@ -1,10 +1,11 @@
 use super::pending_factory::{PendingProducerExecutor, TypedPendingProducer};
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 pub(in crate::domain_computation::primary_graph) struct PendingProducerRegistry<Schema> {
     declared: BTreeMap<String, DeclaredProducerBinding>,
     /// The operations whose partitioned computation a producer's runs retain.
-    retaining: std::collections::HashSet<std::any::TypeId>,
+    retaining: std::collections::HashSet<TypeId>,
     providers: BTreeMap<
         String,
         (
@@ -39,7 +40,7 @@ where
     >(
         &mut self,
     ) -> bool {
-        let operation = std::any::TypeId::of::<Operation>();
+        let operation = TypeId::of::<Operation>();
         let runs = self
             .declared
             .values()

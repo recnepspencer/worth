@@ -1,14 +1,15 @@
 //! Close visits the declared non-root branch inventory.
+use super::installed_entries::InstalledProductBranches;
 use crate::identity::ProductBranchIdentity;
 
-pub(super) fn non_root_branches<'a>(
-    branches: impl Iterator<Item = &'a ProductBranchIdentity>,
+pub(super) fn non_root_branches(
+    branches: &InstalledProductBranches,
     root: Option<&ProductBranchIdentity>,
 ) -> Vec<ProductBranchIdentity> {
-    let mut branches: Vec<_> = branches
+    // The installed inventory carries declared branch order in its BTreeSet.
+    branches
+        .keys()
         .filter(|branch| root != Some(*branch))
         .cloned()
-        .collect();
-    branches.sort();
-    branches
+        .collect()
 }

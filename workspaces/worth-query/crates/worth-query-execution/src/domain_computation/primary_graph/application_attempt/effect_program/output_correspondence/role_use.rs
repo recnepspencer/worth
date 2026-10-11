@@ -4,7 +4,7 @@
 //! in an inline `const` block, so a use its contract does not declare fails
 //! to compile at the instantiating call.
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationOutputPosture, ApplicationMutationOutputRoleCardinality,

@@ -1,4 +1,5 @@
-use std::any::{Any, TypeId};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::any::Any;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;

@@ -10,17 +10,17 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
     fn owned_revision(&self) -> &ApplicationProgramRevision;
 
     /// Whether the owned program acts through one mutation binding.
-    fn owns_action(&self, binding: TypeId) -> bool;
+    fn owns_action(&self, binding: std::any::TypeId) -> bool;
 
     /// Whether one mutation binding is an output source rather than an action.
-    fn owns_output_source(&self, binding: TypeId) -> bool;
+    fn owns_output_source(&self, binding: std::any::TypeId) -> bool;
 
     fn runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.owned_runtime()
     }
 
     fn contains_action<Binding: 'static>(&self) -> bool {
-        self.owns_action(TypeId::of::<Binding>())
+        self.owns_action(TypeId::of::<Binding>().into_external())
     }
 
     /// Commits one action through the program this owner presents, only when

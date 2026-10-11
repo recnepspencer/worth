@@ -1,7 +1,7 @@
 //! A real restored lineage slot for the registry's exact-index owner tests.
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
 use super::{
@@ -53,7 +53,7 @@ fn recorded_settlements(
     let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity);
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        std::any::TypeId::of::<RegistryRestoredOutput>(),
+        TypeId::of::<RegistryRestoredOutput>(),
         "RegistryRestoredOutput",
     );
 

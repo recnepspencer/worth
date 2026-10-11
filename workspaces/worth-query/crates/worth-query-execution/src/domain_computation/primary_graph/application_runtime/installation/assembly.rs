@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 pub(super) fn assemble_application_runtime<Schema>(
     graph: PublishedApplicationGraph<
@@ -74,17 +75,17 @@ where
     let program_required_bindings = installed_schema
         .installed_mutation_binding_inventory()
         .filter(|binding| binding.requires_application_program())
-        .map(|binding| binding.binding_type())
+        .map(|binding| TypeId::from(binding.binding_type()))
         .collect();
     let program_required_operations = installed_schema
         .installed_mutation_binding_inventory()
         .filter(|binding| binding.requires_application_program())
-        .map(|binding| binding.operation_type())
+        .map(|binding| TypeId::from(binding.operation_type()))
         .collect();
     let workflow_guarded_operations = installed_schema
         .installed_mutation_binding_inventory()
         .filter(|binding| binding.requires_workflow_authority())
-        .map(|binding| binding.operation_type())
+        .map(|binding| TypeId::from(binding.operation_type()))
         .collect();
     // One clock, shared. The registry hands it back to any handle that needs to
     // re-check its own deadline, which is why no recovery transition takes a
