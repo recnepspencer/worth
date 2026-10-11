@@ -53,6 +53,41 @@ pub(in super::super) fn price_mutation_with_source_allowance<'a>(
     kind: WalkKind,
     allowance: SourceWalkAllowance,
 ) -> Result<PricedMutation<'a>, WorthQueryOutputDemandDenial> {
+    price_walks(
+        state,
+        admission,
+        walks.iter().map(|(key, count)| (key, *count)),
+        kind,
+        allowance,
+    )
+}
+
+pub(in super::super) fn price_member_release<'a>(
+    state: &'a mut DemandRegistryState,
+    admission: &mut InvalidationEditAdmission,
+    key: &WorthQueryOutputDemandKey,
+) -> Result<PricedMutation<'a>, WorthQueryOutputDemandDenial> {
+    price_walks(
+        state,
+        admission,
+        std::iter::once((key, 1)),
+        WalkKind::RequiredMember,
+        SourceWalkAllowance {
+            paths: 0,
+            rows: 0,
+            entries: 0,
+            navigation: 0,
+        },
+    )
+}
+
+fn price_walks<'a, 'keys>(
+    state: &'a mut DemandRegistryState,
+    admission: &mut InvalidationEditAdmission,
+    walks: impl IntoIterator<Item = (&'keys WorthQueryOutputDemandKey, u64)>,
+    kind: WalkKind,
+    allowance: SourceWalkAllowance,
+) -> Result<PricedMutation<'a>, WorthQueryOutputDemandDenial> {
     let mut paths = allowance.paths;
     let mut rows = allowance.rows;
     let mut navigation = allowance.navigation;
@@ -70,13 +105,13 @@ pub(in super::super) fn price_mutation_with_source_allowance<'a>(
                 .ok_or_else(|| kind.denial())?;
         }
         let inspected = occurrence_count
-            .checked_mul(*count)
+            .checked_mul(count)
             .ok_or_else(|| kind.denial())?;
         navigation = path_navigation
-            .checked_mul(*count)
+            .checked_mul(count)
             .and_then(|price| navigation.checked_add(price))
             .ok_or_else(|| kind.denial())?;
-        paths = paths.checked_add(*count).ok_or_else(|| kind.denial())?;
+        paths = paths.checked_add(count).ok_or_else(|| kind.denial())?;
         rows = rows.checked_add(inspected).ok_or_else(|| kind.denial())?;
     }
     let rows = rows

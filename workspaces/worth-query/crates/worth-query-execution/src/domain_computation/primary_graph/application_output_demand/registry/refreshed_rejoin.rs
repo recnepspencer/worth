@@ -22,7 +22,7 @@ use crate::domain_computation::primary_graph::{
 mod mutation_price;
 mod walk_admission;
 mod walk_charge;
-pub(super) use mutation_price::price_mutation;
+pub(super) use mutation_price::{price_member_release, price_mutation};
 pub(super) use mutation_price::{
     price_mutation_with_source_allowance, PricedMutation, SourceWalkAllowance,
 };

@@ -28,9 +28,13 @@ impl WorthQueryOutputDemandRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let retired = if let Some(mut prepared) =
-                preparation::prepare(&state, &replaced.key, &replacement.key, request_admission)?
-            {
+            let retired = if let Some(mut prepared) = preparation::prepare(
+                &mut state,
+                &replaced.key,
+                &replacement.key,
+                request_admission,
+            )? {
+                let state = prepared.mutation.state_mut();
                 let old_record = state.records.get_mut(&replaced.key).unwrap();
                 let mut old_slots = std::mem::take(&mut old_record.performed_obligations);
                 let old_bytes =
@@ -58,7 +62,12 @@ impl WorthQueryOutputDemandRegistry {
                 // Their credits remain reserved until their physical Drop.
                 state.obligation_reserved_bytes += prepared.bytes;
                 state.install_required_member(prepared.required_member);
-                super::super::post_commit::release_replaced_member(&mut state, &replaced.key);
+                let member = prepared.mutation.release_member(&replaced.key);
+                let refund = member.refund_required_bytes;
+                drop(member);
+                let state = prepared.mutation.state_mut();
+                state.required_reserved_bytes =
+                    state.required_reserved_bytes.saturating_sub(refund);
                 Some((
                     old_slots,
                     next_slots,
