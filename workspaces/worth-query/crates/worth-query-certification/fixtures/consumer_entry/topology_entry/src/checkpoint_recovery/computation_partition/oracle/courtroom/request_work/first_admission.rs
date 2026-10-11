@@ -8,10 +8,10 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
     let mut performed = Vec::new();
     for unrelated in [0, 1_000] {
         let app = install_population();
-        let (scope, principal) = authenticate(&app);
-        let request = app.request(&principal, &scope);
         let mut held = Vec::new();
         for number in 0..unrelated {
+            let (scope, principal) = authenticate(&app);
+            let request = app.request(&principal, &scope);
             let mut row = request
                 .demand(PlanarOutputDemand::new(format!("unrelated-{}", number + 3)))
                 .start_in_program::<ScaleProgram, OracleRoot>(&app)
@@ -27,6 +27,8 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
             // Only registry retention differs; created output receipts start
             // at the same Native ordinal and perform the same fact-key work.
             for number in 0..1_000_u64 {
+                let (scope, principal) = authenticate(&app);
+                let request = app.request(&principal, &scope);
                 let name = format!("unrelated-{}", number + 3);
                 let source = request
                     .query(PlanarRead {
@@ -58,6 +60,8 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
             }
         }
         for row in &mut held {
+            let (scope, principal) = authenticate(&app);
+            let request = app.request(&principal, &scope);
             assert!(matches!(
                 row.advance(&request).unwrap(),
                 WorthQueryApplicationOutputDemandProgress::Settled(_)
@@ -69,6 +73,9 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
             unrelated,
             "the cold lane's actual population"
         );
+        // Bulk preparation is outside the fresh request whose cost is measured.
+        let (scope, principal) = authenticate(&app);
+        let request = app.request(&principal, &scope);
         app.demand_admission_work_for_test();
         app.caller_request_work_for_test();
         let visits = app.whole_registry_rows_visited_for_test();

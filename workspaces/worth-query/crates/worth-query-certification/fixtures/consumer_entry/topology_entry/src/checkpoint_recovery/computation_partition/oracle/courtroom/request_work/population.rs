@@ -45,11 +45,11 @@ fn author_population() -> ScaleApplication {
         1_000,
         |graph| model.seed(graph),
     );
-    let (scope, principal) = authenticate(&app);
-    let request = app.request(&principal, &scope);
     // Each public edit creates one valid triangle within its declared
     // invariant budget. Both lanes restore the same publicly authored truth.
     for triangle in 0..1_008_usize.div_ceil(3) {
+        let (scope, principal) = authenticate(&app);
+        let request = app.request(&principal, &scope);
         use worth_query_consumer_values::{PlanarOperation, PlanarVertex};
         let source = request
             .query(PlanarRead {
@@ -84,6 +84,8 @@ fn author_population() -> ScaleApplication {
         ));
     }
     for number in 0..1_008_u64 {
+        let (scope, principal) = authenticate(&app);
+        let request = app.request(&principal, &scope);
         let name = format!("unrelated-{number}");
         let source = request
             .query(PlanarRead {
