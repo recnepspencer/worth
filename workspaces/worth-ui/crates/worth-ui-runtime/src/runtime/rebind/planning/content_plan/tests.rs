@@ -40,9 +40,9 @@ fn real_collection_snapshot_compiles_distinct_keyed_mounted_rows() {
         }
     };
     let opened = match workspace
-        .with_execution_request_mut(|request_execution, workspace| {
+        .with_advancement_mut(|phase, workspace| {
             binding.open(
-                request_execution,
+                &phase,
                 UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
                 workspace,
             )

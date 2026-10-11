@@ -52,11 +52,11 @@ pub(super) fn run_mixed_permutation(order: [MixedCause; 3], run: usize) -> UiAff
         }
     };
     let opened = match workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_advancement_mut(|phase, workspace| {
             binding.open(
-                execution,
+                &phase,
                 UiCollectionProjectionBudget::new(2, 4, 0, 2048).unwrap(),
-                &mut workspace,
+                workspace,
             )
         })
         .expect("workspace host call opens")

@@ -214,9 +214,7 @@ pub(super) fn open_collection(
     };
     let budget = UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap();
     let UiCollectionProjectionOpenOutcome::Opened(opened) = query
-        .with_execution_request_mut(|execution, workspace| {
-            binding.open(execution, budget, workspace)
-        })
+        .with_advancement_mut(|phase, workspace| binding.open(&phase, budget, workspace))
         .expect("workspace host call opens")
     else {
         panic!("real collection projection opens")

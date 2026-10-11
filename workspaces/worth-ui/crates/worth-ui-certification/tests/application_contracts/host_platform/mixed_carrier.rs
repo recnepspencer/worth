@@ -216,9 +216,9 @@ fn open_collection(
         }
     };
     match workspace
-        .with_execution_request_mut(|execution, workspace| {
+        .with_advancement_mut(|phase, workspace| {
             binding.open(
-                execution,
+                &phase,
                 UiCollectionProjectionBudget::new(
                     profile.collection_rows as u32,
                     profile.text_count,

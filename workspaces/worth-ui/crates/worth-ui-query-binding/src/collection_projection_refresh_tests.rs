@@ -296,9 +296,7 @@ fn open_with_snapshot(
     let budget =
         UiCollectionProjectionBudget::new(rows, 64, 1, 1_048_576).expect("collection budget");
     let UiCollectionProjectionOpenOutcome::Opened(opened) = workspace
-        .with_execution_request_mut(|execution, workspace| {
-            binding.open(execution, budget, workspace)
-        })
+        .with_advancement_mut(|phase, workspace| binding.open(&phase, budget, workspace))
         .expect("workspace host call opens")
     else {
         panic!("canonical collection binding must open");

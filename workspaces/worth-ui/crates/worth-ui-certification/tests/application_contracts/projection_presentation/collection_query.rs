@@ -213,9 +213,9 @@ fn open_live_collection(
         }
     };
     match workspace
-        .with_execution_request_mut(|execution, workspace| {
+        .with_advancement_mut(|phase, workspace| {
             binding.open(
-                execution,
+                &phase,
                 UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
                 workspace,
             )

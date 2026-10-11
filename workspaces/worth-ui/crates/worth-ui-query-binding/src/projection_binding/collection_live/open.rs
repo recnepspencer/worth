@@ -6,7 +6,7 @@ use super::{
 };
 
 pub(super) fn open_collection_projection(
-    request_execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
+    phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     mut binding: crate::UiCollectionProjectionBinding,
     budget: crate::UiCollectionProjectionBudget,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
@@ -26,24 +26,25 @@ pub(super) fn open_collection_projection(
         Ok(admitted) => admitted,
         Err(_) => return stopped(&binding, StopKind::ResourceAdmission),
     };
-    let executed = match installed::transition::execution(admitted.execute(workspace)) {
-        installed::transition::WorthQueryExecutionTransition::Executed(value) => value,
-        installed::transition::WorthQueryExecutionTransition::Deferred(_) => {
-            return stopped(&binding, StopKind::ExecutionDeferred);
-        }
-        installed::transition::WorthQueryExecutionTransition::Denied(_) => {
-            return stopped(&binding, StopKind::ExecutionDenied);
-        }
-        installed::transition::WorthQueryExecutionTransition::Stale(_) => {
-            return stopped(&binding, StopKind::ExecutionStale);
-        }
-        installed::transition::WorthQueryExecutionTransition::RebindRequired(_) => {
-            return stopped(&binding, StopKind::ExecutionRebindRequired);
-        }
-        installed::transition::WorthQueryExecutionTransition::Failed(_) => {
-            return stopped(&binding, StopKind::ExecutionFailed);
-        }
-    };
+    let executed =
+        match installed::transition::execution(admitted.execute_in_advancement(phase, workspace)) {
+            installed::transition::WorthQueryExecutionTransition::Executed(value) => value,
+            installed::transition::WorthQueryExecutionTransition::Deferred(_) => {
+                return stopped(&binding, StopKind::ExecutionDeferred);
+            }
+            installed::transition::WorthQueryExecutionTransition::Denied(_) => {
+                return stopped(&binding, StopKind::ExecutionDenied);
+            }
+            installed::transition::WorthQueryExecutionTransition::Stale(_) => {
+                return stopped(&binding, StopKind::ExecutionStale);
+            }
+            installed::transition::WorthQueryExecutionTransition::RebindRequired(_) => {
+                return stopped(&binding, StopKind::ExecutionRebindRequired);
+            }
+            installed::transition::WorthQueryExecutionTransition::Failed(_) => {
+                return stopped(&binding, StopKind::ExecutionFailed);
+            }
+        };
     let published = match installed::transition::publication(executed.publish()) {
         installed::transition::WorthQueryPublicationTransition::Published(value) => value,
         installed::transition::WorthQueryPublicationTransition::Denied(_) => {
@@ -114,7 +115,7 @@ pub(super) fn open_collection_projection(
     );
     let promoted = match settled
         .into_lifecycle()
-        .promote(request_execution, workspace)
+        .promote_in_advancement(phase, workspace)
     {
         observation::WorthQueryProjectionPromotionOutcome::Promoted(value) => value,
         observation::WorthQueryProjectionPromotionOutcome::Denied(_) => {

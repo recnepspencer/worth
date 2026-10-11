@@ -260,9 +260,7 @@ fn open_live(
     let budget = UiCollectionProjectionBudget::new(max_rows, 131_072, 1, 8_388_608)
         .expect("QP04 collection budget");
     let UiCollectionProjectionOpenOutcome::Opened(opened) = workspace
-        .with_execution_request_mut(|execution, mut workspace| {
-            binding.open(execution, budget, workspace)
-        })
+        .with_advancement_mut(|phase, workspace| binding.open(&phase, budget, workspace))
         .expect("workspace host call opens")
     else {
         panic!("QP04 collection projection must open");

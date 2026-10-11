@@ -67,9 +67,9 @@ pub(super) fn launch_query_world() -> (
         panic!("AP-07 Query binding admits")
     };
     let UiCollectionProjectionOpenOutcome::Opened(opened) = query
-        .with_execution_request_mut(|request_execution, workspace| {
+        .with_advancement_mut(|phase, workspace| {
             binding.open(
-                request_execution,
+                &phase,
                 UiCollectionProjectionBudget::new(1, 1, 0, 512).unwrap(),
                 workspace,
             )

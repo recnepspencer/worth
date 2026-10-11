@@ -117,11 +117,11 @@ pub struct UiLiveCollectionProjection {
 impl crate::UiCollectionProjectionBinding {
     pub fn open(
         self,
-        request_execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         budget: crate::UiCollectionProjectionBudget,
         workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
     ) -> UiCollectionProjectionOpenOutcome {
-        open::open_collection_projection(request_execution, self, budget, workspace)
+        open::open_collection_projection(phase, self, budget, workspace)
     }
 }
 

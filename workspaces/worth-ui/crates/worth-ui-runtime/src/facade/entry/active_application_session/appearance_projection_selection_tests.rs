@@ -24,9 +24,9 @@ fn mounted_selection_keys_share_an_owner_without_crossing_neighborhoods() {
         panic!("Query binding")
     };
     let UiCollectionProjectionOpenOutcome::Opened(opened) = query
-        .with_execution_request_mut(|request_execution, workspace| {
+        .with_advancement_mut(|phase, workspace| {
             binding.open(
-                request_execution,
+                &phase,
                 UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
                 workspace,
             )
