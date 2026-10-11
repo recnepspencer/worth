@@ -289,7 +289,7 @@ fn a_mutation_handler_and_commit_share_one_charged_request() {
         )
         .unwrap();
     assert_eq!(crate::handler::handler_contacts(), contacts + 1);
-    assert!(matches!(outcome, Outcome::Committed { .. }));
+    assert!(matches!(outcome, Outcome::Committed { .. }), "{outcome:?}");
     let opened = reports();
     assert_eq!(opened.len(), 1);
     let charged = opened[0].as_ref().unwrap().charged_work();
