@@ -1,6 +1,8 @@
 //! Selected queue tokens hold required roots for one advancement.
 //! Only a Current proof acknowledges a token; every unfinished token requeues.
 
+mod acknowledgement;
+
 use worth_relational::facade::mvcc::CompanionPublicationCompletion;
 
 use super::super::WorthQueryOutputDemandAdvance;
@@ -189,10 +191,20 @@ impl QueuedRequiredRoots {
         // The caller already certified its own occurrence. A moved basis
         // cannot use that old certification to discharge a newer cause.
         if ready.same_record(&wave.anchor_ready, admission)? {
-            if let Some(CallerOutcome::Current(proof)) = &self.caller {
-                acknowledge_caller_claim(work, proof, admission);
-            } else {
-                self.hold(work, admission)?;
+            match self.caller.take() {
+                Some(CallerOutcome::Current(proof)) => {
+                    self.caller = Some(CallerOutcome::Decided(Arc::clone(proof.value())));
+                    let basis =
+                        performed::CurrentBasis::of(wave.shared.selected().product().observation());
+                    match acknowledgement::acknowledge_caller_claim(work, proof, &basis, admission)? {
+                        crate::domain_computation::primary_graph::application_output_demand::CurrentAcknowledgement::Acknowledged(hint) => drop(hint),
+                        crate::domain_computation::primary_graph::application_output_demand::CurrentAcknowledgement::DifferentBasis(work) => self.hold(work, admission)?,
+                    }
+                }
+                other => {
+                    self.caller = other;
+                    self.hold(work, admission)?;
+                }
             }
             return Ok(None);
         }
@@ -260,20 +272,6 @@ impl QueuedRequiredRoots {
         drop(self.roots[index].take());
     }
 
-    /// The queued root itself is Current on this basis.
-    pub(super) fn acknowledge_root(
-        &mut self,
-        index: usize,
-        _proof: performed::CurrentProof<std::sync::Arc<super::WorthQueryOutputDemandSettlement>>,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let Some(work) = self.roots[index].take() else {
-            return Ok(());
-        };
-        drop(work.acknowledge_current_admitted(admission)?);
-        Ok(())
-    }
-
     /// Hold this failed queued member while independent members proceed.
     /// Query admission-budget exhaustion ends queue work; request stops return
     /// through the driver's request-stop door before this holding door.
@@ -304,14 +302,6 @@ impl QueuedRequiredRoots {
         self.held.push(work);
         Ok(())
     }
-}
-
-fn acknowledge_caller_claim(
-    work: SelectedRequiredWork,
-    _proof: &performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
-    admission: &mut InvalidationEditAdmission,
-) {
-    drop(work.acknowledge_current_admitted(admission));
 }
 
 fn is_budget(denial: &WorthQueryOutputDemandDenial) -> bool {

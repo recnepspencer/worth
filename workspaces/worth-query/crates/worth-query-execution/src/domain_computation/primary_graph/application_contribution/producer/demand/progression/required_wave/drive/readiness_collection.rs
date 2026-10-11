@@ -188,7 +188,18 @@ where
                         )?;
                     }
                     if let Some(queued) = queued {
-                        queue.acknowledge_root(queued, proof, admission)?;
+                        if !queue.acknowledge_root(
+                            queued,
+                            proof,
+                            &performed::CurrentBasis::of(
+                                wave.shared.selected().product().observation(),
+                            ),
+                            admission,
+                        )? {
+                            frontier.members[index].state = MemberState::Inspect;
+                            index += 1;
+                            continue;
+                        }
                         frontier.members[index].ready.finish_claim();
                         frontier.members[index].queued = None;
                     }

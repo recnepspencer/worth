@@ -14,6 +14,7 @@ use super::{
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+pub(in crate::domain_computation::primary_graph) use required_wave::{CurrentBasis, CurrentProof};
 mod admission;
 mod caller_custody;
 mod caller_pass;

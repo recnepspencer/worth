@@ -40,6 +40,7 @@ pub(super) struct RequiredWaveSelection<'runtime, Schema> {
     pub(super) target: RequiredWaveTarget,
 }
 
+pub(in crate::domain_computation::primary_graph) use performed::{CurrentBasis, CurrentProof};
 mod caller;
 mod requested;
 pub(super) use requested::advance_requested_output;

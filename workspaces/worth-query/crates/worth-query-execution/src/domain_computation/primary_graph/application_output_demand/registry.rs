@@ -376,3 +376,5 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputDemandAdva
     Pending,
     Failed(WorthQueryOutputDemandDenial),
 }
+
+pub(in crate::domain_computation::primary_graph) use required_work::CurrentAcknowledgement;

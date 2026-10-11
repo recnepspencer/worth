@@ -5,6 +5,13 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::mvcc::CompanionPublicationCompletion;
 
 use super::*;
+use crate::domain_computation::primary_graph::application_contribution::{
+    CurrentBasis, CurrentProof,
+};
+pub(in crate::domain_computation::primary_graph) enum CurrentAcknowledgement {
+    Acknowledged(Option<ReplacedRequiredWorkHint>),
+    DifferentBasis(SelectedRequiredWork),
+}
 
 impl SelectedRequiredWork {
     /// Stamp the member's same-branch hints whose publication has already
@@ -46,10 +53,15 @@ impl SelectedRequiredWork {
 
     /// A Current inspection covers this row's selected local/initial causes as
     /// well as its settled same-branch hints. Newer marks remain unacknowledged.
-    pub(in crate::domain_computation::primary_graph) fn acknowledge_current_admitted(
+    pub(in crate::domain_computation::primary_graph) fn acknowledge_current_admitted<T>(
         self,
+        proof: CurrentProof<T>,
+        basis: &CurrentBasis,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
+    ) -> Result<CurrentAcknowledgement, WorthQueryOutputDemandDenial> {
+        if proof.basis() != basis {
+            return Ok(CurrentAcknowledgement::DifferentBasis(self));
+        }
         charge_acknowledgement(admission)?;
         admission
             .charge_external_work(4)
@@ -79,7 +91,7 @@ impl SelectedRequiredWork {
         };
         let result = self.acknowledge_subsumed(admission);
         drop(extra);
-        result
+        result.map(CurrentAcknowledgement::Acknowledged)
     }
 
     fn acknowledge_subsumed(

@@ -205,10 +205,10 @@ fn a_claim_selects_newer_causes_and_current_acknowledges_the_row_once() {
         matches!(selected.kind(), SelectedRequiredWorkKind::Local { settlement } if Arc::ptr_eq(settlement, &later)),
         "inspection selects the live cause, not the popped one"
     );
-    assert!(selected
-        .acknowledge_current_admitted(&mut super::record_admission())
-        .unwrap()
-        .is_some());
+    crate::domain_computation::primary_graph::application_contribution::CurrentProof::with_current_fixture_basis(|proof,basis| {
+        assert!(matches!(selected.acknowledge_current_admitted(proof,&basis,&mut super::record_admission()).unwrap(),
+            super::super::CurrentAcknowledgement::Acknowledged(Some(_))));
+    });
     drop(claim);
     assert!(
         matches!(queue.pop(), RequiredWorkPop::Empty),

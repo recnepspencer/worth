@@ -16,6 +16,7 @@ mod refresh_claim;
 mod requested_claim;
 mod selection;
 mod subsumed;
+pub(in crate::domain_computation::primary_graph) use subsumed::CurrentAcknowledgement;
 mod successor_join;
 
 pub(in crate::domain_computation::primary_graph) use pending_readmission::PendingUpstream;
@@ -352,3 +353,6 @@ impl super::DemandRegistryState {
             .map(|_| ())
     }
 }
+
+#[cfg(test)]
+mod proof_fixture;

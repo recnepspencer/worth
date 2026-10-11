@@ -1,6 +1,8 @@
 //! Native certification issues the sole consuming key for a Current result.
 use super::super::*;
 use super::PerformedMembers;
+mod current_basis;
+pub(in crate::domain_computation::primary_graph) use current_basis::CurrentBasis;
 
 /// No accessor exposes a stale decision. Reinspection obtains a new value.
 #[cfg(test)]
@@ -10,17 +12,13 @@ pub(in super::super) struct CertifiedDecision<T> {
 }
 #[cfg(test)]
 impl<T> CertifiedDecision<T> {
-    pub(in super::super) fn into_current(
-        self,
-        owner: &PerformedMembers,
-    ) -> Option<CurrentProof<T>> {
-        (self.commit_generation == owner.commit_generation)
-            .then_some(CurrentProof { value: self.value })
+    pub(in super::super) fn into_current(self, owner: &PerformedMembers) -> Option<T> {
+        (self.commit_generation == owner.commit_generation).then_some(self.value)
     }
 }
 impl PerformedMembers {
-    fn current<T>(&self, value: T) -> CurrentProof<T> {
-        CurrentProof { value }
+    fn current<T>(&self, value: T, basis: CurrentBasis) -> CurrentProof<T> {
+        CurrentProof { value, basis }
     }
 
     #[cfg(test)]
@@ -33,10 +31,14 @@ impl PerformedMembers {
 }
 
 /// A move-only key to acknowledgement, caller acceptance or requested return.
-pub(in super::super) struct CurrentProof<T> {
+pub(in crate::domain_computation::primary_graph) struct CurrentProof<T> {
     value: T,
+    basis: CurrentBasis,
 }
 impl<T> CurrentProof<T> {
+    pub(in crate::domain_computation::primary_graph) fn basis(&self) -> &CurrentBasis {
+        &self.basis
+    }
     pub(in super::super) fn value(&self) -> &T {
         &self.value
     }
@@ -129,9 +131,12 @@ where
             }
         })?;
     match result {
-        RequiredCueProgress::Current(settlement) => Ok(RequiredWaveStep::Current(
-            performed.borrow().current(settlement),
-        )),
+        RequiredCueProgress::Current(settlement) => {
+            Ok(RequiredWaveStep::Current(performed.borrow().current(
+                settlement,
+                CurrentBasis::of(wave.shared.selected().product().observation()),
+            )))
+        }
         RequiredCueProgress::PendingExact(pending) => {
             let upstream = runtime.output_demands.pending_exact_ready_readmission(
                 &pending,
@@ -148,3 +153,6 @@ where
         RequiredCueProgress::Fresh(plan) => Ok(RequiredWaveStep::Fresh(plan)),
     }
 }
+
+#[cfg(test)]
+mod acknowledgement_basis;

@@ -114,9 +114,7 @@ fn assert_publication_credit(replay: bool, publish: bool) {
             record.publication(permission, publication, |member| member.performed());
         }
         assert_eq!(
-            certified
-                .into_current(&record)
-                .map(super::super::CurrentProof::into_value),
+            certified.into_current(&record),
             (!publish || replay).then_some("Current at this generation"),
             "only a new publication invalidates the certified decision"
         );

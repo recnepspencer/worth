@@ -6,6 +6,7 @@ mod execution_denial;
 mod partitioned_computation;
 mod producer;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
+pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
 mod request_execution;
 mod setup;
 

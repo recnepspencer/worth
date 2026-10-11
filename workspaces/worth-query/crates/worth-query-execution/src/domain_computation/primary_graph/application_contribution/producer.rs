@@ -11,6 +11,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 mod demand;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
+pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};
 pub use demand::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,

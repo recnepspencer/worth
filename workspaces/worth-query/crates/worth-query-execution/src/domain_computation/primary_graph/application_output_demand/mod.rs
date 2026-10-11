@@ -4,6 +4,7 @@ mod currentness;
 mod readiness_delivery;
 mod recovered_outputs;
 mod registry;
+pub(in crate::domain_computation::primary_graph) use registry::CurrentAcknowledgement;
 pub(in crate::domain_computation::primary_graph) use registry::{
     AdmittedRequiredWave, PreparedRequiredInputs,
 };
