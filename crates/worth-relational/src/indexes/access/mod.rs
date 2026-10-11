@@ -13,6 +13,7 @@ mod execution;
 mod generation_selection;
 mod prepared_entity_field_lookup;
 mod prepared_field_certification;
+mod prepared_lookup_admission;
 mod routing;
 mod scratch;
 

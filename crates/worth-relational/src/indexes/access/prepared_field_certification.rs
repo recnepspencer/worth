@@ -29,7 +29,7 @@ pub(super) fn certify<E>(
     view.try_for_each_entity_record(
         execution,
         Some(prepared.entity_kind()),
-        |_| check_live().map_err(Stop::Admission),
+        |_| super::prepared_lookup_admission::admit(execution, prepared.index_id(), check_live),
         |record| {
             if entity_query_locus_comparison_key(record, prepared.field_locator()).as_ref()
                 == Some(&expected)
@@ -40,7 +40,7 @@ pub(super) fn certify<E>(
         },
     )?;
     storage_ids.sort();
-    check_live().map_err(Stop::Admission)?;
+    super::prepared_lookup_admission::admit(execution, prepared.index_id(), check_live)?;
     let overflowed = storage_ids.len() > limit;
     storage_ids.truncate(limit);
     if storage_ids == outcome.candidate_entity_ids() && overflowed == outcome.overflowed() {

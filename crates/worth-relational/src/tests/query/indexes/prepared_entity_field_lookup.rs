@@ -162,6 +162,9 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
     );
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_index_field_aspects();
+    let first = create_entity_outcome(execution, &runtime, "cancellation-order");
+    let first_entity = changed_entities(&first)[0];
+    release_test_commit_snapshot(&runtime, &first);
     let created = create_entity_outcome(execution, &runtime, "cancellation-order");
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -189,36 +192,100 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
         .index_access()
         .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator, execution)
         .unwrap();
-    let selected = runtime
-        .index_access()
-        .execute_prepared_entity_field_lookup(
-            &prepared,
-            &string_aspect_value("cancellation-order"),
-            16,
-            BoundedIndexParityMode::Production,
-            execution,
-            || Ok::<_, &str>(()),
-        )
-        .unwrap();
-    assert_eq!(selected.candidate_entity_ids(), changed_entities(&created));
-    cancellation.cancel();
-    let mut admission_calls = 0;
-    let stopped = runtime
-        .index_access()
-        .execute_prepared_entity_field_lookup(
-            &prepared,
-            &string_aspect_value("cancellation-order"),
-            16,
-            BoundedIndexParityMode::Production,
-            execution,
-            || {
-                admission_calls += 1;
-                Err("work exhausted")
-            },
-        )
-        .unwrap_err();
-    assert!(matches!(stopped, Stop::Lookup(denial)
-        if denial.kind() == BoundedEntityFieldLookupDenialKind::Execution(
-            crate::execution::RelationalExecutionDenialCause::Cancelled)));
-    assert_eq!(admission_calls, 0);
+    let mut failures = Vec::new();
+    for parity in [
+        BoundedIndexParityMode::Production,
+        BoundedIndexParityMode::Certification,
+    ] {
+        let baseline = runtime
+            .index_access()
+            .execute_prepared_entity_field_lookup(
+                &prepared,
+                &string_aspect_value("cancellation-order"),
+                16,
+                parity,
+                execution,
+                || Ok::<_, &str>(()),
+            )
+            .unwrap();
+        assert_eq!(
+            baseline.candidate_entity_ids(),
+            &[first_entity, changed_entities(&created)[0]]
+        );
+        // Admission five follows the completed first index candidate. Seven
+        // follows the completed first certification candidate and precedes
+        // certification's final admission after the second storage candidate.
+        let rendezvous: &[usize] = if parity == BoundedIndexParityMode::Production {
+            &[5]
+        } else {
+            &[5, 7]
+        };
+        for &after in rendezvous {
+            for exhaust_work in [false, true] {
+                let cancellation = worth_execution::CancellationSource::new();
+                let host = worth_execution::SerialRequest::from_memory(
+                    worth_execution::SerialMemoryBudget::new(1 << 26),
+                    cancellation.token(),
+                    None,
+                );
+                let execution = worth_execution::ExecutionRequest::serial(&host);
+                let mut admission_calls = 0;
+                let identity = worth_foundational::PartitionIdentity::new(1);
+                let scan = worth_execution::ExecutionScan::try_from_ordered(
+                    vec![identity],
+                    vec![(identity, ())],
+                )
+                .unwrap();
+                let mut stopped = None;
+                execution
+                    .run(worth_execution::ExecutionWorkCeiling::new(0), |lease| {
+                        scan.run::<(), (), (), _>(lease, (), 0, 0, 0, 0, |_, _, work| {
+                            stopped =
+                                Some(runtime.index_access().execute_prepared_entity_field_lookup(
+                                    &prepared,
+                                    &string_aspect_value("cancellation-order"),
+                                    16,
+                                    parity,
+                                    &execution,
+                                    || {
+                                        admission_calls += 1;
+                                        if admission_calls > after {
+                                            return Err("work exhausted");
+                                        }
+                                        if admission_calls == after {
+                                            if exhaust_work {
+                                                assert_eq!(
+                                                    work.checkpoint(1),
+                                                    Err(
+                                                        worth_execution::MapKernelStop::WorkCeiling
+                                                    )
+                                                );
+                                            } else {
+                                                cancellation.cancel();
+                                            }
+                                        }
+                                        Ok(())
+                                    },
+                                ));
+                            Ok(((), ()))
+                        })
+                    })
+                    .unwrap();
+                let stopped = stopped.expect("the metered kernel ran the lookup");
+                let expected = BoundedEntityFieldLookupDenialKind::Execution(if exhaust_work {
+                    crate::execution::RelationalExecutionDenialCause::WorkExhausted
+                } else {
+                    crate::execution::RelationalExecutionDenialCause::Cancelled
+                });
+                let actual = match stopped {
+                    Err(Stop::Lookup(denial)) => Some(denial.kind()),
+                    _ => None,
+                };
+                if actual != Some(expected) || admission_calls != after {
+                    failures.push(format!("{parity:?}, after={after}, exhaust={exhaust_work}: cause={actual:?}, admissions={admission_calls}, expected={expected:?}"));
+                }
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
