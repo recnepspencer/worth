@@ -1,161 +1,72 @@
-//! Distinguish raw allocation patterns from lawful constructor expressions.
-use super::super::production_cfg::compiled_out_of_production;
+//! Only Execution may access raw allocation variants or create an alias lane.
 use super::super::production_scope::{
     visit_field_in_scope, visit_impl_item_in_scope, visit_item_in_scope, visit_trait_item_in_scope,
     visit_variant_in_scope, ScopedVisitor,
 };
-use super::super::use_binding_resolution::expand_use_tree;
-use proc_macro2::{TokenStream, TokenTree};
+use proc_macro2::{Span, TokenStream, TokenTree};
 use std::collections::BTreeSet;
-use syn::parse::{Parse, ParseStream};
-use syn::spanned::Spanned;
 use syn::visit::{self, Visit};
-use syn::{Expr, ImplItem, Item, Pat, Token, TraitItem};
+use syn::{ImplItem, Item, TraitItem, Type, UseTree};
 
 const RAW: &str = "ExecutionAllocationDenialKind";
 
 pub(super) fn findings(items: &[Item]) -> BTreeSet<(String, usize)> {
-    let mut visitor = RawPatterns {
+    let mut visitor = RawAccess {
         scope: Vec::new(),
-        aliases: BTreeSet::from([RAW.to_owned()]),
         found: BTreeSet::new(),
     };
-    visitor.items(items);
+    for item in items {
+        visitor.visit_item(item);
+    }
     visitor.found
 }
 
-struct RawPatterns {
+struct RawAccess {
     scope: Vec<String>,
-    aliases: BTreeSet<String>,
     found: BTreeSet<(String, usize)>,
 }
 
-impl ScopedVisitor for RawPatterns {
+impl ScopedVisitor for RawAccess {
     fn scope(&mut self) -> &mut Vec<String> {
         &mut self.scope
     }
 }
 
-impl RawPatterns {
-    fn import(&mut self, item: &syn::ItemUse) {
-        if compiled_out_of_production(&item.attrs) {
-            return;
-        }
-        for (_, name, binding) in expand_use_tree(&[], &item.tree) {
-            if name == RAW {
-                self.aliases.insert(binding);
+impl RawAccess {
+    fn refuse(&mut self, span: Span) {
+        self.found
+            .insert((self.scope.join("::"), span.start().line));
+    }
+
+    fn macro_access(&mut self, tokens: TokenStream) {
+        // Item-generating macros are governed too; parse complete item fragments,
+        // then scan every group for the forbidden path spelling.
+        if let Ok(file) = syn::parse2::<syn::File>(tokens.clone()) {
+            for item in &file.items {
+                self.visit_item(item);
             }
         }
-    }
-
-    fn items(&mut self, items: &[Item]) {
-        for item in items {
-            if let Item::Use(import) = item {
-                self.import(import);
-            }
-        }
-        for item in items {
-            self.visit_item(item);
-        }
-    }
-
-    fn pattern(&mut self, pattern: &Pat) {
-        let mut visitor = PatternPaths {
-            aliases: &self.aliases,
-            lines: BTreeSet::new(),
-        };
-        visitor.visit_pat(pattern);
-        self.found.extend(
-            visitor
-                .lines
-                .into_iter()
-                .map(|line| (self.scope.join("::"), line)),
-        );
-    }
-
-    fn matches(&mut self, tokens: TokenStream) {
-        if let Ok(input) = syn::parse2::<MatchesInput>(tokens.clone()) {
-            self.pattern(&input.pattern);
-        } else {
-            // A macro metavariable can stand in the value expression. The
-            // first outer comma still separates it from the pattern.
-            let pattern: TokenStream = tokens
-                .into_iter()
-                .skip_while(|token| !matches!(token, TokenTree::Punct(p) if p.as_char() == ','))
-                .skip(1)
-                .collect();
-            self.raw_pattern_tokens(pattern);
-        }
-    }
-
-    fn raw_pattern_tokens(&mut self, tokens: TokenStream) {
-        let tokens: Vec<_> = tokens.into_iter().collect();
-        for window in tokens.windows(4) {
-            if let [TokenTree::Ident(name), TokenTree::Punct(first), TokenTree::Punct(second), TokenTree::Ident(_)] =
-                window
-            {
-                if self.aliases.contains(&name.to_string())
-                    && first.as_char() == ':'
-                    && second.as_char() == ':'
-                {
-                    self.found
-                        .insert((self.scope.join("::"), name.span().start().line));
-                }
-            }
-        }
-        for token in tokens {
-            if let TokenTree::Group(group) = token {
-                self.raw_pattern_tokens(group.stream());
-            }
-        }
-    }
-
-    fn nested_macros(&mut self, tokens: TokenStream) {
         let tokens: Vec<_> = tokens.into_iter().collect();
         for window in tokens.windows(3) {
-            if let [TokenTree::Ident(name), TokenTree::Punct(bang), TokenTree::Group(group)] =
+            if let [TokenTree::Ident(name), TokenTree::Punct(first), TokenTree::Punct(second)] =
                 window
             {
-                if name == "matches" && bang.as_char() == '!' {
-                    self.matches(group.stream());
+                if name == RAW && first.as_char() == ':' && second.as_char() == ':' {
+                    self.refuse(name.span());
                 }
             }
         }
         for token in tokens {
             if let TokenTree::Group(group) = token {
-                self.nested_macros(group.stream());
+                self.macro_access(group.stream());
             }
         }
     }
 }
 
-impl<'ast> Visit<'ast> for RawPatterns {
+impl<'ast> Visit<'ast> for RawAccess {
     fn visit_item(&mut self, item: &'ast Item) {
-        let aliases = self.aliases.clone();
-        if let Item::Mod(module) = item {
-            if let Some((_, items)) = &module.content {
-                for item in items {
-                    if let Item::Use(import) = item {
-                        self.import(import);
-                    }
-                }
-            }
-        }
         visit_item_in_scope(self, item);
-        self.aliases = aliases;
-    }
-    fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
-        self.import(item);
-    }
-    fn visit_block(&mut self, block: &'ast syn::Block) {
-        let aliases = self.aliases.clone();
-        for statement in &block.stmts {
-            if let syn::Stmt::Item(Item::Use(import)) = statement {
-                self.import(import);
-            }
-        }
-        visit::visit_block(self, block);
-        self.aliases = aliases;
     }
     fn visit_impl_item(&mut self, item: &'ast ImplItem) {
         visit_impl_item_in_scope(self, item);
@@ -169,59 +80,89 @@ impl<'ast> Visit<'ast> for RawPatterns {
     fn visit_variant(&mut self, variant: &'ast syn::Variant) {
         visit_variant_in_scope(self, variant);
     }
-    fn visit_arm(&mut self, arm: &'ast syn::Arm) {
-        if compiled_out_of_production(&arm.attrs) {
-            return;
-        }
-        self.pattern(&arm.pat);
-        visit::visit_arm(self, arm);
-    }
-    fn visit_macro(&mut self, mac: &'ast syn::Macro) {
-        if mac
-            .path
-            .segments
-            .last()
-            .is_some_and(|segment| segment.ident == "matches")
-        {
-            self.matches(mac.tokens.clone());
-        }
-        self.nested_macros(mac.tokens.clone());
-    }
-}
-
-struct PatternPaths<'a> {
-    aliases: &'a BTreeSet<String>,
-    lines: BTreeSet<usize>,
-}
-impl<'ast> Visit<'ast> for PatternPaths<'_> {
     fn visit_path(&mut self, path: &'ast syn::Path) {
-        let segments: Vec<_> = path.segments.iter().collect();
-        if segments.len() >= 2
-            && self
-                .aliases
-                .contains(&segments[segments.len() - 2].ident.to_string())
+        for segment in path
+            .segments
+            .iter()
+            .take(path.segments.len().saturating_sub(1))
         {
-            self.lines.insert(path.span().start().line);
+            if segment.ident == RAW {
+                self.refuse(segment.ident.span());
+            }
         }
         visit::visit_path(self, path);
     }
+    fn visit_use_tree(&mut self, tree: &'ast UseTree) {
+        match tree {
+            UseTree::Path(path) if path.ident == RAW => self.refuse(path.ident.span()),
+            // A renamed import creates the same alternate spelling as a type alias.
+            UseTree::Rename(rename) if rename.ident == RAW && rename.rename != RAW => {
+                self.refuse(rename.ident.span());
+            }
+            _ => {}
+        }
+        visit::visit_use_tree(self, tree);
+    }
+    fn visit_item_type(&mut self, item: &'ast syn::ItemType) {
+        if names_raw_type(&item.ty) {
+            self.refuse(item.ident.span());
+        }
+        visit::visit_item_type(self, item);
+    }
+    fn visit_impl_item_type(&mut self, item: &'ast syn::ImplItemType) {
+        if names_raw_type(&item.ty) {
+            self.refuse(item.ident.span());
+        }
+        visit::visit_impl_item_type(self, item);
+    }
+    fn visit_trait_item_type(&mut self, item: &'ast syn::TraitItemType) {
+        if item
+            .default
+            .as_ref()
+            .is_some_and(|(_, ty)| names_raw_type(ty))
+        {
+            self.refuse(item.ident.span());
+        }
+        visit::visit_trait_item_type(self, item);
+    }
+    fn visit_item_impl(&mut self, item: &'ast syn::ItemImpl) {
+        if item.trait_.is_some() && raw_self_type(&item.self_ty) {
+            use syn::spanned::Spanned;
+            self.refuse(item.self_ty.span());
+        }
+        visit::visit_item_impl(self, item);
+    }
+    fn visit_macro(&mut self, mac: &'ast syn::Macro) {
+        self.macro_access(mac.tokens.clone());
+    }
 }
 
-struct MatchesInput {
-    pattern: Pat,
+fn names_raw_type(ty: &Type) -> bool {
+    struct RawName(bool);
+    impl<'ast> Visit<'ast> for RawName {
+        fn visit_path(&mut self, path: &'ast syn::Path) {
+            self.0 |= path
+                .segments
+                .last()
+                .is_some_and(|segment| segment.ident == RAW);
+            visit::visit_path(self, path);
+        }
+    }
+    let mut name = RawName(false);
+    name.visit_type(ty);
+    name.0
 }
-impl Parse for MatchesInput {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        let _: Expr = input.parse()?;
-        let _: Token![,] = input.parse()?;
-        let pattern = Pat::parse_multi_with_leading_vert(input)?;
-        if input.peek(Token![if]) {
-            let _: Token![if] = input.parse()?;
-            let _: Expr = input.parse()?;
-        }
-        if input.peek(Token![,]) {
-            let _: Token![,] = input.parse()?;
-        }
-        Ok(Self { pattern })
+
+fn raw_self_type(ty: &Type) -> bool {
+    match ty {
+        Type::Path(path) => path
+            .path
+            .segments
+            .last()
+            .is_some_and(|segment| segment.ident == RAW),
+        Type::Reference(reference) => raw_self_type(&reference.elem),
+        Type::Paren(paren) => raw_self_type(&paren.elem),
+        Type::Group(group) => raw_self_type(&group.elem),
+        _ => false,
     }
 }

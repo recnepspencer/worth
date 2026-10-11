@@ -107,6 +107,6 @@ fn check_graphs(crate_root: &str, graphs: &[ModuleGraph]) -> Vec<Diagnostic> {
     found.into_iter().map(|(path, item, line)| Diagnostic::new(
         DiagnosticCode::Bc7010AllocationDenialPattern,
         format!("{crate_root}/{path}:{line}"),
-        format!("raw allocation kind pattern in `{item}`; call ExecutionAllocationDenial::classify or ExecutionAllocationDenialKind::classify and match the classified value"),
+        format!("raw allocation kind access or alias in `{item}`; call denial.classify() and match the classified value; raw variants, aliases and trait impls belong to worth-execution"),
     )).collect()
 }

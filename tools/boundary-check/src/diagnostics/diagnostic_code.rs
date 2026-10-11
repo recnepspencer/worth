@@ -131,7 +131,7 @@ impl DiagnosticCode {
             Self::Bc7007ThreadingBoundary => "tools/boundary-check/config/road1.toml [[threading_sites]]; parallel work belongs in worth-execution, while every non-compute thread needs an exact category and reason",
             Self::Bc7008RequestConstruction => "tools/boundary-check/config/road1.toml [[request_constructor_denials]]; borrow the caller request or construct backing only at the declared policy-taking host entry",
             Self::Bc7009CanonicalOrder => "tools/boundary-check/src/source_rules/analysis/canonical_order.rs; order Query Execution by declared identity; named TypeId containers are membership only",
-            Self::Bc7010AllocationDenialPattern => "tools/boundary-check/src/source_rules/analysis/allocation_denial_patterns.rs; raw allocation kinds are classified only by worth-execution; call classify at every consumer door",
+            Self::Bc7010AllocationDenialPattern => "tools/boundary-check/src/source_rules/analysis/allocation_denial_patterns.rs; raw allocation kind access and aliases belong to worth-execution; call denial.classify() at every consumer door",
             Self::Bc8001SnapshotBaseline | Self::Bc8002FacadeSnapshotDrift | Self::Bc8003CrateDagSnapshotDrift => "tools/boundary-check/snapshots/; regenerate the governed snapshot explicitly with boundary-check --update-snapshots",
             Self::Bc8004FacadeDocMissing | Self::Bc8005FacadeDocDebtStale => "tools/boundary-check/snapshots/facade-doc-debt.toml; document the named definition with a `///` comment, or delete the paid debt entry",
         };
