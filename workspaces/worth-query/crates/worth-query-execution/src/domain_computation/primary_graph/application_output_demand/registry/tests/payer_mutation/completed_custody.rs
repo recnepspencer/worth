@@ -61,9 +61,11 @@ fn check(entry: u8) {
                 retired_sources: Vec::new(),
                 retired: None,
                 token_count: 0,
+                cleanup: Default::default(),
                 completed: true,
             },
         );
+        state.note_custody(&commit);
         drop(state);
         (registry, interest)
     };
@@ -148,9 +150,11 @@ fn registry_completed_custody_is_not_swept_after_commit() {
                     retired_sources: Vec::new(),
                     retired: None,
                     token_count: 0,
+                    cleanup: Default::default(),
                     completed: true,
                 },
             );
+            state.note_custody(&commit);
             drop(state);
             registry
         };
@@ -174,7 +178,7 @@ fn registry_completed_custody_is_not_swept_after_commit() {
             super::super::super::record_map::occurrence_rows_visited(),
             before
         );
-        assert!(deferred.state.lock().unwrap().pending_custody_prune);
+        assert!(deferred.state.lock().unwrap().pending_custody_prune());
         let mut full = admission(1_000_000);
         deferred
             .state
@@ -198,7 +202,7 @@ fn registry_completed_custody_is_not_swept_after_commit() {
                 WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
             );
             assert_eq!(value(&retry.state.lock().unwrap()), snapshot);
-            assert!(retry.state.lock().unwrap().pending_custody_prune);
+            assert!(retry.state.lock().unwrap().pending_custody_prune());
             retry
                 .state
                 .lock()

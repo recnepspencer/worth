@@ -218,6 +218,7 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
             retired_sources: Vec::new(),
             retired: None,
             token_count: 1,
+            cleanup: Default::default(),
             completed: false,
         },
     );

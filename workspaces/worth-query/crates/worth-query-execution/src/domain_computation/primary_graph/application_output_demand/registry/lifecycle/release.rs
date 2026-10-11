@@ -16,6 +16,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.note_record_custody(&interest.key);
         let mut released_bytes = 0;
         let replaced = infallible(refreshed_rejoin::replaced_under_refresh(
             &state.records,
@@ -142,6 +143,7 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(custody) = state.source_custody.get_mut(source_commit) {
             custody.token_count = custody.token_count.saturating_sub(1);
         }
+        state.note_custody(source_commit);
         infallible(state.prune_completed_custody(&mut CleanupWalk { _release: () }));
     }
 }

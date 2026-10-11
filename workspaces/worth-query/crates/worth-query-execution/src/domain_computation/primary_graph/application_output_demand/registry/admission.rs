@@ -33,7 +33,13 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.drain_completed_custody(admission)?;
+        state.drain_custody_for_occurrence(&requested_key, admission)?;
+        for commit in expected_source_commit
+            .into_iter()
+            .chain(selected_output.as_ref().map(|selected| selected.commit))
+        {
+            state.drain_custody_entry(commit, admission)?;
+        }
         let stable_refresh = matches!(successor_of, Some(OutputRefreshPredecessor::Stable { .. }));
         let selected_commit = selected_output.as_ref().map(|selected| selected.commit);
         let exact_retained_row = if let Some(selected) =
@@ -264,6 +270,7 @@ impl WorthQueryOutputDemandRegistry {
                 supersede_predecessors(&mut state, &requested_key, admission)?;
             }
         }
+        state.drain_foreign_custody_quota(admission);
         let prepared_source = prepared_commit.and_then(|commit| {
             let custody = state
                 .source_custody

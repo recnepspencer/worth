@@ -14,15 +14,17 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut sweep = PostCommitSweep::after_effect();
-        for custody in state.source_custody.values_mut() {
+        state.note_custody_changes(|_, custody| {
             infallible(sweep.inspect_row());
             if custody.occurrence == occurrence {
                 custody.retire(WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::Closed,
                     "product occurrence retired before required-output custody was consumed",
                 ));
+                return true;
             }
-        }
+            false
+        });
         if let Some(preparation) = state.source_preparations.get_mut(&occurrence) {
             preparation.retired = true;
         }
@@ -94,7 +96,6 @@ impl WorthQueryOutputDemandRegistry {
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
-        state.pending_custody_prune = true;
         drop(state);
         drop(retired_cursors);
     }
@@ -142,6 +143,7 @@ mod tests {
                         retired_sources: Vec::new(),
                         retired: None,
                         token_count: 1,
+                        cleanup: Default::default(),
                         completed: false,
                     },
                 );

@@ -61,6 +61,7 @@ impl DemandRegistryState {
             return Ok(None);
         };
         charge(self.records.len())?;
+        self.forget_custody_note(&commit);
         let custody = self
             .source_custody
             .remove(&commit)

@@ -56,7 +56,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.source_custody.remove(source_commit);
+        state.discard_custody(source_commit);
     }
 
     pub(in crate::domain_computation::primary_graph) fn complete_prepared_source(
@@ -81,7 +81,7 @@ impl WorthQueryOutputDemandRegistry {
                 custody.discovery = None;
             }
         }
-        state.pending_custody_prune = true;
+        state.note_custody(receipt.committed_product_publication().composite_commit());
     }
 
     pub(in crate::domain_computation::primary_graph) fn begin_source_preparation(

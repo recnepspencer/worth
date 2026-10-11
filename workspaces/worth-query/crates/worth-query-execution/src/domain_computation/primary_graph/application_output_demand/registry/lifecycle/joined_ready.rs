@@ -31,6 +31,9 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state
+            .drain_completed_custody(admission)
+            .map_err(|_| work_stop(admission))?;
         let mut prepaid = charge_whole_map(&state.records, admission, WholeMapPasses::One, 4)?;
         let key = &interest.key;
         if !state.records.get(key).is_some_and(only_joined)

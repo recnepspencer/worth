@@ -1,7 +1,7 @@
 //! Prepay custody pruning and the closed-row cascade before their first edit.
 use super::super::refreshed_rejoin::{
-    charge_whole_map, price_mutation_with_source_allowance, source_rows, OccurrenceSearchCharge,
-    PricedMutation, SourceWalkAllowance, WalkAdmission, WalkKind, WholeMapPasses,
+    charge_whole_map, price_mutation_with_source_allowance, PricedMutation, WalkKind,
+    WholeMapPasses,
 };
 use super::super::{DemandRegistryState, WorthQueryOutputDemandKey};
 use super::closed_retirement::{closed_cached, closed_superseded};
@@ -26,54 +26,8 @@ pub(in super::super) fn price_cleanup<'a>(
     kind: WalkKind,
 ) -> Result<PricedMutation<'a>, WorthQueryOutputDemandDenial> {
     walks.extend(cascade_walks(state, cascade, admission, kind)?);
-    let allowance = custody_walks(state, &mut walks, admission, kind)?;
+    let allowance = super::super::cleanup::custody_price::noted_allowance(state, admission, kind)?;
     price_mutation_with_source_allowance(state, admission, &walks, kind, allowance)
-}
-
-pub(in super::super) fn custody_walks(
-    state: &DemandRegistryState,
-    walks: &mut Walks,
-    admission: &mut InvalidationEditAdmission,
-    kind: WalkKind,
-) -> Result<SourceWalkAllowance, WorthQueryOutputDemandDenial> {
-    let mut allowance = SourceWalkAllowance {
-        paths: 0,
-        rows: 0,
-        entries: state.source_custody.len() as u64,
-        navigation: 0,
-    };
-    // The quote's custody-entry scan is paid as well as the later sweep.
-    admission
-        .charge_external_work(allowance.entries)
-        .map_err(|_| kind.denial())?;
-    for custody in state.source_custody.values() {
-        for source in custody.bound_sources.iter().flatten() {
-            let mut charge = WalkAdmission::new(admission, kind);
-            let mut count = 0u64;
-            let before = charge.admission_mut().charged_navigation();
-            let rows = source_rows(&state.records, &source.identity, &mut charge)?;
-            let descent = charge.admission_mut().charged_navigation() - before;
-            allowance.navigation = descent
-                .checked_mul(2)
-                .and_then(|price| allowance.navigation.checked_add(price))
-                .ok_or_else(|| kind.denial())?;
-            for (key, _) in rows {
-                charge.inspect_row()?;
-                count = count.checked_add(1).ok_or_else(|| kind.denial())?;
-                walks.push((key.clone(), 1));
-            }
-            // Pruning checks the source, then may gather its retiring rows.
-            allowance.paths = allowance
-                .paths
-                .checked_add(2)
-                .ok_or_else(|| kind.denial())?;
-            allowance.rows = count
-                .checked_mul(2)
-                .and_then(|rows| allowance.rows.checked_add(rows))
-                .ok_or_else(|| kind.denial())?;
-        }
-    }
-    Ok(allowance)
 }
 
 struct Candidate {

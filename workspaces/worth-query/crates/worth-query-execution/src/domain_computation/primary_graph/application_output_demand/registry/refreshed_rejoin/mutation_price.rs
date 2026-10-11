@@ -12,6 +12,7 @@ use core::convert::Infallible;
 pub(in super::super) struct PricedMutation<'a> {
     state: &'a mut DemandRegistryState,
     charge: PricedMutationWalk,
+    noted_entries: u64,
 }
 
 struct PricedMutationWalk {
@@ -127,12 +128,25 @@ fn price_walks<'a, 'keys>(
     Ok(PricedMutation {
         state,
         charge: PricedMutationWalk { paths, rows },
+        noted_entries: allowance.entries,
     })
 }
 
 impl PricedMutation<'_> {
+    pub(in super::super) fn prune_custody_entry(
+        &mut self,
+        commit: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) {
+        infallible(self.state.prune_custody_entry(commit, &mut self.charge));
+    }
+
     pub(in super::super) fn prune_completed_custody(&mut self) {
-        infallible(self.state.prune_completed_custody(&mut self.charge));
+        for _ in 0..self.noted_entries {
+            let Some(commit) = self.state.custody_cleanup.head.clone() else {
+                break;
+            };
+            infallible(self.state.prune_custody_entry(&commit, &mut self.charge));
+        }
     }
 
     pub(in super::super) fn retire_closed_rows(

@@ -1,8 +1,8 @@
-//! Completed custody sweeps entries and each bound source occurrence.
-use super::super::refreshed_rejoin::OccurrenceSearchCharge;
-use super::super::refreshed_rejoin::{infallible, source_rows};
+//! Drain one custody note at a time, after its complete price was admitted.
+use super::super::refreshed_rejoin::{infallible, source_rows, OccurrenceSearchCharge};
 use super::*;
 use core::convert::Infallible;
+use worth_runtime_world::facade::CompositeCommitIdentity;
 
 impl DemandRegistryState {
     pub(in super::super) fn prune_completed_custody<
@@ -10,44 +10,40 @@ impl DemandRegistryState {
     >(
         &mut self,
         charge: &mut C,
-    ) -> Result<(), C::Refusal> {
-        let mut retired_keys = Vec::new();
+    ) -> Result<(), Infallible> {
+        while let Some(commit) = self.custody_cleanup.head.clone() {
+            self.prune_custody_entry(&commit, charge)?;
+        }
+        Ok(())
+    }
 
-        self.source_custody.retain(|commit, custody| {
-            infallible(charge.inspect_row());
-            if custody.token_count != 0 {
-                return true;
-            }
-            if custody.retired.is_some() {
-                if let Some(bound) = &custody.bound_sources {
-                    for source in bound {
-                        retired_keys.extend(
-                            infallible(source_rows(&self.records, &source.identity, charge)).map(
-                                |(key, _)| {
-                                    infallible(charge.inspect_row());
-                                    key.clone()
-                                },
-                            ),
-                        );
-                    }
-                }
-                return false;
-            }
+    pub(in super::super) fn prune_custody_entry<C: OccurrenceSearchCharge<Refusal = Infallible>>(
+        &mut self,
+        commit: &CompositeCommitIdentity,
+        charge: &mut C,
+    ) -> Result<(), Infallible> {
+        self.forget_custody_note(commit);
+        infallible(charge.inspect_row());
+        let custody = &self.source_custody[commit];
+        if custody.token_count != 0 {
+            return Ok(());
+        }
+        if custody.retired.is_none() {
             let Some(bound) = &custody.bound_sources else {
-                return true;
+                return Ok(());
             };
             let fully_superseded = !bound.is_empty()
                 && bound
                     .iter()
                     .all(|source| custody.source_denial(&source.identity).is_some());
             if !custody.completed && !fully_superseded {
-                return true;
+                return Ok(());
             }
             if !bound.iter().all(|source| {
                 custody.consumed_sources.contains(&source.identity)
                     || custody.source_denial(&source.identity).is_some()
             }) {
-                return true;
+                return Ok(());
             }
             let held = bound.iter().any(|source| {
                 infallible(source_rows(&self.records, &source.identity, charge)).any(
@@ -71,28 +67,24 @@ impl DemandRegistryState {
                     },
                 )
             });
-            if !held {
-                for source in bound {
-                    retired_keys.extend(
-                        infallible(source_rows(&self.records, &source.identity, charge)).map(
-                            |(key, _)| {
-                                infallible(charge.inspect_row());
-                                key.clone()
-                            },
-                        ),
-                    );
-                }
-            }
-            held
-        });
-        for key in retired_keys {
-            if let Some(record) = self.records.get_mut(&key) {
-                record
-                    .source_commits
-                    .retain(|commit| self.source_custody.contains_key(commit));
+            if held {
+                return Ok(());
             }
         }
-        self.pending_custody_prune = false;
+        let custody = self
+            .source_custody
+            .remove(commit)
+            .expect("priced entry exists");
+        for source in custody.bound_sources.iter().flatten() {
+            infallible(charge.occurrence_path(self.records.len()));
+            self.records
+                .visit_source_rows_mut(&source.identity, |record| {
+                    infallible(charge.inspect_row());
+                    record
+                        .source_commits
+                        .retain(|known| self.source_custody.contains_key(known));
+                });
+        }
         Ok(())
     }
 }

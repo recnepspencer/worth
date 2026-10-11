@@ -61,6 +61,7 @@ fn registry_binding_reader_resolves_completed_custody_note() {
                     retired_sources: Vec::new(),
                     retired: None,
                     token_count: 1,
+                    cleanup: Default::default(),
                     completed: false,
                 },
             );
@@ -76,6 +77,7 @@ fn registry_binding_reader_resolves_completed_custody_note() {
                     retired_sources: Vec::new(),
                     retired: None,
                     token_count: 0,
+                    cleanup: Default::default(),
                     completed: true,
                 },
             );
@@ -95,7 +97,7 @@ fn registry_binding_reader_resolves_completed_custody_note() {
             .bind_prepared_output_source(&current_commit, selected.clone())
             .unwrap();
         let deferred = make();
-        assert!(deferred.state.lock().unwrap().pending_custody_prune);
+        assert!(deferred.state.lock().unwrap().pending_custody_prune());
         deferred
             .bind_prepared_output_source(&current_commit, selected.clone())
             .unwrap();

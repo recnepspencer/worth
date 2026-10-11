@@ -197,14 +197,17 @@ impl WorthQueryOutputDemandRegistry {
             })
             .map(|source| source.identity.clone())
             .collect::<Vec<_>>();
-        for (other_commit, other) in &mut state.source_custody {
+        state.note_custody_changes(|other_commit, other| {
             if other_commit == commit || other.retired.is_some() {
-                continue;
+                return false;
             }
             if other.occurrence == occurrence {
+                let before = other.retired_sources.len();
                 other.retire_superseded_roots(sources);
+                return other.retired_sources.len() != before;
             }
-        }
+            false
+        });
         for source in sources {
             retire_stale_records(
                 &mut state,
@@ -232,7 +235,9 @@ impl WorthQueryOutputDemandRegistry {
             }
         }
         custody.bound_sources = Some(bound);
-        state.pending_custody_prune = true;
+        if custody.retired.is_some() || !custody.retired_sources.is_empty() {
+            state.note_custody(commit);
+        }
         Ok(())
     }
 

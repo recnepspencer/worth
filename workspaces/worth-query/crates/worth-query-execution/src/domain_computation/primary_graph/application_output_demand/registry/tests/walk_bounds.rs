@@ -83,6 +83,14 @@ pub(in super::super) fn add_custody(
     rows: u64,
 ) {
     let (scope, _) = super::source_custody::real_scope_and_occurrence();
+    add_custody_in_scope(state, receipts, rows, scope);
+}
+pub(in super::super) fn add_custody_in_scope(
+    state: &mut DemandRegistryState,
+    receipts: &[WorthQueryApplicationCommitReceipt],
+    rows: u64,
+    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+) {
     for (i, receipt) in receipts.iter().enumerate() {
         let commit = receipt
             .committed_product_publication()
@@ -111,7 +119,7 @@ pub(in super::super) fn add_custody(
             );
         }
         state.source_custody.insert(
-            commit,
+            commit.clone(),
             super::super::SourceCustody {
                 occurrence: receipt.product_branch().occurrence(),
                 root_kind: super::super::PreparedOutputRootKind::Discovered(
@@ -127,8 +135,10 @@ pub(in super::super) fn add_custody(
                 retired_sources: Vec::new(),
                 retired: None,
                 token_count: 0,
+                cleanup: Default::default(),
                 completed: true,
             },
         );
+        state.note_custody(&commit);
     }
 }

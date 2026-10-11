@@ -8,7 +8,7 @@ pub(in super::super) fn resolve_before_binding(
     state: &mut DemandRegistryState,
     receipt: &WorthQueryApplicationCommitReceipt,
 ) {
-    if state.pending_custody_prune {
+    if state.pending_custody_prune() {
         infallible(
             state.prune_completed_custody(&mut PostCommitSweep::after_source_commit(receipt)),
         );
@@ -35,12 +35,12 @@ mod tests {
                     "completed reader row",
                 ));
             }
-            state.pending_custody_prune = true;
+            state.note_custody_changes(|_, _| true);
             let before = super::super::walk_charge::sweep_contacts();
             resolve_before_binding(&mut state, &receipts[0]);
             contacts.push(super::super::walk_charge::sweep_contacts() - before);
             assert!(state.source_custody.is_empty());
-            assert!(!state.pending_custody_prune);
+            assert!(!state.pending_custody_prune());
         }
         // Each entry: custody entry + held row + stale-owner row + retiring row.
         assert_eq!(contacts, [4, 8, 16]);

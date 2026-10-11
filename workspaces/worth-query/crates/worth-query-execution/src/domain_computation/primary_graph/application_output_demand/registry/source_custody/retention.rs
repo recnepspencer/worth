@@ -90,7 +90,7 @@ impl WorthQueryOutputDemandRegistry {
                 abandoned.push(prior.clone());
             }
         }
-        for (prior, candidate) in &mut state.source_custody {
+        state.note_custody_changes(|prior, candidate| {
             if direct_root
                 && prior.ordinal() < commit.ordinal()
                 && candidate.retired.is_none()
@@ -105,8 +105,10 @@ impl WorthQueryOutputDemandRegistry {
                     WorthQueryOutputDemandDenialKind::Superseded,
                     "a newer source publication replaced this preparation",
                 ));
+                return true;
             }
-        }
+            false
+        });
         if matches!(root_kind, PreparedOutputRootKind::Discovered(_)) {
             for prior in abandoned {
                 if let Some(candidate) = state.source_custody.get_mut(&prior) {
@@ -115,8 +117,8 @@ impl WorthQueryOutputDemandRegistry {
                         "a newer discovered publication replaced abandoned source custody",
                     ));
                 }
+                state.note_custody(&prior);
             }
-            state.pending_custody_prune = true;
         }
         let recovery = discovery.map(|discovery| super::super::DiscoveredSourceRecovery {
             receipt: source.receipt.clone(),
@@ -135,6 +137,7 @@ impl WorthQueryOutputDemandRegistry {
                 retired_sources: Vec::new(),
                 retired: None,
                 token_count: 1,
+                cleanup: Default::default(),
                 completed: false,
             },
         );

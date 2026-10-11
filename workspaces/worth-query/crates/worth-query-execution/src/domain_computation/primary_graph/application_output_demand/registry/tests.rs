@@ -25,6 +25,7 @@ fn record_admission() -> InvalidationEditAdmission {
 mod caller_chain;
 pub(super) mod closed_retirement;
 mod consumer_custody;
+mod custody_drain;
 mod custody_reader;
 mod demand_key;
 mod local_work;

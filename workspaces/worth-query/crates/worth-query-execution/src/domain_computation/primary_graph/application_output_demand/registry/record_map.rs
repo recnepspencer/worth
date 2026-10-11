@@ -141,6 +141,23 @@ impl DemandRecords {
             .flat_map(|keys| keys.iter())
             .map(|key| (key, self.0.get(key).expect("source index names a live row")))
     }
+    /// Mutation follows the source index directly; no cloned-key scratch and
+    /// no unrelated record traversal is needed to unlink a custody publication.
+    pub(super) fn visit_source_rows_mut(
+        &mut self,
+        source: &super::SourceEpoch,
+        mut visit: impl FnMut(&mut DemandRecord),
+    ) {
+        for key in self
+            .1
+            .get(&source.occurrence_coordinate())
+            .into_iter()
+            .flatten()
+        {
+            visit(self.0.get_mut(key).expect("source index names a live row"));
+        }
+    }
+
     /// One worst-case ordered node for each of the source index's two levels,
     /// funded by each row even when its coordinate is shared with other rows.
     pub(super) fn source_index_bytes(key: &WorthQueryOutputDemandKey) -> Option<usize> {

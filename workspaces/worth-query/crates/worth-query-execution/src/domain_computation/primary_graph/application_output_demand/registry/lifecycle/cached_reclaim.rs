@@ -122,6 +122,7 @@ impl DemandRegistryState {
         claims: &mut Vec<Arc<WorthQueryOutputDemandKey>>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        self.drain_completed_custody(admission)?;
         loop {
             let Some(key) = self.reclaimable_row(still_claimed.as_ref(), admission)? else {
                 return Ok(false);
