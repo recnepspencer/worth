@@ -3,10 +3,12 @@ mod replacement;
 mod selected_begin;
 mod selected_checkpoint_finish;
 mod selected_finish;
+mod supersession;
 pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::{
     PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
 };
 
+use super::post_commit::{release_completed_member, release_completed_prerequisites};
 use super::succession::Succession;
 use super::*;
 
@@ -55,10 +57,11 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.charge_record_lookup(&interest.key, admission)?;
-        let record = state
+        let mut record = state
             .records
             .get_mut(&interest.key)
             .expect("live demand interest retains its owner record");
+        let predecessor = Succession::predecessor_of(&record.successor_of);
         let state @ DemandState::Scheduled = &mut record.state else {
             return Ok(WorthQueryOutputDemandAdvanceAdmission::Pending);
         };
@@ -67,10 +70,7 @@ impl WorthQueryOutputDemandRegistry {
         admission
             .charge_external_work(copy_work)
             .map_err(|_| empty_begin_work_denial())?;
-        Ok(start_scheduled(
-            state,
-            Succession::predecessor_of(&record.successor_of),
-        ))
+        Ok(start_scheduled(state, predecessor))
     }
 }
 
@@ -149,11 +149,11 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+        let mut record = state
             .records
             .get_mut(&interest.key)
             .expect("scheduled demand retains its owner record");
-        if demand_record_is_closed(record) {
+        if demand_record_is_closed(&record) {
             return;
         }
         if interrupted {
@@ -182,10 +182,11 @@ impl WorthQueryOutputDemandRegistry {
         };
         let terminal = matches!(record.state, DemandState::Failed(_));
         record.wake.notify();
+        record.finish();
         let released_prerequisites =
-            terminal.then(|| state.release_record_prerequisites(&interest.key));
+            terminal.then(|| release_completed_prerequisites(&mut state, &interest.key));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        state.remove_required_member_if_released(&interest.key);
+        release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
     }
@@ -207,11 +208,11 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+        let mut record = state
             .records
             .get_mut(&interest.key)
             .expect("executing demand retains its owner record");
-        if demand_record_is_closed(record) {
+        if demand_record_is_closed(&record) {
             return;
         }
         if rescheduled {
@@ -225,10 +226,11 @@ impl WorthQueryOutputDemandRegistry {
             record.release_obligations()
         };
         record.wake.notify();
+        record.finish();
         let released_prerequisites =
-            (!rescheduled).then(|| state.release_record_prerequisites(&interest.key));
+            (!rescheduled).then(|| release_completed_prerequisites(&mut state, &interest.key));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        state.remove_required_member_if_released(&interest.key);
+        release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
     }
@@ -244,7 +246,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state.records.get_mut(&interest.key).ok_or_else(|| {
+        let mut record = state.records.get_mut(&interest.key).ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
                 "output checkpoint was released during advancement",
@@ -261,15 +263,20 @@ impl WorthQueryOutputDemandRegistry {
         };
         match output.advancement() {
             WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {}
-            WorthQueryOutputAdvancement::Stopped { denial: stopped, interrupted_claim: Some(active) } if *active == claim => {
+            WorthQueryOutputAdvancement::Stopped {
+                denial: stopped,
+                interrupted_claim: Some(active),
+            } if *active == claim => {
                 let stopped = stopped.clone();
                 if output.checkpoint.is_none() { output.install_checkpoint(checkpoint); }
                 output.finish_stopped(stopped.clone());
                 let released = record.release_obligations();
-                state.obligation_reserved_bytes =
+                record.finish();
+        state.obligation_reserved_bytes =
                     state.obligation_reserved_bytes.saturating_sub(released);
-                let released_prerequisites = state.release_record_prerequisites(&interest.key);
-                state.remove_required_member_if_released(&interest.key);
+                let released_prerequisites =
+                    release_completed_prerequisites(&mut state, &interest.key);
+                release_completed_member(&mut state, &interest.key);
                 drop(state);
                 drop(released_prerequisites);
                 return Err(stopped);
@@ -295,10 +302,11 @@ impl WorthQueryOutputDemandRegistry {
             0
         };
         record.wake.notify();
+        record.finish();
         let released_prerequisites =
-            terminal.then(|| state.release_record_prerequisites(&interest.key));
+            terminal.then(|| release_completed_prerequisites(&mut state, &interest.key));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        state.remove_required_member_if_released(&interest.key);
+        release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
         Ok(())

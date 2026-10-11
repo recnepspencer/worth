@@ -14,9 +14,21 @@ use super::{
     DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputDemandInterest,
     WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
 };
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+};
+
+mod mutation_price;
+mod walk_admission;
+mod walk_charge;
+pub(super) use mutation_price::{price_member_release, price_mutation};
+pub(super) use mutation_price::{
+    price_mutation_with_source_allowance, PricedMutation, SourceWalkAllowance,
+};
+pub(super) use walk_admission::{WalkAdmission, WalkKind};
+pub(super) use walk_charge::{
+    charge_whole_map, infallible, OccurrenceSearchCharge, WholeMapPasses,
 };
 
 impl WorthQueryOutputDemandRegistry {
@@ -49,7 +61,7 @@ impl WorthQueryOutputDemandRegistry {
         // Only this occurrence is traversed; unrelated records affect the
         // ordered navigation report, never this request's declared work.
         let Some(newest) =
-            newest_matching_row_admitted(&state.records, &stale.key, admission, |key, record| {
+            newest_matching_row(&state.records, &stale.key, admission, |key, record| {
                 refresh_order(key, &stale.key) == Some(Ordering::Greater)
                     && record.product_occurrence == occurrence
                     && record.source_scope == scope
@@ -59,8 +71,8 @@ impl WorthQueryOutputDemandRegistry {
         };
         state.charge_record_lookup(&newest, admission)?;
         let member = state.prepare_required_member(&newest)?;
-        let record = state.records.get_mut(&newest).expect("newest row exists");
-        let joinable = accepts_semantic_join(record)
+        let mut record = state.records.get_mut(&newest).expect("newest row exists");
+        let joinable = accepts_semantic_join(&record)
             && record.product_occurrence == occurrence
             && record.source_scope == scope;
         let Some(readmission) = record.readmission_source.as_ref().filter(|_| joinable) else {
@@ -69,7 +81,8 @@ impl WorthQueryOutputDemandRegistry {
         let readmission = Arc::clone(readmission);
         record.interests = record.interests.saturating_add(1);
         record.required_interests += usize::from(stale.requires_output);
-        let rejoined = interest(self, newest, record, stale.requires_output);
+        let rejoined = interest(self, newest, &record, stale.requires_output);
+        record.finish();
         state.install_required_member(member);
         Ok(Some((rejoined, readmission)))
     }
@@ -80,7 +93,7 @@ impl WorthQueryOutputDemandRegistry {
 pub(super) fn superseded(record: &DemandRecord) -> bool {
     match &record.state {
         DemandState::Output(output) => matches!(
-            output.advancement(),
+            &output.advancement(),
             WorthQueryOutputAdvancement::Stopped { denial, .. }
                 if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
         ),
@@ -98,47 +111,36 @@ pub(super) fn superseded(record: &DemandRecord) -> bool {
 /// keeps its required membership and source custody until each owner rejoins
 /// or releases. A newer row takes the occurrence over once it publishes:
 /// one that ends first gives the occurrence back to this row.
-pub(super) fn awaited_by_stale_owner(
-    records: &super::record_map::DemandRecords,
-    key: &WorthQueryOutputDemandKey,
-) -> bool {
-    let mut awaited = false;
-    for (other, record) in occurrence_rows(records, key) {
-        if other == key {
-            continue;
-        }
-        match refresh_order(other, key) {
-            Some(Ordering::Greater) if !record.unpublished_new_key() => return false,
-            Some(Ordering::Less) => {
-                awaited |= (record.interests != 0 || record.framework_required_count != 0)
-                    && superseded(record);
-            }
-            _ => {}
-        }
-    }
-    awaited
-}
-
 /// Charge only the occurrence-local rows actually inspected. A row that is
 /// already required does not need this traversal at all.
-pub(super) fn awaited_by_stale_owner_admitted(
+pub(super) fn awaited_by_stale_owner<C: OccurrenceSearchCharge>(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, WorthQueryOutputDemandDenial> {
+    charge: &mut C,
+) -> Result<bool, C::Refusal> {
+    awaited_by_stale_owner_matching(records, key, charge, |row, _| {
+        Ok(row.interests != 0 || row.framework_required_count != 0)
+    })
+}
+
+/// Physical cleanup and read-through share this occurrence scan; its holder
+/// predicate decides whether a deferred claim still belongs to an older row.
+pub(super) fn awaited_by_stale_owner_matching<C: OccurrenceSearchCharge>(
+    records: &super::record_map::DemandRecords,
+    key: &WorthQueryOutputDemandKey,
+    charge: &mut C,
+    mut owns_claim: impl FnMut(&DemandRecord, &mut C) -> Result<bool, C::Refusal>,
+) -> Result<bool, C::Refusal> {
     let mut awaited = false;
-    for (other, record) in occurrence_rows_admitted(records, key, admission)? {
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
+    for (other, record) in occurrence_rows(records, key, charge)? {
+        charge.inspect_row()?;
         if other == key {
             continue;
         }
         match refresh_order(other, key) {
             Some(Ordering::Greater) if !record.unpublished_new_key() => return Ok(false),
             Some(Ordering::Less) => {
-                awaited |= (record.interests != 0 || record.framework_required_count != 0)
-                    && superseded(record);
+                awaited |= owns_claim(record, charge)? && superseded(record);
             }
             _ => {}
         }
@@ -149,78 +151,66 @@ pub(super) fn awaited_by_stale_owner_admitted(
 /// Whether the Ready of `key`'s row, replaced by a refresh that has yet to
 /// publish, still answers for a stale owner. A refresh that ends unpublished
 /// gives the occurrence back to the Ready it replaced, never to an older one.
-pub(super) fn replaced_under_refresh(
+pub(super) fn replaced_under_refresh<C: OccurrenceSearchCharge>(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
-) -> bool {
-    occurrence_rows(records, key)
-        .any(|(other, _)| refresh_order(other, key) == Some(Ordering::Greater))
-        && awaited_by_stale_owner(records, key)
-}
-
-/// The closed superseded rows the published row at `key` replaced. Kept
-/// while it refreshed, they answer for nothing once it has published.
-pub(super) fn replaced_by_published(
-    records: &super::record_map::DemandRecords,
-    key: &WorthQueryOutputDemandKey,
-) -> Vec<WorthQueryOutputDemandKey> {
-    if !matches!(records.get(key), Some(record) if matches!(record.state, DemandState::Output(_))) {
-        return Vec::new();
+    charge: &mut C,
+) -> Result<bool, C::Refusal> {
+    let mut newer = false;
+    for (other, _) in occurrence_rows(records, key, charge)? {
+        charge.inspect_row()?;
+        if refresh_order(other, key) == Some(Ordering::Greater) {
+            newer = true;
+            break;
+        }
     }
-    occurrence_rows(records, key)
-        .filter(|(other, record)| {
-            refresh_order(other, key) == Some(Ordering::Less)
-                && record.interests == 0
-                && superseded(record)
-        })
-        .map(|(other, _)| other.clone())
-        .collect()
+    Ok(newer && awaited_by_stale_owner(records, key, charge)?)
 }
 
 /// The newest row of `key`'s occurrence. A closing stale owner of `key` may
 /// have been the last one awaiting it.
-pub(super) fn newest_of_occurrence(
+pub(super) fn newest_of_occurrence<C: OccurrenceSearchCharge>(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
-) -> Option<WorthQueryOutputDemandKey> {
-    newest_lawful_successor(occurrence_rows(records, key).map(|(other, _)| other), key).cloned()
+    charge: &mut C,
+) -> Result<Option<WorthQueryOutputDemandKey>, C::Refusal> {
+    let rows = occurrence_rows(records, key, charge)?;
+    newest_lawful_successor(rows.map(|(other, _)| other), key, charge).map(|newest| newest.cloned())
 }
 
 /// Incomparable bindings never become a successor through iteration order.
-pub(super) fn newest_lawful_successor<'keys>(
+pub(super) fn newest_lawful_successor<'keys, C: OccurrenceSearchCharge>(
     keys: impl Iterator<Item = &'keys WorthQueryOutputDemandKey>,
     predecessor: &WorthQueryOutputDemandKey,
-) -> Option<&'keys WorthQueryOutputDemandKey> {
-    let mut newest = None;
-    for candidate in
-        keys.filter(|candidate| refresh_order(candidate, predecessor) == Some(Ordering::Greater))
-    {
-        match newest {
-            None => newest = Some(candidate),
-            Some(current) => match refresh_order(candidate, current) {
-                Some(Ordering::Greater) => newest = Some(candidate),
-                Some(Ordering::Less) => {}
-                Some(Ordering::Equal) if candidate == current => {}
-                _ => return None,
-            },
-        }
-    }
-    newest
+    charge: &mut C,
+) -> Result<Option<&'keys WorthQueryOutputDemandKey>, C::Refusal> {
+    newest_matching_key(keys.map(|key| (key, ())), charge, |candidate, _| {
+        refresh_order(candidate, predecessor) == Some(Ordering::Greater)
+    })
 }
 
-/// Select a lawful row after charging each inspected payload in the selected occurrence.
-pub(super) fn newest_matching_row_admitted(
+/// Select a lawful row with the caller's charge for the walk and inspected rows.
+pub(super) fn newest_matching_row<C: OccurrenceSearchCharge>(
     records: &super::record_map::DemandRecords,
     requested: &WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
+    charge: &mut C,
     accepts: impl Fn(&WorthQueryOutputDemandKey, &DemandRecord) -> bool,
-) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
+) -> Result<Option<WorthQueryOutputDemandKey>, C::Refusal> {
+    let rows = occurrence_rows(records, requested, charge)?;
+    newest_matching_key(rows, charge, |key, record| accepts(key, record))
+        .map(|newest| newest.cloned())
+}
+
+/// Incomparable candidates cannot become newest through iteration order.
+fn newest_matching_key<'keys, R, C: OccurrenceSearchCharge>(
+    rows: impl Iterator<Item = (&'keys WorthQueryOutputDemandKey, R)>,
+    charge: &mut C,
+    accepts: impl Fn(&WorthQueryOutputDemandKey, &R) -> bool,
+) -> Result<Option<&'keys WorthQueryOutputDemandKey>, C::Refusal> {
     let mut newest: Option<&WorthQueryOutputDemandKey> = None;
-    for (candidate, record) in occurrence_rows_admitted(records, requested, admission)? {
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
-        if !accepts(candidate, record) {
+    for (candidate, record) in rows {
+        charge.inspect_row()?;
+        if !accepts(candidate, &record) {
             continue;
         }
         match newest {
@@ -233,7 +223,7 @@ pub(super) fn newest_matching_row_admitted(
             },
         }
     }
-    Ok(newest.cloned())
+    Ok(newest)
 }
 
 /// How `row` orders against `other` among the rows of one occurrence. A
@@ -254,49 +244,25 @@ pub(super) fn refresh_order(
 
 /// The rows of `key`'s occurrence. Keys order by family and source occurrence
 /// before generation, so they are the contiguous run of rows around `key`.
-pub(super) fn occurrence_rows<'records>(
-    records: &'records super::record_map::DemandRecords,
-    key: &'records WorthQueryOutputDemandKey,
-) -> impl Iterator<Item = (&'records WorthQueryOutputDemandKey, &'records DemandRecord)> {
-    records.occurrence_rows(key)
-}
-
-pub(super) fn occurrence_rows_admitted<'a>(
+pub(super) fn occurrence_rows<'a, C: OccurrenceSearchCharge>(
     records: &'a super::record_map::DemandRecords,
     key: &'a WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<
-    impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)>,
-    WorthQueryOutputDemandDenial,
-> {
-    admit_occurrence_navigation(records, 1, admission)?;
-    Ok(occurrence_rows(records, key))
+    charge: &mut C,
+) -> Result<impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)>, C::Refusal> {
+    charge.occurrence_path(records.len())?;
+    Ok(records.occurrence_rows(key))
 }
 
-/// Logical occurrence seeks are fixed; their tree descents are physical navigation.
-pub(super) fn admit_occurrence_navigation(
-    records: &super::record_map::DemandRecords,
-    walks: u64,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    let path = u64::from(usize::BITS - records.len().leading_zeros())
-        .checked_mul(11)
-        .and_then(|n| n.checked_add(1))
-        .ok_or_else(work_denial)?;
-    admission
-        .charge_ordered_operations(
-            walks.checked_mul(2).ok_or_else(work_denial)?,
-            path.checked_mul(walks)
-                .and_then(|n| n.checked_mul(2))
-                .ok_or_else(work_denial)?,
-        )
-        .map_err(|_| work_denial())?;
-    Ok(())
+/// The source-coordinate index also descends before inspecting any row.
+pub(super) fn source_rows<'a, C: OccurrenceSearchCharge>(
+    records: &'a super::record_map::DemandRecords,
+    source: &'a super::SourceEpoch,
+    charge: &mut C,
+) -> Result<impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)>, C::Refusal> {
+    charge.occurrence_path(records.len())?;
+    Ok(records.source_occurrence_rows(source))
 }
 
 pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "refreshed output rejoin exceeds request work",
-    )
+    WalkKind::Rejoin.denial()
 }

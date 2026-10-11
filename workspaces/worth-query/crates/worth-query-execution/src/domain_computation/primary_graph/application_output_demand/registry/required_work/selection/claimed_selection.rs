@@ -48,7 +48,7 @@ impl WorthQueryOutputDemandRegistry {
                 let occurrence = match state.records.get(work.key()) {
                     Some(record)
                         if (record.is_required()
-                            || super::super::super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+                            || super::super::super::refreshed_rejoin::awaited_by_stale_owner(
                                 &state.records,
                                 work.key(),
                                 admission,

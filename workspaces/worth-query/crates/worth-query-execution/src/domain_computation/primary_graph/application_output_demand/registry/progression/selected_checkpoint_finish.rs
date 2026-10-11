@@ -96,7 +96,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(record) = state.records.get_mut(&self.interest.key) else {
+        let Some(mut record) = state.records.get_mut(&self.interest.key) else {
             return Ok(None);
         };
         if !record
@@ -112,7 +112,8 @@ impl PreparedSelectedCheckpointFinish<'_> {
         {
             return Ok(None);
         }
-        let next = super::begin_record(record, "");
+        let next = super::begin_record(&mut record, "");
+        record.finish();
         drop(state);
         match next {
             WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint } => {
@@ -134,7 +135,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(record) = state.records.get_mut(&self.interest.key) else {
+        let Some(mut record) = state.records.get_mut(&self.interest.key) else {
             return Err(SelectedCheckpointFinishStop::Returned(
                 empty_denial(WorthQueryOutputDemandDenialKind::Closed),
                 checkpoint,
@@ -168,6 +169,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 output.install_checkpoint(checkpoint);
                 output.finish_stopped(retained_denial(&stopped));
                 record.wake.notify();
+                record.finish();
                 state.defer_terminal_cleanup(self.member.key_arc(), 0);
                 drop(state);
                 Err(SelectedCheckpointFinishStop::Restored(stopped))
@@ -184,6 +186,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                     output.reopen();
                 }
                 record.wake.notify();
+                record.finish();
                 if terminal {
                     // Existing admitted cleanup destroys variable obligations
                     // and refunds their final owner after this guarded step.

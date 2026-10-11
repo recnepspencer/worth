@@ -1,6 +1,7 @@
+use super::post_commit::source_retirement::retire_stale_records;
 use super::{
-    BoundOutputSource, DemandRegistryState, DemandState, SourceCustody,
-    WorthQueryOutputDemandRegistry, WorthQueryPerformedOutputDemandSource,
+    BoundOutputSource, SourceCustody, WorthQueryOutputDemandRegistry,
+    WorthQueryPerformedOutputDemandSource,
 };
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
@@ -37,6 +38,12 @@ impl WorthQueryOutputDemandRegistry {
         let custody = state
             .source_custody
             .get(receipt.committed_product_publication().composite_commit())
+            .filter(|_| {
+                super::post_commit::custody_reader::visible(
+                    &state,
+                    receipt.committed_product_publication().composite_commit(),
+                )
+            })
             .ok_or_else(|| {
                 denial(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -69,6 +76,12 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !super::post_commit::custody_reader::visible(
+            &state,
+            receipt.committed_product_publication().composite_commit(),
+        ) {
+            return None;
+        }
         let custody = state
             .source_custody
             .get_mut(receipt.committed_product_publication().composite_commit())
@@ -155,12 +168,16 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let custody = state.source_custody.get(commit).ok_or_else(|| {
-            denial(
-                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                "prepared source is absent",
-            )
-        })?;
+        let custody = state
+            .source_custody
+            .get(commit)
+            .filter(|_| super::post_commit::custody_reader::visible(&state, commit))
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                    "prepared source is absent",
+                )
+            })?;
         if let Some(retired) = &custody.retired {
             return Err(retired.clone());
         }
@@ -174,12 +191,17 @@ impl WorthQueryOutputDemandRegistry {
             .source
             .as_ref()
             .expect("active custody retains source");
-        let occurrence = source.receipt.product_branch().occurrence();
+        let receipt = source.receipt.clone();
+        let occurrence = receipt.product_branch().occurrence();
+        // Completed custody is retained physically until a later drain. This
+        // admission-free reader must resolve it before using bound revisions.
+        super::post_commit::custody_reader::resolve_before_binding(&mut state, &receipt);
         let superseded = sources
             .iter()
             .filter(|source| {
                 state.source_custody.iter().any(|(other_commit, other)| {
                     other_commit != commit
+                        && super::post_commit::custody_reader::visible(&state, other_commit)
                         && other.retired.is_none()
                         && other.occurrence == occurrence
                         && other.bound_sources.as_ref().is_some_and(|bound| {
@@ -192,16 +214,25 @@ impl WorthQueryOutputDemandRegistry {
             })
             .map(|source| source.identity.clone())
             .collect::<Vec<_>>();
-        for (other_commit, other) in &mut state.source_custody {
+        state.note_custody_changes(|other_commit, other| {
             if other_commit == commit || other.retired.is_some() {
-                continue;
+                return false;
             }
             if other.occurrence == occurrence {
+                let before = other.retired_sources.len();
                 other.retire_superseded_roots(sources);
+                return other.retired_sources.len() != before;
             }
-        }
+            false
+        });
         for source in sources {
-            retire_stale_records(&mut state, occurrence, source.scope, &source.identity);
+            retire_stale_records(
+                &mut state,
+                &receipt,
+                occurrence,
+                source.scope,
+                &source.identity,
+            );
         }
         let mut bound = sources.to_vec();
         bound.sort_by_key(|source| source.identity.clone());
@@ -221,7 +252,9 @@ impl WorthQueryOutputDemandRegistry {
             }
         }
         custody.bound_sources = Some(bound);
-        state.prune_completed_custody();
+        if custody.retired.is_some() || !custody.retired_sources.is_empty() {
+            state.note_custody(commit);
+        }
         Ok(())
     }
 
@@ -246,6 +279,7 @@ impl WorthQueryOutputDemandRegistry {
             state
                 .source_custody
                 .get(commit)
+                .filter(|_| super::post_commit::custody_reader::visible(&state, commit))
                 .map(|custody| (custody.retired.clone(), custody.bound_sources.clone()))
         };
         let mut expected = sources.to_vec();
@@ -320,65 +354,7 @@ pub(super) fn root_revision_order(
         .flatten()
 }
 
-fn retire_stale_records(
-    state: &mut DemandRegistryState,
-    occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    successor: &crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
-) {
-    // Custody retirement is source-wide: a changed query source invalidates
-    // every producer record that was computed from its older epoch.
-    let keys = state
-        .records
-        .source_occurrence_rows(successor)
-        .filter(|(key, record)| {
-            record.product_occurrence == occurrence
-                && record.source_scope == Some(scope)
-                && key.source.replacement_order(successor) == Some(Ordering::Less)
-        })
-        .map(|(key, _)| key.clone())
-        .collect::<Vec<_>>();
-    for key in &keys {
-        let record = state
-            .records
-            .get_mut(key)
-            .expect("source occurrence key exists");
-        let cause = denial(
-            WorthQueryOutputDemandDenialKind::Superseded,
-            key.producer.clone(),
-        );
-        match &mut record.state {
-            DemandState::Output(output) => output.stop(cause),
-            _ => record.state = DemandState::Failed(cause),
-        }
-        record.performed_source = None;
-        record.wake.notify();
-        state.release_record_prerequisites(key);
-    }
-    // Remove only after every stale row has released its prerequisites: an
-    // upstream row that sorts before its consumer is held until then.
-    for key in keys {
-        let record = state
-            .records
-            .get(&key)
-            .expect("source occurrence key exists");
-        if record.interests == 0
-            && record.framework_required_count == 0
-            && record.prepared_prerequisite_claims == 0
-            && !record.pending_cleanup_queued
-        {
-            state.records.remove(&key);
-            if let Some(member) = state.required_keys.take(&key) {
-                state.required_reserved_bytes = state.required_reserved_bytes.saturating_sub(
-                    super::required_members::member_bytes(member.as_ref())
-                        .expect("admitted key charge fits"),
-                );
-            }
-        }
-    }
-}
-
-fn denial(
+pub(super) fn denial(
     kind: WorthQueryOutputDemandDenialKind,
     subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {

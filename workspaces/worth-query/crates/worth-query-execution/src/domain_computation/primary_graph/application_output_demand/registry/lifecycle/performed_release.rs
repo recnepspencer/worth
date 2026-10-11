@@ -15,13 +15,12 @@
 
 use super::super::{DemandRegistryState, SourceCustody, WorthQueryPerformedOutputDemandSource};
 use super::cached_reclaim::work_denial;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// What a released performed source kept. It drops after the registry lock
 /// is released.
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct ReleasedPerformedSource
-{
+pub(in super::super) struct ReleasedPerformedSource {
     _custody: SourceCustody,
     _admitted: Vec<WorthQueryPerformedOutputDemandSource>,
 }
@@ -29,15 +28,15 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 impl DemandRegistryState {
     /// Release the oldest retained performed source that no prepared token
     /// and no demand of a row it admitted holds.
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_unheld_performed_source(
+    pub(in super::super) fn release_unheld_performed_source(
         &mut self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReleasedPerformedSource>, WorthQueryOutputDemandDenial> {
         let mut charge = |work: usize| {
-            u64::try_from(work)
-                .ok()
-                .and_then(|work| admission.charge_external_work(work).ok())
-                .ok_or_else(work_denial)
+            let work = u64::try_from(work).map_err(|_| work_denial())?;
+            admission
+                .charge_external_work(work)
+                .map_err(|_| work_denial())
         };
         // Commit order fixes which candidate comparisons are charged. After
         // the oldest unheld source, later commits cannot replace it.
@@ -63,11 +62,10 @@ impl DemandRegistryState {
         };
         charge(self.records.len())?;
         let custody = self
-            .source_custody
-            .remove(&commit)
+            .remove_custody(&commit)
             .expect("the selected source is retained");
         let mut admitted = Vec::new();
-        for record in self.records.values_mut() {
+        for mut record in self.records.values_mut() {
             if record
                 .performed_source
                 .as_ref()

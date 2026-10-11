@@ -82,15 +82,19 @@ impl WorthQueryOutputDemandRegistry {
         };
         // The wave selected this row as required: held, or awaited by an
         // owner that has yet to rejoin it. Its claim accepts the same rows.
-        if !record.is_required() {
-            admission
-                .charge_external_work(
-                    u64::try_from(state.records.len()).map_err(|_| work_denial())?,
-                )
-                .map_err(|_| work_denial())?;
-        }
-        let same_member = (record.is_required()
-            || super::super::refreshed_rejoin::awaited_by_stale_owner(&state.records, key))
+        let required = if record.is_required() {
+            true
+        } else {
+            let mut prepaid = super::super::refreshed_rejoin::charge_whole_map(
+                &state.records,
+                admission,
+                super::super::refreshed_rejoin::WholeMapPasses::One,
+                0,
+            )
+            .map_err(|_| work_denial())?;
+            prepaid.stale_owner(key)?
+        };
+        let same_member = required
             && record
                 .work_membership
                 .as_ref()
@@ -153,7 +157,7 @@ impl WorthQueryOutputDemandRegistry {
             .map_err(|_| capacity_denial())?;
         let capacity = state.reserve_required_custody_capacity(key_bytes)?;
         let interest_key = key.clone();
-        let record = state
+        let mut record = state
             .records
             .get_mut(key)
             .expect("selected Ready row retained");
@@ -167,6 +171,7 @@ impl WorthQueryOutputDemandRegistry {
             },
             owner: self.clone(),
         };
+        record.finish();
         drop(state);
         Ok(Some(SelectedRequiredRefreshClaim {
             interest,

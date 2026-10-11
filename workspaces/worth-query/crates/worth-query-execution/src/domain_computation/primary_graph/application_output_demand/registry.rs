@@ -27,6 +27,7 @@ struct DiscoveredSourceRecovery {
 }
 
 struct SourceCustody {
+    cleanup: cleanup::CustodyCleanupLinks,
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     root_kind: PreparedOutputRootKind,
     source: Option<WorthQueryPerformedOutputDemandSource>,
@@ -151,6 +152,7 @@ pub(in crate::domain_computation::primary_graph) use held_successor::RequiredUps
 mod lifecycle;
 mod notifications;
 mod obligations;
+mod post_commit;
 mod prerequisite_claims;
 mod prerequisite_work;
 mod progression;
@@ -165,6 +167,8 @@ mod ready_backing;
 pub use custody_layout_observation::{
     required_custody_layout_for_test, RequiredCustodyLayoutForTest,
 };
+mod claim_readthrough;
+mod custody_visibility;
 #[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) mod join_observation;
 mod record_capacity;
@@ -261,10 +265,12 @@ struct DemandRecord {
     performed_obligations: Vec<PerformedOutputObligation>,
     framework_required_count: usize,
     prerequisites: Vec<Arc<WorthQueryOutputDemandKey>>,
+    claim_batch: Option<claim_readthrough::ClaimBatch>,
     checkpoint_prerequisites: Option<prerequisite_claims::CheckpointPrerequisiteClaims>,
     prepared_prerequisite_claims: usize,
     pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>,
     pending_cleanup_queued: bool,
+    closed_cleanup: cleanup::ClosedCleanupLinks,
     pending_cleanup_key_bytes: usize,
     settlements: Vec<(
         Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
@@ -313,6 +319,8 @@ struct DemandRegistryState {
     required_custody_retained_bytes: Arc<std::sync::atomic::AtomicUsize>,
     settlement_keys: settlement_index::SettlementIndex,
     pending_cleanup_head: Option<Arc<WorthQueryOutputDemandKey>>,
+    closed_cleanup: cleanup::ClosedCleanupQueue,
+    custody_cleanup: cleanup::CustodyCleanupQueue,
     source_preparations:
         HashMap<worth_runtime_world::facade::ProductBranchIncarnation, SourcePreparationState>,
     source_custody: BTreeMap<worth_runtime_world::facade::CompositeCommitIdentity, SourceCustody>,
@@ -320,9 +328,11 @@ struct DemandRegistryState {
 
 impl Default for DemandRegistryState {
     fn default() -> Self {
+        let closed_cleanup = cleanup::ClosedCleanupQueue::default();
         Self {
-            records: record_map::DemandRecords::new(),
+            records: record_map::DemandRecords::with_cleanup(closed_cleanup.clone()),
             last_selection_frozen: None,
+
             _empty_root_capacity: None,
             record_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_record_retained_bytes(),
             record_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
@@ -336,6 +346,8 @@ impl Default for DemandRegistryState {
             required_custody_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             settlement_keys: settlement_index::SettlementIndex::default(),
             pending_cleanup_head: None,
+            closed_cleanup,
+            custody_cleanup: Default::default(),
             source_preparations: HashMap::new(),
             source_custody: BTreeMap::new(),
         }

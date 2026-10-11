@@ -1,3 +1,5 @@
+mod cleanup_oracle;
+pub(super) use cleanup_oracle::OracleWalk;
 use std::sync::{Arc, Condvar, Mutex};
 
 use super::record_capacity::fixture_capacity as test_record_capacity;
@@ -7,13 +9,13 @@ use super::{
     WorthQueryOutputDemandKey, WorthQueryOutputDemandNotifications, WorthQueryOutputDemandRegistry,
     WorthQueryOutputSchedulingResult,
 };
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
-fn record_admission() -> InvalidationEditAdmission {
+pub(super) fn record_admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: 1_000_000,
         maximum_preparation_bytes: 8 * 1024 * 1024,
@@ -23,14 +25,28 @@ fn record_admission() -> InvalidationEditAdmission {
 mod awaited_claim;
 mod awaited_publication;
 mod caller_chain;
-mod closed_retirement;
+pub(super) mod closed_retirement;
 mod completed_custody_stages;
+
 mod consumer_custody;
+mod custody_drain;
+mod custody_note;
+mod custody_reader;
 mod demand_key;
 mod discarded_successor;
 mod drained_cleanup;
+mod drop_cascade;
+mod drop_claim_release;
+mod drop_cleanup;
+mod eager_debt;
+
 mod local_work;
+mod occurrence_search;
+mod payer_cleanup;
+mod payer_mutation;
+mod payer_publication;
 mod performed_release;
+mod prepaid_passes;
 mod prerequisite_retry;
 mod published_retirement;
 mod published_take;
@@ -45,17 +61,24 @@ mod required_lifecycle;
 mod required_stop;
 mod required_work;
 mod reservation_baseline;
+mod retirement_refusal;
+mod row_work_refusal;
+
 mod scheduling_interruption;
 mod selected_execution_release;
 mod semantic_epoch;
 mod settlement_work;
-mod source_custody;
+pub(super) mod source_custody;
 mod stopped_head;
 mod supersession_refund;
+pub(super) mod walk_bounds;
+mod walk_denial;
+mod walk_refusal;
 mod wave_admission;
 
 mod support;
 use support::*;
+pub(super) use support::{key, occurrence, record};
 
 #[test]
 fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {

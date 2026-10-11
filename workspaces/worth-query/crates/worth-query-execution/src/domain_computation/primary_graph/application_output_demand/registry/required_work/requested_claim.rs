@@ -140,12 +140,13 @@ impl WorthQueryOutputDemandRegistry {
             notifications: WorthQueryOutputDemandNotifications { wake },
             owner: self.clone(),
         };
-        let record = state
+        let mut record = state
             .records
             .get_mut(key)
             .expect("selected cached Ready retained");
         record.interests = interests;
         record.required_interests = required;
+        record.finish();
         state.install_required_member(member);
         drop(state);
         Ok(Some((

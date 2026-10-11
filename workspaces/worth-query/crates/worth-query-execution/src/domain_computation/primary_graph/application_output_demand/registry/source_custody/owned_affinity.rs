@@ -16,6 +16,9 @@ impl WorthQueryOutputDemandRegistry {
         let custody = state
             .source_custody
             .get(&prepared.source_commit)
+            .filter(|_| {
+                super::super::post_commit::custody_reader::visible(&state, &prepared.source_commit)
+            })
             .ok_or_else(|| {
                 denial(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,

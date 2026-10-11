@@ -290,10 +290,12 @@ fn last_interest_drop_preserves_queued_obligations_for_admitted_cleanup() {
         queued_obligations_only(receipt.committed_product_publication().composite_commit());
     let (wake, obligation_bytes, required_bytes) = {
         let mut state = registry.state.lock().unwrap();
-        let row = state.records.get_mut(key.as_ref()).unwrap();
+        let mut row = state.records.get_mut(key.as_ref()).unwrap();
         row.interests = 1;
+        let wake = Arc::clone(&row.wake);
+        row.finish();
         (
-            Arc::clone(&row.wake),
+            wake,
             state.obligation_reserved_bytes,
             state.required_reserved_bytes,
         )

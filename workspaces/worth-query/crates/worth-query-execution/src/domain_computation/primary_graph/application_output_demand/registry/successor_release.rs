@@ -1,5 +1,5 @@
 //! End a discarded frame without orphaning its undelivered publication.
-use super::refreshed_rejoin::{occurrence_rows, refresh_order, superseded};
+use super::refreshed_rejoin::{infallible, occurrence_rows, refresh_order, superseded};
 use super::*;
 
 enum DeliveryOwner {
@@ -25,7 +25,7 @@ impl WorthQueryOutputDemandInterest {
             match delivery_owner(&state, &interest.key) {
                 DeliveryOwner::Entry | DeliveryOwner::RegistryFrame => {}
                 DeliveryOwner::None => {
-                    let cleanup = state.records.get_mut(&interest.key).and_then(|record| {
+                    let cleanup = state.records.get_mut(&interest.key).and_then(|mut record| {
                         let DemandState::Output(output) = &mut record.state else { return None; };
                         if !matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. })) {
                             return None;
@@ -60,7 +60,12 @@ fn delivery_owner(state: &DemandRegistryState, key: &WorthQueryOutputDemandKey) 
     // retain truth, but cannot own that executable entry.
     if record.readmission_source.is_some()
         && super::admission::accepts_semantic_join(record)
-        && occurrence_rows(&state.records, key).any(|(other, row)| {
+        && infallible(occurrence_rows(
+            &state.records,
+            key,
+            &mut super::lifecycle::release::CleanupWalk::new(),
+        ))
+        .any(|(other, row)| {
             refresh_order(other, key) == Some(std::cmp::Ordering::Less)
                 && row.interests != 0
                 && superseded(row)

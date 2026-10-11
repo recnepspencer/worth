@@ -9,14 +9,14 @@
 //! lineage settlement the Ready posted leaves with it, so the execution
 //! decides Fresh and never reuses the output it evicted.
 
-use worth_relational::facade::mvcc::CompanionPreflightStop;
-
-use super::super::refreshed_rejoin::awaited_by_stale_owner;
+use super::super::refreshed_rejoin::{charge_whole_map, WholeMapPasses};
 use super::super::{
     DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint,
     WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
 };
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::{
+    InvalidationEditAdmission, WorthQueryOutputDemandDenial,
+};
 
 impl WorthQueryOutputDemandRegistry {
     /// Release the idle Ready of `interest`'s row when that interest alone
@@ -26,33 +26,52 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         interest: &WorthQueryOutputDemandInterest,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, CompanionPreflightStop> {
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let rows = u64::try_from(state.records.len())
-            .ok()
-            .and_then(|rows| rows.checked_add(4))
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        admission.charge_external_work(rows)?;
+        let mut prepaid = charge_whole_map(&state.records, admission, WholeMapPasses::One, 4)
+            .map_err(|_| super::super::refreshed_rejoin::WalkKind::JoinedReadyRelease.denial())?;
         let key = &interest.key;
-        if !state.records.get(key).is_some_and(only_joined)
-            || awaited_by_stale_owner(&state.records, key)
-        {
+        if !state.records.get(key).is_some_and(only_joined) || prepaid.stale_owner(key)? {
+            drop(state);
+            self.drain_foreign_cleanup(admission);
             return Ok(false);
         }
-        let claims = state.release_record_prerequisites(key);
-        let record = state.records.get_mut(key).expect("the row was checked");
-        let ready = std::mem::replace(&mut record.state, DemandState::Admitted);
-        let readmission = record.readmission_source.take();
-        record.required_stop = None;
-        record.wake.notify();
-        let upstream = claims.iter().map(|claim| claim.as_ref().clone()).collect();
-        let retired = state.retire_closed_rows(upstream);
-        state.prune_completed_custody();
+        let walks: Vec<_> = state.records[key]
+            .prerequisites
+            .iter()
+            .map(|upstream| (upstream.as_ref().clone(), 3))
+            .collect();
+        let cascade: Vec<_> = state.records[key]
+            .prerequisites
+            .iter()
+            .map(|key| key.as_ref().clone())
+            .collect();
+        let (ready, readmission, claims, retired) = super::cleanup_price::price_cascade_mutation(
+            &mut state,
+            admission,
+            walks,
+            &cascade,
+            super::super::refreshed_rejoin::WalkKind::JoinedReadyRelease,
+        )?
+        .complete(|priced| {
+            let claims = priced.release_prerequisites(key);
+            let state = priced.state_mut();
+            let mut record = state.records.get_mut(key).expect("the row was checked");
+            let ready = std::mem::replace(&mut record.state, DemandState::Admitted);
+            let readmission = record.readmission_source.take();
+            record.required_stop = None;
+            record.wake.notify();
+            record.finish();
+            let upstream = claims.iter().map(|claim| claim.as_ref().clone()).collect();
+            let retired = priced.retire_closed_rows(upstream);
+            Ok((ready, readmission, claims, retired))
+        });
         drop(state);
         drop((ready, readmission, claims, retired));
+        self.drain_foreign_cleanup(admission);
         Ok(true)
     }
 }

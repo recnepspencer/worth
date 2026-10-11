@@ -1,7 +1,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint;
 
-pub(super) fn ready() -> DemandState {
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn ready(
+) -> DemandState {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt),
@@ -54,6 +55,7 @@ fn claim_on_superseded(
             .insert(newest.clone(), record(occurrence(), newest_state, 1));
         state.required_keys.insert(Arc::new(newest.clone()));
         state.records.insert(dependent.clone(), dependent_record);
+        retain_owned_key(&mut state, &dependent);
     }
     let interest = interest(&registry, dependent, wake);
     (registry, interest, old, newest)
@@ -69,17 +71,6 @@ fn a_closing_dependent_keeps_its_claim_while_the_newest_row_still_refreshes() {
     assert_eq!(state.records[&old].framework_required_count, 1);
     assert_eq!(state.records[&newest].framework_required_count, 0);
     assert_eq!(claims(&state.records[&dependent]), vec![old]);
-}
-
-#[test]
-fn a_closing_dependent_moves_its_claim_once_the_newest_row_is_ready() {
-    let (registry, interest, old, newest) = claim_on_superseded(ready());
-    let dependent = interest.key.clone();
-    drop(interest);
-    let state = registry.state.lock().unwrap();
-    assert!(!state.records.contains_key(&old));
-    assert_eq!(state.records[&newest].framework_required_count, 1);
-    assert_eq!(claims(&state.records[&dependent]), vec![newest]);
 }
 
 #[test]
@@ -153,4 +144,15 @@ fn claims(record: &DemandRecord) -> Vec<WorthQueryOutputDemandKey> {
         .iter()
         .map(|claimed| claimed.as_ref().clone())
         .collect()
+}
+
+#[test]
+fn a_closing_dependent_moves_its_claim_once_the_newest_row_is_ready() {
+    let (registry, interest, old, newest) = claim_on_superseded(ready());
+    let dependent = interest.key.clone();
+    drop(interest);
+    let state = registry.state.lock().unwrap();
+    assert!(!state.records.contains_key(&old));
+    assert_eq!(state.records[&newest].framework_required_count, 1);
+    assert_eq!(claims(&state.records[&dependent]), vec![newest]);
 }

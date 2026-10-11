@@ -51,17 +51,18 @@ impl DemandRegistryState {
         // One paid quote traversal bounds the successor search and both
         // awaiting walks after the decrement. No unrelated occurrence is read.
         let mut rows = 0u64;
-        for _ in super::super::refreshed_rejoin::occurrence_rows_admitted(
-            &self.records,
-            upstream,
-            admission,
-        )? {
+        for _ in
+            super::super::refreshed_rejoin::occurrence_rows(&self.records, upstream, admission)?
+        {
             admission
                 .charge_external_work(1)
                 .map_err(|_| work_denial())?;
             rows = rows.checked_add(1).ok_or_else(work_denial)?;
         }
-        super::super::refreshed_rejoin::admit_occurrence_navigation(&self.records, 3, admission)?;
+        use super::super::refreshed_rejoin::OccurrenceSearchCharge;
+        for _ in 0..3 {
+            admission.occurrence_path(self.records.len())?;
+        }
         admission
             .charge_external_work(rows.checked_mul(3).ok_or_else(work_denial)?)
             .map_err(|_| work_denial())?;

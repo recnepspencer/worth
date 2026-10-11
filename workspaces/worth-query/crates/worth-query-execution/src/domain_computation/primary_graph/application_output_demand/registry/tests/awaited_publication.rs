@@ -58,8 +58,10 @@ fn scenario(rejoin: bool, late_hold: bool) {
             );
             assert!(super::super::refreshed_rejoin::awaited_by_stale_owner(
                 &state.records,
-                &newest_key
-            ));
+                &newest_key,
+                &mut super::super::lifecycle::release::CleanupWalk::new()
+            )
+            .unwrap());
         }
         if rejoin {
             let (owner, joined_source) = registry

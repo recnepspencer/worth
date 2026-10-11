@@ -24,6 +24,7 @@ fn completed_stage(claimed_with_ready: bool) {
     state.source_custody.insert(
         commit.clone(),
         SourceCustody {
+            cleanup: Default::default(),
             occurrence: receipt.product_branch().occurrence(),
             root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
             source: None,
@@ -54,7 +55,10 @@ fn completed_stage(claimed_with_ready: bool) {
     let mut row = record(occurrence(), DemandState::Output(output), 0);
     row.source_commits.push(commit.clone());
     state.records.insert(row_key.clone(), row);
-    state.prune_completed_custody();
+    state.note_custody(&commit);
+    state
+        .prune_completed_custody(&mut super::super::lifecycle::release::CleanupWalk::new())
+        .unwrap();
     assert_eq!(
         state.source_custody.contains_key(&commit),
         claimed_with_ready,
@@ -65,16 +69,21 @@ fn completed_stage(claimed_with_ready: bool) {
         claimed_with_ready
     );
     if claimed_with_ready {
-        let DemandState::Output(output) = &mut state.records.get_mut(&row_key).unwrap().state
-        else {
-            panic!("the actual checkpoint row is retained")
-        };
-        output.reopen();
-        assert!(matches!(
-            output.checkpoint,
-            Some(WorthQueryOutputCheckpoint::Ready(_))
-        ));
-        state.prune_completed_custody();
+        {
+            let DemandState::Output(output) = &mut state.records.get_mut(&row_key).unwrap().state
+            else {
+                panic!("the actual checkpoint row is retained")
+            };
+            output.reopen();
+            assert!(matches!(
+                output.checkpoint,
+                Some(WorthQueryOutputCheckpoint::Ready(_))
+            ));
+        }
+        state.note_custody(&commit);
+        state
+            .prune_completed_custody(&mut super::super::lifecycle::release::CleanupWalk::new())
+            .unwrap();
         assert!(
             state.source_custody.is_empty(),
             "the completed claim releases its custody"

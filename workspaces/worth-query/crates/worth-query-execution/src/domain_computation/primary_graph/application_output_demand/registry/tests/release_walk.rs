@@ -56,7 +56,14 @@ fn a_released_claim_walks_each_released_key_once() {
             row.prerequisites.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
         state.records.insert(dependent.clone(), row);
         let before = state.records.occurrence_visits_for_test();
-        drop(state.release_record_prerequisites(&dependent));
+        drop(
+            state
+                .release_record_prerequisites(
+                    &dependent,
+                    &mut super::super::lifecycle::release::CleanupWalk::new(),
+                )
+                .unwrap(),
+        );
         let visited = state.records.occurrence_visits_for_test() - before;
         // Two rows: one successor search and one awaited-owner walk for each
         // of the stale and newest keys. No defer or membership rewalk is owed.

@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use std::sync::Arc;
 
 use super::supersession::reject_older_successor;
@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod obligation_capacity;
+mod occurrence_notes;
 mod performed;
 mod selected_output;
 pub(super) use obligation_capacity::performed_obligation_capacity_denial;
@@ -33,12 +34,40 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for commit in expected_source_commit
+            .into_iter()
+            .chain(selected_output.as_ref().map(|selected| selected.commit))
+        {
+            state.drain_custody_entry(commit, admission)?;
+        }
         let stable_refresh = matches!(successor_of, Some(OutputRefreshPredecessor::Stable { .. }));
         let selected_commit = selected_output.as_ref().map(|selected| selected.commit);
+        let notes = occurrence_notes::discover(
+            &state,
+            &requested_key,
+            selected_commit,
+            stable_refresh,
+            admission,
+        )?;
+        let matching_delivery = notes.delivery;
+        let own_closed = notes.closed;
+        let own_custody = notes.custody;
+        if let Some(note) = own_closed {
+            let retired = state.take_closed_cleanup_step(note, admission)?;
+            drop(state);
+            drop(retired);
+            state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+        }
+        if own_custody {
+            state.drain_custody_for_occurrence(&requested_key, admission)?;
+        }
         let exact_retained_row = if let Some(selected) =
             selected_output.as_ref().filter(|_| !stable_refresh)
         {
-            super::refreshed_rejoin::newest_matching_row_admitted(
+            super::refreshed_rejoin::newest_matching_row(
                 &state.records,
                 &requested_key,
                 admission,
@@ -55,32 +84,6 @@ impl WorthQueryOutputDemandRegistry {
             None
         };
 
-        let matching_delivery = if stable_refresh {
-            None
-        } else {
-            let mut found = None;
-            for (key, record) in super::refreshed_rejoin::occurrence_rows_admitted(
-                &state.records,
-                &requested_key,
-                admission,
-            )? {
-                admission
-                    .charge_external_work(1)
-                    .map_err(|_| super::refreshed_rejoin::work_denial())?;
-                let pending_commit = match &record.state {
-                    DemandState::Output(output) => output.published_commit.as_ref(),
-                    _ => None,
-                };
-                if key.producer == requested_key.producer
-                    && key.applicability == requested_key.applicability
-                    && selected_commit.is_some_and(|selected| pending_commit == Some(selected))
-                {
-                    found = Some(key.clone());
-                    break;
-                }
-            }
-            found
-        };
         let matching_semantic_source = newest_semantic_key(
             &state,
             &requested_key,
@@ -260,11 +263,12 @@ impl WorthQueryOutputDemandRegistry {
             if successor_of.is_some() {
                 // Refresh transfers any performed obligation only after the
                 // replacement is admitted and its custody is prepared.
-                reject_older_successor(&state, &requested_key)?;
+                reject_older_successor(&state, &requested_key, admission)?;
             } else {
                 supersede_predecessors(&mut state, &requested_key, admission)?;
             }
         }
+        state.drain_foreign_custody_quota(admission);
         let prepared_source = prepared_commit.and_then(|commit| {
             let custody = state
                 .source_custody
@@ -281,7 +285,7 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(prepared) = prepared_record {
             state.install_prepared_record(prepared);
         }
-        let record = state.records.get_mut(&key).expect("admitted record exists");
+        let mut record = state.records.get_mut(&key).expect("admitted record exists");
         if let Some(successor) = successor_of {
             let reopens_exact_ready = matches!(
                 &record.state,
@@ -316,15 +320,19 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(commit) = prepared_source_commit {
             if !record.source_commits.contains(&commit) {
                 if let Some(growth) = prepared_commit_growth {
-                    growth.install(record);
+                    growth.install(&mut record);
                 }
                 record.source_commits.push(commit);
             }
         }
         record.interests = record.interests.saturating_add(1);
         record.required_interests += usize::from(admission_kind.is_required());
-        let interest = interest(self, key, record, admission_kind.is_required());
+        let interest = interest(self, key, &record, admission_kind.is_required());
+        record.finish();
         state.install_required_member(required_member);
+        let retired = state.take_optional_closed_cleanup(admission);
+        drop(state);
+        drop(retired);
         Ok(interest)
     }
 }
@@ -348,7 +356,7 @@ pub(super) fn newest_semantic_key(
 ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
     let mut newest = None;
     for (key, record) in
-        super::refreshed_rejoin::occurrence_rows_admitted(&state.records, requested, admission)?
+        super::refreshed_rejoin::occurrence_rows(&state.records, requested, admission)?
     {
         admission
             .charge_external_work(1)

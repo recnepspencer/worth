@@ -41,7 +41,7 @@ pub(super) fn begin_admitted<'a>(
     state.charge_record_lookup(&interest.key, admission)?;
     state.charge_maximum_record_lookup(&interest.key, admission)?;
     state.charge_maximum_record_lookup(&interest.key, admission)?;
-    let record = state
+    let mut record = state
         .records
         .get_mut(&interest.key)
         .expect("live required Interest retains its owner record");
@@ -133,7 +133,7 @@ pub(super) fn begin_admitted<'a>(
     } else {
         None
     };
-    let result = begin_record(record, "");
+    let result = begin_record(&mut record, "");
     let finish = if matches!(result, WorthQueryOutputDemandAdvanceAdmission::Schedule(_)) {
         Some(PreparedSelectedSchedulingFinish::new(
             registry,

@@ -57,9 +57,9 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(record) = state.records.get_mut(key) {
+        if let Some(mut record) = state.records.get_mut(key) {
             record.required_stop = stop;
-        }
+        };
     }
 }
 
@@ -133,12 +133,14 @@ pub(super) fn lineage_head(
         return Ok(Some(key.clone()));
     }
     // One pass over the rows compares each key's occurrence once.
-    admission
-        .charge_external_work(u64::try_from(records.len()).map_err(|_| work_denial())?)
-        .map_err(|_| work_denial())?;
-    Ok(Some(
-        super::refreshed_rejoin::newest_of_occurrence(records, key).unwrap_or_else(|| key.clone()),
-    ))
+    let mut prepaid = super::refreshed_rejoin::charge_whole_map(
+        records,
+        admission,
+        super::refreshed_rejoin::WholeMapPasses::One,
+        0,
+    )
+    .map_err(|_| work_denial())?;
+    Ok(Some(prepaid.newest(key)?.unwrap_or_else(|| key.clone())))
 }
 
 /// Why the head row of a refresh lineage can never become Ready: the row

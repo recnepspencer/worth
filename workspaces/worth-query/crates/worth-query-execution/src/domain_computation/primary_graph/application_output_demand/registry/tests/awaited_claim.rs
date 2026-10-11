@@ -61,8 +61,10 @@ fn last_claim_closes(held_successor: bool) {
         }
         assert!(super::super::refreshed_rejoin::awaited_by_stale_owner(
             &registry.state.lock().unwrap().records,
-            &newest_key
-        ));
+            &newest_key,
+            &mut super::super::lifecycle::release::CleanupWalk::new()
+        )
+        .unwrap());
         drop(dependent);
         // Release leaves costly cleanup for the next paying admission.
         // The lifetime proof funds the whole finite cleanup, once. Partial

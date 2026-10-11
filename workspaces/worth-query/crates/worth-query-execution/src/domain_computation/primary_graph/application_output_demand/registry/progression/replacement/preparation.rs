@@ -5,7 +5,8 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Inva
 
 type Commit = worth_runtime_world::facade::CompositeCommitIdentity;
 
-pub(super) struct PreparedObligationTransfer {
+pub(super) struct PreparedObligationTransfer<'a> {
+    pub(super) mutation: refreshed_rejoin::PricedMutation<'a>,
     pub(super) slots: Vec<PerformedOutputObligation>,
     pub(super) added_commits: Vec<Commit>,
     pub(super) commit_growth: Option<record_capacity::PreparedSourceCommitGrowth>,
@@ -13,12 +14,12 @@ pub(super) struct PreparedObligationTransfer {
     pub(super) bytes: usize,
 }
 
-pub(super) fn prepare(
-    state: &DemandRegistryState,
+pub(super) fn prepare<'a>(
+    state: &'a mut DemandRegistryState,
     replaced: &WorthQueryOutputDemandKey,
     replacement: &WorthQueryOutputDemandKey,
     admission: &mut InvalidationEditAdmission,
-) -> Result<Option<PreparedObligationTransfer>, WorthQueryOutputDemandDenial> {
+) -> Result<Option<PreparedObligationTransfer<'a>>, WorthQueryOutputDemandDenial> {
     state.charge_record_lookup(replaced, admission)?;
     let old = state
         .records
@@ -101,9 +102,7 @@ pub(super) fn prepare(
     let levels = usize::BITS as usize - required_count.max(1).leading_zeros() as usize;
     navigate(
         admission,
-        required_count
-            .min(11)
-            .checked_mul(levels)
+        super::super::super::key_comparison::ordered_comparisons(levels, required_count)
             .and_then(|comparisons| {
                 replacement
                     .comparison_work()
@@ -137,7 +136,9 @@ pub(super) fn prepare(
             // Retired backing credit is refunded by a scalar owner relock.
             .and_then(|work| work.checked_add(1)),
     )?;
+    let mutation = refreshed_rejoin::price_member_release(state, admission, replaced)?;
     Ok(Some(PreparedObligationTransfer {
+        mutation,
         slots,
         added_commits,
         commit_growth,

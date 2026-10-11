@@ -100,7 +100,7 @@ impl Fixture {
         }
         {
             let mut state = registry.state.lock().unwrap();
-            let row = state.records.get_mut(&interest.key).unwrap();
+            let mut row = state.records.get_mut(&interest.key).unwrap();
             row.performed_source = Some(WorthQueryPerformedOutputDemandSource {
                 receipt: receipt.clone(),
                 change,
@@ -111,7 +111,9 @@ impl Fixture {
                 source_commit: commit.clone(),
                 source: interest.key.source.clone(),
             }];
-            state.obligation_reserved_bytes += row.obligation_reserved_bytes();
+            let bytes = row.obligation_reserved_bytes();
+            row.finish();
+            state.obligation_reserved_bytes += bytes;
         }
         Self {
             registry,

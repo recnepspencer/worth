@@ -5,6 +5,7 @@
 //! handle that can finish the row. It stays on its own row until the row is
 //! Ready, a newer row of its occurrence supersedes it, or nothing awaits it.
 
+use super::refreshed_rejoin::{infallible, OccurrenceSearchCharge};
 use std::any::Any;
 
 use super::refreshed_rejoin::{awaited_by_stale_owner, superseded};
@@ -43,17 +44,21 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let key = key_of(&successor);
-        let awaited = awaited_by_stale_owner(&state.records, key);
-        match state.records.get_mut(key) {
-            Some(record) if needs_successor(record) && (record.interests > 1 || awaited) => {
+        let awaited = infallible(awaited_by_stale_owner(
+            &state.records,
+            key,
+            &mut super::lifecycle::release::CleanupWalk::new(),
+        ));
+        let result = match state.records.get_mut(key) {
+            Some(mut record) if needs_successor(&record) && (record.interests > 1 || awaited) => {
                 record.held_successor.replace(successor)
             }
             _ => Some(successor),
-        }
+        };
+        result
     }
 
-    /// Inspect the live Published stage and move its held successor under
-    /// one lock. Claimed, Stopped, Ready and pre-publication rows yield none.
+    /// Take the successor held on `key`'s row so a dependent can resume it.
     pub(in crate::domain_computation::primary_graph) fn take_published_held_successor(
         &self,
         key: &WorthQueryOutputDemandKey,
@@ -67,13 +72,10 @@ impl WorthQueryOutputDemandRegistry {
         Ok(state
             .records
             .get_mut(key)
-            .and_then(|record| {
-                // Published is the registry's delivery/readiness stage. A
-                // concurrent claim or stop cannot be taken from an older read.
+            .and_then(|mut record| {
                 let published = matches!(&record.state, DemandState::Output(output)
                     if matches!(output.advancement(), super::WorthQueryOutputAdvancement::Idle)
-                    && matches!(output.checkpoint, Some(super::WorthQueryOutputCheckpoint::Published { .. }
-                        | super::WorthQueryOutputCheckpoint::Delivered { .. })));
+                    && matches!(output.checkpoint, Some(super::WorthQueryOutputCheckpoint::Published { .. } | super::WorthQueryOutputCheckpoint::Delivered { .. })));
                 published.then(|| record.held_successor.take()).flatten()
             }))
     }
@@ -83,15 +85,22 @@ impl DemandRegistryState {
     /// The held successor of `key`'s row once the row is finished, or once
     /// nothing but that successor awaits it. The caller drops it after
     /// releasing the lock.
-    pub(super) fn take_finished_successor(
+    pub(super) fn take_finished_successor<
+        C: OccurrenceSearchCharge<Refusal = core::convert::Infallible>,
+    >(
         &mut self,
         key: &WorthQueryOutputDemandKey,
+        charge: &mut C,
     ) -> Option<HeldRequiredSuccessor> {
         let record = self.records.get(key)?;
         record.held_successor.as_ref()?;
         // Only demands own a row: a prerequisite claim of a cached dependent
         // row keeps the row, not the successor.
-        let orphaned = record.successor_is_orphaned(awaited_by_stale_owner(&self.records, key));
+        let orphaned = record.successor_is_orphaned(infallible(awaited_by_stale_owner(
+            &self.records,
+            key,
+            charge,
+        )));
         if needs_successor(record) && !orphaned {
             return None;
         }

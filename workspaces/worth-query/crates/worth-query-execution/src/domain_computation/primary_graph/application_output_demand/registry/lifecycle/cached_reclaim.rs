@@ -15,14 +15,14 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use super::super::ready_backing::PreparedReadyBacking;
-use super::super::refreshed_rejoin::{awaited_by_stale_owner, superseded};
+use super::super::refreshed_rejoin::{charge_whole_map, superseded, WholeMapPasses};
 use super::super::{
     DemandRecord, DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
 };
 use super::closed_retirement::{
-    claimants_where, closed_cached, closed_superseded, held, newest_ready,
+    claimants_where, closed_cached, closed_superseded, held_by_row, ready_at_newest,
 };
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
@@ -42,14 +42,13 @@ impl WorthQueryOutputDemandRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let reclaimed = state.reclaim_cached_rows(bytes, &mut retired, &mut claims, admission);
-            if !retired.is_empty() {
-                state.prune_completed_custody();
-            }
-            reclaimed
+            state.reclaim_cached_rows(bytes, &mut retired, &mut claims, admission)
         };
         drop(retired);
         drop(claims);
+        if reclaimed.is_ok() {
+            self.drain_foreign_cleanup(admission);
+        }
         reclaimed
     }
 
@@ -70,9 +69,6 @@ impl WorthQueryOutputDemandRegistry {
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             let reclaimed =
                 state.retire_next_cached_row(&mut None, &mut retired, &mut claims, admission);
-            if !retired.is_empty() {
-                state.prune_completed_custody();
-            }
             match reclaimed {
                 Ok(false) => state
                     .release_unheld_performed_source(admission)
@@ -86,6 +82,9 @@ impl WorthQueryOutputDemandRegistry {
         drop(retired);
         drop(claims);
         drop(released);
+        if reclaimed.is_ok() {
+            self.drain_foreign_cleanup(admission);
+        }
         reclaimed
     }
 }
@@ -133,20 +132,42 @@ impl DemandRegistryState {
             let Some(key) = self.reclaimable_row(still_claimed.as_ref(), admission)? else {
                 return Ok(false);
             };
-            for dependent in claimants_where(&self.records, &key, |_| true) {
-                self.follow_newest(&dependent, &key);
+            let dependents = claimants_where(&self.records, &key, |_| true);
+            let walks: Vec<_> = std::iter::once((key.clone(), 3 * dependents.len() as u64 + 2))
+                .chain(
+                    self.records[&key]
+                        .prerequisites
+                        .iter()
+                        .map(|upstream| (upstream.as_ref().clone(), 3)),
+                )
+                .collect();
+            let retired_row = super::cleanup_price::price_cascade_mutation(
+                self,
+                admission,
+                walks,
+                &[],
+                super::super::refreshed_rejoin::WalkKind::CacheReclaim,
+            )?
+            .complete(|priced| {
+                for dependent in dependents {
+                    priced.follow_newest(&dependent, &key);
+                }
+                // A claim that did not move still resolves through this row.
+                if priced
+                    .state()
+                    .records
+                    .get(&key)
+                    .is_some_and(|record| record.framework_required_count != 0)
+                {
+                    return Ok(false);
+                }
+                claims.extend(priced.retire_row(&key, retired));
+                Ok(true)
+            });
+            if retired_row {
+                return Ok(true);
             }
-            // A claim that did not move still resolves through this row.
-            if self
-                .records
-                .get(&key)
-                .is_some_and(|record| record.framework_required_count != 0)
-            {
-                *still_claimed = Some(key);
-                continue;
-            }
-            claims.extend(self.retire_row(&key, retired));
-            return Ok(true);
+            *still_claimed = Some(key);
         }
     }
 
@@ -168,22 +189,22 @@ impl DemandRegistryState {
         let mut behind_ready = None;
         for (key, record) in &self.records {
             if closed_cached(record) && !superseded(record) {
-                admission
-                    .charge_external_work(rows)
-                    .map_err(|_| work_denial())?;
-                if !held(&self.records, key, record) {
+                let mut prepaid =
+                    charge_whole_map(&self.records, admission, WholeMapPasses::One, 0)
+                        .map_err(|_| work_denial())?;
+                if !held_by_row(record) && !prepaid.stale_owner(key)? {
                     return Ok(Some(key.clone()));
                 }
             } else if behind_ready.is_none()
                 && closed_superseded(record)
                 && still_claimed.is_none_or(|claimed| key > claimed)
             {
-                admission
-                    .charge_external_work(rows.saturating_mul(2))
-                    .map_err(|_| work_denial())?;
+                let mut prepaid =
+                    charge_whole_map(&self.records, admission, WholeMapPasses::Two, 0)
+                        .map_err(|_| work_denial())?;
                 if claimed_only(record)
-                    && !awaited_by_stale_owner(&self.records, key)
-                    && newest_ready(&self.records, key)
+                    && !prepaid.stale_owner(key)?
+                    && ready_at_newest(&self.records, prepaid.newest(key)?)
                 {
                     behind_ready = Some(key.clone());
                 }

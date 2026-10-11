@@ -111,8 +111,10 @@ impl DemandRegistryState {
         let selected_key = selected.cloned();
         let selected_member = if let Some(key) = selected_key.as_ref() {
             self.charge_record_lookup(key, admission)?;
-            self.records.get(key.as_ref()).and_then(|record| {
-                (record.product_occurrence == occurrence)
+            let record = self.records.get(key.as_ref());
+            let still_required = !self.queued_member_released(key, admission)?;
+            record.and_then(|record| {
+                (still_required && record.product_occurrence == occurrence)
                     .then(|| record.work_membership.as_ref().cloned())
                     .flatten()
             })
