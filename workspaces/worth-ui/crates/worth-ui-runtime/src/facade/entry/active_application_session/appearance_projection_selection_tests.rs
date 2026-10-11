@@ -23,16 +23,10 @@ fn mounted_selection_keys_share_an_owner_without_crossing_neighborhoods() {
     else {
         panic!("Query binding")
     };
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = query
-        .with_advancement_mut(|phase, workspace| {
-            binding.open(
-                &phase,
-                UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
-                workspace,
-            )
-        })
-        .expect("fixture workspace host call opens")
-    else {
+    let UiCollectionProjectionOpenOutcome::Opened(opened) = binding.open(
+        UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
+        &mut query,
+    ) else {
         panic!("Query collection")
     };
     let (mut live, fact) = opened.into_parts();
