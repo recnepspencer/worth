@@ -181,7 +181,7 @@ fn comparison_keys(
         budget.claim(encoded_value_bound(value))?;
         keys.push(AuthoritativeFieldComparisonKey::from_aspect_value(value));
     }
-    budget.checkpoint(sort_work(keys.len()))?;
+    budget.checkpoint(sort_work(keys.len())?)?;
     keys.sort();
     keys.dedup();
     budget.checkpoint(0)?;
@@ -193,7 +193,9 @@ fn claim_key_clone(
     keys: &[AuthoritativeFieldComparisonKey],
     budget: &mut QueryPreparationBudget<'_, '_, '_>,
 ) -> Result<(), MapKernelFailure<()>> {
-    budget.checkpoint(u64::try_from(keys.len()).unwrap_or(u64::MAX))?;
+    budget.checkpoint(
+        u64::try_from(keys.len()).map_err(|_| MapKernelFailure::ResultCapacityExceeded)?,
+    )?;
     budget.claim(locator.owned_allocation_capacity_bytes() as u64)?;
     budget.claim_items::<AuthoritativeFieldComparisonKey>(keys.len())?;
     for key in keys {
@@ -212,7 +214,7 @@ pub(super) fn prepare_explicit_packets(
         budget.checkpoint(1)?;
         sorted.push(target.clone());
     }
-    budget.checkpoint(sort_work(sorted.len()))?;
+    budget.checkpoint(sort_work(sorted.len())?)?;
     sorted.sort_by_key(|target| (target_partition(target), target.clone()));
     budget.checkpoint(0)?;
     budget.claim_items::<PacketizedQueryWork>(targets.len())?;
@@ -228,7 +230,9 @@ pub(super) fn prepare_explicit_packets(
             end += 1;
         }
         for chunk in sorted[start..end].chunks(TARGET_PREPARATION_ITEMS_PER_PACKET) {
-            budget.checkpoint(u64::try_from(chunk.len()).unwrap_or(u64::MAX))?;
+            budget.checkpoint(
+                u64::try_from(chunk.len()).map_err(|_| MapKernelFailure::ResultCapacityExceeded)?,
+            )?;
             packets.push(PacketizedQueryWork::ExplicitTargets(chunk.to_vec()));
         }
         start = end;
@@ -269,7 +273,7 @@ pub(super) fn prepare_traversal_packets(
         budget.checkpoint(1)?;
         canonical_seeds.push(*seed);
     }
-    budget.checkpoint(sort_work(seeds.len()))?;
+    budget.checkpoint(sort_work(seeds.len())?)?;
     canonical_seeds.sort();
     canonical_seeds.dedup();
     budget.checkpoint(0)?;
@@ -280,7 +284,7 @@ pub(super) fn prepare_traversal_packets(
             budget.checkpoint(1)?;
             canonical_kinds.push(*kind);
         }
-        budget.checkpoint(sort_work(canonical_kinds.len()))?;
+        budget.checkpoint(sort_work(canonical_kinds.len())?)?;
         canonical_kinds.sort();
         canonical_kinds.dedup();
         budget.checkpoint(0)?;
@@ -297,7 +301,8 @@ pub(super) fn prepare_traversal_packets(
     let mut packets = Vec::with_capacity(count);
     for chunk in canonical_seeds.chunks(TARGET_TRAVERSAL_SEEDS_PER_PACKET) {
         budget.checkpoint(
-            u64::try_from(chunk.len() + kinds.as_ref().map_or(0, Vec::len)).unwrap_or(u64::MAX),
+            u64::try_from(chunk.len() + kinds.as_ref().map_or(0, Vec::len))
+                .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?,
         )?;
         let seeds = chunk.to_vec();
         let relation_kind_scope = kinds.clone();
@@ -323,7 +328,9 @@ pub(super) fn prepare_traversal_packets(
     Ok(packets)
 }
 
-fn sort_work(count: usize) -> u64 {
-    let count = u64::try_from(count).unwrap_or(u64::MAX);
-    count.saturating_mul(u64::from(64 - count.max(1).leading_zeros()))
+fn sort_work(count: usize) -> Result<u64, MapKernelFailure<()>> {
+    let count = u64::try_from(count).map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
+    count
+        .checked_mul(u64::from(64 - count.max(1).leading_zeros()))
+        .ok_or(MapKernelFailure::ResultCapacityExceeded)
 }

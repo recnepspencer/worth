@@ -99,7 +99,8 @@ fn merge_execution_failure_code(error: &crate::merge::data::MergeExecutionError)
         crate::merge::data::MergeExecutionError::MergeBaseDrift { .. } => {
             DiagnosticCode::MissingMergeBase
         }
-        crate::merge::data::MergeExecutionError::RuntimeInstanceMismatch { .. }
+        crate::merge::data::MergeExecutionError::Planning(_)
+        | crate::merge::data::MergeExecutionError::RuntimeInstanceMismatch { .. }
         | crate::merge::data::MergeExecutionError::StaleBranchHead { .. }
         | crate::merge::data::MergeExecutionError::StaleBranchReference { .. }
         | crate::merge::data::MergeExecutionError::SchemaSemanticDrift { .. }

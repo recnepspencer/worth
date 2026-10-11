@@ -92,6 +92,7 @@ pub(super) fn add_primary_reads(
                     kind,
                     selected.application_basis().snapshot_handle().version_id(),
                 )
+                .expect("fixture read request remains live")
                 .into_iter()
                 .find(|relation| relation.source == root.entity_id())
                 .unwrap()

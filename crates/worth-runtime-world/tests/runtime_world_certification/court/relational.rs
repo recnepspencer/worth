@@ -168,6 +168,7 @@ impl CargoRecords {
                 .runtime
                 .read_truth()
                 .read_snapshot(&pinned, execution)
+                .expect("fixture read request remains live")
                 .expect("observation: relational read");
             let names: BTreeMap<_, _> = self
                 .ids

@@ -23,6 +23,7 @@ fn main() {
     let current = runtime
         .read_truth()
         .read_snapshot(&edge_commit.snapshot, request_execution)
+        .expect("fixture read request remains live")
         .expect("read final snapshot");
     println!(
         "runtime={} entities={} relations={}",

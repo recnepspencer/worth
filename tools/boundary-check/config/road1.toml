@@ -1594,6 +1594,7 @@ reason = "Test operation control holds the real Product reference write lock wit
 [[request_constructor_denials]]
 crate_root = "crates/worth-relational"
 constructor_names = ["serial", "leased"]
+caller_paid_work = true
 guidance = "Relational seams borrow their caller's ExecutionRequest; no root backing or carrier constructor is named below a host door."
 
 [[request_constructor_denials]]

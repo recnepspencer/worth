@@ -86,7 +86,7 @@ impl<'runtime> IndexAuthority<'runtime> {
     pub(crate) fn rebuild_unique_entity_aspect_field_indexes(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::branch::RelationalBranchBasisDenial> {
+    ) -> Result<(), crate::indexes::data::DerivedIndexMaintenanceDenialKind> {
         rebuild_unique_entity_aspect_field_indexes(execution, self.runtime)
     }
 }

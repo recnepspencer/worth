@@ -42,6 +42,7 @@ pub(super) fn select<Schema: ApplicationSchema>(
     ] {
         let read = branch
             .bounded_entities_of_kind(execution, kind, maximum_work.saturating_sub(work))
+            .map_err(|_| denial("checkpoint transition workflow selection exceeded its bound"))?
             .map_err(|_| denial("checkpoint transition workflow selection exceeded its bound"))?;
         work = work.saturating_add(read.work_units());
         if !read.into_records().is_empty() {
@@ -54,6 +55,7 @@ pub(super) fn select<Schema: ApplicationSchema>(
     for kind in layout.application_entity_kinds() {
         let read = branch
             .bounded_entities_of_kind(execution, kind, maximum_work.saturating_sub(work))
+            .map_err(|_| denial("checkpoint transition entity selection exceeded its bound"))?
             .map_err(|_| denial("checkpoint transition entity selection exceeded its bound"))?;
         work = work.saturating_add(read.work_units());
         entities.extend(

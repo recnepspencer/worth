@@ -23,10 +23,12 @@ fn visibility_cache_zero_window_does_not_accumulate_unprotected_history() {
     runtime.performance_access().reset_counters();
     let _ = runtime
         .read_truth()
-        .read_version(execution, first.version_id);
+        .read_version(execution, first.version_id)
+        .expect("read request remains live");
     let _ = runtime
         .read_truth()
-        .read_version(execution, first.version_id);
+        .read_version(execution, first.version_id)
+        .expect("read request remains live");
     let stats = runtime.storage_access().storage_stats();
     let counters = runtime.performance_access().counters();
 
@@ -76,6 +78,7 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let inspection = runtime.read_truth().inspect_snapshot(&snapshot).unwrap();
     let stats = runtime.storage_access().storage_stats();
@@ -96,6 +99,7 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .is_none());
 }
 
@@ -124,10 +128,12 @@ fn unprotected_active_snapshots_can_use_recent_cache_when_enabled() {
     let _ = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let _ = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
 
     let stats = runtime.storage_access().storage_stats();
@@ -167,13 +173,16 @@ fn visibility_cache_recent_window_is_bounded_and_reports_hits() {
     runtime.performance_access().reset_counters();
     let _ = runtime
         .read_truth()
-        .read_version(execution, first.version_id);
+        .read_version(execution, first.version_id)
+        .expect("read request remains live");
     let _ = runtime
         .read_truth()
-        .read_version(execution, second.version_id);
+        .read_version(execution, second.version_id)
+        .expect("read request remains live");
     let _ = runtime
         .read_truth()
-        .read_version(execution, second.version_id);
+        .read_version(execution, second.version_id)
+        .expect("read request remains live");
     let stats = runtime.storage_access().storage_stats();
     let counters = runtime.performance_access().counters();
 
@@ -207,7 +216,10 @@ fn heavy_profiles_keep_recent_visibility_cache_small_under_sustained_history_rea
 
     runtime.performance_access().reset_counters();
     for version_id in &versions[..versions.len() - 1] {
-        let _ = runtime.read_truth().read_version(execution, *version_id);
+        let _ = runtime
+            .read_truth()
+            .read_version(execution, *version_id)
+            .expect("read request remains live");
     }
     let stats = runtime.storage_access().storage_stats();
 

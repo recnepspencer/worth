@@ -20,7 +20,7 @@ impl WorthQueryApplicationObservedFact {
             Self::SourceEntity { entity_id } => {
                 let view = runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
+                    .project_snapshot(snapshot)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 Ok((
                     view.entity_record_with_projection_scope(
@@ -31,7 +31,9 @@ impl WorthQueryApplicationObservedFact {
                             Some(record.lifecycle()
                         == worth_relational::facade::storage::RecordLifecycleState::Live)
                         },
-                    ) == Some(true),
+                    )
+                    .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
+                        == Some(true),
                     1,
                 ))
             }
@@ -65,8 +67,11 @@ impl WorthQueryApplicationObservedFact {
                     native_revision.ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 let Some(current) = runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
-                    .and_then(|view| view.entity_field_revision(execution, *entity_id, locator))
+                    .project_snapshot(snapshot)
+                    .map(|view| view.entity_field_revision(execution, *entity_id, locator))
+                    .transpose()
+                    .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
+                    .flatten()
                 else {
                     return unanswered_probe(runtime, snapshot, *entity_id, 1, maximum_work);
                 };
@@ -81,7 +86,7 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let view = runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
+                    .project_snapshot(snapshot)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 // The owner-index lookup costs one unit whatever the fact's
                 // recorded limit.
@@ -96,6 +101,9 @@ impl WorthQueryApplicationObservedFact {
                         comparison.revision() == *native_revision,
                         comparison.work_units(),
                     )),
+                    Err(AdjacencyStructuralRevisionDenial::Execution(cause)) => {
+                        Err(WorthQuerySourceCurrentnessFailure::Execution(cause))
+                    }
                     Err(AdjacencyStructuralRevisionDenial::AnchorUnavailable) => {
                         unanswered_probe(runtime, snapshot, *anchor, 1, maximum_work)
                     }
@@ -284,6 +292,9 @@ fn map_adjacency_denial(
     denial: super::super::AdjacencyObservationDenial,
 ) -> WorthQuerySourceCurrentnessFailure {
     match denial {
+        super::super::AdjacencyObservationDenial::Execution(cause) => {
+            WorthQuerySourceCurrentnessFailure::Execution(cause)
+        }
         super::super::AdjacencyObservationDenial::SnapshotUnavailable => {
             WorthQuerySourceCurrentnessFailure::Unavailable
         }

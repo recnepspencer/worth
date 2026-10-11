@@ -31,7 +31,7 @@ impl IndexAccess<'_> {
         })?;
         let projection = runtime
             .read_truth()
-            .project_snapshot(&snapshot, execution)
+            .project_snapshot(&snapshot)
             .ok_or_else(|| {
                 denial(
                     BoundedRelatedEntityOrderedLookupDenialKind::SnapshotUnavailable,
@@ -260,6 +260,12 @@ fn verify_entries(
     for entry in entries {
         let relation = projection
             .with_relation(execution, entry.relation_id(), Clone::clone)
+            .map_err(|cause| {
+                denial(
+                    BoundedRelatedEntityOrderedLookupDenialKind::Execution(cause),
+                    contract.request,
+                )
+            })?
             .ok_or_else(|| corrupt(contract.request))?;
         let (observed_parent, observed_child) = match contract.parent_endpoint {
             RelatedEntityEndpoint::SourceParent => (relation.source, relation.target),
@@ -268,7 +274,14 @@ fn verify_entries(
         if relation.kind.kind_id != contract.relation_kind
             || observed_parent != contract.parent
             || observed_child != entry.child_entity_id()
-            || projection.with_entity(execution, observed_child, |record| record.kind.kind_id)
+            || projection
+                .with_entity(execution, observed_child, |record| record.kind.kind_id)
+                .map_err(|cause| {
+                    denial(
+                        BoundedRelatedEntityOrderedLookupDenialKind::Execution(cause),
+                        contract.request,
+                    )
+                })?
                 != Some(contract.child_kind)
         {
             return Err(corrupt(contract.request));
@@ -284,6 +297,14 @@ fn verify_entries(
                     field.locator(),
                 )
             })
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|cause| {
+                denial(
+                    BoundedRelatedEntityOrderedLookupDenialKind::Execution(cause),
+                    contract.request,
+                )
+            })?
+            .into_iter()
             .collect::<Option<Vec<_>>>()
             .ok_or_else(|| corrupt(contract.request))?;
         if !values
@@ -313,7 +334,13 @@ fn certify_storage_parity(
             contract.child_kind,
             contract.ordering(),
         ),
-    );
+    )
+    .map_err(|cause| {
+        denial(
+            BoundedRelatedEntityOrderedLookupDenialKind::Execution(cause),
+            contract.request,
+        )
+    })?;
     let expected = select_page(
         &storage
             .get(&contract.parent)

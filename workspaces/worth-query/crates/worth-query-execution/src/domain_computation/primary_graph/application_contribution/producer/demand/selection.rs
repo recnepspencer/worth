@@ -264,7 +264,7 @@ where
             let current = self.primary_provider.graph.with_runtime(execution, |runtime| {
                 let truth = runtime.read_truth();
                 let view = truth
-                    .project_snapshot(selected.application_basis().snapshot_handle(), execution)
+                    .project_snapshot(selected.application_basis().snapshot_handle())
                     .ok_or_else(|| {
                         WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -278,7 +278,7 @@ where
                         *entity,
                         ProjectionAspectScope::empty(),
                         |record| Some(record.lifecycle()),
-                    ) == Some(RecordLifecycleState::Live);
+                    ).ok().flatten() == Some(RecordLifecycleState::Live);
                     let identity_current = candidate.source_identity.is_some_and(|identity| {
                         match identity {
                             RecordedSourceIdentity::Runtime(runtime) => runtime == source.idempotency_identity(),

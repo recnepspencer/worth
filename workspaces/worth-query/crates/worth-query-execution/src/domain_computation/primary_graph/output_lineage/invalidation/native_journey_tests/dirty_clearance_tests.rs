@@ -96,6 +96,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                         kind,
                         basis_handle.version_id()
                     )
+                    .expect("fixture read request remains live")
                     .is_empty());
                 register(
                     owner,

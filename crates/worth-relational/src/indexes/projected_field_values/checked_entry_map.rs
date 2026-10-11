@@ -62,3 +62,22 @@ pub(in crate::indexes) fn checked_finish<K: Ord + Clone, R: Clone>(
     }
     Ok(output)
 }
+
+pub(super) fn read_request(
+    cause: crate::execution::RelationalExecutionDenialCause,
+) -> IndexKernelStop {
+    MapKernelFailure::Domain(PacketBudgetDenial::ReadRequest(cause))
+}
+
+pub(super) fn read_stop(
+    stop: crate::visibility::materialization::read_records::read_stop::ReadStop<IndexKernelStop>,
+) -> IndexKernelStop {
+    match stop {
+        crate::visibility::materialization::read_records::read_stop::ReadStop::Request(cause) => {
+            read_request(cause)
+        }
+        crate::visibility::materialization::read_records::read_stop::ReadStop::Admission(stop) => {
+            stop
+        }
+    }
+}

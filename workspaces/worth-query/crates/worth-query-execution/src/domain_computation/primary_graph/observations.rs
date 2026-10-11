@@ -48,7 +48,7 @@ pub(super) fn observe_mapping(
 ) -> Result<WorthQueryPrincipalMappingObservation, WorthQueryPrincipalResolutionDenial> {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let scope = mapping_projection_scope(layout);
     let identity_revision = view
@@ -57,6 +57,7 @@ pub(super) fn observe_mapping(
             mapping_id,
             &authoritative(&layout.identity_locator),
         )
+        .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
         .ok_or_else(|| stale_proof_denial(binding))?;
     let status_revision = view
         .entity_field_revision(
@@ -64,6 +65,7 @@ pub(super) fn observe_mapping(
             mapping_id,
             &authoritative(&layout.status_locator),
         )
+        .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
         .ok_or_else(|| stale_proof_denial(binding))?;
     view.entity_record_with_projection_scope(execution, mapping_id, scope, |record| {
         if record.kind_id() != layout.mapping_kind
@@ -84,6 +86,7 @@ pub(super) fn observe_mapping(
             status_revision,
         })
     })
+    .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
     .ok_or_else(|| stale_proof_denial(binding))
 }
 
@@ -187,7 +190,7 @@ pub(super) fn observe_exact_principal_target(
 ) -> Result<WorthQueryPrincipalTargetObservation, WorthQueryPrincipalResolutionDenial> {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let relation = view
         .relation_record_with_projection_scope(
@@ -203,6 +206,7 @@ pub(super) fn observe_exact_principal_target(
                 ))
             },
         )
+        .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
         .ok_or_else(|| stale_proof_denial(binding))?;
     let principal = view
         .entity_record_with_projection_scope(
@@ -211,6 +215,7 @@ pub(super) fn observe_exact_principal_target(
             ProjectionAspectScope::empty(),
             |record| Some((record.kind_id(), record.lifecycle())),
         )
+        .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
         .ok_or_else(|| stale_proof_denial(binding))?;
     if relation.0 != layout.relation_kind
         || relation.1 != RecordLifecycleState::Live
@@ -253,7 +258,7 @@ fn observe_principal_identity(
 > {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let scope = ProjectionAspectScope::from_requirements([projection_requirement(
         &layout.principal_identity_locator,
@@ -264,6 +269,7 @@ fn observe_principal_identity(
             principal_id,
             &authoritative(&layout.principal_identity_locator),
         )
+        .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
         .ok_or_else(|| stale_proof_denial(binding))?;
     view.entity_record_with_projection_scope(execution, principal_id, scope, |record| {
         if record.kind_id() != layout.principal_kind
@@ -275,6 +281,7 @@ fn observe_principal_identity(
             .cloned()
             .map(|value| (value, revision))
     })
+    .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
     .ok_or_else(|| stale_proof_denial(binding))
 }
 
@@ -310,7 +317,7 @@ fn principal_adjacency_revision(
 > {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| stale_proof_denial(binding))?;
     view.bounded_adjacency_structural_revision(execution,
         mapping,
@@ -320,6 +327,7 @@ fn principal_adjacency_revision(
     )
     .map(|revision| revision.revision())
     .map_err(|unavailable| match unavailable {
+        worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::Execution(cause) => super::resolution_denial::relational_read_denial(cause, binding),
         worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
             WorthQueryPrincipalResolutionDenial::new(
                 WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,

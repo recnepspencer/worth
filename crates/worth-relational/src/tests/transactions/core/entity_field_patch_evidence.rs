@@ -37,6 +37,7 @@ fn update_entity_fields_canonical_delta_uses_authoritative_patch_evidence() {
     let current_read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
 
     let trace = outcome

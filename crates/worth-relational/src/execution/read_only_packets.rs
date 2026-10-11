@@ -26,6 +26,7 @@ pub(crate) enum PacketAdmissionDenial {
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum PacketBudgetDenial {
+    ReadRequest(crate::execution::RelationalExecutionDenialCause),
     ScratchCapacityExceeded,
     UncheckedCustomKernel,
 }
@@ -45,15 +46,13 @@ pub(crate) struct PacketKernelContext<'a, 'b, 'c> {
 }
 
 impl PacketKernelContext<'_, '_, '_> {
-    pub(crate) fn remaining_work(&self) -> u64 {
-        self.meter
-            .as_ref()
-            .map_or(u64::MAX, |meter| meter.remaining_work())
+    pub(crate) fn remaining_work(&self) -> Option<u64> {
+        self.meter.as_ref().map(|meter| meter.remaining_work())
     }
 
-    pub(crate) fn remaining_scratch(&self) -> u64 {
+    pub(crate) fn remaining_scratch(&self) -> Option<u64> {
         self.scratch_limit
-            .map_or(u64::MAX, |limit| limit.saturating_sub(self.scratch_bytes))
+            .map(|limit| limit.saturating_sub(self.scratch_bytes))
     }
 
     pub(crate) fn account_completed_work(

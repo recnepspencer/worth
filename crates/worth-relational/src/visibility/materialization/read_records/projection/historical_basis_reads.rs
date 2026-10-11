@@ -53,7 +53,11 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
         Self { view, basis }
     }
 
-    pub(super) fn entity_records(&self, kind_id: KindId) -> Vec<EntityReadRecord> {
+    pub(super) fn entity_records(
+        &self,
+        kind_id: KindId,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, super::super::reader::EntityKindTruthReadLimitExceeded> {
         let storage = self.storage();
         let registry = self.registry();
         let mut records = Vec::new();
@@ -67,11 +71,12 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
                         partition_id,
                         kind_id,
                         self.view.version_id(),
-                    ),
+                        charge,
+                    )?,
             );
         }
         debug_assert!(authoritative_entity_records_are_identity_ordered(&records));
-        records
+        Ok(records)
     }
 
     pub(super) fn entity_record(&self, entity_id: EntityId) -> Option<EntityReadRecord> {
@@ -111,7 +116,8 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
         &self,
         partition_id: PartitionId,
         kind_id: KindId,
-    ) -> Vec<EntityReadRecord> {
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, super::super::reader::EntityKindTruthReadLimitExceeded> {
         let storage = self.storage();
         let registry = self.registry();
         self.view
@@ -122,10 +128,15 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
                 partition_id,
                 kind_id,
                 self.view.version_id(),
+                charge,
             )
     }
 
-    pub(super) fn relation_records(&self, kind_id: KindId) -> Vec<RelationReadRecord> {
+    pub(super) fn relation_records(
+        &self,
+        kind_id: KindId,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, super::super::reader::RelationKindTruthReadDenial> {
         let storage = self.storage();
         let registry = self.registry();
         let mut records = Vec::new();
@@ -139,11 +150,12 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
                         partition_id,
                         kind_id,
                         self.view.version_id(),
-                    ),
+                        charge,
+                    )?,
             );
         }
         records.sort_by_key(relation_identity_order_key);
-        records
+        Ok(records)
     }
 
     pub(super) fn relation_record(&self, relation_id: RelationId) -> Option<RelationReadRecord> {
@@ -186,7 +198,8 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
         &self,
         partition_id: PartitionId,
         kind_id: KindId,
-    ) -> Vec<RelationReadRecord> {
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, super::super::reader::RelationKindTruthReadDenial> {
         let storage = self.storage();
         let registry = self.registry();
         let mut records = self
@@ -198,9 +211,10 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
                 partition_id,
                 kind_id,
                 self.view.version_id(),
-            );
+                charge,
+            )?;
         records.sort_by_key(relation_identity_order_key);
-        records
+        Ok(records)
     }
 
     pub(super) fn storage(&self) -> HistoricalProjectionStorage<'_> {

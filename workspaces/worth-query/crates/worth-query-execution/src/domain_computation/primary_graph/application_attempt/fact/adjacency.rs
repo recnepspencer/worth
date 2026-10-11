@@ -48,6 +48,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency(
 #[derive(Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum AdjacencyObservationDenial {
     SnapshotUnavailable,
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     WorkBudgetExceeded,
 }
 
@@ -83,7 +84,7 @@ pub(super) fn observe_adjacency_with_work(
 ) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or(AdjacencyObservationDenial::SnapshotUnavailable)?;
     let frontier = std::collections::BTreeSet::from([anchor]);
     // This scalar API budgets examined relations plus returned endpoints. The
@@ -98,6 +99,7 @@ pub(super) fn observe_adjacency_with_work(
             WorthQueryApplicationAdjacencyDirection::Incoming => view
                 .bounded_incoming_relations_for_frontier(execution, &frontier, relation_kind, work),
         }
+        .map_err(AdjacencyObservationDenial::Execution)?
         .map_err(|_| AdjacencyObservationDenial::WorkBudgetExceeded)?;
     let work_units = read.work_units();
     let relations = read

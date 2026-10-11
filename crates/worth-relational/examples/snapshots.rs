@@ -26,6 +26,7 @@ fn main() {
     let snap_read = runtime
         .read_truth()
         .read_snapshot(snapshot, request_execution)
+        .expect("fixture read request remains live")
         .expect("snapshot read");
 
     let authoritative_aspect_state = snap_read

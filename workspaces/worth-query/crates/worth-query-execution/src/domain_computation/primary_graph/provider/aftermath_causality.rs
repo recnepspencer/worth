@@ -249,7 +249,7 @@ impl WorthQueryAftermathCausalityRead<'_> {
             )]);
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot, execution)
+            .project_snapshot(self.snapshot)
             .and_then(|view| {
                 view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
                     (record.kind_id() == self.layout.entity_kind
@@ -262,6 +262,8 @@ impl WorthQueryAftermathCausalityRead<'_> {
                             (record.created_at_version(), values)
                         })
                 })
+                .ok()
+                .flatten()
             })
             .ok_or("aftermath causality record is not authoritative")
     }

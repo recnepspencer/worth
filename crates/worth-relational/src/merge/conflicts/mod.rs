@@ -39,7 +39,8 @@ impl<'runtime> MergeAccess<'runtime> {
         let target_view = self
             .runtime
             .read_truth()
-            .read_version(execution, identity_plan.basis.target_head.version_id);
+            .read_version(execution, identity_plan.basis.target_head.version_id)
+            .map_err(crate::merge::data::MergePlanningError::Execution)?;
         let history = self.runtime.history();
         let base_envelope = history
             .commit_envelope(identity_plan.basis.merge_base.commit.commit_id)
@@ -50,7 +51,8 @@ impl<'runtime> MergeAccess<'runtime> {
         let base_view = self
             .runtime
             .read_truth()
-            .read_version(execution, base_version_id);
+            .read_version(execution, base_version_id)
+            .map_err(crate::merge::data::MergePlanningError::Execution)?;
         let ancestor_basis = AncestorRecordBasisContext::new(&base_view);
         let source_records_by_ref = identity_plan
             .source_records

@@ -345,6 +345,7 @@ fn current_branch_entity_count(
     runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .expect("recovered branch snapshot is readable")
         .entities()
         .len()

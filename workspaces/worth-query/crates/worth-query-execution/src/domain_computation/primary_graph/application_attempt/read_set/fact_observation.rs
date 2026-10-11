@@ -49,7 +49,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
             })?;
             let exists = runtime
                 .read_truth()
-                .project_snapshot(snapshot, execution)
+                .project_snapshot(snapshot)
                 .and_then(|view| {
                     view.entity_record_with_projection_scope(
                         execution,
@@ -62,6 +62,8 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
                             )
                         },
                     )
+                    .ok()
+                    .flatten()
                 })
                 .unwrap_or(false);
             if !exists {

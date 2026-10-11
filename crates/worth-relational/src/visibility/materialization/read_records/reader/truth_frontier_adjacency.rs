@@ -22,36 +22,46 @@ pub struct FrontierAdjacencyTruthReadLimitExceeded {
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn bounded_outgoing_relations_for_frontier_at_version(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<crate::identity::data::EntityId>,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
         maximum_work_units: usize,
-    ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
-        self.bounded_relations_for_frontier_at_version(
-            entity_ids,
-            kind_id,
-            version_id,
-            AdjacencyDirection::Outgoing,
-            maximum_work_units,
-        )
+    ) -> Result<
+        Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::visibility::materialization::read_records::read_request::checked(execution, || {
+            self.bounded_relations_for_frontier_at_version(
+                entity_ids,
+                kind_id,
+                version_id,
+                AdjacencyDirection::Outgoing,
+                maximum_work_units,
+            )
+        })
     }
 
     pub fn bounded_incoming_relations_for_frontier_at_version(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<crate::identity::data::EntityId>,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
         maximum_work_units: usize,
-    ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
-        self.bounded_relations_for_frontier_at_version(
-            entity_ids,
-            kind_id,
-            version_id,
-            AdjacencyDirection::Incoming,
-            maximum_work_units,
-        )
+    ) -> Result<
+        Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::visibility::materialization::read_records::read_request::checked(execution, || {
+            self.bounded_relations_for_frontier_at_version(
+                entity_ids,
+                kind_id,
+                version_id,
+                AdjacencyDirection::Incoming,
+                maximum_work_units,
+            )
+        })
     }
 
     fn bounded_relations_for_frontier_at_version(

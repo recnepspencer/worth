@@ -7,6 +7,7 @@ use crate::snapshots::data::SnapshotHandle;
 #[derive(Debug)]
 pub enum RelationalSnapshotProjectionAdmissionStop<Stop> {
     Admission(Stop),
+    Execution(crate::execution::RelationalExecutionDenialCause),
     AccountingOverflow,
 }
 
@@ -25,6 +26,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         RelationalSnapshotProjectionAdmissionStop<Stop>,
     > {
         use RelationalSnapshotProjectionAdmissionStop as Denial;
+        crate::visibility::materialization::read_records::read_request::consult(execution)
+            .map_err(Denial::Execution)?;
         admit(3, 0).map_err(Denial::Admission)?;
         let runtime = self.runtime();
         if handle.runtime_instance_id() != runtime.runtime_instance_id() {
@@ -48,6 +51,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             u64::try_from(bytes).map_err(|_| Denial::AccountingOverflow)?,
         )
         .map_err(Denial::Admission)?;
-        Ok(self.project_snapshot(handle, execution))
+        Ok(self.project_snapshot(handle))
     }
 }

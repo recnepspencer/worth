@@ -105,6 +105,7 @@ fn cdc_certification_savepoint_abandoned_work_never_leaks_into_stream_truth() {
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let names = read
         .entities()

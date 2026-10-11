@@ -63,16 +63,13 @@ impl WorthQueryPrimaryGraph {
 impl WorthQueryInstalledEntityResolutionContext {
     pub(in crate::domain_computation) fn at_snapshot<'truth>(
         &'truth self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &'truth worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &'truth worth_relational::facade::snapshots::SnapshotHandle,
         mode: WorthQueryPrincipalResolutionMode,
     ) -> Result<WorthQueryEntityResolutionTruth<'truth>, WorthQueryEntityResolutionDenial> {
         if snapshot.runtime_instance_id() != self.relational_runtime_instance_id
-            || relational
-                .read_truth()
-                .project_snapshot(snapshot, execution)
-                .is_none()
+            || relational.read_truth().project_snapshot(snapshot).is_none()
         {
             return Err(entity_denial(
                 WorthQueryEntityResolutionDenialKind::ForeignResolutionTruth,

@@ -253,42 +253,50 @@ pub(super) fn capture_inspection_truth_bundle(
         .map(|commit| commit.commit_id)
         .expect("latest commit");
     InspectionTruthBundle {
-        graph_summary: inspection.graph_summary(
-            execution,
-            &crate::facade::inspection::GraphInspectionRequest {
-                scope: crate::facade::inspection::InspectionScope::Current,
-                partition_scope: None,
-                relation_kind_scope: None,
-                summary_only: true,
-                budget: crate::tests::support::inspection::default_graph_budget(),
-            },
-        ),
-        kind_summary: inspection.kind_summary(
-            execution,
-            &crate::facade::inspection::KindInspectionRequest {
-                scope: crate::facade::inspection::InspectionScope::Current,
-                partition_scope: None,
-                kind_id: KindId(1),
-                record_class: crate::facade::inspection::InspectionRecordClass::Entity,
-            },
-        ),
-        connectivity_summary: inspection.connectivity_summary(
-            execution,
-            &crate::facade::inspection::ConnectivityInspectionRequest {
-                scope: crate::facade::inspection::InspectionScope::Current,
-                partition_scope: None,
-                relation_kind_scope: None,
-                include_members: false,
-                budget: crate::tests::support::inspection::default_connectivity_budget(),
-            },
-        ),
-        historical_record: inspection.inspect_historical_record(
-            execution,
-            branch_id,
-            historical_version,
-            RecordRef::Entity(entity_id),
-            crate::facade::inspection::HistoricalInspectionMode::AllowCanonicalReconstruction,
-        ),
+        graph_summary: inspection
+            .graph_summary(
+                execution,
+                &crate::facade::inspection::GraphInspectionRequest {
+                    scope: crate::facade::inspection::InspectionScope::Current,
+                    partition_scope: None,
+                    relation_kind_scope: None,
+                    summary_only: true,
+                    budget: crate::tests::support::inspection::default_graph_budget(),
+                },
+            )
+            .expect("read request remains live"),
+        kind_summary: inspection
+            .kind_summary(
+                execution,
+                &crate::facade::inspection::KindInspectionRequest {
+                    scope: crate::facade::inspection::InspectionScope::Current,
+                    partition_scope: None,
+                    kind_id: KindId(1),
+                    record_class: crate::facade::inspection::InspectionRecordClass::Entity,
+                },
+            )
+            .expect("read request remains live"),
+        connectivity_summary: inspection
+            .connectivity_summary(
+                execution,
+                &crate::facade::inspection::ConnectivityInspectionRequest {
+                    scope: crate::facade::inspection::InspectionScope::Current,
+                    partition_scope: None,
+                    relation_kind_scope: None,
+                    include_members: false,
+                    budget: crate::tests::support::inspection::default_connectivity_budget(),
+                },
+            )
+            .expect("read request remains live"),
+        historical_record: inspection
+            .inspect_historical_record(
+                execution,
+                branch_id,
+                historical_version,
+                RecordRef::Entity(entity_id),
+                crate::facade::inspection::HistoricalInspectionMode::AllowCanonicalReconstruction,
+            )
+            .expect("read request remains live"),
         retention_summary: inspection
             .retention_summary(&crate::tests::support::inspection::default_retention_request()),
         record_retention: inspection

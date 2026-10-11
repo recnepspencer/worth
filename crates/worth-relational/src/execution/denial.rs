@@ -81,6 +81,7 @@ pub(crate) fn kernel_failure(failure: MapKernelFailure<PacketBudgetDenial>) -> C
             MapKernelStop::WorkCeiling => Cause::WorkExhausted,
             MapKernelStop::NestedStopped => Cause::NestedStopped,
         },
+        MapKernelFailure::Domain(PacketBudgetDenial::ReadRequest(cause)) => cause,
         MapKernelFailure::ResultCapacityExceeded => Cause::ResultCapacityExceeded,
         MapKernelFailure::Panic => Cause::WorkerFailed,
         MapKernelFailure::Domain(PacketBudgetDenial::ScratchCapacityExceeded) => {

@@ -61,6 +61,7 @@ impl WorthQueryAuthorizationDecisionFact {
             &mut CurrentnessAdmission(admission),
             execution,
         ) {
+            Err(RelationalAuthorizationBudgetedObservationStop::Execution(_)) => return Ok(false),
             Ok(freshness) => freshness,
             Err(RelationalAuthorizationBudgetedObservationStop::Admission(stop)) => {
                 return Err(stop);

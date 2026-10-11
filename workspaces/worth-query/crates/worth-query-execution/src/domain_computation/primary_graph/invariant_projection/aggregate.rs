@@ -21,6 +21,13 @@ use super::{WorthQueryApplicationInvariantProjectionReader, WorthQueryInvariantE
 /// Why an aggregate over incoming relations could not be computed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantAggregateDenialKind {
+    /// The caller's read request stopped.
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     /// The relation is not installed.
     RelationNotInstalled,
     /// The summed field is not installed.

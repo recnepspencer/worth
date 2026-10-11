@@ -210,6 +210,7 @@ fn savepoint_rollback_discards_inner_work_only() {
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let rollback_summary = rollback.summary();
 
@@ -242,6 +243,7 @@ fn snapshot_audit_failure_discards_only_touched_overlay() {
     let committed_read = runtime
         .read_truth()
         .read_snapshot(&baseline.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
 
     assert!(matches!(
@@ -298,6 +300,7 @@ fn audit_retained_relations_remain_visible_after_endpoint_delete() {
     let read = runtime
         .read_truth()
         .read_snapshot(&deleted.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let relation = read.get_relation(relation).unwrap();
 

@@ -29,26 +29,33 @@ fn perf_inspection_budget_matrix() {
             let graph_started_at = Instant::now();
             let graph = runtime
                 .inspect_what_happened()
-                .graph_summary(execution, &current_graph_request(None, None, true));
+                .graph_summary(execution, &current_graph_request(None, None, true))
+                .expect("read request remains live");
             let graph_micros = graph_started_at.elapsed().as_micros();
 
             let kind_started_at = Instant::now();
-            let kind = runtime.inspect_what_happened().kind_summary(
-                execution,
-                &KindInspectionRequest {
-                    scope: InspectionScope::Current,
-                    partition_scope: Some(vec![PartitionId(7)]),
-                    kind_id: KindId(1),
-                    record_class: InspectionRecordClass::Entity,
-                },
-            );
+            let kind = runtime
+                .inspect_what_happened()
+                .kind_summary(
+                    execution,
+                    &KindInspectionRequest {
+                        scope: InspectionScope::Current,
+                        partition_scope: Some(vec![PartitionId(7)]),
+                        kind_id: KindId(1),
+                        record_class: InspectionRecordClass::Entity,
+                    },
+                )
+                .expect("read request remains live");
             let kind_micros = kind_started_at.elapsed().as_micros();
 
             let connectivity_started_at = Instant::now();
-            let connectivity = runtime.inspect_what_happened().connectivity_summary(
-                execution,
-                &connectivity_request(InspectionScope::Current, None, None, false),
-            );
+            let connectivity = runtime
+                .inspect_what_happened()
+                .connectivity_summary(
+                    execution,
+                    &connectivity_request(InspectionScope::Current, None, None, false),
+                )
+                .expect("read request remains live");
             let connectivity_micros = connectivity_started_at.elapsed().as_micros();
 
             PerfMeasurement {
@@ -138,18 +145,22 @@ fn perf_inspection_budget_matrix() {
                     InspectionScope::Current,
                     RecordRef::Entity(entity),
                 )
+                .expect("read request remains live")
                 .expect("structural identity evidence");
             let direct_micros = direct_started_at.elapsed().as_micros();
 
             let query_started_at = Instant::now();
-            let query = runtime.inspect_what_happened().query_structural_identity(
-                execution,
-                &StructuralIdentityQueryRequest {
-                    scope: InspectionScope::Current,
-                    partition_scope: None,
-                    fingerprint_family: Symbol(31),
-                },
-            );
+            let query = runtime
+                .inspect_what_happened()
+                .query_structural_identity(
+                    execution,
+                    &StructuralIdentityQueryRequest {
+                        scope: InspectionScope::Current,
+                        partition_scope: None,
+                        fingerprint_family: Symbol(31),
+                    },
+                )
+                .expect("read request remains live");
             let query_micros = query_started_at.elapsed().as_micros();
 
             let historical_started_at = Instant::now();

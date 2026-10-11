@@ -30,7 +30,8 @@ pub(super) fn run_replacement_strategy_certification(
     );
     let current = runtime
         .read_truth()
-        .read_version(execution, runtime.current_version_id());
+        .read_version(execution, runtime.current_version_id())
+        .expect("read request remains live");
     let replacement_record = changed_entities(&replacement_commit)
         .into_iter()
         .find_map(|entity_id| current.get_entity(entity_id).map(|record| record.entity_id))

@@ -163,6 +163,7 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
         runtime
             .read_truth()
             .read_snapshot(&pinned, execution)
+            .expect("read request remains live")
             .unwrap()
             .entities()
             .len(),
@@ -184,6 +185,7 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
             recovered
                 .read_truth()
                 .read_snapshot(&snapshot, execution)
+                .expect("read request remains live")
                 .unwrap()
                 .entities()
                 .len(),
@@ -358,6 +360,7 @@ fn native_capture_sections_count_exact_written_values_without_changing_wire() {
         runtime
             .read_truth()
             .read_snapshot(&pinned, execution)
+            .expect("read request remains live")
             .unwrap()
             .entities()
             .len(),

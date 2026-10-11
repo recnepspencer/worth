@@ -90,13 +90,13 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
         handle.with_runtime(&borrowed_execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let read = runtime.read_truth();
-        let view = read.project_snapshot(snapshot, execution).unwrap();
-        let original_metadata = view.entity_retirement(execution, original).unwrap();
-        let unrelated_metadata = view.entity_retirement(execution, unrelated).unwrap();
+        let view = read.project_snapshot(snapshot).unwrap();
+        let original_metadata = view.entity_retirement( original).unwrap();
+        let unrelated_metadata = view.entity_retirement( unrelated).unwrap();
         assert_eq!(original_metadata.kind_id(), unrelated_metadata.kind_id());
         assert_ne!(original_metadata.deleted_at_version(), unrelated_metadata.deleted_at_version());
         for entity in [original, unrelated] {
-            let record = view.entity_retirement(execution, entity).unwrap();
+            let record = view.entity_retirement( entity).unwrap();
             let facts = [Fact::RetiredOutputEntity {
                 entity_id: entity, kind: record.kind_id(), created_at: record.created_at_version(),
                 deleted_at: record.deleted_at_version(), read_locator: "output-role:7:Account:7:retired".into(),

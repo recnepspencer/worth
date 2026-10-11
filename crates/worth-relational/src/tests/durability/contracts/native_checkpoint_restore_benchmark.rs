@@ -86,6 +86,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
         recovered
             .read_truth()
             .read_snapshot(&snapshot, execution)
+            .expect("read request remains live")
             .unwrap()
             .entities()
             .len(),

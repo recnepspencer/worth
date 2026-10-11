@@ -34,7 +34,7 @@ impl RelationalAuthorizationDurableDependencies {
         }
         let view = runtime
             .read_truth()
-            .project_snapshot(snapshot, execution)
+            .project_snapshot(snapshot)
             .ok_or(Denial::SnapshotUnavailable)?;
         if !view.is_exact_basis() {
             return Err(Denial::InexactSnapshot);
@@ -113,6 +113,7 @@ fn field_revision_matches(
     );
     Ok(view
         .entity_field_revision(execution, field.entity, &locator)
+        .map_err(Denial::Execution)?
         .ok_or(Denial::DependencyUnavailable)?
         == field.revision)
 }

@@ -27,7 +27,7 @@ where
             .reader
             .runtime
             .read_truth()
-            .project_snapshot(self.reader.snapshot, execution)
+            .project_snapshot(self.reader.snapshot)
             .and_then(|view| {
                 view.entity_record_with_projection_scope(
                     execution,
@@ -35,6 +35,8 @@ where
                     ProjectionAspectScope::empty(),
                     |record| Some((record.kind_id(), record.lifecycle())),
                 )
+                .ok()
+                .flatten()
             })
             .is_some_and(|(kind, lifecycle)| {
                 lifecycle == RecordLifecycleState::Live

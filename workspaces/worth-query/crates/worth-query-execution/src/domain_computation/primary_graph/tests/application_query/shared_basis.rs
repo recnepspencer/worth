@@ -56,14 +56,10 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     assert_eq!(first.outcome().relational_retention(), None);
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+        .with_host_advancement(|_phase| {
             assert!(world.application.primary_provider.graph.with_runtime(
                 request_execution,
-                |runtime| runtime
-                    .read_truth()
-                    .project_snapshot(&snapshot, &host_custody.borrowed_request_for_test())
-                    .is_some()
+                |runtime| runtime.read_truth().project_snapshot(&snapshot).is_some()
             ))
         })
         .expect("the fixture read owns its installed host call");
@@ -74,14 +70,10 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     assert_eq!(observer.observe().active(), before.active());
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+        .with_host_advancement(|_phase| {
             assert!(world.application.primary_provider.graph.with_runtime(
                 request_execution,
-                |runtime| runtime
-                    .read_truth()
-                    .project_snapshot(&snapshot, &host_custody.borrowed_request_for_test())
-                    .is_none()
+                |runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()
             ))
         })
         .expect("the fixture read owns its installed host call");
@@ -214,14 +206,10 @@ fn shared_basis_drop_releases_the_final_native_owner() {
     assert_eq!(observer.observe().active(), before.active());
     world
         .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+        .with_host_advancement(|_phase| {
             assert!(world.application.primary_provider.graph.with_runtime(
                 request_execution,
-                |runtime| runtime
-                    .read_truth()
-                    .project_snapshot(&snapshot, &host_custody.borrowed_request_for_test())
-                    .is_none()
+                |runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()
             ))
         })
         .expect("the fixture read owns its installed host call");

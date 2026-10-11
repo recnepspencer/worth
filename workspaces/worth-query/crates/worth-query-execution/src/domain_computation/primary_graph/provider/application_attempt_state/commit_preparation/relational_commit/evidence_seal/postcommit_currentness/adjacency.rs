@@ -75,7 +75,7 @@ pub(super) fn prepare_decision_adjacency(
         }
         _ => return None,
     };
-    let view = runtime.read_truth().project_snapshot(snapshot, execution)?;
+    let view = runtime.read_truth().project_snapshot(snapshot)?;
     let native_revision = match view.bounded_adjacency_structural_revision(
         execution,
         anchor,
@@ -83,6 +83,7 @@ pub(super) fn prepare_decision_adjacency(
         direction,
         limit,
     ) {
+        Err(AdjacencyStructuralRevisionDenial::Execution(_)) => return None,
         Ok(revision) => revision.revision(),
         // A zero recorded limit, or a missing anchor or basis, leaves the
         // decision fact without a native revision.

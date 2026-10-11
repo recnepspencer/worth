@@ -120,6 +120,7 @@ pub(super) fn read_summary(
         .runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .ok_or_else(|| format!("snapshot `{}` is unavailable", snapshot.snapshot_id.0))?;
     let corrected_trades = read
         .entities()

@@ -2,6 +2,13 @@
 /// projection was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantProjectionTraversalDenialKind {
+    /// The caller's read request stopped.
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The relation is not installed.
     RelationNotInstalled,

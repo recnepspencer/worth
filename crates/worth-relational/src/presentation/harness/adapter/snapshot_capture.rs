@@ -37,7 +37,8 @@ pub(super) fn capture_snapshot(
         .unwrap_or(snapshot.version_id);
     let read_view = clone
         .read_truth()
-        .read_version(execution, resolved_version_id);
+        .read_version(execution, resolved_version_id)
+        .map_err(|cause| RelationalHarnessError(format!("snapshot read stopped: {cause:?}")))?;
     let observations = resolve_targets(request)
         .into_iter()
         .map(|target| capture_target_snapshot(&read_view, target))

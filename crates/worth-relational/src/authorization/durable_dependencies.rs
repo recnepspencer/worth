@@ -21,6 +21,7 @@ const DURABLE_DEPENDENCY_VERSION: u8 = 1;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalAuthorizationDependencyDenial {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     ForeignRuntime,
     SnapshotUnavailable,
     InexactSnapshot,

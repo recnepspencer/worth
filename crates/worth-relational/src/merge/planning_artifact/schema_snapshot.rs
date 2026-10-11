@@ -17,16 +17,17 @@ pub(crate) fn merge_schema_snapshot_for_execution_ready(
     target_version_id: crate::identity::data::VersionId,
     source_records: &[VisibleMergeRecord],
     target_touched_records: &[BranchTouchedRecordDelta],
-) -> MergeSchemaSnapshotDigestBasis {
+) -> Result<MergeSchemaSnapshotDigestBasis, crate::merge::data::MergePlanningError> {
     let target_view = runtime
         .read_truth()
-        .read_version(execution, target_version_id);
-    merge_schema_snapshot(
+        .read_version(execution, target_version_id)
+        .map_err(crate::merge::data::MergePlanningError::Execution)?;
+    Ok(merge_schema_snapshot(
         &runtime.runtime_config().schema.registry,
         source_records,
         &target_view,
         target_touched_records,
-    )
+    ))
 }
 
 pub(super) fn merge_schema_snapshot(

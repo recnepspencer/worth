@@ -18,6 +18,8 @@ use worth_relational::facade::storage::RecordLifecycleState;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorkflowAdoptionReadDenial {
+    /// The caller's read request stopped.
+    ReadExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     WorkLimitExceeded {
         consumed_work_units: usize,
     },
@@ -87,6 +89,7 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
         let read = self
             .view
             .bounded_relations_of_kind(execution, kind, self.remaining())
+            .map_err(WorkflowAdoptionReadDenial::ReadExecution)?
             .map_err(|denial| match denial {
                 RelationKindTruthReadDenial::WorkLimitExceeded(limit) => {
                     self.exhausted(limit.consumed_work_units())
@@ -114,6 +117,7 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
                 kind,
                 self.remaining(),
             )
+            .map_err(WorkflowAdoptionReadDenial::ReadExecution)?
             .map_err(|limit| self.exhausted(limit.consumed_work_units()))?;
         self.spend(read.work_units());
         Ok(read.into_records())
@@ -150,6 +154,7 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
                         .then_some(())
                 },
             )
+            .map_err(WorkflowAdoptionReadDenial::ReadExecution)?
             .map(|()| WorkflowAdoptionEntity {
                 truth: self,
                 entity,
@@ -189,6 +194,7 @@ impl WorkflowAdoptionEntity<'_, '_> {
                     None => Ok(None),
                 })
             })
+            .map_err(WorkflowAdoptionReadDenial::ReadExecution)?
             .and_then(Result::ok)
             .ok_or_else(|| self.unreadable())
     }

@@ -152,6 +152,10 @@ fn status(denial: WorthQueryInboundAdmissionDenial) -> StatusCode {
 fn owner_read_status(read: WorthQueryCommittedDispatchOutboxReadDenial) -> StatusCode {
     use WorthQueryCommittedDispatchOutboxReadDenial as Read;
     match read {
+        Read::ReadExecution(Ok(cause)) => crate::http::server::routes::response_status(crate::http::server::mutation_application::pending_execution_denial(cause).kind),
+        Read::ReadExecution(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled)) => crate::http::server::routes::response_status(crate::http::protocol::BankHttpDenialKind::Cancelled),
+        Read::ReadExecution(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut)) => crate::http::server::routes::response_status(crate::http::protocol::BankHttpDenialKind::DeadlineExceeded),
+
         Read::ExactCommitUnavailable => StatusCode::GONE,
         Read::PendingPublication
         | Read::CommittedIndexUnavailable

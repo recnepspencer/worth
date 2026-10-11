@@ -45,6 +45,7 @@ fn stale_native_contract_basis_denies_without_mutating_truth() {
     let read = runtime
         .read_truth()
         .read_snapshot(&latest, execution)
+        .expect("read request remains live")
         .unwrap();
     let value = read
         .get_entity(entity)

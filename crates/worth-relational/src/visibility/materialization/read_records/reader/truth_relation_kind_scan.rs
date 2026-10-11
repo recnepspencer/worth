@@ -29,18 +29,32 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// than the declared slot-examination and record-materialization work.
     pub fn bounded_visible_relations_of_kind(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
         maximum_work_units: usize,
-    ) -> Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial> {
-        let state = self.runtime.storage_access().current_edition();
-        self.bounded_relations_of_kind_in_state(
-            &state,
-            &self.runtime.config.schema.registry,
-            kind_id,
-            KindScanVisibility::for_version(self.runtime, version_id),
-            maximum_work_units,
+    ) -> Result<
+        Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::visibility::materialization::read_records::read_work::metered(
+            execution,
+            |context| {
+                let state = self.runtime.storage_access().current_edition();
+                self.bounded_relations_of_kind_in_state(
+                    &state,
+                    &self.runtime.config.schema.registry,
+                    kind_id,
+                    KindScanVisibility::for_version(self.runtime, version_id),
+                    maximum_work_units,
+                    &mut |units| context.checkpoint(units),
+                )
+            },
+            |result| {
+                result.as_ref().map_or(0, |read| {
+                    super::super::read_footprint::relations(&read.records)
+                })
+            },
         )
     }
 
@@ -53,8 +67,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         kind_id: crate::identity::data::KindId,
         visibility: KindScanVisibility,
         maximum_work_units: usize,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     ) -> Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial> {
-        let mut scan = RelationKindScan::new(maximum_work_units, true);
+        let mut scan = RelationKindScan::funded(maximum_work_units, true, charge);
         for partition_id in state.partition_ids() {
             self.scan_relation_kind_in_partition(
                 state,
@@ -75,7 +90,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         partition_id: crate::identity::data::PartitionId,
         kind_id: crate::identity::data::KindId,
         visibility: KindScanVisibility,
-        scan: &mut RelationKindScan,
+        scan: &mut RelationKindScan<'_>,
     ) -> Result<(), RelationKindTruthReadDenial> {
         let current_version = VersionSource::current_version_id(self.runtime);
         let Some(partition) = state.get_partition(partition_id) else {
@@ -129,29 +144,60 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     }
 }
 
-pub(super) struct RelationKindScan {
+pub(super) struct RelationKindScan<'charge> {
+    charge: Option<&'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
     records: Vec<RelationReadRecord>,
     relation_slots_examined: usize,
     relation_records_reserved: usize,
     work_units: usize,
-    maximum_work_units: usize,
+    maximum_work_units: Option<usize>,
     require_materialization: bool,
 }
 
-impl RelationKindScan {
+impl<'charge> RelationKindScan<'charge> {
+    #[cfg(test)]
     pub(super) const fn new(maximum_work_units: usize, require_materialization: bool) -> Self {
         Self {
+            charge: None,
             records: Vec::new(),
             relation_slots_examined: 0,
             relation_records_reserved: 0,
             work_units: 0,
-            maximum_work_units,
+            maximum_work_units: Some(maximum_work_units),
+            require_materialization,
+        }
+    }
+
+    pub(super) fn funded(
+        maximum_work_units: usize,
+        require_materialization: bool,
+        charge: &'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Self {
+        Self {
+            charge: Some(charge),
+            records: Vec::new(),
+            relation_slots_examined: 0,
+            relation_records_reserved: 0,
+            work_units: 0,
+            maximum_work_units: Some(maximum_work_units),
             require_materialization,
         }
     }
 
     fn spend(&mut self) -> Result<(), RelationKindTruthReadDenial> {
-        if self.work_units == self.maximum_work_units {
+        if self.maximum_work_units == Some(self.work_units) {
+            return Err(RelationKindTruthReadDenial::WorkLimitExceeded(
+                RelationKindTruthReadLimitExceeded {
+                    relation_slots_examined: self.relation_slots_examined,
+                    relation_records_reserved: self.relation_records_reserved,
+                },
+            ));
+        }
+        if self
+            .charge
+            .as_mut()
+            .is_some_and(|charge| charge(1).is_err())
+        {
             return Err(RelationKindTruthReadDenial::WorkLimitExceeded(
                 RelationKindTruthReadLimitExceeded {
                     relation_slots_examined: self.relation_slots_examined,
@@ -161,6 +207,14 @@ impl RelationKindScan {
         }
         self.work_units += 1;
         Ok(())
+    }
+
+    pub(super) fn request_funded(
+        charge: &'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Self {
+        let mut scan = Self::funded(0, false, charge);
+        scan.maximum_work_units = None;
+        scan
     }
 
     fn examine_slot(&mut self) -> Result<(), RelationKindTruthReadDenial> {
@@ -201,6 +255,10 @@ impl RelationKindScan {
 }
 
 impl BoundedRelationKindTruthRead {
+    pub(crate) fn owned_bytes(&self) -> u64 {
+        super::super::read_footprint::relations(&self.records)
+    }
+
     pub const fn relation_slots_examined(&self) -> usize {
         self.relation_slots_examined
     }

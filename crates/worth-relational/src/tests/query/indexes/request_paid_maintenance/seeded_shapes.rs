@@ -151,7 +151,7 @@ fn sixteen_seeded_shapes_preserve_generations_and_answers_and_charge_native_unit
         }
         let view = runtime
             .read_truth()
-            .project_snapshot(&created.snapshot, execution)
+            .project_snapshot(&created.snapshot)
             .unwrap();
         for (field, generation) in paid.generations.iter().enumerate() {
             let key = if field == 0 {

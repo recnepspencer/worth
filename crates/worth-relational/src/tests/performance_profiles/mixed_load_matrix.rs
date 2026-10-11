@@ -21,6 +21,7 @@ fn perf_mixed_load_matrix() {
                 let read = runtime
                     .read_truth()
                     .read_snapshot(&explicit_snapshot, execution)
+                    .expect("read request remains live")
                     .expect("snapshot read");
                 read_entity_name(read.get_entity(entity).expect("snapshot entity"))
                     .expect("snapshot name")
@@ -29,7 +30,8 @@ fn perf_mixed_load_matrix() {
             let serial_version_name = {
                 let read = runtime
                     .read_truth()
-                    .read_version(execution, created_version_id);
+                    .read_version(execution, created_version_id)
+                    .expect("read request remains live");
                 read_entity_name(read.get_entity(entity).expect("version entity"))
                     .expect("version name")
                     .to_string()
@@ -38,6 +40,7 @@ fn perf_mixed_load_matrix() {
                 let read = runtime
                     .read_truth()
                     .read_snapshot(&updated.snapshot, execution)
+                    .expect("read request remains live")
                     .expect("latest read");
                 read_entity_name(read.get_entity(entity).expect("latest entity"))
                     .expect("latest name")
@@ -57,13 +60,16 @@ fn perf_mixed_load_matrix() {
                         let snapshot_read = runtime
                             .read_truth()
                             .read_snapshot(&explicit_snapshot, execution)
+                            .expect("read request remains live")
                             .expect("thread snapshot read");
                         let version_read = runtime
                             .read_truth()
-                            .read_version(execution, created_version_id);
+                            .read_version(execution, created_version_id)
+                            .expect("read request remains live");
                         let latest_read = runtime
                             .read_truth()
                             .read_snapshot(&published_snapshot, execution)
+                            .expect("read request remains live")
                             .expect("thread latest read");
                         (
                             read_entity_name(

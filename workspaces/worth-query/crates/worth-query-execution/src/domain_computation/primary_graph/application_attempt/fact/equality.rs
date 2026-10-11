@@ -12,14 +12,14 @@ impl WorthQueryApplicationObservedFact {
     ) -> bool {
         match self {
             Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => runtime
-                .read_truth().project_snapshot(snapshot, execution)
-                .and_then(|view| view.entity_retirement(execution, *entity_id))
+                .read_truth().project_snapshot(snapshot)
+                .and_then(|view| view.entity_retirement( *entity_id))
                 .is_some_and(|record| record.kind_id() == *kind
                     && record.created_at_version() == *created_at
                     && record.deleted_at_version() == *deleted_at),
             Self::SourceEntity { entity_id } => runtime
                 .read_truth()
-                .project_snapshot(snapshot, execution)
+                .project_snapshot(snapshot)
                 .is_some_and(|view| {
                     view.entity_record_with_projection_scope(execution,
                         *entity_id,
@@ -30,7 +30,7 @@ impl WorthQueryApplicationObservedFact {
                                     == worth_relational::facade::storage::RecordLifecycleState::Live,
                             )
                         },
-                    ) == Some(true)
+                    ).ok().flatten() == Some(true)
                 }),
             Self::SourceAspectRevision {
                 entity_id,
@@ -42,8 +42,8 @@ impl WorthQueryApplicationObservedFact {
                 == Some(*native_revision),
             Self::SourceFieldRevision { entity_id, locator, native_revision } =>
                 native_revision.is_some_and(|expected| {
-                    runtime.read_truth().project_snapshot(snapshot, execution)
-                        .and_then(|view| view.entity_field_revision(execution, *entity_id, locator)) == Some(expected)
+                    runtime.read_truth().project_snapshot(snapshot)
+                        .and_then(|view| view.entity_field_revision(execution, *entity_id, locator).ok().flatten()) == Some(expected)
                 }),
             Self::SourceAdjacencyRevision {
                 relation_kind,
@@ -54,7 +54,7 @@ impl WorthQueryApplicationObservedFact {
                 ..
             } => runtime
                 .read_truth()
-                .project_snapshot(snapshot, execution)
+                .project_snapshot(snapshot)
                 .is_some_and(|view| {
                     match view.bounded_adjacency_structural_revision(execution,
                         *anchor,
@@ -66,7 +66,8 @@ impl WorthQueryApplicationObservedFact {
                         // Equality needs an answer; an unpaid or unreadable
                         // revision is not equal.
                         Err(
-                            worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
+                            worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::Execution(_)
+                            | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
                             | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::AnchorUnavailable
                             | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::BasisUnavailable,
                         ) => false,

@@ -102,9 +102,9 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         }
         assert!(facts.len() > 1, "the real installed output has aspects");
         let original_source = truth
-            .project_snapshot(&before, &host_custody.borrowed_request_for_test())
+            .project_snapshot(&before)
             .unwrap()
-            .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status)
+            .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status).expect("fixture read request remains live")
             .unwrap();
         let producer_facts = [Fact::SourceFieldRevision {
             entity_id: entity,
@@ -234,9 +234,9 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let after = snapshot(runtime);
         let after_source = runtime
             .read_truth()
-            .project_snapshot(&after, &host_custody.borrowed_request_for_test())
+            .project_snapshot(&after)
             .unwrap()
-            .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status)
+            .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status).expect("fixture read request remains live")
             .unwrap();
         assert_eq!(
             original_source, after_source,

@@ -42,6 +42,7 @@ fn bulk_create_entities_match_equivalent_singular_creates() {
     let bulk_read = bulk_runtime
         .read_truth()
         .read_snapshot(&bulk_outcome.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let singular_read = singular_runtime
         .read_truth()
@@ -53,6 +54,7 @@ fn bulk_create_entities_match_equivalent_singular_creates() {
                 .snapshot,
             execution,
         )
+        .expect("read request remains live")
         .unwrap();
 
     assert_eq!(bulk_outcome.changed_records.len(), 2);
@@ -129,6 +131,7 @@ fn staged_parallel_bulk_entity_import_matches_serial_reference() {
         let read = runtime
             .read_truth()
             .read_snapshot(&outcome.snapshot, execution)
+            .expect("read request remains live")
             .unwrap();
         let names = read
             .entities()
@@ -169,6 +172,7 @@ fn cross_context_relations_preserve_partitioned_endpoints() {
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let relation_record = read.get_relation(relation).unwrap();
 

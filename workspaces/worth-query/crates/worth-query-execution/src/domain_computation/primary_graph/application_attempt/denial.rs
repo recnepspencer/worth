@@ -349,3 +349,26 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 }
+
+impl WorthQueryApplicationAttemptDenial {
+    pub(in crate::domain_computation::primary_graph) fn relational_read_denial(
+        cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+        subject: &str,
+    ) -> Self {
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+        use WorthQueryApplicationAttemptDenialKind as Kind;
+        let kind =
+            match super::super::provider::relational_execution_denial::relational_execution_kind(
+                cause, None,
+            ) {
+                Ok(kind) => Kind::ExecutionRequest(kind),
+                Err(Control::Cancelled) => Kind::Cancelled,
+                Err(Control::TimedOut) => Kind::DeadlineExceeded,
+            };
+        Self {
+            kind,
+            subject: subject.to_owned(),
+            cause: AttemptDenialCause::None,
+        }
+    }
+}

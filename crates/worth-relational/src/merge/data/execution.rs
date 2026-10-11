@@ -85,6 +85,7 @@ pub enum MergeExecutionPreparationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MergeExecutionError {
+    Planning(crate::merge::data::MergePlanningError),
     RuntimeInstanceMismatch {
         planned: RuntimeInstanceId,
         current: RuntimeInstanceId,

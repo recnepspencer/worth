@@ -28,7 +28,7 @@ pub(super) fn select_root_path_union(
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .read_truth()
-        .project_snapshot(plan.snapshot, execution)
+        .project_snapshot(plan.snapshot)
         .ok_or_else(|| traversal_denial(plan.name))?;
     let mut roots = BTreeMap::new();
     let mut work = RootSelectionWork::new(maximum_work, interruption, spent);
@@ -157,7 +157,7 @@ fn traverse_path(
                     layout.kind,
                     plan.snapshot.version_id(),
                     work.remaining(),
-                ),
+                ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, plan.name))?,
             ApplicationQueryRootPathDirection::Reverse => runtime
                 .read_truth()
                 .bounded_incoming_relations_for_frontier_at_version(
@@ -166,7 +166,7 @@ fn traverse_path(
                     layout.kind,
                     plan.snapshot.version_id(),
                     work.remaining(),
-                ),
+                ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, plan.name))?,
         }
         .map_err(|_| work_limit_denial(step.relation()))?;
         work.charge(
@@ -282,6 +282,7 @@ fn apply_guards(
             plan.snapshot.version_id(),
             work.remaining(),
         )
+        .map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, guard.field().as_str()))?
         .map_err(|_| work_limit_denial(guard.field().as_str()))?;
         work.charge_predicate(
             read.entity_records_examined(),
@@ -306,8 +307,11 @@ fn read_governed_root_guard(
     version: worth_relational::facade::identity::VersionId,
     maximum_work: usize,
 ) -> Result<
-    worth_relational::facade::runtime::BoundedFrontierFieldEqualityTruthRead,
-    worth_relational::facade::runtime::FrontierFieldEqualityTruthReadLimitExceeded,
+    Result<
+        worth_relational::facade::runtime::BoundedFrontierFieldEqualityTruthRead,
+        worth_relational::facade::runtime::FrontierFieldEqualityTruthReadLimitExceeded,
+    >,
+    worth_relational::facade::transactions::RelationalExecutionDenialCause,
 > {
     runtime
         .read_truth()

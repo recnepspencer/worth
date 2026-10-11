@@ -69,7 +69,7 @@ pub(super) fn retain_matching_targets(
                         record.aspect_field_value(predicate.aspect_key(), predicate.field_key())
                             == Some(expected)
                     })
-            })
+            }).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?
             .ok_or_else(|| projection_denial(relation.result_path()))?;
         if matches {
             targets.push(entity_id);

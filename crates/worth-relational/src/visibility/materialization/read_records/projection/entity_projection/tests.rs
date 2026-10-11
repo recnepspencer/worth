@@ -48,23 +48,22 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
     let entity = changed_entities(&created)[0];
     let updated = update_entity(execution, &runtime, entity, "after");
     for (snapshot, expected_name) in [(&created.snapshot, "before"), (&updated.snapshot, "after")] {
-        let view = runtime
-            .read_truth()
-            .project_snapshot(snapshot, execution)
-            .unwrap();
+        let view = runtime.read_truth().project_snapshot(snapshot).unwrap();
         assert_borrowed_title(execution, &view, entity);
-        let name = view.entity_record_with_projection_scope(
-            execution,
-            entity,
-            ProjectionAspectScope::whole_aspects([aspect_key("name")]),
-            |record| {
-                assert_eq!(record.entity_id(), entity);
-                assert_eq!(record.kind_id(), KindId(1));
-                assert_eq!(record.lifecycle(), RecordLifecycleState::Live);
-                assert_eq!(record.created_at_version(), created.version_id);
-                record.aspect_value(&aspect_key("name")).cloned()
-            },
-        );
+        let name = view
+            .entity_record_with_projection_scope(
+                execution,
+                entity,
+                ProjectionAspectScope::whole_aspects([aspect_key("name")]),
+                |record| {
+                    assert_eq!(record.entity_id(), entity);
+                    assert_eq!(record.kind_id(), KindId(1));
+                    assert_eq!(record.lifecycle(), RecordLifecycleState::Live);
+                    assert_eq!(record.created_at_version(), created.version_id);
+                    record.aspect_value(&aspect_key("name")).cloned()
+                },
+            )
+            .expect("read request remains live");
         assert_eq!(name, Some(string_aspect_value(expected_name)));
     }
 }
@@ -87,22 +86,24 @@ fn assert_borrowed_title(
         panic!("struct fixture")
     };
     let title = summary.get(&field_key("title")).unwrap();
-    let seen = view.entity_record_with_projection_scope(
-        execution,
-        entity,
-        ProjectionAspectScope::fields(aspect_key("summary"), [field_key("title")]),
-        |record| {
-            let projected =
-                record.aspect_field_value(&aspect_key("summary"), &field_key("title"))?;
-            // The public callback must borrow the native value, not a materialized clone.
-            assert!(std::ptr::eq(projected, title));
-            assert!(record
-                .aspect_field_value(&aspect_key("summary"), &field_key("status"))
-                .is_none());
-            assert!(record.struct_aspect_value(&aspect_key("summary")).is_none());
-            Some(())
-        },
-    );
+    let seen = view
+        .entity_record_with_projection_scope(
+            execution,
+            entity,
+            ProjectionAspectScope::fields(aspect_key("summary"), [field_key("title")]),
+            |record| {
+                let projected =
+                    record.aspect_field_value(&aspect_key("summary"), &field_key("title"))?;
+                // The public callback must borrow the native value, not a materialized clone.
+                assert!(std::ptr::eq(projected, title));
+                assert!(record
+                    .aspect_field_value(&aspect_key("summary"), &field_key("status"))
+                    .is_none());
+                assert!(record.struct_aspect_value(&aspect_key("summary")).is_none());
+                Some(())
+            },
+        )
+        .expect("read request remains live");
     assert_eq!(seen, Some(()));
 }
 
@@ -117,18 +118,18 @@ fn projection_preserves_identity_kind_and_lifecycle_across_exact_and_historical_
     let deleted = delete_entity(execution, &runtime, entity);
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap();
     let after = runtime
         .read_truth()
-        .project_snapshot(&deleted.snapshot, execution)
+        .project_snapshot(&deleted.snapshot)
         .unwrap();
     let historical_before = runtime
         .read_truth()
-        .project_historical_version(execution, created.version_id);
+        .project_historical_version(created.version_id);
     let historical_after = runtime
         .read_truth()
-        .project_historical_version(execution, deleted.version_id);
+        .project_historical_version(deleted.version_id);
     for (before, after) in [(before, after), (historical_before, historical_after)] {
         assert_projection_lifecycle(execution, &before, &after, entity);
     }
@@ -144,11 +145,14 @@ fn assert_projection_lifecycle(
     let value =
         |record: EntityProjectionRecord<'_>| record.aspect_value(&aspect_key("name")).cloned();
     assert_eq!(
-        before.entity_record_with_projection_scope(execution, entity, scope.clone(), value),
+        before
+            .entity_record_with_projection_scope(execution, entity, scope.clone(), value)
+            .expect("read request remains live"),
         Some(string_aspect_value("live"))
     );
     assert!(after
         .entity_record_with_projection_scope(execution, entity, scope.clone(), value)
+        .expect("read request remains live")
         .is_none());
     let stale = EntityId::new(
         entity.partition_id,
@@ -157,22 +161,27 @@ fn assert_projection_lifecycle(
     );
     assert!(before
         .entity_record_with_projection_scope(execution, stale, scope.clone(), value)
+        .expect("read request remains live")
         .is_none());
     assert_eq!(
-        before.entity_record_of_expected_kind_with_projection_scope(
-            execution,
-            entity,
-            KindId(2),
-            scope.clone(),
-            value
-        ),
+        before
+            .entity_record_of_expected_kind_with_projection_scope(
+                execution,
+                entity,
+                KindId(2),
+                scope.clone(),
+                value
+            )
+            .expect("read request remains live"),
         Err(KindId(1))
     );
     let wildcard = EntityId::new(entity.partition_id, entity.local_slot_value(), 0);
     assert_eq!(
-        before.entity_record_with_projection_scope(execution, wildcard, scope, |record| Some(
-            record.entity_id()
-        )),
+        before
+            .entity_record_with_projection_scope(execution, wildcard, scope, |record| Some(
+                record.entity_id()
+            ))
+            .expect("read request remains live"),
         Some(entity)
     );
 }
@@ -187,12 +196,13 @@ fn borrowed_projection_cannot_bypass_installed_mask_contract() {
     let created = create_entity_outcome(execution, &runtime, "masked");
     runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap()
         .entity_record_with_projection_scope(
             execution,
             changed_entities(&created)[0],
             ProjectionAspectScope::fields(aspect_key("name"), [field_key("name")]),
             |_| Some(()),
-        );
+        )
+        .expect("read request remains live");
 }

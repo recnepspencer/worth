@@ -282,6 +282,7 @@ fn durability_repair_leaves_a_live_witness_its_usable_published_snapshot() {
         runtime
             .read_truth()
             .read_snapshot(&settled.snapshot, execution)
+            .expect("read request remains live")
             .is_some(),
         "durability repair may not close a snapshot its live witness still owns"
     );

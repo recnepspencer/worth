@@ -43,3 +43,5 @@ pub(crate) use query_locus_projection::{
     relation_query_locus_comparison_key, relation_query_locus_value,
 };
 pub use view::VisibilityProjectionView;
+
+mod record_projections;

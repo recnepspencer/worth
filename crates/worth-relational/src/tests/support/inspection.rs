@@ -93,13 +93,16 @@ pub(crate) fn retained_record_inspection(
     version_id: crate::facade::identity::VersionId,
     target: RecordRef,
 ) -> crate::facade::inspection::HistoricalRecordInspection {
-    runtime.inspect_what_happened().inspect_historical_record(
-        execution,
-        branch_id,
-        version_id,
-        target,
-        crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
-    )
+    runtime
+        .inspect_what_happened()
+        .inspect_historical_record(
+            execution,
+            branch_id,
+            version_id,
+            target,
+            crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
+        )
+        .expect("read request remains live")
 }
 
 pub(crate) fn reconstructed_record_inspection(
@@ -109,13 +112,16 @@ pub(crate) fn reconstructed_record_inspection(
     version_id: crate::facade::identity::VersionId,
     target: RecordRef,
 ) -> crate::facade::inspection::HistoricalRecordInspection {
-    runtime.inspect_what_happened().inspect_historical_record(
-        execution,
-        branch_id,
-        version_id,
-        target,
-        crate::facade::inspection::HistoricalInspectionMode::AllowCanonicalReconstruction,
-    )
+    runtime
+        .inspect_what_happened()
+        .inspect_historical_record(
+            execution,
+            branch_id,
+            version_id,
+            target,
+            crate::facade::inspection::HistoricalInspectionMode::AllowCanonicalReconstruction,
+        )
+        .expect("read request remains live")
 }
 
 pub(crate) fn recent_commit_window(

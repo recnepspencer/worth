@@ -25,7 +25,7 @@ pub(super) fn observe(
     check_request_live(policy, subject)?;
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| super::denial(subject))?;
     let mut relations = Vec::new();
     let mut examined = 0usize;
@@ -41,7 +41,7 @@ pub(super) fn observe(
                     .checked_add(1)
                     .ok_or_else(|| StoreDenial::Representability.into_attempt_denial(subject))?;
                 let Some(relation) = view
-                    .exact_relation_metadata(execution, id)
+                    .exact_relation_metadata(id)
                     .map_err(|_| super::denial(subject))?
                 else {
                     return Ok(());
@@ -59,7 +59,13 @@ pub(super) fn observe(
             }
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         },
-    )?;
+    )
+    .map_err(|cause| {
+        WorthQueryApplicationAttemptDenial::relational_read_denial(
+            cause,
+            "authoritative observation",
+        )
+    })??;
     // Match the existing frontier owner's endpoint/identity order exactly.
     relations.sort_by_key(|relation| {
         (

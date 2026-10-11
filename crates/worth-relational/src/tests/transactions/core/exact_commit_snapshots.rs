@@ -30,9 +30,10 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
     );
     let created_record = runtime
         .read_truth()
-        .project_snapshot(created_observation.snapshot_handle(), execution)
+        .project_snapshot(created_observation.snapshot_handle())
         .expect("retained handle resolves")
         .all_authoritative_entity_records(execution)
+        .expect("read request remains live")
         .into_iter()
         .find(|record| record.entity_id == entity)
         .expect("entity existed at creation commit");
@@ -45,17 +46,19 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
         .expect("updated commit publication remains retained after deletion");
     let updated_record = runtime
         .read_truth()
-        .project_snapshot(updated_observation.snapshot_handle(), execution)
+        .project_snapshot(updated_observation.snapshot_handle())
         .expect("retained update handle resolves")
         .all_authoritative_entity_records(execution)
+        .expect("read request remains live")
         .into_iter()
         .find(|record| record.entity_id == entity)
         .expect("entity existed at update commit");
     assert_eq!(read_entity_name(&updated_record), Some("after".to_owned()));
     assert!(runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id())
+        .project_historical_version(runtime.current_version_id())
         .all_authoritative_entity_records(execution,)
+        .expect("read request remains live")
         .into_iter()
         .all(|record| record.entity_id != entity));
     release_test_commit_snapshot(&runtime, &created);
@@ -151,7 +154,7 @@ fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
     assert_eq!(runtime.current_version_id(), version_before);
     runtime
         .read_truth()
-        .project_snapshot(&first.snapshot, execution)
+        .project_snapshot(&first.snapshot)
         .expect("capacity denial cannot invalidate the retained publication");
 
     runtime

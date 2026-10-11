@@ -32,6 +32,7 @@ fn external_endpoint_group_restores_only_its_exact_relation_endpoints() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&suspended.commit.snapshot, execution)
+        .expect("read request remains live")
         .is_none());
 
     let (_, unavailable_basis) = services
@@ -131,11 +132,13 @@ fn external_endpoint_group_restores_only_its_exact_relation_endpoints() {
     let read = runtime
         .read_truth()
         .read_snapshot(&restored.snapshot, execution)
+        .expect("read request remains live")
         .expect("exact restoration resumes ordinary reads");
     assert_eq!(read.relations()[0].source, external);
     assert_eq!(read.relations()[0].target, internal);
     assert!(runtime
         .read_truth()
         .read_snapshot(&created.snapshot, execution)
+        .expect("read request remains live")
         .is_some());
 }

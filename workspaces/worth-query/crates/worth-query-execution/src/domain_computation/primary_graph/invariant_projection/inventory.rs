@@ -33,10 +33,11 @@ where
         let records = self.graph.with_runtime(execution, |runtime| {
             runtime
                 .read_truth()
-                .project_snapshot(self.snapshot(), execution)
+                .project_snapshot(self.snapshot())
                 .and_then(|view| {
                     view.bounded_entities_of_kind(execution, kind, usize::MAX)
                         .ok()
+                        .and_then(Result::ok)
                 })
                 .map(|read| read.into_records())
                 .unwrap_or_default()
@@ -65,10 +66,11 @@ where
         let records = self.graph.with_runtime(execution, |runtime| {
             runtime
                 .read_truth()
-                .project_snapshot(self.snapshot(), execution)
+                .project_snapshot(self.snapshot())
                 .and_then(|view| {
                     view.bounded_relations_of_kind(execution, layout.kind, usize::MAX)
                         .ok()
+                        .and_then(Result::ok)
                 })
                 .map(|read| read.into_records())
                 .unwrap_or_default()

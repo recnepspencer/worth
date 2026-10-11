@@ -130,6 +130,7 @@ fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
         .runtime
         .read_truth()
         .read_snapshot(&foreign_snapshot, execution)
+        .expect("fixture read request remains live")
         .is_none());
     world.handles.snapshot = foreign_snapshot;
 

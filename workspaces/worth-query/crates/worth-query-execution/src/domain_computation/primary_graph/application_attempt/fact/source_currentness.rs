@@ -11,6 +11,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQuerySourceCurrentnes
     /// The fact's own recorded bound refuses the comparison.
     WorkBudgetExceeded,
     Unavailable,
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
 }
 
 impl WorthQueryApplicationObservedFact {

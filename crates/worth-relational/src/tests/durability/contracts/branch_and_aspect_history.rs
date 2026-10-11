@@ -216,28 +216,34 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
         relation,
         None,
     );
-    let expected_main_inspection = runtime.inspect_what_happened().inspect_historical_record(
-        execution,
-        &BranchId("main".to_string()),
-        runtime
-            .history()
-            .branch_head(&BranchId("main".to_string()))
-            .unwrap()
-            .version_id,
-        RecordRef::Relation(relation),
-        crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
-    );
-    let expected_feature_inspection = runtime.inspect_what_happened().inspect_historical_record(
-        execution,
-        &BranchId("feature".to_string()),
-        runtime
-            .history()
-            .branch_head(&BranchId("feature".to_string()))
-            .unwrap()
-            .version_id,
-        RecordRef::Relation(relation),
-        crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
-    );
+    let expected_main_inspection = runtime
+        .inspect_what_happened()
+        .inspect_historical_record(
+            execution,
+            &BranchId("main".to_string()),
+            runtime
+                .history()
+                .branch_head(&BranchId("main".to_string()))
+                .unwrap()
+                .version_id,
+            RecordRef::Relation(relation),
+            crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
+        )
+        .expect("read request remains live");
+    let expected_feature_inspection = runtime
+        .inspect_what_happened()
+        .inspect_historical_record(
+            execution,
+            &BranchId("feature".to_string()),
+            runtime
+                .history()
+                .branch_head(&BranchId("feature".to_string()))
+                .unwrap()
+                .version_id,
+            RecordRef::Relation(relation),
+            crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
+        )
+        .expect("read request remains live");
 
     runtime.durability_authority().checkpoint().unwrap();
     let plan = runtime.durability().recovery_plan(
@@ -266,28 +272,34 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
         relation,
         None,
     );
-    let recovered_main_inspection = recovered.inspect_what_happened().inspect_historical_record(
-        execution,
-        &BranchId("main".to_string()),
-        recovered
-            .history()
-            .branch_head(&BranchId("main".to_string()))
-            .unwrap()
-            .version_id,
-        RecordRef::Relation(relation),
-        crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
-    );
-    let recovered_feature_inspection = recovered.inspect_what_happened().inspect_historical_record(
-        execution,
-        &BranchId("feature".to_string()),
-        recovered
-            .history()
-            .branch_head(&BranchId("feature".to_string()))
-            .unwrap()
-            .version_id,
-        RecordRef::Relation(relation),
-        crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
-    );
+    let recovered_main_inspection = recovered
+        .inspect_what_happened()
+        .inspect_historical_record(
+            execution,
+            &BranchId("main".to_string()),
+            recovered
+                .history()
+                .branch_head(&BranchId("main".to_string()))
+                .unwrap()
+                .version_id,
+            RecordRef::Relation(relation),
+            crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
+        )
+        .expect("read request remains live");
+    let recovered_feature_inspection = recovered
+        .inspect_what_happened()
+        .inspect_historical_record(
+            execution,
+            &BranchId("feature".to_string()),
+            recovered
+                .history()
+                .branch_head(&BranchId("feature".to_string()))
+                .unwrap()
+                .version_id,
+            RecordRef::Relation(relation),
+            crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
+        )
+        .expect("read request remains live");
 
     assert_eq!(outcome.latest_commit, runtime.history().latest_commit());
     assert_eq!(expected_main_digest, recovered_main_digest);

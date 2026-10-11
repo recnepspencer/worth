@@ -28,6 +28,7 @@ fn snapshot_reader_reads_published_entity_values_without_projection_surface() {
     let published_entity = runtime
         .read_truth()
         .read_snapshot(&published_snapshot, request_execution)
+        .expect("fixture read request remains live")
         .expect("published snapshot read")
         .entities()
         .first()

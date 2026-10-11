@@ -74,7 +74,7 @@ impl IndexAccess<'_> {
         let view = self
             .runtime
             .read_truth()
-            .project_snapshot(&snapshot, execution)
+            .project_snapshot(&snapshot)
             .ok_or_else(unavailable)?;
         let prepared = self.prepare_entity_field_lookup(
             &view,

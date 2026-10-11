@@ -2,6 +2,8 @@
 
 use crate::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity;
 mod capacity;
+mod relational_read;
+pub(super) use relational_read::denial as relational_read_denial;
 
 /// The specific reason authorization refused an operation or query.
 ///
@@ -12,6 +14,7 @@ mod capacity;
 /// any effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperationAuthorizationDenialKind {
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The supplied phase belongs to another installed runtime.
     ForeignPhase,
     /// The authorization check was cancelled.
@@ -105,7 +108,9 @@ pub enum WorthQueryOperationAuthorizationDenialKind {
     /// The runtime ran out of admission identities.
     AdmissionIdentityExhausted,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain the authorization basis.
@@ -242,7 +247,9 @@ impl WorthQueryOperationAuthorizationDenialIdentity {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOperationAuthorizationDenial {
     identity: Option<WorthQueryOperationAuthorizationDenialIdentity>,
-    kind: WorthQueryOperationAuthorizationDenialKind,
+    // The execution kind carries resource details; keep those details off
+    // the stack of every surrounding workflow and recovery refusal.
+    kind: Box<WorthQueryOperationAuthorizationDenialKind>,
     causes: Vec<WorthQueryOperationAuthorizationDenialKind>,
     explanation_cause: Option<WorthQueryApplicationAuthorizationExplanationCause>,
     subject: String,
@@ -255,7 +262,7 @@ impl WorthQueryOperationAuthorizationDenial {
     ) -> Self {
         Self {
             identity: WorthQueryOperationAuthorizationDenialIdentity::mint(),
-            kind,
+            kind: Box::new(kind),
             causes: vec![kind],
             explanation_cause: WorthQueryApplicationAuthorizationExplanationCause::from_denial_kind(
                 kind,
@@ -275,7 +282,7 @@ impl WorthQueryOperationAuthorizationDenial {
         let kind = causes[0];
         Self {
             identity: WorthQueryOperationAuthorizationDenialIdentity::mint(),
-            kind,
+            kind: Box::new(kind),
             causes,
             explanation_cause: WorthQueryApplicationAuthorizationExplanationCause::from_denial_kind(
                 kind,
@@ -292,7 +299,7 @@ impl WorthQueryOperationAuthorizationDenial {
     }
 
     pub const fn kind(&self) -> WorthQueryOperationAuthorizationDenialKind {
-        self.kind
+        *self.kind
     }
 
     pub const fn identity(&self) -> Option<WorthQueryOperationAuthorizationDenialIdentity> {

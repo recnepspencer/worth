@@ -65,6 +65,7 @@ fn lowered_mutation_execution_runs_through_relational_strategy_authority() {
     let read_view = runtime
         .read_truth()
         .read_snapshot(&snapshot, request_execution)
+        .expect("fixture read request remains live")
         .expect("snapshot should read");
     let updated = read_view
         .entities()

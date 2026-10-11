@@ -33,13 +33,16 @@ pub(super) fn resolve_policy_scope(
         })?;
     let source_view = runtime
         .read_truth()
-        .read_version(execution, causal_plan.basis.source_head.version_id);
+        .read_version(execution, causal_plan.basis.source_head.version_id)
+        .map_err(crate::merge::data::MergePlanningError::Execution)?;
     let target_view = runtime
         .read_truth()
-        .read_version(execution, causal_plan.basis.target_head.version_id);
+        .read_version(execution, causal_plan.basis.target_head.version_id)
+        .map_err(crate::merge::data::MergePlanningError::Execution)?;
     let base_view = runtime
         .read_truth()
-        .read_version(execution, base_envelope.commit.version_id);
+        .read_version(execution, base_envelope.commit.version_id)
+        .map_err(crate::merge::data::MergePlanningError::Execution)?;
     let source_view_index = PolicyReadViewIndex::new(&source_view);
     let target_view_index = PolicyReadViewIndex::new(&target_view);
     let base_view_index = PolicyReadViewIndex::new(&base_view);
@@ -96,9 +99,15 @@ pub(super) fn resolve_policy_scope(
                         })?
                         .commit
                         .version_id;
-                    record_base_views
-                        .entry(base_commit_id)
-                        .or_insert_with(|| runtime.read_truth().read_version(execution, version_id))
+                    match record_base_views.entry(base_commit_id) {
+                        std::collections::btree_map::Entry::Occupied(entry) => entry.into_mut(),
+                        std::collections::btree_map::Entry::Vacant(entry) => entry.insert(
+                            runtime
+                                .read_truth()
+                                .read_version(execution, version_id)
+                                .map_err(MergePlanningError::Execution)?,
+                        ),
+                    }
                 };
             let record_base_view_index =
                 if base_commit_id == causal_plan.basis.merge_base.commit.commit_id {

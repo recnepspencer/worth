@@ -95,6 +95,7 @@ fn assert_child_explicit_query_uses_snapshot_root(
         .runtime
         .read_truth()
         .read_snapshot(child_snapshot, execution)
+        .expect("fixture read request remains live")
         .and_then(|view| {
             view.entities()
                 .iter()

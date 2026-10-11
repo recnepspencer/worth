@@ -205,7 +205,7 @@ fn select_indexed_root(
     }
     let projection = runtime
         .read_truth()
-        .project_snapshot(plan.snapshot, execution)
+        .project_snapshot(plan.snapshot)
         .ok_or_else(|| {
             read_execution_denial(
                 WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,

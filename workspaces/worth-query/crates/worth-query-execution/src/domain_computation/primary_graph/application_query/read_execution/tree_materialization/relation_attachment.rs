@@ -103,14 +103,14 @@ pub(super) fn attach_relation(
                 &frontier,
                 layout.kind,
                 work.remaining_work(),
-            ),
+            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
         ApplicationQueryResultTraversalDirection::Reverse => projection
             .bounded_incoming_relations_for_frontier(
                 execution,
                 &frontier,
                 layout.kind,
                 work.remaining_work(),
-            ),
+            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
     }
     .map_err(|_| work_limit_denial(relation.result_path()))?;
     work.charge_adjacency(
@@ -233,14 +233,14 @@ fn attach_targeted_relation(
                 &frontier,
                 layout.kind,
                 work.remaining_work(),
-            ),
+            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
         ApplicationQueryResultTraversalDirection::Reverse => projection
             .bounded_outgoing_relations_for_frontier(
                 execution,
                 &frontier,
                 layout.kind,
                 work.remaining_work(),
-            ),
+            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
     }
     .map_err(|_| work_limit_denial(relation.result_path()))?;
     work.charge_adjacency(

@@ -2,12 +2,15 @@ use super::*;
 
 pub(super) fn borrowed_matches<E>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    index: DerivedIndexId,
     view: &VisibilityProjectionView<'_>,
     entity: EntityId,
     locator: &AspectFieldLocator,
     expected: &AspectValue,
     prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
 ) -> Result<Option<(EntityId, KindId, bool)>, Stop<E>> {
+    crate::visibility::materialization::read_records::read_request::consult(execution)
+        .map_err(|cause| denied(Denial::Execution(cause), index))?;
     let read = view
         .exact_entity_state_read_work_bound()
         .ok_or(Stop::ExactBasisRequired)?;
@@ -21,7 +24,7 @@ pub(super) fn borrowed_matches<E>(
         0,
     )?;
     prepare(SelectedIndexReadWork::OrderedNavigation(navigation), 0).map_err(Stop::Admission)?;
-    view.with_exact_entity_state(execution, entity, |metadata, state| {
+    view.with_exact_entity_state(entity, |metadata, state| {
         let matches = state_matches(state, locator, expected, prepare)?;
         Ok((metadata.entity_id, metadata.kind_id, matches))
     })

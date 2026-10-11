@@ -24,40 +24,46 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn read_snapshot(
         &self,
         handle: &SnapshotHandle,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Option<RelationalReadView> {
-        let resolved = resolve_snapshot_state(self.runtime, handle)?;
-        if resolved
-            .state
-            .basis
-            .root()
-            .is_some_and(|root| root.has_materialization_unavailable())
-        {
-            return None;
-        }
-        Some(read_view_from_snapshot_state(
-            self.runtime,
-            &resolved.state,
-            &resolved.handle,
-        ))
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<RelationalReadView>, crate::execution::RelationalExecutionDenialCause> {
+        crate::visibility::materialization::read_records::read_request::checked(execution, || {
+            let resolved = resolve_snapshot_state(self.runtime, handle)?;
+            if resolved
+                .state
+                .basis
+                .root()
+                .is_some_and(|root| root.has_materialization_unavailable())
+            {
+                return None;
+            }
+            Some(read_view_from_snapshot_state(
+                self.runtime,
+                &resolved.state,
+                &resolved.handle,
+            ))
+        })
     }
 
     pub(crate) fn read_version(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
-    ) -> RelationalReadView {
-        self.try_read_version(execution, version_id)
-            .expect("internal historical read requires retained MVCC coverage")
+    ) -> Result<RelationalReadView, crate::execution::RelationalExecutionDenialCause> {
+        Ok(self
+            .try_read_version(execution, version_id)?
+            .expect("internal historical read requires retained MVCC coverage"))
     }
 
     pub(crate) fn try_read_version(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
-    ) -> Result<RelationalReadView, crate::visibility::snapshot_states::HistoricalVisibilityDenial>
-    {
-        let state = materialize_historical_visibility(self.runtime, version_id, true).ok_or_else(
+    ) -> Result<
+        Result<RelationalReadView, crate::visibility::snapshot_states::HistoricalVisibilityDenial>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::visibility::materialization::read_records::read_request::checked(execution, || {
+            let state = materialize_historical_visibility(self.runtime, version_id, true).ok_or_else(
             || {
                 crate::visibility::cache_state::historical_basis_for_retained_version(
                     self.runtime,
@@ -69,8 +75,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 )
             },
         )?;
-        let handle = state.handle.clone();
-        Ok(read_view_from_snapshot_state(self.runtime, &state, &handle))
+            let handle = state.handle.clone();
+            Ok(read_view_from_snapshot_state(self.runtime, &state, &handle))
+        })
     }
 
     pub fn query_plan_context(&self, handle: &SnapshotHandle) -> Option<QueryPlanContextId> {
@@ -95,26 +102,31 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// Read the immutable root carried by one owner-admitted observation.
     pub fn read_observation(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &crate::mvcc::RelationalBranchObservation,
-    ) -> Result<RelationalReadView, crate::branch::RelationalBranchBasisDenial> {
-        self.require_local_observation(observation)?;
-        if observation
-            .selected_root()
-            .has_materialization_unavailable()
-        {
-            return Err(crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable);
-        }
-        let state = build_visibility_state(
-            self.runtime,
-            crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
-                observation,
-            ),
-            crate::snapshots::data::SnapshotId(0),
-            crate::snapshots::data::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
-        );
-        let handle = state.handle.clone();
-        Ok(read_view_from_snapshot_state(self.runtime, &state, &handle))
+    ) -> Result<
+        Result<RelationalReadView, crate::branch::RelationalBranchBasisDenial>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::visibility::materialization::read_records::read_request::checked(execution, || {
+            self.require_local_observation(observation)?;
+            if observation
+                .selected_root()
+                .has_materialization_unavailable()
+            {
+                return Err(crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable);
+            }
+            let state = build_visibility_state(
+                self.runtime,
+                crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
+                    observation,
+                ),
+                crate::snapshots::data::SnapshotId(0),
+                crate::snapshots::data::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
+            );
+            let handle = state.handle.clone();
+            Ok(read_view_from_snapshot_state(self.runtime, &state, &handle))
+        })
     }
 
     /// Schema version carried by the observation's selected canonical root.

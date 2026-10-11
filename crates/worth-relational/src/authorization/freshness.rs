@@ -38,6 +38,7 @@ impl RelationalRuntime {
                 return Ok(RelationalAuthorizationObservationFreshness::Stale);
             }
             Err(Stop::Admission(stop)) => return Err(Stop::Admission(stop)),
+            Err(Stop::Execution(cause)) => return Err(Stop::Execution(cause)),
             Err(Stop::AccountingOverflow) => return Err(Stop::AccountingOverflow),
         };
         admission::prepare(admission, 2, 0)?;
@@ -86,6 +87,9 @@ impl RelationalRuntime {
             execution,
         ) {
             Ok(freshness) => freshness,
+            Err(Stop::Execution(cause)) => {
+                RelationalAuthorizationObservationFreshness::ExecutionStopped(cause)
+            }
             Err(Stop::AccountingOverflow) => RelationalAuthorizationObservationFreshness::Stale,
             Err(Stop::Admission(impossible)) => match impossible {},
             Err(Stop::Native(_) | Stop::ExactBasisRequired) => {

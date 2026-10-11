@@ -209,6 +209,7 @@ where
                     layout.workflow().definition_node_relation,
                     application_basis.snapshot_handle().version_id(),
                 )
+                .expect("certification fixture read request remains live")
                 .into_iter()
                 .find(|relation| relation.source == definition.entity_id())
                 .expect("the published definition retains a node membership");
@@ -271,6 +272,7 @@ where
                     workflow.definition_node_relation,
                     application_basis.snapshot_handle().version_id(),
                 )
+                .expect("certification fixture read request remains live")
                 .into_iter()
                 .find(|relation| relation.source == definition.entity_id())
                 .expect("the published definition retains a node membership");

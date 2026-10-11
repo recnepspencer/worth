@@ -62,28 +62,34 @@ impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
-        mut visit: impl FnMut(&EntityReadRecord),
-    ) {
+        mut visit: impl FnMut(
+            &EntityReadRecord,
+        ) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
         for record in self
             .projection
-            .authoritative_entity_records(execution, kind_id)
+            .authoritative_entity_records(execution, kind_id)?
         {
-            visit(&record);
+            visit(&record)?;
         }
+        Ok(())
     }
 
     pub(in crate::indexes) fn for_each_relation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
-        mut visit: impl FnMut(&RelationReadRecord),
-    ) {
+        mut visit: impl FnMut(
+            &RelationReadRecord,
+        ) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
         for record in self
             .projection
-            .authoritative_relation_records(execution, kind_id)
+            .authoritative_relation_records(execution, kind_id)?
         {
-            visit(&record);
+            visit(&record)?;
         }
+        Ok(())
     }
 
     pub(in crate::indexes) fn try_for_each_entity<E>(
@@ -92,7 +98,7 @@ impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
         kind_id: KindId,
         before_candidate: impl FnMut(u64) -> Result<(), E>,
         visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
-    ) -> Result<(), E> {
+    ) -> Result<(), crate::visibility::materialization::read_records::read_stop::ReadStop<E>> {
         self.projection.try_for_each_entity_record(
             execution,
             Some(kind_id),
@@ -107,7 +113,7 @@ impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
         kind_id: KindId,
         before_candidate: impl FnMut(u64) -> Result<(), E>,
         visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
-    ) -> Result<(), E> {
+    ) -> Result<(), crate::visibility::materialization::read_records::read_stop::ReadStop<E>> {
         self.projection.try_for_each_relation_record(
             execution,
             Some(kind_id),
@@ -121,11 +127,12 @@ impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         inspect: impl FnOnce(&EntityReadRecord) -> T,
-    ) -> Option<T> {
-        self.projection
-            .authoritative_entity_record(execution, entity_id)
+    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+        Ok(self
+            .projection
+            .authoritative_entity_record(execution, entity_id)?
             .as_ref()
-            .map(inspect)
+            .map(inspect))
     }
 
     pub(in crate::indexes) fn candidate_entity_bytes(&self, entity_id: EntityId) -> u64 {
@@ -137,10 +144,11 @@ impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
         inspect: impl FnOnce(&RelationReadRecord) -> T,
-    ) -> Option<T> {
-        self.projection
-            .authoritative_relation_record(execution, relation_id)
+    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+        Ok(self
+            .projection
+            .authoritative_relation_record(execution, relation_id)?
             .as_ref()
-            .map(inspect)
+            .map(inspect))
     }
 }

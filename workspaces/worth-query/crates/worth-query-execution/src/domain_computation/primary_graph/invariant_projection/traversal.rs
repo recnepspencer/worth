@@ -37,7 +37,15 @@ where
                 from.entity_id,
                 layout.kind,
                 self.work_budget.remaining(),
-            );
+            )
+            .map_err(|cause| {
+                WorthQueryInvariantProjectionTraversalDenial::new(
+                    WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    relation.name(),
+                )
+            })?;
         let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
         self.work_budget.consume(read.work_units());
         self.work.record_adjacency(
@@ -82,7 +90,15 @@ where
                 to.entity_id,
                 layout.kind,
                 self.work_budget.remaining(),
-            );
+            )
+            .map_err(|cause| {
+                WorthQueryInvariantProjectionTraversalDenial::new(
+                    WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    relation.name(),
+                )
+            })?;
         let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
         self.work_budget.consume(read.work_units());
         self.work.record_adjacency(
@@ -171,6 +187,14 @@ where
                         .then_some(())
                 },
             )
+            .map_err(|cause| {
+                WorthQueryInvariantProjectionTraversalDenial::new(
+                    WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    entity,
+                )
+            })?
             .is_some();
         if !available {
             return Err(endpoint_unavailable(entity));
@@ -188,12 +212,12 @@ where
     /// a sibling branch's commits made at older versions.
     fn branch_view(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         subject: &str,
     ) -> Result<VisibilityProjectionView<'_>, WorthQueryInvariantProjectionTraversalDenial> {
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot, execution)
+            .project_snapshot(self.snapshot)
             .ok_or_else(|| endpoint_unavailable(subject))
     }
 

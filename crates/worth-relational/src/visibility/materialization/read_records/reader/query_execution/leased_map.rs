@@ -25,6 +25,7 @@ impl ChargedBytes for QueryPacketMapInput {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum QueryReadExecutionStop {
+    ReadRequest(crate::execution::RelationalExecutionDenialCause),
     Request(worth_execution::WorkCeilingDenial),
     PreparationAdmission(ScanDenial),
     PreparationStopped {
@@ -55,6 +56,7 @@ impl std::error::Error for QueryReadExecutionStop {}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum QueryReadPacketDenial {
+    ReadRequest(crate::execution::RelationalExecutionDenialCause),
     FragmentUnavailable,
 }
 

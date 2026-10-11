@@ -70,7 +70,8 @@ impl<'runtime> MergeAccess<'runtime> {
         let lowered_plan = self
             .lower_planning_scope(execution, normalized_request.clone())
             .map_err(MergeExecutionPreparationError::Planning)?;
-        let artifact = materialize_planning_artifact(execution, self.runtime, lowered_plan.clone());
+        let artifact = materialize_planning_artifact(execution, self.runtime, lowered_plan.clone())
+            .map_err(MergeExecutionPreparationError::Planning)?;
         let execution_ready_plan = ExecutionReadyLoweredMergePlan::try_from_lowered(
             lowered_plan,
             artifact.schema_snapshot.clone(),

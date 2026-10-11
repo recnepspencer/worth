@@ -385,7 +385,8 @@ fn fact_is_current(
 ) -> Result<bool, InputCutoffVerificationStop> {
     match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
         Ok(movement) => Ok(movement.movement() == Movement::Unmoved),
-        Err(WorthQuerySourceCurrentnessFailure::Unavailable) => Ok(false),
+        Err(WorthQuerySourceCurrentnessFailure::Execution(_))
+        | Err(WorthQuerySourceCurrentnessFailure::Unavailable) => Ok(false),
         Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
             Err(InputCutoffVerificationStop::WorkExhausted)
         }

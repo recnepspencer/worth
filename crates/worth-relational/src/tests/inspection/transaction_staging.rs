@@ -8,7 +8,8 @@ fn transaction_inspection_never_projects_hypothetical_committed_truth() {
     let runtime = runtime_with_test_schema();
     let baseline = runtime
         .inspect_what_happened()
-        .graph_summary(execution, &current_graph_request(None, None, true));
+        .graph_summary(execution, &current_graph_request(None, None, true))
+        .expect("read request remains live");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -19,7 +20,8 @@ fn transaction_inspection_never_projects_hypothetical_committed_truth() {
     let staging = txn.inspect_staging();
     let during_staging = runtime
         .inspect_what_happened()
-        .graph_summary(execution, &current_graph_request(None, None, true));
+        .graph_summary(execution, &current_graph_request(None, None, true))
+        .expect("read request remains live");
 
     assert_eq!(staging.batch_count, 1);
     assert_eq!(during_staging.entity_count, baseline.entity_count);

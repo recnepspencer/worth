@@ -214,6 +214,7 @@ fn committed_name(
 ) -> Option<String> {
     let current = runtime
         .read_truth()
-        .read_version(execution, runtime.current_version_id());
+        .read_version(execution, runtime.current_version_id())
+        .expect("read request remains live");
     read_entity_name(current.get_entity(entity_id).expect("record is present"))
 }

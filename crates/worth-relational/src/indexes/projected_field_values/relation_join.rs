@@ -72,70 +72,80 @@ fn collect_join_relations_checked(
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
 ) -> Result<(), IndexKernelStop> {
     let budget = std::cell::RefCell::new(context);
-    projection.try_for_each_relation(
-        request_execution,
-        leg.relation_kind(),
-        |bytes| {
-            budget.borrow_mut().checkpoint(1)?;
-            budget.borrow().check_scratch_peak(bytes)
-        },
-        |relation| {
-            let (shared, external) = join_endpoints(relation, leg.shared_endpoint());
-            budget.borrow_mut().checkpoint(2)?;
-            budget
-                .borrow()
-                .check_scratch_peak(projection.candidate_entity_bytes(shared))?;
-            budget
-                .borrow()
-                .check_scratch_peak(projection.candidate_entity_bytes(external))?;
-            if projection.with_entity(request_execution, shared, |record| record.kind.kind_id)
-                != Some(shared_entity_kind)
-                || projection.with_entity(request_execution, external, |record| record.kind.kind_id)
-                    != Some(leg.external_entity_kind())
-            {
-                return Ok(());
-            }
-            let new_shared = !collected.contains_key(&shared);
-            let new_external = !collected
-                .get(&shared)
-                .is_some_and(|rows| rows.contains_key(&external));
-            if new_shared || new_external {
-                let bytes = u64::from(new_shared)
-                    * (std::mem::size_of::<(EntityId, BTreeMap<EntityId, RelationId>)>()
-                        + 3 * std::mem::size_of::<usize>()) as u64
-                    + u64::from(new_external)
-                        * (std::mem::size_of::<(EntityId, RelationId)>()
-                            + 3 * std::mem::size_of::<usize>()) as u64;
-                budget.borrow_mut().claim_scratch(bytes)?;
-            }
-            collected
-                .entry(shared)
-                .or_default()
-                .entry(external)
-                .and_modify(|selected| *selected = (*selected).min(relation.relation_id))
-                .or_insert(relation.relation_id);
-            Ok(())
-        },
-    )
+    projection
+        .try_for_each_relation(
+            request_execution,
+            leg.relation_kind(),
+            |bytes| {
+                budget.borrow_mut().checkpoint(1)?;
+                budget.borrow().check_scratch_peak(bytes)
+            },
+            |relation| {
+                let (shared, external) = join_endpoints(relation, leg.shared_endpoint());
+                budget.borrow_mut().checkpoint(2)?;
+                budget
+                    .borrow()
+                    .check_scratch_peak(projection.candidate_entity_bytes(shared))?;
+                budget
+                    .borrow()
+                    .check_scratch_peak(projection.candidate_entity_bytes(external))?;
+                if projection
+                    .with_entity(request_execution, shared, |record| record.kind.kind_id)
+                    .map_err(super::checked_entry_map::read_request)?
+                    != Some(shared_entity_kind)
+                    || projection
+                        .with_entity(request_execution, external, |record| record.kind.kind_id)
+                        .map_err(super::checked_entry_map::read_request)?
+                        != Some(leg.external_entity_kind())
+                {
+                    return Ok(());
+                }
+                let new_shared = !collected.contains_key(&shared);
+                let new_external = !collected
+                    .get(&shared)
+                    .is_some_and(|rows| rows.contains_key(&external));
+                if new_shared || new_external {
+                    let bytes = u64::from(new_shared)
+                        * (std::mem::size_of::<(EntityId, BTreeMap<EntityId, RelationId>)>()
+                            + 3 * std::mem::size_of::<usize>()) as u64
+                        + u64::from(new_external)
+                            * (std::mem::size_of::<(EntityId, RelationId)>()
+                                + 3 * std::mem::size_of::<usize>())
+                                as u64;
+                    budget.borrow_mut().claim_scratch(bytes)?;
+                }
+                collected
+                    .entry(shared)
+                    .or_default()
+                    .entry(external)
+                    .and_modify(|selected| *selected = (*selected).min(relation.relation_id))
+                    .or_insert(relation.relation_id);
+                Ok(())
+            },
+        )
+        .map_err(super::checked_entry_map::read_stop)
 }
 
 pub(in crate::indexes) fn build_relation_join_index(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     definition: RelationJoinDefinition,
-) -> BTreeMap<RelationJoinKey, Vec<RelationJoinEntry>> {
+) -> Result<
+    BTreeMap<RelationJoinKey, Vec<RelationJoinEntry>>,
+    crate::execution::RelationalExecutionDenialCause,
+> {
     let left = collect_join_relations(
         execution,
         projection,
         definition.left(),
         definition.shared_entity_kind(),
-    );
+    )?;
     let right = collect_join_relations(
         execution,
         projection,
         definition.right(),
         definition.shared_entity_kind(),
-    );
+    )?;
     let mut entries = BTreeMap::<RelationJoinKey, Vec<RelationJoinEntry>>::new();
     for (shared_entity, left_relations) in left {
         let Some(right_relations) = right.get(&shared_entity) else {
@@ -158,7 +168,7 @@ pub(in crate::indexes) fn build_relation_join_index(
         joined.sort();
         joined.dedup_by_key(|entry| entry.shared_entity_id());
     }
-    entries
+    Ok(entries)
 }
 
 fn collect_join_relations(
@@ -166,16 +176,19 @@ fn collect_join_relations(
     projection: &IndexProjectionSource<'_, '_>,
     leg: RelationJoinLeg,
     shared_entity_kind: KindId,
-) -> BTreeMap<EntityId, BTreeMap<EntityId, RelationId>> {
+) -> Result<
+    BTreeMap<EntityId, BTreeMap<EntityId, RelationId>>,
+    crate::execution::RelationalExecutionDenialCause,
+> {
     let mut collected = BTreeMap::<EntityId, BTreeMap<EntityId, RelationId>>::new();
     projection.for_each_relation(execution, leg.relation_kind(), |relation| {
         let (shared, external) = join_endpoints(relation, leg.shared_endpoint());
-        if projection.with_entity(execution, shared, |record| record.kind.kind_id)
+        if projection.with_entity(execution, shared, |record| record.kind.kind_id)?
             != Some(shared_entity_kind)
-            || projection.with_entity(execution, external, |record| record.kind.kind_id)
+            || projection.with_entity(execution, external, |record| record.kind.kind_id)?
                 != Some(leg.external_entity_kind())
         {
-            return;
+            return Ok(());
         }
         collected
             .entry(shared)
@@ -183,8 +196,9 @@ fn collect_join_relations(
             .entry(external)
             .and_modify(|selected| *selected = (*selected).min(relation.relation_id))
             .or_insert(relation.relation_id);
-    });
-    collected
+        Ok(())
+    })?;
+    Ok(collected)
 }
 
 pub(in crate::indexes) const fn join_endpoints(

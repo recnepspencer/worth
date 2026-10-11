@@ -43,7 +43,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
     )]);
     runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)?
+        .project_snapshot(snapshot)?
         .entity_record_with_projection_scope(execution, entity_id, scope, |record| {
             (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live).then(
                 || {
@@ -57,6 +57,8 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
                 },
             )
         })
+        .ok()
+        .flatten()
 }
 
 pub(in crate::domain_computation::primary_graph) fn observe_field_value(

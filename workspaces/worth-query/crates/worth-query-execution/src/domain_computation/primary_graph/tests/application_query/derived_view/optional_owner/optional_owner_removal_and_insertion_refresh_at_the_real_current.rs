@@ -149,6 +149,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                             kind,
                             selected.application_basis().snapshot_handle().version_id(),
                         )
+                        .expect("fixture read request remains live")
                         .into_iter()
                         .find(|edge| edge.target == account)
                         .unwrap()

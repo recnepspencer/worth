@@ -125,6 +125,7 @@ fn rolled_back_endpoint_deletion_work_leaves_zero_cdc_and_diagnostic_residue() {
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let relation = read.get_relation(relation).unwrap();
     assert_eq!(relation.lifecycle, RecordLifecycleState::Live);

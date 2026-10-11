@@ -58,13 +58,13 @@ impl RelationalRuntime {
         }
         let view = self
             .read_truth()
-            .project_snapshot(plan.snapshot(), execution)
+            .project_snapshot(plan.snapshot())
             .ok_or(Stop::Native(
                 RelationalAuthorizationObservationDenial::SnapshotUnavailable,
             ))?;
         admission::prepare(admission, 1, 0)?;
         let principal = view
-            .with_exact_entity_state(execution, plan.principal(), |metadata, _| {
+            .with_exact_entity_state(plan.principal(), |metadata, _| {
                 metadata.kind_id == plan.principal_kind()
             })
             .map_err(|_| Stop::ExactBasisRequired)?
@@ -81,7 +81,7 @@ impl RelationalRuntime {
         if plan.scope() != plan.principal() {
             admission::prepare(admission, 1, 0)?;
             let scope = view
-                .with_exact_entity_state(execution, plan.scope(), |metadata, _| {
+                .with_exact_entity_state(plan.scope(), |metadata, _| {
                     metadata.kind_id == plan.scope_kind()
                 })
                 .map_err(|_| Stop::ExactBasisRequired)?

@@ -60,6 +60,7 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
     let current_read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let record = current_read.get_entity(entity).unwrap();
 

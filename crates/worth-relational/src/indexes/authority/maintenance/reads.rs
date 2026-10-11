@@ -17,6 +17,7 @@ pub(super) fn entity(
     work.read()?;
     Ok(view
         .authoritative_entity_record(execution, id)
+        .map_err(Denial::Execution)?
         .filter(|record| record.lifecycle == RecordLifecycleState::Live))
 }
 
@@ -34,6 +35,7 @@ pub(super) fn relation(
     // A deleted endpoint alone does not remove field or ordering membership.
     Ok(view
         .authoritative_relation_record(execution, id)
+        .map_err(Denial::Execution)?
         .filter(|record| {
             matches!(
                 record.lifecycle,
@@ -52,13 +54,15 @@ pub(super) fn adjacency(
 ) -> Result<Vec<RelationReadRecord>, Denial> {
     work.charge(1)?;
     let frontier = BTreeSet::from([entity]);
-    let result = view.bounded_index_relations_for_frontier(
-        execution,
-        &frontier,
-        kind,
-        outgoing,
-        work.remaining(),
-    );
+    let result = view
+        .bounded_index_relations_for_frontier(
+            execution,
+            &frontier,
+            kind,
+            outgoing,
+            work.remaining(),
+        )
+        .map_err(Denial::Execution)?;
     match result {
         Ok(read) => {
             let units = read.work_units();

@@ -54,7 +54,6 @@ impl IndexAuthority<'_> {
                 .runtime
                 .read_truth()
                 .try_project_retained_commit(
-                    execution,
                     request.source_commit_id,
                     request.branch_id.clone(),
                     recorded.commit.version_id,
@@ -119,7 +118,7 @@ impl IndexAuthority<'_> {
         let after = self
             .runtime
             .read_truth()
-            .project_observation(execution, &observation)
+            .project_observation(&observation)
             .map_err(DerivedIndexMaintenanceDenialKind::Basis)?;
         let before = before
             .map(|snapshot| {
@@ -128,7 +127,7 @@ impl IndexAuthority<'_> {
                 }
                 self.runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
+                    .project_snapshot(snapshot)
                     .ok_or(DerivedIndexMaintenanceDenialKind::SnapshotUnavailable)
             })
             .transpose()?;

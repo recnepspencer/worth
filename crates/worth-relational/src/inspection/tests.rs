@@ -23,6 +23,7 @@ fn structural_identity_origin_tracks_non_current_scope() {
             InspectionScope::Current,
             RecordRef::Entity(entity),
         )
+        .expect("read request remains live")
         .expect("current structural identity");
     let version = runtime
         .inspect_what_happened()
@@ -31,6 +32,7 @@ fn structural_identity_origin_tracks_non_current_scope() {
             InspectionScope::Version(version_id),
             RecordRef::Entity(entity),
         )
+        .expect("read request remains live")
         .expect("version structural identity");
     let snapshot = runtime
         .inspect_what_happened()
@@ -39,6 +41,7 @@ fn structural_identity_origin_tracks_non_current_scope() {
             InspectionScope::Snapshot(snapshot),
             RecordRef::Entity(entity),
         )
+        .expect("read request remains live")
         .expect("snapshot structural identity");
 
     assert_eq!(current.origin, InspectionOrigin::CurrentTruth);
@@ -75,21 +78,26 @@ fn historical_neighbors_follow_scoped_relation_endpoints_after_rewire() {
     txn.commit(execution, &runtime)
         .expect("relation rewire should commit");
 
-    let current_neighbors = runtime.inspect_what_happened().neighbors(
-        execution,
-        InspectionScope::Current,
-        original_source,
-    );
-    let historical_neighbors = runtime.inspect_what_happened().neighbors(
-        execution,
-        InspectionScope::Version(historical_version),
-        original_source,
-    );
-    let snapshot_neighbors = runtime.inspect_what_happened().neighbors(
-        execution,
-        InspectionScope::Snapshot(historical_snapshot),
-        original_source,
-    );
+    let current_neighbors = runtime
+        .inspect_what_happened()
+        .neighbors(execution, InspectionScope::Current, original_source)
+        .expect("read request remains live");
+    let historical_neighbors = runtime
+        .inspect_what_happened()
+        .neighbors(
+            execution,
+            InspectionScope::Version(historical_version),
+            original_source,
+        )
+        .expect("read request remains live");
+    let snapshot_neighbors = runtime
+        .inspect_what_happened()
+        .neighbors(
+            execution,
+            InspectionScope::Snapshot(historical_snapshot),
+            original_source,
+        )
+        .expect("read request remains live");
 
     assert!(current_neighbors.outgoing_relation_ids.is_empty());
     assert_eq!(historical_neighbors.outgoing_relation_ids, vec![relation]);

@@ -160,7 +160,9 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
             partition_id,
             KindId(11),
             VersionId(1),
-        );
+            &mut |_| Ok(()),
+        )
+        .unwrap();
     let reused_kind_records = runtime
         .read_truth()
         .visible_entities_of_kind_in_partition_from_state(
@@ -168,7 +170,9 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
             partition_id,
             KindId(12),
             VersionId(1),
-        );
+            &mut |_| Ok(()),
+        )
+        .unwrap();
 
     assert_eq!(historical_records.len(), 1);
     assert_eq!(
@@ -241,7 +245,9 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
             partition_id,
             KindId(21),
             VersionId(1),
-        );
+            &mut |_| Ok(()),
+        )
+        .unwrap();
     let reused_kind_records = runtime
         .read_truth()
         .visible_relations_of_kind_in_partition_from_state(
@@ -249,7 +255,9 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
             partition_id,
             KindId(22),
             VersionId(1),
-        );
+            &mut |_| Ok(()),
+        )
+        .unwrap();
 
     assert_eq!(historical_records.len(), 1);
     assert_eq!(

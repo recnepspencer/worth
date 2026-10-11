@@ -157,6 +157,7 @@ fn relation_integrity_commit_boundary_allows_relation_deletion_in_same_commit_un
     let read = runtime
         .read_truth()
         .read_snapshot(&deleted.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
 
     assert!(read.get_relation(relation).is_none());
@@ -178,6 +179,7 @@ fn relation_integrity_commit_boundary_allows_relation_retirement_when_policy_ret
     let read = runtime
         .read_truth()
         .read_snapshot(&deleted.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let relation = read.get_relation(relation).unwrap();
 
@@ -268,7 +270,10 @@ fn assert_relation_lifecycle_at_version(
     lifecycle: RecordLifecycleState,
     retired_at: Option<crate::identity::data::VersionId>,
 ) {
-    let view = runtime.read_truth().read_version(execution, version);
+    let view = runtime
+        .read_truth()
+        .read_version(execution, version)
+        .expect("read request remains live");
     let record = view
         .get_relation(relation)
         .expect("audit-retained relation remains materialized");
@@ -329,6 +334,7 @@ fn relation_integrity_commit_boundary_allows_opposite_endpoint_delete_after_rela
     let read = runtime
         .read_truth()
         .read_snapshot(&deleted_target.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let relation = read.get_relation(relation).unwrap();
 

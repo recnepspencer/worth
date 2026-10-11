@@ -27,7 +27,7 @@ impl IndexAccess<'_> {
         })?;
         let projection = runtime
             .read_truth()
-            .project_snapshot(&snapshot, execution)
+            .project_snapshot(&snapshot)
             .ok_or_else(|| {
                 denial(
                     BoundedRelationJoinLookupDenialKind::SnapshotUnavailable,
@@ -159,9 +159,21 @@ impl RelationJoinVerification {
     ) -> Result<(), BoundedRelationJoinLookupDenial> {
         let left = source
             .with_entity(execution, self.left_entity_id, Clone::clone)
+            .map_err(|cause| {
+                BoundedRelationJoinLookupDenial::new(
+                    BoundedRelationJoinLookupDenialKind::Execution(cause),
+                    self.index_id,
+                )
+            })?
             .ok_or_else(|| self.corrupt())?;
         let right = source
             .with_entity(execution, self.right_entity_id, Clone::clone)
+            .map_err(|cause| {
+                BoundedRelationJoinLookupDenial::new(
+                    BoundedRelationJoinLookupDenialKind::Execution(cause),
+                    self.index_id,
+                )
+            })?
             .ok_or_else(|| self.corrupt())?;
         if left.kind.kind_id == self.join.left().external_entity_kind()
             && right.kind.kind_id == self.join.right().external_entity_kind()
@@ -199,12 +211,30 @@ impl RelationJoinVerification {
     ) -> Result<crate::identity::data::EntityId, BoundedRelationJoinLookupDenial> {
         let shared = source
             .with_entity(execution, entry.shared_entity_id(), Clone::clone)
+            .map_err(|cause| {
+                BoundedRelationJoinLookupDenial::new(
+                    BoundedRelationJoinLookupDenialKind::Execution(cause),
+                    self.index_id,
+                )
+            })?
             .ok_or_else(|| self.corrupt())?;
         let left = source
             .with_relation(execution, entry.left_relation_id(), Clone::clone)
+            .map_err(|cause| {
+                BoundedRelationJoinLookupDenial::new(
+                    BoundedRelationJoinLookupDenialKind::Execution(cause),
+                    self.index_id,
+                )
+            })?
             .ok_or_else(|| self.corrupt())?;
         let right = source
             .with_relation(execution, entry.right_relation_id(), Clone::clone)
+            .map_err(|cause| {
+                BoundedRelationJoinLookupDenial::new(
+                    BoundedRelationJoinLookupDenialKind::Execution(cause),
+                    self.index_id,
+                )
+            })?
             .ok_or_else(|| self.corrupt())?;
         if self.entry_matches(entry, &shared, &left, &right) {
             Ok(entry.shared_entity_id())
@@ -254,7 +284,13 @@ fn certify_storage_parity(
         execution,
         source,
         verification.join,
-    );
+    )
+    .map_err(|cause| {
+        denial(
+            BoundedRelationJoinLookupDenialKind::Execution(cause),
+            request,
+        )
+    })?;
     let key = RelationJoinKey::new(request.left_entity_id(), request.right_entity_id());
     let expected = expected.get(&key).map(Vec::as_slice).unwrap_or(&[]);
     let expected_overflowed = expected.len() > request.candidate_limit();

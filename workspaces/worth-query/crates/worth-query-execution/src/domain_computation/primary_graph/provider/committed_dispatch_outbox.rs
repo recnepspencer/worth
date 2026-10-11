@@ -53,6 +53,12 @@ struct WorthQueryCommittedDispatchOutboxOwnerObservation {
 /// Why Query could not establish an authoritative committed outbox row.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCommittedDispatchOutboxReadDenial {
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     ForeignPhase,
     ForeignRuntime,
     Missing,
@@ -62,7 +68,9 @@ pub enum WorthQueryCommittedDispatchOutboxReadDenial {
     WrongRecordKind,
     NotAuthoritative,
     ExactCommitUnavailable,
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     SnapshotIdentityExhausted,
     Malformed,
     CommitMismatch,
@@ -258,6 +266,9 @@ fn map_retained_snapshot_denial(
         Kind::BranchMismatch | Kind::CommitMismatch | Kind::SnapshotBindingMismatch => {
             Denial::CommitMismatch
         }
+        Kind::Execution(cause) => Denial::ReadExecution(
+            crate::facade::primary_graph::relational_execution_kind(cause, None),
+        ),
         Kind::EntityKindMismatch => Denial::WrongRecordKind,
     }
 }

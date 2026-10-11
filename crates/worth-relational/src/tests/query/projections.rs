@@ -78,12 +78,17 @@ fn entity_projections_collapse_kind_and_partition_threading() {
     let right = create_entity_in_partition(execution, &runtime, "right-a", PartitionId(11));
     let view = runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id());
+        .project_historical_version(runtime.current_version_id());
 
-    let projected = view.entities::<NamedEntityProjection>(execution);
-    let scoped = view.entities_in::<NamedEntityProjection>(execution, PartitionId(7));
+    let projected = view
+        .entities::<NamedEntityProjection>(execution)
+        .expect("read request remains live");
+    let scoped = view
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(7))
+        .expect("read request remains live");
     let single = view
         .entity::<NamedEntityProjection>(execution, right)
+        .expect("read request remains live")
         .unwrap();
 
     assert_eq!(projected.len(), 3);
@@ -111,9 +116,10 @@ fn snapshot_projection_resolves_version_without_manual_kind_scan_parameters() {
 
     let projected = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap()
-        .entities::<NamedEntityProjection>(execution);
+        .entities::<NamedEntityProjection>(execution)
+        .expect("read request remains live");
 
     assert_eq!(projected.len(), 1);
     assert_eq!(projected[0].name, "visible");
@@ -155,8 +161,9 @@ fn projection_record_refuses_aspect_reads_outside_declared_scope() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id())
-        .entities::<EmptyScopeProjection>(execution);
+        .project_historical_version(runtime.current_version_id())
+        .entities::<EmptyScopeProjection>(execution)
+        .expect("read request remains live");
 
     assert_eq!(projected[0].entity_id, entity_id);
     assert!(!projected[0].name_was_visible);
@@ -171,20 +178,22 @@ fn dynamic_projection_scope_reads_aspects_without_raw_record_escape() {
     let entity_id = create_entity(execution, &runtime, "scope-carried");
     let view = runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id());
+        .project_historical_version(runtime.current_version_id());
     let name_key = AspectKey::new("name").unwrap();
 
-    let projected = view.entity_records_with_projection_scope(
-        execution,
-        KindId(1),
-        ProjectionAspectScope::whole_aspects([name_key.clone()]),
-        |record| {
-            let AspectValue::String(name) = record.aspect_value(&name_key)? else {
-                return None;
-            };
-            Some((record.entity_id(), raw_interned_string(name)?.to_string()))
-        },
-    );
+    let projected = view
+        .entity_records_with_projection_scope(
+            execution,
+            KindId(1),
+            ProjectionAspectScope::whole_aspects([name_key.clone()]),
+            |record| {
+                let AspectValue::String(name) = record.aspect_value(&name_key)? else {
+                    return None;
+                };
+                Some((record.entity_id(), raw_interned_string(name)?.to_string()))
+            },
+        )
+        .expect("read request remains live");
 
     assert_eq!(projected, vec![(entity_id, "scope-carried".to_string())]);
 }
@@ -203,9 +212,10 @@ fn snapshot_projection_uses_authoritative_published_binding_version() {
 
     let projected = runtime
         .read_truth()
-        .project_snapshot(&stale_handle, execution)
+        .project_snapshot(&stale_handle)
         .unwrap()
-        .entities::<NamedEntityProjection>(execution);
+        .entities::<NamedEntityProjection>(execution)
+        .expect("read request remains live");
 
     assert_eq!(projected.len(), 1);
     assert_eq!(projected[0].name, "updated");
@@ -221,13 +231,15 @@ fn projection_raw_record_escape_hatches_preserve_full_visible_record_sets() {
     let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
     let relation = create_relation(execution, &runtime, left, right, "r0");
     let version_id = runtime.current_version_id();
-    let view = runtime
+    let view = runtime.read_truth().project_historical_version(version_id);
+    let read = runtime
         .read_truth()
-        .project_historical_version(execution, version_id);
-    let read = runtime.read_truth().read_version(execution, version_id);
+        .read_version(execution, version_id)
+        .expect("read request remains live");
 
     assert_eq!(
         view.all_authoritative_entity_records(execution,)
+            .expect("read request remains live")
             .into_iter()
             .map(|record| record.entity_id)
             .collect::<Vec<_>>(),
@@ -238,6 +250,7 @@ fn projection_raw_record_escape_hatches_preserve_full_visible_record_sets() {
     );
     assert_eq!(
         view.all_authoritative_relation_records(execution,)
+            .expect("read request remains live")
             .into_iter()
             .map(|record| record.relation_id)
             .collect::<Vec<_>>(),
@@ -255,6 +268,7 @@ fn projection_rejects_undeclared_required_aspects() {
     create_entity_outcome(execution, &runtime, "visible");
     let _ = runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id())
-        .entities::<UndeclaredAspectProjection>(execution);
+        .project_historical_version(runtime.current_version_id())
+        .entities::<UndeclaredAspectProjection>(execution)
+        .expect("read request remains live");
 }

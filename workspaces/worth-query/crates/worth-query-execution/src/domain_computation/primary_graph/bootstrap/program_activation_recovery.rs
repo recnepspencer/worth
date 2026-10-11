@@ -29,7 +29,7 @@ pub(in crate::domain_computation::primary_graph) fn recover_program_activation<S
                 .map_err(|error| denial(format!("recovered branch basis refused: {error:?}")))?;
             let branch = runtime
                 .read_truth()
-                .project_observation(execution, &basis.observation())
+                .project_observation(&basis.observation())
                 .map_err(|error| denial(format!("recovered branch is unreadable: {error:?}")))?;
             read_activation(
                 execution,
@@ -64,6 +64,7 @@ pub(super) fn read_activation(
 > {
     let read = branch
         .bounded_entities_of_kind(execution, layout.entity_kind, maximum_work_units)
+        .map_err(|_| denial("recovered program activation scan exceeded its bound"))?
         .map_err(|_| denial("recovered program activation scan exceeded its bound"))?;
     let work = read.work_units();
     let records = read.into_records();

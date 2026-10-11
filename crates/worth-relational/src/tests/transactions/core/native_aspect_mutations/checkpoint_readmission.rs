@@ -24,7 +24,8 @@ fn native_patch_state_survives_checkpoint_readmission() {
     });
     let read = recovered
         .read_truth()
-        .read_version(execution, created.version_id);
+        .read_version(execution, created.version_id)
+        .expect("read request remains live");
     assert!(read
         .get_entity(entity)
         .unwrap()

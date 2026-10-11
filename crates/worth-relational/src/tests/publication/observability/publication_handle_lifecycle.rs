@@ -12,6 +12,7 @@ fn publication_snapshot_handle_reads_without_becoming_a_pinned_snapshot() {
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let inspection = runtime
         .read_truth()
@@ -54,6 +55,7 @@ fn publication_snapshot_handle_reads_without_becoming_a_pinned_snapshot() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .is_none());
 }
 
@@ -71,6 +73,7 @@ fn publication_snapshot_reads_use_authoritative_published_binding_version() {
     let read = runtime
         .read_truth()
         .read_snapshot(&stale_handle, execution)
+        .expect("read request remains live")
         .unwrap();
     let inspection = runtime
         .read_truth()
@@ -107,10 +110,12 @@ fn released_publication_handles_stop_counting_as_readable_runtime_state() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&first.snapshot, execution)
+        .expect("read request remains live")
         .is_none());
     assert!(runtime
         .read_truth()
         .read_snapshot(&second.snapshot, execution)
+        .expect("read request remains live")
         .is_some());
 
     assert!(runtime
@@ -167,10 +172,12 @@ fn publication_handle_retention_is_bounded_by_policy() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&first.snapshot, execution)
+        .expect("read request remains live")
         .is_some());
     assert!(runtime
         .read_truth()
         .read_snapshot(&second.snapshot, execution)
+        .expect("read request remains live")
         .is_some());
     assert_eq!(
         crate::tests::support::test_owner_main_basis(&runtime)
@@ -209,6 +216,7 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&first.snapshot, execution)
+        .expect("read request remains live")
         .is_some());
     let observed = runtime
         .snapshots()
@@ -218,6 +226,7 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&observed, execution)
+        .expect("read request remains live")
         .is_some());
 }
 
@@ -274,10 +283,12 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
     assert!(parallel
         .read_truth()
         .read_snapshot(&parallel_second.snapshot, execution)
+        .expect("read request remains live")
         .is_some());
     assert!(parallel
         .read_truth()
         .read_snapshot(&parallel_third.snapshot, execution)
+        .expect("read request remains live")
         .is_some());
     assert!(diagnostics
         .minimal_summaries()

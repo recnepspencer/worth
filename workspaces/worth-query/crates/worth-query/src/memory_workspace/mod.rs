@@ -15,6 +15,7 @@ mod identities;
 mod mutation_authority_admission;
 mod native_patch;
 mod native_value_access;
+mod read_denial;
 mod runtime_identity;
 pub(crate) use runtime_identity::{
     snapshot_identity_from_admitted_basis, snapshot_identity_from_branch,

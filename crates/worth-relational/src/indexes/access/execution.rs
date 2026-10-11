@@ -26,10 +26,7 @@ pub(crate) fn execute_index_backed_query_from_generation(
     let Some(generation) = runtime.indexes.generation(generation_id) else {
         return Ok(None);
     };
-    let Some(exact_projection) = runtime
-        .read_truth()
-        .project_snapshot(&plan.snapshot, execution)
-    else {
+    let Some(exact_projection) = runtime.read_truth().project_snapshot(&plan.snapshot) else {
         return Ok(None);
     };
     let source = IndexProjectionSource::exact(&exact_projection)
@@ -208,7 +205,10 @@ fn execute_entity_index_lookup(
         {
             continue;
         }
-        let Some(record) = source.with_entity(execution, entity_id, Clone::clone) else {
+        let Some(record) = source
+            .with_entity(execution, entity_id, Clone::clone)
+            .map_err(crate::runtime::QueryReadExecutionStop::ReadRequest)?
+        else {
             continue;
         };
         if include(&record) {
@@ -256,7 +256,10 @@ fn execute_relation_index_lookup(
         {
             continue;
         }
-        let Some(record) = source.with_relation(execution, relation_id, Clone::clone) else {
+        let Some(record) = source
+            .with_relation(execution, relation_id, Clone::clone)
+            .map_err(crate::runtime::QueryReadExecutionStop::ReadRequest)?
+        else {
             continue;
         };
         if include(&record) {

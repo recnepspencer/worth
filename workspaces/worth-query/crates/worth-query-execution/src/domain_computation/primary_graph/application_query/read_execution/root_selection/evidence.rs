@@ -93,7 +93,7 @@ impl RootPathSourceBuilder {
                     aspect.clone(),
                     worth_foundational::facade::CanonicalFieldPath::single(field.clone()),
                 );
-                let native_revision = projection.entity_field_revision(execution, entity, &locator);
+                let native_revision = projection.entity_field_revision(execution, entity, &locator).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, entity_name))?;
                 Ok(entry
                     .insert(WorthQueryObservedFieldRevision {
                         entity,
@@ -138,6 +138,7 @@ impl RootPathSourceBuilder {
                         1,
                     )
                     .map_err(|unavailable| match unavailable {
+                        AdjacencyStructuralRevisionDenial::Execution(cause) => crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, subject),
                         AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
                             read_execution_denial(
                                 WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,

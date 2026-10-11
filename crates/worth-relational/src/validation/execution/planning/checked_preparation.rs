@@ -41,8 +41,8 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
                     context.checkpoint(0)?;
                     let meter = CustomPreparationBudget::new(
                         child_lease.status(),
-                        child_lease.policy().budget().work_ceiling(),
-                        ceiling,
+                        Some(child_lease.policy().budget().work_ceiling()),
+                        Some(ceiling),
                     );
                     let plan = plan_invariant_execution_checked(runtime, request, child_lease, &meter);
                     let work = meter.charged_work();

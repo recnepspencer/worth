@@ -81,7 +81,6 @@ impl VisibilityProjectionView<'_> {
     /// or materializing a read record. A pinned old exact root remains eligible.
     pub fn with_exact_entity_state<T>(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         project: impl FnOnce(RelationalEntityMetadata, Option<&AuthoritativeRecordAspectState>) -> T,
     ) -> Result<Option<T>, RelationalBorrowedRecordReadDenial> {
@@ -129,7 +128,6 @@ impl VisibilityProjectionView<'_> {
     /// Exact metadata only; names and aspect values stay in the pinned root.
     pub fn exact_relation_metadata(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation: RelationId,
     ) -> Result<Option<RelationalRelationMetadata>, RelationalBorrowedRecordReadDenial> {
         let SnapshotStateBasis::Exact(basis) = &self.basis else {

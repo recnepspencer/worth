@@ -50,6 +50,13 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         ) -> Option<T>,
     ) -> Result<RelationalRetainedCommitEntityProjection<T>, RelationalRetainedCommitSnapshotDenial>
     {
+        crate::visibility::materialization::read_records::read_request::consult(execution)
+            .map_err(|cause| {
+                RelationalRetainedCommitSnapshotDenial::new(
+                    RelationalRetainedCommitSnapshotDenialKind::Execution(cause),
+                    "retained commit read request stopped",
+                )
+            })?;
         if expected_runtime_instance_id != self.runtime.runtime_instance_id() {
             return Err(RelationalRetainedCommitSnapshotDenial::new(
                 RelationalRetainedCommitSnapshotDenialKind::ForeignRuntime,
@@ -107,7 +114,7 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         let projection = self
             .runtime
             .read_truth()
-            .project_snapshot(&snapshot, execution)
+            .project_snapshot(&snapshot)
             .ok_or_else(projection_binding_denial)
             .and_then(|view| {
                 view.entity_record_of_expected_kind_with_projection_scope(
@@ -117,6 +124,12 @@ impl<'runtime> VisibilityAuthority<'runtime> {
                     projection_scope,
                     project,
                 )
+                .map_err(|cause| {
+                    RelationalRetainedCommitSnapshotDenial::new(
+                        RelationalRetainedCommitSnapshotDenialKind::Execution(cause),
+                        "retained projection stopped under its caller request",
+                    )
+                })?
                 .map_err(|_| {
                     RelationalRetainedCommitSnapshotDenial::new(
                         RelationalRetainedCommitSnapshotDenialKind::EntityKindMismatch,

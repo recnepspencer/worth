@@ -13,12 +13,17 @@ impl<'runtime> InspectionAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: InspectionScope,
         target: RecordRef,
-    ) -> Option<StructuralIdentityEvidence> {
+    ) -> Result<Option<StructuralIdentityEvidence>, crate::execution::RelationalExecutionDenialCause>
+    {
         self.count_structural_identity_lookup();
         let version_id = self.scope_version_id(&scope);
-        match target {
+        Ok(match target {
             RecordRef::Entity(entity_id) => {
-                let read = self.scoped_authoritative_entity_record(execution, &scope, entity_id)?;
+                let Some(read) =
+                    self.scoped_authoritative_entity_record(execution, &scope, entity_id)?
+                else {
+                    return Ok(None);
+                };
                 let (lineage_id, structural_fingerprint) =
                     self.entity_structural_sidecars(entity_id);
                 let mut degradations = Vec::new();
@@ -44,8 +49,11 @@ impl<'runtime> InspectionAccess<'runtime> {
                 })
             }
             RecordRef::Relation(relation_id) => {
-                let read =
-                    self.scoped_authoritative_relation_record(execution, &scope, relation_id)?;
+                let Some(read) =
+                    self.scoped_authoritative_relation_record(execution, &scope, relation_id)?
+                else {
+                    return Ok(None);
+                };
                 Some(StructuralIdentityEvidence {
                     target,
                     record_class: InspectionRecordClass::Relation,
@@ -64,7 +72,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                     ],
                 })
             }
-        }
+        })
     }
 
     pub fn compare_structural_identity(
@@ -73,9 +81,10 @@ impl<'runtime> InspectionAccess<'runtime> {
         scope: InspectionScope,
         left: RecordRef,
         right: RecordRef,
-    ) -> StructuralIdentityComparison {
-        let left_evidence = self.structural_identity(execution, scope.clone(), left);
-        let right_evidence = self.structural_identity(execution, scope, right);
+    ) -> Result<StructuralIdentityComparison, crate::execution::RelationalExecutionDenialCause>
+    {
+        let left_evidence = self.structural_identity(execution, scope.clone(), left)?;
+        let right_evidence = self.structural_identity(execution, scope, right)?;
         let verdict = match (&left_evidence, &right_evidence) {
             (Some(left), Some(right)) => {
                 match (left.structural_fingerprint, right.structural_fingerprint) {
@@ -95,39 +104,44 @@ impl<'runtime> InspectionAccess<'runtime> {
             }
             _ => StructuralIdentityComparisonVerdict::IncomparableMissingFingerprint,
         };
-        StructuralIdentityComparison {
+        Ok(StructuralIdentityComparison {
             left: left_evidence,
             right: right_evidence,
             verdict,
-        }
+        })
     }
 
     pub fn query_structural_identity(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &StructuralIdentityQueryRequest,
-    ) -> Vec<StructuralIdentityEvidence> {
+    ) -> Result<Vec<StructuralIdentityEvidence>, crate::execution::RelationalExecutionDenialCause>
+    {
         self.count_structural_identity_query_scan();
         let version_id = self.scope_version_id(&request.scope);
-        let Some(read_view) = self.read_view_for_scope(execution, &request.scope) else {
-            return Vec::new();
+        let Some(read_view) = self.read_view_for_scope(execution, &request.scope)? else {
+            return Ok(Vec::new());
         };
         let partition_scope = PartitionScopeFilter::from_scope(request.partition_scope.as_ref());
-        read_view
+        let mut evidence = Vec::new();
+        for record in read_view
             .entities()
             .iter()
             .filter(|record| partition_scope.allows(record.entity_id.partition_id))
-            .filter_map(|record| {
-                let evidence = self.structural_identity(
-                    execution,
-                    InspectionScope::Version(version_id),
-                    RecordRef::Entity(record.entity_id),
-                )?;
-                evidence
+        {
+            if let Some(item) = self.structural_identity(
+                execution,
+                InspectionScope::Version(version_id),
+                RecordRef::Entity(record.entity_id),
+            )? {
+                if item
                     .structural_fingerprint
                     .is_some_and(|fingerprint| fingerprint.family == request.fingerprint_family)
-                    .then_some(evidence)
-            })
-            .collect()
+                {
+                    evidence.push(item);
+                }
+            }
+        }
+        Ok(evidence)
     }
 }

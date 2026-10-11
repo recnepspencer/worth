@@ -66,6 +66,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
     let expected = runtime
         .read_truth()
         .read_snapshot(&publication.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
 
     if custom {
@@ -117,6 +118,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
     assert!(runtime
         .read_truth()
         .read_snapshot(&suspended.commit.snapshot, execution)
+        .expect("read request remains live")
         .is_none());
     let (_, unavailable) = services
         .basis_port()
@@ -157,6 +159,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
         assert!(runtime
             .read_truth()
             .read_snapshot(&suspended.commit.snapshot, execution)
+            .expect("read request remains live")
             .is_none());
         rejected.custody
     } else {
@@ -185,6 +188,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
     let actual = runtime
         .read_truth()
         .read_snapshot(&restored.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     assert_eq!(expected.entities(), actual.entities());
     assert_eq!(expected.relations(), actual.relations());

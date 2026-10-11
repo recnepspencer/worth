@@ -313,6 +313,7 @@ fn read_entity_aspect_field_display(
     runtime
         .read_truth()
         .read_version(execution, version_id)
+        .expect("read request remains live")
         .get_entity(entity_id)
         .and_then(|entity| read_entity_aspect_field(entity, aspect_key, field))
         .expect("aspect field display value")

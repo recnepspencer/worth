@@ -73,6 +73,7 @@ impl PreparedFactRebase {
         if producer_output && reads_source(fact) {
             return Ok(
                 match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
+                    Err(WorthQuerySourceCurrentnessFailure::Execution(_)) => Err(unavailable),
                     Ok(movement) => Ok(match movement.movement() {
                         Movement::Unmoved => Self::Keep,
                         Movement::Moved => Self::KeepSuperseded,
@@ -137,9 +138,12 @@ impl PreparedFactRebase {
                 );
                 match runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
-                    .and_then(|view| view.entity_field_revision(execution, *entity_id, &locator))
-                {
+                    .project_snapshot(snapshot)
+                    .and_then(|view| {
+                        view.entity_field_revision(execution, *entity_id, &locator)
+                            .ok()
+                            .flatten()
+                    }) {
                     Some(revision) => Ok(Self::Field { locator, revision }),
                     None if producer_output => Err(unavailable),
                     None => Ok(Self::Keep),
@@ -150,8 +154,8 @@ impl PreparedFactRebase {
             } => {
                 match runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
-                    .and_then(|view| view.entity_aspect_version(execution, *entity_id, aspect))
+                    .project_snapshot(snapshot)
+                    .and_then(|view| view.entity_aspect_version(*entity_id, aspect))
                 {
                     Some(revision) => Ok(Self::Aspect(revision)),
                     None if producer_output => Err(unavailable),
@@ -165,7 +169,7 @@ impl PreparedFactRebase {
                 comparison_work_limit,
                 ..
             } => {
-                let Some(view) = runtime.read_truth().project_snapshot(snapshot, execution) else {
+                let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
                     return if producer_output {
                         Err(unavailable)
                     } else {
@@ -179,6 +183,7 @@ impl PreparedFactRebase {
                     *direction,
                     (*comparison_work_limit).min(maximum_pair_rebase_work),
                 ) {
+                    Err(AdjacencyStructuralRevisionDenial::Execution(_)) => Err(unavailable),
                     Ok(comparison) => Ok(Self::Adjacency(comparison.revision())),
                     // The request paid the lookup above; a refusal here is
                     // the fact's own recorded limit, or a missing anchor or

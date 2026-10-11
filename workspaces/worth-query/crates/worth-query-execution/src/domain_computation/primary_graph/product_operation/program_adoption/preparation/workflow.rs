@@ -92,6 +92,11 @@ pub(super) fn workflow_read_denial(
     selection_work_units: usize,
 ) -> WorthQueryBranchAdoptionPreparationDenial {
     match denial {
+        WorkflowAdoptionReadDenial::ReadExecution(cause) => {
+            WorthQueryBranchAdoptionPreparationDenial::ReadExecution(
+                crate::facade::primary_graph::relational_execution_kind(cause, None),
+            )
+        }
         WorkflowAdoptionReadDenial::WorkLimitExceeded {
             consumed_work_units,
         } => WorthQueryBranchAdoptionPreparationDenial::SelectionLimitExceeded {

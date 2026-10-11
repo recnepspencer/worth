@@ -271,6 +271,7 @@ pub(super) fn requirements<Schema: ApplicationSchema>(
     let source = *selected
         .inspect_selected_program()
         .map_err(|denial| match denial {
+            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ReadExecution(cause) => WorthQueryBranchAdoptionPreparationDenial::ReadExecution(cause),
             crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable => {
                 WorthQueryBranchAdoptionPreparationDenial::ProgramSupportUnavailable
             }

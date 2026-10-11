@@ -137,14 +137,7 @@ pub(super) fn entity_lookup_resolution_denial(
 ) -> WorthQueryPrincipalResolutionDenial {
     let resolution_kind = match kind {
         BoundedEntityFieldLookupDenialKind::Execution(cause) => {
-            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
-            match super::provider::relational_execution_denial::relational_execution_kind(
-                cause, None,
-            ) {
-                Ok(kind) => WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(kind),
-                Err(Control::Cancelled) => WorthQueryPrincipalResolutionDenialKind::Cancelled,
-                Err(Control::TimedOut) => WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded,
-            }
+            return relational_read_denial(cause, binding)
         }
         BoundedEntityFieldLookupDenialKind::SnapshotUnavailable => {
             WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof
@@ -201,6 +194,21 @@ pub(super) fn query_read_resolution_denial(
         binding: binding.to_owned(),
         native_query_read_stop: Some(std::sync::Arc::new(stop)),
     }
+}
+
+pub(super) fn relational_read_denial(
+    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    binding: &str,
+) -> WorthQueryPrincipalResolutionDenial {
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    let kind = match super::provider::relational_execution_denial::relational_execution_kind(
+        cause, None,
+    ) {
+        Ok(kind) => WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(kind),
+        Err(Control::Cancelled) => WorthQueryPrincipalResolutionDenialKind::Cancelled,
+        Err(Control::TimedOut) => WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded,
+    };
+    resolution_denial(kind, binding)
 }
 
 #[cfg(test)]

@@ -159,6 +159,7 @@ pub(crate) struct ValidatedSchemaDeclaredCorrespondence {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MergePlanningError {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     RequestNormalization(RelationalMergeRequestNormalizationDenial),
     UnboundBranchCurrentness,
     SourceObservationDenied(crate::branch::RelationalBranchBasisDenial),

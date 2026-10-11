@@ -21,6 +21,7 @@ fn complexity_budget_bounded_adjacency_leases_its_fanout_without_copying_it() {
             version_id,
             6,
         )
+        .expect("read request remains live")
         .expect_err("six work units cannot admit a sixty-four edge fanout");
     let counters = runtime.performance_access().counters();
 
@@ -41,12 +42,10 @@ fn complexity_budget_bounded_adjacency_acquires_one_edition_for_the_whole_traver
     let version_id = runtime.current_version_id();
 
     runtime.performance_access().reset_counters();
-    let records = runtime.read_truth().outgoing_relations_of_kind_at_version(
-        execution,
-        anchor,
-        RELATION_KIND,
-        version_id,
-    );
+    let records = runtime
+        .read_truth()
+        .outgoing_relations_of_kind_at_version(execution, anchor, RELATION_KIND, version_id)
+        .expect("read request remains live");
     let counters = runtime.performance_access().counters();
 
     // Thirty-two resolved records against exactly one pinned edition. A
@@ -101,6 +100,7 @@ fn complexity_budget_frontier_adjacency_acquires_one_edition_for_the_whole_front
             version_id,
             usize::MAX,
         )
+        .expect("read request remains live")
         .expect("an unbounded frontier read cannot exhaust usize::MAX work");
     let counters = runtime.performance_access().counters();
 
@@ -146,10 +146,7 @@ fn projected_frontier_adjacency_uses_the_selected_branch_root() {
         child.clone(),
     );
     let snapshot = snapshot_for_owner_branch(&runtime, &child);
-    let projection = runtime
-        .read_truth()
-        .project_snapshot(&snapshot, execution)
-        .unwrap();
+    let projection = runtime.read_truth().project_snapshot(&snapshot).unwrap();
     let records = projection
         .bounded_outgoing_relations_for_frontier(
             execution,
@@ -157,6 +154,7 @@ fn projected_frontier_adjacency_uses_the_selected_branch_root() {
             RELATION_KIND,
             8,
         )
+        .expect("read request remains live")
         .unwrap()
         .into_records();
     assert_eq!(records.len(), 1);

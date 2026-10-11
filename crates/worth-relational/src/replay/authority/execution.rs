@@ -274,7 +274,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &admission.verification_plan,
         )
         .expect("reconstructed replay envelope continuity must remain valid");
-        compare_replay_surfaces(
+        if let Err(cause) = compare_replay_surfaces(
             execution,
             self.runtime,
             &admission.verification_plan,
@@ -287,7 +287,15 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &reconstruction.runtime,
             &request,
             selected_lineage_authority.as_ref(),
-        );
+        ) {
+            return self.fail_and_record(
+                request,
+                Some(&admission.envelope),
+                None,
+                ReplayFailureClass::Execution(cause),
+                None,
+            );
+        }
         let outcome = replay_comparison_outcome(
             request,
             &admission,

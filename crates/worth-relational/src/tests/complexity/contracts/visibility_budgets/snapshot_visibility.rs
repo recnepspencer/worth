@@ -279,6 +279,7 @@ fn complexity_contract_visibility_scans_are_explicitly_measured() {
     let _ = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let snapshot_counters = runtime.performance_access().counters();
 
@@ -290,7 +291,8 @@ fn complexity_contract_visibility_scans_are_explicitly_measured() {
     runtime.performance_access().reset_counters();
     let _ = runtime
         .read_truth()
-        .read_version(execution, historical_version);
+        .read_version(execution, historical_version)
+        .expect("read request remains live");
     let historical_version_counters = runtime.performance_access().counters();
 
     assert_eq!(historical_version_counters.visibility_entity_slot_scans, 2);
@@ -312,7 +314,8 @@ fn complexity_contract_visibility_scans_are_explicitly_measured() {
     runtime.performance_access().reset_counters();
     let _ = runtime
         .read_truth()
-        .read_version(execution, current_version);
+        .read_version(execution, current_version)
+        .expect("read request remains live");
     let current_version_counters = runtime.performance_access().counters();
 
     assert_eq!(current_version_counters.visibility_entity_slot_scans, 0);

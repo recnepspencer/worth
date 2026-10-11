@@ -71,7 +71,7 @@ pub(super) fn materialize_result_tree(
 ) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| projection_denial(contract.root_entity()))?;
     let mut work = ResultTreeWork::new(maximum_work, interruption, spent);
     work.checkpoint("root")?;
@@ -176,7 +176,7 @@ fn project_nodes(
                         project_fields(record, &fields, projected, result_buffer)
                     },
                 )
-            })
+            }).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, result_path))?
             .ok_or_else(|| projection_denial(result_path))??;
         let projected_relations = allocate_claimed_result_vector::<
             WorthQueryApplicationProjectedRelation,

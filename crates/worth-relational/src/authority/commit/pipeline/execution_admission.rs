@@ -188,10 +188,18 @@ impl AdmittedCommitExecution {
 
 /// Required request borrow proves this work belongs to the caller, without retaining it.
 pub(super) fn admit_commit_execution(
-    _execution: &worth_execution::ExecutionRequest<'_, '_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
 ) -> Result<AdmittedCommitExecution, TransactionCommitError> {
+    crate::visibility::materialization::read_records::read_request::consult(execution).map_err(
+        |cause| {
+            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
+                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+                partition_identity: None,
+            })
+        },
+    )?;
     let complexity_before = context
         .complexity_baseline
         .clone()

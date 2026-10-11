@@ -63,6 +63,9 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
         match fact.source_currentness_in(runtime, execution, snapshot, admission) {
             Ok(Ok(movement)) if movement.movement() == Movement::Moved => return Ok(Some(fact)),
             Ok(Ok(_)) => {}
+            Ok(Err(WorthQuerySourceCurrentnessFailure::Execution(_))) => {
+                return Err(RetainedFactStop::Unavailable(fact))
+            }
             Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable)) => {
                 return Err(RetainedFactStop::Unavailable(fact));
             }

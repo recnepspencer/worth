@@ -211,6 +211,7 @@ pub(super) fn relation_source(
             let source = runtime
                 .read_truth()
                 .visible_relations_of_kind(execution, kind, snapshot.version_id())
+                .expect("fixture read request remains live")
                 .into_iter()
                 .find(|record| record.target == target)
                 .unwrap()
@@ -305,6 +306,7 @@ fn current_relation(
             let relation = runtime
                 .read_truth()
                 .visible_relations_of_kind(execution, kind, snapshot.version_id())
+                .expect("fixture read request remains live")
                 .into_iter()
                 .find(|record| record.source == source && record.target == target)
                 .unwrap()

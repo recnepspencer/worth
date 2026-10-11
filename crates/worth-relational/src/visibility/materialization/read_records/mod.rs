@@ -1,5 +1,8 @@
 pub(crate) mod materialization;
 mod projection;
+mod read_footprint;
+pub(crate) mod read_request;
+mod read_work;
 mod reader;
 mod visibility;
 
@@ -34,3 +37,5 @@ impl RelationalRuntime {
         VisibilityReadContext::new(self)
     }
 }
+
+pub(crate) mod read_stop;

@@ -142,7 +142,8 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
 
     let current = runtime
         .read_truth()
-        .read_version(request_execution, runtime.current_version_id());
+        .read_version(request_execution, runtime.current_version_id())
+        .expect("read request remains live");
     assert_eq!(
         read_entity_name(current.get_entity(entity).expect("committed entity")),
         Some("after".into())
@@ -245,7 +246,8 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
     };
     let current = runtime
         .read_truth()
-        .read_version(request_execution, runtime.current_version_id());
+        .read_version(request_execution, runtime.current_version_id())
+        .expect("read request remains live");
     let replacement_record = changed_entities(&commit)
         .into_iter()
         .find_map(|entity_id| current.get_entity(entity_id).cloned())

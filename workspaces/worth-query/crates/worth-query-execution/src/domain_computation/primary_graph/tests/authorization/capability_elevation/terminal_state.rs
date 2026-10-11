@@ -100,6 +100,7 @@ pub(super) fn has_exact_reviewer(
                     snapshot.version_id(),
                     4,
                 )
+                .expect("fixture read request remains live")
                 .ok()
                 .is_some_and(|read| {
                     let relations = read.into_records();
@@ -151,6 +152,7 @@ pub(super) fn has_exact_approver(
                     snapshot.version_id(),
                     4,
                 )
+                .expect("fixture read request remains live")
                 .ok()
                 .is_some_and(|read| {
                     let relations = read.into_records();

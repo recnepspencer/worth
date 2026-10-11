@@ -47,7 +47,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
                 .map_err(map_bootstrap_basis_denial)?;
             let branch = runtime
                 .read_truth()
-                .project_observation(execution, &basis.observation())
+                .project_observation(&basis.observation())
                 .map_err(|error| {
                     denial(format!(
                         "checkpoint transition source unreadable: {error:?}"

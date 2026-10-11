@@ -48,11 +48,13 @@ fn retention_plan_reports_active_root_obligations_without_per_record_snapshot_pi
     let retained_entity_view = runtime
         .read_truth()
         .read_snapshot(&entity_created_snapshot, execution)
+        .expect("read request remains live")
         .expect("the retained exact root remains readable after maintenance");
     assert!(retained_entity_view.get_entity(entity).is_some());
     let retained_relation_view = runtime
         .read_truth()
         .read_snapshot(&relation_created_snapshot, execution)
+        .expect("read request remains live")
         .expect("the retained exact root remains readable after maintenance");
     assert!(retained_relation_view.get_relation(relation).is_some());
 
@@ -156,6 +158,7 @@ fn lagging_sibling_root_survives_without_per_record_branch_pins() {
     let feature_truth = runtime
         .read_truth()
         .read_observation(execution, &feature_basis.observation())
+        .expect("read request remains live")
         .unwrap();
     assert!(feature_truth.get_entity(source_entity).is_some());
 }
@@ -221,6 +224,7 @@ fn retention_inspection_keeps_legacy_branch_pin_counts_zero() {
     let feature_truth = runtime
         .read_truth()
         .read_observation(execution, &feature_basis.observation())
+        .expect("read request remains live")
         .unwrap();
     assert!(feature_truth.get_entity(source_entity).is_some());
     assert!(feature_truth.get_relation(relation).is_some());
@@ -280,7 +284,8 @@ fn replay_retention_preserves_historical_live_entity_aspects_across_updates() {
     let _updated = update_entity(execution, &runtime, entity, "replay-history-updated");
     let historical = runtime
         .read_truth()
-        .read_version(execution, created.version_id);
+        .read_version(execution, created.version_id)
+        .expect("read request remains live");
 
     assert_eq!(historical.entities.len(), 1);
     assert_eq!(

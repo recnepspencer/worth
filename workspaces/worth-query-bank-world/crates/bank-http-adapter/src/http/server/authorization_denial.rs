@@ -15,6 +15,9 @@ pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHtt
     use BankAuthorizationDenialKind as Authorization;
     let (denial, next) = match kind {
         // The request lapsed before authorization decided.
+        Authorization::ExecutionRequest(cause) => {
+            return super::mutation_application::pending_execution_denial(cause)
+        }
         Authorization::Cancelled => (Kind::Cancelled, Next::Retry),
         Authorization::DeadlineExceeded => (Kind::DeadlineExceeded, Next::Retry),
         Authorization::ExpiredAuthentication => (Kind::Unauthenticated, Next::Authenticate),

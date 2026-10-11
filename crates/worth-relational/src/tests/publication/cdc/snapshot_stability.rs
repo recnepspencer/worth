@@ -48,10 +48,12 @@ fn subscriber_cdc_is_snapshot_stable_under_hot_rewrite_pressure() {
     let pinned_snapshot_read = pinned_runtime
         .read_truth()
         .read_snapshot(&pinned_snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let pinned_latest_read = pinned_runtime
         .read_truth()
         .read_snapshot(&pinned_latest.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
 
     assert_eq!(

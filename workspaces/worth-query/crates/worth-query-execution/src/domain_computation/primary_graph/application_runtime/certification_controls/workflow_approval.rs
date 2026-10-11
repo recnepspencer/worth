@@ -104,6 +104,7 @@ where
                     layout.workflow().approval_evidence_relation,
                     application_basis.snapshot_handle().version_id(),
                 )
+                .expect("certification fixture read request remains live")
                 .into_iter()
                 .find(|relation| relation.source == approval)
                 .expect("the published approval retains an evidence link");

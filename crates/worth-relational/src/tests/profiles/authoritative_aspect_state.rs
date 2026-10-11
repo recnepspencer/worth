@@ -26,6 +26,7 @@ fn fieldless_entity_create_commits_with_absent_authoritative_aspect_state() {
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let entity_id = read.entities().first().unwrap().entity_id;
 

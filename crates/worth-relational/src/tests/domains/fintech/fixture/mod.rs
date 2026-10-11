@@ -128,6 +128,7 @@ impl FintechWorld {
         self.runtime
             .read_truth()
             .read_snapshot(&self.latest_snapshot(), execution)
+            .expect("read request remains live")
             .unwrap()
     }
 

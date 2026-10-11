@@ -1,3 +1,4 @@
+use super::super::read_stop::ReadStop;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::PartitionAccess;
@@ -16,7 +17,8 @@ impl VisibilityProjectionView<'_> {
         kind_id: Option<KindId>,
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
-    ) -> Result<(), E> {
+    ) -> Result<(), ReadStop<E>> {
+        super::super::read_request::consult(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
@@ -24,12 +26,14 @@ impl VisibilityProjectionView<'_> {
             return Ok(());
         };
         let mut examine = |slot: usize| {
-            before_candidate(self.candidate_entity_bytes(partition, slot))?;
+            before_candidate(self.candidate_entity_bytes(partition, slot))
+                .map_err(ReadStop::Admission)?;
             if let Some(record) = self
                 .authoritative_entity_record(execution, EntityId::new(partition_id, slot as u64, 0))
+                .map_err(ReadStop::Request)?
             {
                 if kind_id.is_none_or(|kind_id| record.kind.kind_id == kind_id) {
-                    visit(&record)?;
+                    visit(&record).map_err(ReadStop::Admission)?;
                 }
             }
             Ok(())
@@ -53,7 +57,8 @@ impl VisibilityProjectionView<'_> {
         kind_id: Option<KindId>,
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
-    ) -> Result<(), E> {
+    ) -> Result<(), ReadStop<E>> {
+        super::super::read_request::consult(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
@@ -61,13 +66,17 @@ impl VisibilityProjectionView<'_> {
             return Ok(());
         };
         let mut examine = |slot: usize| {
-            before_candidate(self.candidate_relation_bytes(partition, slot))?;
-            if let Some(record) = self.authoritative_relation_record(
-                execution,
-                RelationId::new(partition_id, slot as u64, 0),
-            ) {
+            before_candidate(self.candidate_relation_bytes(partition, slot))
+                .map_err(ReadStop::Admission)?;
+            if let Some(record) = self
+                .authoritative_relation_record(
+                    execution,
+                    RelationId::new(partition_id, slot as u64, 0),
+                )
+                .map_err(ReadStop::Request)?
+            {
                 if kind_id.is_none_or(|kind_id| record.kind.kind_id == kind_id) {
-                    visit(&record)?;
+                    visit(&record).map_err(ReadStop::Admission)?;
                 }
             }
             Ok(())
@@ -90,7 +99,8 @@ impl VisibilityProjectionView<'_> {
         kind_id: Option<KindId>,
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
-    ) -> Result<(), E> {
+    ) -> Result<(), ReadStop<E>> {
+        super::super::read_request::consult(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
@@ -111,7 +121,8 @@ impl VisibilityProjectionView<'_> {
         kind_id: Option<KindId>,
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
-    ) -> Result<(), E> {
+    ) -> Result<(), ReadStop<E>> {
+        super::super::read_request::consult(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };

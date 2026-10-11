@@ -125,7 +125,7 @@ impl IndexAuthority<'_> {
                 }
                 self.runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
+                    .project_snapshot(snapshot)
                     .ok_or(Denial::SnapshotUnavailable)
             })
             .transpose()?;

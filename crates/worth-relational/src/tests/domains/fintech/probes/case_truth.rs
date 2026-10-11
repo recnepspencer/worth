@@ -117,7 +117,8 @@ pub(crate) fn read_version_probe(
     let read = world
         .runtime
         .read_truth()
-        .read_version(execution, version_id);
+        .read_version(execution, version_id)
+        .expect("read request remains live");
     let fragment = read
         .execute_planned_packet_fragment(
             crate::facade::query::DeterministicQueryPlanKey(0),

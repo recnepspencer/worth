@@ -8,12 +8,15 @@ fn structural_identity_comparison_only_uses_fingerprint_truth() {
     let runtime = runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "alpha");
 
-    let comparison = runtime.inspect_what_happened().compare_structural_identity(
-        execution,
-        InspectionScope::Current,
-        crate::facade::transactions::RecordRef::Entity(entity),
-        crate::facade::transactions::RecordRef::Entity(entity),
-    );
+    let comparison = runtime
+        .inspect_what_happened()
+        .compare_structural_identity(
+            execution,
+            InspectionScope::Current,
+            crate::facade::transactions::RecordRef::Entity(entity),
+            crate::facade::transactions::RecordRef::Entity(entity),
+        )
+        .expect("read request remains live");
 
     assert_eq!(
         comparison.verdict,
@@ -41,6 +44,7 @@ fn structural_identity_evidence_exposes_declared_fingerprint_and_lineage_for_ent
             InspectionScope::Current,
             crate::facade::transactions::RecordRef::Entity(entity),
         )
+        .expect("read request remains live")
         .expect("entity evidence");
 
     assert_eq!(
@@ -58,6 +62,7 @@ fn structural_identity_evidence_exposes_declared_fingerprint_and_lineage_for_ent
             InspectionScope::Current,
             crate::facade::transactions::RecordRef::Relation(relation),
         )
+        .expect("read request remains live")
         .expect("relation evidence");
 
     assert!(relation_evidence.structural_fingerprint.is_none());
@@ -96,12 +101,15 @@ fn structural_identity_comparison_distinguishes_equal_mismatch_and_family_mismat
         Some(LineageId(3)),
     ));
 
-    let equal = runtime.inspect_what_happened().compare_structural_identity(
-        execution,
-        InspectionScope::Current,
-        crate::facade::transactions::RecordRef::Entity(left),
-        crate::facade::transactions::RecordRef::Entity(right),
-    );
+    let equal = runtime
+        .inspect_what_happened()
+        .compare_structural_identity(
+            execution,
+            InspectionScope::Current,
+            crate::facade::transactions::RecordRef::Entity(left),
+            crate::facade::transactions::RecordRef::Entity(right),
+        )
+        .expect("read request remains live");
     assert_eq!(
         equal.verdict,
         StructuralIdentityComparisonVerdict::EqualByFingerprint
@@ -112,23 +120,29 @@ fn structural_identity_comparison_distinguishes_equal_mismatch_and_family_mismat
         Some(StructuralFingerprint::new(Symbol(21), 999)),
         Some(LineageId(2)),
     ));
-    let mismatch = runtime.inspect_what_happened().compare_structural_identity(
-        execution,
-        InspectionScope::Current,
-        crate::facade::transactions::RecordRef::Entity(left),
-        crate::facade::transactions::RecordRef::Entity(right),
-    );
+    let mismatch = runtime
+        .inspect_what_happened()
+        .compare_structural_identity(
+            execution,
+            InspectionScope::Current,
+            crate::facade::transactions::RecordRef::Entity(left),
+            crate::facade::transactions::RecordRef::Entity(right),
+        )
+        .expect("read request remains live");
     assert_eq!(
         mismatch.verdict,
         StructuralIdentityComparisonVerdict::NotEqualByFingerprint
     );
 
-    let family_mismatch = runtime.inspect_what_happened().compare_structural_identity(
-        execution,
-        InspectionScope::Current,
-        crate::facade::transactions::RecordRef::Entity(left),
-        crate::facade::transactions::RecordRef::Entity(other_family),
-    );
+    let family_mismatch = runtime
+        .inspect_what_happened()
+        .compare_structural_identity(
+            execution,
+            InspectionScope::Current,
+            crate::facade::transactions::RecordRef::Entity(left),
+            crate::facade::transactions::RecordRef::Entity(other_family),
+        )
+        .expect("read request remains live");
     assert_eq!(
         family_mismatch.verdict,
         StructuralIdentityComparisonVerdict::IncomparableFingerprintFamilyMismatch
@@ -162,14 +176,17 @@ fn structural_identity_query_is_family_scoped_and_entity_only() {
         Some(LineageId(12)),
     ));
 
-    let queried = runtime.inspect_what_happened().query_structural_identity(
-        execution,
-        &StructuralIdentityQueryRequest {
-            scope: InspectionScope::Current,
-            partition_scope: None,
-            fingerprint_family: Symbol(31),
-        },
-    );
+    let queried = runtime
+        .inspect_what_happened()
+        .query_structural_identity(
+            execution,
+            &StructuralIdentityQueryRequest {
+                scope: InspectionScope::Current,
+                partition_scope: None,
+                fingerprint_family: Symbol(31),
+            },
+        )
+        .expect("read request remains live");
 
     assert_eq!(queried.len(), 2);
     assert!(queried.iter().all(|evidence| evidence.record_class
@@ -210,6 +227,7 @@ fn structural_identity_historical_scope_does_not_leak_reused_slot_sidecars() {
             InspectionScope::Version(original.version_id),
             crate::facade::transactions::RecordRef::Entity(original_entity),
         )
+        .expect("read request remains live")
         .expect("historical structural identity");
     let current = runtime
         .inspect_what_happened()
@@ -218,6 +236,7 @@ fn structural_identity_historical_scope_does_not_leak_reused_slot_sidecars() {
             InspectionScope::Current,
             crate::facade::transactions::RecordRef::Entity(replacement_entity),
         )
+        .expect("read request remains live")
         .expect("current replacement structural identity");
 
     assert!(historical.structural_fingerprint.is_none());
@@ -261,15 +280,19 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
             InspectionScope::Current,
             crate::facade::transactions::RecordRef::Entity(left),
         )
+        .expect("read request remains live")
         .expect("expected left evidence");
-    let expected_query = runtime.inspect_what_happened().query_structural_identity(
-        execution,
-        &StructuralIdentityQueryRequest {
-            scope: InspectionScope::Current,
-            partition_scope: None,
-            fingerprint_family: Symbol(51),
-        },
-    );
+    let expected_query = runtime
+        .inspect_what_happened()
+        .query_structural_identity(
+            execution,
+            &StructuralIdentityQueryRequest {
+                scope: InspectionScope::Current,
+                partition_scope: None,
+                fingerprint_family: Symbol(51),
+            },
+        )
+        .expect("read request remains live");
 
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -287,15 +310,19 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
             InspectionScope::Current,
             crate::facade::transactions::RecordRef::Entity(left),
         )
+        .expect("read request remains live")
         .expect("actual left evidence");
-    let actual_query = recovered.inspect_what_happened().query_structural_identity(
-        execution,
-        &StructuralIdentityQueryRequest {
-            scope: InspectionScope::Current,
-            partition_scope: None,
-            fingerprint_family: Symbol(51),
-        },
-    );
+    let actual_query = recovered
+        .inspect_what_happened()
+        .query_structural_identity(
+            execution,
+            &StructuralIdentityQueryRequest {
+                scope: InspectionScope::Current,
+                partition_scope: None,
+                fingerprint_family: Symbol(51),
+            },
+        )
+        .expect("read request remains live");
 
     assert_eq!(expected_left, actual_left);
     assert_eq!(expected_query, actual_query);

@@ -24,6 +24,7 @@ fn bounded_adjacency_stops_before_allocating_the_unbounded_fanout() {
     let limit = runtime
         .read_truth()
         .bounded_outgoing_relations_of_kind_at_version(execution, source, relation_kind, version, 5)
+        .expect("read request remains live")
         .expect_err("five units cannot materialize a sixty-four-edge adjacency");
 
     assert_eq!(limit.consumed_work_units(), 5);
@@ -47,6 +48,7 @@ fn bounded_adjacency_stops_before_allocating_the_unbounded_fanout() {
             version,
             128,
         )
+        .expect("read request remains live")
         .expect("two work units per matching edge admit the exact fanout");
     assert_eq!(complete.relation_records_examined(), 64);
     assert_eq!(complete.endpoint_records_reserved(), 64);

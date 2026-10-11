@@ -116,6 +116,7 @@ impl IndexAccess<'_> {
         prepare(SelectedIndexReadWork::OrderedNavigation(seek), 0).map_err(Stop::Admission)?;
         let rows = entries.get(&key);
         let mut read = AdmittedCollectionRead {
+            index,
             view,
             locator,
             value,
@@ -154,6 +155,7 @@ impl IndexAccess<'_> {
 }
 
 struct AdmittedCollectionRead<'a, 'runtime, F> {
+    index: DerivedIndexId,
     view: &'a VisibilityProjectionView<'runtime>,
     locator: &'a AspectFieldLocator,
     value: &'a AspectValue,
@@ -188,6 +190,7 @@ impl<E, F: FnMut(SelectedIndexReadWork, u64) -> Result<(), E>>
         charge(self.prepare, width(previous + 1)?, 0)?;
         Ok(borrowed_matches(
             execution,
+            self.index,
             self.view,
             entity,
             self.locator,
@@ -231,7 +234,7 @@ fn certify_storage<E>(
         for slot in partition.entity_arena.live_bitset.iter_set_slots() {
             let entity = EntityId::new(partition_id, slot as u64, 0);
             let Some((actual_id, actual_kind, matches)) =
-                borrowed_matches(execution, view, entity, locator, value, prepare)?
+                borrowed_matches(execution, index, view, entity, locator, value, prepare)?
             else {
                 continue;
             };

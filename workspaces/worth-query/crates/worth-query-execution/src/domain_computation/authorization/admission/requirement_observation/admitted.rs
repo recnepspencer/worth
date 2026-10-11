@@ -281,6 +281,14 @@ where
                 execution,
             )
             .map_err(|stop| match stop {
+                RelationalAuthorizationBudgetedObservationStop::Execution(cause) => {
+                    AdmittedQueryAuthorizationStop::Authorization(
+                        crate::domain_computation::authorization::denial::relational_read_denial(
+                            cause,
+                            requirement.policy(),
+                        ),
+                    )
+                }
                 RelationalAuthorizationBudgetedObservationStop::Admission(stop) => {
                     AdmittedQueryAuthorizationStop::Preparation(stop)
                 }

@@ -120,7 +120,7 @@ impl<'runtime> MergeAccess<'runtime> {
     ) -> Result<MergePlanningArtifactCore, MergePlanningError> {
         let plan = self.lower_planning_scope(execution, normalized_request)?;
         let artifact =
-            super::planning_artifact::materialize_planning_artifact(execution, self.runtime, plan);
+            super::planning_artifact::materialize_planning_artifact(execution, self.runtime, plan)?;
         self.runtime
             .performance_access()
             .count_merge_planning_elapsed(started_at.elapsed().as_nanos());

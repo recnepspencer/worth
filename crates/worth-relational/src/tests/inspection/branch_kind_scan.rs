@@ -51,6 +51,7 @@ fn a_fork_view_scans_its_own_writes_and_not_its_parents_later_ones() {
     let view = branch_view(execution, &runtime, &feature);
     let entities = view
         .bounded_entities_of_kind(execution, ENTITY_KIND, 8)
+        .expect("read request remains live")
         .expect("four live fork entities cost eight units")
         .into_records()
         .into_iter()
@@ -63,6 +64,7 @@ fn a_fork_view_scans_its_own_writes_and_not_its_parents_later_ones() {
     assert!(!entities.contains(&later_entity));
     let refused = view
         .bounded_relations_of_kind(execution, RELATION_KIND, 3)
+        .expect("read request remains live")
         .expect_err("one unit short refuses before completing the fork's inventory");
     let crate::facade::runtime::RelationKindTruthReadDenial::WorkLimitExceeded(refused) = refused
     else {
@@ -116,11 +118,12 @@ fn historical_entities(
         .expect("the branch has a head");
     let view = runtime
         .read_truth()
-        .try_project_historical_version(execution, head.version_id)
+        .try_project_historical_version(head.version_id)
         .expect("the branch head is retained");
     let before = runtime.performance_access().counters();
     let entities = view
         .bounded_entities_of_kind(execution, ENTITY_KIND, 4)
+        .expect("read request remains live")
         .expect("two entities cost four units")
         .into_records()
         .into_iter()
@@ -134,7 +137,7 @@ fn historical_entities(
 }
 
 fn branch_view<'runtime>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime crate::runtime::RelationalRuntime,
     branch: &BranchId,
 ) -> crate::facade::runtime::VisibilityProjectionView<'runtime> {
@@ -144,7 +147,7 @@ fn branch_view<'runtime>(
         .expect("the branch has a head");
     runtime
         .read_truth()
-        .project_branch_head(execution, branch, head.version_id)
+        .project_branch_head(branch, head.version_id)
         .expect("the branch head is admitted")
         .expect("the branch head is retained")
 }
@@ -157,6 +160,7 @@ fn branch_view_relations(
 ) -> Vec<crate::facade::identity::RelationId> {
     let read = branch_view(execution, runtime, branch)
         .bounded_relations_of_kind(execution, RELATION_KIND, maximum_work_units)
+        .expect("read request remains live")
         .expect("the branch's live relations fit the budget");
     assert_eq!(read.work_units(), maximum_work_units);
     read.into_records()

@@ -10,6 +10,7 @@ pub(crate) fn refresh_live_world(
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     *entities = read
         .entities()

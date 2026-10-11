@@ -12,6 +12,7 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
     let original = runtime
         .read_truth()
         .read_snapshot(&created.snapshot, execution)
+        .expect("read request remains live")
         .expect("the source publication remains readable");
     let source_records = original.entities().to_vec();
     let source_relation = original.relations()[0].clone();
@@ -31,10 +32,12 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&suspended.commit.snapshot, execution)
+        .expect("read request remains live")
         .is_none());
     let retained = runtime
         .read_truth()
         .read_snapshot(&created.snapshot, execution)
+        .expect("read request remains live")
         .expect("the retained source root remains independently readable");
     assert_eq!(retained.entities(), original.entities());
     assert_eq!(retained.relations(), original.relations());
@@ -47,13 +50,14 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
     assert!(matches!(
         runtime
             .read_truth()
-            .read_observation(execution, &unavailable_basis.observation()),
+            .read_observation(execution, &unavailable_basis.observation())
+            .expect("read request remains live"),
         Err(crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable)
     ));
     assert!(matches!(
         runtime
             .read_truth()
-            .project_observation(execution, &unavailable_basis.observation()),
+            .project_observation(&unavailable_basis.observation()),
         Err(crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable)
     ));
     assert!(matches!(
@@ -103,6 +107,7 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
     let restored_read = runtime
         .read_truth()
         .read_snapshot(&restored.snapshot, execution)
+        .expect("read request remains live")
         .expect("ordinary reads resume after complete reconstruction");
 
     assert_eq!(restored_read.entities(), source_records);

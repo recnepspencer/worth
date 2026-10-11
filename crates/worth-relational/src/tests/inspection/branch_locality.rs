@@ -78,11 +78,14 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
         .release_snapshot(&feature_update.snapshot)
         .is_ok());
 
-    let retained_only = runtime.inspect_what_happened().open_historical_view(
-        execution,
-        created.version_id,
-        HistoricalInspectionMode::RetainedOnly,
-    );
+    let retained_only = runtime
+        .inspect_what_happened()
+        .open_historical_view(
+            execution,
+            created.version_id,
+            HistoricalInspectionMode::RetainedOnly,
+        )
+        .expect("read request remains live");
     assert!(retained_only.view.is_none());
     assert_eq!(
         retained_only.availability,

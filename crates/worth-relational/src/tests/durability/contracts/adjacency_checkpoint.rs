@@ -27,6 +27,7 @@ fn checkpoint_rebuilds_current_and_historical_adjacency_kind_buckets() {
             historical_version,
             2,
         )
+        .expect("read request remains live")
         .expect("recovery must rebuild retained historical kind membership");
     let current = recovered
         .read_truth()
@@ -37,6 +38,7 @@ fn checkpoint_rebuilds_current_and_historical_adjacency_kind_buckets() {
             recovered.current_version_id(),
             1,
         )
+        .expect("read request remains live")
         .expect("deleted current adjacency must be empty without scanning history");
 
     assert_eq!(historical.into_records()[0].relation_id, relation);

@@ -109,7 +109,11 @@ pub(super) fn execute_index_inputs(
             if lease.is_some() {
                 index_packet_result_checked(execution, projection, packet, context)
             } else {
-                Ok(index_packet_result(execution, projection, packet))
+                index_packet_result(execution, projection, packet).map_err(|cause| {
+                    worth_execution::MapKernelFailure::Domain(PacketBudgetDenial::ReadRequest(
+                        cause,
+                    ))
+                })
             }
         },
         |stream: &IndexResultStream| {
@@ -211,13 +215,13 @@ fn index_packet_result(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     packet: &IndexPreparationPacket,
-) -> IndexResultStream {
+) -> Result<IndexResultStream, crate::execution::RelationalExecutionDenialCause> {
     let entries = match &packet.definition.kind {
         DerivedIndexKind::EntityField { field_locator } => DerivedIndexEntries::EntityField(
-            build_entity_aspect_field_index(execution, projection, field_locator).into(),
+            build_entity_aspect_field_index(execution, projection, field_locator)?.into(),
         ),
         DerivedIndexKind::RelationField { field_locator } => DerivedIndexEntries::RelationField(
-            build_relation_aspect_field_index(execution, projection, field_locator).into(),
+            build_relation_aspect_field_index(execution, projection, field_locator)?.into(),
         ),
         DerivedIndexKind::RelatedEntityOrdering {
             relation_kind,
@@ -234,20 +238,20 @@ fn index_packet_result(
                     *child_kind,
                     ordering,
                 ),
-            )
+            )?
             .into(),
         ),
         DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
-            build_relation_join_index(execution, projection, *definition).into(),
+            build_relation_join_index(execution, projection, *definition)?.into(),
         ),
     };
-    OrderedReductionStream::singleton(
+    Ok(OrderedReductionStream::singleton(
         packet.header.reduction_key,
         IndexPreparationResult {
             index_id: packet.definition.index_id,
             entries: Some(entries),
         },
-    )
+    ))
 }
 
 pub(super) fn index_execution_denial(stop: PacketExecutionStop) -> DerivedIndexExecutionDenial {

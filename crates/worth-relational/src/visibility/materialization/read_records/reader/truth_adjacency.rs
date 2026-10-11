@@ -18,71 +18,121 @@ pub struct AdjacencyTruthReadLimitExceeded {
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn outgoing_relations_of_kind_at_version(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<RelationReadRecord> {
-        self.bounded_relations_of_kind_at_version(
-            entity_id,
-            kind_id,
-            version_id,
-            AdjacencyDirection::Outgoing,
-            usize::MAX,
-        )
-        .expect("an unbounded adjacency read cannot exhaust usize::MAX work")
-        .into_records()
+    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        crate::visibility::materialization::read_records::read_work::metered(
+            execution,
+            |context| {
+                self.bounded_relations_of_kind_at_version(
+                    entity_id,
+                    kind_id,
+                    version_id,
+                    AdjacencyDirection::Outgoing,
+                    None,
+                    &mut |units| context.checkpoint(units),
+                )
+                .map(BoundedAdjacencyTruthRead::into_records)
+            },
+            |result| {
+                result.as_ref().map_or(0, |records| {
+                    super::super::read_footprint::relations(records)
+                })
+            },
+        )?
+        .map_err(|_| crate::execution::RelationalExecutionDenialCause::WorkExhausted)
     }
 
     pub fn incoming_relations_of_kind_at_version(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<RelationReadRecord> {
-        self.bounded_relations_of_kind_at_version(
-            entity_id,
-            kind_id,
-            version_id,
-            AdjacencyDirection::Incoming,
-            usize::MAX,
-        )
-        .expect("an unbounded adjacency read cannot exhaust usize::MAX work")
-        .into_records()
+    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        crate::visibility::materialization::read_records::read_work::metered(
+            execution,
+            |context| {
+                self.bounded_relations_of_kind_at_version(
+                    entity_id,
+                    kind_id,
+                    version_id,
+                    AdjacencyDirection::Incoming,
+                    None,
+                    &mut |units| context.checkpoint(units),
+                )
+                .map(BoundedAdjacencyTruthRead::into_records)
+            },
+            |result| {
+                result.as_ref().map_or(0, |records| {
+                    super::super::read_footprint::relations(records)
+                })
+            },
+        )?
+        .map_err(|_| crate::execution::RelationalExecutionDenialCause::WorkExhausted)
     }
 
     pub fn bounded_outgoing_relations_of_kind_at_version(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
         maximum_work_units: usize,
-    ) -> Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded> {
-        self.bounded_relations_of_kind_at_version(
-            entity_id,
-            kind_id,
-            version_id,
-            AdjacencyDirection::Outgoing,
-            maximum_work_units,
+    ) -> Result<
+        Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::visibility::materialization::read_records::read_work::metered(
+            execution,
+            |context| {
+                self.bounded_relations_of_kind_at_version(
+                    entity_id,
+                    kind_id,
+                    version_id,
+                    AdjacencyDirection::Outgoing,
+                    Some(maximum_work_units),
+                    &mut |units| context.checkpoint(units),
+                )
+            },
+            |result| {
+                result.as_ref().map_or(0, |read| {
+                    super::super::read_footprint::relations(&read.records)
+                })
+            },
         )
     }
 
     pub fn bounded_incoming_relations_of_kind_at_version(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
         maximum_work_units: usize,
-    ) -> Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded> {
-        self.bounded_relations_of_kind_at_version(
-            entity_id,
-            kind_id,
-            version_id,
-            AdjacencyDirection::Incoming,
-            maximum_work_units,
+    ) -> Result<
+        Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::visibility::materialization::read_records::read_work::metered(
+            execution,
+            |context| {
+                self.bounded_relations_of_kind_at_version(
+                    entity_id,
+                    kind_id,
+                    version_id,
+                    AdjacencyDirection::Incoming,
+                    Some(maximum_work_units),
+                    &mut |units| context.checkpoint(units),
+                )
+            },
+            |result| {
+                result.as_ref().map_or(0, |read| {
+                    super::super::read_footprint::relations(&read.records)
+                })
+            },
         )
     }
 
@@ -92,7 +142,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
         direction: AdjacencyDirection,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     ) -> Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded> {
         let slot = entity_id.slot_index();
         let basis =
@@ -116,7 +167,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         let mut work_units = 0_usize;
         let mut relation_records_examined = 0_usize;
         for relation_id in relation_ids.iter().copied() {
-            if work_units == maximum_work_units {
+            if maximum_work_units == Some(work_units) || charge(1).is_err() {
                 ledger.settle(self.runtime);
                 return Err(AdjacencyTruthReadLimitExceeded::new(
                     relation_records_examined,
@@ -138,7 +189,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             {
                 continue;
             }
-            if work_units == maximum_work_units {
+            if maximum_work_units == Some(work_units) || charge(1).is_err() {
                 ledger.settle(self.runtime);
                 return Err(AdjacencyTruthReadLimitExceeded::new(
                     relation_records_examined,

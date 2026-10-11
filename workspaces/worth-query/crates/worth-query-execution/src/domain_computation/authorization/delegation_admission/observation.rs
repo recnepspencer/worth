@@ -53,8 +53,8 @@ pub(super) fn observe_lineage(
         let status_revision = observation
             .relational
             .read_truth()
-            .project_snapshot(observation.snapshot, execution)
-            .and_then(|view| {
+            .project_snapshot(observation.snapshot)
+            .map(|view| {
                 view.entity_field_revision(
                     execution,
                     current_grant,
@@ -71,6 +71,14 @@ pub(super) fn observe_lineage(
                     ),
                 )
             })
+            .transpose()
+            .map_err(|cause| {
+                crate::domain_computation::authorization::denial::relational_read_denial(
+                    cause,
+                    installed.contract().name(),
+                )
+            })?
+            .flatten()
             .ok_or_else(|| {
                 denial(
                     WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,

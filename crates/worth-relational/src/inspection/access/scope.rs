@@ -16,18 +16,18 @@ impl<'runtime> InspectionAccess<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
-    ) -> Option<RelationalReadView> {
+    ) -> Result<Option<RelationalReadView>, crate::execution::RelationalExecutionDenialCause> {
         match scope {
-            InspectionScope::Current => Some(
-                self.runtime
-                    .read_truth()
-                    .read_version(execution, self.runtime.current_version_id()),
-            ),
-            InspectionScope::Version(version_id) => Some(
-                self.runtime
-                    .read_truth()
-                    .read_version(execution, *version_id),
-            ),
+            InspectionScope::Current => self
+                .runtime
+                .read_truth()
+                .read_version(execution, self.runtime.current_version_id())
+                .map(Some),
+            InspectionScope::Version(version_id) => self
+                .runtime
+                .read_truth()
+                .read_version(execution, *version_id)
+                .map(Some),
             InspectionScope::Snapshot(handle) => {
                 self.runtime.read_truth().read_snapshot(handle, execution)
             }

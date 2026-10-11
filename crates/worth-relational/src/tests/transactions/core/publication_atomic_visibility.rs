@@ -80,6 +80,7 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
             let entity_count = runtime
                 .read_truth()
                 .read_observation(execution, &basis.observation())
+                .expect("read request remains live")
                 .expect("concurrent complete basis reads")
                 .entities()
                 .len();
@@ -94,6 +95,7 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
         let entity_count = runtime
             .read_truth()
             .read_observation(execution, &basis.observation())
+            .expect("read request remains live")
             .expect("final complete basis reads")
             .entities()
             .len();
@@ -294,6 +296,7 @@ fn record_complete_fork(
     let entity_count = runtime
         .read_truth()
         .read_observation(execution, &basis.observation())
+        .expect("read request remains live")
         .expect("successful fork reads its complete root")
         .entities()
         .len();

@@ -131,8 +131,9 @@ fn entity_field_mask_projection_reads_only_declared_struct_field() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id())
-        .entities::<SummaryTitleFieldProjection>(execution);
+        .project_historical_version(runtime.current_version_id())
+        .entities::<SummaryTitleFieldProjection>(execution)
+        .expect("read request remains live");
 
     assert_eq!(projected.len(), 1);
     assert_eq!(projected[0].entity_id, entity_id);
@@ -157,8 +158,9 @@ fn whole_aspect_projection_still_reads_full_struct_aspect() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id())
-        .entities::<SummaryWholeAspectProjection>(execution);
+        .project_historical_version(runtime.current_version_id())
+        .entities::<SummaryWholeAspectProjection>(execution)
+        .expect("read request remains live");
 
     assert_eq!(projected.len(), 1);
     assert_eq!(projected[0].title, "whole-title");
@@ -175,8 +177,9 @@ fn scalar_aspect_rejects_field_mask_projection_at_use_boundary() {
 
     let _ = runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id())
-        .entities::<NameFieldMaskProjection>(execution);
+        .project_historical_version(runtime.current_version_id())
+        .entities::<NameFieldMaskProjection>(execution)
+        .expect("read request remains live");
 }
 
 #[test]
@@ -199,8 +202,9 @@ fn relation_field_mask_projection_reads_only_declared_struct_field() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id())
-        .relations::<RelationSummaryTitleFieldProjection>(execution);
+        .project_historical_version(runtime.current_version_id())
+        .relations::<RelationSummaryTitleFieldProjection>(execution)
+        .expect("read request remains live");
 
     assert_eq!(projected.len(), 1);
     assert_eq!(projected[0].title, "relation-title");

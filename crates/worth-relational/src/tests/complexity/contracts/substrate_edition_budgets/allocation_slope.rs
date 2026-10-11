@@ -156,6 +156,7 @@ fn measured_bounded_read(
             version_id,
             REFUSAL_BUDGET,
         )
+        .expect("read request remains live")
         .expect_err("the budget is smaller than every measured fanout");
     let stats = region.change();
     assert_eq!(refusal.consumed_work_units(), REFUSAL_BUDGET);

@@ -38,7 +38,18 @@ pub(super) fn certify<E>(
             }
             Ok(())
         },
-    )?;
+    )
+    .map_err(|stop| match stop {
+        crate::visibility::materialization::read_records::read_stop::ReadStop::Admission(stop) => {
+            stop
+        }
+        crate::visibility::materialization::read_records::read_stop::ReadStop::Request(cause) => {
+            Stop::Lookup(super::prepared_entity_field_lookup::denied(
+                BoundedEntityFieldLookupDenialKind::Execution(cause),
+                prepared.index_id(),
+            ))
+        }
+    })?;
     storage_ids.sort();
     super::prepared_lookup_admission::admit(execution, prepared.index_id(), check_live)?;
     let overflowed = storage_ids.len() > limit;

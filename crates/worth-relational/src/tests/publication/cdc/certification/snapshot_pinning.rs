@@ -107,10 +107,12 @@ fn cdc_certification_snapshot_pinning_is_neutral_under_rewrite_churn() {
     let pinned_snapshot_read = pinned_runtime
         .read_truth()
         .read_snapshot(&pinned_snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let pinned_latest_read = pinned_runtime
         .read_truth()
         .read_snapshot(&latest_snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
 
     assert_eq!(

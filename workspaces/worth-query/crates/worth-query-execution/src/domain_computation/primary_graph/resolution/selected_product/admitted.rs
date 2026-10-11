@@ -302,6 +302,9 @@ where
                     },
                 )
                 .map_err(|stop| match stop {
+                    RelationalSnapshotProjectionAdmissionStop::Execution(cause) => {
+                        entity_lookup_resolution_denial(worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause), binding)
+                    }
                     RelationalSnapshotProjectionAdmissionStop::Admission(stop) => {
                         principal_admission_denial(stop, binding)
                     }

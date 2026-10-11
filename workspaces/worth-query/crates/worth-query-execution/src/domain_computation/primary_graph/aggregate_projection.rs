@@ -129,8 +129,8 @@ fn affected_sources(
 ) -> Option<BTreeSet<EntityId>> {
     let truth = runtime.read_truth();
     let views = [
-        truth.project_snapshot(before, execution)?,
-        truth.project_snapshot(after, execution)?,
+        truth.project_snapshot(before)?,
+        truth.project_snapshot(after)?,
     ];
     let mut sources = BTreeSet::new();
     for patch in patches {
@@ -145,16 +145,20 @@ fn affected_sources(
             }
             RecordRef::Relation(relation) => {
                 for view in &views {
-                    if let Some(source) = view.relation_record_with_projection_scope(
-                        execution,
-                        relation,
-                        ProjectionAspectScope::empty(),
-                        |record| {
-                            (record.lifecycle() == RecordLifecycleState::Live
-                                && record.kind_id() == key.relation_kind)
-                                .then_some(record.source())
-                        },
-                    ) {
+                    if let Some(source) = view
+                        .relation_record_with_projection_scope(
+                            execution,
+                            relation,
+                            ProjectionAspectScope::empty(),
+                            |record| {
+                                (record.lifecycle() == RecordLifecycleState::Live
+                                    && record.kind_id() == key.relation_kind)
+                                    .then_some(record.source())
+                            },
+                        )
+                        .ok()
+                        .flatten()
+                    {
                         sources.insert(source);
                     }
                 }
@@ -171,10 +175,7 @@ fn source_contributions(
     snapshot: &SnapshotHandle,
     source: EntityId,
 ) -> Result<BTreeMap<EntityId, i64>, ()> {
-    let view = runtime
-        .read_truth()
-        .project_snapshot(snapshot, execution)
-        .ok_or(())?;
+    let view = runtime.read_truth().project_snapshot(snapshot).ok_or(())?;
     if live_entity_kind(execution, &view, source) != Some(key.source_kind) {
         return Ok(BTreeMap::new());
     }
@@ -190,6 +191,7 @@ fn source_contributions(
     };
     let relations = view
         .bounded_outgoing_relations_of_kind(execution, source, key.relation_kind, usize::MAX)
+        .map_err(|_| ())?
         .map_err(|_| ())?
         .into_records();
     if relations.len() > 1 {
@@ -217,6 +219,8 @@ fn live_entity_kind(
         ProjectionAspectScope::empty(),
         |record| (record.lifecycle() == RecordLifecycleState::Live).then_some(record.kind_id()),
     )
+    .ok()
+    .flatten()
 }
 
 fn update_materialized_targets(

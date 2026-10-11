@@ -67,6 +67,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     },
                 )
                 .map_err(|stop| match stop {
+                    RelationalSnapshotProjectionAdmissionStop::Execution(cause) => entity_denial(
+                        native_denial_kind(BoundedEntityFieldLookupDenialKind::Execution(cause)),
+                        field,
+                    ),
                     RelationalSnapshotProjectionAdmissionStop::Admission(stop) => {
                         admission_denial(stop, field)
                     }

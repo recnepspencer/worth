@@ -160,13 +160,15 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         partition_id: crate::identity::data::PartitionId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<EntityReadRecord> {
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, super::EntityKindTruthReadLimitExceeded> {
         self.visible_entities_of_kind_in_partition_from_state_with_registry(
             state,
             &self.runtime.config.schema.registry,
             partition_id,
             kind_id,
             version_id,
+            charge,
         )
     }
 
@@ -177,11 +179,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         partition_id: crate::identity::data::PartitionId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<EntityReadRecord> {
-        // One scan implementation. An unbounded kind read is the bounded one
-        // with a budget nothing can reach, so the two can never drift apart in
-        // what they consider visible.
-        let mut scan = super::truth_kind_scan::EntityKindScan::new(usize::MAX);
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, super::EntityKindTruthReadLimitExceeded> {
+        let mut scan = super::truth_kind_scan::EntityKindScan::request_funded(charge);
         self.scan_entity_kind_in_partition(
             state,
             registry,
@@ -189,9 +189,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             kind_id,
             super::KindScanVisibility::for_version(self.runtime, version_id),
             &mut scan,
-        )
-        .expect("an unbounded kind scan cannot exhaust usize::MAX work");
-        scan.into_records()
+        )?;
+        Ok(scan.into_records())
     }
 
     pub(crate) fn visible_relations_of_kind_in_partition_from_state(
@@ -200,13 +199,15 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         partition_id: crate::identity::data::PartitionId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<RelationReadRecord> {
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, super::RelationKindTruthReadDenial> {
         self.visible_relations_of_kind_in_partition_from_state_with_registry(
             state,
             &self.runtime.config.schema.registry,
             partition_id,
             kind_id,
             version_id,
+            charge,
         )
     }
 
@@ -217,8 +218,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         partition_id: crate::identity::data::PartitionId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<RelationReadRecord> {
-        let mut scan = super::truth_relation_kind_scan::RelationKindScan::new(usize::MAX, false);
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, super::RelationKindTruthReadDenial> {
+        let mut scan = super::truth_relation_kind_scan::RelationKindScan::request_funded(charge);
         self.scan_relation_kind_in_partition(
             state,
             registry,
@@ -226,9 +228,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             kind_id,
             super::KindScanVisibility::for_version(self.runtime, version_id),
             &mut scan,
-        )
-        .expect("an unbounded kind scan cannot exhaust usize::MAX work");
-        scan.into_records()
+        )?;
+        Ok(scan.into_records())
     }
 
     pub(crate) fn visible_entity_slots_from_state(

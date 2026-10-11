@@ -60,6 +60,7 @@ fn savepoint_abandoned_work_never_appears_in_subscriber_cdc() {
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let names = read
         .entities()

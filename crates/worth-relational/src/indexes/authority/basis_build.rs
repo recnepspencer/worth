@@ -71,11 +71,7 @@ impl IndexAuthority<'_> {
             );
         }
         let version_id = observation.version_id();
-        let projection = match self
-            .runtime
-            .read_truth()
-            .project_observation(execution, &observation)
-        {
+        let projection = match self.runtime.read_truth().project_observation(&observation) {
             Ok(projection) => projection,
             Err(denial) => {
                 return failed_build_outcome(

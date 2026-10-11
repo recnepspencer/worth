@@ -47,6 +47,13 @@ pub enum WorthQueryBranchAdoptionActivationDenial {
 /// Why a branch adoption could not be prepared. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryBranchAdoptionPreparationDenial {
+    /// The caller's read request stopped.
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     /// The preparation call could not enter its execution request.
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The runtime has no installed program support.

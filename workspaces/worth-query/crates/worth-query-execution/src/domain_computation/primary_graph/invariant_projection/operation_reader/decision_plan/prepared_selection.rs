@@ -109,7 +109,7 @@ impl<Schema: ApplicationSchema, Operation>
             .reader
             .runtime
             .read_truth()
-            .project_observation(execution, &self.reader.observation)
+            .project_observation(&self.reader.observation)
             .map_err(|_| {
                 selection_denial(
                     WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,

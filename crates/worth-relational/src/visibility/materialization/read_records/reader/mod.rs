@@ -79,3 +79,6 @@ pub use truth_kind_scan::{BoundedEntityKindTruthRead, EntityKindTruthReadLimitEx
 pub use truth_relation_kind_scan::{
     BoundedRelationKindTruthRead, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
 };
+
+#[cfg(test)]
+mod request_paid_truth;

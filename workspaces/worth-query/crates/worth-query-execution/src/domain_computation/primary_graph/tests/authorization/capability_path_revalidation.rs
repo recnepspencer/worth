@@ -129,6 +129,7 @@ fn replace_grantor_with_custodian(
         runtime
             .read_truth()
             .visible_relations_of_kind(execution, grantor_kind, snapshot.version_id())
+            .expect("fixture read request remains live")
             .into_iter()
             .find(|record| record.source == principal && record.target == grant.entity_id())
             .expect("the admitted capability has one current grantor path")

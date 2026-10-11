@@ -91,6 +91,7 @@ fn mutation_batch_executes_through_one_batch_native_lowered_plan() {
     let read_view = runtime
         .read_truth()
         .read_snapshot(&snapshot, request_execution)
+        .expect("fixture read request remains live")
         .expect("snapshot should read");
     let names = read_view
         .entities()

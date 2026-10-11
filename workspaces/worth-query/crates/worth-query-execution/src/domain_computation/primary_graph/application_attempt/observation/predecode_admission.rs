@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed
     let mut action = Some(action);
     runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)?
+        .project_snapshot(snapshot)?
         .entity_record_with_projection_scope(execution, entity_id, scope, |record| {
             if record.kind_id() != kind || record.lifecycle() != RecordLifecycleState::Live {
                 return None;
@@ -36,4 +36,6 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed
                 record.aspect_field_value(locator.aspect().aspect_key(), &field),
             ))
         })
+        .ok()
+        .flatten()
 }

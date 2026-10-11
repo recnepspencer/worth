@@ -347,10 +347,7 @@ fn project_approval(
     // main's edition.
     let committed = runtime
         .read_truth()
-        .try_project_historical_version(
-            execution,
-            receipt.committed_changes().commit_reference().version_id,
-        )
+        .try_project_historical_version(receipt.committed_changes().commit_reference().version_id)
         .ok()?;
     // One unit for the adjacency list and two per expected relation: an
     // unexpected extra relation exhausts the bound and fails closed.
@@ -363,6 +360,7 @@ fn project_approval(
                 expected.saturating_mul(2).saturating_add(1),
             )
             .ok()
+            .and_then(Result::ok)
             .map(|read| {
                 read.into_records()
                     .into_iter()

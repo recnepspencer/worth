@@ -20,10 +20,7 @@ impl<'a, K: Ord + Copy, V: Clone> SharedMapIter<'a, K, V> {
     ) -> Result<Self, Stop> {
         let height = root.map_or(0, |node| node.height);
         let bytes = height.saturating_mul(std::mem::size_of::<&MapNode<K, V>>());
-        prepare(
-            u64::try_from(height).unwrap_or(u64::MAX).saturating_add(1),
-            u64::try_from(bytes).unwrap_or(u64::MAX),
-        )?;
+        prepare(height as u64 + 1, u64::try_from(bytes).unwrap_or(u64::MAX))?;
         let mut iterator = Self {
             pending: Vec::with_capacity(height),
             remaining: root.map_or(0, |node| node.len),
@@ -39,10 +36,7 @@ impl<'a, K: Ord + Copy, V: Clone> SharedMapIter<'a, K, V> {
             return Ok(None);
         };
         let descent = next.right.as_ref().map_or(0, |right| right.height);
-        prepare(
-            u64::try_from(descent).unwrap_or(u64::MAX).saturating_add(1),
-            0,
-        )?;
+        prepare(descent as u64 + 1, 0)?;
         let node = self
             .pending
             .pop()

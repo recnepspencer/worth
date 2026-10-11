@@ -14,6 +14,12 @@ pub enum BankInvariantDecisionPlanDenial {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankInvariantProjectionTraversalDenial {
+    ReadExecution(
+        Result<
+            worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+            worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     ExecutionRequest(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -51,6 +57,7 @@ impl BankInvariantDecisionPlanDenial {
 impl BankInvariantProjectionTraversalDenial {
     pub const fn code(self) -> &'static str {
         match self {
+            Self::ReadExecution(_) => "execution-request",
             Self::ExecutionRequest(_) => "execution-request",
             Self::RelationNotInstalled => "relation-not-installed",
             Self::UndeclaredDecisionTarget => "undeclared-decision-target",
@@ -68,6 +75,7 @@ impl BankInvariantProjectionTraversalDenial {
 
     pub(crate) const fn from_query(kind: QueryTraversal) -> Self {
         match kind {
+            QueryTraversal::ReadExecution(cause) => Self::ReadExecution(cause),
             QueryTraversal::ExecutionRequest(cause) => Self::ExecutionRequest(cause),
             QueryTraversal::RelationNotInstalled => Self::RelationNotInstalled,
             QueryTraversal::UndeclaredDecisionTarget => Self::UndeclaredDecisionTarget,

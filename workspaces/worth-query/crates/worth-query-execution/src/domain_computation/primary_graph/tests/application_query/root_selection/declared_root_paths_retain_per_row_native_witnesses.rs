@@ -192,6 +192,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                             kind,
                             selected.application_basis().snapshot_handle().version_id(),
                         )
+                        .expect("fixture read request remains live")
                         .into_iter()
                         .find(|relation| relation.source == account.entity_id())
                         .map(|relation| (relation.relation_id, relation.target))

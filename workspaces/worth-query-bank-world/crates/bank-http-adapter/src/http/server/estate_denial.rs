@@ -165,6 +165,10 @@ fn dispatch_owner_read_denial(read: BankCommittedDispatchOutboxReadDenial) -> Ba
     use BankHttpDenialKind as Denial;
     use BankHttpNextAction as Next;
     let (denial, next) = match read {
+        Read::ReadExecution(Ok(cause)) => return super::mutation_application::pending_execution_denial(cause),
+        Read::ReadExecution(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled)) => (Denial::Cancelled, Next::Retry),
+        Read::ReadExecution(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut)) => (Denial::DeadlineExceeded, Next::Retry),
+
         // Publication, indexing or concurrent snapshot occupancy can settle
         // before the same owner read is retried.
         Read::PendingPublication

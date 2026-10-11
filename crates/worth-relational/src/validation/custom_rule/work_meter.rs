@@ -18,9 +18,9 @@ pub(crate) enum CustomPreparationStop {
 
 struct LeasedCustomMeter {
     status: ExecutionLeaseStatus,
-    work_ceiling: u64,
+    work_ceiling: Option<u64>,
     consumed_work: AtomicU64,
-    memory_ceiling: u64,
+    memory_ceiling: Option<u64>,
     claimed_memory: AtomicU64,
     stop: std::sync::Mutex<Option<CustomPreparationStop>>,
 }
@@ -31,8 +31,8 @@ pub(crate) struct CustomPreparationBudget(Arc<LeasedCustomMeter>);
 impl CustomPreparationBudget {
     pub(crate) fn new(
         status: ExecutionLeaseStatus,
-        work_ceiling: u64,
-        memory_ceiling: u64,
+        work_ceiling: Option<u64>,
+        memory_ceiling: Option<u64>,
     ) -> Self {
         Self(Arc::new(LeasedCustomMeter {
             status,
@@ -70,15 +70,19 @@ impl CustomPreparationBudget {
     }
 
     pub(crate) fn try_plan_item(&self, retained_bytes: u64) -> bool {
-        let meter =
-            CustomInvariantWorkMeter::new(NonZeroU64::new(u64::MAX).unwrap()).with_lease(self);
+        let meter = CustomInvariantWorkMeter {
+            maximum: None,
+            consumed: Arc::new(AtomicU64::new(0)),
+            exhausted: Arc::new(AtomicBool::new(false)),
+            leased: Some(Arc::clone(&self.0)),
+        };
         meter.try_charge(1) && meter.try_claim_bytes(retained_bytes)
     }
 }
 
 #[derive(Clone)]
 pub(crate) struct CustomInvariantWorkMeter {
-    maximum: NonZeroU64,
+    maximum: Option<NonZeroU64>,
     consumed: Arc<AtomicU64>,
     exhausted: Arc<AtomicBool>,
     leased: Option<Arc<LeasedCustomMeter>>,
@@ -87,7 +91,7 @@ pub(crate) struct CustomInvariantWorkMeter {
 impl CustomInvariantWorkMeter {
     pub(crate) fn new(maximum: NonZeroU64) -> Self {
         Self {
-            maximum,
+            maximum: Some(maximum),
             consumed: Arc::new(AtomicU64::new(0)),
             exhausted: Arc::new(AtomicBool::new(false)),
             leased: None,
@@ -102,6 +106,7 @@ impl CustomInvariantWorkMeter {
     pub(crate) fn for_evaluation(&self, budget: &CustomPreparationBudget) -> Self {
         let remaining = self
             .maximum
+            .expect("only installed invariant meters enter evaluation")
             .get()
             .saturating_sub(self.consumed.load(Ordering::Relaxed));
         let meter = Self::new(NonZeroU64::new(remaining.max(1)).unwrap()).with_lease(budget);
@@ -143,7 +148,7 @@ impl CustomInvariantWorkMeter {
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
                 current
                     .checked_add(bytes)
-                    .filter(|next| *next <= leased.memory_ceiling)
+                    .filter(|next| leased.memory_ceiling.is_none_or(|ceiling| *next <= ceiling))
             })
             .is_err()
         {
@@ -162,7 +167,7 @@ impl CustomInvariantWorkMeter {
                 .claimed_memory
                 .load(Ordering::Relaxed)
                 .checked_add(bytes)
-                .is_some_and(|peak| peak <= leased.memory_ceiling)
+                .is_some_and(|peak| leased.memory_ceiling.is_none_or(|ceiling| peak <= ceiling))
     }
 
     fn safe_point(&self) -> bool {
@@ -183,7 +188,10 @@ impl CustomInvariantWorkMeter {
         if self.exceeded() || !self.safe_point() {
             return false;
         }
-        let units = u64::try_from(units).unwrap_or(u64::MAX);
+        let Ok(units) = u64::try_from(units) else {
+            self.stop(CustomPreparationStop::WorkExhausted);
+            return false;
+        };
         if !self.try_claim_bytes(units.saturating_mul(STRUCTURAL_UNIT_BYTES)) {
             return false;
         }
@@ -193,7 +201,7 @@ impl CustomInvariantWorkMeter {
                 .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
                     current
                         .checked_add(units)
-                        .filter(|next| *next <= leased.work_ceiling)
+                        .filter(|next| leased.work_ceiling.is_none_or(|ceiling| *next <= ceiling))
                 })
                 .is_err()
             {
@@ -206,7 +214,7 @@ impl CustomInvariantWorkMeter {
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
                 current
                     .checked_add(units)
-                    .filter(|next| *next <= self.maximum.get())
+                    .filter(|next| self.maximum.is_none_or(|maximum| *next <= maximum.get()))
             })
             .is_err()
         {

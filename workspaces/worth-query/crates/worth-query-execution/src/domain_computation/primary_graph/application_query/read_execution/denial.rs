@@ -61,17 +61,29 @@ pub(super) fn relational_lookup_denial(
     unavailable: WorthQueryApplicationReadExecutionDenialKind,
     subject: &str,
 ) -> WorthQueryApplicationReadExecutionDenial {
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
     use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind as Kind;
     let kind = match denial.kind() {
-        Kind::Execution(cause) => match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
-            Ok(kind) => WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind),
-            Err(Control::Cancelled) => WorthQueryApplicationReadExecutionDenialKind::Cancelled,
-            Err(Control::TimedOut) => WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded,
-        },
-        Kind::InvalidCandidateLimit | Kind::SnapshotUnavailable | Kind::IndexNotInstalled
-        | Kind::WrongIndexKind | Kind::ExactGenerationUnavailable | Kind::CorruptIndexEntries
+        Kind::Execution(cause) => return relational_read_denial(cause, subject),
+        Kind::InvalidCandidateLimit
+        | Kind::SnapshotUnavailable
+        | Kind::IndexNotInstalled
+        | Kind::WrongIndexKind
+        | Kind::ExactGenerationUnavailable
+        | Kind::CorruptIndexEntries
         | Kind::StorageParityMismatch => unavailable,
+    };
+    read_execution_denial(kind, subject)
+}
+
+pub(in crate::domain_computation::primary_graph::application_query) fn relational_read_denial(
+    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    subject: &str,
+) -> WorthQueryApplicationReadExecutionDenial {
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    let kind = match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+        Ok(kind) => WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind),
+        Err(Control::Cancelled) => WorthQueryApplicationReadExecutionDenialKind::Cancelled,
+        Err(Control::TimedOut) => WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded,
     };
     read_execution_denial(kind, subject)
 }

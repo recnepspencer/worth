@@ -47,6 +47,7 @@ fn snapshot_reads_are_immutable_after_later_mutation() {
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
 
     assert!(read.get_entity(first).is_some());
@@ -104,14 +105,17 @@ fn snapshots_resolve_historical_entity_aspects_by_version() {
     let old_read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let current_read = runtime
         .read_truth()
         .read_snapshot(&update_outcome.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let version_read = runtime
         .read_truth()
-        .read_version(execution, create_outcome.version_id);
+        .read_version(execution, create_outcome.version_id)
+        .expect("read request remains live");
 
     assert_eq!(
         read_entity_name(old_read.get_entity(entity).unwrap()),
@@ -149,7 +153,8 @@ fn historical_reads_preserve_generation_and_aspects_after_slot_reuse() {
 
     let historical = runtime
         .read_truth()
-        .read_version(execution, created.version_id);
+        .read_version(execution, created.version_id)
+        .expect("read request remains live");
     let record = historical.get_entity(original).unwrap();
 
     assert_eq!(record.entity_id, original);
@@ -228,6 +233,7 @@ fn snapshot_root_obligation_survives_substrate_reclaim_until_release() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&create_snapshot, execution)
+        .expect("read request remains live")
         .unwrap()
         .get_entity(entity)
         .is_some());
@@ -283,6 +289,7 @@ fn epoch_retention_backend_preserves_snapshot_visibility_until_release() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&create_snapshot, execution)
+        .expect("read request remains live")
         .unwrap()
         .get_entity(entity)
         .is_some());
@@ -354,6 +361,7 @@ fn external_basis_retention_keeps_observed_truth_until_independent_release() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&retained_snapshot, execution)
+        .expect("read request remains live")
         .and_then(|read| read.get_entity(entity).cloned())
         .is_some());
 
@@ -375,19 +383,4 @@ fn external_basis_retention_keeps_observed_truth_until_independent_release() {
     );
 }
 
-#[test]
-fn read_records_expose_visibility_metadata() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    let outcome = create_entity_outcome(execution, &runtime, "visible");
-    let read = runtime
-        .read_truth()
-        .read_snapshot(&outcome.snapshot, execution)
-        .unwrap();
-    let record = read.entities().first().unwrap();
-
-    assert_eq!(record.created_at_version, outcome.version_id);
-    assert_eq!(record.retired_at_version, None);
-}
+mod read_record_metadata;

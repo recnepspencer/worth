@@ -18,7 +18,10 @@ pub(in crate::indexes) fn build_relation_aspect_field_index(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     field_locator: &AspectFieldLocator,
-) -> BTreeMap<AuthoritativeFieldComparisonKey, Vec<RelationId>> {
+) -> Result<
+    BTreeMap<AuthoritativeFieldComparisonKey, Vec<RelationId>>,
+    crate::execution::RelationalExecutionDenialCause,
+> {
     let mut entries = BTreeMap::new();
     for scope in relation_index_projection_scopes(projection, field_locator) {
         projection.for_each_relation(execution, scope.kind_id(), |record| {
@@ -28,9 +31,10 @@ pub(in crate::indexes) fn build_relation_aspect_field_index(
                     .or_insert_with(Vec::new)
                     .push(record.relation_id);
             }
-        });
+            Ok(())
+        })?;
     }
-    entries
+    Ok(entries)
 }
 
 pub(in crate::indexes) fn build_relation_aspect_field_index_checked(
@@ -46,34 +50,36 @@ pub(in crate::indexes) fn build_relation_aspect_field_index_checked(
             if relation_index_projection_scope(plan, field_locator).is_none() {
                 continue;
             }
-            projection.try_for_each_relation(
-                request_execution,
-                plan.kind_id,
-                |bytes| {
-                    budget.borrow_mut().checkpoint(1)?;
-                    budget.borrow().check_scratch_peak(bytes)
-                },
-                |record| {
-                    let Some(value) = relation_query_locus_value(record, field_locator) else {
-                        return Ok(());
-                    };
-                    budget.borrow().check_scratch_peak(
-                        (value.owned_allocation_capacity_bytes() as u64)
-                            .saturating_mul(4)
-                            .saturating_add(128),
-                    )?;
-                    let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
-                    let key_bytes = key.owned_allocation_capacity_bytes();
-                    checked_push(
-                        &mut entries,
-                        key,
-                        record.relation_id,
-                        key_bytes,
-                        0,
-                        &mut budget.borrow_mut(),
-                    )
-                },
-            )?;
+            projection
+                .try_for_each_relation(
+                    request_execution,
+                    plan.kind_id,
+                    |bytes| {
+                        budget.borrow_mut().checkpoint(1)?;
+                        budget.borrow().check_scratch_peak(bytes)
+                    },
+                    |record| {
+                        let Some(value) = relation_query_locus_value(record, field_locator) else {
+                            return Ok(());
+                        };
+                        budget.borrow().check_scratch_peak(
+                            (value.owned_allocation_capacity_bytes() as u64)
+                                .saturating_mul(4)
+                                .saturating_add(128),
+                        )?;
+                        let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
+                        let key_bytes = key.owned_allocation_capacity_bytes();
+                        checked_push(
+                            &mut entries,
+                            key,
+                            record.relation_id,
+                            key_bytes,
+                            0,
+                            &mut budget.borrow_mut(),
+                        )
+                    },
+                )
+                .map_err(super::checked_entry_map::read_stop)?;
         }
     }
     Ok(entries)

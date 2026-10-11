@@ -104,7 +104,7 @@ fn read_idempotency_record(
     context
         .runtime
         .read_truth()
-        .project_snapshot(context.snapshot, execution)
+        .project_snapshot(context.snapshot)
         .and_then(|view| {
             view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
                 (record.kind_id() == context.layout.entity_kind
@@ -143,6 +143,8 @@ fn read_idempotency_record(
                         .cloned(),
                 })
             })
+            .ok()
+            .flatten()
         })
         .ok_or("provider idempotency record is not authoritative")
 }

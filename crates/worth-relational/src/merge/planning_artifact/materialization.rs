@@ -14,10 +14,11 @@ pub(crate) fn materialize_planning_artifact(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     plan: LoweredMergePlan,
-) -> MergePlanningArtifactCore {
+) -> Result<MergePlanningArtifactCore, crate::merge::data::MergePlanningError> {
     let target_view = runtime
         .read_truth()
-        .read_version(execution, plan.basis.target_head.version_id);
+        .read_version(execution, plan.basis.target_head.version_id)
+        .map_err(crate::merge::data::MergePlanningError::Execution)?;
     let schema_snapshot = merge_schema_snapshot(
         &runtime.runtime_config().schema.registry,
         plan.source_records.as_ref(),
@@ -38,7 +39,7 @@ pub(crate) fn materialize_planning_artifact(
 
     record_merge_planning_counters(runtime, &plan, schema_snapshot.touched_kinds.len());
 
-    MergePlanningArtifactCore {
+    Ok(MergePlanningArtifactCore {
         request: plan.request.clone(),
         branch_basis: plan.basis.clone(),
         schema_snapshot,
@@ -58,5 +59,5 @@ pub(crate) fn materialize_planning_artifact(
             request_summary,
             ancestry_summary,
         },
-    }
+    })
 }

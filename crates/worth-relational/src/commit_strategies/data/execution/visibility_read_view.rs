@@ -279,10 +279,16 @@ impl<'observation, 'runtime> StrategyVisibilityReadView<'observation, 'runtime> 
     fn safe_projection<T>(
         &self,
         operation: &'static str,
-        run: impl FnOnce() -> T,
+        run: impl FnOnce() -> Result<T, crate::execution::RelationalExecutionDenialCause>,
     ) -> Result<T, StrategyExecutorFailure> {
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(run))
-            .map_err(|unwind_value| self.projection_failure(operation, unwind_value))
+            .map_err(|unwind_value| self.projection_failure(operation, unwind_value))?
+            .map_err(|cause| {
+                StrategyExecutorFailure::new(
+                    StrategyExecutorFailureClass::Execution(cause),
+                    operation,
+                )
+            })
     }
 }
 

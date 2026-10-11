@@ -32,9 +32,10 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
     let candidate_bytes = Cell::new(0);
     let mut entities = Vec::new();
     let mut relations = Vec::new();
-    let (target_count, touched_partitions) =
-        if let Some((partition_id, kind_id, target_count)) = entity_scan_scope(work) {
-            projection.try_for_each_entity_record_in(
+    let (target_count, touched_partitions) = if let Some((partition_id, kind_id, target_count)) =
+        entity_scan_scope(work)
+    {
+        projection.try_for_each_entity_record_in(
                 execution,
                 partition_id,
                 kind_id,
@@ -57,10 +58,13 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
                     }
                     Ok(())
                 },
-            )?;
-            (target_count, usize::from(!entities.is_empty()))
-        } else if let Some((partition_id, kind_id, target_count)) = relation_scan_scope(work) {
-            projection.try_for_each_relation_record_in(
+            ).map_err(|stop| match stop {
+                crate::visibility::materialization::read_records::read_stop::ReadStop::Admission(stop) => stop,
+                crate::visibility::materialization::read_records::read_stop::ReadStop::Request(cause) => MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(cause)),
+            })?;
+        (target_count, usize::from(!entities.is_empty()))
+    } else if let Some((partition_id, kind_id, target_count)) = relation_scan_scope(work) {
+        projection.try_for_each_relation_record_in(
                 execution,
                 partition_id,
                 kind_id,
@@ -83,13 +87,16 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
                     }
                     Ok(())
                 },
-            )?;
-            (target_count, usize::from(!relations.is_empty()))
-        } else {
-            return Err(MapKernelFailure::Domain(
-                QueryReadPacketDenial::FragmentUnavailable,
-            ));
-        };
+            ).map_err(|stop| match stop {
+                crate::visibility::materialization::read_records::read_stop::ReadStop::Admission(stop) => stop,
+                crate::visibility::materialization::read_records::read_stop::ReadStop::Request(cause) => MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(cause)),
+            })?;
+        (target_count, usize::from(!relations.is_empty()))
+    } else {
+        return Err(MapKernelFailure::Domain(
+            QueryReadPacketDenial::FragmentUnavailable,
+        ));
+    };
     Ok(QueryWorkerFragment {
         plan_key: packet.plan_key,
         fragment_key: crate::query::data::deterministic_query_fragment_key(

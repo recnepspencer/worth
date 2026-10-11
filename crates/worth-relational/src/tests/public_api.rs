@@ -73,6 +73,7 @@ fn admitted_observation_opens_its_selected_root_after_branch_movement() {
     assert!(runtime
         .read_truth()
         .read_snapshot(&observed, execution)
+        .expect("read request remains live")
         .is_some());
     assert!(runtime.snapshots().release_snapshot(&observed).is_ok());
     assert!(runtime
