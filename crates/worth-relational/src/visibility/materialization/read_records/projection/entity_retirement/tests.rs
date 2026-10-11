@@ -8,9 +8,9 @@ fn exact_snapshot_retirement_is_metadata_only_and_does_not_change_live_projectio
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "live");
+    let created = create_entity_outcome(execution, &runtime, "live");
     let entity = changed_entities(&created)[0];
-    let deleted = delete_entity(&runtime, entity);
+    let deleted = delete_entity(execution, &runtime, entity);
     let before = runtime
         .read_truth()
         .project_snapshot(&created.snapshot, execution)

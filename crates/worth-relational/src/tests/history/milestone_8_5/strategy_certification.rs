@@ -6,9 +6,9 @@ pub(super) fn run_strategy_merge_certification(
     let root_path = unique_test_store_path("worth-relational-strategy-cert");
     let recovered_root = root_path.clone();
     let runtime = persisted_strategy_runtime(root_path);
-    let entity = create_entity(&runtime, "service");
-    let aspect_overlap_entity = create_entity(&runtime, "aspect-overlap");
-    let aspect_disjoint_entity = create_entity(&runtime, "aspect-disjoint");
+    let entity = create_entity(execution, &runtime, "service");
+    let aspect_overlap_entity = create_entity(execution, &runtime, "aspect-overlap");
+    let aspect_disjoint_entity = create_entity(execution, &runtime, "aspect-disjoint");
     let feature_branch = create_branch_from_main(&runtime, "strategy-feature");
     let aspect_overlap_branch = create_branch_from_main(&runtime, "aspect-overlap-feature");
     let aspect_disjoint_branch = create_branch_from_main(&runtime, "aspect-disjoint-feature");

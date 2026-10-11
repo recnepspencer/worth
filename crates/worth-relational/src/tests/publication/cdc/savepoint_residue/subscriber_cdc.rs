@@ -6,7 +6,7 @@ fn savepoint_abandoned_work_never_appears_in_subscriber_cdc() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let anchor = create_entity_outcome(&runtime, "anchor");
+    let anchor = create_entity_outcome(execution, &runtime, "anchor");
     let anchor_entity = changed_entities(&anchor)[0];
     let checkpoint = checkpoint_for_schema_version(anchor.patch_position(), SchemaVersionId(1));
 
@@ -53,6 +53,7 @@ fn savepoint_abandoned_work_never_appears_in_subscriber_cdc() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

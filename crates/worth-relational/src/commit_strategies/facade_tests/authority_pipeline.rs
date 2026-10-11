@@ -54,6 +54,9 @@ fn validate_lowered_plan_preserves_strategy_provenance_and_commit_boundary_summa
 
 #[test]
 fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling_advance() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
@@ -73,6 +76,7 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
     )
     .expect("test staging stays within configured resource budgets");
     seed.commit(
+        request_execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
@@ -120,6 +124,7 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
         .expect("test staging stays within configured resource budgets");
     sibling
         .commit(
+            request_execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -134,7 +139,7 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
     let commit = {
         let mut authority = CommitStrategiesAuthorityFacade::new();
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("unrelated sibling progress remains admissible")
     };
     assert_eq!(commit.version_id, validated_version);
@@ -142,6 +147,9 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
 
 #[test]
 fn execute_validated_commit_routes_prevalidated_strategy_plan_through_authoritative_pipeline() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
@@ -167,7 +175,7 @@ fn execute_validated_commit_routes_prevalidated_strategy_plan_through_authoritat
     let commit = {
         let mut authority = CommitStrategiesAuthorityFacade::new();
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("validated strategy commit executed")
     };
 
@@ -202,6 +210,9 @@ fn execute_validated_commit_routes_prevalidated_strategy_plan_through_authoritat
 
 #[test]
 fn validate_lowered_plan_rejects_stale_basis_with_zero_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
@@ -236,6 +247,7 @@ fn validate_lowered_plan_rejects_stale_basis_with_zero_residue() {
         .expect("test staging stays within configured resource budgets");
     intervening
         .commit(
+            request_execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -281,6 +293,9 @@ fn validate_lowered_plan_rejects_stale_basis_with_zero_residue() {
 
 #[test]
 fn execute_validated_commit_rejects_stale_validation_basis_after_intervening_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
@@ -319,6 +334,7 @@ fn execute_validated_commit_rejects_stale_validation_basis_after_intervening_com
         .expect("test staging stays within configured resource budgets");
     ordinary_txn
         .commit(
+            request_execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -333,7 +349,7 @@ fn execute_validated_commit_rejects_stale_validation_basis_after_intervening_com
     let error = {
         let mut authority = CommitStrategiesAuthorityFacade::new();
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect_err("stale validated strategy plan should be rejected")
     };
 

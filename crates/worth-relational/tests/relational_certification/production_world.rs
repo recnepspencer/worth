@@ -12,7 +12,8 @@ fn supply_chain_world_compiles_causally_through_public_facades() {
     let program =
         CompiledSupplyChainProgram::compile(SupplyChainWorldDefinition::empty(empty_scale()))
             .expect("empty Supply Chain program compiles");
-    let world = compile_supply_chain_baseline(program).expect("empty production world compiles");
+    let world =
+        compile_supply_chain_baseline(execution, program).expect("empty production world compiles");
     assert_eq!(world.handles.entities.len(), 0);
     assert_eq!(world.handles.relations.len(), 0);
     assert_eq!(world.schema_receipt.retained_entity_kind_count(), 8);
@@ -42,7 +43,7 @@ fn supply_chain_world_compiles_causally_through_public_facades() {
             .expect("Court Supply Chain definition is valid"),
     )
     .expect("Court Supply Chain program compiles");
-    let court_world = compile_supply_chain_baseline(court_program)
+    let court_world = compile_supply_chain_baseline(execution, court_program)
         .expect("Court production world compiles through public facades");
     assert_eq!(court_world.schema_receipt.retained_entity_kind_count(), 8);
     assert_eq!(
@@ -74,7 +75,8 @@ fn supply_chain_named_handles_are_owner_issued_and_complete() {
         .expect("Court Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
         .expect("Court Supply Chain program compiles");
-    let world = compile_supply_chain_baseline(program).expect("Court production world compiles");
+    let world =
+        compile_supply_chain_baseline(execution, program).expect("Court production world compiles");
     assert_eq!(world.handles.entities.len(), 244);
     assert_eq!(world.handles.relations.len(), 247);
     assert_eq!(world.commit, world.commit_result.commit);
@@ -132,7 +134,8 @@ fn standard_supply_chain_baseline_matches_oracle_and_forks_without_copying() {
         .expect("Standard Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
         .expect("Standard Supply Chain program compiles");
-    let world = compile_supply_chain_baseline(program).expect("Standard production world compiles");
+    let world = compile_supply_chain_baseline(execution, program)
+        .expect("Standard production world compiles");
     assert_eq!(world.handles.entities.len(), 4_848);
     assert_eq!(world.handles.relations.len(), 3_363);
     let budget = world

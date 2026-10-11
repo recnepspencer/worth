@@ -16,13 +16,19 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
             });
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
 
-            let _source = create_entity_in_partition(&runtime, "chip-batch-driver", PartitionId(7));
+            let _source = create_entity_in_partition(
+                execution,
+                &runtime,
+                "chip-batch-driver",
+                PartitionId(7),
+            );
             let mut partition_targets = BTreeMap::new();
             for partition_offset in 0..8u32 {
                 let partition_id = PartitionId(11 + partition_offset * 2);
                 let targets = (0..8)
                     .map(|index| {
                         create_entity_in_partition(
+                            execution,
                             &runtime,
                             &format!("chip-batch-sink-{}-{index}", partition_id.0),
                             partition_id,
@@ -75,6 +81,7 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
                 )
                 .expect("test staging stays within configured resource budgets");
                 txn.commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

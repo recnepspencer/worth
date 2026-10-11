@@ -2,8 +2,12 @@ use super::*;
 
 #[test]
 fn leased_bulk_creation_matches_serial_canonical_patch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = TEST_SERIAL.lock().unwrap();
     fn commit_bulk(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     ) -> worth_relational::facade::transactions::CommitResult {
         let runtime = RelationalRuntimeApi::builder()
@@ -39,19 +43,23 @@ fn leased_bulk_creation_matches_serial_canonical_patch() {
             )
             .expect("bulk transaction stages");
         match lease {
-            Some(lease) => runtime.commit_branch_transaction_with_lease(transaction, lease),
-            None => {
-                runtime.commit_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
+            Some(lease) => {
+                runtime.commit_branch_transaction_with_lease(execution, transaction, lease)
             }
+            None => runtime.commit_branch_transaction(
+                execution,
+                transaction,
+                AllocationPolicy::SystemAllocation,
+            ),
         }
         .expect("bulk commit succeeds")
     }
 
-    let serial = commit_bulk(None);
+    let serial = commit_bulk(execution, None);
     let lease = authority()
         .request_lease(lease_request(32 * 1024 * 1024, CancellationToken::new()))
         .expect("bulk lease admitted");
-    let leased = commit_bulk(Some(&lease));
+    let leased = commit_bulk(execution, Some(&lease));
     assert_eq!(serial.changed_records.len(), 64);
     assert_eq!(serial.changed_records, leased.changed_records);
     assert_eq!(serial.patch(), leased.patch());

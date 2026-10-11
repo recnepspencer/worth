@@ -53,11 +53,14 @@ fn production_schema_installation_failure_is_typed_before_mutation() {
 
 #[test]
 fn production_transaction_failure_is_typed_before_handle_binding() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut program = court_program();
     program.relation_specs_mut_for_test()[0].source =
         EntityReference::Existing(EntityId::new(PartitionId::main(), u64::MAX, 0));
 
-    let error = match compile_supply_chain_baseline(program) {
+    let error = match compile_supply_chain_baseline(execution, program) {
         Ok(_) => panic!("a relation with an unknown endpoint must fail the commit"),
         Err(error) => error,
     };
@@ -69,6 +72,9 @@ fn production_transaction_failure_is_typed_before_handle_binding() {
 
 #[test]
 fn missing_owner_binding_is_typed_and_cannot_fall_back_to_a_raw_id() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let program = court_program();
     let owner = RelationalRuntimeApi::builder().build();
     let owner_identity = owner.main_branch_identity();
@@ -88,7 +94,7 @@ fn missing_owner_binding_is_typed_and_cannot_fall_back_to_a_raw_id() {
         )
         .unwrap();
     let commit = transaction
-        .commit(&owner, Allocation::SystemAllocation)
+        .commit(execution, &owner, Allocation::SystemAllocation)
         .expect("the public no-op commit supplies a real empty correspondence");
     let error = SupplyChainSemanticHandles::bind(&program, &commit, commit.snapshot.clone())
         .expect_err("a real commit with no matching owner records cannot mint semantic handles");
@@ -101,7 +107,8 @@ fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let program = court_program();
-    let mut world = compile_supply_chain_baseline(program).expect("Court world compiles");
+    let mut world =
+        compile_supply_chain_baseline(execution, program).expect("Court world compiles");
     let foreign_runtime = RelationalRuntimeApi::builder().build();
     let foreign_snapshot = {
         let identity = foreign_runtime.main_branch_identity();
@@ -115,7 +122,7 @@ fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
             )
             .expect("owner-admitted transaction context");
         let commit = transaction
-            .commit(&foreign_runtime, Allocation::SystemAllocation)
+            .commit(execution, &foreign_runtime, Allocation::SystemAllocation)
             .expect("foreign runtime no-op commit");
         commit.snapshot.clone()
     };
@@ -142,8 +149,12 @@ fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
 
 #[test]
 fn relation_binding_rejects_a_snapshot_from_another_runtime() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let program = court_program();
-    let world = compile_supply_chain_baseline(program.clone()).expect("Court world compiles");
+    let world =
+        compile_supply_chain_baseline(execution, program.clone()).expect("Court world compiles");
     let foreign_runtime = RelationalRuntimeApi::builder().build();
     let foreign_snapshot = {
         let identity = foreign_runtime.main_branch_identity();
@@ -157,7 +168,7 @@ fn relation_binding_rejects_a_snapshot_from_another_runtime() {
             )
             .expect("owner-admitted transaction context");
         let commit = transaction
-            .commit(&foreign_runtime, Allocation::SystemAllocation)
+            .commit(execution, &foreign_runtime, Allocation::SystemAllocation)
             .expect("foreign runtime no-op commit");
         commit.snapshot.clone()
     };
@@ -171,7 +182,8 @@ fn oracle_failure_is_distinct_from_production_observation_and_comparison() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut world = compile_supply_chain_baseline(court_program()).expect("Court world compiles");
+    let mut world =
+        compile_supply_chain_baseline(execution, court_program()).expect("Court world compiles");
     let edge = world
         .program
         .definition_mut_for_test()
@@ -193,7 +205,8 @@ fn comparison_failure_is_distinct_after_an_oracle_only_value_drift() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut world = compile_supply_chain_baseline(court_program()).expect("Court world compiles");
+    let mut world =
+        compile_supply_chain_baseline(execution, court_program()).expect("Court world compiles");
     let port = world
         .program
         .definition_mut_for_test()
@@ -226,7 +239,10 @@ fn declaration_failure_remains_distinct_from_runtime_failures() {
 
 #[test]
 fn publication_budget_failure_is_typed_and_happens_before_handle_binding() {
-    let error = match compile_supply_chain_baseline_with_budget(court_program(), 1) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let error = match compile_supply_chain_baseline_with_budget(execution, court_program(), 1) {
         Ok(_) => panic!("an intentionally tiny publication budget must reject Court"),
         Err(error) => error,
     };
@@ -238,8 +254,12 @@ fn publication_budget_failure_is_typed_and_happens_before_handle_binding() {
 
 #[test]
 fn semantic_relation_binding_rejects_wrong_kind_and_endpoint_intent() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let original = court_program();
-    let world = compile_supply_chain_baseline(original.clone()).expect("Court world compiles");
+    let world =
+        compile_supply_chain_baseline(execution, original.clone()).expect("Court world compiles");
 
     let mut wrong_kind = original.clone();
     let first_key = *wrong_kind
@@ -291,8 +311,12 @@ fn semantic_relation_binding_rejects_wrong_kind_and_endpoint_intent() {
 
 #[test]
 fn semantic_relation_binding_rejects_incomplete_correspondence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let original = court_program();
-    let world = compile_supply_chain_baseline(original.clone()).expect("Court world compiles");
+    let world =
+        compile_supply_chain_baseline(execution, original.clone()).expect("Court world compiles");
     let first_key = *original
         .definition()
         .relations
@@ -318,8 +342,12 @@ fn semantic_relation_binding_rejects_incomplete_correspondence() {
 
 #[test]
 fn semantic_relation_binding_rejects_duplicate_correspondence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let original = court_program();
-    let world = compile_supply_chain_baseline(original.clone()).expect("Court world compiles");
+    let world =
+        compile_supply_chain_baseline(execution, original.clone()).expect("Court world compiles");
     let keys = original
         .definition()
         .relations

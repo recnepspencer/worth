@@ -9,7 +9,7 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(
         "persisted_recovery_replay_round_trip",
         || {
             let runtime = persisted_runtime_with_test_schema();
-            let source_created = create_entity_outcome(&runtime, "recovery-source");
+            let source_created = create_entity_outcome(execution, &runtime, "recovery-source");
             let source = changed_entities(&source_created)[0];
 
             let checkpoint_started_at = Instant::now();
@@ -20,7 +20,7 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(
             let checkpoint_micros = checkpoint_started_at.elapsed().as_micros();
 
             let post_checkpoint_commit_started_at = Instant::now();
-            let target_created = create_entity_outcome(&runtime, "recovery-target");
+            let target_created = create_entity_outcome(execution, &runtime, "recovery-target");
             let target = changed_entities(&target_created)[0];
             let post_checkpoint_commit_micros =
                 post_checkpoint_commit_started_at.elapsed().as_micros();

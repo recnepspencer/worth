@@ -24,6 +24,7 @@ use worth_relational::facade::{
 };
 
 pub(in crate::domain_computation::primary_graph) fn refused_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     request: LeaseRequest,
 ) -> worth_relational::facade::transactions::TransactionCommitError {
     let schema = RelationalSchemaRegistry::new()
@@ -61,12 +62,15 @@ pub(in crate::domain_computation::primary_graph) fn refused_commit(
     // Bootstrap has no production lease injector until 7.6. Exercise its
     // error-mapping seam using a real owner refusal, without threading a lease.
     runtime
-        .prepare_branch_transaction_with_lease(transaction, &lease)
+        .prepare_branch_transaction_with_lease(execution, transaction, &lease)
         .expect_err("commit preparation refused")
 }
 
 #[test]
 fn bootstrap_commit_preserves_real_leased_work_refusal() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
         isolated(
             concat!(
@@ -80,7 +84,7 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
                     DeterminismContract::CanonicalBitwise,
                     ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, 0),
                 );
-                let error = refused_commit(request);
+                let error = refused_commit(execution, request);
                 let worth_relational::facade::transactions::TransactionCommitError::Execution {
                     denial,
                     ..
@@ -154,6 +158,9 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
 
 #[test]
 fn bootstrap_commit_preserves_real_control_stops() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     isolated(
         concat!(
             module_path!(),
@@ -169,7 +176,7 @@ fn bootstrap_commit_preserves_real_control_stops() {
             for (request, expected) in
                 [(canceled, Control::Cancelled), (expired, Control::TimedOut)]
             {
-                let observed = map_bootstrap_commit_denial(refused_commit(request));
+                let observed = map_bootstrap_commit_denial(refused_commit(execution, request));
                 assert_eq!(
                     observed.kind(),
                     WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped {
@@ -204,6 +211,7 @@ fn bootstrap_operation_interruption_keeps_heads_generic_commit_rejection() {
 }
 
 pub(in crate::domain_computation::primary_graph) fn work_refusal(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> worth_relational::facade::transactions::TransactionCommitError {
     let mut request = request();
     request.policy = ExecutionRequestPolicy::new(
@@ -211,5 +219,5 @@ pub(in crate::domain_computation::primary_graph) fn work_refusal(
         DeterminismContract::CanonicalBitwise,
         ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, 0),
     );
-    refused_commit(request)
+    refused_commit(execution, request)
 }

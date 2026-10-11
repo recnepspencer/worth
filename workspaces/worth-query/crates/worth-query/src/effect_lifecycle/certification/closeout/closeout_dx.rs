@@ -99,7 +99,7 @@ pub(super) fn build_closeout_dx(
     let batch = batch_receipt_surface(execution);
     let common_path = common_path_story(&mutation);
     let writeback_common_path = writeback_common_path_story(&writeback);
-    let inspectable = inspectable_lowered_story();
+    let inspectable = inspectable_lowered_story(execution);
     let denial_or_rebind = denial_or_rebind_story();
     let support_discovery = support_discovery_story();
     let support_lookup_counters = support_discovery.counters.clone();
@@ -180,10 +180,17 @@ fn common_path_story(
     )
 }
 
-fn inspectable_lowered_story() -> DxStoryEvidence {
+fn inspectable_lowered_story(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> DxStoryEvidence {
     let branch = "dx-lowered";
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity = create_entity(
+        execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     fork_seed_branch_from_main(&mut runtime, branch);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(branch));
     let binding =
@@ -368,33 +375,6 @@ fn receipt_first_story(
     )
 }
 
-fn target_dx_digest(public_surface: &EffectLifecyclePublicSurfaceInventory) -> String {
-    let required = [
-        EffectPublicSurfaceKind::CommonPathIntentAuthoring,
-        EffectPublicSurfaceKind::WritebackCommonPath,
-        EffectPublicSurfaceKind::InspectableLoweredPlan,
-        EffectPublicSurfaceKind::DenialOrRebind,
-        EffectPublicSurfaceKind::SupportDiscovery,
-        EffectPublicSurfaceKind::BatchExecution,
-        EffectPublicSurfaceKind::DiagnosticsEnvelope,
-        EffectPublicSurfaceKind::ProductionCertification,
-    ];
-    hash_parts(
-        &required
-            .iter()
-            .map(|kind| {
-                let row = public_surface
-                    .rows()
-                    .iter()
-                    .find(|row| row.surface_kind() == *kind)
-                    .expect("required public surface row should exist");
-                format!(
-                    "{}:{}:{}",
-                    kind.as_str(),
-                    row.entrypoint().unwrap_or("none"),
-                    row.row_for_reporting()
-                )
-            })
-            .collect::<Vec<_>>(),
-    )
-}
+#[path = "closeout_dx/target_surface_digest.rs"]
+mod target_surface_digest;
+use target_surface_digest::target_dx_digest;

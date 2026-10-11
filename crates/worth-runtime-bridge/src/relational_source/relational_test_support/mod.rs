@@ -85,37 +85,54 @@ pub(crate) fn test_owner_begin_transaction_for_branch(
         .expect("branch basis belongs to its issuing runtime")
 }
 
-pub(crate) fn create_entity(runtime: &RelationalRuntime, name: &str) -> EntityId {
-    let outcome = create_entity_outcome(runtime, name);
+pub(crate) fn create_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    name: &str,
+) -> EntityId {
+    let outcome = create_entity_outcome(execution, runtime, name);
     let entity = changed_entities(&outcome)[0];
     release_test_commit_snapshot(runtime, &outcome);
     entity
 }
 
 pub(crate) fn create_entity_in_partition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
     partition_id: PartitionId,
 ) -> EntityId {
-    let outcome = commit_named_entity(runtime, name, partition_id, BranchId("main".to_owned()));
+    let outcome = commit_named_entity(
+        execution,
+        runtime,
+        name,
+        partition_id,
+        BranchId("main".to_owned()),
+    );
     let entity = changed_entities(&outcome)[0];
     release_test_commit_snapshot(runtime, &outcome);
     entity
 }
 
-pub(crate) fn create_entity_outcome(runtime: &RelationalRuntime, name: &str) -> CommitResult {
-    create_entity_outcome_on_branch(runtime, name, BranchId("main".to_owned()))
+pub(crate) fn create_entity_outcome(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    name: &str,
+) -> CommitResult {
+    create_entity_outcome_on_branch(execution, runtime, name, BranchId("main".to_owned()))
 }
 
 pub(crate) fn create_entity_outcome_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
     branch_id: BranchId,
 ) -> CommitResult {
-    commit_named_entity(runtime, name, PartitionId::main(), branch_id)
+    commit_named_entity(execution, runtime, name, PartitionId::main(), branch_id)
 }
 
 fn commit_named_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
     partition_id: PartitionId,
@@ -141,6 +158,7 @@ fn commit_named_entity(
         .unwrap();
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -164,6 +182,7 @@ pub(crate) fn fork_branch(
 /// Replace `entity` on `branch` with a new named entity that continues its
 /// lineage.
 pub(crate) fn replace_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity: EntityId,
     replacement: &str,
@@ -192,6 +211,7 @@ pub(crate) fn replace_entity_on_branch(
         .expect("test staging stays within configured resource budgets");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -210,6 +230,7 @@ pub(crate) fn replacement_successor(outcome: &CommitResult, original: EntityId) 
 
 /// Relate `source` to `target` on main with a `label` field.
 pub(crate) fn create_relation_outcome(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     source: EntityId,
     target: EntityId,
@@ -237,6 +258,7 @@ pub(crate) fn create_relation_outcome(
         .unwrap();
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

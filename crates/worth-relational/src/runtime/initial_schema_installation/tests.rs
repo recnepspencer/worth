@@ -49,6 +49,9 @@ fn recovered_initial_schema_readmission_requires_full_schema_identity() {
 }
 #[test]
 fn retained_publication_port_rejects_candidate_from_before_empty_invariant_seal() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use crate::tests::support::{batch_create, runtime_with_test_schema, test_owner_main_basis};
     let mut runtime = runtime_with_test_schema();
     let port = runtime.publication_port();
@@ -64,6 +67,7 @@ fn retained_publication_port_rejects_candidate_from_before_empty_invariant_seal(
         .unwrap();
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -112,6 +116,7 @@ fn retained_publication_port_rejects_candidate_from_before_empty_invariant_seal(
         .unwrap();
     let fresh = runtime
         .prepare_branch_transaction(
+            execution,
             fresh,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -132,6 +137,9 @@ fn retained_publication_port_rejects_candidate_from_before_empty_invariant_seal(
 
 #[test]
 fn delayed_installation_rejects_published_unsettled_branch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use crate::tests::support::{batch_create, runtime_with_test_schema, test_owner_main_basis};
     let mut runtime = runtime_with_test_schema();
     let basis = test_owner_main_basis(&runtime).unwrap();
@@ -146,6 +154,7 @@ fn delayed_installation_rejects_published_unsettled_branch() {
         .unwrap();
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -177,6 +186,9 @@ fn delayed_installation_rejects_published_unsettled_branch() {
 
 #[test]
 fn retained_ports_cannot_cross_initial_root_and_configuration_cutover() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use crate::tests::support::{batch_create, runtime_with_test_schema, test_owner_main_basis};
     use std::sync::mpsc;
     use std::time::Duration;
@@ -193,6 +205,7 @@ fn retained_ports_cannot_cross_initial_root_and_configuration_cutover() {
         .unwrap();
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             prepared_transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -222,6 +235,7 @@ fn retained_ports_cannot_cross_initial_root_and_configuration_cutover() {
         let prepare = threads.spawn(move || {
             preparation_started.send(()).unwrap();
             let result = preparation.prepare_branch_transaction(
+                execution,
                 pending_transaction,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             );
@@ -278,6 +292,7 @@ fn retained_ports_cannot_cross_initial_root_and_configuration_cutover() {
     let candidate = runtime
         .preparation_port()
         .prepare_branch_transaction(
+            execution,
             fresh,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

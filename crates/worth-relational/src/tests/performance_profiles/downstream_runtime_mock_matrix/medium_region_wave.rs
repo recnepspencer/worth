@@ -25,14 +25,16 @@ pub(super) fn certify_geometry_commit_downstream_medium_region_wave(
                     if development_profile { 256 } else { 0 }
             });
 
-            let entities = seed_downstream_region_world(&relational, "downstream-medium", 24, 4);
+            let entities =
+                seed_downstream_region_world(execution, &relational, "downstream-medium", 24, 4);
             let updated = entities[10];
             let seeds = Arc::from([entities[8], entities[10], entities[12], entities[14]]);
             let mut downstream_runtime =
                 build_mock_downstream_runtime(development_profile, entities.len());
 
             let relational_commit_started_at = Instant::now();
-            let update = update_entity(&relational, updated, "downstream-medium-updated");
+            let update =
+                update_entity(execution, &relational, updated, "downstream-medium-updated");
             let relational_commit_micros = relational_commit_started_at.elapsed().as_micros();
 
             let snapshot = relational.visibility_authority().snapshot();

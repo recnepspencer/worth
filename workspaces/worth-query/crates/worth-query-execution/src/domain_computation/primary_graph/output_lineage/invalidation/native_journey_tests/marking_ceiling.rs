@@ -99,7 +99,7 @@ fn unwatched_commit_with_more_touch_keys_than_the_ceiling_publishes_exactly() {
     let owner = &handle.source_owner.invalidation_owner;
     let batch = unwatched_accounts(graph.layout(), CEILING, "marking-ceiling");
     handle.with_runtime_mut(request_execution, |runtime| {
-        let committed = write_batch(runtime, batch);
+        let committed = write_batch(request_execution, runtime, batch);
         release_test_commit_snapshot(runtime, &committed);
         let (after_handle, after) = snapshot(runtime);
         let report = owner
@@ -173,7 +173,7 @@ fn matched_fan_out_above_the_ceiling_publishes_and_readers_fully_verify() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             handle.with_runtime_mut(request_execution, |runtime| {
-                write_field(runtime, entity, status.clone(), "prime");
+                write_field(request_execution, runtime, entity, status.clone(), "prime");
                 let (before_handle, before) = snapshot(runtime);
                 let facts: Arc<[_]> = Arc::from([field_fact(
                     &host_custody.borrowed_request_for_test(),
@@ -185,7 +185,7 @@ fn matched_fan_out_above_the_ceiling_publishes_and_readers_fully_verify() {
                 for reader in &readers {
                     register(owner, reader.clone(), facts.clone(), &before, OrdSet::new());
                 }
-                write_field(runtime, entity, status, "closed");
+                write_field(request_execution, runtime, entity, status, "closed");
                 let (after_handle, after) = snapshot(runtime);
                 let report = owner
                     .native_marking_report(&after, &mut owner.edit_admission())

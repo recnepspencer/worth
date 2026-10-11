@@ -36,6 +36,7 @@ pub trait WorthQueryRuntimeWriteAuthorityAdapter {
 
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
         relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -43,13 +44,19 @@ pub trait WorthQueryRuntimeWriteAuthorityAdapter {
 
     fn write_batch(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
         mut relational_runtime: Option<&mut RelationalRuntime>,
         mutations: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WriteAuthorityExecutionReceipt>, WorthQueryWorkspaceError> {
         let mut receipts = Vec::with_capacity(mutations.len());
         for mutation in mutations {
-            receipts.push(self.write(bridge, relational_runtime.as_deref_mut(), mutation)?);
+            receipts.push(self.write(
+                execution,
+                bridge,
+                relational_runtime.as_deref_mut(),
+                mutation,
+            )?);
         }
         Ok(receipts)
     }

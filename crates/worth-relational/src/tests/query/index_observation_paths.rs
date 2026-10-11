@@ -16,14 +16,14 @@ fn unique_entity_aspect_field_index_refresh_rewrites_name_membership_after_entit
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
     });
-    let alpha = create_entity(&runtime, "alpha");
-    let beta = create_entity(&runtime, "beta");
+    let alpha = create_entity(execution, &runtime, "alpha");
+    let beta = create_entity(execution, &runtime, "beta");
 
     runtime
         .index_authority()
         .rebuild_unique_entity_aspect_field_indexes(execution)
         .expect("main-branch unique index rebuild admits its exact basis");
-    update_entity(&runtime, beta, "gamma");
+    update_entity(execution, &runtime, beta, "gamma");
 
     let index_access = runtime.index_access();
     let name_field = aspect_field_locator(aspect_key("name"), field_key("name"));
@@ -97,6 +97,7 @@ fn unique_entity_aspect_field_index_keeps_same_field_key_separate_by_aspect_loca
         .build();
 
     let alpha = create_entity_with_aspect_fields(
+        execution,
         &runtime,
         "alpha",
         aspect_field_patch_from_values([
@@ -113,6 +114,7 @@ fn unique_entity_aspect_field_index_keeps_same_field_key_separate_by_aspect_loca
         ]),
     );
     let beta = create_entity_with_aspect_fields(
+        execution,
         &runtime,
         "beta",
         aspect_field_patch_from_values([
@@ -169,8 +171,8 @@ fn derived_index_build_materializes_latest_visible_entity_field_values() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let alpha = create_entity(&runtime, "alpha");
-    let create_outcome = update_entity(&runtime, alpha, "gamma");
+    let alpha = create_entity(execution, &runtime, "alpha");
+    let create_outcome = update_entity(execution, &runtime, alpha, "gamma");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name".to_string(),
@@ -259,6 +261,7 @@ fn derived_index_build_materializes_declared_struct_field_through_field_projecti
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -307,6 +310,7 @@ fn field_comparison_key(value: &str) -> AuthoritativeFieldComparisonKey {
 }
 
 fn create_entity_with_aspect_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,
     fields: AspectFieldPatch,
@@ -326,6 +330,7 @@ fn create_entity_with_aspect_fields(
     .expect("test staging stays within configured resource budgets");
     changed_entities(
         &txn.commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

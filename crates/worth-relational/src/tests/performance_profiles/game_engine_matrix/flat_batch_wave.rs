@@ -12,7 +12,7 @@ pub(super) fn certify_flat_entity_batch_region_wave(
                 &mut runtime,
                 PerfDiagnosticsPolicy::GeometryOperationalHotPath,
             );
-            let seeded = seed_game_engine_frame_world(&runtime, "scene-batch", 8, 24);
+            let seeded = seed_game_engine_frame_world(execution, &runtime, "scene-batch", 8, 24);
 
             let mut partition_targets = BTreeMap::new();
             for entity in &seeded.entities {
@@ -77,6 +77,7 @@ pub(super) fn certify_flat_entity_batch_region_wave(
                 )
                 .expect("test staging stays within configured resource budgets");
                 txn.commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

@@ -10,7 +10,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "pinned-name");
+    let created = create_entity_outcome(execution, &runtime, "pinned-name");
     let entity = changed_entities(&created)[0];
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -77,7 +77,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
         .visibility_authority()
         .release_snapshot(&created.snapshot)
         .unwrap();
-    update_entity(&runtime, entity, "new-name");
+    update_entity(execution, &runtime, entity, "new-name");
     let before = runtime.index_access().generation_selection_counters();
     let handles = runtime.visibility.snapshot_handle_registry_cost_counters();
     for (name, expected) in [
@@ -162,7 +162,7 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
     );
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "cancellation-order");
+    let created = create_entity_outcome(execution, &runtime, "cancellation-order");
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),

@@ -6,7 +6,7 @@ fn durability_contract_recovery_preserves_merge_parent_order() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let main = create_entity_outcome(&runtime, "main");
+    let main = create_entity_outcome(execution, &runtime, "main");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -14,9 +14,14 @@ fn durability_contract_recovery_preserves_merge_parent_order() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let feature =
-        create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
+    let feature = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
     let merge = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
@@ -54,10 +59,16 @@ fn durability_contract_replays_empty_intent_merge_currentness_once() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "main");
+    create_entity_outcome(execution, &runtime, "main");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
     let merge = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
@@ -111,9 +122,14 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "main");
+    create_entity_outcome(execution, &runtime, "main");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
     let prepared = runtime
         .prepare_merge_execution(
             execution,
@@ -192,11 +208,16 @@ fn durability_contract_reports_parent_order_parity_drift_when_durable_segment_is
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let main = create_entity_outcome(&runtime, "main");
+    let main = create_entity_outcome(execution, &runtime, "main");
     create_branch_from_main(&runtime, "feature");
-    let feature =
-        create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
+    let feature = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
     let merge = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
@@ -252,9 +273,14 @@ fn durability_contract_does_not_reconstruct_missing_merge_authority_from_diagnos
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "main");
+    create_entity_outcome(execution, &runtime, "main");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
     let prepared = runtime
         .prepare_merge_execution(
             execution,

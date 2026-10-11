@@ -6,6 +6,7 @@ use crate::facade::transactions::{
 use super::super::fixture::{FintechCaseRole, FintechWorld};
 
 pub(crate) fn emit_case_audit_record(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
     case_role: FintechCaseRole,
@@ -48,6 +49,7 @@ pub(crate) fn emit_case_audit_record(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &world.runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
@@ -55,10 +57,12 @@ pub(crate) fn emit_case_audit_record(
 }
 
 pub(crate) fn emit_trade_correction_audit_record(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
 ) -> CommitResult {
     emit_case_audit_record(
+        execution,
         world,
         branch_id,
         FintechCaseRole::LateTradeCorrection,

@@ -7,11 +7,13 @@ use crate::facade::transactions::{
 use super::super::fixture::FintechWorld;
 
 pub(crate) fn repair_seeded_failed_settlement(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
 ) -> CommitResult {
     let case = world.failed_settlement_repair_case();
     repair_settlement_with_aspect_field_patches(
+        execution,
         world,
         branch_id,
         case.settlement,
@@ -21,6 +23,7 @@ pub(crate) fn repair_seeded_failed_settlement(
 }
 
 pub(crate) fn repair_settlement_with_aspect_field_patches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
     settlement_id: EntityId,
@@ -118,6 +121,7 @@ pub(crate) fn repair_settlement_with_aspect_field_patches(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &world.runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

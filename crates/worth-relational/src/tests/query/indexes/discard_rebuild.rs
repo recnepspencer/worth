@@ -18,14 +18,14 @@ struct OrderingFixture {
 }
 
 impl OrderingFixture {
-    fn new() -> Self {
+    fn new(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Self {
         let runtime = persisted_runtime_with_index_field_aspects();
-        let parent = changed_entities(&create_entity_outcome(&runtime, "parent"))[0];
-        let alpha_one = changed_entities(&create_entity_outcome(&runtime, "alpha"))[0];
-        let beta = changed_entities(&create_entity_outcome(&runtime, "beta"))[0];
-        let alpha_two = changed_entities(&create_entity_outcome(&runtime, "alpha"))[0];
+        let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
+        let alpha_one = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
+        let beta = changed_entities(&create_entity_outcome(execution, &runtime, "beta"))[0];
+        let alpha_two = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
         for child in [beta, alpha_two, alpha_one] {
-            create_relation_outcome(&runtime, parent, child, "owns");
+            create_relation_outcome(execution, &runtime, parent, child, "owns");
         }
         let index = runtime.index_authority().register(DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -102,7 +102,7 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = OrderingFixture::new();
+    let fixture = OrderingFixture::new(execution);
     let runtime = &fixture.runtime;
     let historical = fixture.basis();
     let historical_snapshot = runtime
@@ -130,7 +130,7 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
         &sibling_basis,
     );
     assert!(sibling_build.failed_indexes.is_empty());
-    create_entity_outcome(runtime, "unrelated-new-record");
+    create_entity_outcome(execution, runtime, "unrelated-new-record");
     let current = fixture.basis();
     let current_snapshot = runtime
         .snapshots()
@@ -296,7 +296,10 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
 
 #[test]
 fn discard_requires_installed_definition_and_empty_discard_is_idempotent() {
-    let fixture = OrderingFixture::new();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = OrderingFixture::new(execution);
     let authority = fixture.runtime.index_authority();
     let missing = DerivedIndexId(fixture.index.index_id.0 + 1);
     assert_eq!(

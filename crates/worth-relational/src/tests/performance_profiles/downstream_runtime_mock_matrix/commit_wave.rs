@@ -19,19 +19,21 @@ pub(super) fn certify_geometry_commit_downstream_wave(
                     if development_profile { 256 } else { 0 }
             });
 
-            let source = create_entity_outcome(&relational, "merged-geometry-source");
-            let middle = create_entity_outcome(&relational, "merged-geometry-middle");
-            let target = create_entity_outcome(&relational, "merged-geometry-target");
+            let source = create_entity_outcome(execution, &relational, "merged-geometry-source");
+            let middle = create_entity_outcome(execution, &relational, "merged-geometry-middle");
+            let target = create_entity_outcome(execution, &relational, "merged-geometry-target");
             let source_entity = changed_entities(&source)[0];
             let middle_entity = changed_entities(&middle)[0];
             let target_entity = changed_entities(&target)[0];
             create_relation_outcome(
+                execution,
                 &relational,
                 source_entity,
                 middle_entity,
                 "merged-geometry-link-a",
             );
             create_relation_outcome(
+                execution,
                 &relational,
                 middle_entity,
                 target_entity,
@@ -41,8 +43,12 @@ pub(super) fn certify_geometry_commit_downstream_wave(
             let mut downstream_runtime = build_mock_downstream_runtime(development_profile, 4);
 
             let relational_commit_started_at = Instant::now();
-            let update =
-                update_entity(&relational, middle_entity, "merged-geometry-middle-updated");
+            let update = update_entity(
+                execution,
+                &relational,
+                middle_entity,
+                "merged-geometry-middle-updated",
+            );
             let relational_commit_micros = relational_commit_started_at.elapsed().as_micros();
 
             let snapshot = relational.visibility_authority().snapshot();

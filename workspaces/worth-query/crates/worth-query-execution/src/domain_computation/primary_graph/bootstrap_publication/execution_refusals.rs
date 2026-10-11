@@ -136,6 +136,7 @@ fn refused_index_build(
         .unwrap();
     let committed = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

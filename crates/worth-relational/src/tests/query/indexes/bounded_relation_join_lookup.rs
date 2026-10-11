@@ -11,16 +11,30 @@ fn relation_join_isolates_both_exact_endpoints_and_certifies_storage_parity() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let other_left = create_entity(&runtime, "other-left");
-    let other_right = create_entity(&runtime, "other-right");
-    let selected = create_entity(&runtime, "selected");
-    let same_left = create_entity(&runtime, "same-left");
-    let same_right = create_entity(&runtime, "same-right");
-    bind_chain(&runtime, left, selected, right, "selected");
-    bind_chain(&runtime, left, same_left, other_right, "same-left");
-    bind_chain(&runtime, other_left, same_right, right, "same-right");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let other_left = create_entity(execution, &runtime, "other-left");
+    let other_right = create_entity(execution, &runtime, "other-right");
+    let selected = create_entity(execution, &runtime, "selected");
+    let same_left = create_entity(execution, &runtime, "same-left");
+    let same_right = create_entity(execution, &runtime, "same-right");
+    bind_chain(execution, &runtime, left, selected, right, "selected");
+    bind_chain(
+        execution,
+        &runtime,
+        left,
+        same_left,
+        other_right,
+        "same-left",
+    );
+    bind_chain(
+        execution,
+        &runtime,
+        other_left,
+        same_right,
+        right,
+        "same-right",
+    );
     let index = register_relation_join(&runtime, 81);
     build_current_generation(execution, &runtime, index.index_id);
     let snapshot = runtime.visibility_authority().snapshot();
@@ -61,10 +75,10 @@ fn relation_join_certification_rejects_a_missing_candidate() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let selected = create_entity(&runtime, "selected");
-    bind_chain(&runtime, left, selected, right, "selected");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let selected = create_entity(execution, &runtime, "selected");
+    bind_chain(execution, &runtime, left, selected, right, "selected");
     let index = register_relation_join(&runtime, 84);
     build_current_generation(execution, &runtime, index.index_id);
     let key = RelationJoinKey::new(left, right);
@@ -99,15 +113,15 @@ fn relation_join_requires_an_exact_generation_and_reports_bounded_overflow() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let first = create_entity(&runtime, "first");
-    bind_chain(&runtime, left, first, right, "first");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let first = create_entity(execution, &runtime, "first");
+    bind_chain(execution, &runtime, left, first, right, "first");
     let index = register_relation_join(&runtime, 82);
     build_current_generation(execution, &runtime, index.index_id);
 
-    let second = create_entity(&runtime, "second");
-    bind_chain(&runtime, left, second, right, "second");
+    let second = create_entity(execution, &runtime, "second");
+    bind_chain(execution, &runtime, left, second, right, "second");
     let current = runtime.visibility_authority().snapshot();
     let missing = runtime
         .index_access()
@@ -142,15 +156,22 @@ fn relation_join_rejects_a_candidate_with_substituted_relation_evidence() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let selected = create_entity(&runtime, "selected");
-    let other_left = create_entity(&runtime, "other-left");
-    let other_right = create_entity(&runtime, "other-right");
-    let other_shared = create_entity(&runtime, "other-shared");
-    let (selected_left_relation, _) = bind_chain(&runtime, left, selected, right, "selected");
-    let (_, substituted_right_relation) =
-        bind_chain(&runtime, other_left, other_shared, other_right, "other");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let selected = create_entity(execution, &runtime, "selected");
+    let other_left = create_entity(execution, &runtime, "other-left");
+    let other_right = create_entity(execution, &runtime, "other-right");
+    let other_shared = create_entity(execution, &runtime, "other-shared");
+    let (selected_left_relation, _) =
+        bind_chain(execution, &runtime, left, selected, right, "selected");
+    let (_, substituted_right_relation) = bind_chain(
+        execution,
+        &runtime,
+        other_left,
+        other_shared,
+        other_right,
+        "other",
+    );
     let index = register_relation_join(&runtime, 83);
     build_current_generation(execution, &runtime, index.index_id);
     let key = RelationJoinKey::new(left, right);
@@ -189,10 +210,11 @@ fn exact_relation_join_uses_one_branch_root_after_both_heads_diverge() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let left = create_entity(&runtime, "exact-left");
-    let right = create_entity(&runtime, "exact-right");
-    let selected = create_entity(&runtime, "exact-selected");
-    let (selected_left_relation, _) = bind_chain(&runtime, left, selected, right, "exact-selected");
+    let left = create_entity(execution, &runtime, "exact-left");
+    let right = create_entity(execution, &runtime, "exact-right");
+    let selected = create_entity(execution, &runtime, "exact-selected");
+    let (selected_left_relation, _) =
+        bind_chain(execution, &runtime, left, selected, right, "exact-selected");
     let index = register_relation_join_with_scope(&runtime, 85, true);
     build_current_generation(execution, &runtime, index.index_id);
     let main_snapshot = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
@@ -207,11 +229,13 @@ fn exact_relation_join_uses_one_branch_root_after_both_heads_diverge() {
     let sibling_snapshot =
         snapshot_for_owner_branch(&runtime, &BranchId("join-sibling".to_owned()));
     create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "sibling-after-observation",
         BranchId("join-sibling".to_owned()),
     );
     delete_relation_on_branch(
+        execution,
         &runtime,
         selected_left_relation,
         BranchId("main".to_owned()),
@@ -297,6 +321,7 @@ fn build_current_generation(
 }
 
 fn bind_chain(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     left: crate::facade::identity::EntityId,
     shared: crate::facade::identity::EntityId,
@@ -306,8 +331,9 @@ fn bind_chain(
     crate::facade::identity::RelationId,
     crate::facade::identity::RelationId,
 ) {
-    let left_relation = create_relation(runtime, left, shared, &format!("{name}-left"));
-    let right_relation = create_relation(runtime, shared, right, &format!("{name}-right"));
+    let left_relation = create_relation(execution, runtime, left, shared, &format!("{name}-left"));
+    let right_relation =
+        create_relation(execution, runtime, shared, right, &format!("{name}-right"));
     (left_relation, right_relation)
 }
 

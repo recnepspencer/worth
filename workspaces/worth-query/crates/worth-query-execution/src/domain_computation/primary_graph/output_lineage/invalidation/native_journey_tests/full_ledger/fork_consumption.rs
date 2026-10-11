@@ -76,7 +76,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
         )
         .unwrap();
     handle.with_runtime_mut(execution, |runtime| {
-        publish_on_fork(runtime, &fork, unrelated, label.clone(), "first-fork-write");
+        publish_on_fork(execution, runtime, &fork, unrelated, label.clone(), "first-fork-write");
         assert!(owner.resources.retained_capacity_bytes() <= MAXIMUM_RETAINED_BYTES);
         assert!(matches!(
             owner
@@ -118,15 +118,15 @@ pub(super) fn restored_root_consumption_and_later_writes() {
             ConsumedOutputVerification::Current,
             "the unrelated write did not change the restored root"
         );
-        publish_on_fork(runtime, &fork, unrelated, label.clone(), "consumer-commit");
+        publish_on_fork(execution, runtime, &fork, unrelated, label.clone(), "consumer-commit");
         publish_on_fork(
-            runtime,
+            execution, runtime,
             &fork,
             unrelated,
             label.clone(),
             "later-fork-write-one",
         );
-        publish_on_fork(runtime, &fork, unrelated, label, "later-fork-write-two");
+        publish_on_fork(execution, runtime, &fork, unrelated, label, "later-fork-write-two");
         assert!(owner.resources.retained_capacity_bytes() <= MAXIMUM_RETAINED_BYTES);
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
         runtime.snapshots().release_snapshot(&old_handle).unwrap();
@@ -136,6 +136,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
 }
 
 fn publish_on_fork(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     fork: &BranchId,
     entity: EntityId,
@@ -164,6 +165,7 @@ fn publish_on_fork(
         .unwrap();
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

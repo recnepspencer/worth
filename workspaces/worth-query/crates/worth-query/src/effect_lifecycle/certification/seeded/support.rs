@@ -47,6 +47,7 @@ pub(super) fn relational_runtime_with_intent_strategy() -> RelationalRuntime {
 }
 
 pub(super) fn create_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     name: &str,
     branch: BranchId,
@@ -78,6 +79,7 @@ pub(super) fn create_entity(
     .expect("seeded effect fixture staging fits the configured transaction budget");
     let outcome = txn
         .commit(
+            execution,
             runtime,
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )

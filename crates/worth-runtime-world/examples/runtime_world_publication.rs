@@ -54,7 +54,13 @@ fn main() {
         .unwrap();
 }
 fn publication_workflow() {
-    let records = relational::CargoRecords::install();
+    let seed_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let seed_execution = worth_execution::ExecutionRequest::serial(&seed_request);
+    let records = relational::CargoRecords::install(&seed_execution);
     let mut graph = SignalGraph::new();
     let source_node = graph.node().build();
     // Install correspondence into the SAME graph that the Signal owner seals.
@@ -137,9 +143,11 @@ fn publication_workflow() {
     let token = RuntimeWorldCancellationSource::new().token();
     let intent = |head: &ProductBranchObservation, amount: &str| {
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
-            .with_prepared_relational_candidate(
-                records.candidate(head.basis().relational_basis(), amount),
-            )
+            .with_prepared_relational_candidate(records.candidate(
+                &execution,
+                head.basis().relational_basis(),
+                amount,
+            ))
     };
     let stale = publication
         .prepare_without_signal(root.clone(), intent(&root, "6"), &token, None)
@@ -168,9 +176,11 @@ fn publication_workflow() {
         .unwrap();
     let combined =
         CompositePublicationIntent::with_signal(Some(RelationalTransactionIntent::ordinary()))
-            .with_prepared_relational_candidate(
-                records.candidate(head.basis().relational_basis(), "7"),
-            );
+            .with_prepared_relational_candidate(records.candidate(
+                &execution,
+                head.basis().relational_basis(),
+                "7",
+            ));
     let prepared = publication
         .prepare_with_signal(head.clone(), combined, &token, None)
         .unwrap();

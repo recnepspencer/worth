@@ -5,13 +5,15 @@ fn derived_index_contract_staged_parallel_generation_matches_serial_reference() 
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    fn build_runtime() -> (
+    fn build_runtime(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> (
         crate::facade::runtime::RelationalRuntime,
         crate::facade::history::CommitId,
         Vec<crate::facade::indexes::DerivedIndexId>,
     ) {
         let runtime = runtime_with_test_schema();
-        let commit = create_entity_outcome(&runtime, "main-a");
+        let commit = create_entity_outcome(execution, &runtime, "main-a");
         let name_index = runtime.index_authority().register(DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
             name: "entity.name".to_string(),
@@ -36,8 +38,8 @@ fn derived_index_contract_staged_parallel_generation_matches_serial_reference() 
         )
     }
 
-    let (serial_runtime, serial_commit_id, index_ids) = build_runtime();
-    let (staged_runtime, staged_commit_id, staged_index_ids) = build_runtime();
+    let (serial_runtime, serial_commit_id, index_ids) = build_runtime(execution);
+    let (staged_runtime, staged_commit_id, staged_index_ids) = build_runtime(execution);
 
     serial_runtime.performance_access().reset_counters();
     staged_runtime.performance_access().reset_counters();

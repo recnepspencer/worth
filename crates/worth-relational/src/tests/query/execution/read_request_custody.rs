@@ -11,11 +11,13 @@ use worth_foundational::{
 
 const MEMORY: u64 = 1 << 26;
 
-fn fixture() -> (RelationalRuntime, SnapshotPinnedQueryPlan) {
+fn fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (RelationalRuntime, SnapshotPinnedQueryPlan) {
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity_in_partition(&runtime, "left-a", PartitionId(7));
-    create_entity_in_partition(&runtime, "left-b", PartitionId(7));
-    create_entity_in_partition(&runtime, "right-a", PartitionId(11));
+    create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "left-b", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "right-a", PartitionId(11));
     let snapshot = runtime.visibility_authority().snapshot();
     let context_id = runtime.read_truth().query_plan_context(&snapshot).unwrap();
     let packet = PlannedQueryPacket {
@@ -62,7 +64,10 @@ fn lease(
 
 #[test]
 fn production_kind_scan_spends_its_callers_work_ceiling() {
-    let (runtime, plan) = fixture();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, plan) = fixture(execution);
     let lease = lease(1, 1, CancellationToken::new());
     // Three fixture rows at the owner's one-unit examined-row fee cannot fit one unit.
     let stopped = runtime
@@ -85,7 +90,10 @@ fn serial(cancellation: CancellationToken) -> worth_execution::SerialRequest {
 
 #[test]
 fn production_plan_has_equal_bits_and_charged_work_at_every_backing() {
-    let (runtime, plan) = fixture();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, plan) = fixture(execution);
     let host = serial(CancellationToken::new());
     let reference = runtime
         .read_truth()
@@ -119,7 +127,10 @@ fn production_plan_has_equal_bits_and_charged_work_at_every_backing() {
 
 #[test]
 fn production_plan_cancellation_has_one_typed_cause_at_every_backing() {
-    let (runtime, plan) = fixture();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, plan) = fixture(execution);
     for width in [0, 1, 2, 4] {
         let source = worth_execution::CancellationSource::new();
         let host = serial(source.token());

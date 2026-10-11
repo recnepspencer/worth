@@ -33,7 +33,7 @@ fn external_component_pin_is_the_last_readmission_obligation() {
         DeltaId::StormRerouteAurora,
     )
     .unwrap();
-    commit_branch_batch(&runtime, branch_id, batch);
+    commit_branch_batch(execution, &runtime, branch_id, batch);
     drop(basis);
 
     let retained = runtime
@@ -76,7 +76,7 @@ fn foreign_release_denial_preserves_the_owner_obligation() {
         DeltaId::StormRerouteAurora,
     )
     .unwrap();
-    commit_branch_batch(&runtime, branch_id, batch);
+    commit_branch_batch(execution, &runtime, branch_id, batch);
     drop(basis);
 
     let foreign = certified_supply_chain_world(execution, SupplyChainScale::court())

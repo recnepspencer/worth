@@ -66,8 +66,9 @@ fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_s
         verdict: CustomInvariantVerdict::Pass,
     })
     .expect("proposed-state probe registers");
-    let world = compile_supply_chain_baseline_with_custom_invariant(program, registration)
-        .expect("baseline commits with the inactive proposed-state probe");
+    let world =
+        compile_supply_chain_baseline_with_custom_invariant(execution, program, registration)
+            .expect("baseline commits with the inactive proposed-state probe");
 
     let target = world.handles.aurora_voyage().id;
     assert_snapshot_status(
@@ -129,6 +130,9 @@ fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_s
 
 #[test]
 fn malformed_proposal_denial_preserves_custom_rule_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
         .expect("Court Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
@@ -139,8 +143,9 @@ fn malformed_proposal_denial_preserves_custom_rule_identity() {
         verdict: CustomInvariantVerdict::Violation,
     })
     .expect("proposed-state denial rule registers");
-    let world = compile_supply_chain_baseline_with_custom_invariant(program, registration)
-        .expect("baseline commits while the denial rule is inactive");
+    let world =
+        compile_supply_chain_baseline_with_custom_invariant(execution, program, registration)
+            .expect("baseline commits while the denial rule is inactive");
 
     let target = world.handles.aurora_voyage().id;
     evidence.set_target(target);

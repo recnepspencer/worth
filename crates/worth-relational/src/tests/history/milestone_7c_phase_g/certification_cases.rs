@@ -16,10 +16,16 @@ pub(super) fn certify_exact_shared_merge_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> MergeExecutionCertificationArtifacts {
     let runtime = persisted_runtime_with_test_schema();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "same");
-    update_entity_on_branch(&runtime, shared, "same", BranchId("feature".to_string()));
+    update_entity(execution, &runtime, shared, "same");
+    update_entity_on_branch(
+        execution,
+        &runtime,
+        shared,
+        "same",
+        BranchId("feature".to_string()),
+    );
 
     let prepared = runtime
         .prepare_merge_execution(
@@ -50,9 +56,14 @@ pub(super) fn certify_source_only_addition_merge_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> MergeExecutionCertificationArtifacts {
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let prepared = runtime
         .prepare_merge_execution(
@@ -86,7 +97,7 @@ pub(super) fn certify_prefer_richer_merge_execution(
     let registry = prefer_richer_registry();
     let runtime = persisted_runtime_with_registry(registry.clone(), store_path.clone());
 
-    let main_entity = create_entity(&runtime, "shared-name");
+    let main_entity = create_entity(execution, &runtime, "shared-name");
     create_branch_from_main(&runtime, "feature");
 
     let mut feature_txn = crate::tests::support::test_owner_begin_transaction_for_branch(
@@ -119,6 +130,7 @@ pub(super) fn certify_prefer_richer_merge_execution(
         .expect("test staging stays within configured resource budgets");
     feature_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

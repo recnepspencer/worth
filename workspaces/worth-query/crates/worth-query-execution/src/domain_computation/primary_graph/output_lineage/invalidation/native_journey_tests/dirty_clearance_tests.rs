@@ -88,7 +88,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             handle.with_runtime_mut(request_execution, |runtime| {
-                write_field(runtime, account, label.clone(), "prime");
+                write_field(request_execution, runtime, account, label.clone(), "prime");
                 let (basis_handle, basis) = snapshot(runtime);
                 assert!(runtime
                     .read_truth()
@@ -118,6 +118,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                     target: EntityReference::Existing(account),
                 };
                 let result = write_batch(
+                    request_execution,
                     runtime,
                     WorkerIntentBatch::new("add-clearance-relation").push(MutationIntent::Create(
                         CreateIntent::Relation(RelationSpec {
@@ -147,6 +148,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                     DirtyReverification::ChangedOrdinal(0)
                 ));
                 let deleted = write_batch(
+                    request_execution,
                     runtime,
                     WorkerIntentBatch::new("remove-clearance-relation").push(
                         MutationIntent::Relation(RelationMutationIntent::Delete(
@@ -192,7 +194,13 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                 else {
                     panic!("the actual restored relation set verifies at the live root");
                 };
-                write_field(runtime, account, label, "unrelated-label");
+                write_field(
+                    request_execution,
+                    runtime,
+                    account,
+                    label,
+                    "unrelated-label",
+                );
                 assert!(
                     matches!(
                         owner.clear_verified_dirty(verified, &mut owner.edit_admission()),

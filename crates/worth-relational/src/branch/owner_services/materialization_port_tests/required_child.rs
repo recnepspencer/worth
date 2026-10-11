@@ -59,6 +59,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
         .unwrap();
     let publication = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -72,7 +73,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
         .unwrap();
 
     if custom {
-        completeness_rule::deny_invalid_child_value(&runtime, child);
+        completeness_rule::deny_invalid_child_value(execution, &runtime, child);
     }
 
     let mut deletion = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -90,6 +91,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
         .unwrap();
     let denied = deletion
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -109,7 +111,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
         .map(|count| count.load(Ordering::SeqCst));
     let suspended = services
         .materialization_port()
-        .suspend_generated_materialization(&basis, &[child])
+        .suspend_generated_materialization(execution, &basis, &[child])
         .expect("suspension keeps required incidence while withholding generated payload");
     if custom {
         for (phase, (count, before)) in evaluations.iter().zip(before_suspension).enumerate() {
@@ -139,6 +141,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
         let rejected = services
             .materialization_port()
             .rematerialize_generated_materialization(
+                execution,
                 &unavailable,
                 suspended.custody,
                 vec![RelationalEntityMaterialization {
@@ -170,6 +173,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
     let restored = services
         .materialization_port()
         .rematerialize_generated_materialization(
+            execution,
             &unavailable,
             custody,
             vec![RelationalEntityMaterialization {

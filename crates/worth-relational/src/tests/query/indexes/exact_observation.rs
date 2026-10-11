@@ -6,7 +6,7 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
+    let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let alpha_id = changed_entities(&alpha)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -33,8 +33,9 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
             &BranchId("main".to_owned()),
         )
         .expect("sibling begins at the observed root");
-    update_entity(&runtime, alpha_id, "main-new");
+    update_entity(execution, &runtime, alpha_id, "main-new");
     create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "sibling-only",
         BranchId("index-sibling".to_owned()),
@@ -97,7 +98,7 @@ fn current_query_prefers_its_exact_generation_over_a_later_historical_rebuild() 
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
+    let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let alpha_id = changed_entities(&alpha)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -115,7 +116,7 @@ fn current_query_prefers_its_exact_generation_over_a_later_historical_rebuild() 
             index_ids: vec![index.index_id],
         },
     );
-    let current = update_entity(&runtime, alpha_id, "beta");
+    let current = update_entity(execution, &runtime, alpha_id, "beta");
     let current_build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -194,7 +195,7 @@ fn current_query_rejects_an_older_generation_and_returns_every_exact_match() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "shared-name");
+    let first = create_entity_outcome(execution, &runtime, "shared-name");
     let first_id = changed_entities(&first)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -212,7 +213,7 @@ fn current_query_rejects_an_older_generation_and_returns_every_exact_match() {
             index_ids: vec![index.index_id],
         },
     );
-    let second = create_entity_outcome(&runtime, "shared-name");
+    let second = create_entity_outcome(execution, &runtime, "shared-name");
     let second_id = changed_entities(&second)[0];
 
     let snapshot = runtime.visibility_authority().snapshot();

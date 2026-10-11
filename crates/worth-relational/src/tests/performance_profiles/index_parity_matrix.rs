@@ -10,8 +10,8 @@ fn perf_index_parity_matrix() {
     let warm_generation_samples =
         capture_perf_samples(suite, "entity_field_equals_warm_generation", || {
             let runtime = runtime_with_test_schema();
-            let alpha = create_entity_outcome(&runtime, "alpha");
-            let _beta = create_entity_outcome(&runtime, "beta");
+            let alpha = create_entity_outcome(execution, &runtime, "alpha");
+            let _beta = create_entity_outcome(execution, &runtime, "beta");
             let index = runtime.index_authority().register(DerivedIndexDefinition {
                 index_id: DerivedIndexId(0),
                 name: "entity.name.lookup".to_string(),
@@ -107,7 +107,7 @@ fn perf_index_parity_matrix() {
         "entity_field_equals_build_failed_storage_read",
         || {
             let runtime = runtime_with_test_schema();
-            let alpha = create_entity_outcome(&runtime, "alpha");
+            let alpha = create_entity_outcome(execution, &runtime, "alpha");
             let index = runtime.index_authority().register(DerivedIndexDefinition {
                 index_id: DerivedIndexId(0),
                 name: "entity.name.lookup".to_string(),
@@ -203,7 +203,7 @@ fn perf_index_parity_matrix() {
     let persisted_recovery_samples =
         capture_perf_samples(suite, "persisted_recovery_generation_parity", || {
             let runtime = persisted_runtime_with_test_schema();
-            let alpha = create_entity_outcome(&runtime, "alpha");
+            let alpha = create_entity_outcome(execution, &runtime, "alpha");
             let index = runtime.index_authority().register(DerivedIndexDefinition {
                 index_id: DerivedIndexId(0),
                 name: "entity.name.lookup".to_string(),

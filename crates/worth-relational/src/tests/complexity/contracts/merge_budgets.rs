@@ -12,10 +12,11 @@ fn complexity_budget_merge_planning_reports_request_shaped_work() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "main-value");
+    update_entity(execution, &runtime, shared, "main-value");
     update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "feature-value",
@@ -82,7 +83,7 @@ fn complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutati
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "main-anchor");
+    create_entity(execution, &runtime, "main-anchor");
     create_branch_from_main(&runtime, "feature");
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
         &runtime,
@@ -106,6 +107,7 @@ fn complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutati
     .expect("test staging stays within configured resource budgets");
     let feature_only = changed_entities(
         &txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

@@ -9,7 +9,8 @@ fn relation_integrity_endpoint_deletion_history_stays_branch_local_under_diverge
         crate::schema::data::EndpointDeletionIntegrityMode::RequireRelationRetirement,
         CascadeDeletePolicy::RetainDanglingForAudit,
     );
-    let (source, target, relation) = create_endpoint_deletion_relation_fixture(&runtime, "live");
+    let (source, target, relation) =
+        create_endpoint_deletion_relation_fixture(execution, &runtime, "live");
 
     runtime
         .history_authority()
@@ -19,8 +20,9 @@ fn relation_integrity_endpoint_deletion_history_stays_branch_local_under_diverge
         )
         .unwrap();
 
-    let main_delete = delete_entity(&runtime, source);
+    let main_delete = delete_entity(execution, &runtime, source);
     let _feature_update = update_entity_on_branch(
+        execution,
         &runtime,
         target,
         "feature-target",

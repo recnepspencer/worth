@@ -12,7 +12,7 @@ fn structural_identity_origin_tracks_non_current_scope() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "scoped-identity");
+    let entity = create_entity(execution, &runtime, "scoped-identity");
     let version_id = runtime.current_version_id();
     let snapshot = runtime.visibility_authority().snapshot();
 
@@ -52,10 +52,10 @@ fn historical_neighbors_follow_scoped_relation_endpoints_after_rewire() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let original_source = create_entity(&runtime, "original-source");
-    let shared_target = create_entity(&runtime, "shared-target");
-    let replacement_source = create_entity(&runtime, "replacement-source");
-    let relation = create_relation(&runtime, original_source, shared_target, "edge");
+    let original_source = create_entity(execution, &runtime, "original-source");
+    let shared_target = create_entity(execution, &runtime, "shared-target");
+    let replacement_source = create_entity(execution, &runtime, "replacement-source");
+    let relation = create_relation(execution, &runtime, original_source, shared_target, "edge");
     let historical_version = runtime.current_version_id();
     let historical_snapshot = runtime.visibility_authority().snapshot();
 
@@ -73,6 +73,7 @@ fn historical_neighbors_follow_scoped_relation_endpoints_after_rewire() {
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

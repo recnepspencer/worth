@@ -8,12 +8,17 @@ fn merge_ready_history_shape_reports_counter_breadth_explicitly() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let _root = create_entity_outcome(&runtime, "root");
-    let _linear = create_entity_outcome(&runtime, "linear");
+    let _root = create_entity_outcome(execution, &runtime, "root");
+    let _linear = create_entity_outcome(execution, &runtime, "linear");
     create_branch_from_main(&runtime, "feature");
-    let _feature =
-        create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
+    let _feature = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
     let merge = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],

@@ -27,7 +27,7 @@ fn retained_merge_correspondence_witness_preserves_exact_admitted_truth() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = merge_ready_runtime();
+    let runtime = merge_ready_runtime(execution);
     let prepared = runtime
         .merge()
         .prepare_merge_execution(execution, merge_request())
@@ -68,7 +68,7 @@ fn retained_merge_correspondence_witness_rejects_forged_or_incomplete_truth() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = merge_ready_runtime();
+    let runtime = merge_ready_runtime(execution);
     let prepared = runtime
         .merge()
         .prepare_merge_execution(execution, merge_request())
@@ -137,7 +137,7 @@ fn retained_merge_correspondence_witness_preserves_authority_basis_distinctions(
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = merge_ready_runtime();
+    let runtime = merge_ready_runtime(execution);
     let prepared = runtime
         .merge()
         .prepare_merge_execution(execution, merge_request())
@@ -176,10 +176,15 @@ fn retained_merge_correspondence_witness_preserves_runtime_declared_key_ambiguit
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_key_identity_registry();
-    create_entity(&runtime, "shared-name");
-    create_entity(&runtime, "shared-name");
+    create_entity(execution, &runtime, "shared-name");
+    create_entity(execution, &runtime, "shared-name");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "shared-name", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "shared-name",
+        BranchId("feature".to_string()),
+    );
 
     let artifact = runtime
         .merge()
@@ -217,7 +222,7 @@ fn retained_merge_correspondence_witness_survives_publication_and_recovery() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = merge_ready_runtime();
+    let runtime = merge_ready_runtime(execution);
     let outcome = execute_merge(execution, &runtime);
     let live_witness = outcome.execution_summary.correspondence_witness.clone();
     let live_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
@@ -246,18 +251,24 @@ fn retained_merge_correspondence_witness_survives_publication_and_recovery() {
         .retains_consistent_proof_packet_authority());
 }
 
-fn merge_ready_runtime() -> RelationalRuntime {
+fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
     let runtime = persisted_runtime_with_test_schema();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "shared-value");
+    update_entity(execution, &runtime, shared, "shared-value");
     update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "shared-value",
         BranchId("feature".to_string()),
     );
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
     runtime
 }
 

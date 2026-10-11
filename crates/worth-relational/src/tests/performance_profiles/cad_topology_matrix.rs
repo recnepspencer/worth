@@ -18,16 +18,19 @@ fn perf_cad_topology_matrix() {
             let mut thrust = Vec::new();
             for index in 0..4 {
                 nose.push(create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("nose-skin-{index}"),
                     PartitionId((index % 2) as u32 + 1),
                 ));
                 tank.push(create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("tank-frame-{index}"),
                     PartitionId((index % 2) as u32 + 4),
                 ));
                 thrust.push(create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("thrust-mount-{index}"),
                     PartitionId((index % 2) as u32 + 7),
@@ -35,6 +38,7 @@ fn perf_cad_topology_matrix() {
             }
             for index in 0..3 {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     nose[index],
                     nose[index + 1],
@@ -42,6 +46,7 @@ fn perf_cad_topology_matrix() {
                     PartitionId(30),
                 );
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     tank[index],
                     tank[index + 1],
@@ -49,6 +54,7 @@ fn perf_cad_topology_matrix() {
                     PartitionId(31),
                 );
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     thrust[index],
                     thrust[index + 1],
@@ -58,6 +64,7 @@ fn perf_cad_topology_matrix() {
             }
             for index in 0..4 {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     nose[index],
                     tank[index],
@@ -68,8 +75,13 @@ fn perf_cad_topology_matrix() {
 
             runtime.performance_access().reset_counters();
             let bridge_started_at = Instant::now();
-            let bridge_outcome =
-                create_relation_outcome(&runtime, tank[2], thrust[1], "tank-to-thrust-interface");
+            let bridge_outcome = create_relation_outcome(
+                execution,
+                &runtime,
+                tank[2],
+                thrust[1],
+                "tank-to-thrust-interface",
+            );
             let bridge_commit_micros = bridge_started_at.elapsed().as_micros();
 
             let snapshot = runtime.visibility_authority().snapshot();

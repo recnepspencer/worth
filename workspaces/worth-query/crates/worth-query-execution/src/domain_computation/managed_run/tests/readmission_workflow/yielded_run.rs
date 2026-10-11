@@ -54,7 +54,7 @@ pub(super) fn yielded_workflow_fixture(
     let attempt = runtime
         .start_workflow_resource_attempt(&operation, resources)
         .expect("workflow resources should reserve");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_workflow(&operation, attempt, lower.read_request(), resource_request)

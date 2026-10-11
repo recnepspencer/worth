@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_dense_fanout_compile_wave_rich_diagnostics(suite: &'static str) {
+pub(super) fn certify_dense_fanout_compile_wave_rich_diagnostics(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let rich_fanout_compile_samples = capture_perf_samples(
         suite,
         "dense_fanout_compile_wave_rich_diagnostics",
@@ -12,7 +15,8 @@ pub(super) fn certify_dense_fanout_compile_wave_rich_diagnostics(suite: &'static
                 PerfDiagnosticsPolicy::ChipRichCertification,
             );
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
-            let source = create_entity_in_partition(&runtime, "rich-net-driver", PartitionId(7));
+            let source =
+                create_entity_in_partition(execution, &runtime, "rich-net-driver", PartitionId(7));
             let targets = (0..24)
                 .map(|index| {
                     let partition_id = match index % 4 {
@@ -22,6 +26,7 @@ pub(super) fn certify_dense_fanout_compile_wave_rich_diagnostics(suite: &'static
                         _ => PartitionId(19),
                     };
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("rich-net-sink-{index}"),
                         partition_id,
@@ -55,6 +60,7 @@ pub(super) fn certify_dense_fanout_compile_wave_rich_diagnostics(suite: &'static
                 )
                 .expect("test staging stays within configured resource budgets");
                 txn.commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

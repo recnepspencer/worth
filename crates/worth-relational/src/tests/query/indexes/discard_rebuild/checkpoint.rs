@@ -6,7 +6,7 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = OrderingFixture::new();
+    let fixture = OrderingFixture::new(execution);
     let runtime = &fixture.runtime;
     let basis = fixture.basis();
     let built =
@@ -106,7 +106,7 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
         .unwrap();
     assert_eq!(page.child_entity_ids(), fixture.expected);
     assert!(!page.has_more());
-    let later = create_entity_outcome(&restored, "editable-after-cold-restore");
+    let later = create_entity_outcome(execution, &restored, "editable-after-cold-restore");
     assert_eq!(
         restored
             .history()

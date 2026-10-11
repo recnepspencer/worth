@@ -123,6 +123,7 @@ fn prove_named_delta_cow(
     )
     .expect("the actual branch pre-state admits its named delta");
     commit_supply_chain_delta(
+        execution,
         &world.runtime,
         &world.program,
         BranchId(branch.to_owned()),

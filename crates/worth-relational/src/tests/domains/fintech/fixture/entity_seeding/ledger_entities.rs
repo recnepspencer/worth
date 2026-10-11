@@ -9,8 +9,13 @@ use super::super::seed_catalog::FintechCaseSeed;
 use super::super::{FintechCaseRole, LEDGER_PARTITION};
 use super::bulk_create::bulk_create_entities;
 
-pub(super) fn seed_desks(runtime: &RelationalRuntime, desk_names: &[String]) -> Vec<EntityId> {
+pub(super) fn seed_desks(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    desk_names: &[String],
+) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-desks",
         LEDGER_PARTITION,
@@ -40,11 +45,13 @@ pub(super) fn seed_desks(runtime: &RelationalRuntime, desk_names: &[String]) -> 
 }
 
 pub(super) fn seed_books(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
     book_names: &[String],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-books",
         LEDGER_PARTITION,
@@ -85,10 +92,12 @@ pub(super) fn seed_books(
 }
 
 pub(super) fn seed_accounts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-accounts",
         LEDGER_PARTITION,
@@ -123,10 +132,12 @@ pub(super) fn seed_accounts(
 }
 
 pub(super) fn seed_counterparties(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-counterparties",
         LEDGER_PARTITION,
@@ -161,10 +172,12 @@ pub(super) fn seed_counterparties(
 }
 
 pub(super) fn seed_trades(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-trades",
         LEDGER_PARTITION,
@@ -217,10 +230,12 @@ pub(super) fn seed_trades(
 }
 
 pub(super) fn seed_settlements(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-settlements",
         LEDGER_PARTITION,
@@ -250,10 +265,12 @@ pub(super) fn seed_settlements(
 }
 
 pub(super) fn seed_cash_events(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-cash-events",
         LEDGER_PARTITION,
@@ -283,10 +300,12 @@ pub(super) fn seed_cash_events(
 }
 
 pub(super) fn seed_audit_records(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-audit-records",
         LEDGER_PARTITION,

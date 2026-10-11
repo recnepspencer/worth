@@ -96,8 +96,13 @@ fn materialization_staging_denials_preserve_authority_meaning() {
 
 #[test]
 fn leased_execution_is_typed_at_the_effect_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
-    let observed = transaction_commit(crate::relational_execution_refusal::work_exhausted());
+    let observed = transaction_commit(crate::relational_execution_refusal::work_exhausted(
+        execution,
+    ));
     assert!(matches!(
         observed,
         RelationalEffectExecutionFailure::Denied {

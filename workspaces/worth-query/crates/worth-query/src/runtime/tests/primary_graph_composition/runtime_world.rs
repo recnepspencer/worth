@@ -80,6 +80,7 @@ pub(super) struct CommittingWriteAuthority;
 impl WorthQueryRuntimeWriteAuthorityAdapter for CommittingWriteAuthority {
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
         relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -136,6 +137,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for CommittingWriteAuthority {
             .expect("test staging stays within configured resource budgets");
         let committed = transaction
             .commit(
+                execution,
                 runtime,
                 worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -150,6 +152,6 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for CommittingWriteAuthority {
             .expect("ordinary Query write snapshot should close exactly once");
 
         let mut receipt_authority = TestWriteAuthority;
-        receipt_authority.write(bridge, Some(runtime), mutation)
+        receipt_authority.write(execution, bridge, Some(runtime), mutation)
     }
 }

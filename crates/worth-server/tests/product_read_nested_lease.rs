@@ -159,7 +159,10 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
             .schema_registry(relational_support::demo_schema_registry())
             .build(),
     );
-    let (created, entity_id) = relational_support::create_entity(&runtime, &"x".repeat(32_000));
+    let fixture_host_request = relational_support::serial_request();
+    let fixture_execution = &worth_execution::ExecutionRequest::serial(&fixture_host_request);
+    let (created, entity_id) =
+        relational_support::create_entity(fixture_execution, &runtime, &"x".repeat(32_000));
     let context = runtime
         .read_truth()
         .query_plan_context(&created.snapshot)

@@ -203,7 +203,7 @@ impl MergeWorld {
             fields: self.created_fields(key, handle),
         }));
         self.mutate(execution, |runtime| {
-            let committed = commit(runtime, branch, intent);
+            let committed = commit(execution, runtime, branch, intent);
             let entity = committed
                 .created_entity(&created)
                 .expect("the create issued");
@@ -275,6 +275,7 @@ fn merge_request() -> MergeExecutionRequest {
 }
 
 fn commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     branch: &str,
     intent: MutationIntent,
@@ -299,6 +300,7 @@ fn commit(
         .expect("the fixture batch stages");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

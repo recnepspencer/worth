@@ -16,7 +16,7 @@ fn fork_checkpoint(
     crate::indexes::data::DerivedIndexGenerationId,
 ) {
     let runtime = persisted_runtime_with_test_schema();
-    let anchor = create_entity_outcome(&runtime, NAME);
+    let anchor = create_entity_outcome(execution, &runtime, NAME);
     let entity = changed_entities(&anchor)[0];
     let branch = create_branch_from_main(&runtime, FORK);
     assert_ne!(anchor.commit.branch_id, branch);
@@ -160,7 +160,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     checkpoint.derived_index_checkpoint = Some(artifact);
 
     let mut target = persisted_runtime_with_test_schema();
-    let retained = create_entity_outcome(&target, "target-must-remain");
+    let retained = create_entity_outcome(execution, &target, "target-must-remain");
     let entity = changed_entities(&retained)[0];
     let index = scoped_name_index(&target);
     build(execution, &target, index.index_id, &retained);

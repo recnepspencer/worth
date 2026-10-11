@@ -6,7 +6,7 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let (created, entity_fields, relation_fields) = create_generated_group(&runtime);
+    let (created, entity_fields, relation_fields) = create_generated_group(execution, &runtime);
     let entities = changed_entities(&created);
     let relation = changed_relations(&created)[0];
     let original = runtime
@@ -24,7 +24,7 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
         .expect("the source publication has an exact owner basis");
     let suspended = services
         .materialization_port()
-        .suspend_generated_materialization(&source_basis, &entities)
+        .suspend_generated_materialization(execution, &source_basis, &entities)
         .expect("a complete all-create publication can suspend its payload");
 
     assert_eq!(suspended.custody.records().len(), 3);
@@ -66,6 +66,7 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
     let failed = services
         .materialization_port()
         .rematerialize_generated_materialization(
+            execution,
             &unavailable_basis,
             suspended.custody,
             vec![entity_materialization(
@@ -83,6 +84,7 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
     let restored = services
         .materialization_port()
         .rematerialize_generated_materialization(
+            execution,
             &unavailable_basis,
             failed.custody,
             vec![
@@ -117,8 +119,12 @@ fn generated_group_suspends_and_rematerializes_with_exact_identity() {
 
 #[test]
 fn ordinary_transaction_cannot_stage_an_owner_materialization_transition() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = crate::tests::support::create_entity_outcome(&runtime, "ordinary-denial");
+    let created =
+        crate::tests::support::create_entity_outcome(execution, &runtime, "ordinary-denial");
     let entity = changed_entities(&created)[0];
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     let denial = transaction

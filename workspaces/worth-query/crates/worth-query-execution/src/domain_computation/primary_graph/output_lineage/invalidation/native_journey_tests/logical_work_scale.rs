@@ -91,7 +91,7 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
                 })))
             },
         );
-        let committed = write_batch(runtime, batch);
+        let committed = write_batch(execution, runtime, batch);
         let entities: Vec<_> = references.iter().map(|reference|
             committed.created_entity(reference).expect("actual Native create correspondence")).collect();
         release_test_commit_snapshot(runtime, &committed);
@@ -125,7 +125,7 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
         );
         register(owner, downstream.clone(), Arc::from([]), &before,
             OrdSet::unit(identities[0].clone()));
-        write_field(runtime, entities[0], label.clone(), "after");
+        write_field(execution, runtime, entities[0], label.clone(), "after");
         let (after_handle, after) = snapshot(runtime);
         let report = owner.native_marking_report(&after, &mut owner.edit_admission())
             .unwrap().expect("exact Native publication owns a delivery report");

@@ -17,8 +17,8 @@ fn visibility_cache_zero_window_does_not_accumulate_unprotected_history() {
         })
         .build();
 
-    let first = create_entity_outcome(&runtime, "first");
-    let second = create_entity_outcome(&runtime, "second");
+    let first = create_entity_outcome(execution, &runtime, "first");
+    let second = create_entity_outcome(execution, &runtime, "second");
 
     runtime.performance_access().reset_counters();
     let _ = runtime
@@ -54,10 +54,10 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
         })
         .build();
 
-    let first = create_entity_outcome(&runtime, "first");
+    let first = create_entity_outcome(execution, &runtime, "first");
     let snapshot = runtime.visibility_authority().snapshot();
     let entity = changed_entities(&first)[0];
-    let _updated = update_entity(&runtime, entity, "first-updated");
+    let _updated = update_entity(execution, &runtime, entity, "first-updated");
 
     let read_path = runtime
         .read_truth()
@@ -115,10 +115,10 @@ fn unprotected_active_snapshots_can_use_recent_cache_when_enabled() {
         })
         .build();
 
-    let first = create_entity_outcome(&runtime, "first");
+    let first = create_entity_outcome(execution, &runtime, "first");
     let snapshot = runtime.visibility_authority().snapshot();
     let entity = changed_entities(&first)[0];
-    let _updated = update_entity(&runtime, entity, "first-updated");
+    let _updated = update_entity(execution, &runtime, entity, "first-updated");
 
     runtime.performance_access().reset_counters();
     let _ = runtime
@@ -158,9 +158,9 @@ fn visibility_cache_recent_window_is_bounded_and_reports_hits() {
         })
         .build();
 
-    let first = create_entity_outcome(&runtime, "first");
-    let second = create_entity_outcome(&runtime, "second");
-    let third = create_entity_outcome(&runtime, "third");
+    let first = create_entity_outcome(execution, &runtime, "first");
+    let second = create_entity_outcome(execution, &runtime, "second");
+    let third = create_entity_outcome(execution, &runtime, "third");
 
     assert_recent_version_admission_candidate(&runtime, first.version_id);
 
@@ -202,7 +202,7 @@ fn heavy_profiles_keep_recent_visibility_cache_small_under_sustained_history_rea
         .build();
     let mut versions = Vec::new();
     for index in 0..6 {
-        versions.push(create_entity_outcome(&runtime, &format!("e{index}")).version_id);
+        versions.push(create_entity_outcome(execution, &runtime, &format!("e{index}")).version_id);
     }
 
     runtime.performance_access().reset_counters();

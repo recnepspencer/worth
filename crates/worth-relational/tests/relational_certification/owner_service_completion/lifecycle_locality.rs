@@ -12,7 +12,10 @@ const LOCALITY_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[test]
 fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
-    let (runtime, services, parked_identity) = committed_fork("parked-lifecycle");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, services, parked_identity) = committed_fork(execution, "parked-lifecycle");
     let parked_basis = services
         .basis_port()
         .admit_branch_basis(&parked_identity)
@@ -37,6 +40,7 @@ fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
     let candidate = services
         .preparation_port()
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

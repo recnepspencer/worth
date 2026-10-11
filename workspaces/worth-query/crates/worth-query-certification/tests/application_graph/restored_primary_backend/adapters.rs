@@ -101,6 +101,7 @@ pub struct CommitThenDecline(pub CommitLog);
 impl runtime::WorthQueryRuntimeWriteAuthorityAdapter for CommitThenDecline {
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
         relational_runtime: Option<&mut RelationalRuntime>,
         _mutation: runtime::WorthQueryBackendAdmissibleMutation,
@@ -117,6 +118,7 @@ impl runtime::WorthQueryRuntimeWriteAuthorityAdapter for CommitThenDecline {
             )
             .expect("the transaction binds to main")
             .commit(
+                execution,
                 runtime,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )

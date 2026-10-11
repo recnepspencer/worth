@@ -17,6 +17,7 @@ fn runtime_with_test_schema() -> crate::facade::runtime::RelationalRuntime {
 }
 
 fn replace_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::facade::runtime::RelationalRuntime,
     entity: EntityId,
     replacement: &str,
@@ -45,6 +46,7 @@ fn replace_entity_on_branch(
         .expect("test staging stays within configured resource budgets");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -71,7 +73,10 @@ fn retained_fork_lineage_ancestry_is_flat_at_scale_profile() {
 #[test]
 #[ignore = "scheduled 65,536-commit same-branch lineage scale profile"]
 fn selected_main_lineage_is_flat_at_65_536_unrelated_commits() {
-    assert_same_branch_history_scale(65_536, &[65_536]);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_same_branch_history_scale(execution, 65_536, &[65_536]);
 }
 
 struct RetainedScaleFixture {
@@ -91,11 +96,12 @@ fn retained_scale_fixture(
     replacement_count: usize,
 ) -> RetainedScaleFixture {
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "flat-lineage-source");
+    let created = create_entity_outcome(execution, &runtime, "flat-lineage-source");
     let original = changed_entities(&created)[0];
     let mut current = original;
     for replacement in 1..=replacement_count {
         replace_entity_on_branch(
+            execution,
             &runtime,
             current,
             &format!("flat-lineage-successor-{replacement}"),
@@ -160,7 +166,7 @@ fn assert_owner_history_scale(
             .history_authority()
             .fork_branch_from(branch.clone(), &BranchId("main".to_owned()))
             .expect("owner-created scale branch");
-        create_entity_on_branch(&fixture.runtime, branch, ordinal);
+        create_entity_on_branch(execution, &fixture.runtime, branch, ordinal);
     }
 
     let scaled = fixture.resolution();
@@ -178,6 +184,7 @@ fn assert_owner_history_scale(
 }
 
 fn create_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::facade::runtime::RelationalRuntime,
     branch: BranchId,
     ordinal: usize,
@@ -203,17 +210,23 @@ fn create_entity_on_branch(
         .expect("test staging stays within configured resource budgets");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("owner-created scale commit");
 }
 
-fn assert_same_branch_history_scale(unrelated_commit_count: usize, checkpoints: &[usize]) {
+fn assert_same_branch_history_scale(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    unrelated_commit_count: usize,
+    checkpoints: &[usize],
+) {
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "same-branch-scale-source");
+    let created = create_entity_outcome(execution, &runtime, "same-branch-scale-source");
     let original = changed_entities(&created)[0];
     replace_entity_on_branch(
+        execution,
         &runtime,
         original,
         "same-branch-scale-successor",
@@ -221,7 +234,7 @@ fn assert_same_branch_history_scale(unrelated_commit_count: usize, checkpoints: 
     );
     let mut expected_metrics = None;
     for ordinal in 1..=unrelated_commit_count {
-        create_entity_on_branch(&runtime, BranchId("main".to_owned()), ordinal);
+        create_entity_on_branch(execution, &runtime, BranchId("main".to_owned()), ordinal);
         if checkpoints.contains(&ordinal) {
             let identity = runtime.main_branch_identity();
             let (_, basis) = runtime

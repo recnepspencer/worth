@@ -42,6 +42,8 @@ fn patch(value: &str) -> AspectFieldPatch {
 }
 impl CargoRecords {
     pub fn install(include_steel: bool) -> Self {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         let mut registry = RelationalSchemaRegistry::new();
         for (kind, name) in [(1, "port"), (2, "voyage"), (3, "manifest"), (4, "cargo")] {
             registry = registry
@@ -105,6 +107,7 @@ impl CargoRecords {
             .expect("component owner: stage entity");
             let result = tx
                 .commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
@@ -150,6 +153,7 @@ impl CargoRecords {
             )
             .expect("component owner: stage route link");
             tx.commit(
+                execution,
                 &runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -219,11 +223,13 @@ impl CargoRecords {
     }
     pub fn candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         name: &str,
         value: &str,
     ) -> PreparedRelationalCommitCandidate {
         self.candidate_with_control(
+            execution,
             basis,
             name,
             value,
@@ -232,6 +238,7 @@ impl CargoRecords {
     }
     pub fn candidate_with_control(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         name: &str,
         value: &str,
@@ -258,6 +265,7 @@ impl CargoRecords {
         self.runtime
             .preparation_port()
             .prepare_branch_transaction(
+                execution,
                 tx,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )

@@ -3,13 +3,16 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_durability_append_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let suite = "durability_append_matrix";
 
     let fresh_append_samples =
         capture_perf_samples(suite, "append_canonical_envelope_fresh_store", || {
             let runtime = persisted_runtime_with_test_schema();
 
-            let outcome = create_entity_outcome(&runtime, "fresh-source");
+            let outcome = create_entity_outcome(execution, &runtime, "fresh-source");
             let elapsed_micros = outcome.execution().phase_timing.durable_append_micros as u128;
 
             let store = runtime.durable_store().expect("durable store after append");
@@ -42,9 +45,9 @@ fn perf_durability_append_matrix() {
     let warm_append_samples =
         capture_perf_samples(suite, "append_canonical_envelope_existing_segment", || {
             let runtime = persisted_runtime_with_test_schema();
-            create_entity_outcome(&runtime, "warm-source-a");
+            create_entity_outcome(execution, &runtime, "warm-source-a");
 
-            let outcome = create_entity_outcome(&runtime, "warm-source-b");
+            let outcome = create_entity_outcome(execution, &runtime, "warm-source-b");
             let elapsed_micros = outcome.execution().phase_timing.durable_append_micros as u128;
 
             let store = runtime.durable_store().expect("durable store after append");

@@ -21,8 +21,18 @@ fn mutation_batch_executes_through_one_batch_native_lowered_plan() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = relational_runtime_with_intent_strategy();
-    let left = create_entity(&mut runtime, "left", BranchId("main".to_string()));
-    let right = create_entity(&mut runtime, "right", BranchId("main".to_string()));
+    let left = create_entity(
+        request_execution,
+        &mut runtime,
+        "left",
+        BranchId("main".to_string()),
+    );
+    let right = create_entity(
+        request_execution,
+        &mut runtime,
+        "right",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),
@@ -98,7 +108,12 @@ fn mutation_batch_preserves_branch_scoped_authority_target() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        request_execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),
@@ -106,6 +121,7 @@ fn mutation_batch_preserves_branch_scoped_authority_target() {
     )
     .expect("branch-a should be created");
     let main_head_before = update_entity_name(
+        request_execution,
         &mut runtime,
         entity_id,
         "main-diverged",
@@ -146,7 +162,12 @@ fn retained_lowered_batch_denies_after_intervening_truth_change() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        request_execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),
@@ -169,6 +190,7 @@ fn retained_lowered_batch_denies_after_intervening_truth_change() {
         .expect("batch should lower");
 
     let intervening_commit_id = update_entity_name(
+        request_execution,
         &mut runtime,
         entity_id,
         "intervening",
@@ -201,7 +223,12 @@ fn lowered_branch_batch_does_not_deny_when_only_another_branch_moves() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        request_execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),
@@ -224,6 +251,7 @@ fn lowered_branch_batch_does_not_deny_when_only_another_branch_moves() {
         .expect("batch should lower");
 
     let main_head_before = update_entity_name(
+        request_execution,
         &mut runtime,
         entity_id,
         "main-only-intervening",
@@ -250,7 +278,12 @@ fn mutation_batch_rejects_mixed_target_branches_before_publication() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        request_execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),

@@ -5,13 +5,15 @@ use worth_relational::facade::{
 };
 
 fn main() {
+    let host_request = support::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
         .build();
 
-    let (_created, entity_id) = support::create_entity(&runtime, "durable");
-    let _updated = support::update_entity(&runtime, entity_id, "durable-updated");
-    let _deleted = support::delete_entity(&runtime, entity_id);
+    let (_created, entity_id) = support::create_entity(execution, &runtime, "durable");
+    let _updated = support::update_entity(execution, &runtime, entity_id, "durable-updated");
+    let _deleted = support::delete_entity(execution, &runtime, entity_id);
 
     let validation = runtime.validation().certification_state();
     let recovery_plan = runtime

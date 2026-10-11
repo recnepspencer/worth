@@ -6,7 +6,7 @@ fn exact_basis_index_build_rejects_each_mixed_axis_without_publication() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let main = create_entity_outcome(&runtime, "exact-basis-main");
+    let main = create_entity_outcome(execution, &runtime, "exact-basis-main");
     let actual_branch = BranchId("main".to_string());
     let claimed_sibling = BranchId("feature".to_string());
     runtime
@@ -73,7 +73,7 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let main = create_entity_outcome(&runtime, "canonical-main");
+    let main = create_entity_outcome(execution, &runtime, "canonical-main");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -82,6 +82,7 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
         )
         .expect("feature branch forks");
     let feature = create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "canonical-feature",
         BranchId("feature".to_string()),
@@ -128,7 +129,7 @@ fn commit_index_build_returns_retention_backpressure_instead_of_panicking() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_index_field_aspects();
-    let main = create_entity_outcome(&runtime, "capacity-main");
+    let main = create_entity_outcome(execution, &runtime, "capacity-main");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -137,6 +138,7 @@ fn commit_index_build_returns_retention_backpressure_instead_of_panicking() {
         )
         .expect("feature branch forks");
     let feature = create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "capacity-feature",
         BranchId("feature".to_string()),

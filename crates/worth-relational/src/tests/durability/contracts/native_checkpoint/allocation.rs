@@ -28,7 +28,7 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let committed = create_entity_outcome(&runtime, "native-custody-source");
+    let committed = create_entity_outcome(execution, &runtime, "native-custody-source");
     let head = runtime.history().branch_head(&BranchId("main".into()));
     let system = runtime
         .durability_authority()
@@ -107,7 +107,7 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
         .unwrap();
     assert_eq!(restored.latest_commit.as_ref(), Some(&committed.commit));
     assert_ne!(recovered.runtime_instance_id(), prior_owner);
-    let later = create_entity_outcome(&recovered, "native-custody-edit");
+    let later = create_entity_outcome(execution, &recovered, "native-custody-edit");
     assert_eq!(
         recovered
             .history()

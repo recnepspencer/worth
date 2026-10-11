@@ -10,14 +10,14 @@ fn bounded_relation_kind_read_charges_live_slots_and_records() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let first_target = create_entity(&runtime, "first-target");
-    let removed_target = create_entity(&runtime, "removed-target");
-    let second_target = create_entity(&runtime, "second-target");
-    let first = create_relation(&runtime, source, first_target, "first");
-    let removed = create_relation(&runtime, source, removed_target, "removed");
-    let second = create_relation(&runtime, source, second_target, "second");
-    delete_relation_on_branch(&runtime, removed, BranchId("main".to_owned()));
+    let source = create_entity(execution, &runtime, "source");
+    let first_target = create_entity(execution, &runtime, "first-target");
+    let removed_target = create_entity(execution, &runtime, "removed-target");
+    let second_target = create_entity(execution, &runtime, "second-target");
+    let first = create_relation(execution, &runtime, source, first_target, "first");
+    let removed = create_relation(execution, &runtime, source, removed_target, "removed");
+    let second = create_relation(execution, &runtime, source, second_target, "second");
+    delete_relation_on_branch(execution, &runtime, removed, BranchId("main".to_owned()));
     let version = runtime.current_version_id();
 
     let exact = runtime
@@ -55,12 +55,12 @@ fn bounded_relation_kind_read_uses_the_requested_historical_version() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let early_target = create_entity(&runtime, "early-target");
-    let late_target = create_entity(&runtime, "late-target");
-    let early = create_relation(&runtime, source, early_target, "early");
+    let source = create_entity(execution, &runtime, "source");
+    let early_target = create_entity(execution, &runtime, "early-target");
+    let late_target = create_entity(execution, &runtime, "late-target");
+    let early = create_relation(execution, &runtime, source, early_target, "early");
     let before = runtime.current_version_id();
-    let late = create_relation(&runtime, source, late_target, "late");
+    let late = create_relation(execution, &runtime, source, late_target, "late");
 
     let historical = runtime
         .read_truth()
@@ -96,12 +96,12 @@ fn refused_historical_relation_scan_charges_only_examined_slots() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let early_target = create_entity(&runtime, "early-target");
-    let late_target = create_entity(&runtime, "late-target");
-    create_relation(&runtime, source, early_target, "early");
+    let source = create_entity(execution, &runtime, "source");
+    let early_target = create_entity(execution, &runtime, "early-target");
+    let late_target = create_entity(execution, &runtime, "late-target");
+    create_relation(execution, &runtime, source, early_target, "early");
     let before = runtime.current_version_id();
-    create_relation(&runtime, source, late_target, "late");
+    create_relation(execution, &runtime, source, late_target, "late");
 
     runtime.performance_access().reset_counters();
     let refused = runtime

@@ -2,11 +2,14 @@ use super::*;
 
 #[test]
 fn durability_contract_compaction_only_removes_segments_covered_by_checkpoint() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "a");
-    create_entity_outcome(&runtime, "b");
+    create_entity_outcome(execution, &runtime, "a");
+    create_entity_outcome(execution, &runtime, "b");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity_outcome(&runtime, "c");
+    create_entity_outcome(execution, &runtime, "c");
     let before = runtime
         .durability()
         .recovery_plan(

@@ -15,7 +15,7 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
         unique_test_store_path("root-strategy-artifact"),
         true,
     );
-    let entity = create_entity(&runtime, "strategy-before");
+    let entity = create_entity(execution, &runtime, "strategy-before");
     let outcome = crate::commit_strategies::facade::execute_persisted_intent_strategy_commit(
         execution,
         &mut runtime,
@@ -33,12 +33,17 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    create_entity_outcome(&runtime, "merge-main");
+    create_entity_outcome(execution, &runtime, "merge-main");
     runtime
         .history_authority()
         .fork_branch_from(BranchId("feature".to_owned()), &BranchId("main".to_owned()))
         .expect("feature branch forks");
-    create_entity_outcome_on_branch(&runtime, "merge-feature", BranchId("feature".to_owned()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "merge-feature",
+        BranchId("feature".to_owned()),
+    );
     let prepared = runtime
         .prepare_merge_execution(
             execution,
@@ -61,8 +66,11 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
 
 #[test]
 fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "schema-before");
+    create_entity_outcome(execution, &runtime, "schema-before");
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
             schema_version_id: SchemaVersionId(2),
@@ -87,6 +95,7 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
         .expect("test staging stays within configured resource budgets");
     let outcome = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

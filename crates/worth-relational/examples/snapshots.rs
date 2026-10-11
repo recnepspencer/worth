@@ -10,14 +10,14 @@ fn main() {
         .schema_registry(support::demo_schema_registry())
         .build();
 
-    let (created, entity_id) = support::create_entity(&runtime, "first");
+    let (created, entity_id) = support::create_entity(request_execution, &runtime, "first");
     let runtime_instance_id = runtime.main_branch_identity().runtime_instance_id();
     let retained = runtime
         .snapshots()
         .retained_snapshot_for_commit(runtime_instance_id, &created.commit)
         .expect("exact retained commit snapshot");
     let snapshot = retained.snapshot_handle();
-    let _updated = support::update_entity(&runtime, entity_id, "first-updated");
+    let _updated = support::update_entity(request_execution, &runtime, entity_id, "first-updated");
 
     let read_path = runtime
         .read_truth()

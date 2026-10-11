@@ -53,7 +53,7 @@ fn budgeted_observer_matches_ordinary_authorization_and_held_old_root() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let ordinary = fixture
         .runtime
@@ -74,6 +74,7 @@ fn budgeted_observer_matches_ordinary_authorization_and_held_old_root() {
     assert_eq!(bounded.counters(), ordinary.counters());
     assert!(bounded.paths()[0].matched());
     let revoked = delete_relation_on_branch(
+        execution,
         &fixture.runtime,
         fixture.role_scope_relation,
         BranchId("main".to_string()),
@@ -90,7 +91,7 @@ fn budgeted_currentness_preserves_legacy_result_and_carried_refusal() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let evidence = fixture
         .runtime
@@ -144,6 +145,7 @@ fn budgeted_currentness_preserves_legacy_result_and_carried_refusal() {
         Err(Stop::Admission(Exhausted::Preparation))
     ));
     let revoked = delete_relation_on_branch(
+        execution,
         &fixture.runtime,
         fixture.role_scope_relation,
         BranchId("main".to_string()),
@@ -172,7 +174,7 @@ fn carried_stop_survives_initial_and_late_work_or_preparation_exhaustion() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let observe = |budget: &mut Budget| {
         fixture.runtime.observe_authorization_budgeted(
@@ -223,7 +225,7 @@ fn reconstructed_projection_refuses_exact_borrow_without_policy_denial() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     use crate::runtime::RelationalBorrowedRecordReadDenial;
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let reconstructed = fixture
         .runtime

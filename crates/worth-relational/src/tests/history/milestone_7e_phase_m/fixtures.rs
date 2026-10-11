@@ -85,7 +85,7 @@ pub(super) fn prepared_feature_merge(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
 ) -> PreparedMergeExecution {
-    install_merge_scenario(runtime);
+    install_merge_scenario(execution, runtime);
     runtime
         .merge()
         .prepare_merge_execution(
@@ -171,7 +171,10 @@ fn lower_packet(
     basis
 }
 
-fn install_merge_scenario(runtime: &RelationalRuntime) {
+fn install_merge_scenario(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) {
     if runtime
         .history()
         .branch_head(&BranchId("feature".to_string()))
@@ -179,15 +182,16 @@ fn install_merge_scenario(runtime: &RelationalRuntime) {
     {
         return;
     }
-    let shared = create_entity(runtime, "shared");
+    let shared = create_entity(execution, runtime, "shared");
     create_branch_from_main(runtime, "feature");
     create_branch_from_main(runtime, "alt");
-    update_entity_status_on_branch(runtime, shared, "inactive", "main");
-    update_entity_status_on_branch(runtime, shared, "active", "feature");
-    update_entity_status_on_branch(runtime, shared, "pending", "alt");
+    update_entity_status_on_branch(execution, runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, runtime, shared, "active", "feature");
+    update_entity_status_on_branch(execution, runtime, shared, "pending", "alt");
 }
 
 fn update_entity_status_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     status: &str,
@@ -225,6 +229,7 @@ fn update_entity_status_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

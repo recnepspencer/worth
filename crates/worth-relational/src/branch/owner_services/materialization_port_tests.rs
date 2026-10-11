@@ -21,7 +21,7 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let (created, entity_fields, relation_fields) = create_generated_group(&runtime);
+    let (created, entity_fields, relation_fields) = create_generated_group(execution, &runtime);
     assert_cold_inventory(&runtime);
     let entities = changed_entities(&created);
     let relation = changed_relations(&created)[0];
@@ -37,7 +37,7 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
         .expect("the durable source has an exact basis");
     let suspended = services
         .materialization_port()
-        .suspend_generated_materialization(&source_basis, &entities)
+        .suspend_generated_materialization(execution, &source_basis, &entities)
         .expect("the durable source suspends through owner authority");
     assert_cold_inventory(&runtime);
 
@@ -69,6 +69,7 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
     let restored = services
         .materialization_port()
         .rematerialize_generated_materialization(
+            execution,
             &unavailable_basis,
             suspended.custody,
             vec![
@@ -121,6 +122,7 @@ fn assert_cold_inventory(runtime: &crate::runtime::RelationalRuntime) {
 }
 
 fn create_generated_group(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
 ) -> (
     crate::transactions::data::CommitResult,
@@ -175,6 +177,7 @@ fn create_generated_group(
     (
         transaction
             .commit(
+                execution,
                 runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -185,6 +188,7 @@ fn create_generated_group(
 }
 
 fn create_group_with_external_endpoint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     external: crate::identity::data::EntityId,
 ) -> crate::transactions::data::CommitResult {
@@ -219,6 +223,7 @@ fn create_group_with_external_endpoint(
         .expect("the open generated group fits transaction budgets");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

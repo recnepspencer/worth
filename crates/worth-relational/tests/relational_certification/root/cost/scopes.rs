@@ -39,6 +39,7 @@ fn phase5_selected_publication_tuple_is_stable_across_target_history_lengths() {
         fork(&world.runtime, &branch_id.0);
         for sequence in 0..history_len {
             commit_branch_batch(
+                execution,
                 &world.runtime,
                 branch_id.clone(),
                 WorkerIntentBatch::new(format!("history-{sequence}")),
@@ -59,7 +60,7 @@ fn phase5_selected_publication_tuple_is_stable_across_target_history_lengths() {
             DeltaId::HoldMedicalCargo,
         )
         .expect("the actual prestate admits the Medical delta");
-        commit_branch_batch(&world.runtime, branch_id, batch);
+        commit_branch_batch(execution, &world.runtime, branch_id, batch);
         let observation = world.runtime.observe_mvcc_cost(&scope).unwrap();
         let publication = observation.sharing_cost_delta();
         observed_costs.push((
@@ -152,7 +153,7 @@ fn phase5_selected_publication_tuple_ignores_unrelated_population_reads_and_vali
             DeltaId::HoldMedicalCargo,
         )
         .expect("the selected branch validates after unrelated work");
-        commit_branch_batch(&world.runtime, selected_branch, batch);
+        commit_branch_batch(execution, &world.runtime, selected_branch, batch);
         let publication = world.runtime.observe_mvcc_cost(&publication_scope).unwrap();
         let delta = publication.sharing_cost_delta();
         observed_costs.push((
@@ -229,7 +230,7 @@ fn exercise_unrelated_branch_reads_and_validation(
                 delta,
             )
             .expect("named unrelated branch validates its own named delta");
-            commit_branch_batch(&world.runtime, branch_id.clone(), batch);
+            commit_branch_batch(execution, &world.runtime, branch_id.clone(), batch);
         }
     }
 }

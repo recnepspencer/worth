@@ -18,7 +18,7 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
         .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
         .durable_store_layout(store_layout)
         .build();
-    let old = create_entity_outcome(&runtime, "old-contract");
+    let old = create_entity_outcome(execution, &runtime, "old-contract");
     let old_entity = changed_entities(&old)[0];
     create_branch_from_main(&runtime, "legacy-schema");
 
@@ -59,12 +59,14 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
         .expect("test staging stays within configured resource budgets");
     let new = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("v2 schema transition commits");
     let new_entity = changed_entities(&new)[0];
     let _legacy_before_recovery = update_entity_on_branch(
+        execution,
         &runtime,
         old_entity,
         "legacy-v1-before-recovery",
@@ -182,6 +184,7 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
     .is_err());
 
     let _legacy_after_recovery = update_entity_on_branch(
+        execution,
         &recovered,
         old_entity,
         "legacy-v1-after-recovery",
@@ -208,6 +211,7 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
         .expect("test staging stays within configured resource budgets");
     let denial = v2_meaning_on_v1_root
         .commit(
+            execution,
             &recovered,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

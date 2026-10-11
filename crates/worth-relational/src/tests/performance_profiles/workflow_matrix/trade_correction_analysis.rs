@@ -7,8 +7,12 @@ pub(super) fn certify_trade_correction_analysis_round_trip(
     let trade_correction_samples =
         capture_perf_samples(suite, "trade_correction_analysis_round_trip", || {
             let runtime = persisted_runtime_with_test_schema();
-            let account =
-                create_entity_in_partition(&runtime, "portfolio-account", PartitionId(10));
+            let account = create_entity_in_partition(
+                execution,
+                &runtime,
+                "portfolio-account",
+                PartitionId(10),
+            );
             create_branch_from_main(&runtime, "analysis");
 
             runtime.performance_access().reset_counters();
@@ -119,6 +123,7 @@ pub(super) fn certify_trade_correction_analysis_round_trip(
                 )
                 .expect("test staging stays within configured resource budgets");
                 txn.commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

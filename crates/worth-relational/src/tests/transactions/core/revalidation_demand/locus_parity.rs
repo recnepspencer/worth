@@ -13,12 +13,15 @@ use worth_foundational::facade::PortableRecordAspectPatch;
 
 #[test]
 fn every_entity_intent_records_exactly_its_authoritative_locus() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let update = create_entity(&runtime, COMPLIANT_NAME);
-    let patch = create_entity(&runtime, COMPLIANT_NAME);
-    let replace = create_entity(&runtime, COMPLIANT_NAME);
-    let delete = create_entity(&runtime, COMPLIANT_NAME);
-    let revalidate = create_entity(&runtime, COMPLIANT_NAME);
+    let update = create_entity(execution, &runtime, COMPLIANT_NAME);
+    let patch = create_entity(execution, &runtime, COMPLIANT_NAME);
+    let replace = create_entity(execution, &runtime, COMPLIANT_NAME);
+    let delete = create_entity(execution, &runtime, COMPLIANT_NAME);
+    let revalidate = create_entity(execution, &runtime, COMPLIANT_NAME);
 
     let batch = WorkerIntentBatch::new("all-entity-intent-loci")
         .push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(

@@ -26,6 +26,7 @@ pub(super) fn certify(execution: &worth_execution::ExecutionRequest<'_, '_>, sui
                     .expect("test staging stays within configured resource budgets");
                 }
                 txn.commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

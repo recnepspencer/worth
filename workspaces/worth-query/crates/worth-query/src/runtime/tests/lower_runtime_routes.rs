@@ -42,12 +42,13 @@ fn runtime_write_denies_when_write_authority_route_receipt_drifts_from_command()
     impl WorthQueryRuntimeWriteAuthorityAdapter for DriftingWriteAuthority {
         fn write(
             &mut self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
             bridge: &RuntimeBridge,
             relational_runtime: Option<&mut RelationalRuntime>,
             mutation: WorthQueryBackendAdmissibleMutation,
         ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
             let mut authority = TestWriteAuthority;
-            let honest = authority.write(bridge, relational_runtime, mutation)?;
+            let honest = authority.write(execution, bridge, relational_runtime, mutation)?;
             Ok(WriteAuthorityExecutionReceipt::from_command(
                 &WorthQueryWriteCommand::Delete {
                     entity_identity: crate::memory_workspace::admit_authored_entity_label(

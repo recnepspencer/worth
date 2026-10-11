@@ -29,6 +29,7 @@ fn perf_profile_matrix() {
                     .expect("test staging stays within configured resource budgets");
                 }
                 txn.commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
@@ -158,6 +159,7 @@ fn perf_profile_matrix() {
                     .expect("test staging stays within configured resource budgets");
                 }
                 txn.commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

@@ -67,7 +67,7 @@ fn entity_replacement_reconciliation_strategy_replaces_with_normalized_client_ke
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -132,7 +132,7 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -172,6 +172,7 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
     }
     let commit = txn
         .commit(
+            request_execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -236,7 +237,7 @@ fn entity_replacement_reconciliation_strategy_rejects_undeclared_fields() {
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -291,7 +292,7 @@ fn entity_replacement_reconciliation_strategy_replaces_when_only_client_key_chan
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = create_entity(&runtime, "service");
+    let entity = create_entity(request_execution, &runtime, "service");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -344,7 +345,7 @@ fn entity_replacement_reconciliation_strategy_noops_when_authoritative_fields_ma
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = create_entity(&runtime, "service");
+    let entity = create_entity(request_execution, &runtime, "service");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(

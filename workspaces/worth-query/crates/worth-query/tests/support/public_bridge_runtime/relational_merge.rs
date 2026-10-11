@@ -16,6 +16,8 @@ use worth_relational::facade::transactions::{
 };
 
 pub fn public_relational_merge_runtime() -> RelationalRuntime {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(913));
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(
@@ -37,18 +39,23 @@ pub fn public_relational_merge_runtime() -> RelationalRuntime {
             &descriptor,
         ))
         .build();
-    create_empty_entity(&mut runtime, "main", "main-seed");
+    create_empty_entity(execution, &mut runtime, "main", "main-seed");
     let (_, basis) = runtime
         .observe_fork_source(&BranchId("main".to_string()))
         .expect("main branch should expose an exact fork source");
     runtime
         .fork_branch(BranchId("candidate".to_string()), basis)
         .expect("candidate branch should be created");
-    create_empty_entity(&mut runtime, "candidate", "candidate-seed");
+    create_empty_entity(execution, &mut runtime, "candidate", "candidate-seed");
     runtime
 }
 
-fn create_empty_entity(runtime: &mut RelationalRuntime, branch: &str, key: &str) {
+fn create_empty_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut RelationalRuntime,
+    branch: &str,
+    key: &str,
+) {
     let branch_id = BranchId(branch.to_string());
     let mut transaction = {
         let identity = runtime
@@ -79,6 +86,7 @@ fn create_empty_entity(runtime: &mut RelationalRuntime, branch: &str, key: &str)
         .expect("test staging stays within configured resource budgets");
     let committed = transaction
         .commit(
+            execution,
             runtime,
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )

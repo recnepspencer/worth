@@ -45,7 +45,7 @@ pub(super) fn shared_yielded_workflow_peers_with_provider(
     );
     let runtime =
         super::workflow_provider_steps::installed_runtime(installer, "workflow association");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let first = yield_peer(
         execution,
         &runtime,
@@ -233,7 +233,7 @@ fn foreign_bridge_denial_preserves_both_workflow_peers_without_fresh_query_work(
             first_inspection.yielded_attempt_identity(),
             second_inspection.yielded_attempt_identity()
         );
-        let foreign_bridge = causal_fixture::managed_admission_context().bridge;
+        let foreign_bridge = causal_fixture::managed_admission_context(&resource_request).bridge;
         let first = {
             let fixture_phase_result = {
                 let installed_fixture_phase = first.fixture_phase(active_request);

@@ -6,11 +6,12 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let source = create_entity_outcome(&runtime, "source");
+    let source = create_entity_outcome(execution, &runtime, "source");
     let source_entity = changed_entities(&source)[0];
-    let target = create_entity_outcome(&runtime, "target");
+    let target = create_entity_outcome(execution, &runtime, "target");
     let target_entity = changed_entities(&target)[0];
-    let _relation = create_relation_outcome(&runtime, source_entity, target_entity, "r1");
+    let _relation =
+        create_relation_outcome(execution, &runtime, source_entity, target_entity, "r1");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -18,7 +19,7 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let _deleted = delete_entity(&runtime, source_entity);
+    let _deleted = delete_entity(execution, &runtime, source_entity);
     runtime.durability_authority().checkpoint().unwrap();
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -54,7 +55,7 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
     runtime
         .history_authority()
@@ -63,7 +64,7 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let _main_update = update_entity(&runtime, entity, "main");
+    let _main_update = update_entity(execution, &runtime, entity, "main");
     let _feature_update = {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
             &runtime,
@@ -84,6 +85,7 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -119,8 +121,11 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
 
 #[test]
 fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
     let inspection = runtime.inspect_what_happened();
     assert_eq!(
@@ -149,7 +154,7 @@ fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
         0
     );
 
-    update_entity(&runtime, entity, "main");
+    update_entity(execution, &runtime, entity, "main");
     let inspection = runtime.inspect_what_happened();
     assert_eq!(
         inspection
@@ -160,7 +165,13 @@ fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
         0
     );
 
-    update_entity_on_branch(&runtime, entity, "feature", BranchId("feature".to_string()));
+    update_entity_on_branch(
+        execution,
+        &runtime,
+        entity,
+        "feature",
+        BranchId("feature".to_string()),
+    );
     let inspection = runtime.inspect_what_happened();
     assert_eq!(
         inspection
@@ -196,6 +207,7 @@ fn invalid_store_path_does_not_relabel_performed_in_memory_publication() {
     .expect("test staging stays within configured resource budgets");
     let durability_deferred = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

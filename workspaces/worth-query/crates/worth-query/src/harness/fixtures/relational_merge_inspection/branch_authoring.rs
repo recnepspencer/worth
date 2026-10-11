@@ -2,6 +2,7 @@
 use super::*;
 
 pub(super) fn create_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     name: &str,
     branch_id: BranchId,
@@ -21,7 +22,7 @@ pub(super) fn create_entity_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(runtime, Allocation::SystemAllocation)
+        .commit(execution, runtime, Allocation::SystemAllocation)
         .expect("entity create should commit");
     let entity = changed_entities(&outcome)[0];
     release_commit_snapshot(runtime, &outcome);
@@ -29,6 +30,7 @@ pub(super) fn create_entity_on_branch(
 }
 
 pub(super) fn update_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     entity_id: EntityId,
     name: &str,
@@ -47,12 +49,13 @@ pub(super) fn update_entity_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(runtime, Allocation::SystemAllocation)
+        .commit(execution, runtime, Allocation::SystemAllocation)
         .expect("entity update should commit");
     release_commit_snapshot(runtime, &outcome);
 }
 
 pub(super) fn delete_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     entity_id: EntityId,
     branch_id: BranchId,
@@ -66,12 +69,13 @@ pub(super) fn delete_entity_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(runtime, Allocation::SystemAllocation)
+        .commit(execution, runtime, Allocation::SystemAllocation)
         .expect("entity delete should commit");
     release_commit_snapshot(runtime, &outcome);
 }
 
 pub(super) fn create_relation_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     source: EntityId,
     target: EntityId,
@@ -96,7 +100,7 @@ pub(super) fn create_relation_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(runtime, Allocation::SystemAllocation)
+        .commit(execution, runtime, Allocation::SystemAllocation)
         .expect("relation create should commit");
     let relation = changed_relations(&outcome)[0];
     release_commit_snapshot(runtime, &outcome);
@@ -104,6 +108,7 @@ pub(super) fn create_relation_on_branch(
 }
 
 pub(super) fn delete_relation_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     relation_id: RelationId,
     branch_id: BranchId,
@@ -117,7 +122,7 @@ pub(super) fn delete_relation_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(runtime, Allocation::SystemAllocation)
+        .commit(execution, runtime, Allocation::SystemAllocation)
         .expect("relation delete should commit");
     release_commit_snapshot(runtime, &outcome);
 }

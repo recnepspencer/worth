@@ -31,8 +31,9 @@ pub(super) fn compile_committed_observations(
     beta: &AspectFieldLocator,
 ) -> CommittedObservationWorld {
     let mut runtime = schema::fixture_runtime();
-    let entities = commit_entities(&mut runtime, alpha, beta);
+    let entities = commit_entities(execution, &mut runtime, alpha, beta);
     let decoy_relation = commit_relation(
+        execution,
         &mut runtime,
         RelationSeed {
             batch: "provider-effect-decoy-relation",
@@ -42,6 +43,7 @@ pub(super) fn compile_committed_observations(
         },
     );
     let relation_commit = commit_relation(
+        execution,
         &mut runtime,
         RelationSeed {
             batch: "provider-effect-observed-relation",
@@ -103,6 +105,7 @@ fn created_relation(
 }
 
 fn commit_entities(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     alpha: &AspectFieldLocator,
     beta: &AspectFieldLocator,
@@ -116,6 +119,7 @@ fn commit_entities(
     let decoy_from = created(13, "decoy-relation-from");
     let decoy_to = created(14, "decoy-relation-to");
     let committed = commit(
+        execution,
         runtime,
         "provider-effect-observed-entities",
         [
@@ -170,10 +174,12 @@ fn issued_entity(
 }
 
 fn commit_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     seed: RelationSeed<'_>,
 ) -> worth_relational::facade::transactions::CommitResult {
     commit(
+        execution,
         runtime,
         seed.batch,
         [MutationIntent::Create(CreateIntent::Relation(
@@ -197,6 +203,7 @@ struct RelationSeed<'a> {
 }
 
 fn commit<const N: usize>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     name: &str,
     intents: [MutationIntent; N],
@@ -222,6 +229,7 @@ fn commit<const N: usize>(
         .expect("test staging stays within configured resource budgets");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

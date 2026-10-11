@@ -6,7 +6,7 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let main_outcome = create_entity_outcome(&runtime, "main-a");
+    let main_outcome = create_entity_outcome(execution, &runtime, "main-a");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -14,8 +14,12 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let feature_outcome =
-        create_entity_outcome_on_branch(&runtime, "feature-a", BranchId("feature".to_string()));
+    let feature_outcome = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-a",
+        BranchId("feature".to_string()),
+    );
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name".to_string(),
@@ -80,7 +84,7 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let main_outcome = create_entity_outcome(&runtime, "main-a");
+    let main_outcome = create_entity_outcome(execution, &runtime, "main-a");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -88,8 +92,12 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let feature_outcome =
-        create_entity_outcome_on_branch(&runtime, "feature-a", BranchId("feature".to_string()));
+    let feature_outcome = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-a",
+        BranchId("feature".to_string()),
+    );
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.global".to_string(),
@@ -155,9 +163,10 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let main_source = create_entity_outcome(&runtime, "main-source");
-    let main_target = create_entity_outcome(&runtime, "main-target");
+    let main_source = create_entity_outcome(execution, &runtime, "main-source");
+    let main_target = create_entity_outcome(execution, &runtime, "main-target");
     let main_relation = create_relation_outcome(
+        execution,
         &runtime,
         changed_entities(&main_source)[0],
         changed_entities(&main_target)[0],
@@ -171,11 +180,13 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
         )
         .unwrap();
     let feature_source = create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "feature-source",
         BranchId("feature".to_string()),
     );
     let feature_target = create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "feature-target",
         BranchId("feature".to_string()),
@@ -205,6 +216,7 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
         .expect("test staging stays within configured resource budgets");
     let feature_relation = feature_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -274,7 +286,7 @@ fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() 
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let main_outcome = create_entity_outcome(&runtime, "main-a");
+    let main_outcome = create_entity_outcome(execution, &runtime, "main-a");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -282,8 +294,12 @@ fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() 
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let feature_outcome =
-        create_entity_outcome_on_branch(&runtime, "feature-a", BranchId("feature".to_string()));
+    let feature_outcome = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-a",
+        BranchId("feature".to_string()),
+    );
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.branch".to_string(),

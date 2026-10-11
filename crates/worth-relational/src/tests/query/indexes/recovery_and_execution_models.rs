@@ -6,9 +6,10 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_index_field_aspects();
-    let source = create_entity_outcome(&runtime, "source");
-    let target = create_entity_outcome(&runtime, "target");
+    let source = create_entity_outcome(execution, &runtime, "source");
+    let target = create_entity_outcome(execution, &runtime, "target");
     let relation = create_relation_outcome(
+        execution,
         &runtime,
         changed_entities(&source)[0],
         changed_entities(&target)[0],
@@ -108,7 +109,7 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
+    let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.lookup".to_string(),
@@ -210,7 +211,7 @@ fn derived_index_contract_entity_field_equals_is_stable_with_leased_index_build(
         crate::facade::snapshots::SnapshotHandle,
     ) {
         let runtime = runtime_with_test_schema();
-        let alpha = create_entity_outcome(&runtime, "alpha");
+        let alpha = create_entity_outcome(execution, &runtime, "alpha");
         let index = runtime.index_authority().register(DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
             name: "entity.name.lookup".to_string(),

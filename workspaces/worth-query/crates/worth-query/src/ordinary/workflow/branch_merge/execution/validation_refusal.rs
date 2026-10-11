@@ -34,6 +34,9 @@ mod tests {
     use super::*;
     #[test]
     fn real_refusal_survives_the_merge_validation_mapping_seam() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         use worth_relational::facade::transactions::{
             CommitExecutionDenialKind, TransactionCommitError,
         };
@@ -41,7 +44,7 @@ mod tests {
         // Its backend error type can carry execution stops; exercise that seam
         // with a real commit-owner refusal, without threading a production lease.
         let TransactionCommitError::Execution { denial, .. } =
-            crate::relational_execution_refusal::work_exhausted()
+            crate::relational_execution_refusal::work_exhausted(execution)
         else {
             panic!("real execution refusal");
         };

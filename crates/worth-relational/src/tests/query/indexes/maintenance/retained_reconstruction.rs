@@ -6,9 +6,9 @@ fn retained_commit_reconstruction_uses_its_own_root_and_finite_cold_budget() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "historical");
+    let first = create_entity_outcome(execution, &runtime, "historical");
     let entity = changed_entities(&first)[0];
-    let second = update_entity(&runtime, entity, "current");
+    let second = update_entity(execution, &runtime, entity, "current");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "maintenance.retained".into(),
@@ -73,7 +73,7 @@ fn retained_commit_reconstruction_uses_its_own_root_and_finite_cold_budget() {
         )
         .unwrap();
     assert_eq!(cold_current.work.entry_edits, 1);
-    let third = update_entity(&runtime, entity, "later");
+    let third = update_entity(execution, &runtime, entity, "later");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

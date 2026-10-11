@@ -5,7 +5,7 @@ fn replay_rebuild_denies_summary_and_packet_drift() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = merge_ready_runtime();
+    let runtime = merge_ready_runtime(execution);
     let outcome = execute_merge(execution, &runtime);
     let mut envelope = runtime
         .replay()

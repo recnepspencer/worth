@@ -149,6 +149,7 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
         )
         .unwrap();
         let committed = commit_supply_chain_delta(
+            execution,
             &world.runtime,
             &world.program,
             branch.clone(),
@@ -291,6 +292,7 @@ fn stale_schema_transition_basis_cannot_install_target_authority() {
         .unwrap();
     let committed = ordinary
         .commit(
+            execution,
             &world.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

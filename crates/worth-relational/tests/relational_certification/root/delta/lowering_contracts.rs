@@ -23,6 +23,7 @@ fn phase5_lowering_reads_actual_branch_pre_state_instead_of_expected_oracle() {
     fork(&world.runtime, "storm");
     let voyage = EntityKey::new(EntityKind::Voyage, 0);
     commit_branch_batch(
+        execution,
         &world.runtime,
         BranchId("storm".to_owned()),
         update_number(&world.handles, voyage, "arrival", 9_000),
@@ -38,7 +39,12 @@ fn phase5_lowering_reads_actual_branch_pre_state_instead_of_expected_oracle() {
         DeltaId::StormRerouteAurora,
     )
     .expect("actual pre-state satisfies the Storm contract");
-    commit_branch_batch(&world.runtime, BranchId("storm".to_owned()), batch);
+    commit_branch_batch(
+        execution,
+        &world.runtime,
+        BranchId("storm".to_owned()),
+        batch,
+    );
 
     let observed = observe_branch(execution, &mut world, "storm");
     let EntityRecord::Voyage(voyage) = &observed.entities[&voyage] else {
@@ -138,6 +144,7 @@ fn maintenance_rewire_and_medical_lower_from_each_actual_branch_pre_state() {
     fork(&world.runtime, "medical-hold");
     let cargo = EntityKey::new(EntityKind::CargoLot, 0);
     commit_branch_batch(
+        execution,
         &world.runtime,
         BranchId("medical-hold".to_owned()),
         update_text(&world.handles, cargo, "booking", "Available"),
@@ -152,7 +159,12 @@ fn maintenance_rewire_and_medical_lower_from_each_actual_branch_pre_state() {
         DeltaId::HoldMedicalCargo,
     )
     .expect("Medical Hold is an absolute transition over the actual cargo row");
-    commit_branch_batch(&world.runtime, BranchId("medical-hold".to_owned()), batch);
+    commit_branch_batch(
+        execution,
+        &world.runtime,
+        BranchId("medical-hold".to_owned()),
+        batch,
+    );
     let EntityRecord::CargoLot(cargo) =
         &observe_branch(execution, &mut world, "medical-hold").entities[&cargo]
     else {
@@ -188,6 +200,7 @@ fn prove_number_prestate(
     assert_oracle_matches(execution, &world, &baseline);
     fork(&world.runtime, branch);
     commit_branch_batch(
+        execution,
         &world.runtime,
         BranchId(branch.to_owned()),
         update_number(&world.handles, entity, field, prestate),
@@ -202,7 +215,12 @@ fn prove_number_prestate(
         delta,
     )
     .expect("actual branch pre-state admits its semantic delta");
-    commit_branch_batch(&world.runtime, BranchId(branch.to_owned()), batch);
+    commit_branch_batch(
+        execution,
+        &world.runtime,
+        BranchId(branch.to_owned()),
+        batch,
+    );
     assert_eq!(
         observe(&observe_branch(execution, &mut world, branch).entities[&entity]),
         expected

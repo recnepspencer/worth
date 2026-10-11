@@ -3,9 +3,12 @@ use crate::tests::support::*;
 
 #[test]
 fn subscriber_cdc_resume_windows_preserve_order_across_interleaved_partitions() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-    let left = create_entity_in_partition(&runtime, "left", PartitionId(7));
-    let right = create_entity_in_partition(&runtime, "right", PartitionId(11));
+    let left = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
+    let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
     let baseline_checkpoint =
         checkpoint_for_schema_version(PatchStreamPosition(2), SchemaVersionId(1));
 
@@ -18,11 +21,11 @@ fn subscriber_cdc_resume_windows_preserve_order_across_interleaved_partitions() 
         (right, "right-3"),
     ];
     for (entity, name) in updates {
-        let _ = update_entity(&runtime, entity, name);
+        let _ = update_entity(execution, &runtime, entity, name);
     }
 
-    let _ = create_entity_in_partition(&runtime, "churn-1", PartitionId(29));
-    let _ = create_entity_in_partition(&runtime, "churn-2", PartitionId(31));
+    let _ = create_entity_in_partition(execution, &runtime, "churn-1", PartitionId(29));
+    let _ = create_entity_in_partition(execution, &runtime, "churn-2", PartitionId(31));
 
     let full = runtime
         .publication()

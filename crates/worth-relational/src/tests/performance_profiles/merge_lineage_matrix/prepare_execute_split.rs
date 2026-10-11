@@ -9,7 +9,7 @@ pub(super) fn certify_merge_prepare_vs_execute_feature_adoption(
         "merge_prepare_vs_execute_feature_adoption",
         || {
             let runtime = persisted_runtime_with_test_schema();
-            create_entity(&runtime, "main-anchor");
+            create_entity(execution, &runtime, "main-anchor");
             create_branch_from_main(&runtime, "feature");
             let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
                 &runtime,
@@ -33,6 +33,7 @@ pub(super) fn certify_merge_prepare_vs_execute_feature_adoption(
             .expect("test staging stays within configured resource budgets");
             let _feature_only = changed_entities(
                 &txn.commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

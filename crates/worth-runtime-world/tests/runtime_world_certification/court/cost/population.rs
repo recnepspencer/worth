@@ -106,9 +106,11 @@ impl Population {
                     // Retained history keeps each distinct exact Relational
                     // pin live. H co-varies with U; B returns to one.
                 }
-                Axis::A => population
-                    .attempts
-                    .push(population.court.prepare_cargo(&population.root, "5")),
+                Axis::A => population.attempts.push(population.court.prepare_cargo(
+                    request_execution,
+                    &population.root,
+                    "5",
+                )),
                 Axis::P => {
                     let head = child(&population.court, &population.root, &name, true, false);
                     population.partials.push(

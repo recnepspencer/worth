@@ -57,6 +57,7 @@ pub(super) fn commit_bootstrap_rows(
                 .map_err(map_bootstrap_staging_denial)?;
             let committed = transaction
                 .commit(
+                    execution,
                     runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

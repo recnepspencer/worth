@@ -20,6 +20,7 @@ fn a_committed_struct_field_patch_publishes_one_field_precise_target() {
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let execution = &resource_request;
 
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![entity_summary_struct_aspect(
@@ -49,6 +50,7 @@ fn a_committed_struct_field_patch_publishes_one_field_precise_target() {
     let entity = changed_entities(
         &create
             .commit(
+                execution,
                 &runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -72,6 +74,7 @@ fn a_committed_struct_field_patch_publishes_one_field_precise_target() {
         .unwrap();
     let commit_id = update
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

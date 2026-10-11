@@ -28,7 +28,7 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
                 .expect("feature strategy registration"),
         )
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "shared");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch = crate::tests::support::create_branch_from_main(&runtime, "feature");
 
     {
@@ -69,7 +69,7 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
             .validate_lowered_plan(&runtime, lowered)
             .expect("validated main strategy plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("main strategy commit");
     }
 
@@ -113,7 +113,7 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
             .validate_lowered_plan(&runtime, lowered)
             .expect("validated feature strategy plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("feature strategy commit");
     }
 
@@ -184,7 +184,7 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
             &replica_descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "shared");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch = crate::tests::support::create_branch_from_main(&runtime, "feature-real");
 
     {
@@ -222,7 +222,7 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
             .validate_lowered_plan(&runtime, lowered)
             .expect("validated intent plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("intent strategy commit");
     }
 
@@ -264,7 +264,7 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
             .validate_lowered_plan(&runtime, lowered)
             .expect("validated replica plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("replica strategy commit");
     }
 

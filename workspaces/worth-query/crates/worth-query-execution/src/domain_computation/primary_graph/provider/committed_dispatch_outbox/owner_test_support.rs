@@ -47,7 +47,7 @@ pub(super) fn commit_record(
                 .unwrap(),
             ),
          worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,).unwrap();
+        let committed = transaction.commit(request_execution, runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,).unwrap();
         let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
             provider.graph.layout.provider_dispatch_outbox(),
             Some(&record),

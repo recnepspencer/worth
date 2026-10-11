@@ -28,6 +28,7 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
     .expect("test staging stays within configured resource budgets");
     let created = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -70,6 +71,7 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -124,6 +126,7 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -141,7 +144,7 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
         0
     );
 
-    let deleted = delete_entity(&runtime, entity);
+    let deleted = delete_entity(execution, &runtime, entity);
     let deleted_patch = &deleted.patch()[0];
     let deleted_aspect_summary = deleted.aspect_summary().unwrap();
     assert_eq!(
@@ -161,10 +164,13 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
 #[test]
 fn retained_relation_patch_only_emits_declared_lifecycle_delta_when_endpoints_and_aspects_stay_same(
 ) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_outcome = create_relation_outcome(&runtime, source, target, "r-audit");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "r-audit");
     let relation_patch = &relation_outcome.patch()[0];
     let relation_aspect_summary = relation_outcome.aspect_summary().unwrap();
 
@@ -185,7 +191,7 @@ fn retained_relation_patch_only_emits_declared_lifecycle_delta_when_endpoints_an
     );
     assert_eq!(relation_aspect_summary.changed_relation_aspect_count, 4);
 
-    let deleted_source = delete_entity(&runtime, source);
+    let deleted_source = delete_entity(execution, &runtime, source);
     let retained_relation_patch = deleted_source
         .patch()
         .iter()

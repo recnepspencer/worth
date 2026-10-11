@@ -5,20 +5,23 @@ use crate::tests::support::*;
 
 #[test]
 fn entity_slot_reuse_increments_generation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
-    let create_outcome = create_entity_outcome(&runtime, "first");
+    let create_outcome = create_entity_outcome(execution, &runtime, "first");
     let entity_a = changed_entities(&create_outcome)[0];
     assert!(runtime
         .visibility_authority()
         .release_snapshot(&create_outcome.snapshot)
         .is_ok());
-    let delete_outcome = delete_entity(&runtime, entity_a);
+    let delete_outcome = delete_entity(execution, &runtime, entity_a);
     assert!(runtime
         .visibility_authority()
         .release_snapshot(&delete_outcome.snapshot)
         .is_ok());
     let retention = runtime.retention().run_pass();
-    let entity_b = create_entity(&runtime, "second");
+    let entity_b = create_entity(execution, &runtime, "second");
 
     assert!(retention.entity_reclaimed <= 1);
     assert_eq!(
@@ -38,9 +41,9 @@ fn snapshot_reads_are_immutable_after_later_mutation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let first = create_entity(&runtime, "first");
+    let first = create_entity(execution, &runtime, "first");
     let snapshot = runtime.visibility_authority().snapshot();
-    let _second = create_entity(&runtime, "second");
+    let _second = create_entity(execution, &runtime, "second");
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
@@ -93,10 +96,10 @@ fn snapshots_resolve_historical_entity_aspects_by_version() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let create_outcome = create_entity_outcome(&runtime, "before");
+    let create_outcome = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&create_outcome)[0];
     let snapshot = runtime.visibility_authority().snapshot();
-    let update_outcome = update_entity(&runtime, entity, "after");
+    let update_outcome = update_entity(execution, &runtime, entity, "after");
 
     let old_read = runtime
         .read_truth()
@@ -130,9 +133,9 @@ fn historical_reads_preserve_generation_and_aspects_after_slot_reuse() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
-    let created = create_entity_outcome(&runtime, "before");
+    let created = create_entity_outcome(execution, &runtime, "before");
     let original = changed_entities(&created)[0];
-    let deleted = delete_entity(&runtime, original);
+    let deleted = delete_entity(execution, &runtime, original);
     assert!(runtime
         .visibility_authority()
         .release_snapshot(&created.snapshot)
@@ -142,7 +145,7 @@ fn historical_reads_preserve_generation_and_aspects_after_slot_reuse() {
         .release_snapshot(&deleted.snapshot)
         .is_ok());
     let _ = runtime.retention().run_pass();
-    let replacement = create_entity(&runtime, "after");
+    let replacement = create_entity(execution, &runtime, "after");
 
     let historical = runtime
         .read_truth()
@@ -206,10 +209,10 @@ fn snapshot_root_obligation_survives_substrate_reclaim_until_release() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
-    let create_outcome = create_entity_outcome(&runtime, "pinned");
+    let create_outcome = create_entity_outcome(execution, &runtime, "pinned");
     let create_snapshot = runtime.visibility_authority().snapshot();
     let entity = changed_entities(&create_outcome)[0];
-    let _delete_outcome = delete_entity(&runtime, entity);
+    let _delete_outcome = delete_entity(execution, &runtime, entity);
     let delete_snapshot = runtime.visibility_authority().snapshot();
     let first_retention = runtime.retention().run_pass();
 
@@ -265,10 +268,10 @@ fn epoch_retention_backend_preserves_snapshot_visibility_until_release() {
             retention_backend: RetentionBackend::EpochChunkRetention,
         })
         .build();
-    let create_outcome = create_entity_outcome(&runtime, "epoch-pinned");
+    let create_outcome = create_entity_outcome(execution, &runtime, "epoch-pinned");
     let create_snapshot = runtime.visibility_authority().snapshot();
     let entity = changed_entities(&create_outcome)[0];
-    let _delete_outcome = delete_entity(&runtime, entity);
+    let _delete_outcome = delete_entity(execution, &runtime, entity);
     let delete_snapshot = runtime.visibility_authority().snapshot();
 
     let first_retention = runtime.retention().run_pass();
@@ -320,7 +323,7 @@ fn external_basis_retention_keeps_observed_truth_until_independent_release() {
             retention_backend: RetentionBackend::EpochChunkRetention,
         })
         .build();
-    let created = create_entity_outcome(&runtime, "managed-observation-basis");
+    let created = create_entity_outcome(execution, &runtime, "managed-observation-basis");
     let entity = changed_entities(&created)[0];
     let identity = runtime.main_branch_identity();
     let (descriptor, basis) = runtime.observe_branch(&identity).unwrap();
@@ -333,7 +336,7 @@ fn external_basis_retention_keeps_observed_truth_until_independent_release() {
         .release_snapshot(&created.snapshot)
         .is_ok());
 
-    let deleted = delete_entity(&runtime, entity);
+    let deleted = delete_entity(execution, &runtime, entity);
     assert!(runtime
         .visibility_authority()
         .release_snapshot(&deleted.snapshot)
@@ -378,7 +381,7 @@ fn read_records_expose_visibility_metadata() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let outcome = create_entity_outcome(&runtime, "visible");
+    let outcome = create_entity_outcome(execution, &runtime, "visible");
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)

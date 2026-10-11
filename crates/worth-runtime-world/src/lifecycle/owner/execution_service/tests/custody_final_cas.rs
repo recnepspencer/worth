@@ -16,7 +16,7 @@ fn final_cell_comparison_rejects_a_real_winner_without_promoting_or_retagging() 
     let settlement = settled(execute_without_signal(
         execution,
         &owner,
-        prepare_relational(&fixture, &owner, &expected, "final-cell-loser"),
+        prepare_relational(&execution, &fixture, &owner, &expected, "final-cell-loser"),
     ));
     let successor = settlement.successor_basis().unwrap().clone();
     let (_, results) = settlement.progress().ready_results().unwrap();

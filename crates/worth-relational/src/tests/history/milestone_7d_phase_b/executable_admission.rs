@@ -15,10 +15,14 @@ fn admitted_source_addition_carries_executable_class() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    let feature_only =
-        create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    let feature_only = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
     let entity = changed_entities(&feature_only)[0];
 
     let artifact = runtime
@@ -57,9 +61,14 @@ fn compile_rejects_corrupted_non_executable_resolution_class() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let mut prepared = runtime
         .prepare_merge_execution(

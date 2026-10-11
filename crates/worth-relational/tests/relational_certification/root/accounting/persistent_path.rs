@@ -48,7 +48,7 @@ fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
         DeltaId::StormRerouteAurora,
     )
     .expect("storm delta lowers through production intent");
-    commit_branch_batch(&world.runtime, branch_id.clone(), batch);
+    commit_branch_batch(execution, &world.runtime, branch_id.clone(), batch);
 
     let after_mutation = persistent_node_locators(&world.runtime, &identity);
     let mutation_cost = world
@@ -85,6 +85,7 @@ fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
     let before_noop = after_mutation;
     let noop_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
     commit_branch_batch(
+        execution,
         &world.runtime,
         branch_id,
         WorkerIntentBatch::new("phase5-persistent-path-noop"),

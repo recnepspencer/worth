@@ -13,7 +13,7 @@ fn update_entity_fields_canonical_delta_uses_authoritative_patch_evidence() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(execution, &runtime, "before");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -34,6 +34,7 @@ fn update_entity_fields_canonical_delta_uses_authoritative_patch_evidence() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

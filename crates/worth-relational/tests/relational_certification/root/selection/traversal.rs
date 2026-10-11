@@ -29,7 +29,7 @@ fn branch_traversal_enumerates_edges_from_the_selected_immutable_root() {
     let edge = edge_movement(&world.handles, &baseline);
     let child_snapshot = fork_from_main(&world.runtime, "storm");
     assert_ancestor_edge_is_visible(execution, &world.runtime, &child_snapshot, &edge);
-    publish_main_rewire(&world.runtime, &edge);
+    publish_main_rewire(execution, &world.runtime, &edge);
     let main_snapshot = current_snapshot(&world.runtime, "main");
     assert_main_edge_is_visible(execution, &world.runtime, &main_snapshot, &edge);
     assert_child_retains_ancestor_and_rejects_main_edge(
@@ -81,7 +81,11 @@ fn assert_ancestor_edge_is_visible(
     assert!(incoming.relations.contains(&edge.ancestor_tuple()));
 }
 
-fn publish_main_rewire(runtime: &RelationalRuntime, edge: &EdgeMovement) {
+fn publish_main_rewire(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    edge: &EdgeMovement,
+) {
     let intent = UpdateRelationEndpointsIntent {
         relation_id: edge.relation_id,
         kind_id: edge.kind_id,
@@ -91,7 +95,7 @@ fn publish_main_rewire(runtime: &RelationalRuntime, edge: &EdgeMovement) {
     let batch = WorkerIntentBatch::new("phase5-adversarial-main-edge-rewire").push(
         MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(intent)),
     );
-    commit_branch_batch(runtime, BranchId("main".to_owned()), batch);
+    commit_branch_batch(execution, runtime, BranchId("main".to_owned()), batch);
 }
 
 fn assert_main_edge_is_visible(

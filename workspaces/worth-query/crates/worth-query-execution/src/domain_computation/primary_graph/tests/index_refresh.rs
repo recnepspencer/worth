@@ -30,8 +30,8 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
             runtime
                 .fork_branch(BranchId("index-refresh-feature".to_owned()), source)
                 .expect("feature branch forks from main");
-            let feature = commit_empty(runtime, "index-refresh-feature");
-            let main = commit_empty(runtime, "main");
+            let feature = commit_empty(execution, runtime, "index-refresh-feature");
+            let main = commit_empty(execution, runtime, "main");
             assert!(index_ids.iter().any(|index_id| {
                 runtime
                     .index_access()
@@ -78,7 +78,10 @@ fn multi_commit_callback_reconstructs_each_retained_generation_with_cold_budget(
     let index_ids = handle.primary_index_ids.to_vec();
     let commits = handle
         .execute_mutation_with_index_refresh(execution, |runtime| {
-            Ok::<_, &'static str>([commit_empty(runtime, "main"), commit_empty(runtime, "main")])
+            Ok::<_, &'static str>([
+                commit_empty(execution, runtime, "main"),
+                commit_empty(execution, runtime, "main"),
+            ])
         })
         .expect("bounded reconstruction succeeds")
         .expect("both commits succeed");
@@ -127,7 +130,7 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
             },
             branch_scoped: true,
         });
-        let committed = commit_empty(runtime, "main");
+        let committed = commit_empty(execution, runtime, "main");
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
         let refreshed = super::super::index_maintenance_budget::refresh_with_cold_fallback(
             execution,
@@ -147,6 +150,7 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
 }
 
 pub(super) fn commit_empty(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     branch: &str,
 ) -> RelationalCommitReceipt {
@@ -161,6 +165,7 @@ pub(super) fn commit_empty(
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .expect("transaction binds to exact branch")
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

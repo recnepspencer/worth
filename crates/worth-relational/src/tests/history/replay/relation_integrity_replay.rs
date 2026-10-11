@@ -49,9 +49,9 @@ fn replay_contract_preserves_relation_integrity_declared_schema() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let outcome = create_relation_outcome(&runtime, source, target, "guarded");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let outcome = create_relation_outcome(execution, &runtime, source, target, "guarded");
 
     let replay = runtime.replay_authority().replay_commit(
         RelationalReplayRequest {
@@ -101,9 +101,9 @@ fn replay_contract_preserves_branch_local_relation_integrity_truth_after_rejecte
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = source_max_one_relation_integrity_runtime();
-    let source = create_entity(&runtime, "source");
-    let target_a = create_entity(&runtime, "target-a");
-    let target_b = create_entity(&runtime, "target-b");
+    let source = create_entity(execution, &runtime, "source");
+    let target_a = create_entity(execution, &runtime, "target-a");
+    let target_b = create_entity(execution, &runtime, "target-b");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -132,6 +132,7 @@ fn replay_contract_preserves_branch_local_relation_integrity_truth_after_rejecte
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -162,6 +163,7 @@ fn replay_contract_preserves_branch_local_relation_integrity_truth_after_rejecte
         .expect("test staging stays within configured resource budgets");
     let rejected = rejected_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

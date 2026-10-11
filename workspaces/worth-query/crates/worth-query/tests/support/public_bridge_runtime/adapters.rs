@@ -142,6 +142,7 @@ impl PublicWriteAuthorityAdapter {
 impl WorthQueryRuntimeWriteAuthorityAdapter for PublicWriteAuthorityAdapter {
     fn write(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
         _relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,

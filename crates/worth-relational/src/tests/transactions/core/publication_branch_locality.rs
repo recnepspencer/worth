@@ -3,14 +3,22 @@ use std::sync::Arc;
 
 #[test]
 fn paused_storm_publication_does_not_contact_or_wait_on_maintenance() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    create_entity(&runtime, "branch-local-publication-anchor");
+    create_entity(execution, &runtime, "branch-local-publication-anchor");
     fork_publication_branch(&mut runtime, "storm");
     fork_publication_branch(&mut runtime, "maintenance");
 
-    let storm = prepare_publication(&mut runtime, "storm", "storm-publication");
+    let storm = prepare_publication(execution, &mut runtime, "storm", "storm-publication");
     let storm_cell = storm.publication_cell_for_test();
-    let maintenance = prepare_publication(&mut runtime, "maintenance", "maintenance-publication");
+    let maintenance = prepare_publication(
+        execution,
+        &mut runtime,
+        "maintenance",
+        "maintenance-publication",
+    );
     let maintenance_cell = maintenance.publication_cell_for_test();
     let position_reservations_before = runtime.patch_position_reservation_counters();
 
@@ -127,6 +135,7 @@ fn paused_storm_publication_does_not_contact_or_wait_on_maintenance() {
 }
 
 fn prepare_publication(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     branch: &str,
     entity: &str,
@@ -140,6 +149,7 @@ fn prepare_publication(
         .expect("test staging stays within configured resource budgets");
     runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

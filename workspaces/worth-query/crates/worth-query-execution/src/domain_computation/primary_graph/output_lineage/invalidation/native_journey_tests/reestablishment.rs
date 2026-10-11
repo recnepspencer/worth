@@ -85,7 +85,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
         .unwrap()
         .clone();
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
-        write_field(runtime, account, label.clone(), "prime");
+        write_field(request_execution, runtime, account, label.clone(), "prime");
         let (basis_handle, basis) = snapshot(runtime);
         let upstream_facts: Arc<[WorthQueryApplicationObservedFact]> =
             Arc::from([WorthQueryApplicationObservedFact::Relation {
@@ -139,7 +139,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
             target: EntityReference::Existing(account),
         };
         let result = write_batch(
-            runtime,
+            request_execution, runtime,
             WorkerIntentBatch::new("add-pending-relation").push(MutationIntent::Create(
                 CreateIntent::Relation(RelationSpec {
                     partition_id: created.partition_id,
@@ -154,7 +154,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
         let relation = result.created_relation(&created).unwrap();
         release_test_commit_snapshot(runtime, &result);
         let result = write_batch(
-            runtime,
+            request_execution, runtime,
             WorkerIntentBatch::new("remove-pending-relation").push(MutationIntent::Relation(
                 RelationMutationIntent::Delete(DeleteRelationIntent {
                     relation_id: relation,
@@ -164,7 +164,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
         release_test_commit_snapshot(runtime, &result);
         for index in 0..=WINDOW {
             write_field(
-                runtime,
+                request_execution, runtime,
                 account,
                 label.clone(),
                 if index % 2 == 0 { "aa" } else { "bb" },

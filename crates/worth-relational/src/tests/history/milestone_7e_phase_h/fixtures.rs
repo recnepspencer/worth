@@ -181,6 +181,7 @@ pub(super) fn runtime_with_relation_identity_registry(
 }
 
 pub(super) fn create_named_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,
     name: &str,
@@ -208,6 +209,7 @@ pub(super) fn create_named_entity_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

@@ -192,7 +192,7 @@ impl WorthQueryPrimaryGraphProvider {
                     .validate(runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(|error| preparation_denial::validation_denial(&error))?;
                 let mut candidate = runtime
-                    .prepare_validated_proposal(validated)
+                    .prepare_validated_proposal(execution, validated)
                     .map_err(|error| preparation_denial::preparation_denial(&error))?;
                 crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(execution,
                     runtime, &mut candidate, &self.graph.primary_index_ids, &before,

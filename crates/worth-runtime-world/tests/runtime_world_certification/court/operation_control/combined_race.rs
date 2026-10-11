@@ -28,6 +28,7 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
     let (reached, received) = mpsc::sync_channel(1);
     let gate = Arc::new(RelationalPatchPositionReservationGate::default());
     let candidate = court.records.candidate_with_control(
+        request_execution,
         root.basis().relational_basis(),
         "grain",
         "5",

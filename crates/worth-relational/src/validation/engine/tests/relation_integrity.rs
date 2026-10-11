@@ -109,16 +109,19 @@ fn engine_rejects_planned_cycles_under_acyclicity_contracts() {
 
 #[test]
 fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_acyclicity_and_connectivity();
-    let a = create_entity_of_kind(&runtime, KindId(3), "a");
-    let b = create_entity_of_kind(&runtime, KindId(3), "b");
-    let c = create_entity_of_kind(&runtime, KindId(3), "c");
-    let d = create_entity_of_kind(&runtime, KindId(3), "d");
-    let e = create_entity_of_kind(&runtime, KindId(3), "e");
-    create_relation_of_kind(&runtime, KindId(2), a, b, "edge-ab");
-    create_relation_of_kind(&runtime, KindId(2), b, c, "edge-bc");
-    create_relation_of_kind(&runtime, KindId(2), c, d, "edge-cd");
-    create_relation_of_kind(&runtime, KindId(2), d, e, "edge-de");
+    let a = create_entity_of_kind(execution, &runtime, KindId(3), "a");
+    let b = create_entity_of_kind(execution, &runtime, KindId(3), "b");
+    let c = create_entity_of_kind(execution, &runtime, KindId(3), "c");
+    let d = create_entity_of_kind(execution, &runtime, KindId(3), "d");
+    let e = create_entity_of_kind(execution, &runtime, KindId(3), "e");
+    create_relation_of_kind(execution, &runtime, KindId(2), a, b, "edge-ab");
+    create_relation_of_kind(execution, &runtime, KindId(2), b, c, "edge-bc");
+    create_relation_of_kind(execution, &runtime, KindId(2), c, d, "edge-cd");
+    create_relation_of_kind(execution, &runtime, KindId(2), d, e, "edge-de");
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(19),
         merged_intents: vec![MutationIntent::Create(CreateIntent::Relation(
@@ -164,6 +167,9 @@ fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
 
 #[test]
 fn commit_publication_stage_rejects_sources_without_required_connectivity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_acyclicity_and_connectivity();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -181,6 +187,7 @@ fn commit_publication_stage_rejects_sources_without_required_connectivity() {
 
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -196,13 +203,22 @@ fn commit_publication_stage_rejects_sources_without_required_connectivity() {
 
 #[test]
 fn minimum_cardinality_current_version_scans_only_live_slots() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_cardinality_minimum();
-    let source = create_entity_of_kind(&runtime, KindId(1), "source");
-    let target = create_entity_of_kind(&runtime, KindId(1), "target");
-    let retired_target = create_entity_of_kind(&runtime, KindId(1), "retired-target");
-    let retired_relation =
-        create_relation_of_kind(&runtime, KindId(2), source, retired_target, "retired");
-    create_relation_of_kind(&runtime, KindId(2), source, target, "live");
+    let source = create_entity_of_kind(execution, &runtime, KindId(1), "source");
+    let target = create_entity_of_kind(execution, &runtime, KindId(1), "target");
+    let retired_target = create_entity_of_kind(execution, &runtime, KindId(1), "retired-target");
+    let retired_relation = create_relation_of_kind(
+        execution,
+        &runtime,
+        KindId(2),
+        source,
+        retired_target,
+        "retired",
+    );
+    create_relation_of_kind(execution, &runtime, KindId(2), source, target, "live");
     let mut delete_txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     delete_txn
         .push_batch(
@@ -216,6 +232,7 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
         .expect("test staging stays within configured resource budgets");
     delete_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -265,11 +282,14 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
 
 #[test]
 fn minimum_cardinality_shared_index_preserves_both_passing_contracts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_cardinality_minimum();
-    let first = create_entity_of_kind(&runtime, KindId(1), "first");
-    let second = create_entity_of_kind(&runtime, KindId(1), "second");
-    create_relation_of_kind(&runtime, KindId(2), first, second, "forward");
-    create_relation_of_kind(&runtime, KindId(2), second, first, "reverse");
+    let first = create_entity_of_kind(execution, &runtime, KindId(1), "first");
+    let second = create_entity_of_kind(execution, &runtime, KindId(1), "second");
+    create_relation_of_kind(execution, &runtime, KindId(2), first, second, "forward");
+    create_relation_of_kind(execution, &runtime, KindId(2), second, first, "reverse");
 
     runtime.performance_access().reset_counters();
     let results = InvariantEngine::new(&runtime).execute(

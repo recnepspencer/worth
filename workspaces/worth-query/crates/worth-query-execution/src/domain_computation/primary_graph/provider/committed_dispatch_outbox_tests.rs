@@ -112,6 +112,7 @@ fn assert_commit_affinity_substitutions(
             .expect("test staging stays within configured resource budgets");
         let committed = transaction
             .commit(
+                execution,
                 runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -199,6 +200,7 @@ fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
                 .expect("test staging stays within configured resource budgets");
             let committed = transaction
                 .commit(
+                    execution,
                     runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
@@ -254,6 +256,7 @@ fn later_deletion_cannot_erase_exact_commit_truth() {
             .expect("test staging stays within configured resource budgets");
         let committed = transaction
             .commit(
+                execution,
                 runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )

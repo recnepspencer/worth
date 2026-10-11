@@ -16,19 +16,21 @@ pub(super) fn certify_geometry_hot_commit_vs_replay_reconstruction(
                 profile.max_entries_per_artifact = 0;
             });
 
-            let source = create_entity_outcome(&runtime, "hot-cold-geometry-source");
-            let middle = create_entity_outcome(&runtime, "hot-cold-geometry-middle");
-            let target = create_entity_outcome(&runtime, "hot-cold-geometry-target");
+            let source = create_entity_outcome(execution, &runtime, "hot-cold-geometry-source");
+            let middle = create_entity_outcome(execution, &runtime, "hot-cold-geometry-middle");
+            let target = create_entity_outcome(execution, &runtime, "hot-cold-geometry-target");
             let source_entity = changed_entities(&source)[0];
             let middle_entity = changed_entities(&middle)[0];
             let target_entity = changed_entities(&target)[0];
             create_relation_outcome(
+                execution,
                 &runtime,
                 source_entity,
                 middle_entity,
                 "hot-cold-geometry-link-a",
             );
             create_relation_outcome(
+                execution,
                 &runtime,
                 middle_entity,
                 target_entity,
@@ -37,8 +39,12 @@ pub(super) fn certify_geometry_hot_commit_vs_replay_reconstruction(
 
             runtime.performance_access().reset_counters();
             let hot_commit_started_at = Instant::now();
-            let hot_commit =
-                update_entity(&runtime, middle_entity, "hot-cold-geometry-middle-updated");
+            let hot_commit = update_entity(
+                execution,
+                &runtime,
+                middle_entity,
+                "hot-cold-geometry-middle-updated",
+            );
             let hot_commit_micros = hot_commit_started_at.elapsed().as_micros();
 
             let snapshot = runtime.visibility_authority().snapshot();

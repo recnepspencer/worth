@@ -100,6 +100,7 @@ pub(super) fn setup() -> (
 /// are a single owner step; these custody tests then supply owner-issued
 /// effects by hand rather than driving production dispatch.
 pub(super) fn relational_attempt(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     fixture: &RealReferenceFixture,
     owner: &TestOwner,
     expected: ProductBranchObservation,
@@ -110,7 +111,7 @@ pub(super) fn relational_attempt(
         expected,
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
             .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate("recovery-custody"),
+                fixture.prepare_relational_owner_candidate(execution, "recovery-custody"),
             ),
         &cancellation.token(),
         None,
@@ -143,11 +144,14 @@ pub(super) fn successor_basis(
 
 #[test]
 fn caller_loss_preserves_relational_settlement_custody_and_catalog_capacity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
-    let mut attempt = relational_attempt(&fixture, &owner, expected.clone());
+    let mut attempt = relational_attempt(execution, &fixture, &owner, expected.clone());
     attempt.begin_owner_execution();
 
-    let performed = fixture.perform_relational_owner_change();
+    let performed = fixture.perform_relational_owner_change(execution);
     let successor_basis = successor_basis(&owner, &expected, performed.next_basis().clone(), None);
     let progress = CompositeAttemptProgress::new(
         RelationalAttemptProgress::performed(performed),
@@ -189,8 +193,11 @@ fn caller_loss_preserves_relational_settlement_custody_and_catalog_capacity() {
 
 #[test]
 fn continuation_settles_relational_effects_without_signal_or_product_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
-    let mut attempt = relational_attempt(&fixture, &owner, expected.clone());
+    let mut attempt = relational_attempt(execution, &fixture, &owner, expected.clone());
     attempt.begin_owner_execution();
 
     let before_product_head = owner
@@ -199,7 +206,7 @@ fn continuation_settles_relational_effects_without_signal_or_product_publication
         .root_cell()
         .expect("bootstrapped cell")
         .atomic_snapshot();
-    let performed = fixture.perform_relational_owner_change();
+    let performed = fixture.perform_relational_owner_change(execution);
     let successor_basis = successor_basis(&owner, &expected, performed.next_basis().clone(), None);
     let handle = {
         let progress = CompositeAttemptProgress::new(

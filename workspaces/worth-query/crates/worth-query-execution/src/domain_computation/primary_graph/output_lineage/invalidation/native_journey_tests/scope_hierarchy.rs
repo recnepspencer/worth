@@ -78,7 +78,7 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
                 ])),
             })))
         });
-        let committed = write_batch(runtime, batch);
+        let committed = write_batch(execution, runtime, batch);
         let entities: Vec<_> = refs.iter().map(|r| committed.created_entity(r).unwrap()).collect();
         release_test_commit_snapshot(runtime, &committed);
         let (before_handle, before) = snapshot(runtime);
@@ -112,7 +112,7 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
             }
             assert!(registries[n].next_required_work(owner, &mut owner.edit_admission()).unwrap().is_none());
         }
-        write_field(runtime, entities[0], label, "after");
+        write_field(execution, runtime, entities[0], label, "after");
         let (after_handle, after) = snapshot(runtime);
         let report = owner.native_marking_report(&after, &mut owner.edit_admission()).unwrap().unwrap();
         let NativeMarkingPrecision::Exact(counts) = report.precision else { panic!("the declared Native leaf touch is exact") };

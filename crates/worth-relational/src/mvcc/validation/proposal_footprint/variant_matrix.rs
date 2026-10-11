@@ -18,12 +18,16 @@ use super::{assert_work, locator, project, validate};
 
 #[test]
 fn entity_field_patch_materializes_only_selected_fields_on_its_exact_record_type() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_struct_aspects();
-    let changed = create_entity(&runtime, "changed");
-    let other = create_entity(&runtime, "other");
-    let relation = create_relation(&runtime, changed, other, "edge");
+    let changed = create_entity(execution, &runtime, "changed");
+    let other = create_entity(execution, &runtime, "other");
+    let relation = create_relation(execution, &runtime, changed, other, "edge");
     let contract = summary_contract(&runtime);
     commit_intent(
+        execution,
         &runtime,
         entity_summary_patch(changed, whole_summary_patch(&contract, "before", "open")),
     );
@@ -45,14 +49,18 @@ fn entity_field_patch_materializes_only_selected_fields_on_its_exact_record_type
 
 #[test]
 fn relation_field_patch_materializes_only_selected_fields_on_its_exact_record_type() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_struct_aspects();
-    let source = create_entity(&runtime, "source");
-    let first_target = create_entity(&runtime, "first-target");
-    let second_target = create_entity(&runtime, "second-target");
-    let changed = create_relation(&runtime, source, first_target, "changed");
-    let other = create_relation(&runtime, source, second_target, "other");
+    let source = create_entity(execution, &runtime, "source");
+    let first_target = create_entity(execution, &runtime, "first-target");
+    let second_target = create_entity(execution, &runtime, "second-target");
+    let changed = create_relation(execution, &runtime, source, first_target, "changed");
+    let other = create_relation(execution, &runtime, source, second_target, "other");
     let contract = summary_contract(&runtime);
     commit_intent(
+        execution,
         &runtime,
         relation_summary_patch(changed, whole_summary_patch(&contract, "before", "open")),
     );
@@ -73,12 +81,15 @@ fn relation_field_patch_materializes_only_selected_fields_on_its_exact_record_ty
 
 #[test]
 fn relation_whole_aspect_footprint_keeps_record_type_and_aspect_distinct() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let first_target = create_entity(&runtime, "first-target");
-    let second_target = create_entity(&runtime, "second-target");
-    let changed = create_relation(&runtime, source, first_target, "changed");
-    let other = create_relation(&runtime, source, second_target, "other");
+    let source = create_entity(execution, &runtime, "source");
+    let first_target = create_entity(execution, &runtime, "first-target");
+    let second_target = create_entity(execution, &runtime, "second-target");
+    let changed = create_relation(execution, &runtime, source, first_target, "changed");
+    let other = create_relation(execution, &runtime, source, second_target, "other");
     let contract = runtime
         .relation_aspect_plan(KindId(2))
         .unwrap()
@@ -99,12 +110,15 @@ fn relation_whole_aspect_footprint_keeps_record_type_and_aspect_distinct() {
 
 #[test]
 fn relation_delete_footprint_covers_only_the_exact_relation_record() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let first_target = create_entity(&runtime, "first-target");
-    let second_target = create_entity(&runtime, "second-target");
-    let changed = create_relation(&runtime, source, first_target, "changed");
-    let other = create_relation(&runtime, source, second_target, "other");
+    let source = create_entity(execution, &runtime, "source");
+    let first_target = create_entity(execution, &runtime, "first-target");
+    let second_target = create_entity(execution, &runtime, "second-target");
+    let changed = create_relation(execution, &runtime, source, first_target, "changed");
+    let other = create_relation(execution, &runtime, source, second_target, "other");
     let footprint = project(validate(
         &runtime,
         [MutationIntent::Relation(RelationMutationIntent::Delete(
@@ -206,7 +220,11 @@ fn relation_summary_patch(
     ))
 }
 
-fn commit_intent(runtime: &crate::runtime::RelationalRuntime, intent: MutationIntent) {
+fn commit_intent(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &crate::runtime::RelationalRuntime,
+    intent: MutationIntent,
+) {
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
     transaction
         .push_batch(
@@ -216,6 +234,7 @@ fn commit_intent(runtime: &crate::runtime::RelationalRuntime, intent: MutationIn
         .expect("test staging stays within configured resource budgets");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

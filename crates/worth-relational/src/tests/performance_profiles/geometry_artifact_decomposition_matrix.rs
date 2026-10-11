@@ -32,6 +32,7 @@ fn perf_geometry_artifact_decomposition_matrix() {
 
             let hot_update_started_at = Instant::now();
             let update = update_entity(
+                execution,
                 &runtime,
                 seeded.hot_update_target,
                 "rocketship-rich-artifact-update",

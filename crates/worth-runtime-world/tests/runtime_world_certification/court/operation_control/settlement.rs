@@ -12,9 +12,12 @@ fn pending_relational_settlement_never_calls_signal_or_republishes_product() {
         }
     };
     let root = court.bootstrap();
-    let candidate = court
-        .records
-        .candidate(root.basis().relational_basis(), "grain", "5");
+    let candidate = court.records.candidate(
+        request_execution,
+        root.basis().relational_basis(),
+        "grain",
+        "5",
+    );
     court.records.runtime.fail_next_durable_append_for_test();
     let token = RuntimeWorldCancellationSource::new().token();
     let port = court.world.publication_port();

@@ -7,7 +7,12 @@ fn dropped_mutation_settlement_recovers_by_commit_id_and_reopens_the_route() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "abandon-before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        request_execution,
+        &mut runtime,
+        "abandon-before",
+        BranchId("main".to_string()),
+    );
     let baseline = runtime
         .storage_access()
         .storage_stats()
@@ -57,6 +62,7 @@ fn dropped_mutation_settlement_recovers_by_commit_id_and_reopens_the_route() {
         baseline
     );
     create_entity(
+        request_execution,
         &mut runtime,
         "after-dropped-settlement-repair",
         BranchId("main".to_string()),

@@ -17,6 +17,7 @@ fn healthy_fixture_completes_both_leased_preparations() {
                 .build();
             let created = transaction(&runtime, "source")
                 .commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
@@ -43,7 +44,11 @@ fn healthy_fixture_completes_both_leased_preparations() {
                 .unwrap()
                 .0;
             let _prepared = runtime
-                .prepare_branch_transaction_with_lease(transaction(&runtime, "target"), &lease)
+                .prepare_branch_transaction_with_lease(
+                    execution,
+                    transaction(&runtime, "target"),
+                    &lease,
+                )
                 .expect("the same fixture admits ordinary leased preparation");
             assert_eq!(
                 runtime

@@ -33,6 +33,7 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_propagation_wave(
             runtime.performance_access().reset_counters();
             let hot_update_started_at = Instant::now();
             let update = update_entity(
+                execution,
                 &runtime,
                 seeded.hot_update_target,
                 "rocket.plumbing_and_feed.propagation_patch",

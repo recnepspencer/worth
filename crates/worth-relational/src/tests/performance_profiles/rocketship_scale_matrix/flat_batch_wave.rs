@@ -93,6 +93,7 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_flat_batch_wave(
                 )
                 .expect("test staging stays within configured resource budgets");
                 txn.commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

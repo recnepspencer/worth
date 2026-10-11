@@ -88,7 +88,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         RecordedSettlementIdentity::retain(&source(TypeId::of::<OtherUpstream>()), coordinate, 0);
 
     handle.with_runtime_mut(request_execution, |runtime| {
-        write_field(runtime, entity, label.clone(), "prime");
+        write_field(request_execution, runtime, entity, label.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let old_a_fact = field_fact(request_execution, runtime, &before_handle, entity, status.clone());
         register(owner, Arc::clone(&a0), Arc::from([old_a_fact.clone()]), &before, OrdSet::new());
@@ -96,8 +96,8 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         register(owner, Arc::clone(&b), Arc::from([]), &before, OrdSet::unit(Arc::clone(&a0)));
         register(owner, Arc::clone(&c), Arc::from([]), &before, [Arc::clone(&b), Arc::clone(&other)].into_iter().collect());
 
-        write_field(runtime, entity, status.clone(), "closed");
-        write_field(runtime, entity, label, "changed");
+        write_field(request_execution, runtime, entity, status.clone(), "closed");
+        write_field(request_execution, runtime, entity, label, "changed");
         let (changed_handle, changed) = snapshot(runtime);
         assert_pending(owner, &changed, &b, &a0);
         assert_pending(owner, &changed, &c, &b);
@@ -120,14 +120,14 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         register(owner, Arc::clone(&b), Arc::from([]), &changed, OrdSet::unit(Arc::clone(&a0)));
         assert!(matches!(currentness(owner, &changed, &b), SourceSettlementCurrentness::Clean));
 
-        write_field(runtime, entity, status.clone(), "again");
+        write_field(request_execution, runtime, entity, status.clone(), "again");
         let (next_handle, next) = snapshot(runtime);
         assert_pending(owner, &next, &b, &a0);
         register_alias(request_execution, owner, runtime, &next_handle, &next, entity, status.clone(), &a1, &a2);
         assert!(matches!(currentness(owner, &next, &b), SourceSettlementCurrentness::Clean));
         assert_source_only_alias_verification(request_execution, owner, runtime, &next_handle, &next, &before, &a0, &old_a_fact);
 
-        write_field(runtime, entity, status.clone(), "changed-output");
+        write_field(request_execution, runtime, entity, status.clone(), "changed-output");
         let (later_handle, later) = snapshot(runtime);
         assert_pending(owner, &later, &b, &a0);
         assert!(matches!(
@@ -215,11 +215,11 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         let (before_handle, before) = snapshot(runtime);
         let unchanged_fact = field_fact(request_execution, runtime, &before_handle, entity, label);
         register(owner, Arc::clone(&a0), Arc::from([unchanged_fact.clone()]), &before, OrdSet::new());
-        write_field(runtime, entity, status.clone(), "closed");
+        write_field(request_execution, runtime, entity, status.clone(), "closed");
         let (alias_handle, alias) = snapshot(runtime);
         register_alias(request_execution, owner, runtime, &alias_handle, &alias, entity, status.clone(), &a0, &a1);
         // The successor's status changes; the predecessor's label never changes.
-        write_field(runtime, entity, status, "changed-output");
+        write_field(request_execution, runtime, entity, status, "changed-output");
         let (later_handle, later) = snapshot(runtime);
         assert!(matches!(owner.consumed_output_currentness(&later, &a0, &mut owner.edit_admission()).unwrap(),
             crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness::PendingEqualSuccessor));

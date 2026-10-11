@@ -34,23 +34,31 @@ pub(crate) enum SupplyChainCompilationError {
 const SUPPLY_CHAIN_BASELINE_PATCH_BUDGET: usize = 16_384;
 
 pub(crate) fn compile_supply_chain_baseline(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: CompiledSupplyChainProgram,
 ) -> Result<ProductionSeededSupplyChainWorld, SupplyChainCompilationError> {
-    compile_supply_chain_baseline_with_budget(program, SUPPLY_CHAIN_BASELINE_PATCH_BUDGET)
+    compile_supply_chain_baseline_with_budget(
+        execution,
+        program,
+        SUPPLY_CHAIN_BASELINE_PATCH_BUDGET,
+    )
 }
 
 pub(crate) fn compile_supply_chain_baseline_with_budget(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: CompiledSupplyChainProgram,
     max_patch_records_per_commit: usize,
 ) -> Result<ProductionSeededSupplyChainWorld, SupplyChainCompilationError> {
-    compile_supply_chain_baseline_with_limits(program, max_patch_records_per_commit)
+    compile_supply_chain_baseline_with_limits(execution, program, max_patch_records_per_commit)
 }
 
 pub(crate) fn compile_supply_chain_baseline_with_limits(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: CompiledSupplyChainProgram,
     max_patch_records_per_commit: usize,
 ) -> Result<ProductionSeededSupplyChainWorld, SupplyChainCompilationError> {
     compile_supply_chain_baseline_with_limits_and_custom_invariant(
+        execution,
         program,
         max_patch_records_per_commit,
         None,
@@ -58,10 +66,12 @@ pub(crate) fn compile_supply_chain_baseline_with_limits(
 }
 
 pub(crate) fn compile_supply_chain_baseline_with_custom_invariant(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: CompiledSupplyChainProgram,
     custom_invariant: CustomInvariantRegistration,
 ) -> Result<ProductionSeededSupplyChainWorld, SupplyChainCompilationError> {
     compile_supply_chain_baseline_with_limits_and_custom_invariant(
+        execution,
         program,
         SUPPLY_CHAIN_BASELINE_PATCH_BUDGET,
         Some(custom_invariant),
@@ -69,10 +79,12 @@ pub(crate) fn compile_supply_chain_baseline_with_custom_invariant(
 }
 
 pub(crate) fn compile_supply_chain_baseline_with_invariant_catalog(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: CompiledSupplyChainProgram,
     invariant_catalog: InvariantCatalog,
 ) -> Result<ProductionSeededSupplyChainWorld, SupplyChainCompilationError> {
     compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariant(
+        execution,
         program,
         SUPPLY_CHAIN_BASELINE_PATCH_BUDGET,
         Some(invariant_catalog),
@@ -81,12 +93,14 @@ pub(crate) fn compile_supply_chain_baseline_with_invariant_catalog(
 }
 
 pub(crate) fn compile_supply_chain_baseline_with_budget_and_invariant_catalog_and_custom_invariants(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: CompiledSupplyChainProgram,
     max_patch_records_per_commit: usize,
     invariant_catalog: InvariantCatalog,
     custom_invariants: Vec<CustomInvariantRegistration>,
 ) -> Result<ProductionSeededSupplyChainWorld, SupplyChainCompilationError> {
     compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariants(
+        execution,
         program,
         max_patch_records_per_commit,
         Some(invariant_catalog),
@@ -95,11 +109,13 @@ pub(crate) fn compile_supply_chain_baseline_with_budget_and_invariant_catalog_an
 }
 
 fn compile_supply_chain_baseline_with_limits_and_custom_invariant(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: CompiledSupplyChainProgram,
     max_patch_records_per_commit: usize,
     custom_invariant: Option<CustomInvariantRegistration>,
 ) -> Result<ProductionSeededSupplyChainWorld, SupplyChainCompilationError> {
     compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariant(
+        execution,
         program,
         max_patch_records_per_commit,
         None,
@@ -108,12 +124,14 @@ fn compile_supply_chain_baseline_with_limits_and_custom_invariant(
 }
 
 fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariant(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: CompiledSupplyChainProgram,
     max_patch_records_per_commit: usize,
     invariant_catalog: Option<InvariantCatalog>,
     custom_invariant: Option<CustomInvariantRegistration>,
 ) -> Result<ProductionSeededSupplyChainWorld, SupplyChainCompilationError> {
     compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariants(
+        execution,
         program,
         max_patch_records_per_commit,
         invariant_catalog,
@@ -122,6 +140,7 @@ fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariant(
 }
 
 fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariants(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: CompiledSupplyChainProgram,
     max_patch_records_per_commit: usize,
     invariant_catalog: Option<InvariantCatalog>,
@@ -149,7 +168,7 @@ fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariants(
         .install(program.schema_registry().clone())
         .map_err(SupplyChainCompilationError::SchemaInstallation)?;
 
-    let commit_result = commit_definition(&runtime, &program)?;
+    let commit_result = commit_definition(execution, &runtime, &program)?;
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime
         .observe_branch(&identity)
@@ -173,6 +192,7 @@ fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invariants(
 }
 
 fn commit_definition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     program: &CompiledSupplyChainProgram,
 ) -> Result<worth_relational::facade::transactions::CommitResult, SupplyChainCompilationError> {
@@ -194,6 +214,7 @@ fn commit_definition(
             .expect("empty baseline staging fits the configured transaction budget");
         return transaction
             .commit(
+                execution,
                 runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -225,6 +246,7 @@ fn commit_definition(
         .expect("Supply Chain baseline staging fits its configured transaction budget");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

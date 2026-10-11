@@ -22,7 +22,7 @@ fn patch_local_field_maintenance_matches_independent_rebuild_and_preserves_prior
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "before");
+    let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -45,7 +45,7 @@ fn patch_local_field_maintenance_matches_independent_rebuild_and_preserves_prior
         .indexes
         .generation(initial.generations[0].generation_id)
         .unwrap();
-    let second = update_entity(&runtime, entity, "after");
+    let second = update_entity(execution, &runtime, entity, "after");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -98,7 +98,7 @@ fn exhausted_refresh_and_wrong_before_root_publish_nothing() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "first");
+    let first = create_entity_outcome(execution, &runtime, "first");
     let entity = changed_entities(&first)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -116,7 +116,7 @@ fn exhausted_refresh_and_wrong_before_root_publish_nothing() {
     runtime
         .index_authority()
         .build_for_commit(execution, request(first.commit.commit_id));
-    let second = update_entity(&runtime, entity, "second");
+    let second = update_entity(execution, &runtime, entity, "second");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -175,16 +175,16 @@ fn ordering_join_and_relation_field_updates_match_rebuild_after_local_changes() 
         RelationJoinDefinition, RelationJoinLeg, RelationJoinSharedEndpoint,
     };
     let runtime = runtime_with_index_field_aspects();
-    let parent = create_entity(&runtime, "parent");
-    let alpha = create_entity(&runtime, "alpha");
-    let beta = create_entity(&runtime, "beta");
-    let left = create_entity(&runtime, "left");
-    let shared = create_entity(&runtime, "shared");
-    let right = create_entity(&runtime, "right");
-    create_relation(&runtime, parent, alpha, "owns-alpha");
-    create_relation(&runtime, parent, beta, "owns-beta");
-    let left_link = create_relation(&runtime, left, shared, "left-link");
-    let last = create_relation_outcome(&runtime, shared, right, "right-link");
+    let parent = create_entity(execution, &runtime, "parent");
+    let alpha = create_entity(execution, &runtime, "alpha");
+    let beta = create_entity(execution, &runtime, "beta");
+    let left = create_entity(execution, &runtime, "left");
+    let shared = create_entity(execution, &runtime, "shared");
+    let right = create_entity(execution, &runtime, "right");
+    create_relation(execution, &runtime, parent, alpha, "owns-alpha");
+    create_relation(execution, &runtime, parent, beta, "owns-beta");
+    let left_link = create_relation(execution, &runtime, left, shared, "left-link");
+    let last = create_relation_outcome(execution, &runtime, shared, right, "right-link");
     let definitions = [
         DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -234,7 +234,7 @@ fn ordering_join_and_relation_field_updates_match_rebuild_after_local_changes() 
         .failed_indexes
         .is_empty());
 
-    let changed = update_entity(&runtime, alpha, "zeta");
+    let changed = update_entity(execution, &runtime, alpha, "zeta");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -265,7 +265,8 @@ fn ordering_join_and_relation_field_updates_match_rebuild_after_local_changes() 
         );
     }
 
-    let deleted = delete_relation_on_branch(&runtime, left_link, BranchId("main".into()));
+    let deleted =
+        delete_relation_on_branch(execution, &runtime, left_link, BranchId("main".into()));
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

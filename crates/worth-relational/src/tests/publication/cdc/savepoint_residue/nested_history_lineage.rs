@@ -7,9 +7,9 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "anchor");
+    let created = create_entity_outcome(execution, &runtime, "anchor");
     let anchor = changed_entities(&created)[0];
-    let target = create_entity(&runtime, "target");
+    let target = create_entity(execution, &runtime, "target");
     let start_lineage = runtime
         .lineage_access()
         .for_record(anchor)
@@ -139,6 +139,7 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

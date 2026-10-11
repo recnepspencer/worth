@@ -75,8 +75,8 @@ fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
         crate::commit_strategies::data::CommitStrategyId(701),
     );
     let runtime = strategy_runtime(descriptor, registry_with_replicas_field());
-    let entity = create_entity(&runtime, "before");
-    crate::tests::support::update_entity(&runtime, entity, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
+    crate::tests::support::update_entity(request_execution, &runtime, entity, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -133,7 +133,7 @@ fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches()
         crate::commit_strategies::data::CommitStrategyId(703),
     );
     let runtime = strategy_runtime(descriptor, registry_with_replicas_field());
-    let entity = create_entity(&runtime, "stable");
+    let entity = create_entity(request_execution, &runtime, "stable");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -188,7 +188,7 @@ fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
     }
     .build_registry();
     let runtime = strategy_runtime(descriptor, registry);
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(

@@ -154,6 +154,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                         .owner_component_services()
                         .materialization_port()
                         .prepare_generated_materialization_suspension(
+                            &borrowed_execution,
                             product.relational_basis(),
                             &[generated],
                         )
@@ -210,6 +211,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                         .owner_component_services()
                         .materialization_port()
                         .prepare_generated_rematerialization(
+                            &borrowed_execution,
                             product.relational_basis(),
                             suspended.custody,
                             vec![RelationalEntityMaterialization {

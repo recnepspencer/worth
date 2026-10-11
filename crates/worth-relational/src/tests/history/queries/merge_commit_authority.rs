@@ -8,8 +8,11 @@ use crate::tests::support::*;
 
 #[test]
 fn merge_commit_uses_deterministic_parent_order_and_advances_target_branch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let main_outcome = create_entity_outcome(&runtime, "main-a");
+    let main_outcome = create_entity_outcome(execution, &runtime, "main-a");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -17,9 +20,14 @@ fn merge_commit_uses_deterministic_parent_order_and_advances_target_branch() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let feature_outcome =
-        create_entity_outcome_on_branch(&runtime, "feature-a", BranchId("feature".to_string()));
+    let feature_outcome = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-a",
+        BranchId("feature".to_string()),
+    );
     let merge_outcome = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
@@ -98,7 +106,7 @@ fn merge_commit_requires_existing_parent_branch_heads() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    create_entity_outcome(&runtime, "main-a");
+    create_entity_outcome(execution, &runtime, "main-a");
     let error = runtime
         .prepare_merge_execution(
             execution,
@@ -119,8 +127,11 @@ fn merge_commit_requires_existing_parent_branch_heads() {
 
 #[test]
 fn merge_commit_rejects_stale_secondary_parent_binding_after_parent_moves() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity_outcome(&runtime, "merge-base");
+    create_entity_outcome(execution, &runtime, "merge-base");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -129,6 +140,7 @@ fn merge_commit_rejects_stale_secondary_parent_binding_after_parent_moves() {
         )
         .unwrap();
     create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "feature-before-prepare",
         BranchId("feature".to_string()),
@@ -160,12 +172,13 @@ fn merge_commit_rejects_stale_secondary_parent_binding_after_parent_moves() {
     .expect("target candidate validates before the parent moves");
 
     create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "feature-after-prepare",
         BranchId("feature".to_string()),
     );
     let error = runtime
-        .prepare_validated_proposal(prepared)
+        .prepare_validated_proposal(execution, prepared)
         .expect_err("a moved secondary parent must stale the prepared binding");
     assert!(matches!(
         error,
@@ -176,8 +189,11 @@ fn merge_commit_rejects_stale_secondary_parent_binding_after_parent_moves() {
 
 #[test]
 fn merge_inspection_reports_overlapping_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let base = create_entity_outcome(&runtime, "shared");
+    let base = create_entity_outcome(execution, &runtime, "shared");
     let shared = changed_entities(&base)[0];
     runtime
         .history_authority()
@@ -186,8 +202,9 @@ fn merge_inspection_reports_overlapping_authority() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let _main_update = update_entity(&runtime, shared, "main-updated");
+    let _main_update = update_entity(execution, &runtime, shared, "main-updated");
     let _feature_update = update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "feature-updated",
@@ -208,8 +225,11 @@ fn merge_inspection_reports_overlapping_authority() {
 
 #[test]
 fn merge_commit_rejects_overlapping_authority_since_merge_base() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let base = create_entity_outcome(&runtime, "shared");
+    let base = create_entity_outcome(execution, &runtime, "shared");
     let shared = changed_entities(&base)[0];
     runtime
         .history_authority()
@@ -218,8 +238,9 @@ fn merge_commit_rejects_overlapping_authority_since_merge_base() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let _main_update = update_entity(&runtime, shared, "main-updated");
+    let _main_update = update_entity(execution, &runtime, shared, "main-updated");
     let _feature_update = update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "feature-updated",
@@ -232,6 +253,7 @@ fn merge_commit_rejects_overlapping_authority_since_merge_base() {
     );
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

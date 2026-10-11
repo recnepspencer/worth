@@ -9,7 +9,7 @@ pub(super) fn certify_controller_sequence_shared_truth(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
 ) -> ControllerSequenceProof {
-    let controller_sequence_entity = create_entity(runtime, "controller-sequence");
+    let controller_sequence_entity = create_entity(execution, runtime, "controller-sequence");
     let _controller_initial_intent = execute_strategy_commit(
         execution,
         runtime,

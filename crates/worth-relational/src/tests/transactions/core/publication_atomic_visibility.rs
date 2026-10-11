@@ -5,8 +5,10 @@ use std::sync::Arc;
 
 #[test]
 fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "atomic-reader-anchor");
+    create_entity(execution, &runtime, "atomic-reader-anchor");
     let old_basis = crate::tests::support::test_owner_main_basis(&runtime).expect("old basis");
     let old_root_id = old_basis.descriptor().root_identity();
 
@@ -24,6 +26,7 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -140,8 +143,10 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
 
 #[test]
 fn fork_and_publication_consume_complete_old_and_new_roots() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = runtime_with_test_schema();
-    let old_commit = create_entity_outcome(&runtime, "fork-race-anchor");
+    let old_commit = create_entity_outcome(execution, &runtime, "fork-race-anchor");
     let old_basis = crate::tests::support::test_owner_main_basis(&runtime).expect("old basis");
     let old_root_id = old_basis.descriptor().root_identity();
     let (_, fork_source) = runtime
@@ -162,6 +167,7 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

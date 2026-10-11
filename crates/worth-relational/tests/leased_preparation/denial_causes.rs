@@ -1,11 +1,15 @@
 use super::*;
 use std::time::Instant;
 
-fn assert_request_cause(request: LeaseRequest, expected: fn(Cause) -> bool) {
+fn assert_request_cause(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    request: LeaseRequest,
+    expected: fn(Cause) -> bool,
+) {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
         .build();
-    let (created, _) = support::create_entity(&runtime, "cause-source");
+    let (created, _) = support::create_entity(execution, &runtime, "cause-source");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "cause-source.name".to_owned(),
@@ -52,7 +56,7 @@ fn assert_request_cause(request: LeaseRequest, expected: fn(Cause) -> bool) {
         )
         .expect("intent stages");
     let error = runtime
-        .prepare_branch_transaction_with_lease(transaction, &lease)
+        .prepare_branch_transaction_with_lease(execution, transaction, &lease)
         .expect_err("commit execution stops");
     let TransactionCommitError::Execution { denial, .. } = error else {
         panic!("wrong commit stop: {error:?}");
@@ -70,26 +74,38 @@ fn assert_request_cause(request: LeaseRequest, expected: fn(Cause) -> bool) {
 
 #[test]
 fn cancelled_lease_preserves_both_request_causes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = TEST_SERIAL.lock().unwrap();
     let source = worth_execution::CancellationSource::new();
     source.cancel();
-    assert_request_cause(lease_request(32 * 1024 * 1024, source.token()), |cause| {
-        cause == Cause::Cancelled
-    });
+    assert_request_cause(
+        execution,
+        lease_request(32 * 1024 * 1024, source.token()),
+        |cause| cause == Cause::Cancelled,
+    );
 }
 
 #[test]
 fn expired_lease_preserves_both_request_causes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = TEST_SERIAL.lock().unwrap();
     let mut request = lease_request(32 * 1024 * 1024, CancellationToken::new());
     request.deadline = Some(Instant::now());
-    assert_request_cause(request, |cause| cause == Cause::DeadlineElapsed);
+    assert_request_cause(execution, request, |cause| cause == Cause::DeadlineElapsed);
 }
 
 #[test]
 fn exhausted_work_lease_preserves_both_request_causes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = TEST_SERIAL.lock().unwrap();
     assert_request_cause(
+        execution,
         lease_request_with_work(32 * 1024 * 1024, CancellationToken::new(), 0),
         |cause| cause == Cause::WorkExhausted,
     );
@@ -97,21 +113,31 @@ fn exhausted_work_lease_preserves_both_request_causes() {
 
 #[test]
 fn exhausted_policy_memory_preserves_both_request_causes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = TEST_SERIAL.lock().unwrap();
-    assert_request_cause(lease_request(0, CancellationToken::new()), |cause| {
-        matches!(
-            cause,
-            Cause::PolicyMemoryExhausted {
-                requested: 1..,
-                admitted: 0,
-                ancestor: 0
-            }
-        )
-    });
+    assert_request_cause(
+        execution,
+        lease_request(0, CancellationToken::new()),
+        |cause| {
+            matches!(
+                cause,
+                Cause::PolicyMemoryExhausted {
+                    requested: 1..,
+                    admitted: 0,
+                    ancestor: 0
+                }
+            )
+        },
+    );
 }
 
 #[test]
 fn exhausted_process_memory_preserves_both_request_causes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = TEST_SERIAL.lock().unwrap();
     let held = authority()
         .request_lease(lease_request(64 * 1024 * 1024, CancellationToken::new()))
@@ -120,6 +146,7 @@ fn exhausted_process_memory_preserves_both_request_causes() {
         .reserve_memory(64 * 1024 * 1024)
         .expect("process memory is held");
     assert_request_cause(
+        execution,
         lease_request(32 * 1024 * 1024, CancellationToken::new()),
         |cause| {
             matches!(

@@ -10,7 +10,7 @@ fn entity_field_certification_rejects_a_missing_candidate() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "parity-candidate");
+    let created = create_entity_outcome(execution, &runtime, "parity-candidate");
     let entity_id = changed_entities(&created)[0];
     let field_locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -72,12 +72,12 @@ fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
     let runtime = runtime_with_index_field_aspects();
     let entities = (0..32)
         .map(|index| {
-            let outcome = create_entity_outcome(&runtime, &format!("candidate-{index}"));
+            let outcome = create_entity_outcome(execution, &runtime, &format!("candidate-{index}"));
             changed_entities(&outcome)[0]
         })
         .collect::<Vec<_>>();
     for entity in &entities {
-        update_entity(&runtime, *entity, "shared");
+        update_entity(execution, &runtime, *entity, "shared");
     }
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(71),
@@ -143,10 +143,10 @@ fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let requested = create_entity_outcome(&runtime, "small");
-    let unrelated = create_entity_outcome(&runtime, "large");
+    let requested = create_entity_outcome(execution, &runtime, "small");
+    let unrelated = create_entity_outcome(execution, &runtime, "large");
     let unrelated_id = changed_entities(&unrelated)[0];
-    update_entity(&runtime, unrelated_id, &"x".repeat(32 * 1024));
+    update_entity(execution, &runtime, unrelated_id, &"x".repeat(32 * 1024));
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(76),
@@ -197,7 +197,7 @@ fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "alpha");
+    let created = create_entity_outcome(execution, &runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(72),
         name: "entity.name.exact-generation".to_string(),
@@ -228,7 +228,7 @@ fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
         BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
     );
 
-    create_entity_outcome(&runtime, "later");
+    create_entity_outcome(execution, &runtime, "later");
     let later_snapshot = runtime.visibility_authority().snapshot();
     let request = BoundedEntityFieldLookupRequest::new(
         later_snapshot,
@@ -255,7 +255,7 @@ fn bounded_lookup_rebuilds_exact_historical_generation_after_truth_advances() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "historical");
+    let created = create_entity_outcome(execution, &runtime, "historical");
     let entity_id = changed_entities(&created)[0];
     let historical_snapshot = created.snapshot.clone();
     let historical_commit_id = created.commit.commit_id;
@@ -271,7 +271,7 @@ fn bounded_lookup_rebuilds_exact_historical_generation_after_truth_advances() {
         branch_scoped: false,
     });
 
-    update_entity(&runtime, entity_id, "current");
+    update_entity(execution, &runtime, entity_id, "current");
     assert_ne!(historical_version_id, runtime.current_version_id());
     let historical_read = runtime
         .read_truth()

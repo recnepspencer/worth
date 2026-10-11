@@ -244,11 +244,13 @@ impl AggregateWorld {
 
     pub(super) fn replace_amount(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         source: &str,
         amount: i64,
     ) {
         self.replace_amount_on(
+            execution,
             phase_custody,
             self.main_branch(),
             self.source(phase_custody, source),
@@ -260,6 +262,7 @@ impl AggregateWorld {
     /// commit leaves the identity index behind the branch it moved.
     pub(super) fn replace_amount_on(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
         source: worth_relational::facade::identity::EntityId,
@@ -279,7 +282,13 @@ impl AggregateWorld {
                 fields,
             },
         ));
-        self.commit_on(phase_custody, branch, "aggregate-stale-generation", intent);
+        self.commit_on(
+            execution,
+            phase_custody,
+            branch,
+            "aggregate-stale-generation",
+            intent,
+        );
     }
 
     fn install(values: Vec<Option<i64>>, ambiguous: bool) -> Self {

@@ -48,7 +48,7 @@ fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {
             .validate_lowered_plan(&runtime, lowered)
             .expect("validated lowered strategy plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("validated strategy commit executed")
     };
 
@@ -91,7 +91,7 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
             &descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "before");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -136,7 +136,7 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
             .validate_lowered_plan(&runtime, lowered)
             .expect("validated strategy plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("validated strategy commit executed")
     };
 
@@ -198,7 +198,7 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "before");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let original_lineage = runtime
         .lineage_access()
         .for_record(entity)
@@ -240,7 +240,7 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
             .validate_lowered_plan(&runtime, lowered)
             .expect("validated replacement strategy plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("validated replacement strategy commit executed")
     };
     let current = runtime

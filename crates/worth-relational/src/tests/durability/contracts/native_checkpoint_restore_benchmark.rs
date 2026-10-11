@@ -49,6 +49,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
         .unwrap();
         let committed = txn
             .commit(
+                execution,
                 &source,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )

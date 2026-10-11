@@ -10,11 +10,13 @@ use super::snapshot_validation::validate_snapshot_publication;
 use crate::transactions::data::{CommitResult, TransactionCommitError};
 
 pub(crate) fn prepare_authoritative_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    crate::execution::check_commit_request(execution)?;
     let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         &context.validation_input,
         allocation_policy,
@@ -209,11 +211,13 @@ fn publication_outcome_error(detail: String) -> TransactionCommitError {
 }
 
 pub(crate) fn execute_authoritative_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     context: AuthoritativeCommitContext,
 ) -> Result<CommitResult, TransactionCommitError> {
     let preparation = runtime.preparation_runtime_snapshot();
     let candidate = prepare_authoritative_commit(
+        execution,
         &preparation,
         context,
         None,

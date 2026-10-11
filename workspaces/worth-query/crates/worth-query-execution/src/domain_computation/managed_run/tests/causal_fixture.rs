@@ -61,9 +61,11 @@ impl CausalManagedAdmissionContext {
     }
 }
 
-pub(crate) fn managed_admission_context() -> CausalManagedAdmissionContext {
+pub(crate) fn managed_admission_context(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> CausalManagedAdmissionContext {
     let mut runtime = relational_runtime();
-    let committed = create_fixture_entity(&mut runtime);
+    let committed = create_fixture_entity(execution, &mut runtime);
     let identity = runtime.main_branch_identity();
     let (descriptor, basis) = runtime.observe_branch(&identity).unwrap();
     assert!(runtime
@@ -84,9 +86,11 @@ pub(crate) fn managed_admission_context() -> CausalManagedAdmissionContext {
     }
 }
 
-pub(super) fn source_profile_substitution_context() -> SourceProfileSubstitutionContext {
+pub(super) fn source_profile_substitution_context(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> SourceProfileSubstitutionContext {
     let mut runtime = relational_runtime();
-    let committed = create_fixture_entity(&mut runtime);
+    let committed = create_fixture_entity(execution, &mut runtime);
     let identity = runtime.main_branch_identity();
     let (descriptor, basis) = runtime.observe_branch(&identity).unwrap();
     assert!(runtime
@@ -147,7 +151,7 @@ fn causal_lower_execution_basis_with_snapshot_match(
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> CausalLowerExecutionBasis {
     let (source, bridge_relational, substitute, branch, snapshot) =
-        relational_source_and_lease(matching_snapshot);
+        relational_source_and_lease(&resource_request, matching_snapshot);
     let bridge = bridge_for_source(source, branch.clone(), snapshot.clone());
     let planned = bridge
         .plan_truth_view_packet(
@@ -183,6 +187,7 @@ fn causal_lower_execution_basis_with_snapshot_match(
 }
 
 fn relational_source_and_lease(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     matching_snapshot: bool,
 ) -> (
     RuntimeBridgeRelationalSource,
@@ -192,7 +197,7 @@ fn relational_source_and_lease(
     TruthSnapshotIdentity,
 ) {
     let mut runtime = relational_runtime();
-    let committed = create_fixture_entity(&mut runtime);
+    let committed = create_fixture_entity(execution, &mut runtime);
     let branch_identity = runtime.main_branch_identity();
     let (_, bridge_basis) = runtime.observe_branch(&branch_identity).unwrap();
     let substitute_basis = runtime
@@ -236,6 +241,7 @@ fn relational_runtime() -> RelationalRuntime {
 }
 
 fn create_fixture_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
 ) -> worth_relational::facade::transactions::CommitResult {
     let mut transaction = {
@@ -263,7 +269,7 @@ fn create_fixture_entity(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(runtime, NativeAllocationPolicy::SystemAllocation)
+        .commit(execution, runtime, NativeAllocationPolicy::SystemAllocation)
         .expect("managed-run fixture entity should commit")
 }
 

@@ -14,10 +14,14 @@ fn a_bounded_kind_read_admits_exactly_the_work_the_live_kind_costs() {
     let runtime = runtime_with_test_schema();
     let mut live = Vec::new();
     for ordinal in 0..8 {
-        live.push(create_entity(&runtime, &format!("part-{ordinal}")));
+        live.push(create_entity(
+            execution,
+            &runtime,
+            &format!("part-{ordinal}"),
+        ));
     }
     let retired = live.remove(3);
-    delete_entity(&runtime, retired);
+    delete_entity(execution, &runtime, retired);
     let version = runtime.current_version_id();
 
     // Two units per live entity: one to look at its slot, one to reserve the
@@ -62,7 +66,7 @@ fn a_kind_with_no_entities_still_costs_the_slots_it_had_to_look_at() {
 
     let runtime = runtime_with_test_schema();
     for ordinal in 0..5 {
-        create_entity(&runtime, &format!("part-{ordinal}"));
+        create_entity(execution, &runtime, &format!("part-{ordinal}"));
     }
     let version = runtime.current_version_id();
 
@@ -91,7 +95,7 @@ fn a_maximum_of_zero_refuses_before_examining_anything() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "part");
+    create_entity(execution, &runtime, "part");
 
     let refused = runtime
         .read_truth()
@@ -108,7 +112,7 @@ fn current_kind_read_refuses_before_materializing_an_unadmitted_record() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "part");
+    create_entity(execution, &runtime, "part");
 
     runtime.performance_access().reset_counters();
     let refused = runtime
@@ -131,9 +135,9 @@ fn historical_kind_read_refuses_before_materializing_an_unadmitted_record() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "early");
+    create_entity(execution, &runtime, "early");
     let historical_version = runtime.current_version_id();
-    create_entity(&runtime, "late");
+    create_entity(execution, &runtime, "late");
 
     runtime.performance_access().reset_counters();
     let refused = runtime
@@ -157,9 +161,13 @@ fn the_unbounded_kind_read_answers_exactly_as_the_bounded_one() {
 
     let runtime = runtime_with_test_schema();
     for ordinal in 0..6 {
-        create_entity(&runtime, &format!("part-{ordinal}"));
+        create_entity(execution, &runtime, &format!("part-{ordinal}"));
     }
-    delete_entity(&runtime, create_entity(&runtime, "retired"));
+    delete_entity(
+        execution,
+        &runtime,
+        create_entity(execution, &runtime, "retired"),
+    );
     let version = runtime.current_version_id();
 
     let unbounded = runtime
@@ -186,9 +194,9 @@ fn a_bounded_kind_read_answers_the_version_it_was_asked_for() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let early = create_entity(&runtime, "early");
+    let early = create_entity(execution, &runtime, "early");
     let before = runtime.current_version_id();
-    let late = create_entity(&runtime, "late");
+    let late = create_entity(execution, &runtime, "late");
 
     let historical = runtime
         .read_truth()
@@ -227,9 +235,9 @@ fn a_refused_historical_kind_read_charges_only_slots_it_examined() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let _early = create_entity(&runtime, "early");
+    let _early = create_entity(execution, &runtime, "early");
     let historical_version = runtime.current_version_id();
-    let _late = create_entity(&runtime, "late");
+    let _late = create_entity(execution, &runtime, "late");
 
     runtime.performance_access().reset_counters();
     let refused = runtime

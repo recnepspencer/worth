@@ -8,17 +8,30 @@ fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
     let runtime = persisted_runtime_with_topology_identity_registry(unique_test_store_path(
         "worth-relational-7d-topology-region",
     ));
-    let source = create_entity(&runtime, "source");
-    let target_a = create_entity(&runtime, "target-a");
-    let target_b = create_entity(&runtime, "target-b");
-    let target_c = create_entity(&runtime, "target-c");
-    let target_d = create_entity(&runtime, "target-d");
-    let relation_a = crate::tests::support::create_relation(&runtime, source, target_a, "edge-a");
-    let relation_b = crate::tests::support::create_relation(&runtime, source, target_b, "edge-b");
+    let source = create_entity(execution, &runtime, "source");
+    let target_a = create_entity(execution, &runtime, "target-a");
+    let target_b = create_entity(execution, &runtime, "target-b");
+    let target_c = create_entity(execution, &runtime, "target-c");
+    let target_d = create_entity(execution, &runtime, "target-d");
+    let relation_a =
+        crate::tests::support::create_relation(execution, &runtime, source, target_a, "edge-a");
+    let relation_b =
+        crate::tests::support::create_relation(execution, &runtime, source, target_b, "edge-b");
     create_branch_from_main(&runtime, "feature");
-    delete_relation_on_branch(&runtime, relation_a, BranchId("feature".to_string()));
-    delete_relation_on_branch(&runtime, relation_b, BranchId("feature".to_string()));
+    delete_relation_on_branch(
+        execution,
+        &runtime,
+        relation_a,
+        BranchId("feature".to_string()),
+    );
+    delete_relation_on_branch(
+        execution,
+        &runtime,
+        relation_b,
+        BranchId("feature".to_string()),
+    );
     create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         target_c,
@@ -28,6 +41,7 @@ fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
         BranchId("feature".to_string()),
     );
     create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         target_d,
@@ -123,17 +137,30 @@ fn topology_region_conflict_denial_is_stable_across_recovery() {
 
     let store_path = unique_test_store_path("worth-relational-7d-topology-region-recovery");
     let runtime = persisted_runtime_with_topology_identity_registry(store_path.clone());
-    let source = create_entity(&runtime, "source");
-    let target_a = create_entity(&runtime, "target-a");
-    let target_b = create_entity(&runtime, "target-b");
-    let target_c = create_entity(&runtime, "target-c");
-    let target_d = create_entity(&runtime, "target-d");
-    let relation_a = crate::tests::support::create_relation(&runtime, source, target_a, "edge-a");
-    let relation_b = crate::tests::support::create_relation(&runtime, source, target_b, "edge-b");
+    let source = create_entity(execution, &runtime, "source");
+    let target_a = create_entity(execution, &runtime, "target-a");
+    let target_b = create_entity(execution, &runtime, "target-b");
+    let target_c = create_entity(execution, &runtime, "target-c");
+    let target_d = create_entity(execution, &runtime, "target-d");
+    let relation_a =
+        crate::tests::support::create_relation(execution, &runtime, source, target_a, "edge-a");
+    let relation_b =
+        crate::tests::support::create_relation(execution, &runtime, source, target_b, "edge-b");
     create_branch_from_main(&runtime, "feature");
-    delete_relation_on_branch(&runtime, relation_a, BranchId("feature".to_string()));
-    delete_relation_on_branch(&runtime, relation_b, BranchId("feature".to_string()));
+    delete_relation_on_branch(
+        execution,
+        &runtime,
+        relation_a,
+        BranchId("feature".to_string()),
+    );
+    delete_relation_on_branch(
+        execution,
+        &runtime,
+        relation_b,
+        BranchId("feature".to_string()),
+    );
     create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         target_c,
@@ -143,6 +170,7 @@ fn topology_region_conflict_denial_is_stable_across_recovery() {
         BranchId("feature".to_string()),
     );
     create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         target_d,

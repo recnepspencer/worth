@@ -34,7 +34,7 @@ fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
     }
     .build_runtime();
     let entity = super::struct_field_patch_authority::create_entity_with_summary_fields(
-        &runtime, "mixed", "same", "open", false, false,
+        execution, &runtime, "mixed", "same", "open", false, false,
     );
     let before = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let title = locator("summary", "title");
@@ -66,6 +66,7 @@ fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
     .unwrap();
     let updated = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -92,7 +93,7 @@ fn scalar_equal_value_is_stable_but_return_to_original_value_revises() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "alpha");
+    let created = create_entity_outcome(execution, &runtime, "alpha");
     let entity = changed_entities(&created)[0];
     let name = locator("name", "name");
     let revision = |outcome: &crate::facade::transactions::CommitResult| {
@@ -104,11 +105,11 @@ fn scalar_equal_value_is_stable_but_return_to_original_value_revises() {
             .unwrap()
     };
     let original = revision(&created);
-    let changed = update_entity(&runtime, entity, "beta");
+    let changed = update_entity(execution, &runtime, entity, "beta");
     let changed_revision = revision(&changed);
-    let returned = update_entity(&runtime, entity, "alpha");
+    let returned = update_entity(execution, &runtime, entity, "alpha");
     let returned_revision = revision(&returned);
-    let equal = update_entity(&runtime, entity, "alpha");
+    let equal = update_entity(execution, &runtime, entity, "alpha");
     assert_ne!(original, changed_revision);
     assert_ne!(original, returned_revision);
     assert_ne!(changed_revision, returned_revision);
@@ -124,9 +125,9 @@ fn relation_equal_value_patch_preserves_native_field_revision() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation = create_relation(&runtime, source, target, "original");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation = create_relation(execution, &runtime, source, target, "original");
     let label = locator("label", "label");
     let before = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let original = runtime
@@ -163,6 +164,7 @@ fn relation_equal_value_patch_preserves_native_field_revision() {
         )
         .unwrap();
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

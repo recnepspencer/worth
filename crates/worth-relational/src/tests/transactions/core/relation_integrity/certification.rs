@@ -8,8 +8,11 @@ use crate::tests::support::*;
 
 #[test]
 fn relation_integrity_certification_boundary_rejects_zero_edge_entity_for_minimum_cardinality() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = publication_source_min_one_runtime();
-    let _orphan = create_entity(&runtime, "orphan");
+    let _orphan = create_entity(execution, &runtime, "orphan");
 
     let result = runtime.validation().certification_state();
     let failure = result
@@ -46,10 +49,13 @@ fn relation_integrity_certification_boundary_rejects_zero_edge_entity_for_minimu
 
 #[test]
 fn relation_integrity_certification_boundary_rejects_observed_pair_below_parallel_minimum() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = publication_pair_min_two_runtime();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    create_relation(&runtime, source, target, "single");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    create_relation(execution, &runtime, source, target, "single");
 
     let result = runtime.validation().certification_state();
     let failure = result
@@ -86,8 +92,11 @@ fn relation_integrity_certification_boundary_rejects_observed_pair_below_paralle
 
 #[test]
 fn relation_integrity_certification_boundary_is_authority_owned_and_blocks_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = certification_authority_source_min_one_runtime();
-    let _orphan = create_entity(&runtime, "orphan");
+    let _orphan = create_entity(execution, &runtime, "orphan");
 
     let shared: &RelationalRuntime = &runtime;
     let error = shared

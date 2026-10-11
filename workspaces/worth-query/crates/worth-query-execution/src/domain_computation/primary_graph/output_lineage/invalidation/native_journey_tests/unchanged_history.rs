@@ -63,6 +63,7 @@ fn pinned_same_position_replacements_share_history_but_own_their_root_bytes() {
             handle.with_runtime_mut(request_execution, |runtime| {
                 for ordinal in 0..20 {
                     write_field(
+                        request_execution,
                         runtime,
                         entity,
                         label.clone(),
@@ -157,7 +158,7 @@ fn pinned_same_position_replacements_share_history_but_own_their_root_bytes() {
                     &history
                 ));
                 let last = cell.read_image();
-                write_field(runtime, entity, label, "edited-history");
+                write_field(request_execution, runtime, entity, label, "edited-history");
                 let next = cell.read_image();
                 assert_ne!(next.position(), last.position());
                 assert!(

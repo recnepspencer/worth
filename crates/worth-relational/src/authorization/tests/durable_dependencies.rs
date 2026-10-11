@@ -24,7 +24,7 @@ fn planned_locator_is_resolved_to_native_authoritative_revision() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let path = RelationalAuthorizationPathPlan::new(
         [forward_traversal(), forward_traversal()],
@@ -65,7 +65,7 @@ fn source_native_stamp_survives_unrelated_publication_and_wire_roundtrip() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     let before = stamp_now(execution, &fixture);
     let wire = before.to_wire_string().expect("bounded stamp encodes");
     assert!(wire.len() <= MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES * 2);
@@ -80,9 +80,15 @@ fn source_native_stamp_survives_unrelated_publication_and_wire_roundtrip() {
         )
         .unwrap());
 
-    let unrelated = create_entity(&fixture.runtime, "unrelated");
-    let other = create_entity(&fixture.runtime, "other");
-    create_relation(&fixture.runtime, unrelated, other, "unrelated-edge");
+    let unrelated = create_entity(execution, &fixture.runtime, "unrelated");
+    let other = create_entity(execution, &fixture.runtime, "other");
+    create_relation(
+        execution,
+        &fixture.runtime,
+        unrelated,
+        other,
+        "unrelated-edge",
+    );
     assert!(recovered.matches(&stamp_now(execution, &fixture)));
     assert!(recovered
         .source_revisions_match(
@@ -98,11 +104,17 @@ fn pinned_stamp_does_not_depend_on_which_snapshot_is_latest() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     // An off-path edge in the pinned root: a whole-graph read would record it.
-    let bystander = create_entity(&fixture.runtime, "bystander");
-    let other = create_entity(&fixture.runtime, "bystander-other");
-    create_relation(&fixture.runtime, bystander, other, "bystander-edge");
+    let bystander = create_entity(execution, &fixture.runtime, "bystander");
+    let other = create_entity(execution, &fixture.runtime, "bystander-other");
+    create_relation(
+        execution,
+        &fixture.runtime,
+        bystander,
+        other,
+        "bystander-edge",
+    );
     let pinned = fixture.runtime.visibility_authority().snapshot();
     let observe_pinned = || {
         fixture
@@ -123,9 +135,15 @@ fn pinned_stamp_does_not_depend_on_which_snapshot_is_latest() {
     let first_counters = first.counters();
     let while_latest = stamp(first);
 
-    let later = create_entity(&fixture.runtime, "later");
-    let later_other = create_entity(&fixture.runtime, "later-other");
-    create_relation(&fixture.runtime, later, later_other, "later-edge");
+    let later = create_entity(execution, &fixture.runtime, "later");
+    let later_other = create_entity(execution, &fixture.runtime, "later-other");
+    create_relation(
+        execution,
+        &fixture.runtime,
+        later,
+        later_other,
+        "later-edge",
+    );
 
     // The same basis answers the same dependencies once a later publication
     // exists: evaluation reads the basis's own root, not the latest edition.
@@ -141,11 +159,11 @@ fn source_native_stamp_compares_after_checkpoint_recovery() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let principal = create_entity(&runtime, "principal");
-    let role = create_entity(&runtime, "approver");
-    let scope = create_entity(&runtime, "payment");
-    create_relation(&runtime, principal, role, "principal-role");
-    create_relation(&runtime, role, scope, "role-scope");
+    let principal = create_entity(execution, &runtime, "principal");
+    let role = create_entity(execution, &runtime, "approver");
+    let scope = create_entity(execution, &runtime, "payment");
+    create_relation(execution, &runtime, principal, role, "principal-role");
+    create_relation(execution, &runtime, role, scope, "role-scope");
     let before_evidence = runtime
         .observe_authorization(
             allow_plan(
@@ -207,7 +225,7 @@ fn predicate_field_change_back_cannot_revive_old_stamp() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let evidence = fixture
         .runtime
@@ -224,8 +242,8 @@ fn predicate_field_change_back_cannot_revive_old_stamp() {
         .runtime
         .capture_authorization_durable_dependencies(&evidence, execution)
         .expect("exact original provenance");
-    update_entity(&fixture.runtime, role, "temporarily-disabled");
-    update_entity(&fixture.runtime, role, "approver");
+    update_entity(execution, &fixture.runtime, role, "temporarily-disabled");
+    update_entity(execution, &fixture.runtime, role, "approver");
     assert!(!before.matches(&stamp_now(execution, &fixture)));
     assert!(!before
         .source_revisions_match(
@@ -241,11 +259,22 @@ fn adjacency_add_remove_cannot_revive_old_stamp() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     let before = stamp_now(execution, &fixture);
-    let detour = create_entity(&fixture.runtime, "detour");
-    let edge = create_relation(&fixture.runtime, fixture.principal, detour, "detour-edge");
-    delete_relation_on_branch(&fixture.runtime, edge, BranchId("main".to_owned()));
+    let detour = create_entity(execution, &fixture.runtime, "detour");
+    let edge = create_relation(
+        execution,
+        &fixture.runtime,
+        fixture.principal,
+        detour,
+        "detour-edge",
+    );
+    delete_relation_on_branch(
+        execution,
+        &fixture.runtime,
+        edge,
+        BranchId("main".to_owned()),
+    );
     assert!(!before.matches(&stamp_now(execution, &fixture)));
     assert!(!before
         .source_revisions_match(
@@ -261,12 +290,12 @@ fn relation_retarget_and_return_cannot_revive_old_stamp() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     let before = stamp_now(execution, &fixture);
-    let alternative = create_entity(&fixture.runtime, "alternative-scope");
+    let alternative = create_entity(execution, &fixture.runtime, "alternative-scope");
     let role = role_for(execution, &fixture);
-    retarget(&fixture, role, alternative);
-    retarget(&fixture, role, fixture.scope);
+    retarget(execution, &fixture, role, alternative);
+    retarget(execution, &fixture, role, fixture.scope);
     assert!(!before.matches(&stamp_now(execution, &fixture)));
     assert!(!before
         .source_revisions_match(
@@ -282,7 +311,7 @@ fn noncanonical_or_oversized_wire_is_denied() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let fixture = authorization_fixture();
+    let fixture = authorization_fixture(execution);
     let wire = stamp_now(execution, &fixture).to_wire_string().unwrap();
     assert_eq!(
         RelationalAuthorizationDurableDependencies::from_wire_string(&wire.to_uppercase())
@@ -336,6 +365,7 @@ fn role_for(
 }
 
 fn retarget(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     fixture: &super::AuthorizationFixture,
     role: crate::identity::data::EntityId,
     target: crate::identity::data::EntityId,
@@ -357,6 +387,7 @@ fn retarget(
         .unwrap();
     transaction
         .commit(
+            execution,
             &fixture.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

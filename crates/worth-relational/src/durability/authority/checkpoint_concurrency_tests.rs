@@ -10,7 +10,7 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let baseline = create_entity_outcome(&runtime, "checkpoint-concurrency-anchor");
+    let baseline = create_entity_outcome(execution, &runtime, "checkpoint-concurrency-anchor");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -20,6 +20,7 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

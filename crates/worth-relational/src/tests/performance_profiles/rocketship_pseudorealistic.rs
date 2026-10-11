@@ -84,6 +84,7 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -242,6 +243,7 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
             )
             .expect("test staging stays within configured resource budgets");
             txn.commit(
+                execution,
                 runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )

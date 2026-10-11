@@ -18,9 +18,9 @@ fn perf_sustained_load_matrix() {
 
     commit_query_churn::certify_commit_query_churn_stability(execution, suite);
     replay_window_drift::certify_replay_window_drift_stability(execution, suite);
-    retention_pass_drift::certify_retention_pass_drift_stability(suite);
+    retention_pass_drift::certify_retention_pass_drift_stability(execution, suite);
     mixed_topology_query_churn::certify_mixed_topology_query_churn_stability(execution, suite);
     rocketship_hot_update_endurance::certify_rocketship_hot_update_endurance(execution, suite);
     rocketship_propagation_endurance::certify_rocketship_propagation_endurance(execution, suite);
-    chip_global_step_endurance::certify_chip_global_step_endurance(suite);
+    chip_global_step_endurance::certify_chip_global_step_endurance(execution, suite);
 }

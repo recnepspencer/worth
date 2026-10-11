@@ -22,6 +22,7 @@ fn index(runtime: &RelationalRuntime) -> DerivedIndexId {
 }
 
 fn candidate_for_update(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     name: &str,
@@ -40,6 +41,7 @@ fn candidate_for_update(
         .unwrap();
     runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -83,6 +85,7 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
         .unwrap();
     let mut candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -108,10 +111,10 @@ fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_se
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "before");
+    let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
-    let mut candidate = candidate_for_update(&runtime, entity, "after");
+    let mut candidate = candidate_for_update(execution, &runtime, entity, "after");
     let commit_id = candidate
         .index_preparation_roots()
         .unwrap()
@@ -206,10 +209,10 @@ fn candidate_index_work_exhaustion_leaves_the_candidate_unpublished_and_retryabl
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "before");
+    let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
-    let mut candidate = candidate_for_update(&runtime, entity, "after");
+    let mut candidate = candidate_for_update(execution, &runtime, entity, "after");
     let commit_id = candidate
         .index_preparation_roots()
         .unwrap()
@@ -273,10 +276,10 @@ fn discarded_prepared_candidate_does_not_expose_index_generation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "before");
+    let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
-    let mut candidate = candidate_for_update(&runtime, entity, "abandoned");
+    let mut candidate = candidate_for_update(execution, &runtime, entity, "abandoned");
     let commit_id = candidate
         .index_preparation_roots()
         .unwrap()
@@ -307,7 +310,7 @@ fn candidate_patch_refresh_uses_prior_generation_without_cold_scan() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "before");
+    let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
     let initial = runtime.index_authority().build_for_commit(
@@ -319,7 +322,7 @@ fn candidate_patch_refresh_uses_prior_generation_without_cold_scan() {
         },
     );
     assert!(initial.failed_indexes.is_empty());
-    let mut candidate = candidate_for_update(&runtime, entity, "after");
+    let mut candidate = candidate_for_update(execution, &runtime, entity, "after");
     let commit_id = candidate
         .index_preparation_roots()
         .unwrap()

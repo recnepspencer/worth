@@ -86,19 +86,21 @@ impl CommitStrategiesAuthorityFacade {
 
     pub fn prepare_validated_commit(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         validated: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-        runtime.prepare_validated_proposal(validated)
+        runtime.prepare_validated_proposal(execution, validated)
     }
 
     #[cfg(test)]
     pub(crate) fn execute_validated_commit(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         validated: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::transactions::data::CommitResult, TransactionCommitError> {
-        let candidate = self.prepare_validated_commit(runtime, validated)?;
+        let candidate = self.prepare_validated_commit(execution, runtime, validated)?;
         runtime.publish_prepared_candidate(candidate)
     }
 }

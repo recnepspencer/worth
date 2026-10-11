@@ -196,6 +196,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             .map_err(WorthQueryBranchAdoptionPreparationDenial::TransactionStaging)?;
         runtime
             .prepare_branch_transaction(
+                execution,
                 transaction,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )

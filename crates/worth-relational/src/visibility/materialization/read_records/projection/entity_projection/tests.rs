@@ -46,12 +46,13 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
         .unwrap();
     let created = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     let entity = changed_entities(&created)[0];
-    let updated = update_entity(&runtime, entity, "after");
+    let updated = update_entity(execution, &runtime, entity, "after");
     for (snapshot, expected_name) in [(&created.snapshot, "before"), (&updated.snapshot, "after")] {
         let view = runtime
             .read_truth()
@@ -117,9 +118,9 @@ fn projection_preserves_identity_kind_and_lifecycle_across_exact_and_historical_
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "live");
+    let created = create_entity_outcome(execution, &runtime, "live");
     let entity = changed_entities(&created)[0];
-    let deleted = delete_entity(&runtime, entity);
+    let deleted = delete_entity(execution, &runtime, entity);
     let before = runtime
         .read_truth()
         .project_snapshot(&created.snapshot, execution)
@@ -189,7 +190,7 @@ fn borrowed_projection_cannot_bypass_installed_mask_contract() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "masked");
+    let created = create_entity_outcome(execution, &runtime, "masked");
     runtime
         .read_truth()
         .project_snapshot(&created.snapshot, execution)

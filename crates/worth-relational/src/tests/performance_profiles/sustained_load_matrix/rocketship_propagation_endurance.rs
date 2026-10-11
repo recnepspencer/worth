@@ -46,6 +46,7 @@ pub(super) fn certify_rocketship_propagation_endurance(
                 let target = seeded.traversal_seeds[index % seeded.traversal_seeds.len()];
                 let update_started_at = Instant::now();
                 let _ = update_entity(
+                    execution,
                     &runtime,
                     target,
                     &format!("rocket.endurance.propagation.{index}"),

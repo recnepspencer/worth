@@ -20,10 +20,10 @@ fn retained_merge_strategy_witness_preserves_exact_strategy_truth() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity_status_on_branch(&runtime, shared, "inactive", "main");
-    update_entity_status_on_branch(&runtime, shared, "active", "feature");
+    update_entity_status_on_branch(execution, &runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, &runtime, shared, "active", "feature");
 
     let prepared = runtime
         .merge()
@@ -210,10 +210,10 @@ fn retained_merge_strategy_witness_survives_prepared_execution_publication_and_r
 
     let runtime =
         persisted_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity_status_on_branch(&runtime, shared, "inactive", "main");
-    update_entity_status_on_branch(&runtime, shared, "active", "feature");
+    update_entity_status_on_branch(execution, &runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, &runtime, shared, "active", "feature");
 
     let prepared = runtime
         .merge()
@@ -259,10 +259,10 @@ fn retained_merge_strategy_witness_live_authority_denies_internal_forged_strateg
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity_status_on_branch(&runtime, shared, "inactive", "main");
-    update_entity_status_on_branch(&runtime, shared, "active", "feature");
+    update_entity_status_on_branch(execution, &runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, &runtime, shared, "active", "feature");
 
     let prepared = runtime
         .merge()

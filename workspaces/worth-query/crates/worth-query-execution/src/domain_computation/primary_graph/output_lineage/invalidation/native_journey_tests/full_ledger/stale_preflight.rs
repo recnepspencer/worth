@@ -62,6 +62,7 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
             .unwrap();
             runtime
                 .prepare_branch_transaction(
+                    request_execution,
                     tx,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

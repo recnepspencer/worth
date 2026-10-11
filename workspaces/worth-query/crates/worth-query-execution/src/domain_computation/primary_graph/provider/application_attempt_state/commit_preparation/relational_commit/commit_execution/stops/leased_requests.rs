@@ -167,6 +167,7 @@ fn check_lease(
         .build();
     let created = transaction(&runtime, "source")
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -200,7 +201,7 @@ fn check_lease(
         .unwrap()
         .0;
     let error = runtime
-        .prepare_branch_transaction_with_lease(transaction(&runtime, "target"), lease)
+        .prepare_branch_transaction_with_lease(execution, transaction(&runtime, "target"), lease)
         .expect_err("commit preparation refused");
     assert!(matches!(error, TransactionCommitError::Execution { .. }));
     let outcome = application_outcome(super::transaction_commit_stop(error));

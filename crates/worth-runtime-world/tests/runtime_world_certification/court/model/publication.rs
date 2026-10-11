@@ -30,6 +30,7 @@ impl ModelRun {
         let token = RuntimeWorldCancellationSource::new().token();
         let candidate = amount.map(|amount| {
             self.court.records.candidate(
+                request_execution,
                 head.basis().relational_basis(),
                 "grain",
                 &amount.to_string(),
@@ -104,7 +105,9 @@ impl ModelRun {
 
         self.steps.push("prepare/cancel".into());
         self.model.prepare(0, "work");
-        let prepared = self.court.prepare_cargo(&self.heads["work"], "3");
+        let prepared = self
+            .court
+            .prepare_cargo(request_execution, &self.heads["work"], "3");
         self.check(request_execution);
         let source = RuntimeWorldCancellationSource::new();
         source.cancel();
@@ -135,7 +138,9 @@ impl ModelRun {
 
         self.steps.push("reserve stale contender".into());
         self.model.prepare(0, "work");
-        let prepared = self.court.prepare_cargo(&self.heads["work"], "2");
+        let prepared = self
+            .court
+            .prepare_cargo(request_execution, &self.heads["work"], "2");
         self.check(request_execution);
         self.publish(request_execution, Some(7), false);
         self.steps.push("execute stale contender".into());

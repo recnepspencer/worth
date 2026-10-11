@@ -6,9 +6,9 @@ fn graph_summary_is_scope_explicit_and_canonical() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let _relation = create_relation(&runtime, left, right, "rel");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let _relation = create_relation(execution, &runtime, left, right, "rel");
 
     let summary = runtime
         .inspect_what_happened()
@@ -35,28 +35,32 @@ fn current_graph_surfaces_match_version_and_snapshot_scopes_for_same_truth() {
 
     let runtime = runtime_with_test_schema();
     let left_a = crate::tests::support::create_entity_in_partition(
+        execution,
         &runtime,
         "left-a",
         crate::facade::identity::PartitionId(7),
     );
     let left_b = crate::tests::support::create_entity_in_partition(
+        execution,
         &runtime,
         "left-b",
         crate::facade::identity::PartitionId(7),
     );
     let right = crate::tests::support::create_entity_in_partition(
+        execution,
         &runtime,
         "right",
         crate::facade::identity::PartitionId(11),
     );
     let left_relation = crate::tests::support::create_relation_in_partition(
+        execution,
         &runtime,
         left_a,
         left_b,
         "left-rel",
         crate::facade::identity::PartitionId(7),
     );
-    let _cross_relation = create_relation(&runtime, left_b, right, "cross-rel");
+    let _cross_relation = create_relation(execution, &runtime, left_b, right, "cross-rel");
     let snapshot = runtime.visibility_authority().snapshot();
     let version_id = runtime.current_version_id();
 
@@ -168,7 +172,7 @@ fn snapshot_graph_summary_fails_closed_when_snapshot_handle_is_unavailable() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "alpha");
+    let created = create_entity_outcome(execution, &runtime, "alpha");
     assert!(runtime
         .visibility_authority()
         .release_snapshot(&created.snapshot)
@@ -203,9 +207,9 @@ fn connectivity_summary_refuses_oversized_budget_with_explicit_degradation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let _relation = create_relation(&runtime, left, right, "rel");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let _relation = create_relation(execution, &runtime, left, right, "rel");
 
     let summary = runtime.inspect_what_happened().connectivity_summary(
         execution,
@@ -235,9 +239,12 @@ fn connectivity_summary_refuses_oversized_budget_with_explicit_degradation() {
 
 #[test]
 fn retention_summary_refuses_work_budget_with_explicit_degradation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "retained");
-    let _relation = create_relation(&runtime, entity, entity, "loop");
+    let entity = create_entity(execution, &runtime, "retained");
+    let _relation = create_relation(execution, &runtime, entity, entity, "loop");
 
     let summary = runtime.inspect_what_happened().retention_summary(
         &crate::facade::inspection::RetentionInspectionRequest {

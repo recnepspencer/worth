@@ -6,7 +6,7 @@ fn complexity_budget_replay_verification_tracks_digest_and_deep_layers_separatel
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "replayable");
+    let created = create_entity_outcome(execution, &runtime, "replayable");
 
     runtime.performance_access().reset_counters();
     let normal = runtime.replay_authority().replay_commit(

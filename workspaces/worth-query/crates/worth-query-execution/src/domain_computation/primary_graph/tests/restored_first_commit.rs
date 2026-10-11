@@ -253,7 +253,7 @@ fn raw_commit(
     graph
         .integration_handle()
         .execute_mutation_with_index_refresh(execution, |runtime| {
-            Ok::<_, &'static str>(commit_empty(runtime, "main"))
+            Ok::<_, &'static str>(commit_empty(execution, runtime, "main"))
         })
         .expect("a mutation after restore refreshes only the commits it made")
         .expect("the empty commit succeeds")

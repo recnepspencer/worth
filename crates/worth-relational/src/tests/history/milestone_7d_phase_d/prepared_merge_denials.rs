@@ -6,10 +6,10 @@ fn deleted_on_both_sides_prepared_merge_rejects_target_head_drift() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    delete_entity(&runtime, entity);
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    delete_entity(execution, &runtime, entity);
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let prepared = runtime
         .prepare_merge_execution(
@@ -21,7 +21,7 @@ fn deleted_on_both_sides_prepared_merge_rejects_target_head_drift() {
             },
         )
         .expect("prepared merge");
-    create_entity(&runtime, "main-advance");
+    create_entity(execution, &runtime, "main-advance");
 
     match runtime.execute_prepared_merge(execution, prepared) {
         Err(MergeExecutionError::StaleBranchHead { branch, .. }) => {
@@ -57,10 +57,10 @@ fn deleted_on_both_sides_prepared_merge_rejects_schema_semantic_drift() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    delete_entity(&runtime, entity);
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    delete_entity(execution, &runtime, entity);
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let prepared = runtime
         .prepare_merge_execution(
@@ -86,10 +86,10 @@ fn non_executable_deletion_denial_is_stable_across_recovery() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, entity, "main-modified");
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    update_entity(execution, &runtime, entity, "main-modified");
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let live_artifact = runtime
         .merge()

@@ -83,7 +83,12 @@ pub(super) fn mutation_receipt_surface(
 ) -> ReceiptSurfaceEvidence {
     let branch = "cert-phase6-branch";
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     fork_seed_branch_from_main(&mut runtime, branch);
     let basis = EffectAuthoringBasis::from(scenarios::branch_mutation_basis(branch));
     let raw = scenarios::raw_mutation_effect_with_binding(
@@ -129,8 +134,8 @@ pub(super) fn batch_receipt_surface(
     let branch = "cert-phase6-batch";
     let mut runtime = relational_runtime_with_intent_strategy();
     let main = BranchId("main".to_string());
-    let left = create_entity(&mut runtime, "left", main.clone());
-    let right = create_entity(&mut runtime, "right", main);
+    let left = create_entity(execution, &mut runtime, "left", main.clone());
+    let right = create_entity(execution, &mut runtime, "right", main);
     fork_seed_branch_from_main(&mut runtime, branch);
     let basis = EffectAuthoringBasis::from(scenarios::branch_mutation_basis(branch));
     let binding = scenarios::runtime_workflow_binding_for_branch(

@@ -4,10 +4,11 @@ use worth_foundational::{
 };
 
 fn fork_checkpoint_plan(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     mutate: fn(&mut crate::branch::RelationalBranchCellCheckpoint),
 ) -> RecoveryPlan {
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "fork-source");
+    create_entity_outcome(execution, &runtime, "fork-source");
     let source = BranchId("main".to_owned());
     let (_, basis) = runtime
         .observe_fork_source(&source)
@@ -29,9 +30,12 @@ fn fork_checkpoint_plan(
     plan
 }
 
-fn fork_tail_plan(mutate: fn(&mut crate::branch::RelationalBranchCellCheckpoint)) -> RecoveryPlan {
+fn fork_tail_plan(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    mutate: fn(&mut crate::branch::RelationalBranchCellCheckpoint),
+) -> RecoveryPlan {
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "fork-source");
+    create_entity_outcome(execution, &runtime, "fork-source");
     let source = BranchId("main".to_owned());
     let (_, basis) = runtime
         .observe_fork_source(&source)
@@ -40,7 +44,12 @@ fn fork_tail_plan(mutate: fn(&mut crate::branch::RelationalBranchCellCheckpoint)
         .fork_branch(BranchId("storm".to_owned()), basis)
         .expect("fork tail fixture");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity_outcome_on_branch(&runtime, "fork-tail", BranchId("storm".to_owned()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "fork-tail",
+        BranchId("storm".to_owned()),
+    );
     let mut plan = runtime
         .durability()
         .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
@@ -110,8 +119,14 @@ fn recovery_rejects_one_sided_fork_provenance_in_checkpoint() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    assert_recovery_rejects_fork_checkpoint(execution, fork_checkpoint_plan(provenance_only));
-    assert_recovery_rejects_fork_checkpoint(execution, fork_checkpoint_plan(source_only));
+    assert_recovery_rejects_fork_checkpoint(
+        execution,
+        fork_checkpoint_plan(execution, provenance_only),
+    );
+    assert_recovery_rejects_fork_checkpoint(
+        execution,
+        fork_checkpoint_plan(execution, source_only),
+    );
 }
 
 #[test]
@@ -121,7 +136,7 @@ fn recovery_rejects_mismatched_fork_provenance_identity_in_checkpoint() {
 
     assert_recovery_rejects_fork_checkpoint(
         execution,
-        fork_checkpoint_plan(wrong_provenance_branch),
+        fork_checkpoint_plan(execution, wrong_provenance_branch),
     );
 }
 
@@ -130,6 +145,6 @@ fn recovery_rejects_one_sided_fork_provenance_in_tail() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    assert_recovery_rejects_fork_checkpoint(execution, fork_tail_plan(provenance_only));
-    assert_recovery_rejects_fork_checkpoint(execution, fork_tail_plan(source_only));
+    assert_recovery_rejects_fork_checkpoint(execution, fork_tail_plan(execution, provenance_only));
+    assert_recovery_rejects_fork_checkpoint(execution, fork_tail_plan(execution, source_only));
 }

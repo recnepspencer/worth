@@ -21,7 +21,7 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let anchor = create_entity_outcome(&runtime, "fork-currency-anchor");
+    let anchor = create_entity_outcome(execution, &runtime, "fork-currency-anchor");
     let scoped = name_index(&runtime, "fork-currency.scoped", true);
     let global = name_index(&runtime, "fork-currency.global", false);
     let main = BranchId("main".into());

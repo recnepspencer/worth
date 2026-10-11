@@ -19,11 +19,13 @@ fn exact_selection_is_constant_and_historical_selection_uses_exact_ancestry() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
-    let ancestor = create_entity_outcome(&runtime.lock().unwrap(), "deep-head-ancestor");
+    let ancestor =
+        create_entity_outcome(&execution, &runtime.lock().unwrap(), "deep-head-ancestor");
     let ancestor_commit_id = ancestor.commit.commit_id;
     release_test_commit_snapshot(&runtime.lock().unwrap(), &ancestor);
     for ordinal in 1..=255 {
         create_entity(
+            &execution,
             &runtime.lock().unwrap(),
             &format!("deep-head-history-{ordinal}"),
         );
@@ -57,7 +59,11 @@ fn exact_selection_is_constant_and_historical_selection_uses_exact_ancestry() {
         .expect("visible historical ancestor");
     assert_eq!(source.selection_work_totals(), (2, ancestry_work));
 
-    let future = create_entity_outcome(&runtime.lock().unwrap(), "future-after-bound-head");
+    let future = create_entity_outcome(
+        &execution,
+        &runtime.lock().unwrap(),
+        "future-after-bound-head",
+    );
     let future_commit_id = future.commit.commit_id;
     release_test_commit_snapshot(&runtime.lock().unwrap(), &future);
     let denial = source

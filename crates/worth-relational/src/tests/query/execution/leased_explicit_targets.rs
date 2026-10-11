@@ -47,9 +47,24 @@ fn leased_explicit_read_preserves_packet_identity_and_reports_stops() {
 
     let runtime = runtime_with_test_schema();
     let targets = vec![
-        RecordRef::Entity(create_entity_in_partition(&runtime, "a", PartitionId(7))),
-        RecordRef::Entity(create_entity_in_partition(&runtime, "b", PartitionId(11))),
-        RecordRef::Entity(create_entity_in_partition(&runtime, "c", PartitionId(13))),
+        RecordRef::Entity(create_entity_in_partition(
+            execution,
+            &runtime,
+            "a",
+            PartitionId(7),
+        )),
+        RecordRef::Entity(create_entity_in_partition(
+            execution,
+            &runtime,
+            "b",
+            PartitionId(11),
+        )),
+        RecordRef::Entity(create_entity_in_partition(
+            execution,
+            &runtime,
+            "c",
+            PartitionId(13),
+        )),
     ];
     let snapshot = runtime.visibility_authority().snapshot();
     let plan = planned_explicit_query(&runtime, &snapshot, "leased-explicit", targets);
@@ -172,7 +187,7 @@ fn leased_field_filter_charges_captured_comparison_bytes() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity_in_partition(&runtime, "small", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "small", PartitionId(7));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
     let packet = PlannedQueryPacket {
@@ -239,7 +254,12 @@ fn leased_kind_scan_stops_at_a_record_checkpoint() {
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     for ordinal in 0..24 {
-        create_entity_in_partition(&runtime, &format!("entity-{ordinal}"), PartitionId(7));
+        create_entity_in_partition(
+            execution,
+            &runtime,
+            &format!("entity-{ordinal}"),
+            PartitionId(7),
+        );
     }
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
@@ -299,8 +319,11 @@ fn leased_kind_scan_stops_at_a_record_checkpoint() {
 
 #[test]
 fn leased_kind_scan_rejects_one_record_larger_than_its_packet_ceiling() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity_in_partition(&runtime, &"x".repeat(32_000), PartitionId(7));
+    create_entity_in_partition(execution, &runtime, &"x".repeat(32_000), PartitionId(7));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
     let plan = runtime

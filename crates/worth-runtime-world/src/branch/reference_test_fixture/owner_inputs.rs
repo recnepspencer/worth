@@ -23,9 +23,12 @@ impl RealReferenceFixture {
             .reserve_fork_target(BranchId(target.to_owned()))
     }
 
-    pub(crate) fn perform_relational_owner_change(&self) -> PerformedRelationalCommit {
-        let candidate =
-            self.prepare_relational_owner_candidate("runtime-world-cas-loss-owner-effect");
+    pub(crate) fn perform_relational_owner_change(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> PerformedRelationalCommit {
+        let candidate = self
+            .prepare_relational_owner_candidate(execution, "runtime-world-cas-loss-owner-effect");
         match self
             ._relational_runtime
             .publication_port()
@@ -40,6 +43,7 @@ impl RealReferenceFixture {
 
     pub(crate) fn prepare_relational_owner_candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         operation_name: &str,
     ) -> PreparedRelationalCommitCandidate {
         let identity = self._relational_runtime.main_branch_identity();
@@ -61,6 +65,7 @@ impl RealReferenceFixture {
         services
             .preparation_port()
             .prepare_branch_transaction(
+                execution,
                 transaction,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )

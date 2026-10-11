@@ -51,6 +51,9 @@ fn owner_port_rejects_a_basis_from_a_foreign_runtime() {
 
 #[test]
 fn owner_port_rejects_an_exact_basis_after_the_branch_moves() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let services = runtime.owner_component_services();
     let identity = runtime.main_branch_identity();
@@ -58,7 +61,7 @@ fn owner_port_rejects_an_exact_basis_after_the_branch_moves() {
         .basis_port()
         .observe_branch(&identity)
         .expect("the owner basis port issues the pre-movement basis");
-    create_entity(&runtime, "transaction-admission-stale-basis");
+    create_entity(execution, &runtime, "transaction-admission-stale-basis");
 
     assert!(matches!(
         services

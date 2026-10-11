@@ -69,6 +69,9 @@ mod tests {
 
     #[test]
     fn aspect_version_enumeration_spends_the_request_and_keeps_native_causes() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         use crate::execution::RelationalExecutionDenialCause as Cause;
         use crate::transactions::data::CommitExecutionDenialKind;
         use worth_execution::{CancellationToken, ExecutionRequest, LeaseRequest};
@@ -77,7 +80,7 @@ mod tests {
         };
         let runtime =
             runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-        let entity = create_entity(&runtime, "alpha");
+        let entity = create_entity(execution, &runtime, "alpha");
         // The declared fixture has lifecycle and name: two symbolic versions,
         // each costing one visit, cannot fit a one-unit request.
         for (memory, work, expected_work) in [(64 * 1024 * 1024, 1, true), (0, 100, false)] {
@@ -118,7 +121,7 @@ mod tests {
 
         let runtime =
             runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-        let entity = create_entity(&runtime, "alpha");
+        let entity = create_entity(execution, &runtime, "alpha");
         {
             let mut writer = runtime.edit_partitions();
             let partition = writer

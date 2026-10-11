@@ -39,7 +39,7 @@ fn admitted_supply_chain_observation_is_repeatable_after_branch_moves() {
         DeltaId::StormRerouteAurora,
     )
     .expect("the real Supply Chain delta lowers from the admitted storm basis");
-    commit_branch_batch(&world.runtime, branch_id.clone(), batch);
+    commit_branch_batch(execution, &world.runtime, branch_id.clone(), batch);
 
     let repeated = observe_supply_chain_observation(
         execution,

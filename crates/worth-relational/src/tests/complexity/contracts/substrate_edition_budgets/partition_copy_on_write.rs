@@ -12,11 +12,14 @@ use crate::tests::support::*;
 
 #[test]
 fn complexity_budget_unobserved_write_copies_no_partition() {
-    let runtime = populated_partitions();
-    let anchor = create_entity(&runtime, "anchor");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = populated_partitions(execution);
+    let anchor = create_entity(execution, &runtime, "anchor");
 
     runtime.performance_access().reset_counters();
-    let _ = update_entity(&runtime, anchor, "anchor-updated");
+    let _ = update_entity(execution, &runtime, anchor, "anchor-updated");
     let counters = runtime.performance_access().counters();
 
     // The negative twin. Nothing holds the substrate, so every mutation lands
@@ -28,14 +31,17 @@ fn complexity_budget_unobserved_write_copies_no_partition() {
 
 #[test]
 fn complexity_budget_observed_write_copies_only_the_partition_it_touches() {
-    let runtime = populated_partitions();
-    let anchor = create_entity(&runtime, "anchor");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = populated_partitions(execution);
+    let anchor = create_entity(execution, &runtime, "anchor");
     let resident_partitions = runtime.acquire_partition_edition().len();
     assert!(resident_partitions >= 4);
 
     let observer = runtime.acquire_partition_edition();
     runtime.performance_access().reset_counters();
-    let _ = update_entity(&runtime, anchor, "anchor-updated");
+    let _ = update_entity(execution, &runtime, anchor, "anchor-updated");
     let counters = runtime.performance_access().counters();
     drop(observer);
 
@@ -58,7 +64,10 @@ fn complexity_budget_observed_write_copies_only_the_partition_it_touches() {
 
 #[test]
 fn complexity_budget_observed_substrate_wide_pass_copies_every_partition_it_holds() {
-    let runtime = populated_partitions();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = populated_partitions(execution);
     let resident_partitions = runtime.acquire_partition_edition().len();
 
     let observer = runtime.acquire_partition_edition();
@@ -82,7 +91,10 @@ fn complexity_budget_observed_substrate_wide_pass_copies_every_partition_it_hold
 
 #[test]
 fn complexity_budget_unobserved_substrate_wide_pass_copies_nothing() {
-    let runtime = populated_partitions();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = populated_partitions(execution);
 
     runtime.performance_access().reset_counters();
     runtime
@@ -97,13 +109,20 @@ fn complexity_budget_unobserved_substrate_wide_pass_copies_nothing() {
 
 /// A runtime whose records live in several partitions, so a per-partition
 /// claim can be told apart from a substrate-wide one.
-fn populated_partitions() -> crate::facade::runtime::RelationalRuntime {
+fn populated_partitions(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::facade::runtime::RelationalRuntime {
     let runtime = runtime_with_test_schema();
     for (ordinal, partition) in [PartitionId(7), PartitionId(11), PartitionId(23)]
         .into_iter()
         .enumerate()
     {
-        let _ = create_entity_in_partition(&runtime, &format!("resident-{ordinal}"), partition);
+        let _ = create_entity_in_partition(
+            execution,
+            &runtime,
+            &format!("resident-{ordinal}"),
+            partition,
+        );
     }
     runtime
 }

@@ -29,9 +29,15 @@ pub fn source_addition_inspection_artifact(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RelationalMergeInspectionArtifact {
     let mut runtime = runtime_with_default_merge_registry();
-    create_entity_on_branch(&mut runtime, "root", BranchId(TARGET_BRANCH.to_string()));
+    create_entity_on_branch(
+        request_execution,
+        &mut runtime,
+        "root",
+        BranchId(TARGET_BRANCH.to_string()),
+    );
     create_branch_from_main(&mut runtime, SOURCE_BRANCH);
     create_entity_on_branch(
+        request_execution,
         &mut runtime,
         "feature-only",
         BranchId(SOURCE_BRANCH.to_string()),
@@ -43,16 +49,26 @@ pub fn deleted_vs_modified_inspection_artifact(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RelationalMergeInspectionArtifact {
     let mut runtime = runtime_with_default_merge_registry();
-    let entity =
-        create_entity_on_branch(&mut runtime, "shared", BranchId(TARGET_BRANCH.to_string()));
+    let entity = create_entity_on_branch(
+        request_execution,
+        &mut runtime,
+        "shared",
+        BranchId(TARGET_BRANCH.to_string()),
+    );
     create_branch_from_main(&mut runtime, SOURCE_BRANCH);
     update_entity_on_branch(
+        request_execution,
         &mut runtime,
         entity,
         "main-modified",
         BranchId(TARGET_BRANCH.to_string()),
     );
-    delete_entity_on_branch(&mut runtime, entity, BranchId(SOURCE_BRANCH.to_string()));
+    delete_entity_on_branch(
+        request_execution,
+        &mut runtime,
+        entity,
+        BranchId(SOURCE_BRANCH.to_string()),
+    );
     inspect_execution_surface(request_execution, &runtime)
 }
 
@@ -60,29 +76,38 @@ pub fn topology_region_conflict_inspection_artifact(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RelationalMergeInspectionArtifact {
     let mut runtime = runtime_with_topology_merge_registry();
-    let source =
-        create_entity_on_branch(&mut runtime, "source", BranchId(TARGET_BRANCH.to_string()));
+    let source = create_entity_on_branch(
+        request_execution,
+        &mut runtime,
+        "source",
+        BranchId(TARGET_BRANCH.to_string()),
+    );
     let target_a = create_entity_on_branch(
+        request_execution,
         &mut runtime,
         "target-a",
         BranchId(TARGET_BRANCH.to_string()),
     );
     let target_b = create_entity_on_branch(
+        request_execution,
         &mut runtime,
         "target-b",
         BranchId(TARGET_BRANCH.to_string()),
     );
     let target_c = create_entity_on_branch(
+        request_execution,
         &mut runtime,
         "target-c",
         BranchId(TARGET_BRANCH.to_string()),
     );
     let target_d = create_entity_on_branch(
+        request_execution,
         &mut runtime,
         "target-d",
         BranchId(TARGET_BRANCH.to_string()),
     );
     let relation_a = create_relation_on_branch(
+        request_execution,
         &mut runtime,
         source,
         target_a,
@@ -91,6 +116,7 @@ pub fn topology_region_conflict_inspection_artifact(
         BranchId(TARGET_BRANCH.to_string()),
     );
     let relation_b = create_relation_on_branch(
+        request_execution,
         &mut runtime,
         source,
         target_b,
@@ -101,16 +127,19 @@ pub fn topology_region_conflict_inspection_artifact(
 
     create_branch_from_main(&mut runtime, SOURCE_BRANCH);
     delete_relation_on_branch(
+        request_execution,
         &mut runtime,
         relation_a,
         BranchId(SOURCE_BRANCH.to_string()),
     );
     delete_relation_on_branch(
+        request_execution,
         &mut runtime,
         relation_b,
         BranchId(SOURCE_BRANCH.to_string()),
     );
     create_relation_on_branch(
+        request_execution,
         &mut runtime,
         source,
         target_c,
@@ -119,6 +148,7 @@ pub fn topology_region_conflict_inspection_artifact(
         BranchId(SOURCE_BRANCH.to_string()),
     );
     create_relation_on_branch(
+        request_execution,
         &mut runtime,
         source,
         target_d,

@@ -128,7 +128,7 @@ impl DuplicateWorld {
                 .expect("the candidate branch forks");
         });
         world.lend(request_execution, |relational| {
-            create_duplicate_principal(relational, "candidate")
+            create_duplicate_principal(request_execution, relational, "candidate")
         });
         world
     }
@@ -163,7 +163,11 @@ fn main_head(
 
 /// A raw create of a second principal holding the seeded identity, which a
 /// program write would be refused.
-fn create_duplicate_principal(relational: &mut RelationalRuntime, branch: &str) {
+fn create_duplicate_principal(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    relational: &mut RelationalRuntime,
+    branch: &str,
+) {
     let kind = principal_kind(relational);
     let locator = AspectFieldLocator::new(
         LocatorAuthority::Planned,
@@ -200,6 +204,7 @@ fn create_duplicate_principal(relational: &mut RelationalRuntime, branch: &str) 
         .expect("the fixture batch stages");
     let committed = transaction
         .commit(
+            execution,
             relational,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

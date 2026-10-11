@@ -6,9 +6,9 @@ fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "lineage-overflow-checkpoint");
+    create_entity_outcome(execution, &runtime, "lineage-overflow-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity_outcome(&runtime, "lineage-overflow-tail");
+    create_entity_outcome(execution, &runtime, "lineage-overflow-tail");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -34,8 +34,11 @@ fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
 
 #[test]
 fn live_lineage_allocator_exhaustion_denies_before_public_effects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let baseline = create_entity_outcome(&runtime, "lineage-exhaustion-baseline");
+    let baseline = create_entity_outcome(execution, &runtime, "lineage-exhaustion-baseline");
     let baseline_entities = runtime.storage_access().storage_stats().live_entities;
     let (_, event_frontier) = runtime.lineage.identity_frontiers();
     runtime
@@ -51,6 +54,7 @@ fn live_lineage_allocator_exhaustion_denies_before_public_effects() {
         .expect("test staging stays within configured resource budgets");
     let error = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

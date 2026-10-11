@@ -128,6 +128,7 @@ impl UpdateWorld {
             client_key: ClientKey::raw(name),
         };
         let committed = self.commit(
+            execution,
             "main",
             MutationIntent::Create(CreateIntent::Entity(EntitySpec {
                 partition_id: created.partition_id,
@@ -162,6 +163,7 @@ impl UpdateWorld {
         note: &str,
     ) {
         let committed = self.commit(
+            execution,
             FEATURE,
             MutationIntent::Entity(EntityMutationIntent::UpdateFields(
                 UpdateEntityFieldsIntent {
@@ -229,6 +231,7 @@ impl UpdateWorld {
 
     fn commit(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: &str,
         intent: MutationIntent,
     ) -> worth_relational::facade::transactions::CommitResult {
@@ -253,6 +256,7 @@ impl UpdateWorld {
             .expect("the fixture batch stages");
         transaction
             .commit(
+                execution,
                 runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )

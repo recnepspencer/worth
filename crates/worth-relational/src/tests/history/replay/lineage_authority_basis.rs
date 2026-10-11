@@ -15,7 +15,7 @@ fn replay_reports_owner_create_event_drift_at_digest_layer() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "event-drift");
+    let created = create_entity_outcome(execution, &runtime, "event-drift");
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         created.commit.commit_id,
         |envelope| {
@@ -45,7 +45,7 @@ fn replay_reports_owner_create_decision_drift_at_digest_layer() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "decision-drift");
+    let created = create_entity_outcome(execution, &runtime, "decision-drift");
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         created.commit.commit_id,
         |envelope| {
@@ -75,7 +75,7 @@ fn replay_uses_retained_owner_envelope_only_in_normal_mode() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "retained-envelope");
+    let created = create_entity_outcome(execution, &runtime, "retained-envelope");
     assert!(runtime
         .durability_authority()
         .remove_durable_envelope_for_test(created.commit.commit_id));
@@ -100,7 +100,7 @@ fn audit_replay_rejects_retained_owner_envelope_basis() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "audit-retained-envelope");
+    let created = create_entity_outcome(execution, &runtime, "audit-retained-envelope");
     assert!(runtime
         .durability_authority()
         .remove_durable_envelope_for_test(created.commit.commit_id));
@@ -121,7 +121,7 @@ fn audit_replay_uses_checkpoint_owner_basis_when_tail_is_absent() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "checkpoint-basis");
+    let created = create_entity_outcome(execution, &runtime, "checkpoint-basis");
     runtime.durability_authority().checkpoint().unwrap();
     assert!(runtime
         .durability_authority()

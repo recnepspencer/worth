@@ -43,6 +43,7 @@ impl RelationalPublicationCompanion for FirstWriterGate {
 }
 
 fn candidate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &BranchId,
     entity: EntityId,
@@ -71,6 +72,7 @@ fn candidate(
         .unwrap();
     runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -140,8 +142,22 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
                 owner.resources.preflight_budget(),
             )
             .unwrap();
-        let first = candidate(runtime, &branch, entity, status.clone(), "first");
-        let second = candidate(runtime, &branch, entity, status, "second");
+        let first = candidate(
+            request_execution,
+            runtime,
+            &branch,
+            entity,
+            status.clone(),
+            "first",
+        );
+        let second = candidate(
+            request_execution,
+            runtime,
+            &branch,
+            entity,
+            status,
+            "second",
+        );
         let port = runtime.publication_port();
         let (performed, second, hang_guard) = std::thread::scope(|threads| {
             let first_thread = threads.spawn(|| {

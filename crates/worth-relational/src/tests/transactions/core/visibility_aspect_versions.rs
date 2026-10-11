@@ -8,9 +8,9 @@ fn visibility_aspect_versions_follow_canonical_delta_truth_and_ignore_undeclared
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "alpha");
+    let created = create_entity_outcome(execution, &runtime, "alpha");
     let entity = changed_entities(&created)[0];
-    let updated = update_entity(&runtime, entity, "beta");
+    let updated = update_entity(execution, &runtime, entity, "beta");
     let versions = runtime
         .read_truth()
         .entity_aspect_versions(execution, entity)
@@ -35,7 +35,7 @@ fn visibility_aspect_versions_follow_canonical_delta_truth_and_ignore_undeclared
         ]
     );
 
-    let relation = create_relation(&runtime, entity, entity, "edge");
+    let relation = create_relation(execution, &runtime, entity, entity, "edge");
     let relation_versions = runtime
         .read_truth()
         .relation_aspect_versions(execution, relation)
@@ -61,7 +61,7 @@ fn visibility_aspect_versions_reject_stale_generation_ids() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(execution, &runtime, "before");
     let stale = EntityId::new(
         entity.partition_id,
         entity.local_slot.0,
@@ -86,9 +86,9 @@ fn selected_basis_aspect_revision_reads_only_the_requested_aspect() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "alpha");
+    let created = create_entity_outcome(execution, &runtime, "alpha");
     let entity = changed_entities(&created)[0];
-    let updated = update_entity(&runtime, entity, "beta");
+    let updated = update_entity(execution, &runtime, entity, "beta");
     let view = runtime
         .read_truth()
         .project_snapshot(&updated.snapshot, execution)

@@ -6,7 +6,7 @@ fn exact_entity_field_lookup_uses_one_branch_root_after_both_heads_diverge() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "exact-field");
+    let created = create_entity_outcome(execution, &runtime, "exact-field");
     let entity_id = changed_entities(&created)[0];
     let field_locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let exact_value = string_aspect_value("exact-field");
@@ -31,12 +31,13 @@ fn exact_entity_field_lookup_uses_one_branch_root_after_both_heads_diverge() {
     let sibling_snapshot =
         snapshot_for_owner_branch(&runtime, &BranchId("field-sibling".to_owned()));
     update_entity_on_branch(
+        execution,
         &runtime,
         entity_id,
         "sibling-field",
         BranchId("field-sibling".to_owned()),
     );
-    update_entity(&runtime, entity_id, "main-field");
+    update_entity(execution, &runtime, entity_id, "main-field");
     build_entity_field_generation(execution, &runtime, index.index_id);
 
     let current_main = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));

@@ -18,7 +18,7 @@ pub(crate) fn certified_supply_chain_world(
         CompiledSupplyChainProgram::compile(definition).expect("Supply Chain program compiles");
     let certified = audit_supply_chain_baseline(
         execution,
-        compile_supply_chain_baseline(program).expect("baseline installs"),
+        compile_supply_chain_baseline(execution, program).expect("baseline installs"),
     )
     .expect("baseline matches the independent Supply Chain oracle");
     (certified.world, certified.expected)

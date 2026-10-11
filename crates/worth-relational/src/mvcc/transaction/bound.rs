@@ -100,13 +100,14 @@ impl BranchBoundRelationalTransaction {
 
     pub fn commit(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::runtime::RelationalRuntime,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::transactions::data::CommitResult,
         crate::transactions::data::TransactionCommitError,
     > {
-        runtime.commit_branch_transaction(self, allocation_policy)
+        runtime.commit_branch_transaction(execution, self, allocation_policy)
     }
 
     pub fn validate(

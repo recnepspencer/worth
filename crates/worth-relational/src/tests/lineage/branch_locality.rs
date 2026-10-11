@@ -11,7 +11,7 @@ fn lineage_branch_divergence_is_queryable() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let _main = create_entity_outcome(&runtime, "main");
+    let _main = create_entity_outcome(execution, &runtime, "main");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -19,8 +19,12 @@ fn lineage_branch_divergence_is_queryable() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let _feature =
-        create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
+    let _feature = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
     let divergence = runtime.lineage_access().divergence_between_branches(
         execution,
         LineageDivergenceRequest {

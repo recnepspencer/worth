@@ -10,8 +10,11 @@ use crate::tests::support::*;
 
 #[test]
 fn subscriber_stream_rejects_unsupported_contract_upgrade_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     install_schema_version(&mut runtime, SchemaVersionId(2));
     let mut txn = {
@@ -33,6 +36,7 @@ fn subscriber_stream_rejects_unsupported_contract_upgrade_boundary() {
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
@@ -76,8 +80,11 @@ fn subscriber_stream_rejects_unsupported_contract_upgrade_boundary() {
 
 #[test]
 fn subscriber_stream_applies_contract_upgrade_when_declared_supported() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     install_schema_version(&mut runtime, SchemaVersionId(2));
     let mut txn = {
@@ -99,6 +106,7 @@ fn subscriber_stream_applies_contract_upgrade_when_declared_supported() {
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
@@ -147,8 +155,11 @@ fn subscriber_stream_applies_contract_upgrade_when_declared_supported() {
 
 #[test]
 fn subscriber_stream_rejects_renegotiation_required_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     install_schema_version(&mut runtime, SchemaVersionId(2));
     let mut txn = {
@@ -170,6 +181,7 @@ fn subscriber_stream_rejects_renegotiation_required_boundary() {
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

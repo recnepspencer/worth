@@ -6,7 +6,7 @@ fn structural_identity_comparison_only_uses_fingerprint_truth() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "alpha");
+    let entity = create_entity(execution, &runtime, "alpha");
 
     let comparison = runtime.inspect_what_happened().compare_structural_identity(
         execution,
@@ -27,7 +27,7 @@ fn structural_identity_evidence_exposes_declared_fingerprint_and_lineage_for_ent
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "alpha");
+    let entity = create_entity(execution, &runtime, "alpha");
     assert!(runtime.set_entity_structural_identity_for_test(
         entity,
         Some(StructuralFingerprint::new(Symbol(11), 101)),
@@ -50,7 +50,7 @@ fn structural_identity_evidence_exposes_declared_fingerprint_and_lineage_for_ent
     assert_eq!(entity_evidence.lineage_id, Some(LineageId(77)));
     assert!(entity_evidence.degradations.is_empty());
 
-    let relation = create_relation(&runtime, entity, entity, "self");
+    let relation = create_relation(execution, &runtime, entity, entity, "self");
     let relation_evidence = runtime
         .inspect_what_happened()
         .structural_identity(
@@ -76,9 +76,9 @@ fn structural_identity_comparison_distinguishes_equal_mismatch_and_family_mismat
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_test_schema();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let other_family = create_entity(&runtime, "other-family");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let other_family = create_entity(execution, &runtime, "other-family");
 
     assert!(runtime.set_entity_structural_identity_for_test(
         left,
@@ -141,10 +141,10 @@ fn structural_identity_query_is_family_scoped_and_entity_only() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_test_schema();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let ignored = create_entity(&runtime, "ignored");
-    let _relation = create_relation(&runtime, left, right, "rel");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let ignored = create_entity(execution, &runtime, "ignored");
+    let _relation = create_relation(execution, &runtime, left, right, "rel");
 
     assert!(runtime.set_entity_structural_identity_for_test(
         left,
@@ -187,7 +187,7 @@ fn structural_identity_historical_scope_does_not_leak_reused_slot_sidecars() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_test_schema();
-    let original = create_entity_outcome(&runtime, "original");
+    let original = create_entity_outcome(execution, &runtime, "original");
     let original_entity = changed_entities(&original)[0];
     assert!(runtime.set_entity_structural_identity_for_test(
         original_entity,
@@ -241,8 +241,8 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
     assert!(runtime.set_entity_structural_identity_for_test(
         left,
         Some(StructuralFingerprint::new(Symbol(51), 1001)),
@@ -307,9 +307,9 @@ fn inspection_truth_bundle_recovery_parity_holds_for_current_and_historical_surf
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "bundle");
+    let created = create_entity_outcome(execution, &runtime, "bundle");
     let entity = changed_entities(&created)[0];
-    let _relation = create_relation(&runtime, entity, entity, "self");
+    let _relation = create_relation(execution, &runtime, entity, entity, "self");
     runtime.durability_authority().checkpoint().unwrap();
 
     let expected = capture_inspection_truth_bundle(

@@ -2,11 +2,15 @@ use super::*;
 
 #[test]
 fn branch_roots_with_one_schema_deduplicate_the_durable_carrier() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "schema-carrier-deduplication");
+    let created = create_entity_outcome(execution, &runtime, "schema-carrier-deduplication");
     let entity = changed_entities(&created)[0];
     create_branch_from_main(&runtime, "feature");
     update_entity_on_branch(
+        execution,
         &runtime,
         entity,
         "schema-carrier-feature-root",
@@ -27,7 +31,7 @@ fn recovery_rejects_a_missing_branch_root_schema_carrier() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut plan = checkpoint_plan_with_one_root("missing-schema-carrier");
+    let mut plan = checkpoint_plan_with_one_root(execution, "missing-schema-carrier");
     plan.checkpoint
         .as_mut()
         .expect("checkpoint exists")
@@ -42,7 +46,7 @@ fn recovery_rejects_a_tampered_branch_root_schema_carrier() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut plan = checkpoint_plan_with_one_root("tampered-schema-carrier");
+    let mut plan = checkpoint_plan_with_one_root(execution, "tampered-schema-carrier");
     plan.checkpoint
         .as_mut()
         .and_then(|checkpoint| checkpoint.branch_root_schema_images.first_mut())
@@ -59,7 +63,7 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
 
     let mut runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity_outcome(&runtime, "schema-v1");
+    create_entity_outcome(execution, &runtime, "schema-v1");
     create_branch_from_main(&runtime, "legacy");
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -95,6 +99,7 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
         .expect("test staging stays within configured resource budgets");
     transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -146,9 +151,12 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
     assert_eq!(recovered.history().immutable_commit_count(), 0);
 }
 
-fn checkpoint_plan_with_one_root(label: &str) -> RecoveryPlan {
+fn checkpoint_plan_with_one_root(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    label: &str,
+) -> RecoveryPlan {
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, label);
+    create_entity_outcome(execution, &runtime, label);
     runtime
         .durability_authority()
         .checkpoint()

@@ -14,6 +14,7 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
         AspectMergePolicyKind::PreferRicher,
     );
     let entity = create_entity_with_aspect_fields(
+        execution,
         &mut runtime,
         "shared",
         crate::tests::support::single_string_aspect_field_patch(
@@ -55,6 +56,7 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
         .unwrap();
     source
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

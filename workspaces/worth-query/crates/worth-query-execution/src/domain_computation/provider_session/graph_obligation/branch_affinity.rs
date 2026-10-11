@@ -69,6 +69,8 @@ mod tests {
 
     #[test]
     fn equal_version_snapshot_from_another_branch_cannot_satisfy_affinity() {
+        let host_request = crate::test_request_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         let runtime = RelationalRuntimeApi::builder()
             .schema_registry(
                 RelationalSchemaRegistry::new()
@@ -108,6 +110,7 @@ mod tests {
             .expect("test staging stays within configured resource budgets");
         let committed = transaction
             .commit(
+                execution,
                 &runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )

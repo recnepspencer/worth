@@ -13,7 +13,10 @@ use crate::tests::support::{
 
 #[test]
 fn normalized_merge_request_equivalence_is_exact_across_authoring_lanes() {
-    let runtime = merge_ready_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = merge_ready_runtime(execution);
     let planning_request = planning_request();
     let execution_request = execution_request();
 
@@ -121,7 +124,7 @@ fn planning_execution_and_publication_consume_normalized_request_authority() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = merge_ready_runtime();
+    let runtime = merge_ready_runtime(execution);
     let planning_request = planning_request();
     let execution_request = execution_request();
     let normalized = runtime
@@ -232,11 +235,16 @@ fn normalized_request_deserialization_revalidates_admitted_truth() {
     assert!(unsupported_result.is_err());
 }
 
-fn merge_ready_runtime() -> RelationalRuntime {
+fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
     runtime
 }
 

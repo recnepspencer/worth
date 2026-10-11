@@ -6,6 +6,9 @@ use crate::tests::support::{
 
 #[test]
 fn rootless_selected_publication_fails_before_movement_and_releases_preflight_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
     runtime.set_retention_capacity_for_test(8, 1);
     let branch = BranchId("main".to_owned());
@@ -36,6 +39,7 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

@@ -50,6 +50,7 @@ pub struct DenyingWriteAuthority;
 impl runtime::WorthQueryRuntimeWriteAuthorityAdapter for DenyingWriteAuthority {
     fn write(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &worth_runtime_bridge::facade::RuntimeBridge,
         _relational_runtime: Option<&mut worth_relational::facade::runtime::RelationalRuntime>,
         _mutation: runtime::WorthQueryBackendAdmissibleMutation,

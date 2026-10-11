@@ -120,7 +120,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         FullVerificationReason::NativeRevisionUnavailable,
     );
     handle.with_runtime_mut(request_execution, |runtime| {
-        write_field(runtime, entity, status, "closed")
+        write_field(request_execution, runtime, entity, status, "closed")
     });
     let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
     assert!(matches!(

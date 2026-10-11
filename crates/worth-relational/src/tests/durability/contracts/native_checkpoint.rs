@@ -57,7 +57,7 @@ fn native_checkpoint_round_trip_restores_a_live_editable_world() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let committed = create_entity_outcome(&runtime, "native-checkpoint");
+    let committed = create_entity_outcome(execution, &runtime, "native-checkpoint");
     let checkpoint = runtime
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
@@ -78,7 +78,7 @@ fn native_checkpoint_round_trip_restores_a_live_editable_world() {
             .branch_head(&BranchId("main".to_owned())),
         Some(committed.commit.clone())
     );
-    let later = create_entity_outcome(&recovered, "post-restore-edit");
+    let later = create_entity_outcome(execution, &recovered, "post-restore-edit");
     assert_eq!(
         recovered
             .history()
@@ -93,7 +93,7 @@ fn recovery_authority_only_admits_a_basis_from_the_recovered_image() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let source = persisted_runtime_with_test_schema();
-    create_entity_outcome(&source, "recovered-authority-source");
+    create_entity_outcome(execution, &source, "recovered-authority-source");
     let checkpoint = source
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
@@ -114,7 +114,7 @@ fn recovery_authority_only_admits_a_basis_from_the_recovered_image() {
         .durability_recovery()
         .restore_native_checkpoint_with_authority(execution, &checkpoint)
         .unwrap();
-    create_entity_outcome(&moved_recovery, "post-recovery-movement");
+    create_entity_outcome(execution, &moved_recovery, "post-recovery-movement");
     let (_, moved_basis) = moved_recovery
         .observe_branch(&moved_recovery.main_branch_identity())
         .unwrap();
@@ -165,6 +165,7 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
         .unwrap();
     let created = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -220,7 +221,7 @@ fn repeated_native_captures_do_not_retain_checkpoint_images() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "native-checkpoint-first");
+    create_entity_outcome(execution, &runtime, "native-checkpoint-first");
     let retained_before = runtime.durability.checkpoints().len();
 
     for label in ["second", "third", "fourth"] {
@@ -228,7 +229,7 @@ fn repeated_native_captures_do_not_retain_checkpoint_images() {
             .durability_authority()
             .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
             .expect("each settled world encodes without retaining an internal checkpoint");
-        create_entity_outcome(&runtime, label);
+        create_entity_outcome(execution, &runtime, label);
     }
     let checkpoint = runtime
         .durability_authority()
@@ -241,7 +242,7 @@ fn repeated_native_captures_do_not_retain_checkpoint_images() {
         .durability_recovery()
         .restore_native_checkpoint(execution, &checkpoint)
         .expect("the final non-retained checkpoint restores");
-    create_entity_outcome(&recovered, "post-bounded-retention-edit");
+    create_entity_outcome(execution, &recovered, "post-bounded-retention-edit");
 }
 
 #[test]
@@ -268,7 +269,7 @@ fn native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "native-checkpoint-runtime-name");
+    create_entity_outcome(execution, &runtime, "native-checkpoint-runtime-name");
     let checkpoint = runtime
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
@@ -298,7 +299,7 @@ fn native_checkpoint_preserves_unsealed_builder_invariant_authority() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let source = persisted_runtime_with_builder_invariant();
-    create_entity_outcome(&source, "native-checkpoint-builder-invariant");
+    create_entity_outcome(execution, &source, "native-checkpoint-builder-invariant");
     let checkpoint = source
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)

@@ -2,8 +2,11 @@ use crate::tests::support::*;
 
 #[test]
 fn fork_resolves_a_port_performed_head_without_catalog_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "fork-after-port-anchor");
+    create_entity(execution, &runtime, "fork-after-port-anchor");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -13,6 +16,7 @@ fn fork_resolves_a_port_performed_head_without_catalog_authority() {
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -44,8 +48,11 @@ fn fork_resolves_a_port_performed_head_without_catalog_authority() {
 
 #[test]
 fn runtime_fork_preserves_positioned_inventory_and_allocator_floor() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity_outcome(&runtime, "runtime-fork-source");
+    let source = create_entity_outcome(execution, &runtime, "runtime-fork-source");
     let source_position = runtime
         .history
         .canonical_stream_position(source.commit.commit_id)
@@ -64,7 +71,7 @@ fn runtime_fork_preserves_positioned_inventory_and_allocator_floor() {
         Some(source.commit.commit_id)
     );
 
-    let continued = create_entity_outcome(&fork, "runtime-fork-continuation");
+    let continued = create_entity_outcome(execution, &fork, "runtime-fork-continuation");
     let continued_position = fork
         .history
         .canonical_stream_position(continued.commit.commit_id)

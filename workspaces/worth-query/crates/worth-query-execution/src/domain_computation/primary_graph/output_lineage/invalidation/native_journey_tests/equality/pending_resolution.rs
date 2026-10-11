@@ -107,14 +107,14 @@ fn cutoff_journey(
             register(owner, Arc::clone(&b), Arc::from([]), &before, OrdSet::unit(Arc::clone(&a0)));
             register_dependent_alias(owner, &before, &b, &b_successor, &a0);
             register(owner, Arc::clone(&consumer), Arc::clone(&prefix), &before, OrdSet::unit(Arc::clone(&b)));
-            write_field(runtime, entity, status.clone(), "cutoff-upstream-changed");
+            write_field(request_execution, runtime, entity, status.clone(), "cutoff-upstream-changed");
             let (selected_handle, selected) = snapshot(runtime);
             match successor {
                 Successor::Equal | Successor::Dirty => register_alias(request_execution, owner, runtime, &selected_handle, &selected, entity, status.clone(), &a0, &a1),
                 Successor::Unequal => register(owner, Arc::clone(&a1), Arc::from([field_fact(request_execution, runtime, &selected_handle, entity, status.clone())]), &selected, OrdSet::new()),
             }
             if matches!(successor, Successor::Dirty) {
-                write_field(runtime, entity, status, "cutoff-successor-dirty");
+                write_field(request_execution, runtime, entity, status, "cutoff-successor-dirty");
             }
             let (live_handle, live) = snapshot(runtime);
             match successor {
@@ -336,7 +336,13 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
                 &before,
                 OrdSet::new(),
             );
-            write_field(runtime, entity, status.clone(), "retained-upstream-changed");
+            write_field(
+                request_execution,
+                runtime,
+                entity,
+                status.clone(),
+                "retained-upstream-changed",
+            );
             let (live_handle, live) = snapshot(runtime);
             register_alias(
                 request_execution,

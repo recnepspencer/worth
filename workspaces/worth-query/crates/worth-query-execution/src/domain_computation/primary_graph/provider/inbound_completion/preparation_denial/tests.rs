@@ -13,13 +13,16 @@ use worth_execution::CancellationSource;
 
 #[test]
 fn inbound_completion_preserves_real_execution_refusals_at_each_phase() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     isolated(
         concat!(
             module_path!(),
             "::inbound_completion_preserves_real_execution_refusals_at_each_phase"
         ),
         || {
-            let error = work_refusal();
+            let error = work_refusal(execution);
             let expected = Kind::ExecutionResource {
                 denial: Resource::WorkExhausted,
                 partition_identity: Some(1),
@@ -46,7 +49,7 @@ fn inbound_completion_preserves_real_execution_refusals_at_each_phase() {
             let mut expired = request();
             expired.deadline = Some(Instant::now());
             for (request, kind) in [(canceled, Control::Cancelled), (expired, Control::TimedOut)] {
-                let error = refused_commit(request);
+                let error = refused_commit(execution, request);
                 assert_eq!(
                     validation_denial(&error),
                     Denial::ExecutionControlStopped {

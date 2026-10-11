@@ -11,7 +11,7 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "topology-source");
+    let created = create_entity_outcome(execution, &runtime, "topology-source");
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
@@ -19,7 +19,7 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
         .unwrap()
         .lineage_id;
 
-    let replacement = update_entity(&runtime, entity, "topology-source-updated");
+    let replacement = update_entity(execution, &runtime, entity, "topology-source-updated");
     let replaced_entity = changed_entities(&replacement)[0];
     let replacement_lineage = runtime
         .lineage_access()

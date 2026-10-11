@@ -17,12 +17,16 @@ use crate::facade::transactions::CommitResult;
 pub(crate) use fixture::FintechWorld;
 pub(crate) use probes::{CaseTruthProbe, ObservabilityProbe};
 
-pub(crate) fn setup_intraday_risk_perf_world() -> FintechWorld {
-    scenarios::setup_world_for(scenarios::FintechScenario::IntradayRisk)
+pub(crate) fn setup_intraday_risk_perf_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> FintechWorld {
+    scenarios::setup_world_for(execution, scenarios::FintechScenario::IntradayRisk)
 }
 
-pub(crate) fn setup_trade_correction_perf_world() -> FintechWorld {
-    scenarios::setup_world_for(scenarios::FintechScenario::LateTradeCorrection)
+pub(crate) fn setup_trade_correction_perf_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> FintechWorld {
+    scenarios::setup_world_for(execution, scenarios::FintechScenario::LateTradeCorrection)
 }
 
 pub(crate) fn perf_open_analysis_branch(world: &mut FintechWorld) -> BranchId {
@@ -30,24 +34,27 @@ pub(crate) fn perf_open_analysis_branch(world: &mut FintechWorld) -> BranchId {
 }
 
 pub(crate) fn perf_stress_intraday_risk(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
 ) -> CommitResult {
-    actions::stress_seeded_intraday_risk(world, branch_id)
+    actions::stress_seeded_intraday_risk(execution, world, branch_id)
 }
 
 pub(crate) fn perf_correct_trade_correction(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
 ) -> CommitResult {
-    actions::correct_seeded_trade_candidate(world, branch_id)
+    actions::correct_seeded_trade_candidate(execution, world, branch_id)
 }
 
 pub(crate) fn perf_emit_trade_correction_audit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
 ) -> CommitResult {
-    actions::emit_trade_correction_audit_record(world, branch_id)
+    actions::emit_trade_correction_audit_record(execution, world, branch_id)
 }
 
 pub(crate) fn perf_capture_baseline_observability(world: &FintechWorld) -> ObservabilityProbe {

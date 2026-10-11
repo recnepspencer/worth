@@ -14,6 +14,9 @@ const OWNER_CLOSE_START_FAIL_SAFE: Duration = Duration::from_secs(6);
 
 #[test]
 fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = empty_runtime();
     let services = runtime.owner_component_services();
     let lifecycle_port = services.lifecycle_port();
@@ -45,6 +48,7 @@ fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authorit
     let candidate = services
         .preparation_port()
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

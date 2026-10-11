@@ -6,9 +6,9 @@ fn tail_created_lineage_regression_below_checkpoint_high_water_denies() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "lineage-regression-checkpoint");
+    create_entity_outcome(execution, &runtime, "lineage-regression-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity_outcome(&runtime, "lineage-regression-tail");
+    create_entity_outcome(execution, &runtime, "lineage-regression-tail");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );

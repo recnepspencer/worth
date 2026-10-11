@@ -7,7 +7,7 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "global-duplicate-first");
+    let first = create_entity_outcome(execution, &runtime, "global-duplicate-first");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "global-duplicate-name".into(),
@@ -37,7 +37,7 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
         runtime.indexes.restore_generation(generation);
     }
     let selected_pinned = *duplicates.last().unwrap();
-    let next = create_entity_outcome(&runtime, "global-duplicate-next");
+    let next = create_entity_outcome(execution, &runtime, "global-duplicate-next");
     let next_built = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {

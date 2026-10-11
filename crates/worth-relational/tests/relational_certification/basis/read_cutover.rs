@@ -51,7 +51,7 @@ fn history_and_visibility_read_the_observation_selected_root() {
         DeltaId::StormRerouteAurora,
     )
     .unwrap();
-    commit_branch_batch(&world.runtime, branch_id, batch);
+    commit_branch_batch(execution, &world.runtime, branch_id, batch);
 
     let (_, current_basis) = world.runtime.observe_branch(&identity).unwrap();
     let current_observation = current_basis.observation();
@@ -104,7 +104,7 @@ fn merge_history_resolves_from_two_exact_observations() {
         DeltaId::StormRerouteAurora,
     )
     .unwrap();
-    commit_branch_batch(&world.runtime, storm.clone(), batch);
+    commit_branch_batch(execution, &world.runtime, storm.clone(), batch);
     let storm_identity = world.runtime.branch_identity(&storm).unwrap();
     let (_, storm_basis) = world.runtime.observe_branch(&storm_identity).unwrap();
     let storm_observation = storm_basis.observation();

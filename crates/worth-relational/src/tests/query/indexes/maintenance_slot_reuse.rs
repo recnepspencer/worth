@@ -18,13 +18,13 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
         RelationalRuntimeProfile::AiWorkflow,
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
-    let original = create_entity_outcome(&runtime, "original");
+    let original = create_entity_outcome(execution, &runtime, "original");
     let old_id = changed_entities(&original)[0];
     release_test_commit_snapshot(&runtime, &original);
-    let deleted = delete_entity(&runtime, old_id);
+    let deleted = delete_entity(execution, &runtime, old_id);
     release_test_commit_snapshot(&runtime, &deleted);
     runtime.retention().run_pass();
-    let replacement = create_entity_outcome(&runtime, "replacement");
+    let replacement = create_entity_outcome(execution, &runtime, "replacement");
     let new_id = changed_entities(&replacement)[0];
     assert_eq!(old_id.local_slot, new_id.local_slot);
     assert!(new_id.generation.0 > old_id.generation.0);
@@ -76,7 +76,7 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
     };
     assert_eq!(entries.values().next().unwrap().get(0), Some(&new_id));
 
-    let changed = update_entity(&runtime, new_id, "later");
+    let changed = update_entity(execution, &runtime, new_id, "later");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

@@ -152,7 +152,7 @@ fn bound_query_facade_installs_correspondence_with_operation_authority() {
             vec![target],
         )
         .unwrap();
-    let (bridge, publication_request) = correspondence_bridge(registration);
+    let (bridge, publication_request) = correspondence_bridge(request_execution, registration);
     {
         let mut graph_binding = bridge.bind_signal_graph(&mut signal_graph).unwrap();
 

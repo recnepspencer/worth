@@ -10,8 +10,8 @@ fn complexity_budget_unique_entity_invariant_scans_the_selected_state() {
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
     });
-    let target = create_entity(&runtime, "target");
-    let _other = create_entity(&runtime, "other");
+    let target = create_entity(execution, &runtime, "target");
+    let _other = create_entity(execution, &runtime, "other");
     runtime
         .index_authority()
         .rebuild_unique_entity_aspect_field_indexes(execution)
@@ -35,6 +35,7 @@ fn complexity_budget_unique_entity_invariant_scans_the_selected_state() {
     .expect("test staging stays within configured resource budgets");
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -66,8 +67,8 @@ fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
     });
-    let target = create_entity(&runtime, "target");
-    let _other = create_entity(&runtime, "other");
+    let target = create_entity(execution, &runtime, "target");
+    let _other = create_entity(execution, &runtime, "other");
     runtime
         .index_authority()
         .rebuild_unique_entity_aspect_field_indexes(execution)
@@ -91,6 +92,7 @@ fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan(
     .expect("test staging stays within configured resource budgets");
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -111,18 +113,21 @@ fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan(
 
 #[test]
 fn complexity_budget_unique_entity_scan_grows_with_selected_unrelated_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
     });
-    let target = create_entity(&runtime, "target");
-    let _other_a = create_entity(&runtime, "other-a");
-    let _other_b = create_entity(&runtime, "other-b");
-    let _other_c = create_entity(&runtime, "other-c");
+    let target = create_entity(execution, &runtime, "target");
+    let _other_a = create_entity(execution, &runtime, "other-a");
+    let _other_b = create_entity(execution, &runtime, "other-b");
+    let _other_c = create_entity(execution, &runtime, "other-c");
     runtime.performance_access().reset_counters();
 
-    update_entity(&runtime, target, "fresh-value");
+    update_entity(execution, &runtime, target, "fresh-value");
     let counters = runtime.performance_access().counters();
 
     assert_eq!(

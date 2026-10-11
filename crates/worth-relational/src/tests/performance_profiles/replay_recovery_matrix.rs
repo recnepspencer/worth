@@ -12,8 +12,8 @@ fn perf_replay_recovery_matrix() {
         "durable_replay_lineage_basis",
         || {
             let runtime = persisted_runtime_with_test_schema();
-            create_entity_outcome(&runtime, "source");
-            let second = create_entity_outcome(&runtime, "target");
+            create_entity_outcome(execution, &runtime, "source");
+            let second = create_entity_outcome(execution, &runtime, "target");
             let replay_commit_id = second.commit.commit_id;
 
             runtime.performance_access().reset_counters();
@@ -76,12 +76,12 @@ fn perf_replay_recovery_matrix() {
     let checkpoint_recovery_samples =
         capture_perf_samples(suite, "checkpoint_recover_suffix_replay", || {
             let runtime = persisted_runtime_with_test_schema();
-            create_entity_outcome(&runtime, "source");
+            create_entity_outcome(execution, &runtime, "source");
             runtime
                 .durability_authority()
                 .checkpoint()
                 .expect("checkpoint");
-            let second = create_entity_outcome(&runtime, "target");
+            let second = create_entity_outcome(execution, &runtime, "target");
             let tail_commit_id = second.commit.commit_id;
 
             let recovery_plan = runtime.durability().recovery_plan(

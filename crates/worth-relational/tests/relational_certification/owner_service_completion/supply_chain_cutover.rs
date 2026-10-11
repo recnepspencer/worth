@@ -57,6 +57,7 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
     let candidate = services
         .preparation_port()
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -144,6 +145,7 @@ fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
         .expect("the Supply Chain maintenance delta remains in budget");
     let committed = transaction
         .commit(
+            execution,
             &world.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

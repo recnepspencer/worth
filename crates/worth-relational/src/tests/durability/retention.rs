@@ -10,16 +10,16 @@ fn retention_plan_reports_active_root_obligations_without_per_record_snapshot_pi
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let entity_created = create_entity_outcome(&runtime, "entity-pinned");
+    let entity_created = create_entity_outcome(execution, &runtime, "entity-pinned");
     let entity_created_snapshot = runtime.visibility_authority().snapshot();
     let entity = changed_entities(&entity_created)[0];
-    let _deleted_entity = delete_entity(&runtime, entity);
+    let _deleted_entity = delete_entity(execution, &runtime, entity);
     let deleted_entity_snapshot = runtime.visibility_authority().snapshot();
 
-    let relation_source = create_entity(&runtime, "relation-left");
-    let relation_target = create_entity(&runtime, "relation-right");
+    let relation_source = create_entity(execution, &runtime, "relation-left");
+    let relation_target = create_entity(execution, &runtime, "relation-right");
     let relation_created =
-        create_relation_outcome(&runtime, relation_source, relation_target, "r1");
+        create_relation_outcome(execution, &runtime, relation_source, relation_target, "r1");
     let relation_created_snapshot = runtime.visibility_authority().snapshot();
     let relation = changed_relations(&relation_created)[0];
     let _deleted_relation = {
@@ -34,6 +34,7 @@ fn retention_plan_reports_active_root_obligations_without_per_record_snapshot_pi
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -80,11 +81,14 @@ fn retention_plan_reports_active_root_obligations_without_per_record_snapshot_pi
 
 #[test]
 fn retention_plan_turns_deleted_records_reclaimable_after_snapshot_release() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "reclaimable");
+    let created = create_entity_outcome(execution, &runtime, "reclaimable");
     let created_snapshot = runtime.visibility_authority().snapshot();
     let entity = changed_entities(&created)[0];
-    let _deleted = delete_entity(&runtime, entity);
+    let _deleted = delete_entity(execution, &runtime, entity);
     let deleted_snapshot = runtime.visibility_authority().snapshot();
 
     assert!(runtime
@@ -111,11 +115,12 @@ fn lagging_sibling_root_survives_without_per_record_branch_pins() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let source = create_entity_outcome(&runtime, "source");
+    let source = create_entity_outcome(execution, &runtime, "source");
     let source_entity = changed_entities(&source)[0];
-    let target = create_entity_outcome(&runtime, "target");
+    let target = create_entity_outcome(execution, &runtime, "target");
     let target_entity = changed_entities(&target)[0];
-    let relation_created = create_relation_outcome(&runtime, source_entity, target_entity, "r1");
+    let relation_created =
+        create_relation_outcome(execution, &runtime, source_entity, target_entity, "r1");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -123,7 +128,7 @@ fn lagging_sibling_root_survives_without_per_record_branch_pins() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let deleted = delete_entity(&runtime, source_entity);
+    let deleted = delete_entity(execution, &runtime, source_entity);
 
     assert!(runtime
         .visibility_authority()
@@ -166,11 +171,12 @@ fn retention_inspection_keeps_legacy_branch_pin_counts_zero() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let source = create_entity_outcome(&runtime, "source");
+    let source = create_entity_outcome(execution, &runtime, "source");
     let source_entity = changed_entities(&source)[0];
-    let target = create_entity_outcome(&runtime, "target");
+    let target = create_entity_outcome(execution, &runtime, "target");
     let target_entity = changed_entities(&target)[0];
-    let relation_created = create_relation_outcome(&runtime, source_entity, target_entity, "r1");
+    let relation_created =
+        create_relation_outcome(execution, &runtime, source_entity, target_entity, "r1");
     let relation = changed_relations(&relation_created)[0];
     runtime
         .history_authority()
@@ -179,7 +185,7 @@ fn retention_inspection_keeps_legacy_branch_pin_counts_zero() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let deleted = delete_entity(&runtime, source_entity);
+    let deleted = delete_entity(execution, &runtime, source_entity);
 
     assert!(runtime
         .visibility_authority()
@@ -227,10 +233,13 @@ fn retention_inspection_keeps_legacy_branch_pin_counts_zero() {
 
 #[test]
 fn retention_plan_reports_explicit_replay_pins_until_released() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "replay-pinned");
+    let created = create_entity_outcome(execution, &runtime, "replay-pinned");
     let entity = changed_entities(&created)[0];
-    let deleted = delete_entity(&runtime, entity);
+    let deleted = delete_entity(execution, &runtime, entity);
 
     assert!(runtime
         .visibility_authority()
@@ -262,7 +271,7 @@ fn replay_retention_preserves_historical_live_entity_aspects_across_updates() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "replay-history");
+    let created = create_entity_outcome(execution, &runtime, "replay-history");
     let entity = changed_entities(&created)[0];
 
     assert!(runtime
@@ -273,7 +282,7 @@ fn replay_retention_preserves_historical_live_entity_aspects_across_updates() {
         .history_authority()
         .retain_version_for_replay(created.version_id));
 
-    let _updated = update_entity(&runtime, entity, "replay-history-updated");
+    let _updated = update_entity(execution, &runtime, entity, "replay-history-updated");
     let historical = runtime
         .read_truth()
         .read_version(execution, created.version_id);
@@ -291,10 +300,13 @@ fn replay_retention_preserves_historical_live_entity_aspects_across_updates() {
 
 #[test]
 fn retention_plan_reports_explicit_replay_pins_for_deleted_relations_until_released() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "replay-left");
-    let target = create_entity(&runtime, "replay-right");
-    let created = create_relation_outcome(&runtime, source, target, "replay-r1");
+    let source = create_entity(execution, &runtime, "replay-left");
+    let target = create_entity(execution, &runtime, "replay-right");
+    let created = create_relation_outcome(execution, &runtime, source, target, "replay-r1");
     let relation = changed_relations(&created)[0];
     let deleted = {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -308,6 +320,7 @@ fn retention_plan_reports_explicit_replay_pins_for_deleted_relations_until_relea
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

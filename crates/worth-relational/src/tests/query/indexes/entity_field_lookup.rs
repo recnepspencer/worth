@@ -7,8 +7,8 @@ fn derived_index_contract_entity_field_equals_executes_through_real_index_path_w
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
-    let beta = create_entity_outcome(&runtime, "beta");
+    let alpha = create_entity_outcome(execution, &runtime, "alpha");
+    let beta = create_entity_outcome(execution, &runtime, "beta");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.lookup".to_string(),
@@ -85,9 +85,9 @@ fn derived_index_contract_entity_field_any_of_executes_through_real_index_path_w
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
-    let beta = create_entity_outcome(&runtime, "beta");
-    let _gamma = create_entity_outcome(&runtime, "gamma");
+    let alpha = create_entity_outcome(execution, &runtime, "alpha");
+    let beta = create_entity_outcome(execution, &runtime, "beta");
+    let _gamma = create_entity_outcome(execution, &runtime, "gamma");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(10),
         name: "entity.name.any-of".to_string(),
@@ -173,7 +173,7 @@ fn derived_index_contract_matching_definition_without_generation_reports_missing
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let outcome = create_entity_outcome(&runtime, "alpha");
+    let outcome = create_entity_outcome(execution, &runtime, "alpha");
     let _index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.lookup".to_string(),
@@ -231,7 +231,7 @@ fn derived_index_contract_explicit_corrupt_generation_reports_corrupt_entries() 
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
+    let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.lookup".to_string(),

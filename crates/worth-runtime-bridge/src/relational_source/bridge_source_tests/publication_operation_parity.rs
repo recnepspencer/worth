@@ -22,6 +22,7 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let execution = &resource_request;
 
     let note = optional_note_contract();
     let summary = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
@@ -76,6 +77,7 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
         .expect("test staging stays within configured resource budgets");
     let created = create
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -111,6 +113,7 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
         .expect("test staging stays within configured resource budgets");
     let updated = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

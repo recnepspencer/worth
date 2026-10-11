@@ -28,8 +28,11 @@ fn transaction_inspection_never_projects_hypothetical_committed_truth() {
 
 #[test]
 fn transaction_inspection_savepoint_rollback_scrubs_abandoned_work_and_commit_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let existing = create_entity(&runtime, "existing");
+    let existing = create_entity(execution, &runtime, "existing");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -79,6 +82,7 @@ fn transaction_inspection_savepoint_rollback_scrubs_abandoned_work_and_commit_tr
 
     let committed = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -106,7 +110,7 @@ fn transaction_inspection_marks_lineage_affecting_intents_without_previewing_com
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "replace-target");
+    let entity = create_entity(execution, &runtime, "replace-target");
     let baseline_latest_commit = runtime
         .history()
         .latest_commit()
@@ -180,9 +184,12 @@ fn transaction_inspection_marks_lineage_affecting_intents_without_previewing_com
 
 #[test]
 fn staging_inspection_counts_a_revalidation_demand_apart_from_the_mutations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let rewritten = create_entity(&runtime, "rewritten");
-    let demanded = create_entity(&runtime, "demanded");
+    let rewritten = create_entity(execution, &runtime, "rewritten");
+    let demanded = create_entity(execution, &runtime, "demanded");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(

@@ -28,8 +28,11 @@ fn lease(memory: u64, work: u64) -> worth_execution::ExecutionResourceLease<'sta
 
 #[test]
 fn any_of_encoding_checks_work_and_memory_before_packet_clones() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity_in_partition(&runtime, "value", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "value", PartitionId(7));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
     let plan = runtime
@@ -89,8 +92,11 @@ fn any_of_encoding_checks_work_and_memory_before_packet_clones() {
 
 #[test]
 fn explicit_and_traversal_packet_copies_deny_before_allocation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity_in_partition(&runtime, "seed", PartitionId(7));
+    let entity = create_entity_in_partition(execution, &runtime, "seed", PartitionId(7));
     let snapshot = runtime.visibility_authority().snapshot();
     let explicit = planned_explicit_query(
         &runtime,
@@ -159,8 +165,11 @@ fn explicit_and_traversal_packet_copies_deny_before_allocation() {
 
 #[test]
 fn scoped_scan_does_not_charge_unrelated_partitions() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity_in_partition(&runtime, "target", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "target", PartitionId(7));
     let scoped_read = || {
         let snapshot = runtime.visibility_authority().snapshot();
         let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
@@ -198,7 +207,7 @@ fn scoped_scan_does_not_charge_unrelated_partitions() {
     };
     let before = scoped_read();
     for partition in 100..120 {
-        create_entity_in_partition(&runtime, "other", PartitionId(partition));
+        create_entity_in_partition(execution, &runtime, "other", PartitionId(partition));
     }
     let after = scoped_read();
     assert_eq!(

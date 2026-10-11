@@ -81,6 +81,7 @@ pub(super) fn relation_integrity_runtime() -> crate::runtime::RelationalRuntime 
 }
 
 pub(super) fn create_relation_of_kind(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     kind_id: KindId,
     source: crate::identity::data::EntityId,
@@ -104,6 +105,7 @@ pub(super) fn create_relation_of_kind(
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -119,6 +121,7 @@ pub(super) fn create_relation_of_kind(
 }
 
 pub(super) fn create_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     name: &str,
 ) -> crate::identity::data::EntityId {
@@ -137,6 +140,7 @@ pub(super) fn create_entity(
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

@@ -16,14 +16,18 @@ fn field_comparison_cannot_join_values_from_different_path_witnesses() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let principal = create_entity(&runtime, "witness-principal");
-    let left_a = create_entity(&runtime, "A");
-    let right_b = create_entity(&runtime, "B");
-    let left_b = create_entity(&runtime, "B");
-    let right_a = create_entity(&runtime, "A");
-    let scope = create_entity(&runtime, "witness-scope");
-    connect_branch(&runtime, principal, left_a, right_b, scope, "first");
-    connect_branch(&runtime, principal, left_b, right_a, scope, "second");
+    let principal = create_entity(execution, &runtime, "witness-principal");
+    let left_a = create_entity(execution, &runtime, "A");
+    let right_b = create_entity(execution, &runtime, "B");
+    let left_b = create_entity(execution, &runtime, "B");
+    let right_a = create_entity(execution, &runtime, "A");
+    let scope = create_entity(execution, &runtime, "witness-scope");
+    connect_branch(
+        execution, &runtime, principal, left_a, right_b, scope, "first",
+    );
+    connect_branch(
+        execution, &runtime, principal, left_b, right_a, scope, "second",
+    );
 
     let evidence = observe_same_witness_names(execution, &runtime, principal, scope);
     assert!(
@@ -31,9 +35,10 @@ fn field_comparison_cannot_join_values_from_different_path_witnesses() {
         "cross-branch A/A and B/B values must not form a synthetic witness"
     );
 
-    let matching_left = create_entity(&runtime, "same");
-    let matching_right = create_entity(&runtime, "same");
+    let matching_left = create_entity(execution, &runtime, "same");
+    let matching_right = create_entity(execution, &runtime, "same");
     connect_branch(
+        execution,
         &runtime,
         principal,
         matching_left,
@@ -81,6 +86,7 @@ fn observe_same_witness_names(
 }
 
 fn connect_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     principal: crate::identity::data::EntityId,
     left: crate::identity::data::EntityId,
@@ -88,7 +94,25 @@ fn connect_branch(
     scope: crate::identity::data::EntityId,
     label: &str,
 ) {
-    create_relation(runtime, principal, left, &format!("{label}-principal-left"));
-    create_relation(runtime, left, right, &format!("{label}-left-right"));
-    create_relation(runtime, right, scope, &format!("{label}-right-scope"));
+    create_relation(
+        execution,
+        runtime,
+        principal,
+        left,
+        &format!("{label}-principal-left"),
+    );
+    create_relation(
+        execution,
+        runtime,
+        left,
+        right,
+        &format!("{label}-left-right"),
+    );
+    create_relation(
+        execution,
+        runtime,
+        right,
+        scope,
+        &format!("{label}-right-scope"),
+    );
 }

@@ -101,12 +101,15 @@ fn basis_port_matches_every_direct_basis_operation_on_separate_worlds() {
 
 #[test]
 fn direct_and_service_routes_have_equivalent_semantics_on_separate_worlds() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut direct = empty_runtime();
     let ported = empty_runtime();
     let services = ported.owner_component_services();
 
-    let direct_commit = commit_direct(&direct, "equivalent-movement");
-    let port_commit = commit_through_services(&ported, &services, "equivalent-movement");
+    let direct_commit = commit_direct(execution, &direct, "equivalent-movement");
+    let port_commit = commit_through_services(execution, &ported, &services, "equivalent-movement");
     assert_eq!(direct_commit.commit.branch_id, port_commit.commit.branch_id);
     assert_eq!(
         direct_commit.commit.version_id,
@@ -195,9 +198,12 @@ fn direct_and_service_routes_have_equivalent_semantics_on_separate_worlds() {
 
 #[test]
 fn movement_through_either_route_is_immediately_visible_through_the_other() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = empty_runtime();
     let services = runtime.owner_component_services();
-    commit_through_services(&runtime, &services, "shared-state-visibility");
+    commit_through_services(execution, &runtime, &services, "shared-state-visibility");
     let port_archived = fork_through_services(&services, "port-archived")
         .target_identity()
         .clone();

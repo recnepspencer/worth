@@ -20,6 +20,7 @@ fn perf_query_packet_matrix() {
                         _ => PartitionId(7),
                     };
                     RecordRef::Entity(create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("target-{index}"),
                         partition_id,
@@ -101,8 +102,12 @@ fn perf_query_packet_matrix() {
                     2 => PartitionId(5),
                     _ => PartitionId(7),
                 };
-                let _ =
-                    create_entity_in_partition(&runtime, &format!("scan-{index}"), partition_id);
+                let _ = create_entity_in_partition(
+                    execution,
+                    &runtime,
+                    &format!("scan-{index}"),
+                    partition_id,
+                );
             }
             let snapshot = runtime.visibility_authority().snapshot();
             let context = runtime
@@ -201,6 +206,7 @@ fn perf_query_packet_matrix() {
             let seeds = (0..12)
                 .map(|index| {
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("seed-{index}"),
                         PartitionId(10 + index as u32),
@@ -210,6 +216,7 @@ fn perf_query_packet_matrix() {
             let neighbors = (0..12)
                 .map(|index| {
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("neighbor-{index}"),
                         PartitionId(40 + index as u32),
@@ -218,6 +225,7 @@ fn perf_query_packet_matrix() {
                 .collect::<Vec<_>>();
             for (index, (seed, neighbor)) in seeds.iter().zip(neighbors.iter()).enumerate() {
                 let _ = create_relation_in_partition(
+                    execution,
                     &runtime,
                     *seed,
                     *neighbor,

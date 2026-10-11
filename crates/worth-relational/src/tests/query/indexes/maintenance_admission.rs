@@ -2,13 +2,15 @@ use super::*;
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::indexes::data::{DerivedIndexMaintenanceAdmissionStop, DerivedIndexMaintenanceBudget};
 
-fn fixture() -> (
+fn fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (
     RelationalRuntime,
     AdmittedRelationalBranchBasis,
     DerivedIndexBuildRequest,
 ) {
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "selected-field");
+    let first = create_entity_outcome(execution, &runtime, "selected-field");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "admitted.selected-field".into(),
@@ -42,7 +44,7 @@ fn selected_field_cold_admission_matches_native_build_and_warm_reuse_is_not_cold
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let (runtime, basis, request) = fixture();
+    let (runtime, basis, request) = fixture(execution);
     let mut work = 0;
     let mut bytes = 0;
     let refreshed = runtime
@@ -99,7 +101,7 @@ fn selected_field_refusals_preserve_original_stop_and_publish_no_partial_generat
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let (measure_runtime, measure_basis, measure_request) = fixture();
+    let (measure_runtime, measure_basis, measure_request) = fixture(execution);
     let (mut total_work, mut total_bytes, mut calls) = (0, 0, 0);
     measure_runtime
         .index_authority()
@@ -122,7 +124,7 @@ fn selected_field_refusals_preserve_original_stop_and_publish_no_partial_generat
         (u64::MAX, total_bytes - 1, usize::MAX, OriginalStop::Bytes),
         (u64::MAX, u64::MAX, calls, OriginalStop::Cancelled),
     ] {
-        let (runtime, basis, request) = fixture();
+        let (runtime, basis, request) = fixture(execution);
         let before = runtime.current_version_id();
         let (mut work_used, mut bytes_used, mut call) = (0, 0, 0);
         let denied = runtime

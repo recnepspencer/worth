@@ -9,8 +9,11 @@ use crate::tests::support::*;
 
 #[test]
 fn latest_available_checkpoint_reflects_head_continuation_state_for_subscriber_contract() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
     let contract = SubscriberContractDeclaration {
         contract_id: "subscriber.contract.geometry.v3".to_string(),
         accepted_upgrade_classes: SubscriberContinuationClassSet::new([
@@ -49,6 +52,7 @@ fn latest_available_checkpoint_reflects_head_continuation_state_for_subscriber_c
         .expect("test staging stays within configured resource budgets");
     visible_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -76,6 +80,7 @@ fn latest_available_checkpoint_reflects_head_continuation_state_for_subscriber_c
         .expect("test staging stays within configured resource budgets");
     upgrade_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

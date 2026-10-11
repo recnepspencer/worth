@@ -102,8 +102,11 @@ impl RelationalPublicationCompanion for FirstWriteCompanion {
 
 #[test]
 fn first_write_companion_mints_from_selected_source_without_runtime_reentry() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let baseline = create_entity_outcome(&runtime, "first-write-baseline");
+    let baseline = create_entity_outcome(execution, &runtime, "first-write-baseline");
     let baseline_position = baseline.patch_position();
     release_test_commit_snapshot(&runtime, &baseline);
 
@@ -125,7 +128,7 @@ fn first_write_companion_mints_from_selected_source_without_runtime_reentry() {
             },
         )
         .expect("participant is active without a caller-selected branch cell");
-    let written = create_entity_outcome(&runtime, "first-write-after-subscription");
+    let written = create_entity_outcome(execution, &runtime, "first-write-after-subscription");
     assert_eq!(
         *participant.selected_position.lock().unwrap(),
         Some(Some(baseline_position))
@@ -144,8 +147,11 @@ fn first_write_companion_mints_from_selected_source_without_runtime_reentry() {
 
 #[test]
 fn direct_publication_invokes_required_companion_and_positions_its_root() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "companion-anchor");
+    create_entity(execution, &runtime, "companion-anchor");
     let selected_handle = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let selected = runtime
         .read_truth()
@@ -188,6 +194,7 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
         .expect("candidate stages");
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -219,7 +226,8 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
     release_test_commit_snapshot(&runtime, &committed);
 
     for ordinal in 0..3 {
-        let later = create_entity_outcome(&runtime, &format!("unrelated-later-{ordinal}"));
+        let later =
+            create_entity_outcome(execution, &runtime, &format!("unrelated-later-{ordinal}"));
         release_test_commit_snapshot(&runtime, &later);
     }
     assert_eq!(calls.load(Ordering::Relaxed), 4);
@@ -242,6 +250,7 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
         .expect("later candidate stages");
     let later = runtime
         .prepare_branch_transaction(
+            execution,
             later,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -257,8 +266,11 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
 
 #[test]
 fn prepared_derived_image_keeps_conflict_and_retired_drop_custody() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "derived-image-anchor");
+    create_entity(execution, &runtime, "derived-image-anchor");
     let selected_handle = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let pending = runtime
         .publication_companion_port()

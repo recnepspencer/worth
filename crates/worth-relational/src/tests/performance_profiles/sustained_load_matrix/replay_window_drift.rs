@@ -13,7 +13,8 @@ pub(super) fn certify_replay_window_drift_stability(
             const REPLAY_WINDOW: usize = 32;
             let mut commit_ids = Vec::with_capacity(HISTORY_DEPTH);
             for index in 0..HISTORY_DEPTH {
-                let outcome = create_entity_outcome(&runtime, &format!("replay-window-{index}"));
+                let outcome =
+                    create_entity_outcome(execution, &runtime, &format!("replay-window-{index}"));
                 commit_ids.push(outcome.commit.commit_id);
             }
 

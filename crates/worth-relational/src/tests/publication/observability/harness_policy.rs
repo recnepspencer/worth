@@ -2,13 +2,16 @@ use super::fixtures::*;
 
 #[test]
 fn harness_heavy_invariants_are_opt_in() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::harness_audit_only(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
     });
-    let _ = create_entity(&runtime, "duplicate");
-    let _ = create_entity(&runtime, "duplicate");
+    let _ = create_entity(execution, &runtime, "duplicate");
+    let _ = create_entity(execution, &runtime, "duplicate");
 
     let default_results = runtime
         .validation()

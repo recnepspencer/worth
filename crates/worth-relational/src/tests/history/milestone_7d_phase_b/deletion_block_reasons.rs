@@ -15,9 +15,9 @@ fn lowered_plan_preserves_source_deleted_target_live_block_reason() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     assert_blocked_deletion_lowering(
         execution,
@@ -35,10 +35,16 @@ fn lowered_plan_preserves_source_live_target_deleted_block_reason() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity_on_branch(&runtime, entity, "shared", BranchId("feature".to_string()));
-    delete_entity(&runtime, entity);
+    update_entity_on_branch(
+        execution,
+        &runtime,
+        entity,
+        "shared",
+        BranchId("feature".to_string()),
+    );
+    delete_entity(execution, &runtime, entity);
 
     assert_blocked_deletion_lowering(
         execution,
@@ -56,10 +62,10 @@ fn lowered_plan_preserves_deleted_vs_modified_block_reason() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, entity, "main-modified");
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    update_entity(execution, &runtime, entity, "main-modified");
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     assert_blocked_deletion_lowering(
         execution,

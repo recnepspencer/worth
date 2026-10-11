@@ -22,6 +22,7 @@ pub(crate) fn observe_branch_snapshot(
 }
 
 pub(crate) fn commit_branch_batch_result(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: BranchId,
     batch: WorkerIntentBatch,
@@ -46,6 +47,7 @@ pub(crate) fn commit_branch_batch_result(
         .unwrap();
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

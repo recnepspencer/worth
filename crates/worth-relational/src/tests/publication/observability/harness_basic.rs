@@ -138,7 +138,7 @@ fn runtime_packet_execution_and_storage_stats_are_readable() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "first");
+    let entity = create_entity(execution, &runtime, "first");
     let snapshot = runtime.visibility_authority().snapshot();
     let result = execute_explicit_query(
         execution,

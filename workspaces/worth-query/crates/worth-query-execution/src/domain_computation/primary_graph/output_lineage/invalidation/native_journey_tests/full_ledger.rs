@@ -96,7 +96,7 @@ let selected = world.selected_product(
             let mut deliver = |runtime: &mut RelationalRuntime| {
                 flip = !flip;
                 write_field(
-                    runtime,
+                    execution, runtime,
                     entity,
                     label.clone(),
                     if flip { "aa" } else { "bb" },
@@ -134,7 +134,7 @@ let selected = world.selected_product(
             // A legal writer is never refused, though its delivery marks every
             // row and its install replaces the root that holds them; nor are the
             // writes after it, which move the window.
-            write_field(runtime, entity, status.clone(), "closed");
+            write_field(execution, runtime, entity, status.clone(), "closed");
             let (discard_handle, discarded_at) = snapshot(runtime);
             for identity in &rows {
                 assert!(

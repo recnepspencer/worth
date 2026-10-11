@@ -41,20 +41,25 @@ pub(super) struct ResolvedRace {
 
 /// Admit and execute one ready attempt, move the product head out from under
 /// it with a second owner-issued publication, then send it into `publish`.
-pub(super) fn resolve_one_race(late: CompositeLateCancellationPosture) -> ResolvedRace {
-    race_from(setup(), late)
+pub(super) fn resolve_one_race(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    late: CompositeLateCancellationPosture,
+) -> ResolvedRace {
+    race_from(execution, setup(), late)
 }
 
 /// The same race, run against an owner that has already completed one ordinary
 /// publication. The completed attempt released its exact component custody, so
 /// the registry carries a zero-count entry no live holder still names.
 pub(super) fn resolve_one_race_after_a_completed_publication(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     late: CompositeLateCancellationPosture,
 ) -> ResolvedRace {
-    race_from(setup_with_relational_source(), late)
+    race_from(execution, setup_with_relational_source(execution), late)
 }
 
 fn race_from(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     base: (
         RealReferenceFixture,
         Arc<TestOwner>,
@@ -66,7 +71,13 @@ fn race_from(
     let cell = owner.state.branches.root_cell().expect("bootstrapped cell");
     let loser = ready_from_prepared(
         owner.as_ref(),
-        prepare_relational(&fixture, owner.as_ref(), expected.clone(), "cas-loser"),
+        prepare_relational(
+            execution,
+            &fixture,
+            owner.as_ref(),
+            expected.clone(),
+            "cas-loser",
+        ),
         "the losing attempt settles its owner work before the race",
     );
 
@@ -144,7 +155,10 @@ fn publish_competing_head(
 /// its own by `a_losing_cas_attempt_does_not_consume_its_reserved_history_slot`.
 #[test]
 fn a_losing_cas_attempt_takes_no_product_head_authority_and_advances_no_generation() {
-    let race = resolve_one_race(CompositeLateCancellationPosture::NotRequested);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
     let cell = race
         .owner
         .state
@@ -190,7 +204,10 @@ fn a_losing_cas_attempt_takes_no_product_head_authority_and_advances_no_generati
 /// exact winner it observed, and derives its next actions from that progress.
 #[test]
 fn lost_product_cas_retains_the_settled_owner_occurrence_and_observed_winner() {
-    let race = resolve_one_race(CompositeLateCancellationPosture::NotRequested);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
 
     assert_eq!(
         race.retained.cause(),
@@ -226,7 +243,13 @@ fn lost_product_cas_retains_the_settled_owner_occurrence_and_observed_winner() {
 /// have its loss reclassified as cancellation.
 #[test]
 fn cancelled_ready_loses_to_winner_and_retains_publication_loss() {
-    let race = resolve_one_race(CompositeLateCancellationPosture::RequestedBeforeProductMovement);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let race = resolve_one_race(
+        execution,
+        CompositeLateCancellationPosture::RequestedBeforeProductMovement,
+    );
 
     assert_eq!(
         race.retained.cause(),
@@ -249,7 +272,10 @@ fn cancelled_ready_loses_to_winner_and_retains_publication_loss() {
 /// the successor occurrence stays reachable and the pin pair stays held.
 #[test]
 fn complete_ready_publish_path_retains_commit_results_and_custody_on_observed_product_loss() {
-    let race = resolve_one_race(CompositeLateCancellationPosture::NotRequested);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
 
     assert_eq!(
         race.retained.retention_posture(),
@@ -284,7 +310,10 @@ fn complete_ready_publish_path_retains_commit_results_and_custody_on_observed_pr
 /// successor basis is the evidence a fresh attempt names it by.
 #[test]
 fn a_losing_cas_attempt_does_not_consume_its_reserved_history_slot() {
-    let race = resolve_one_race(CompositeLateCancellationPosture::NotRequested);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
 
     assert_eq!(
         race.owner.state.history.len(),
@@ -314,67 +343,5 @@ fn a_losing_cas_attempt_does_not_consume_its_reserved_history_slot() {
 }
 
 #[cfg(feature = "test-durability-faults")]
-#[test]
-fn settled_owner_recovery_adopts_without_replaying_relational_work() {
-    use crate::lifecycle::ports::{RuntimeWorldOwnerExecutionService, RuntimeWorldRecoveryService};
-    let (fixture, owner, expected) = setup_with_retention_capacity(16, 16);
-    let serial_request = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
-        worth_execution::CancellationToken::new(),
-        None,
-    );
-    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
-    fixture.fail_next_relational_durable_append();
-    let cancellation = RuntimeWorldCancellationSource::new();
-    let prepared = prepare_relational(
-        &fixture,
-        owner.as_ref(),
-        expected.clone(),
-        "settled-adoption",
-    );
-    let retained = match RuntimeWorldOwnerExecutionService::execute_without_signal(
-        owner.as_ref(),
-        execution,
-        prepared,
-        &cancellation.token(),
-    ) {
-        OwnerExecutionOutcome::ProductUnpublished(retained) => retained,
-        other => panic!("the injected settlement failure must retain: {other:?}"),
-    };
-    let handle = retained.recovery_handle();
-    RuntimeWorldRecoveryService::continue_effects(owner.as_ref(), retained)
-        .expect("the exact Relational owner result settles");
-    let settled = RuntimeWorldRecoveryService::inspect_effects(owner.as_ref(), &handle)
-        .expect("the settled record remains in World custody");
-    let prepared = RuntimeWorldRecoveryService::prepare_settled_relational_adoption(
-        owner.as_ref(),
-        &settled,
-        &cancellation.token(),
-        None,
-    )
-    .expect("World admits the settled owner result against its original product head");
-    drop(settled);
-    let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal(
-        owner.as_ref(),
-        execution,
-        prepared,
-        &cancellation.token(),
-    );
-    let performed = match owner.finish_publication(outcome, &cancellation.token()) {
-        RuntimeWorldPublicationOutcome::Performed(performed) => performed,
-        other => panic!("the settled owner result must publish without replay: {other:?}"),
-    };
-    assert_eq!(performed.old_product_head(), expected.snapshot());
-    assert_eq!(
-        performed.cost_counters().relational_owner_contacts(),
-        0,
-        "adoption cannot contact or replay the Relational owner"
-    );
-    assert!(performed
-        .component_results()
-        .relational_commit_result()
-        .is_some());
-    drop(performed);
-    RuntimeWorldRecoveryService::release_effects(owner.as_ref(), &handle, 0)
-        .expect("the superseded recovery record releases after product movement");
-}
+#[path = "product_cas_loss/retained_recovery.rs"]
+mod retained_recovery;

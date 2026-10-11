@@ -102,7 +102,13 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             "source-only test registration cannot manufacture full output evidence"
         );
         drop(old);
-        write_field(runtime, entity, label.clone(), "changed-for-full-oracle");
+        write_field(
+            request_execution,
+            runtime,
+            entity,
+            label.clone(),
+            "changed-for-full-oracle",
+        );
         let (changed_handle, changed_basis) = snapshot(runtime);
         let captured = owner
             .capture_full_verification(

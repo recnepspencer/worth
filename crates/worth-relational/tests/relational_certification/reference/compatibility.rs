@@ -107,6 +107,7 @@ fn publication_cannot_mint_a_missing_branch_cell() {
         .unwrap();
     transaction
         .commit(
+            execution,
             &world.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

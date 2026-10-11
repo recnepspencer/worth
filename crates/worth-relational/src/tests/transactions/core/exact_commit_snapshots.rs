@@ -8,10 +8,10 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "before");
+    let created = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
     let created_commit = created.commit.clone();
-    let updated = update_entity(&runtime, entity, "after");
+    let updated = update_entity(execution, &runtime, entity, "after");
     let updated_commit = updated.commit.clone();
     let runtime_instance_id = runtime.runtime_instance_id();
 
@@ -38,7 +38,7 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
         .expect("entity existed at creation commit");
     assert_eq!(read_entity_name(&created_record), Some("before".to_owned()));
 
-    let deleted = delete_entity(&runtime, entity);
+    let deleted = delete_entity(execution, &runtime, entity);
     let updated_observation = runtime
         .snapshots()
         .retained_snapshot_for_commit(runtime_instance_id, &updated_commit)
@@ -65,8 +65,11 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
 
 #[test]
 fn exact_commit_snapshot_rejects_foreign_runtime_branch_and_commit_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "owned");
+    let created = create_entity_outcome(execution, &runtime, "owned");
     let runtime_instance_id = runtime.runtime_instance_id();
 
     let foreign_runtime = runtime_with_test_schema();
@@ -120,7 +123,7 @@ fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
             candidate_max_lifetime_millis: 30_000,
         })
         .build();
-    let first = create_entity_outcome(&runtime, "first");
+    let first = create_entity_outcome(execution, &runtime, "first");
     let version_before = runtime.current_version_id();
     let basis = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
     let mut transaction = runtime
@@ -136,7 +139,7 @@ fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
         )
         .unwrap();
     assert!(matches!(
-        transaction.commit(&runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,),
+        transaction.commit(execution, &runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,),
         Err(crate::facade::transactions::TransactionCommitError::PublicationDeferred {
             deferred:
                 crate::facade::mvcc::RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted {
@@ -155,7 +158,7 @@ fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
         .snapshots()
         .release_snapshot(&first.snapshot)
         .unwrap();
-    create_entity(&runtime, "second");
+    create_entity(execution, &runtime, "second");
     let runtime_instance_id = runtime.runtime_instance_id();
 
     runtime.performance_access().reset_counters();

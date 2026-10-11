@@ -30,7 +30,7 @@ fn checkpoint_restore_preserves_exact_field_revision() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "same");
+    let created = create_entity_outcome(execution, &runtime, "same");
     let entity = changed_entities(&created)[0];
     let name = locator("name", "name");
     let before = runtime
@@ -100,9 +100,10 @@ fn checkpoint_restore_preserves_relation_field_revision() {
         .build_runtime()
     };
     let runtime = fixture();
-    let source = create_entity_outcome(&runtime, "source");
-    let target = create_entity_outcome(&runtime, "target");
+    let source = create_entity_outcome(execution, &runtime, "source");
+    let target = create_entity_outcome(execution, &runtime, "target");
     let created = create_relation_outcome(
+        execution,
         &runtime,
         changed_entities(&source)[0],
         changed_entities(&target)[0],
@@ -177,6 +178,7 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
         .unwrap();
     let created = create
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -206,6 +208,7 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
     .unwrap();
     let present = set
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -239,6 +242,7 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
         .unwrap();
     let absent_again = clear
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -288,7 +292,7 @@ fn checkpoint_restore_rejects_incomplete_field_revision_column() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "same");
+    let created = create_entity_outcome(execution, &runtime, "same");
     runtime.durability_authority().checkpoint().unwrap();
     let mut recovery = runtime
         .durability()

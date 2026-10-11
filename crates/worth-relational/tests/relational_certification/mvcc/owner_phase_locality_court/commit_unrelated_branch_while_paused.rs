@@ -14,6 +14,7 @@ use super::*;
 /// becoming a locality claim nothing observes. Scope teardown joins, so every
 /// failing exit opens the park before it returns.
 pub(crate) fn commit_unrelated_branch_while_paused(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &ProductionSeededSupplyChainWorld,
     court: &OwnerPhaseCourtBranches,
     before: &PausedCourtObservation,
@@ -26,7 +27,7 @@ pub(crate) fn commit_unrelated_branch_while_paused(
     std::thread::scope(|scope| {
         let runtime = &world.runtime;
         let committer = scope.spawn(move || {
-            let committed = commit_branch_batch_with_result(runtime, branch, batch);
+            let committed = commit_branch_batch_with_result(execution, runtime, branch, batch);
             finished
                 .send(())
                 .expect("the locality court still owns the completion receiver");

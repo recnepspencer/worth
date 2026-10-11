@@ -10,7 +10,8 @@ pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(
         || {
             let relational =
                 runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-            let entities = seed_downstream_region_world(&relational, "downstream-mixed", 20, 5);
+            let entities =
+                seed_downstream_region_world(execution, &relational, "downstream-mixed", 20, 5);
             let updated = entities[9];
             let query_targets = [
                 "downstream-mixed-node-2",
@@ -22,7 +23,7 @@ pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(
             let mut downstream_runtime = build_mock_downstream_runtime(false, entities.len());
 
             let relational_commit_started_at = Instant::now();
-            let update = update_entity(&relational, updated, "downstream-mixed-updated");
+            let update = update_entity(execution, &relational, updated, "downstream-mixed-updated");
             let relational_commit_micros = relational_commit_started_at.elapsed().as_micros();
 
             let snapshot = relational.visibility_authority().snapshot();

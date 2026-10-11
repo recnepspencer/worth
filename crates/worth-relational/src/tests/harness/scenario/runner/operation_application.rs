@@ -31,8 +31,9 @@ pub(super) fn apply_operation(
         ScenarioOperation::CreateEntity { partition, .. } => {
             let name = format!("seed-{seed}-create-{step}-{name_counter}");
             *name_counter += 1;
-            let entity =
-                crate::tests::support::create_entity_in_partition(runtime, &name, *partition);
+            let entity = crate::tests::support::create_entity_in_partition(
+                execution, runtime, &name, *partition,
+            );
             entities.push(entity);
         }
         ScenarioOperation::UpdateEntity {
@@ -48,7 +49,7 @@ pub(super) fn apply_operation(
             let name = format!("seed-{seed}-update-{step}-{name_counter}");
             *name_counter += 1;
             if let Ok(outcome) =
-                try_update_entity_on_branch(runtime, entities[index], &name, branch)
+                try_update_entity_on_branch(execution, runtime, entities[index], &name, branch)
             {
                 release_test_commit_snapshot(runtime, &outcome);
             }
@@ -80,6 +81,7 @@ pub(super) fn apply_operation(
             ..
         } => {
             create_live_relation(
+                execution,
                 runtime,
                 entities,
                 relations,
@@ -190,6 +192,7 @@ fn replace_entity_through_authoritative_patch(
     )
     .expect("test staging stays within configured resource budgets");
     if let Ok(outcome) = txn.commit(
+        execution,
         runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     ) {
@@ -202,6 +205,7 @@ fn replace_entity_through_authoritative_patch(
 }
 
 fn create_live_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entities: &[EntityId],
     relations: &mut Vec<ActiveRelation>,
@@ -231,7 +235,8 @@ fn create_live_relation(
     }
     let client_key = format!("seed-{seed}-rel-{step}-{name_counter}");
     *name_counter += 1;
-    let relation = create_relation_in_partition(runtime, source, target, &client_key, partition);
+    let relation =
+        create_relation_in_partition(execution, runtime, source, target, &client_key, partition);
     relations.push(ActiveRelation {
         relation_id: relation,
         source,
@@ -280,6 +285,7 @@ fn delete_relation(
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -312,6 +318,7 @@ fn delete_entity(
     )
     .expect("test staging stays within configured resource budgets");
     if let Ok(outcome) = txn.commit(
+        execution,
         runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     ) {
@@ -367,6 +374,7 @@ fn merge_branch_into_main(
             vec![branch],
         );
         if let Ok(outcome) = txn.commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         ) {

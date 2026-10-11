@@ -22,9 +22,14 @@ fn prepared_merge_promoted_to_deleted_on_both_sides(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
 ) -> crate::facade::merge::PreparedMergeExecution {
-    create_entity(&*runtime, "root");
+    create_entity(execution, &*runtime, "root");
     create_branch_from_main(runtime, "feature");
-    create_entity_outcome_on_branch(runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let mut prepared = runtime
         .prepare_merge_execution(
@@ -238,10 +243,10 @@ fn real_feature_branch_delete_after_main_delete_is_authorable_and_classifies_as_
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    delete_entity(&runtime, entity);
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    delete_entity(execution, &runtime, entity);
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let artifact = runtime
         .merge()
@@ -278,9 +283,12 @@ fn real_feature_branch_delete_after_main_delete_is_authorable_and_classifies_as_
 
 #[test]
 fn branch_local_delete_allowance_does_not_make_same_branch_stale_delete_legal() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
-    delete_entity(&runtime, entity);
+    let entity = create_entity(execution, &runtime, "shared");
+    delete_entity(execution, &runtime, entity);
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
         WorkerIntentBatch::new("stale-delete").push(MutationIntent::Entity(
@@ -291,6 +299,7 @@ fn branch_local_delete_allowance_does_not_make_same_branch_stale_delete_legal() 
     .expect("test staging stays within configured resource budgets");
 
     match txn.commit(
+        execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     ) {

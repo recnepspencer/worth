@@ -173,7 +173,7 @@ fn assert_overlapping_field_reads(
             .unwrap(),
         )
         .build();
-    let created = commit_entity_with_summary(&runtime, "subject", "before", "open")
+    let created = commit_entity_with_summary(execution, &runtime, "subject", "before", "open")
         .expect("subject publication");
     let entity = created
         .changed_records
@@ -206,6 +206,7 @@ fn assert_overlapping_field_reads(
         .expect("stage summary change");
     transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -216,6 +217,9 @@ fn assert_overlapping_field_reads(
 
 #[test]
 fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let target = Arc::new(OnceLock::new());
     let schema = AspectSchemaFixture {
         entity_aspects: vec![
@@ -246,7 +250,8 @@ fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
             .unwrap(),
         )
         .build();
-    let created = commit_entity_with_summary(&runtime, "subject", "before", "open").unwrap();
+    let created =
+        commit_entity_with_summary(execution, &runtime, "subject", "before", "open").unwrap();
     let entity = created
         .changed_records
         .iter()

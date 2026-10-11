@@ -7,7 +7,7 @@ fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_la
 
     let root_path = unique_test_store_path("worth-relational-strategy-replay-missing-executor");
     let mut runtime = persisted_intent_runtime(root_path.clone(), true);
-    let entity = crate::tests::support::create_entity(&runtime, "before");
+    let entity = crate::tests::support::create_entity(execution, &runtime, "before");
     let commit = execute_persisted_intent_strategy_commit(execution, &mut runtime, entity);
     let branch_head_before = runtime.history().branch_head(&BranchId("main".to_string()));
     let mut recovery_plan = runtime.durability().recovery_plan(
@@ -58,7 +58,7 @@ fn replay_commit_reports_strategy_execution_failure_when_recovered_executor_reje
 
     let root_path = unique_test_store_path("worth-relational-strategy-replay-failing-executor");
     let mut runtime = persisted_intent_runtime(root_path.clone(), true);
-    let entity = crate::tests::support::create_entity(&runtime, "before");
+    let entity = crate::tests::support::create_entity(execution, &runtime, "before");
     let commit = execute_persisted_intent_strategy_commit(execution, &mut runtime, entity);
     let mut recovery_plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::AuditRecoveryVerification,

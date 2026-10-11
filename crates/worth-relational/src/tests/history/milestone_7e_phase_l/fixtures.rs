@@ -76,10 +76,10 @@ pub(super) fn prepared_merge(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
 ) -> PreparedMergeExecution {
-    let shared = create_entity(runtime, "shared");
+    let shared = create_entity(execution, runtime, "shared");
     create_branch_from_main(runtime, "feature");
-    update_entity_status_on_branch(runtime, shared, "inactive", "main");
-    update_entity_status_on_branch(runtime, shared, "active", "feature");
+    update_entity_status_on_branch(execution, runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, runtime, shared, "active", "feature");
     runtime
         .merge()
         .prepare_merge_execution(execution, merge_request())
@@ -87,6 +87,7 @@ pub(super) fn prepared_merge(
 }
 
 fn update_entity_status_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     status: &str,
@@ -124,6 +125,7 @@ fn update_entity_status_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

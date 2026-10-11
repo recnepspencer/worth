@@ -16,6 +16,7 @@ use effect::{
 use preparation::prepare_replay_context;
 
 pub(super) fn replay_readmitted_envelope(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     readmitted: crate::durability::migration::ReadmittedCanonicalCommit,
     available_commit_ids: &BTreeSet<crate::history::data::CommitId>,
@@ -35,6 +36,7 @@ pub(super) fn replay_readmitted_envelope(
     )?;
     if requires_completion {
         return replay_incomplete_envelope(
+            execution,
             restored,
             readmitted,
             commit_id,
@@ -67,7 +69,7 @@ pub(super) fn replay_readmitted_envelope(
             .stage_replay_allocations_with_leading_gaps(envelope.record_allocations().to_vec())
             .map_err(|detail| DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail))?;
     }
-    let replay_result = replay_envelope_effect(restored, &positioned);
+    let replay_result = replay_envelope_effect(execution, restored, &positioned);
     let staged_was_not_consumed = restored.record_identity.clear_staged_replay_allocations();
     replay_result?;
     if staged_was_not_consumed && replays_mutation_pipeline {
@@ -90,6 +92,7 @@ pub(super) fn replay_readmitted_envelope(
 }
 
 fn replay_incomplete_envelope(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     readmitted: crate::durability::migration::ReadmittedCanonicalCommit,
     commit_id: crate::history::data::CommitId,
@@ -100,7 +103,7 @@ fn replay_incomplete_envelope(
     let envelope = readmitted.envelope();
     let positioned =
         if envelope.authority_kind() == CanonicalCommitAuthorityKind::BranchReferenceMovement {
-            complete_incomplete_metadata_commit(restored, readmitted)?
+            complete_incomplete_metadata_commit(execution, restored, readmitted)?
         } else {
             if !envelope.record_allocations().is_empty() {
                 return Err(DurabilityError::new(
@@ -109,9 +112,9 @@ fn replay_incomplete_envelope(
                 ));
             }
             if envelope.merge_parent_branches.is_empty() {
-                replay_ordinary_commit(restored, envelope, readmitted.position())?;
+                replay_ordinary_commit(execution, restored, envelope, readmitted.position())?;
             } else {
-                replay_merge_commit(restored, envelope, readmitted.position())?;
+                replay_merge_commit(execution, restored, envelope, readmitted.position())?;
             }
             let replayed = restored
                 .history

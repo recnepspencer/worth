@@ -3,9 +3,12 @@ use crate::tests::support::*;
 
 #[test]
 fn bulk_mutation_plan_normalizes_client_keys_and_tracks_locality() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity_in_partition(&runtime, "target", PartitionId(7));
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity_in_partition(execution, &runtime, "target", PartitionId(7));
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -89,10 +92,13 @@ fn bulk_mutation_plan_normalizes_client_keys_and_tracks_locality() {
 
 #[test]
 fn bulk_mutation_plan_captures_lineage_and_provenance_for_topology_rewrite() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let original = create_entity(&runtime, "original");
-    let peer = create_entity(&runtime, "peer");
-    let relation = create_relation(&runtime, original, peer, "original-edge");
+    let original = create_entity(execution, &runtime, "original");
+    let peer = create_entity(execution, &runtime, "peer");
+    let relation = create_relation(execution, &runtime, original, peer, "original-edge");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -169,9 +175,12 @@ fn bulk_mutation_plan_is_absent_for_empty_staging() {
 
 #[test]
 fn bulk_mutation_commit_records_admission_counters() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity_in_partition(&runtime, "target", PartitionId(4));
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity_in_partition(execution, &runtime, "target", PartitionId(4));
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -192,6 +201,7 @@ fn bulk_mutation_commit_records_admission_counters() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

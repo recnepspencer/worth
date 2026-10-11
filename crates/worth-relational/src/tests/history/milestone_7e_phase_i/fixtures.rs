@@ -45,6 +45,7 @@ pub(super) fn merge_request() -> crate::facade::merge::MergeExecutionRequest {
 }
 
 pub(super) fn update_entity_status_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     status: &str,
@@ -82,6 +83,7 @@ pub(super) fn update_entity_status_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

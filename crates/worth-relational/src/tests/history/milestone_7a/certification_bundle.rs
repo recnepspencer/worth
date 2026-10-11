@@ -70,11 +70,15 @@ pub(super) fn run_merge_ready_history_shape_certification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> MergeReadyHistoryCertificationBundle {
     let runtime = persisted_runtime_with_test_schema();
-    let root = create_entity_outcome(&runtime, "root");
-    let linear = create_entity_outcome(&runtime, "linear");
+    let root = create_entity_outcome(execution, &runtime, "root");
+    let linear = create_entity_outcome(execution, &runtime, "linear");
     create_branch_from_main(&runtime, "feature");
-    let feature =
-        create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
+    let feature = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
 
     let pre_merge_common_ancestor = runtime
         .history()
@@ -85,11 +89,12 @@ pub(super) fn run_merge_ready_history_shape_certification(
         .map(|commit| commit.0);
 
     let merge = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
     );
-    let post_merge_main = create_entity_outcome(&runtime, "main-post-merge");
+    let post_merge_main = create_entity_outcome(execution, &runtime, "main-post-merge");
     let replay = replay_merge_ready_commit(execution, &runtime, merge.commit.commit_id);
 
     let (_recovery, recovered) =

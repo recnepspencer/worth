@@ -42,24 +42,33 @@ pub(crate) fn relation_label_field_patch(label: &str) -> AspectFieldPatch {
 }
 
 pub(crate) fn create_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
 ) -> crate::facade::identity::EntityId {
-    let outcome = create_entity_outcome(runtime, name);
+    let outcome = create_entity_outcome(execution, runtime, name);
     let entity = changed_entities(&outcome)[0];
     release_test_commit_snapshot(runtime, &outcome);
     entity
 }
 
 pub(crate) fn create_entity_in_partition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
     partition_id: PartitionId,
 ) -> crate::facade::identity::EntityId {
-    create_entity_in_partition_on_branch(runtime, name, partition_id, BranchId("main".to_string()))
+    create_entity_in_partition_on_branch(
+        execution,
+        runtime,
+        name,
+        partition_id,
+        BranchId("main".to_string()),
+    )
 }
 
 pub(crate) fn create_entity_in_partition_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
     partition_id: PartitionId,
@@ -80,17 +89,24 @@ pub(crate) fn create_entity_in_partition_on_branch(
         Allocation::SystemAllocation,
     )
     .unwrap();
-    let outcome = txn.commit(runtime, Allocation::SystemAllocation).unwrap();
+    let outcome = txn
+        .commit(execution, runtime, Allocation::SystemAllocation)
+        .unwrap();
     let entity = changed_entities(&outcome)[0];
     release_test_commit_snapshot(runtime, &outcome);
     entity
 }
 
-pub(crate) fn create_entity_outcome(runtime: &RelationalRuntime, name: &str) -> CommitResult {
-    create_entity_outcome_on_branch(runtime, name, BranchId("main".to_string()))
+pub(crate) fn create_entity_outcome(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    name: &str,
+) -> CommitResult {
+    create_entity_outcome_on_branch(execution, runtime, name, BranchId("main".to_string()))
 }
 
 pub(crate) fn create_entity_outcome_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
     branch_id: BranchId,
@@ -110,7 +126,8 @@ pub(crate) fn create_entity_outcome_on_branch(
             },
         )));
     txn.push_batch(batch, Allocation::SystemAllocation).unwrap();
-    txn.commit(runtime, Allocation::SystemAllocation).unwrap()
+    txn.commit(execution, runtime, Allocation::SystemAllocation)
+        .unwrap()
 }
 
 pub(super) fn entity_fields_for_runtime(
@@ -134,13 +151,15 @@ pub(super) fn entity_fields_for_runtime(
 }
 
 pub(crate) fn delete_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
 ) -> CommitResult {
-    delete_entity_on_branch(runtime, entity_id, BranchId("main".to_string()))
+    delete_entity_on_branch(execution, runtime, entity_id, BranchId("main".to_string()))
 }
 
 pub(crate) fn delete_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     branch_id: BranchId,
@@ -154,10 +173,12 @@ pub(crate) fn delete_entity_on_branch(
         Allocation::SystemAllocation,
     )
     .unwrap();
-    txn.commit(runtime, Allocation::SystemAllocation).unwrap()
+    txn.commit(execution, runtime, Allocation::SystemAllocation)
+        .unwrap()
 }
 
 pub(crate) fn delete_relation_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     relation_id: RelationId,
     branch_id: BranchId,
@@ -171,36 +192,47 @@ pub(crate) fn delete_relation_on_branch(
         Allocation::SystemAllocation,
     )
     .unwrap();
-    txn.commit(runtime, Allocation::SystemAllocation).unwrap()
+    txn.commit(execution, runtime, Allocation::SystemAllocation)
+        .unwrap()
 }
 
 pub(crate) fn update_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     name: &str,
 ) -> CommitResult {
-    update_entity_on_branch(runtime, entity_id, name, BranchId("main".to_string()))
+    update_entity_on_branch(
+        execution,
+        runtime,
+        entity_id,
+        name,
+        BranchId("main".to_string()),
+    )
 }
 
 pub(crate) fn update_entity_and_release_snapshot(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     name: &str,
 ) {
-    let outcome = update_entity(runtime, entity_id, name);
+    let outcome = update_entity(execution, runtime, entity_id, name);
     release_test_commit_snapshot(runtime, &outcome);
 }
 
 pub(crate) fn update_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     name: &str,
     branch_id: BranchId,
 ) -> CommitResult {
-    try_update_entity_on_branch(runtime, entity_id, name, branch_id).unwrap()
+    try_update_entity_on_branch(execution, runtime, entity_id, name, branch_id).unwrap()
 }
 
 pub(crate) fn try_update_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     name: &str,
@@ -218,129 +250,7 @@ pub(crate) fn try_update_entity_on_branch(
         )
         .unwrap();
     }
-    txn.commit(runtime, Allocation::SystemAllocation)
-}
-
-pub(crate) fn create_relation(
-    runtime: &RelationalRuntime,
-    source: crate::facade::identity::EntityId,
-    target: crate::facade::identity::EntityId,
-    client_key: &str,
-) -> RelationId {
-    create_relation_with_aspect_label(
-        runtime,
-        source,
-        target,
-        client_key,
-        client_key,
-        PartitionId::main(),
-    )
-}
-
-pub(crate) fn create_relation_in_partition(
-    runtime: &RelationalRuntime,
-    source: crate::facade::identity::EntityId,
-    target: crate::facade::identity::EntityId,
-    client_key: &str,
-    partition_id: PartitionId,
-) -> RelationId {
-    create_relation_with_aspect_label(
-        runtime,
-        source,
-        target,
-        client_key,
-        client_key,
-        partition_id,
-    )
-}
-
-pub(crate) fn create_relation_with_aspect_label(
-    runtime: &RelationalRuntime,
-    source: crate::facade::identity::EntityId,
-    target: crate::facade::identity::EntityId,
-    client_key: &str,
-    label: &str,
-    partition_id: PartitionId,
-) -> RelationId {
-    create_relation_in_partition_on_branch(
-        runtime,
-        source,
-        target,
-        client_key,
-        label,
-        partition_id,
-        BranchId("main".to_string()),
-    )
-}
-
-pub(crate) fn create_relation_in_partition_on_branch(
-    runtime: &RelationalRuntime,
-    source: crate::facade::identity::EntityId,
-    target: crate::facade::identity::EntityId,
-    client_key: &str,
-    label: &str,
-    partition_id: PartitionId,
-    branch_id: BranchId,
-) -> RelationId {
-    let fields = relation_fields_for_runtime(runtime, label);
-    let mut txn =
-        crate::tests::support::test_owner_begin_transaction_for_branch(runtime, branch_id);
-    txn.push_batch(
-        WorkerIntentBatch::new("relation").push(MutationIntent::Create(CreateIntent::Relation(
-            crate::transactions::data::RelationSpec {
-                partition_id,
-                kind_id: KindId(2),
-                client_key: crate::symbols::data::ClientKey::raw(client_key),
-                source: crate::transactions::data::EntityReference::Existing(source),
-                target: crate::transactions::data::EntityReference::Existing(target),
-                fields,
-            },
-        ))),
-        Allocation::SystemAllocation,
-    )
-    .unwrap();
-    let outcome = txn.commit(runtime, Allocation::SystemAllocation).unwrap();
-    let relation = changed_relations(&outcome)[0];
-    release_test_commit_snapshot(runtime, &outcome);
-    relation
-}
-
-pub(crate) fn create_relation_outcome(
-    runtime: &RelationalRuntime,
-    source: crate::facade::identity::EntityId,
-    target: crate::facade::identity::EntityId,
-    client_key: &str,
-) -> CommitResult {
-    let fields = relation_fields_for_runtime(runtime, client_key);
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new("relation").push(MutationIntent::Create(CreateIntent::Relation(
-            crate::transactions::data::RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(2),
-                client_key: crate::symbols::data::ClientKey::raw(client_key),
-                source: crate::transactions::data::EntityReference::Existing(source),
-                target: crate::transactions::data::EntityReference::Existing(target),
-                fields,
-            },
-        ))),
-        Allocation::SystemAllocation,
-    )
-    .unwrap();
-    txn.commit(runtime, Allocation::SystemAllocation).unwrap()
-}
-
-fn relation_fields_for_runtime(runtime: &RelationalRuntime, label: &str) -> AspectFieldPatch {
-    let declares_label = runtime.relation_aspect_plan(KindId(2)).is_some_and(|plan| {
-        plan.executable_bindings.iter().any(|binding| {
-            binding.aspect_key() == &AspectKey::new("label").expect("valid label aspect key")
-        })
-    });
-    if declares_label {
-        relation_label_field_patch(label)
-    } else {
-        AspectFieldPatch::default()
-    }
+    txn.commit(execution, runtime, Allocation::SystemAllocation)
 }
 
 pub(crate) fn changed_entities(outcome: &CommitResult) -> Vec<crate::facade::identity::EntityId> {
@@ -365,13 +275,17 @@ pub(crate) fn changed_relations(outcome: &CommitResult) -> Vec<RelationId> {
         .collect()
 }
 
-pub(crate) fn apply_batches(batches: Vec<WorkerIntentBatch>) -> RelationalRuntime {
+pub(crate) fn apply_batches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    batches: Vec<WorkerIntentBatch>,
+) -> RelationalRuntime {
     let runtime = runtime_with_test_schema();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     for batch in batches {
         txn.push_batch(batch, Allocation::SystemAllocation).unwrap();
     }
-    txn.commit(&runtime, Allocation::SystemAllocation).unwrap();
+    txn.commit(execution, &runtime, Allocation::SystemAllocation)
+        .unwrap();
     runtime
 }
 
@@ -383,6 +297,7 @@ pub(crate) fn release_test_commit_snapshot(runtime: &RelationalRuntime, outcome:
 }
 
 pub(crate) fn merge_commit_from_branches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     target_branch: BranchId,
     merge_parent_branches: Vec<BranchId>,
@@ -392,5 +307,13 @@ pub(crate) fn merge_commit_from_branches(
         target_branch,
         merge_parent_branches,
     );
-    txn.commit(runtime, Allocation::SystemAllocation).unwrap()
+    txn.commit(execution, runtime, Allocation::SystemAllocation)
+        .unwrap()
 }
+
+#[path = "records/relations.rs"]
+mod relations;
+pub(crate) use relations::{
+    create_relation, create_relation_in_partition, create_relation_in_partition_on_branch,
+    create_relation_outcome,
+};

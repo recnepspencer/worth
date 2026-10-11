@@ -18,7 +18,8 @@ pub(super) fn certify_commit_query_churn_stability(
             runtime.performance_access().reset_counters();
             for index in 0..ITERATIONS {
                 let commit_started_at = Instant::now();
-                let outcome = create_entity_outcome(&runtime, &format!("sustained-{index}"));
+                let outcome =
+                    create_entity_outcome(execution, &runtime, &format!("sustained-{index}"));
                 total_commit_micros += commit_started_at.elapsed().as_micros();
 
                 let entity = changed_entities(&outcome)[0];

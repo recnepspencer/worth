@@ -11,10 +11,13 @@ use crate::tests::support::*;
 /// move, so a stale attempt must give back the exact reservation it installed.
 #[test]
 fn stale_publication_releases_its_pending_settlement_reservation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "stale-reservation-anchor");
-    let loser = prepared_main_write(&runtime, "stale-loser");
-    let winner = prepared_main_write(&runtime, "stale-winner");
+    create_entity(execution, &runtime, "stale-reservation-anchor");
+    let loser = prepared_main_write(execution, &runtime, "stale-loser");
+    let winner = prepared_main_write(execution, &runtime, "stale-winner");
 
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(winner)
@@ -69,12 +72,15 @@ fn stale_publication_releases_its_pending_settlement_reservation() {
 /// is a no-movement path, so it must not retain settlement state either.
 #[test]
 fn interrupted_publication_releases_its_pending_settlement_reservation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for interruption in [
         RelationalOperationInterruption::Cancelled,
         RelationalOperationInterruption::TimedOut,
     ] {
         let runtime = runtime_with_test_schema();
-        create_entity(&runtime, "interrupted-reservation-anchor");
+        create_entity(execution, &runtime, "interrupted-reservation-anchor");
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
         let control = RelationalOperationControl::uninterrupted().with_injected_interruption(
@@ -97,6 +103,7 @@ fn interrupted_publication_releases_its_pending_settlement_reservation() {
             .unwrap();
         let candidate = runtime
             .prepare_branch_transaction(
+                execution,
                 transaction,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -136,6 +143,9 @@ fn interrupted_publication_releases_its_pending_settlement_reservation() {
 /// reservation: the registry needs no second capacity check to stay bounded.
 #[test]
 fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
@@ -148,8 +158,8 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
             candidate_max_lifetime_millis: 30_000,
         })
         .build();
-    let first = create_entity_outcome(&runtime, "capacity-first");
-    let second = create_entity_outcome(&runtime, "capacity-second");
+    let first = create_entity_outcome(execution, &runtime, "capacity-first");
+    let second = create_entity_outcome(execution, &runtime, "capacity-second");
     let before = test_owner_main_basis(&runtime).unwrap();
     let contacts_before = runtime
         .publication_binding()
@@ -164,6 +174,7 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
         .unwrap();
     assert!(matches!(
         runtime.prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         ),
@@ -204,8 +215,11 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
 /// its settlement record must already exist at that instant.
 #[test]
 fn the_pending_settlement_record_exists_before_the_moved_head_is_observable() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "pre-effect-install-anchor");
+    create_entity(execution, &runtime, "pre-effect-install-anchor");
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let reached = Arc::new(Barrier::new(2));
@@ -227,6 +241,7 @@ fn the_pending_settlement_record_exists_before_the_moved_head_is_observable() {
         .unwrap();
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -268,6 +283,7 @@ fn the_pending_settlement_record_exists_before_the_moved_head_is_observable() {
 }
 
 fn prepared_main_write(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
 ) -> PreparedRelationalCommitCandidate {
@@ -283,6 +299,7 @@ fn prepared_main_write(
         .expect("test staging stays within configured resource budgets");
     runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

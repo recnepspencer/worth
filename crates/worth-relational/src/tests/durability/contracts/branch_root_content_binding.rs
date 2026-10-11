@@ -6,7 +6,7 @@ fn checkpoint_rejects_previous_branch_root_format_before_readmission() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut plan = checkpoint_recovery_plan("previous-branch-root-format");
+    let mut plan = checkpoint_recovery_plan(execution, "previous-branch-root-format");
     let root = selected_root_image(&mut plan);
     assert_eq!(root.format_version, 4);
     root.format_version = 3;
@@ -23,7 +23,7 @@ fn checkpoint_rejects_altered_root_content_with_recomputed_image_digest() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut plan = checkpoint_recovery_plan("altered-root-content");
+    let mut plan = checkpoint_recovery_plan(execution, "altered-root-content");
     let root = selected_root_image(&mut plan);
     let generation = root.partition_images[0]
         .entity_arena
@@ -41,7 +41,7 @@ fn checkpoint_rejects_omitted_root_partition_with_recomputed_image_digest() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut plan = checkpoint_recovery_plan("omitted-root-partition");
+    let mut plan = checkpoint_recovery_plan(execution, "omitted-root-partition");
     let root = selected_root_image(&mut plan);
     root.partition_images
         .pop()
@@ -56,7 +56,7 @@ fn checkpoint_rejects_same_commit_truth_root_relabeling() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut plan = checkpoint_recovery_plan("checkpoint-truth-root-relabeling");
+    let mut plan = checkpoint_recovery_plan(execution, "checkpoint-truth-root-relabeling");
     let checkpoint = selected_main_checkpoint(&mut plan);
     let target = basis_target(checkpoint);
     let mut substituted_truth_root = *target.roots().truth_root();
@@ -77,7 +77,7 @@ fn checkpoint_rejects_same_commit_schema_root_relabeling() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut plan = checkpoint_recovery_plan("checkpoint-schema-root-relabeling");
+    let mut plan = checkpoint_recovery_plan(execution, "checkpoint-schema-root-relabeling");
     let checkpoint = selected_main_checkpoint(&mut plan);
     let target = basis_target(checkpoint);
     let mut substituted_schema_root = *target.roots().schema_root();
@@ -99,12 +99,12 @@ fn tail_rejects_same_commit_root_descriptor_substitution() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "tail-descriptor-checkpoint");
+    create_entity_outcome(execution, &runtime, "tail-descriptor-checkpoint");
     runtime
         .durability_authority()
         .checkpoint()
         .expect("production checkpoint succeeds");
-    let tail_commit = create_entity_outcome(&runtime, "tail-descriptor-commit");
+    let tail_commit = create_entity_outcome(execution, &runtime, "tail-descriptor-commit");
     let mut plan = runtime
         .durability()
         .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
@@ -135,7 +135,7 @@ fn tail_replay_reconstructs_the_owner_content_root() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "tail-content-root-parity");
+    create_entity_outcome(execution, &runtime, "tail-content-root-parity");
     let expected = current_main_descriptor(&runtime);
     let plan = runtime
         .durability()
@@ -155,7 +155,7 @@ fn checkpoint_owner_root_is_stable_across_fingerprint_symbol_ids() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let plan = checkpoint_recovery_plan("fingerprint-symbol-stability");
+    let plan = checkpoint_recovery_plan(execution, "fingerprint-symbol-stability");
     let mut left = plan.clone();
     let mut right = plan;
     install_fingerprint_image(&mut left, crate::symbols::data::Symbol(10_001));
@@ -167,9 +167,12 @@ fn checkpoint_owner_root_is_stable_across_fingerprint_symbol_ids() {
     assert_eq!(left_error.detail, right_error.detail);
 }
 
-fn checkpoint_recovery_plan(label: &str) -> RecoveryPlan {
+fn checkpoint_recovery_plan(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    label: &str,
+) -> RecoveryPlan {
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, label);
+    create_entity_outcome(execution, &runtime, label);
     runtime
         .durability_authority()
         .checkpoint()

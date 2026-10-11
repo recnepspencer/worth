@@ -76,8 +76,14 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
             delta,
         )
         .expect("the production lowerer accepts the selected branch's actual state");
-        let committed =
-            commit_supply_chain_delta(&world.runtime, &world.program, branch.clone(), delta, batch);
+        let committed = commit_supply_chain_delta(
+            execution,
+            &world.runtime,
+            &world.program,
+            branch.clone(),
+            delta,
+            batch,
+        );
         committed_deltas.push(delta);
         for (ordinal, (candidate, _)) in scenarios.iter().enumerate() {
             let after = world.runtime.branch_reference_state(candidate).unwrap();

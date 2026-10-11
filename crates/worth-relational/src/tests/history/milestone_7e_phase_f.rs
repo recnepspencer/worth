@@ -18,7 +18,7 @@ fn merge_proof_packet_canonical_basis_parity_survives_publication_and_recovery()
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = merge_ready_runtime();
+    let runtime = merge_ready_runtime(execution);
     let outcome = execute_merge(execution, &runtime);
     let live_packet = outcome.execution_summary.proof_packet().clone();
     let live_basis = lower_packet(&runtime, &live_packet);
@@ -46,7 +46,7 @@ fn merge_proof_packet_canonical_basis_localizes_single_field_drift() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = merge_ready_runtime();
+    let runtime = merge_ready_runtime(execution);
     let prepared = runtime
         .merge()
         .prepare_merge_execution(execution, merge_request())
@@ -201,13 +201,18 @@ fn merge_proof_packet_canonical_basis_localizes_single_field_drift() {
     );
 }
 
-fn merge_ready_runtime() -> RelationalRuntime {
+fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_branch_from_main(&runtime, "alt");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
-    create_entity_outcome_on_branch(&runtime, "alt-only", BranchId("alt".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
+    create_entity_outcome_on_branch(execution, &runtime, "alt-only", BranchId("alt".to_string()));
     runtime
 }
 

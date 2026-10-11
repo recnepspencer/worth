@@ -86,7 +86,7 @@ let selected = world.selected_product(
             let mut deliver = |runtime: &mut RelationalRuntime| {
                 flip = !flip;
                 write_field(
-                    runtime,
+                    execution, runtime,
                     entity,
                     label.clone(),
                     if flip { "aa" } else { "bb" },

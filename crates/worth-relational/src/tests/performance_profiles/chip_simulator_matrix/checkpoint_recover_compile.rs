@@ -11,7 +11,8 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
             let runtime = persisted_runtime_with_test_schema_profile(
                 RelationalRuntimeProfile::ChipSimulation,
             );
-            let source = create_entity_in_partition(&runtime, "persisted-driver", PartitionId(7));
+            let source =
+                create_entity_in_partition(execution, &runtime, "persisted-driver", PartitionId(7));
             let targets = (0..12)
                 .map(|index| {
                     let partition_id = match index % 3 {
@@ -20,6 +21,7 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
                         _ => PartitionId(17),
                     };
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("persisted-sink-{index}"),
                         partition_id,
@@ -28,6 +30,7 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
                 .collect::<Vec<_>>();
             for (index, target) in targets.iter().enumerate() {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     source,
                     *target,

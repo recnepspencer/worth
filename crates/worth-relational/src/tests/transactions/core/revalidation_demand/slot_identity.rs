@@ -6,12 +6,15 @@ use crate::tests::support::*;
 
 #[test]
 fn judgement_tracks_the_nonzero_slot_named_by_the_demand() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let mode = create_entity(&runtime, "lax");
-    update_entity_and_release_snapshot(&runtime, mode, STRICT_MODE_NAME);
-    let bystander_low = create_entity(&runtime, "oversized");
-    let target = create_entity(&runtime, COMPLIANT_NAME);
-    let _bystander_high = create_entity(&runtime, "oversized");
+    let mode = create_entity(execution, &runtime, "lax");
+    update_entity_and_release_snapshot(execution, &runtime, mode, STRICT_MODE_NAME);
+    let bystander_low = create_entity(execution, &runtime, "oversized");
+    let target = create_entity(execution, &runtime, COMPLIANT_NAME);
+    let _bystander_high = create_entity(execution, &runtime, "oversized");
 
     assert_ne!(
         target.slot_index(),
@@ -28,6 +31,7 @@ fn judgement_tracks_the_nonzero_slot_named_by_the_demand() {
         .expect("staging stays within configured resource budgets");
     let target_outcome = target_transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -43,6 +47,7 @@ fn judgement_tracks_the_nonzero_slot_named_by_the_demand() {
         .expect("staging stays within configured resource budgets");
     let error = bystander_transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

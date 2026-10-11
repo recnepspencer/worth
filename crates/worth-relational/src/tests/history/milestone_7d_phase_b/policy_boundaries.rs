@@ -17,9 +17,9 @@ fn lowered_plan_carries_explicit_manual_resolution_policy_boundary_for_generic_d
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let artifact = runtime
         .merge()
@@ -64,10 +64,11 @@ fn lowered_plan_carries_explicit_hard_reject_policy_boundary_for_fail_on_conflic
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_name_merge_policy(AspectMergePolicyKind::FailOnConflict);
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, entity, "main-name");
+    update_entity(execution, &runtime, entity, "main-name");
     update_entity_on_branch(
+        execution,
         &runtime,
         entity,
         "feature-name",

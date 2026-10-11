@@ -6,7 +6,7 @@ fn derived_index_contract_prefers_older_supported_generation_over_newer_unsuppor
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let main_alpha = create_entity_outcome(&runtime, "alpha");
+    let main_alpha = create_entity_outcome(execution, &runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.lookup".to_string(),
@@ -32,8 +32,12 @@ fn derived_index_contract_prefers_older_supported_generation_over_newer_unsuppor
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let feature_alpha =
-        create_entity_outcome_on_branch(&runtime, "alpha", BranchId("feature".to_string()));
+    let feature_alpha = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "alpha",
+        BranchId("feature".to_string()),
+    );
     let feature_build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {

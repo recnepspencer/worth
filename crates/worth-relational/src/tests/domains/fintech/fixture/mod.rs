@@ -95,16 +95,21 @@ pub(crate) struct FintechWorld {
 }
 
 impl FintechWorld {
-    pub(super) fn setup_world() -> Self {
-        Self::setup_world_with(FintechScale::smoke())
+    pub(super) fn setup_world(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Self {
+        Self::setup_world_with(execution, FintechScale::smoke())
     }
 
-    pub(super) fn setup_world_with(scale: FintechScale) -> Self {
-        Self::build(scale, false)
+    pub(super) fn setup_world_with(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        scale: FintechScale,
+    ) -> Self {
+        Self::build(execution, scale, false)
     }
 
-    pub(super) fn setup_persisted_world() -> Self {
-        Self::build(FintechScale::smoke(), true)
+    pub(super) fn setup_persisted_world(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Self {
+        Self::build(execution, FintechScale::smoke(), true)
     }
 
     pub(super) fn latest_snapshot(&self) -> SnapshotHandle {
@@ -271,7 +276,11 @@ impl FintechWorld {
         create_analysis_branch(&self.runtime)
     }
 
-    fn build(scale: FintechScale, persisted: bool) -> Self {
+    fn build(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        scale: FintechScale,
+        persisted: bool,
+    ) -> Self {
         let mut builder = RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::AiWorkflow)
             .schema_registry(fintech_schema_registry());
@@ -285,9 +294,9 @@ impl FintechWorld {
         }
         let runtime = builder.build();
         let case_seeds = seeded_trade_cases(scale);
-        let seeded = seed_entities(&runtime, &case_seeds);
+        let seeded = seed_entities(execution, &runtime, &case_seeds);
         let workflow_cases = build_workflow_cases(&case_seeds, &seeded);
-        let relations = seed_relations(&runtime, &case_seeds, &seeded, &workflow_cases);
+        let relations = seed_relations(execution, &runtime, &case_seeds, &seeded, &workflow_cases);
         let casebook = build_casebook(&workflow_cases);
 
         Self {

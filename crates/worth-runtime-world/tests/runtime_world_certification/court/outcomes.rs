@@ -32,7 +32,7 @@ fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {
         .observe_branch(&court.records.runtime.main_branch_identity())
         .unwrap()
         .0;
-    drop(court.prepare_cargo(&root, "5"));
+    drop(court.prepare_cargo(&execution, &root, "5"));
     assert_eq!(
         court
             .world
@@ -42,7 +42,7 @@ fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {
             .reserved(),
         0
     );
-    let prepared = court.prepare_cargo(&root, "5");
+    let prepared = court.prepare_cargo(&execution, &root, "5");
     let cancel = RuntimeWorldCancellationSource::new();
     cancel.cancel();
     let RuntimeWorldPublicationOutcome::NoEffect(denied) = court
@@ -70,7 +70,7 @@ fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {
         signal_before
     );
     drop(denied);
-    let stale_prepared = court.prepare_cargo(&root, "7");
+    let stale_prepared = court.prepare_cargo(&execution, &root, "7");
     let healthy = court.publish_cargo(&root, "5");
     let current = court
         .records
@@ -133,9 +133,10 @@ fn foreign_candidate_denial_has_a_healthy_candidate_twin() {
         .observe_branch(&court.records.runtime.main_branch_identity())
         .unwrap()
         .0;
-    let candidate = other
-        .records
-        .candidate(foreign.basis().relational_basis(), "grain", "8");
+    let candidate =
+        other
+            .records
+            .candidate(&execution, foreign.basis().relational_basis(), "grain", "8");
     let prepared = court
         .world
         .publication_port()
@@ -287,7 +288,7 @@ fn public_owner_loss_denies_reserved_execution_without_component_movement() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let root = court.bootstrap();
-    let prepared = court.prepare_cargo(&root, "5");
+    let prepared = court.prepare_cargo(&execution, &root, "5");
     let port = court.world.publication_port();
     let signal = court
         .signal

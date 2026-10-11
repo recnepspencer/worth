@@ -203,9 +203,14 @@ mod tests {
     use super::*;
     #[test]
     fn leased_execution_is_typed_at_the_workspace_boundary() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
         use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
-        let observed = commit(crate::relational_execution_refusal::work_exhausted());
+        let observed = commit(crate::relational_execution_refusal::work_exhausted(
+            execution,
+        ));
         assert_eq!(
             observed.kind(),
             WorthQueryWorkspaceErrorKind::ExecutionDenied(Kind::ExecutionResource {

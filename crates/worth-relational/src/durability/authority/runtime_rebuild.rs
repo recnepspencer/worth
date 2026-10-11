@@ -103,6 +103,7 @@ pub(super) fn rebuild_runtime_from_plan(
         let commit_id = pending.envelope().commit.commit_id;
         let restore_authoritative_envelope = plan.should_restore_authoritative_envelope(commit_id);
         let positioned = replay_readmitted_envelope(
+            execution,
             &mut restored,
             pending,
             &available_commit_ids,

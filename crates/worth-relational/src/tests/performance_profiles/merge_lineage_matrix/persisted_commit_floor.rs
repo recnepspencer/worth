@@ -9,7 +9,7 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
         "merge_execution_vs_persisted_commit_floor",
         || {
             let merge_runtime = persisted_runtime_with_test_schema();
-            create_entity(&merge_runtime, "main-anchor");
+            create_entity(execution, &merge_runtime, "main-anchor");
             create_branch_from_main(&merge_runtime, "feature");
             let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
                 &merge_runtime,
@@ -33,6 +33,7 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
             .expect("test staging stays within configured resource budgets");
             let _feature_only = changed_entities(
                 &txn.commit(
+                    execution,
                     &merge_runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
@@ -70,6 +71,7 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
                 )
                 .expect("test staging stays within configured resource budgets");
                 txn.commit(
+                    execution,
                     &control_runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

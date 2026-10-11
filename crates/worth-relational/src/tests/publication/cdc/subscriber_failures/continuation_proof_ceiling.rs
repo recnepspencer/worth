@@ -9,8 +9,11 @@ use crate::tests::support::*;
 
 #[test]
 fn subscriber_stream_rejects_when_normalized_continuation_proof_exceeds_complexity_ceiling() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _ = create_entity_outcome(&runtime, "anchor");
+    let _ = create_entity_outcome(execution, &runtime, "anchor");
     let batch = runtime
         .publication()
         .read_subscriber_stream(SubscriberResumeRequest::from_head(1))
@@ -55,6 +58,7 @@ fn subscriber_stream_rejects_when_normalized_continuation_proof_exceeds_complexi
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

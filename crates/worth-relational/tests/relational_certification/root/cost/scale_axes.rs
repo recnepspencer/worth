@@ -37,7 +37,7 @@ fn production_write_footprints_report_exact_records_and_local_publication_cost()
             .map(|allocation| allocation.locator())
             .collect();
         let batch = lower_cargo_footprint_batch(&world.handles, scale, footprint);
-        let committed = commit_branch_batch_with_result(&world.runtime, branch, batch);
+        let committed = commit_branch_batch_with_result(execution, &world.runtime, branch, batch);
         assert_eq!(
             committed.publication_summary().unwrap().patch_record_count,
             footprint
@@ -115,7 +115,7 @@ fn single_record_copy_cost(
     let identity = world.runtime.branch_identity(&branch).unwrap();
     let scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
     let batch = lower_cargo_footprint_batch(&world.handles, scale, 1);
-    let committed = commit_branch_batch_with_result(&world.runtime, branch, batch);
+    let committed = commit_branch_batch_with_result(execution, &world.runtime, branch, batch);
     assert_eq!(
         committed.publication_summary().unwrap().patch_record_count,
         1
@@ -171,7 +171,8 @@ fn assert_flat_history_samples(
             .unwrap();
         world.runtime.fork_branch(branch.clone(), source).unwrap();
         let first_batch = lower_cargo_footprint_batch(&world.handles, scale, 1);
-        let first = commit_branch_batch_with_result(&world.runtime, branch.clone(), first_batch);
+        let first =
+            commit_branch_batch_with_result(execution, &world.runtime, branch.clone(), first_batch);
         world
             .runtime
             .snapshots()
@@ -182,6 +183,7 @@ fn assert_flat_history_samples(
         let mut retained_bases = vec![world.runtime.retain_component_basis(&first_basis).unwrap()];
         for sequence in 1..history_len {
             let committed = commit_branch_batch_with_result(
+                execution,
                 &world.runtime,
                 branch.clone(),
                 WorkerIntentBatch::new(format!("retained-history-{sequence}")),
@@ -197,7 +199,8 @@ fn assert_flat_history_samples(
         assert_eq!(retained_bases.len(), history_len);
         let scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
         let final_batch = lower_cargo_footprint_batch(&world.handles, scale, 64);
-        let final_commit = commit_branch_batch_with_result(&world.runtime, branch, final_batch);
+        let final_commit =
+            commit_branch_batch_with_result(execution, &world.runtime, branch, final_batch);
         let retained = world.runtime.run_branch_root_reclamation_pass();
         assert!(retained.roots_still_retained() >= history_len as u64);
         let delta = world

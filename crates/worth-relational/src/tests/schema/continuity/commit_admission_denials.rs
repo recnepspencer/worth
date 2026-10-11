@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn ordinary_commit_keeps_the_admitted_branch_root_schema_when_live_registry_drifts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -32,6 +35,7 @@ fn ordinary_commit_keeps_the_admitted_branch_root_schema_when_live_registry_drif
     .expect("test staging stays within configured resource budgets");
     let committed = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -49,8 +53,11 @@ fn ordinary_commit_keeps_the_admitted_branch_root_schema_when_live_registry_drif
 
 #[test]
 fn declared_schema_transition_rejects_wrong_source_basis() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -106,6 +113,7 @@ fn declared_schema_transition_rejects_wrong_source_basis() {
     .expect("test staging stays within configured resource budgets");
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -128,8 +136,11 @@ fn declared_schema_transition_rejects_wrong_source_basis() {
 
 #[test]
 fn declared_schema_transition_rejects_wrong_target_basis() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -185,6 +196,7 @@ fn declared_schema_transition_rejects_wrong_target_basis() {
     .expect("test staging stays within configured resource budgets");
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -222,6 +234,9 @@ fn declared_schema_transition_rejects_wrong_target_basis() {
 
 #[test]
 fn declared_schema_transition_requires_non_empty_runtime_basis() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .build();
@@ -266,6 +281,7 @@ fn declared_schema_transition_requires_non_empty_runtime_basis() {
     };
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -285,8 +301,11 @@ fn declared_schema_transition_requires_non_empty_runtime_basis() {
 
 #[test]
 fn declared_type_continuity_denied_schema_transition_reports_specific_conflict_class() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -345,6 +364,7 @@ fn declared_type_continuity_denied_schema_transition_reports_specific_conflict_c
     .expect("test staging stays within configured resource budgets");
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

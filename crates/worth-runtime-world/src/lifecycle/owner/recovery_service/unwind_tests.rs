@@ -9,13 +9,16 @@ use crate::recovery::ProductUnpublishedNextAction;
 
 #[test]
 fn settlement_unwind_restores_custody_before_catalog_reinstallation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     // Stop before route extraction and after real settlement. Neither case
     // may turn the catalog record into untouched or cleanup-only progress.
     for settle_before_unwind in [false, true] {
         let (fixture, owner, expected) = setup();
-        let mut attempt = relational_attempt(&fixture, &owner, expected.clone());
+        let mut attempt = relational_attempt(execution, &fixture, &owner, expected.clone());
         attempt.begin_owner_execution();
-        let performed = fixture.perform_relational_owner_change();
+        let performed = fixture.perform_relational_owner_change(execution);
         let basis = performed.next_basis().clone();
         let successor = successor_basis(&owner, &expected, basis.clone(), None);
         let retained = attempt

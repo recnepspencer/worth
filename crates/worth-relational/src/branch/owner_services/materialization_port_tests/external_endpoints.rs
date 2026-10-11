@@ -6,8 +6,8 @@ fn external_endpoint_group_restores_only_its_exact_relation_endpoints() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let external = crate::tests::support::create_entity(&runtime, "external-endpoint");
-    let created = create_group_with_external_endpoint(&runtime, external);
+    let external = crate::tests::support::create_entity(execution, &runtime, "external-endpoint");
+    let created = create_group_with_external_endpoint(execution, &runtime, external);
     let internal = changed_entities(&created)[0];
     let relation = changed_relations(&created)[0];
     let identity = runtime.main_branch_identity();
@@ -18,7 +18,7 @@ fn external_endpoint_group_restores_only_its_exact_relation_endpoints() {
         .expect("the output-owned boundary link has a current basis");
     let suspended = services
         .materialization_port()
-        .suspend_generated_materialization(&basis, &[internal])
+        .suspend_generated_materialization(execution, &basis, &[internal])
         .expect("a generated relation may retain an endpoint outside its output group");
     assert!(suspended
         .custody
@@ -88,6 +88,7 @@ fn external_endpoint_group_restores_only_its_exact_relation_endpoints() {
     let failed = services
         .materialization_port()
         .rematerialize_generated_materialization(
+            execution,
             &unavailable_basis,
             suspended.custody,
             vec![entity_materialization(
@@ -111,6 +112,7 @@ fn external_endpoint_group_restores_only_its_exact_relation_endpoints() {
     let restored = services
         .materialization_port()
         .rematerialize_generated_materialization(
+            execution,
             &unavailable_basis,
             failed.custody,
             vec![entity_materialization(

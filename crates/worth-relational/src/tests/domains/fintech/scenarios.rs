@@ -22,22 +22,28 @@ pub(super) struct FintechScenarioSelection {
     pub(super) persisted: bool,
 }
 
-pub(super) fn setup_world() -> FintechWorld {
-    FintechWorld::setup_world()
+pub(super) fn setup_world(execution: &worth_execution::ExecutionRequest<'_, '_>) -> FintechWorld {
+    FintechWorld::setup_world(execution)
 }
 
-pub(super) fn setup_world_with(scale: FintechScale) -> FintechWorld {
-    FintechWorld::setup_world_with(scale)
+pub(super) fn setup_world_with(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    scale: FintechScale,
+) -> FintechWorld {
+    FintechWorld::setup_world_with(execution, scale)
 }
 
-pub(super) fn setup_world_for(scenario: FintechScenario) -> FintechWorld {
+pub(super) fn setup_world_for(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    scenario: FintechScenario,
+) -> FintechWorld {
     match scenario {
-        FintechScenario::SmokeBook => FintechWorld::setup_world(),
-        FintechScenario::PersistedSmokeBook => FintechWorld::setup_persisted_world(),
-        FintechScenario::HistoricalVisibility => FintechWorld::setup_world(),
-        FintechScenario::IntradayRisk => FintechWorld::setup_world(),
-        FintechScenario::LateTradeCorrection => FintechWorld::setup_world(),
-        FintechScenario::FailedSettlementRepair => FintechWorld::setup_world(),
+        FintechScenario::SmokeBook => FintechWorld::setup_world(execution),
+        FintechScenario::PersistedSmokeBook => FintechWorld::setup_persisted_world(execution),
+        FintechScenario::HistoricalVisibility => FintechWorld::setup_world(execution),
+        FintechScenario::IntradayRisk => FintechWorld::setup_world(execution),
+        FintechScenario::LateTradeCorrection => FintechWorld::setup_world(execution),
+        FintechScenario::FailedSettlementRepair => FintechWorld::setup_world(execution),
     }
 }
 
@@ -135,24 +141,33 @@ pub(super) fn selection_for(scenario: FintechScenario) -> FintechScenarioSelecti
 }
 
 pub(super) fn setup_selected_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     scenario: FintechScenario,
 ) -> (FintechWorld, FintechScenarioSelection) {
     let selection = selection_for(scenario);
-    (setup_world_for(scenario), selection)
+    (setup_world_for(execution, scenario), selection)
 }
 
-pub(super) fn setup_world_for_intraday_risk() -> FintechWorld {
-    setup_world_for(FintechScenario::IntradayRisk)
+pub(super) fn setup_world_for_intraday_risk(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> FintechWorld {
+    setup_world_for(execution, FintechScenario::IntradayRisk)
 }
 
-pub(super) fn setup_world_for_historical_visibility() -> FintechWorld {
-    setup_world_for(FintechScenario::HistoricalVisibility)
+pub(super) fn setup_world_for_historical_visibility(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> FintechWorld {
+    setup_world_for(execution, FintechScenario::HistoricalVisibility)
 }
 
-pub(super) fn setup_world_for_late_trade_correction() -> FintechWorld {
-    setup_world_for(FintechScenario::LateTradeCorrection)
+pub(super) fn setup_world_for_late_trade_correction(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> FintechWorld {
+    setup_world_for(execution, FintechScenario::LateTradeCorrection)
 }
 
-pub(super) fn setup_world_for_failed_settlement_repair() -> FintechWorld {
-    setup_world_for(FintechScenario::FailedSettlementRepair)
+pub(super) fn setup_world_for_failed_settlement_repair(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> FintechWorld {
+    setup_world_for(execution, FintechScenario::FailedSettlementRepair)
 }

@@ -230,7 +230,7 @@ fn double_panicking_artifact_world(
     let attempt = runtime
         .start_workflow_resource_attempt(&operation, resources)
         .expect("double-panic workflow should reserve");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_workflow(&operation, attempt, lower.read_request(), resource_request)

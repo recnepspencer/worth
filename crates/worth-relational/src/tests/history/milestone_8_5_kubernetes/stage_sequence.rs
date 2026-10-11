@@ -6,7 +6,7 @@ pub(super) fn run_kubernetes_style_certification(
     let root_path = unique_test_store_path("worth-relational-m8-5-kubernetes-style");
     let recovered_root = root_path.clone();
     let runtime = persisted_strategy_runtime(root_path);
-    let entity = create_entity(&runtime, "kube-service");
+    let entity = create_entity(execution, &runtime, "kube-service");
     let controller_branch = create_branch_from_main(&runtime, "kube-controller");
     let main_branch = BranchId("main".to_string());
 

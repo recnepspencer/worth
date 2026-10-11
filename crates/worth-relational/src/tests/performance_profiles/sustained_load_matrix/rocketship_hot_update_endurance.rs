@@ -40,6 +40,7 @@ pub(super) fn certify_rocketship_hot_update_endurance(
                 let target = seeded.traversal_seeds[index % seeded.traversal_seeds.len()];
                 let update_started_at = Instant::now();
                 let _ = update_entity(
+                    execution,
                     &runtime,
                     target,
                     &format!("rocket.endurance.hot-loop.{index}"),

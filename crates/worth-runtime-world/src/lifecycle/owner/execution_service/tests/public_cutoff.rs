@@ -22,7 +22,7 @@ fn final_clock_panic_keeps_owner_effects_without_product_movement() {
     let intent =
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
             .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate("clock-panic"),
+                fixture.prepare_relational_owner_candidate(&execution, "clock-panic"),
             );
     let prepared = owner
         .prepare_publication(
@@ -82,7 +82,7 @@ fn cancellation_during_clock_check_prevents_product_movement() {
     let intent =
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
             .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate("late-cancellation"),
+                fixture.prepare_relational_owner_candidate(&execution, "late-cancellation"),
             );
     let prepared = owner
         .prepare_publication(

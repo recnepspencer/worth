@@ -8,11 +8,14 @@ use crate::tests::support::*;
 
 #[test]
 fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
         .build();
-    create_entity(&runtime, "shared-root");
+    create_entity(execution, &runtime, "shared-root");
     fork_from_main(&mut runtime, "storm");
     fork_from_main(&mut runtime, "maintenance");
 
@@ -25,6 +28,7 @@ fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_r
         .expect("test staging stays within configured resource budgets");
     let storm_commit = storm
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -60,6 +64,7 @@ fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_r
 
     let error = maintenance
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -75,6 +80,9 @@ fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_r
 
 #[test]
 fn unowned_created_endpoint_denial_precedes_normalization_and_leaves_zero_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
@@ -104,6 +112,7 @@ fn unowned_created_endpoint_denial_precedes_normalization_and_leaves_zero_residu
 
     let error = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

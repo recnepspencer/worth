@@ -142,7 +142,12 @@ pub(super) fn host_override_denial_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(branch_mutation_basis("branch-a"));
     let raw = raw_mutation_effect_with_binding(
@@ -176,7 +181,12 @@ pub(super) fn stale_after_admission_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),
@@ -198,6 +208,7 @@ pub(super) fn stale_after_admission_row(
         other => panic!("expected admitted mutation, got {other:?}"),
     };
     create_entity(
+        execution,
         &mut runtime,
         "intervening",
         BranchId("branch-a".to_string()),
@@ -226,7 +237,12 @@ pub(super) fn stale_after_lowering_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),
@@ -256,6 +272,7 @@ pub(super) fn stale_after_lowering_row(
     .lower()
     .expect("mutation should lower");
     create_entity(
+        execution,
         &mut runtime,
         "intervening",
         BranchId("branch-a".to_string()),

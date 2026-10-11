@@ -104,12 +104,14 @@ fn snapshot(runtime: &RelationalRuntime) -> (SnapshotHandle, PositionedRelationa
 }
 
 fn write_field(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     entity: EntityId,
     locator: AspectFieldLocator,
     value: &str,
 ) {
     let committed = write_batch(
+        execution,
         runtime,
         WorkerIntentBatch::new("native-invalidation-journey").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -125,6 +127,7 @@ fn write_field(
 }
 
 fn write_batch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     batch: WorkerIntentBatch,
 ) -> worth_relational::facade::transactions::CommitResult {
@@ -142,6 +145,7 @@ fn write_batch(
         .unwrap();
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -283,7 +287,7 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
             handle.with_runtime_mut(request_execution, |runtime| {
                 // Ensure the real companion has a selected cell even if fixture
                 // installation happened before its subscription became active.
-                write_field(runtime, entity, label.clone(), "prime");
+                write_field(request_execution, runtime, entity, label.clone(), "prime");
                 let (before_handle, before) = snapshot(runtime);
                 let status_facts: Arc<[_]> = Arc::from([field_fact(
                     &host_custody.borrowed_request_for_test(),
@@ -323,7 +327,7 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
                     currentness(owner, &before, &a),
                     SourceSettlementCurrentness::Clean
                 ));
-                write_field(runtime, entity, label, "changed-label");
+                write_field(request_execution, runtime, entity, label, "changed-label");
                 let (label_handle, label_basis) = snapshot(runtime);
                 assert!(
                     matches!(
@@ -349,7 +353,7 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
                     ),
                     "newer marks cannot leak into the retained earlier snapshot"
                 );
-                write_field(runtime, entity, status, "closed");
+                write_field(request_execution, runtime, entity, status, "closed");
                 let (after_handle, after) = snapshot(runtime);
                 assert!(matches!(
                     currentness(owner, &after, &a),

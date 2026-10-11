@@ -34,9 +34,14 @@ fn derive_merge_commit_mutation_plan_emits_source_authorized_create_intent() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let prepared = runtime
         .prepare_merge_execution(
@@ -104,10 +109,11 @@ fn derive_merge_commit_mutation_plan_preserves_exact_shared_truth_without_mutati
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "same");
+    update_entity(execution, &runtime, shared, "same");
     crate::tests::support::update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "same",
@@ -212,6 +218,7 @@ fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_as
         .expect("test staging stays within configured resource budgets");
     main_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -259,6 +266,7 @@ fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_as
         .expect("test staging stays within configured resource budgets");
     feature_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -298,9 +306,14 @@ fn derive_merge_commit_mutation_plan_does_not_rely_on_raw_lowered_record_arrays(
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let mut prepared = runtime
         .prepare_merge_execution(

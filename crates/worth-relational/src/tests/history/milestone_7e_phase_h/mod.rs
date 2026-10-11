@@ -134,9 +134,17 @@ fn retained_schema_reconciliation_witness_preserves_runtime_additive_truth_acros
 
     let runtime =
         persisted_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
-    create_named_entity_on_branch(&runtime, "main-shared", "shared-name", None, "main");
+    create_named_entity_on_branch(
+        execution,
+        &runtime,
+        "main-shared",
+        "shared-name",
+        None,
+        "main",
+    );
     create_branch_from_main(&runtime, "feature");
     create_named_entity_on_branch(
+        execution,
         &runtime,
         "feature-shared",
         "shared-name",
@@ -207,6 +215,7 @@ fn retained_schema_reconciliation_witness_preserves_runtime_narrowing_truth() {
 
     let runtime = runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::LastWriterWins);
     create_named_entity_on_branch(
+        execution,
         &runtime,
         "main-shared",
         "shared-name",
@@ -214,7 +223,14 @@ fn retained_schema_reconciliation_witness_preserves_runtime_narrowing_truth() {
         "main",
     );
     create_branch_from_main(&runtime, "feature");
-    create_named_entity_on_branch(&runtime, "feature-shared", "shared-name", None, "feature");
+    create_named_entity_on_branch(
+        execution,
+        &runtime,
+        "feature-shared",
+        "shared-name",
+        None,
+        "feature",
+    );
 
     let prepared = runtime
         .merge()
@@ -247,6 +263,7 @@ fn retained_schema_reconciliation_witness_keeps_runtime_type_denial_typed() {
 
     let runtime = runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::FailOnConflict);
     create_named_entity_on_branch(
+        execution,
         &runtime,
         "main-shared",
         "shared-name",
@@ -255,6 +272,7 @@ fn retained_schema_reconciliation_witness_keeps_runtime_type_denial_typed() {
     );
     create_branch_from_main(&runtime, "feature");
     create_named_entity_on_branch(
+        execution,
         &runtime,
         "feature-shared",
         "shared-name",
@@ -295,18 +313,20 @@ fn retained_schema_reconciliation_witness_keeps_runtime_structural_denial_typed(
     let runtime = runtime_with_relation_identity_registry(unique_test_store_path(
         "worth-relational-7e-phase-h-topology",
     ));
-    let source = create_entity(&runtime, "source");
-    let target_a = create_entity(&runtime, "target-a");
-    let target_b = create_entity(&runtime, "target-b");
-    let target_c = create_entity(&runtime, "target-c");
-    let relation = create_relation(&runtime, source, target_a, "edge-a");
+    let source = create_entity(execution, &runtime, "source");
+    let target_a = create_entity(execution, &runtime, "target-a");
+    let target_b = create_entity(execution, &runtime, "target-b");
+    let target_c = create_entity(execution, &runtime, "target-c");
+    let relation = create_relation(execution, &runtime, source, target_a, "edge-a");
     create_branch_from_main(&runtime, "feature");
     delete_relation_on_branch(
+        execution,
         &runtime,
         relation,
         crate::facade::history::BranchId("feature".to_string()),
     );
     create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         target_b,
@@ -316,6 +336,7 @@ fn retained_schema_reconciliation_witness_keeps_runtime_structural_denial_typed(
         crate::facade::history::BranchId("feature".to_string()),
     );
     create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         target_c,

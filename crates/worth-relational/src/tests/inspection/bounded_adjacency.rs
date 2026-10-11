@@ -6,10 +6,16 @@ fn bounded_adjacency_stops_before_allocating_the_unbounded_fanout() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
+    let source = create_entity(execution, &runtime, "source");
     for ordinal in 0..64 {
-        let target = create_entity(&runtime, &format!("target-{ordinal}"));
-        let _ = create_relation(&runtime, source, target, &format!("relation-{ordinal}"));
+        let target = create_entity(execution, &runtime, &format!("target-{ordinal}"));
+        let _ = create_relation(
+            execution,
+            &runtime,
+            source,
+            target,
+            &format!("relation-{ordinal}"),
+        );
     }
     let relation_kind = crate::facade::identity::KindId(2);
     let version = runtime.current_version_id();

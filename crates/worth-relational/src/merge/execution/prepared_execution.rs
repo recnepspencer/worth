@@ -83,7 +83,7 @@ pub(in crate::merge) fn execute_prepared_merge(
     )
     .map_err(MergeExecutionError::from)
     .map_err(|error| emit_failure(runtime, &prepared, error))?;
-    let commit = execute_authoritative_commit(runtime, context)
+    let commit = execute_authoritative_commit(execution, runtime, context)
         .map_err(MergeExecutionError::from)
         .map_err(|error| emit_failure(runtime, &prepared, error))?;
     Ok(MergeExecutionOutcome {

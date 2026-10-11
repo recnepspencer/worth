@@ -22,7 +22,7 @@ fn cdc_certification_durable_recovery_matches_head_and_midstream_consumers() {
 
     let runtime = persisted_runtime_with_test_schema();
     for name in ["a", "b", "c", "d", "e", "f"] {
-        let _ = create_entity_outcome(&runtime, name);
+        let _ = create_entity_outcome(execution, &runtime, name);
         if ["b", "d"].contains(&name) {
             runtime.durability_authority().checkpoint().unwrap();
         }

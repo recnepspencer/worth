@@ -10,6 +10,9 @@ use worth_relational::facade::mvcc::RelationalTransactionIntent;
 
 #[test]
 fn healthy_bundle_executes_every_promised_method_family() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = empty_runtime();
     let services = runtime.owner_component_services();
     assert_eq!(
@@ -17,7 +20,7 @@ fn healthy_bundle_executes_every_promised_method_family() {
         RelationalOwnerLifecycleObservation::Open
     );
 
-    let committed = commit_through_services(&runtime, &services, "six-port-health");
+    let committed = commit_through_services(execution, &runtime, &services, "six-port-health");
     assert_eq!(committed.commit.branch_id, BranchId("main".to_owned()));
     let archived_identity = fork_through_services(&services, "archived")
         .target_identity()
@@ -140,6 +143,7 @@ fn discarded_candidate_leaves_truth_unchanged_and_releases_its_obligation() {
     let candidate = services
         .preparation_port()
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

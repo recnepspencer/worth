@@ -68,7 +68,7 @@ fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_cha
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             handle.with_runtime_mut(request_execution, |runtime| {
-                write_field(runtime, entity, label, "prime");
+                write_field(request_execution, runtime, entity, label, "prime");
                 let (before_handle, before) = snapshot(runtime);
                 let before_fact = field_fact(
                     &host_custody.borrowed_request_for_test(),
@@ -92,7 +92,7 @@ fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_cha
                     OrdSet::unit(Arc::clone(&output)),
                 );
 
-                write_field(runtime, entity, status.clone(), "open");
+                write_field(request_execution, runtime, entity, status.clone(), "open");
                 let (equal_handle, equal) = snapshot(runtime);
                 let equal_fact = field_fact(
                     &host_custody.borrowed_request_for_test(),
@@ -111,7 +111,7 @@ fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_cha
                     SourceSettlementCurrentness::Clean
                 ));
 
-                write_field(runtime, entity, status.clone(), "closed");
+                write_field(request_execution, runtime, entity, status.clone(), "closed");
                 let (changed_handle, changed) = snapshot(runtime);
                 let changed_fact = field_fact(
                     &host_custody.borrowed_request_for_test(),

@@ -52,13 +52,17 @@ impl WorthQueryBridgeBackedRuntimeBackend {
         let write_execution = match self.relational_runtime.as_mut() {
             Some(owner) => owner
                 .execute_mutation(execution, |runtime| {
-                    self.write_authority
-                        .write(&self.runtime_bridge, Some(runtime), mutation)
+                    self.write_authority.write(
+                        execution,
+                        &self.runtime_bridge,
+                        Some(runtime),
+                        mutation,
+                    )
                 })
                 .map_err(primary_graph_refresh_workspace_error)??,
             None => self
                 .write_authority
-                .write(&self.runtime_bridge, None, mutation)?,
+                .write(execution, &self.runtime_bridge, None, mutation)?,
         };
         if let Some(message) =
             write_execution.drift_from_backend_admissible_mutation(&expected_mutation)
@@ -82,13 +86,20 @@ impl WorthQueryBridgeBackedRuntimeBackend {
         let write_executions = match self.relational_runtime.as_mut() {
             Some(owner) => owner
                 .execute_mutation(execution, |runtime| {
-                    self.write_authority
-                        .write_batch(&self.runtime_bridge, Some(runtime), mutations)
+                    self.write_authority.write_batch(
+                        execution,
+                        &self.runtime_bridge,
+                        Some(runtime),
+                        mutations,
+                    )
                 })
                 .map_err(primary_graph_refresh_workspace_error)??,
-            None => self
-                .write_authority
-                .write_batch(&self.runtime_bridge, None, mutations)?,
+            None => self.write_authority.write_batch(
+                execution,
+                &self.runtime_bridge,
+                None,
+                mutations,
+            )?,
         };
         for (mutation, execution) in expected_mutations.iter().zip(write_executions.iter()) {
             if let Some(message) = execution.drift_from_backend_admissible_mutation(mutation) {

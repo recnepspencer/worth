@@ -123,41 +123,15 @@ impl RelationalPublicationCompanion for TwoCellHints {
     }
 }
 
-fn prepare_update(
-    runtime: &RelationalRuntime,
-    branch: &BranchId,
-    entity: EntityId,
-    locator: AspectFieldLocator,
-) -> PreparedRelationalCommitCandidate {
-    let identity = runtime.branch_identity(branch).unwrap();
-    let basis = runtime.admit_branch_basis(&identity).unwrap();
-    let mut transaction = runtime
-        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-        .unwrap();
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("two-native-hints").push(MutationIntent::Entity(
-                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                    entity_id: entity,
-                    fields: AspectFieldPatch::from(BTreeMap::from([(
-                        locator,
-                        AspectValue::String(InternedString::Raw("closed".to_owned())),
-                    )])),
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-}
+#[path = "required_hints/prepare_update.rs"]
+mod prepare_update;
+use prepare_update::prepare_update;
 
 #[test]
 fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     {
         for allowed_hints in [1_u64, 2] {
             let world = installed_authorization_world(true);
@@ -268,8 +242,8 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                         },
                     )
                     .unwrap();
-                let main_candidate = prepare_update(runtime, &main, entity, locator.clone());
-                let fork_candidate = prepare_update(runtime, &fork, entity, locator.clone());
+                let main_candidate = prepare_update(execution, runtime, &main, entity, locator.clone());
+                let fork_candidate = prepare_update(execution, runtime, &fork, entity, locator.clone());
                 let main_port = runtime.publication_port();
                 let fork_port = runtime.publication_port();
                 let outcomes = std::thread::scope(|scope| {

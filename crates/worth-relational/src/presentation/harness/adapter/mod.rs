@@ -82,6 +82,8 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         runtime: &mut Self::Runtime,
         fixture: &worth_harness::facade::ScenarioFixture<Self::Fixture>,
     ) -> Result<(), Self::Error> {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         if fixture.fixture.entities.is_empty() && fixture.fixture.relations.is_empty() {
             return Ok(());
         }
@@ -93,6 +95,7 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         .expect("test staging stays within configured resource budgets");
         let outcome = txn
             .commit(
+                execution,
                 runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -116,6 +119,7 @@ impl HarnessAdapter for RelationalHarnessAdapter {
                 .expect("test staging stays within configured resource budgets");
             relation_txn
                 .commit(
+                    execution,
                     runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
@@ -129,6 +133,8 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         runtime: &mut Self::Runtime,
         batch: &MutationBatch<Self::Mutation>,
     ) -> Result<(), Self::Error> {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
         for operation in &batch.operations {
             let operation: WorkerIntentBatch = operation.clone();
@@ -139,6 +145,7 @@ impl HarnessAdapter for RelationalHarnessAdapter {
             .expect("test staging stays within configured resource budgets");
         }
         txn.commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

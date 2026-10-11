@@ -24,6 +24,7 @@ fn phase5_region_reuse_is_sensitive_to_empty_and_touched_deltas() {
     );
     assert!(!baseline.is_empty());
     commit_main_batch(
+        execution,
         &world.runtime,
         WorkerIntentBatch::new("phase5-no-storage-delta"),
     );
@@ -66,6 +67,7 @@ fn phase5_region_reuse_is_sensitive_to_empty_and_touched_deltas() {
         vec![world.runtime.main_branch_identity()],
     );
     commit_main_batch(
+        execution,
         &world.runtime,
         WorkerIntentBatch::new("phase5-touched-storage-delta").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {

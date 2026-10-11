@@ -51,7 +51,7 @@ fn worth_query_9_16_1_1_native_tail_recovers_through_current_schema_authority() 
         Some("9.16.1.1-native-fixture".to_owned())
     );
 
-    let continued = create_entity_outcome(&recovered, "post-legacy-recovery");
+    let continued = create_entity_outcome(execution, &recovered, "post-legacy-recovery");
     assert_eq!(
         continued.patch_position(),
         crate::publication::patch::data::PatchStreamPosition(2)

@@ -7,7 +7,7 @@ fn bounded_generation_selection_does_not_enumerate_retained_builds() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "selected");
+    let created = create_entity_outcome(execution, &runtime, "selected");
     let entity = changed_entities(&created)[0];
     let field = aspect_field_locator(aspect_key("name"), field_key("name"));
     let index = runtime.index_authority().register(DerivedIndexDefinition {

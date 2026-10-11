@@ -55,6 +55,7 @@ struct InspectingInvariantWriteAuthority;
 impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingInvariantWriteAuthority {
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
         relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -82,7 +83,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingInvariantWriteAuthorit
         assert!(format!("{:?}", result.verdict).contains("Violation"));
 
         let mut authority = TestWriteAuthority;
-        authority.write(bridge, Some(relational_runtime), mutation)
+        authority.write(execution, bridge, Some(relational_runtime), mutation)
     }
 }
 
@@ -93,6 +94,7 @@ struct InspectingCatalogWriteAuthority {
 impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingCatalogWriteAuthority {
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
         relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -105,7 +107,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingCatalogWriteAuthority 
         );
 
         let mut authority = TestWriteAuthority;
-        authority.write(bridge, Some(relational_runtime), mutation)
+        authority.write(execution, bridge, Some(relational_runtime), mutation)
     }
 }
 

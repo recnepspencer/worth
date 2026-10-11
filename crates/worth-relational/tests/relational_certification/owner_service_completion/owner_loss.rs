@@ -7,9 +7,12 @@ use worth_relational::facade::mvcc::RelationalOperationControl;
 
 #[test]
 fn surviving_bundle_is_weak_and_reports_exact_owner_unavailable_postures() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = empty_runtime();
     let services = runtime.owner_component_services();
-    commit_through_services(&runtime, &services, "owner-loss-world");
+    commit_through_services(execution, &runtime, &services, "owner-loss-world");
     let identity = fork_through_services(&services, "owner-loss")
         .target_identity()
         .clone();

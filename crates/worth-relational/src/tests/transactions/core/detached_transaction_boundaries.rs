@@ -9,11 +9,14 @@ use crate::tests::support::*;
 
 #[test]
 fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "relation-source");
-    let target = create_entity(&runtime, "relation-target");
-    let alternate_target = create_entity(&runtime, "alternate-relation-target");
-    let relation = create_relation(&runtime, source, target, "root-edge");
+    let source = create_entity(execution, &runtime, "relation-source");
+    let target = create_entity(execution, &runtime, "relation-target");
+    let alternate_target = create_entity(execution, &runtime, "alternate-relation-target");
+    let relation = create_relation(execution, &runtime, source, target, "root-edge");
     fork_from_main(&mut runtime, "storm");
     fork_from_main(&mut runtime, "maintenance");
 

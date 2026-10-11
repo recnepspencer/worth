@@ -28,8 +28,15 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
         ..AspectSchemaFixture::default()
     }
     .build_runtime();
-    let entity =
-        create_entity_with_summary_fields(&runtime, "struct-patch", "before", "open", true, false);
+    let entity = create_entity_with_summary_fields(
+        execution,
+        &runtime,
+        "struct-patch",
+        "before",
+        "open",
+        true,
+        false,
+    );
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -50,6 +57,7 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -141,6 +149,7 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
 }
 
 pub(super) fn create_entity_with_summary_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,
     summary_title: &str,
@@ -197,6 +206,7 @@ pub(super) fn create_entity_with_summary_fields(
     .expect("test staging stays within configured resource budgets");
     changed_entities(
         &txn.commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

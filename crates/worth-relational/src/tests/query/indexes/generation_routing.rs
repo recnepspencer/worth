@@ -7,7 +7,7 @@ fn generation_routing_respects_declared_branch_scope_without_history_inventory()
 
     for branch_scoped in [true, false] {
         let runtime = runtime_with_index_field_aspects();
-        let created = create_entity_outcome(&runtime, "alpha");
+        let created = create_entity_outcome(execution, &runtime, "alpha");
         let entity = changed_entities(&created)[0];
         let field = aspect_field_locator(aspect_key("name"), field_key("name"));
         let index = runtime.index_authority().register(DerivedIndexDefinition {

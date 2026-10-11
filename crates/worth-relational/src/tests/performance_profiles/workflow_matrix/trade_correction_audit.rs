@@ -6,17 +6,18 @@ pub(super) fn certify_fintech_trade_correction_audit_round_trip(
 ) {
     let fintech_trade_correction_samples =
         capture_perf_samples(suite, "fintech_trade_correction_audit_round_trip", || {
-            let mut world = setup_trade_correction_perf_world();
+            let mut world = setup_trade_correction_perf_world(execution);
             let baseline_observability = perf_capture_baseline_observability(&world);
             let analysis = perf_open_analysis_branch(&mut world);
 
             world.runtime.performance_access().reset_counters();
             let correction_started_at = Instant::now();
-            let correction_commit = perf_correct_trade_correction(&mut world, analysis.clone());
+            let correction_commit =
+                perf_correct_trade_correction(execution, &mut world, analysis.clone());
             let correction_commit_micros = correction_started_at.elapsed().as_micros();
 
             let audit_started_at = Instant::now();
-            let audit_commit = perf_emit_trade_correction_audit(&mut world, analysis);
+            let audit_commit = perf_emit_trade_correction_audit(execution, &mut world, analysis);
             let audit_commit_micros = audit_started_at.elapsed().as_micros();
 
             let query_started_at = Instant::now();

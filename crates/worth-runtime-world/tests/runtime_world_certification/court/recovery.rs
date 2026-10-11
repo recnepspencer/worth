@@ -131,7 +131,7 @@ fn performed_capability_loss_reopens_one_claim_and_consumption_closes_it() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let root = court.bootstrap();
-    let prepared = court.prepare_cargo(&root, "5");
+    let prepared = court.prepare_cargo(&execution, &root, "5");
     let RuntimeWorldPublicationOutcome::Performed(done) =
         court.world.publication_port().execute_without_signal(
             execution,

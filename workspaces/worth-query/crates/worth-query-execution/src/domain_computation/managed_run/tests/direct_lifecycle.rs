@@ -11,7 +11,7 @@ fn causal_lower_authorities_admit_one_managed_direct_run_and_cleanup_every_owner
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("exact installed operation should start one reserved attempt");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
 
     let admitted = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
@@ -56,7 +56,7 @@ fn cleanup_thread_failure_returns_all_authority_for_owner_thread_retry() {
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("exact operation should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let terminal = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)

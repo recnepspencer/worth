@@ -19,7 +19,7 @@ pub(crate) fn run_seeded_scenario(
     config: SeededScenarioConfig,
 ) -> SeededScenarioWorld {
     let mut runtime = build_runtime(config.runtime_mode);
-    let mut entities = seed_initial_entities(&mut runtime, "seed");
+    let mut entities = seed_initial_entities(execution, &mut runtime, "seed");
     let baseline_checkpoint = checkpoint_for_schema_version(
         runtime
             .publication()
@@ -82,7 +82,7 @@ pub(crate) fn run_property_scenario(
     runtime_mode: RuntimeHarnessMode,
 ) -> SeededScenarioWorld {
     let mut runtime = build_property_runtime(runtime_mode);
-    let mut entities = seed_initial_entities(&mut runtime, "property");
+    let mut entities = seed_initial_entities(execution, &mut runtime, "property");
     let baseline_checkpoint = checkpoint_for_schema_version(
         runtime
             .publication()
@@ -141,21 +141,25 @@ pub(crate) fn run_property_scenario(
 }
 
 fn seed_initial_entities(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     label: &str,
 ) -> Vec<crate::facade::identity::EntityId> {
     vec![
         create_entity_in_partition(
+            execution,
             runtime,
             &format!("{label}-left"),
             crate::facade::identity::PartitionId(7),
         ),
         create_entity_in_partition(
+            execution,
             runtime,
             &format!("{label}-right"),
             crate::facade::identity::PartitionId(11),
         ),
         create_entity_in_partition(
+            execution,
             runtime,
             &format!("{label}-center"),
             crate::facade::identity::PartitionId(29),

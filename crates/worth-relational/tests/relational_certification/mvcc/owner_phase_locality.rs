@@ -61,7 +61,10 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
     );
     let preparation = world.runtime.preparation_port();
     let storm_worker = std::thread::spawn(move || {
+        let host_request = crate::test_execution_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
         preparation.prepare_branch_transaction(
+            request_execution,
             storm_transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -70,6 +73,7 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
 
     let before = court.capture(&world.runtime);
     let committed = commit_unrelated_branch_while_paused(
+        request_execution,
         &world,
         &court,
         &before,
@@ -132,6 +136,7 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
         .runtime
         .preparation_port()
         .prepare_branch_transaction(
+            request_execution,
             storm_transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -142,6 +147,7 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
 
     let before = court.capture(&world.runtime);
     let committed = commit_unrelated_branch_while_paused(
+        request_execution,
         &world,
         &court,
         &before,
@@ -226,6 +232,7 @@ fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() 
         .runtime
         .preparation_port()
         .prepare_branch_transaction(
+            request_execution,
             storm_transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -262,6 +269,7 @@ fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() 
     let before = court.capture(&world.runtime);
     let maintenance_before = coordination_counters(&world.runtime, &court.maintenance);
     let committed = commit_unrelated_branch_while_paused(
+        request_execution,
         &world,
         &court,
         &before,

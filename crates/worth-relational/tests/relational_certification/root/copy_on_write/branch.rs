@@ -91,7 +91,12 @@ fn phase5_forked_topology_write_copies_only_touched_regions() {
         delta,
     )
     .expect("the actual rewire branch pre-state lowers to production intent");
-    commit_branch_batch(&world.runtime, BranchId("rewire".to_owned()), batch);
+    commit_branch_batch(
+        execution,
+        &world.runtime,
+        BranchId("rewire".to_owned()),
+        batch,
+    );
 
     assert_rewire_matches_oracle(execution, &mut world, &rewire, expected);
     let cost = world

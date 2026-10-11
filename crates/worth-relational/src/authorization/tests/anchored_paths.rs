@@ -15,16 +15,23 @@ fn exact_next_hop_anchor_ignores_same_source_population() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let principal = create_entity(&runtime, "anchored-principal");
-    let anchor = create_entity(&runtime, "anchored-role");
-    let scope = create_entity(&runtime, "anchored-scope");
-    create_relation(&runtime, principal, anchor, "anchored-principal-role");
-    create_relation(&runtime, anchor, scope, "anchored-role-scope");
+    let principal = create_entity(execution, &runtime, "anchored-principal");
+    let anchor = create_entity(execution, &runtime, "anchored-role");
+    let scope = create_entity(execution, &runtime, "anchored-scope");
+    create_relation(
+        execution,
+        &runtime,
+        principal,
+        anchor,
+        "anchored-principal-role",
+    );
+    create_relation(execution, &runtime, anchor, scope, "anchored-role-scope");
 
     let baseline = observe_anchored_path(execution, &runtime, principal, anchor, scope);
     for ordinal in 0..64 {
-        let unrelated = create_entity(&runtime, &format!("same-source-grant-{ordinal}"));
+        let unrelated = create_entity(execution, &runtime, &format!("same-source-grant-{ordinal}"));
         create_relation(
+            execution,
             &runtime,
             principal,
             unrelated,
@@ -47,14 +54,21 @@ fn exact_next_hop_anchor_retains_revocation_currentness() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let principal = create_entity(&runtime, "revoked-anchor-principal");
-    let anchor = create_entity(&runtime, "revoked-anchor-role");
-    let scope = create_entity(&runtime, "revoked-anchor-scope");
-    let exact = create_relation(&runtime, principal, anchor, "revoked-principal-role");
-    create_relation(&runtime, anchor, scope, "revoked-role-scope");
+    let principal = create_entity(execution, &runtime, "revoked-anchor-principal");
+    let anchor = create_entity(execution, &runtime, "revoked-anchor-role");
+    let scope = create_entity(execution, &runtime, "revoked-anchor-scope");
+    let exact = create_relation(
+        execution,
+        &runtime,
+        principal,
+        anchor,
+        "revoked-principal-role",
+    );
+    create_relation(execution, &runtime, anchor, scope, "revoked-role-scope");
     let admitted = observe_anchored_path(execution, &runtime, principal, anchor, scope);
 
-    let revoked = delete_relation_on_branch(&runtime, exact, BranchId("main".to_owned()));
+    let revoked =
+        delete_relation_on_branch(execution, &runtime, exact, BranchId("main".to_owned()));
 
     assert_eq!(
         runtime.compare_authorization_observation(&admitted, revoked.snapshot.clone(), execution),

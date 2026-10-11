@@ -61,7 +61,7 @@ fn intent_reconciliation_strategy_emits_update_when_aspect_fields_differ() {
             &descriptor,
         ))
         .build();
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -110,8 +110,8 @@ fn intent_reconciliation_strategy_emits_noop_when_aspect_fields_match() {
             &descriptor,
         ))
         .build();
-    let entity = create_entity(&runtime, "before");
-    update_entity(&runtime, entity, "stable");
+    let entity = create_entity(request_execution, &runtime, "before");
+    update_entity(request_execution, &runtime, entity, "stable");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -160,7 +160,7 @@ fn intent_reconciliation_strategy_preserves_untouched_declared_fields() {
             &descriptor,
         ))
         .build();
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(

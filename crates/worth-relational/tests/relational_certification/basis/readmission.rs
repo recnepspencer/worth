@@ -56,7 +56,7 @@ fn unretained_descriptor_cannot_follow_a_moved_reference() {
         DeltaId::StormRerouteAurora,
     )
     .unwrap();
-    commit_branch_batch(&runtime, branch_id, batch);
+    commit_branch_batch(execution, &runtime, branch_id, batch);
 
     assert!(matches!(
         runtime.readmit_branch_basis(&descriptor),

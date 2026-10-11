@@ -58,7 +58,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         .unwrap()
         .clone();
     handle.with_runtime_mut(request_execution, |runtime| {
-        write_field(runtime, entity, label, "prime")
+        write_field(request_execution, runtime, entity, label, "prime")
     });
     let (before_handle, before, facts) = world
         .application
@@ -107,7 +107,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     ));
 
     handle.with_runtime_mut(request_execution, |runtime| {
-        write_field(runtime, entity, status, "closed")
+        write_field(request_execution, runtime, entity, status, "closed")
     });
     let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
     let next = RecordedSettlementIdentity::retain(&source, coordinate, 1);

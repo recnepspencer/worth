@@ -140,6 +140,9 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
 
 #[test]
 fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -153,8 +156,8 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
         .schema_registry(schema)
         .custom_invariant(CustomInvariantRegistration::new(BoundedBudgetUnrelatedRule).unwrap())
         .build();
-    let source = crate::tests::support::create_entity(&runtime, "bulk-source");
-    let target = crate::tests::support::create_entity(&runtime, "bulk-target");
+    let source = crate::tests::support::create_entity(execution, &runtime, "bulk-source");
+    let target = crate::tests::support::create_entity(execution, &runtime, "bulk-target");
     let endpoints = (0..40)
         .map(|_| {
             (

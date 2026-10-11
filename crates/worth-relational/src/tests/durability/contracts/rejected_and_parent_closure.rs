@@ -36,10 +36,10 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
         .durable_store_layout(store_layout.clone())
         .build();
-    let source = create_entity(&runtime, "source");
-    let target_a = create_entity(&runtime, "target-a");
-    let target_b = create_entity(&runtime, "target-b");
-    let accepted = create_relation_outcome(&runtime, source, target_a, "accepted");
+    let source = create_entity(execution, &runtime, "source");
+    let target_a = create_entity(execution, &runtime, "target-a");
+    let target_b = create_entity(execution, &runtime, "target-b");
+    let accepted = create_relation_outcome(execution, &runtime, source, target_a, "accepted");
     let relation = changed_relations(&accepted)[0];
     let latest_commit_before = runtime.history().latest_commit();
     let latest_patch_before = runtime.publication().latest_patch().unwrap().position;
@@ -67,6 +67,7 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
     .expect("test staging stays within configured resource budgets");
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -148,8 +149,8 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let parent = create_entity_outcome(&runtime, "main-a");
-    let child = create_entity_outcome(&runtime, "main-b");
+    let parent = create_entity_outcome(execution, &runtime, "main-a");
+    let child = create_entity_outcome(execution, &runtime, "main-b");
     let child_envelope = runtime
         .replay()
         .canonical_commit_envelope(child.commit.commit_id)

@@ -18,8 +18,11 @@ const GENEROUS: Budget = Budget {
 
 #[test]
 fn prepared_summary_reads_exact_whole_scalar_scope_without_publishing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "summary-before");
+    let entity = create_entity(execution, &runtime, "summary-before");
     let before = test_owner_main_basis(&runtime).unwrap().observation();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -36,7 +39,7 @@ fn prepared_summary_reads_exact_whole_scalar_scope_without_publishing() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
         .unwrap();
     let summary = runtime
         .preparation_port()
@@ -87,8 +90,11 @@ fn prepared_summary_reads_exact_whole_scalar_scope_without_publishing() {
 
 #[test]
 fn unchanged_entity_update_has_empty_scope_and_preserves_native_field_revision() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "summary-unchanged");
+    let entity = create_entity(execution, &runtime, "summary-unchanged");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -104,7 +110,7 @@ fn unchanged_entity_update_has_empty_scope_and_preserves_native_field_revision()
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
         .unwrap();
     let summary = runtime
         .preparation_port()
@@ -147,6 +153,9 @@ fn unchanged_entity_update_has_empty_scope_and_preserves_native_field_revision()
 
 #[test]
 fn prepared_summary_preserves_exact_struct_field_scope() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![entity_summary_struct_aspect(
             aspect_key("summary"),
@@ -156,6 +165,7 @@ fn prepared_summary_preserves_exact_struct_field_scope() {
     }
     .build_runtime();
     let entity = super::struct_field_patch_authority::create_entity_with_summary_fields(
+        execution,
         &runtime,
         "summary-struct",
         "before",
@@ -184,7 +194,7 @@ fn prepared_summary_preserves_exact_struct_field_scope() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
         .unwrap();
     let summary = runtime
         .preparation_port()
@@ -211,11 +221,14 @@ fn prepared_summary_preserves_exact_struct_field_scope() {
 
 #[test]
 fn prepared_summary_uses_before_and_after_relation_roots_for_rewire() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "summary-source");
-    let old_target = create_entity(&runtime, "summary-old-target");
-    let new_target = create_entity(&runtime, "summary-new-target");
-    let relation = create_relation(&runtime, source, old_target, "summary-edge");
+    let source = create_entity(execution, &runtime, "summary-source");
+    let old_target = create_entity(execution, &runtime, "summary-old-target");
+    let new_target = create_entity(execution, &runtime, "summary-new-target");
+    let relation = create_relation(execution, &runtime, source, old_target, "summary-edge");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -231,7 +244,7 @@ fn prepared_summary_uses_before_and_after_relation_roots_for_rewire() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
         .unwrap();
     let summary = runtime
         .preparation_port()
@@ -263,10 +276,13 @@ fn prepared_summary_uses_before_and_after_relation_roots_for_rewire() {
 
 #[test]
 fn prepared_relation_delete_has_only_before_live_endpoints() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "summary-delete-source");
-    let target = create_entity(&runtime, "summary-delete-target");
-    let relation = create_relation(&runtime, source, target, "summary-delete-edge");
+    let source = create_entity(execution, &runtime, "summary-delete-source");
+    let target = create_entity(execution, &runtime, "summary-delete-target");
+    let relation = create_relation(execution, &runtime, source, target, "summary-delete-edge");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -279,7 +295,7 @@ fn prepared_relation_delete_has_only_before_live_endpoints() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
         .unwrap();
     let summary = runtime
         .preparation_port()
@@ -305,6 +321,9 @@ fn prepared_relation_delete_has_only_before_live_endpoints() {
 
 #[test]
 fn summary_budget_and_foreign_owner_deny_without_consuming_candidate() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let foreign = runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -312,7 +331,7 @@ fn summary_budget_and_foreign_owner_deny_without_consuming_candidate() {
         .push_batch(batch_create("summary-denial"), Allocation::SystemAllocation)
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
         .unwrap();
     assert_eq!(
         foreign
@@ -349,36 +368,5 @@ fn summary_budget_and_foreign_owner_deny_without_consuming_candidate() {
     runtime.discard_prepared_candidate(candidate).unwrap();
 }
 
-#[test]
-fn expired_candidate_summary_is_typed_and_cannot_retain_stale_scope() {
-    let runtime = RelationalRuntimeApi::builder()
-        .profile(RelationalRuntimeProfile::AiWorkflow)
-        .schema_registry(test_schema_registry())
-        .publication(crate::facade::config::PublicationConfig {
-            coherent_publication_required: true,
-            max_patch_records_per_commit: 4_096,
-            max_published_snapshot_handles: 1,
-            max_active_snapshot_handles: 8,
-            max_transaction_savepoints: 8,
-            max_prepared_candidates: 1,
-            candidate_max_lifetime_millis: 0,
-        })
-        .build();
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            batch_create("expired-summary"),
-            Allocation::SystemAllocation,
-        )
-        .unwrap();
-    let candidate = runtime
-        .prepare_branch_transaction(transaction, Allocation::SystemAllocation)
-        .unwrap();
-    assert_eq!(
-        runtime
-            .preparation_port()
-            .summarize_prepared_candidate(&candidate, GENEROUS),
-        Err(Denial::CandidateLifetimeExpired)
-    );
-    runtime.discard_prepared_candidate(candidate).unwrap();
-}
+#[path = "prepared_candidate_change_summary/expired_scope.rs"]
+mod expired_scope;

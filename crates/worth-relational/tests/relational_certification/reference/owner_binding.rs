@@ -45,6 +45,7 @@ fn owner_issues_transaction_context_from_exact_main_identity() {
         .unwrap();
     let result = transaction
         .commit(
+            execution,
             &world.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -204,6 +205,7 @@ fn unrelated_branch_progress_is_not_staled_by_main_branch_movement() {
         .unwrap();
     main_transaction
         .commit(
+            execution,
             &world.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -211,6 +213,7 @@ fn unrelated_branch_progress_is_not_staled_by_main_branch_movement() {
 
     let committed = storm_transaction
         .commit(
+            execution,
             &world.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -272,6 +275,7 @@ fn source_movement_cannot_mutate_a_forked_target_reference() {
         .unwrap();
     advance
         .commit(
+            execution,
             &world.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

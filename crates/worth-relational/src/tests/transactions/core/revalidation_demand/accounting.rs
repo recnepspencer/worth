@@ -8,8 +8,11 @@ use crate::validation::data::InvariantGroupSet;
 
 #[test]
 fn a_demand_reports_no_invalidation_and_keeps_flat_entity_topology() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let target = create_entity(&runtime, COMPLIANT_NAME);
+    let target = create_entity(execution, &runtime, COMPLIANT_NAME);
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -20,6 +23,7 @@ fn a_demand_reports_no_invalidation_and_keeps_flat_entity_topology() {
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -40,8 +44,11 @@ fn a_demand_reports_no_invalidation_and_keeps_flat_entity_topology() {
 
 #[test]
 fn demand_clone_cost_does_not_scale_with_unrelated_partition_population() {
-    let sparse = demand_clone_cost(4);
-    let populated = demand_clone_cost(40);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let sparse = demand_clone_cost(execution, 4);
+    let populated = demand_clone_cost(execution, 40);
 
     assert_eq!(
         populated, sparse,
@@ -51,10 +58,13 @@ fn demand_clone_cost_does_not_scale_with_unrelated_partition_population() {
 
 #[test]
 fn demand_only_rejection_survives_the_narrow_effect_claim() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let mode = create_entity(&runtime, "lax");
-    update_entity_and_release_snapshot(&runtime, mode, STRICT_MODE_NAME);
-    let offending = create_entity(&runtime, "oversized");
+    let mode = create_entity(execution, &runtime, "lax");
+    update_entity_and_release_snapshot(execution, &runtime, mode, STRICT_MODE_NAME);
+    let offending = create_entity(execution, &runtime, "oversized");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -65,6 +75,7 @@ fn demand_only_rejection_survives_the_narrow_effect_claim() {
         .expect("staging stays within configured resource budgets");
     let error = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -88,11 +99,14 @@ fn demand_only_rejection_survives_the_narrow_effect_claim() {
     );
 }
 
-fn demand_clone_cost(bystanders: usize) -> (usize, usize) {
+fn demand_clone_cost(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    bystanders: usize,
+) -> (usize, usize) {
     let runtime = strictness_runtime();
-    let target = create_entity(&runtime, COMPLIANT_NAME);
+    let target = create_entity(execution, &runtime, COMPLIANT_NAME);
     for ordinal in 0..bystanders {
-        let _ = create_entity(&runtime, &format!("bystander-{ordinal}"));
+        let _ = create_entity(execution, &runtime, &format!("bystander-{ordinal}"));
     }
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -104,6 +118,7 @@ fn demand_clone_cost(bystanders: usize) -> (usize, usize) {
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

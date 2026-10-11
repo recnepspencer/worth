@@ -7,9 +7,9 @@ fn durability_contract_recovery_rejects_tail_target_without_immutable_artifact()
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "checkpoint-basis");
+    create_entity_outcome(execution, &runtime, "checkpoint-basis");
     runtime.durability_authority().checkpoint().unwrap();
-    let second = create_entity_outcome(&runtime, "tail-commit");
+    let second = create_entity_outcome(execution, &runtime, "tail-commit");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );

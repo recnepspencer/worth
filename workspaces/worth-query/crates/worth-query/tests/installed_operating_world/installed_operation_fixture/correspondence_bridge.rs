@@ -49,6 +49,7 @@ impl InvalidationSink for CorrespondenceSink {
 }
 
 pub(crate) fn correspondence_bridge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     registration: BridgeSemanticCorrespondenceRegistration,
 ) -> (RuntimeBridge, RelationalCommittedPatchRequest) {
     let dependency = registration.dependency();
@@ -95,6 +96,7 @@ pub(crate) fn correspondence_bridge(
         .expect("test staging stays within configured resource budgets");
     let created = create
         .commit(
+            execution,
             &relational,
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -126,6 +128,7 @@ pub(crate) fn correspondence_bridge(
         .expect("test staging stays within configured resource budgets");
     let updated = update
         .commit(
+            execution,
             &relational,
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )

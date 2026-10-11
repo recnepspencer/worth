@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn runtime_recovers_settlement_after_external_capability_is_dropped() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "runtime-recovery-anchor");
+    create_entity(execution, &runtime, "runtime-recovery-anchor");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -12,7 +15,7 @@ fn runtime_recovers_settlement_after_external_capability_is_dropped() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction, AllocationPolicy::SystemAllocation)
         .unwrap();
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
@@ -38,7 +41,7 @@ fn runtime_recovers_settlement_after_external_capability_is_dropped() {
         )
         .unwrap();
     assert!(runtime
-        .prepare_branch_transaction(blocked, AllocationPolicy::SystemAllocation,)
+        .prepare_branch_transaction(execution, blocked, AllocationPolicy::SystemAllocation,)
         .unwrap_err()
         .detail()
         .contains("requires explicit owner settlement"));
@@ -49,7 +52,7 @@ fn runtime_recovers_settlement_after_external_capability_is_dropped() {
     assert_eq!(repaired.commit_id, commit_id);
     assert_eq!(runtime.publication_binding().pending_settlement_count(), 0);
     assert_eq!(runtime.visibility.published_snapshot_handle_count(), 0);
-    let child = create_entity_outcome(&runtime, "child-after-runtime-recovery");
+    let child = create_entity_outcome(execution, &runtime, "child-after-runtime-recovery");
     assert_eq!(child.commit.parents, vec![commit_id]);
     release_test_commit_snapshot(&runtime, &child);
 }

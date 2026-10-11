@@ -6,6 +6,7 @@ use crate::facade::transactions::{
 };
 
 pub(super) fn bulk_create_entities<I>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     batch_name: &str,
     partition_id: PartitionId,
@@ -33,6 +34,7 @@ where
     .expect("test staging stays within configured resource budgets");
     changed_entities(
         &txn.commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

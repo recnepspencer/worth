@@ -9,8 +9,11 @@ use crate::tests::support::*;
 
 #[test]
 fn subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome_and_trace_each_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     install_schema_version(&mut runtime, SchemaVersionId(2));
     let mut visible_txn = {
@@ -34,6 +37,7 @@ fn subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome_and_tra
         .expect("test staging stays within configured resource budgets");
     visible_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -61,6 +65,7 @@ fn subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome_and_tra
         .expect("test staging stays within configured resource budgets");
     upgrade_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -96,8 +101,11 @@ fn subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome_and_tra
 
 #[test]
 fn resumed_subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
     let contract = SubscriberContractDeclaration {
         contract_id: "subscriber.contract.geometry.v3".to_string(),
         accepted_upgrade_classes: SubscriberContinuationClassSet::new([
@@ -136,6 +144,7 @@ fn resumed_subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome
         .expect("test staging stays within configured resource budgets");
     visible_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -163,6 +172,7 @@ fn resumed_subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome
         .expect("test staging stays within configured resource budgets");
     upgrade_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

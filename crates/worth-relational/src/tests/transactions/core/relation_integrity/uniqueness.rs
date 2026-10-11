@@ -2,6 +2,9 @@ use crate::tests::support::*;
 
 #[test]
 fn relation_integrity_commit_boundary_rejects_duplicate_normalized_symmetric_edge() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -35,10 +38,10 @@ fn relation_integrity_commit_boundary_rejects_duplicate_normalized_symmetric_edg
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
 
-    create_relation(&runtime, source, target, "forward");
+    create_relation(execution, &runtime, source, target, "forward");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -58,6 +61,7 @@ fn relation_integrity_commit_boundary_rejects_duplicate_normalized_symmetric_edg
 
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

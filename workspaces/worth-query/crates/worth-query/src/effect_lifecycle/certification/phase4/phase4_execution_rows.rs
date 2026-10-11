@@ -30,7 +30,12 @@ pub(super) fn branch_mutation_execution_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),
@@ -81,7 +86,12 @@ pub(super) fn relational_merge_execution_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
-    create_entity(&mut runtime, "main", BranchId("main".to_string()));
+    create_entity(
+        execution,
+        &mut runtime,
+        "main",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("candidate".to_string()),
@@ -89,6 +99,7 @@ pub(super) fn relational_merge_execution_row(
     )
     .expect("candidate branch should exist");
     create_entity(
+        execution,
         &mut runtime,
         "candidate-only",
         BranchId("candidate".to_string()),
@@ -181,8 +192,18 @@ pub(super) fn batch_execution_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
-    let left = create_entity(&mut runtime, "left", BranchId("main".to_string()));
-    let right = create_entity(&mut runtime, "right", BranchId("main".to_string()));
+    let left = create_entity(
+        execution,
+        &mut runtime,
+        "left",
+        BranchId("main".to_string()),
+    );
+    let right = create_entity(
+        execution,
+        &mut runtime,
+        "right",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),
@@ -235,7 +256,12 @@ pub(super) fn relational_oracle_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> EffectLifecyclePhase4CertificationRow {
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),

@@ -28,8 +28,9 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = capacity_runtime();
-    let [lineage, first, second] = commit_entities(&mut runtime, ["lineage", "first", "second"]);
-    let read = commit_live(&mut runtime, "first-live", first, lineage);
+    let [lineage, first, second] =
+        commit_entities(execution, &mut runtime, ["lineage", "first", "second"]);
+    let read = commit_live(execution, &mut runtime, "first-live", first, lineage);
     let expected = incoming(execution, &runtime, &read.snapshot, lineage);
     assert_eq!(expected.len(), 1);
     assert!(remains_equal(
@@ -54,7 +55,7 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
         "a membership that already fills the lineage admits no start",
     );
 
-    let raced = commit_live(&mut runtime, "second-live", second, lineage);
+    let raced = commit_live(execution, &mut runtime, "second-live", second, lineage);
     assert!(
         !remains_equal(
             &runtime,
@@ -131,6 +132,7 @@ fn capacity_runtime() -> RelationalRuntime {
 }
 
 fn commit_entities<const N: usize>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     keys: [&str; N],
 ) -> [EntityId; N] {
@@ -147,7 +149,7 @@ fn commit_entities<const N: usize>(
             fields: AspectFieldPatch::default(),
         }))
     });
-    let committed = commit(runtime, "entities", intents);
+    let committed = commit(execution, runtime, "entities", intents);
     let issued = created.map(|created| {
         committed
             .created_entity(&created)
@@ -158,12 +160,14 @@ fn commit_entities<const N: usize>(
 }
 
 fn commit_live(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     key: &str,
     instance: EntityId,
     lineage: EntityId,
 ) -> CommitResult {
     commit(
+        execution,
         runtime,
         key,
         [MutationIntent::Create(CreateIntent::Relation(
@@ -180,6 +184,7 @@ fn commit_live(
 }
 
 fn commit<const N: usize>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     name: &str,
     intents: [MutationIntent; N],
@@ -203,6 +208,7 @@ fn commit<const N: usize>(
         .expect("the fixture batch stages");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

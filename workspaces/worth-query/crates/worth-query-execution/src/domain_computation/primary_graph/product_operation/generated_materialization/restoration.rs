@@ -208,6 +208,7 @@ where
                         .owner_component_services()
                         .materialization_port()
                         .prepare_generated_rematerialization(
+                            &execution,
                             publication.observation().basis().relational_basis(),
                             custody,
                             entities,

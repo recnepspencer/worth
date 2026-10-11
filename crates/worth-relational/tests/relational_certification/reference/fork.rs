@@ -342,6 +342,7 @@ fn stale_fork_source_denial_does_not_install_a_target_reference() {
         .unwrap();
     transaction
         .commit(
+            execution,
             &world.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

@@ -11,6 +11,7 @@ fn perf_snapshot_materialization_matrix() {
         let runtime = runtime_with_test_schema();
         for index in 0..128 {
             let _ = create_entity_in_partition(
+                execution,
                 &runtime,
                 &format!("entity-{index}"),
                 PartitionId(1 + (index % 4) as u32),
@@ -55,6 +56,7 @@ fn perf_snapshot_materialization_matrix() {
             let runtime = runtime_with_test_schema();
             for index in 0..96 {
                 let _ = create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("before-{index}"),
                     PartitionId(1 + (index % 3) as u32),
@@ -63,11 +65,17 @@ fn perf_snapshot_materialization_matrix() {
             let pinned_snapshot = runtime.visibility_authority().snapshot();
             for index in 0..24 {
                 let entity_id = create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("after-{index}"),
                     PartitionId(9 + index as u32),
                 );
-                let _ = update_entity(&runtime, entity_id, &format!("after-updated-{index}"));
+                let _ = update_entity(
+                    execution,
+                    &runtime,
+                    entity_id,
+                    &format!("after-updated-{index}"),
+                );
             }
 
             runtime.performance_access().reset_counters();
@@ -106,6 +114,7 @@ fn perf_snapshot_materialization_matrix() {
             let runtime = runtime_with_test_schema();
             for index in 0..128 {
                 let _ = create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("projection-{index}"),
                     PartitionId(1 + (index % 4) as u32),

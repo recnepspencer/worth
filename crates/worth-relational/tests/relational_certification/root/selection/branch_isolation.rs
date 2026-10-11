@@ -35,7 +35,7 @@ fn main_advances_before_child_read_keeps_child_snapshot_on_fork_root() {
         .expect("child root is owner-inspectable")
         .root_ids()[0];
 
-    advance_main_aurora_status(&mut world);
+    advance_main_aurora_status(execution, &mut world);
 
     let main = world.runtime.main_branch_identity();
     let main_root_after_advance = world
@@ -154,7 +154,10 @@ fn assert_child_explicit_query_uses_snapshot_root(
     );
 }
 
-fn advance_main_aurora_status(world: &mut ProductionSeededSupplyChainWorld) {
+fn advance_main_aurora_status(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &mut ProductionSeededSupplyChainWorld,
+) {
     let status_locator = planned_single_field_locator(
         AspectKey::new("status").expect("Supply Chain status aspect"),
         FieldKey::new("status").expect("Supply Chain status field"),
@@ -169,7 +172,12 @@ fn advance_main_aurora_status(world: &mut ProductionSeededSupplyChainWorld) {
     let batch = WorkerIntentBatch::new("main-advances-before-child-read").push(
         MutationIntent::Entity(EntityMutationIntent::UpdateFields(update)),
     );
-    commit_branch_batch(&world.runtime, BranchId("main".to_owned()), batch);
+    commit_branch_batch(
+        execution,
+        &world.runtime,
+        BranchId("main".to_owned()),
+        batch,
+    );
 }
 
 #[test]
@@ -218,7 +226,12 @@ fn phase5_named_supply_chain_deltas_keep_sibling_roots_and_work_independent() {
             delta,
         )
         .expect("the selected branch's actual pre-state admits its named delta");
-        commit_branch_batch(&world.runtime, BranchId(branch.to_owned()), batch);
+        commit_branch_batch(
+            execution,
+            &world.runtime,
+            BranchId(branch.to_owned()),
+            batch,
+        );
 
         let observed = observe_branch(execution, &mut world, &selected, branch);
         compare(

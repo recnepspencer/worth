@@ -2,6 +2,9 @@ use crate::tests::support::*;
 
 #[test]
 fn relation_integrity_commit_reports_contract_counters_on_success() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -52,10 +55,10 @@ fn relation_integrity_commit_reports_contract_counters_on_success() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
 
-    let result = create_relation_outcome(&runtime, source, target, "guarded");
+    let result = create_relation_outcome(execution, &runtime, source, target, "guarded");
 
     assert!(
         result

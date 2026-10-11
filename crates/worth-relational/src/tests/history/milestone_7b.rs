@@ -18,10 +18,11 @@ fn inspect_recovered_merge_planning_artifact(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::merge::MergePlanningArtifactCore {
     let runtime = persisted_runtime_with_test_schema();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "shared-main");
+    update_entity(execution, &runtime, shared, "shared-main");
     update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "shared-feature",
@@ -134,10 +135,11 @@ fn merge_planning_schema_snapshot_changes_when_schema_semantics_change() {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut crate::facade::runtime::RelationalRuntime,
     ) -> String {
-        let shared = create_entity(runtime, "shared");
+        let shared = create_entity(execution, runtime, "shared");
         create_branch_from_main(runtime, "feature");
-        update_entity(runtime, shared, "shared-main");
+        update_entity(execution, runtime, shared, "shared-main");
         update_entity_on_branch(
+            execution,
             runtime,
             shared,
             "shared-feature",

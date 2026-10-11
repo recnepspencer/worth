@@ -139,12 +139,15 @@ mod tests {
 
     #[test]
     fn stale_owner_binding_is_rejected_during_transaction_admission() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let runtime = runtime_with_test_schema();
         let identity = runtime.main_branch_identity();
         let stale_options = runtime
             .transaction_validation_input_for(&identity)
             .expect("main branch owner binding");
-        let _ = create_entity(&runtime, "head-advance");
+        let _ = create_entity(execution, &runtime, "head-advance");
 
         assert_eq!(
             runtime
@@ -156,6 +159,9 @@ mod tests {
 
     #[test]
     fn owner_rechecks_head_after_validation_before_commit() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let runtime = runtime_with_test_schema();
         let identity = runtime.main_branch_identity();
         let validation_input = runtime
@@ -171,9 +177,9 @@ mod tests {
             .expect("head is current at validation");
         let candidate_ordinal = candidate.proposal_identity.ordinal();
 
-        let _ = create_entity(&runtime, "post-validation-advance");
+        let _ = create_entity(execution, &runtime, "post-validation-advance");
         let denied = runtime
-            .prepare_validated_proposal(candidate)
+            .prepare_validated_proposal(execution, candidate)
             .expect_err("Relational must close the validate/commit race");
 
         assert!(matches!(

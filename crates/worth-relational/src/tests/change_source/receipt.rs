@@ -30,8 +30,11 @@ fn mint_at_head(
 
 #[test]
 fn receipt_carries_the_canonical_patch_and_the_checks_it_passed() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let outcome = create_entity_outcome(&runtime, "receipt");
+    let outcome = create_entity_outcome(execution, &runtime, "receipt");
     let commit = &outcome.commit;
 
     let receipt = mint_at_head(&runtime, "main", commit.commit_id, None);
@@ -58,8 +61,11 @@ fn receipt_carries_the_canonical_patch_and_the_checks_it_passed() {
 
 #[test]
 fn receipt_narrows_to_one_partition_and_counts_what_it_filtered() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity_in_partition(&runtime, "elsewhere", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "elsewhere", PartitionId(7));
     let commit_id = runtime
         .history()
         .next_commit_id()
@@ -83,8 +89,11 @@ fn receipt_narrows_to_one_partition_and_counts_what_it_filtered() {
 
 #[test]
 fn a_fork_receipt_names_the_selected_and_the_authoring_branch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let inherited = create_entity_outcome(&runtime, "inherited")
+    let inherited = create_entity_outcome(execution, &runtime, "inherited")
         .commit
         .commit_id;
     let feature = BranchId("feature".to_owned());
@@ -92,7 +101,7 @@ fn a_fork_receipt_names_the_selected_and_the_authoring_branch() {
         .history_authority()
         .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
         .unwrap();
-    create_entity_outcome_on_branch(&runtime, "feature-head", feature.clone());
+    create_entity_outcome_on_branch(execution, &runtime, "feature-head", feature.clone());
 
     let receipt = mint_at_head(&runtime, "feature", inherited, None);
 
@@ -102,10 +111,15 @@ fn a_fork_receipt_names_the_selected_and_the_authoring_branch() {
 
 #[test]
 fn another_runtime_cannot_mint_a_receipt_for_a_selection() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let owner = runtime_with_test_schema();
     let other = runtime_with_test_schema();
-    let commit_id = create_entity_outcome(&owner, "owned").commit.commit_id;
-    create_entity_outcome(&other, "unrelated");
+    let commit_id = create_entity_outcome(execution, &owner, "owned")
+        .commit
+        .commit_id;
+    create_entity_outcome(execution, &other, "unrelated");
     let observation = observe(&owner, "main").observation();
     let selected = owner
         .select_exact_commit(&observation, commit_id)

@@ -20,7 +20,7 @@ fn historical_lineage_resolution_follows_replace_events() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
@@ -50,6 +50,7 @@ fn historical_lineage_resolution_follows_replace_events() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -108,7 +109,7 @@ fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "failed-lineage-source");
+    let created = create_entity_outcome(execution, &runtime, "failed-lineage-source");
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
@@ -148,6 +149,7 @@ fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
         .expect("test staging stays within configured resource budgets");
     let durability_deferred = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -200,7 +202,7 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
@@ -210,7 +212,7 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
 
     for index in 0..6 {
         let label = format!("unrelated-{index}");
-        let _ = create_entity_outcome(&runtime, &label);
+        let _ = create_entity_outcome(execution, &runtime, &label);
     }
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -235,6 +237,7 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
     .expect("test staging stays within configured resource budgets");
     let _ = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -268,8 +271,11 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
 
 #[test]
 fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
@@ -299,6 +305,7 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
     .expect("test staging stays within configured resource budgets");
     let replacement = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

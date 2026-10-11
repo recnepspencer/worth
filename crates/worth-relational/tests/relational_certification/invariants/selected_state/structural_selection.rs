@@ -44,8 +44,9 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
             .expect("Court Supply Chain definition is valid"),
     )
     .expect("Supply Chain program compiles");
-    let world = compile_supply_chain_baseline_with_custom_invariant(program, registration)
-        .expect("Court world compiles with the structural selection probe");
+    let world =
+        compile_supply_chain_baseline_with_custom_invariant(execution, program, registration)
+            .expect("Court world compiles with the structural selection probe");
 
     let relation = world.handles.relations
         [&super::world::supply_chain::RelationKey::new(RelationKind::CargoBookedOnVoyage, 0)]
@@ -78,6 +79,7 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
             .version_id;
 
     commit_branch_batch(
+        execution,
         &world.runtime,
         BranchId("main".to_owned()),
         WorkerIntentBatch::new("phase5-main-rewire-cargo-booking").push(MutationIntent::Relation(
@@ -137,6 +139,7 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
     )
     .expect("the child medical-hold delta lowers from its selected root");
     let child_commit = commit_branch_batch_result(
+        execution,
         &world.runtime,
         BranchId("medical-hold".to_owned()),
         child_batch,

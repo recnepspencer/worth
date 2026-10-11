@@ -61,7 +61,12 @@ fn relational_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_
 fn scalar_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
     let branch = "closeout-oracle-branch";
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId(branch.to_string()),
@@ -102,8 +107,18 @@ fn scalar_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'
 fn batch_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
     let branch = "closeout-oracle-batch";
     let mut runtime = relational_runtime_with_intent_strategy();
-    let left = create_entity(&mut runtime, "left", BranchId("main".to_string()));
-    let right = create_entity(&mut runtime, "right", BranchId("main".to_string()));
+    let left = create_entity(
+        execution,
+        &mut runtime,
+        "left",
+        BranchId("main".to_string()),
+    );
+    let right = create_entity(
+        execution,
+        &mut runtime,
+        "right",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId(branch.to_string()),

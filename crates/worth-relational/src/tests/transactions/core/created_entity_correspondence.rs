@@ -41,6 +41,7 @@ fn committed_create_references_resolve_their_own_distinct_persisted_meanings() {
         .expect("test staging stays within configured resource budgets");
     let committed = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

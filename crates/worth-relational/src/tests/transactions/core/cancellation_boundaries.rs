@@ -12,9 +12,12 @@ use crate::tests::support::*;
 
 #[test]
 fn admission_interruptions_after_retention_acquisition_release_exactly_once() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for interruption in interruption_twins() {
         let runtime = runtime_with_test_schema();
-        create_entity(&runtime, "admission-interruption-anchor");
+        create_entity(execution, &runtime, "admission-interruption-anchor");
         let identity = runtime.main_branch_identity();
         let reference_before = runtime
             .branch_reference_state(&BranchId("main".to_owned()))
@@ -104,6 +107,9 @@ fn admission_interruptions_after_retention_acquisition_release_exactly_once() {
 
 #[test]
 fn preparation_interruptions_leave_no_candidate_or_publication_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (boundary, trigger_on_visit) in [
         (RelationalInterruptionBoundary::ProposalValidation, 1),
         // Scope-control admission is now the first visit. The fourth visit in
@@ -112,7 +118,7 @@ fn preparation_interruptions_leave_no_candidate_or_publication_residue() {
     ] {
         for interruption in interruption_twins() {
             let runtime = runtime_with_test_schema();
-            create_entity(&runtime, "preparation-interruption-anchor");
+            create_entity(execution, &runtime, "preparation-interruption-anchor");
             let identity = runtime.main_branch_identity();
             let (_, basis) = runtime.observe_branch(&identity).unwrap();
             let control = injected_control(boundary, interruption, trigger_on_visit);
@@ -136,6 +142,7 @@ fn preparation_interruptions_leave_no_candidate_or_publication_residue() {
 
             let error = runtime
                 .prepare_branch_transaction(
+                    execution,
                     transaction,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
@@ -172,13 +179,16 @@ fn preparation_interruptions_leave_no_candidate_or_publication_residue() {
 
 #[test]
 fn pre_effect_publication_interruptions_preserve_every_owner_surface() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for boundary in [
         RelationalInterruptionBoundary::PublicationPreflight,
         RelationalInterruptionBoundary::BeforeCriticalSection,
     ] {
         for interruption in interruption_twins() {
             let runtime = runtime_with_test_schema();
-            create_entity(&runtime, "publication-interruption-anchor");
+            create_entity(execution, &runtime, "publication-interruption-anchor");
             let identity = runtime.main_branch_identity();
             let (_, basis) = runtime.observe_branch(&identity).unwrap();
             let control = injected_control(boundary, interruption, 1);
@@ -199,6 +209,7 @@ fn pre_effect_publication_interruptions_preserve_every_owner_surface() {
                 .unwrap();
             let candidate = runtime
                 .prepare_branch_transaction(
+                    execution,
                     transaction,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
@@ -230,13 +241,16 @@ fn pre_effect_publication_interruptions_preserve_every_owner_surface() {
 
 #[test]
 fn performed_and_settlement_boundaries_report_both_late_interruption_reasons() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for boundary in [
         RelationalInterruptionBoundary::AfterLinearization,
         RelationalInterruptionBoundary::Settlement,
     ] {
         for interruption in interruption_twins() {
             let runtime = runtime_with_test_schema();
-            create_entity(&runtime, "late-interruption-anchor");
+            create_entity(execution, &runtime, "late-interruption-anchor");
             let identity = runtime.main_branch_identity();
             let (_, basis) = runtime.observe_branch(&identity).unwrap();
             let control = injected_control(boundary, interruption, 1);
@@ -255,6 +269,7 @@ fn performed_and_settlement_boundaries_report_both_late_interruption_reasons() {
                 .unwrap();
             let candidate = runtime
                 .prepare_branch_transaction(
+                    execution,
                     transaction,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
@@ -295,74 +310,6 @@ fn performed_and_settlement_boundaries_report_both_late_interruption_reasons() {
     }
 }
 
-#[test]
-fn cancellation_after_linearization_returns_the_performed_commit() {
-    let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "late-cancellation-anchor");
-    let identity = runtime.main_branch_identity();
-    let (_, basis) = runtime.observe_branch(&identity).unwrap();
-    let source = RelationalCancellationSource::new();
-    let reached = Arc::new(Barrier::new(2));
-    let release = Arc::new(Barrier::new(2));
-    let control = RelationalOperationControl::from(source.token())
-        .with_post_linearization_pause(Arc::clone(&reached), Arc::clone(&release));
-    let mut transaction = runtime
-        .begin_branch_transaction_with_control(
-            &basis,
-            RelationalTransactionIntent::ordinary(),
-            control,
-        )
-        .unwrap();
-    transaction
-        .push_batch(
-            batch_create("late-cancellation-write"),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let before = runtime
-        .branch_reference_state(&BranchId("main".to_owned()))
-        .unwrap();
-    let port = runtime.publication_port();
-
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
-    reached.wait();
-    assert_ne!(
-        runtime
-            .branch_reference_state(&BranchId("main".to_owned()))
-            .unwrap(),
-        before,
-        "the owner reference has already crossed its linearization point"
-    );
-    source.cancel();
-    release.wait();
-
-    let performed = match publisher.join().unwrap() {
-        crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
-        outcome => panic!("late cancellation cannot erase performed movement: {outcome:?}"),
-    };
-    let interruption = performed
-        .late_interruption()
-        .expect("late cancellation remains attached to the performed result");
-    assert_eq!(
-        interruption.interruption(),
-        RelationalOperationInterruption::Cancelled
-    );
-    assert_eq!(
-        interruption.boundary(),
-        RelationalInterruptionBoundary::AfterLinearization
-    );
-    let committed = runtime
-        .settle_performed_publication(performed)
-        .expect("performed publication remains settleable after late cancellation");
-    release_test_commit_snapshot(&runtime, &committed);
-}
-
 fn interruption_twins() -> [RelationalOperationInterruption; 2] {
     [
         RelationalOperationInterruption::Cancelled,
@@ -392,3 +339,6 @@ fn assert_interruption_count(
         1,
     );
 }
+
+#[path = "cancellation_boundaries/post_linearization.rs"]
+mod post_linearization;

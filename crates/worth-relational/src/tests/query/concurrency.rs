@@ -13,11 +13,11 @@ fn concurrent_snapshot_and_version_reads_match_serial_truth() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
-    let created = create_entity_outcome(&runtime, "before");
+    let created = create_entity_outcome(execution, &runtime, "before");
     let created_version_id = created.version_id;
     let entity = changed_entities(&created)[0];
     let explicit_snapshot = runtime.visibility_authority().snapshot();
-    let updated = update_entity(&runtime, entity, "after");
+    let updated = update_entity(execution, &runtime, entity, "after");
     let serial_snapshot_name = {
         let read = runtime
             .read_truth()
@@ -93,14 +93,14 @@ fn concurrent_read_pressure_keeps_cache_diagnostics_coherent() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-    let created = create_entity_outcome(&runtime, "baseline");
+    let created = create_entity_outcome(execution, &runtime, "baseline");
     let created_version_id = created.version_id;
     let entity = changed_entities(&created)[0];
     let explicit_snapshot = runtime.visibility_authority().snapshot();
-    let updated = update_entity(&runtime, entity, "mutated");
-    let _ = create_entity_outcome(&runtime, "churn-1");
-    let _ = create_entity_outcome(&runtime, "churn-2");
-    let _ = create_entity_outcome(&runtime, "churn-3");
+    let updated = update_entity(execution, &runtime, entity, "mutated");
+    let _ = create_entity_outcome(execution, &runtime, "churn-1");
+    let _ = create_entity_outcome(execution, &runtime, "churn-2");
+    let _ = create_entity_outcome(execution, &runtime, "churn-3");
     runtime.performance_access().reset_counters();
     let runtime = Arc::new(runtime);
 
@@ -147,10 +147,13 @@ fn concurrent_read_pressure_keeps_cache_diagnostics_coherent() {
 
 #[test]
 fn published_snapshot_read_diagnostics_use_authoritative_binding_version() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-    let created = create_entity_outcome(&runtime, "baseline");
+    let created = create_entity_outcome(execution, &runtime, "baseline");
     let entity = changed_entities(&created)[0];
-    let updated = update_entity(&runtime, entity, "mutated");
+    let updated = update_entity(execution, &runtime, entity, "mutated");
     let mut stale_handle = updated.snapshot.clone();
     stale_handle.version_id = created.snapshot.version_id;
 
@@ -184,21 +187,22 @@ fn concurrent_pinned_traversal_reads_stay_snapshot_stable_under_hot_rewrite_pres
         ))
         .build();
     let seeds = vec![
-        create_entity_in_partition(&runtime, "s0", PartitionId(7)),
-        create_entity_in_partition(&runtime, "s1", PartitionId(11)),
-        create_entity_in_partition(&runtime, "s2", PartitionId(13)),
-        create_entity_in_partition(&runtime, "s3", PartitionId(17)),
-        create_entity_in_partition(&runtime, "s4", PartitionId(19)),
+        create_entity_in_partition(execution, &runtime, "s0", PartitionId(7)),
+        create_entity_in_partition(execution, &runtime, "s1", PartitionId(11)),
+        create_entity_in_partition(execution, &runtime, "s2", PartitionId(13)),
+        create_entity_in_partition(execution, &runtime, "s3", PartitionId(17)),
+        create_entity_in_partition(execution, &runtime, "s4", PartitionId(19)),
     ];
     let neighbors = [
-        create_entity_in_partition(&runtime, "n0", PartitionId(23)),
-        create_entity_in_partition(&runtime, "n1", PartitionId(29)),
-        create_entity_in_partition(&runtime, "n2", PartitionId(31)),
-        create_entity_in_partition(&runtime, "n3", PartitionId(37)),
-        create_entity_in_partition(&runtime, "n4", PartitionId(41)),
+        create_entity_in_partition(execution, &runtime, "n0", PartitionId(23)),
+        create_entity_in_partition(execution, &runtime, "n1", PartitionId(29)),
+        create_entity_in_partition(execution, &runtime, "n2", PartitionId(31)),
+        create_entity_in_partition(execution, &runtime, "n3", PartitionId(37)),
+        create_entity_in_partition(execution, &runtime, "n4", PartitionId(41)),
     ];
     for (index, (seed, neighbor)) in seeds.iter().zip(neighbors.iter()).enumerate() {
         create_relation_in_partition(
+            execution,
             &runtime,
             *seed,
             *neighbor,
@@ -240,10 +244,13 @@ fn concurrent_pinned_traversal_reads_stay_snapshot_stable_under_hot_rewrite_pres
         .expect("baseline query outcome")
         .result;
 
-    let churn_entity = create_entity_in_partition(&runtime, "rewrite-anchor", PartitionId(53));
-    let _ = update_entity(&runtime, churn_entity, "rewrite-anchor-2");
-    let extra_neighbor = create_entity_in_partition(&runtime, "late-neighbor", PartitionId(59));
+    let churn_entity =
+        create_entity_in_partition(execution, &runtime, "rewrite-anchor", PartitionId(53));
+    let _ = update_entity(execution, &runtime, churn_entity, "rewrite-anchor-2");
+    let extra_neighbor =
+        create_entity_in_partition(execution, &runtime, "late-neighbor", PartitionId(59));
     let _ = create_relation_in_partition(
+        execution,
         &runtime,
         seeds[0],
         extra_neighbor,
@@ -286,112 +293,5 @@ fn concurrent_pinned_traversal_reads_stay_snapshot_stable_under_hot_rewrite_pres
     });
 }
 
-#[test]
-fn concurrent_relation_index_certification_parity_stays_stable_under_scheduler_pressure() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    let source = create_entity_outcome(&runtime, "source");
-    let source_id = changed_entities(&source)[0];
-    let targets = [
-        create_entity_in_partition(&runtime, "r0", PartitionId(7)),
-        create_entity_in_partition(&runtime, "r1", PartitionId(11)),
-        create_entity_in_partition(&runtime, "r2", PartitionId(13)),
-    ];
-    for (index, target) in targets.into_iter().enumerate() {
-        create_relation_in_partition(
-            &runtime,
-            source_id,
-            target,
-            if index < 2 { "fast" } else { "slow" },
-            PartitionId(23 + index as u32),
-        );
-    }
-    let commit = create_entity_outcome(&runtime, "anchor");
-    let relation_index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "relation.name".to_string(),
-        kind: DerivedIndexKind::RelationField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
-    runtime.index_authority().build_for_commit(
-        execution,
-        DerivedIndexBuildRequest {
-            source_commit_id: commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            index_ids: vec![relation_index.index_id],
-        },
-    );
-
-    let snapshot = commit.snapshot.clone();
-    let context = runtime
-        .read_truth()
-        .query_plan_context(&snapshot)
-        .expect("query plan context");
-    let packet = PlannedQueryPacket {
-        label: "relation-index-certification".to_string(),
-        context_id: context,
-        scope: QueryScope::RelationFieldEquals {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-            value: string_aspect_value("fast"),
-            partition_scope: None,
-        },
-        locality: QueryLocalityClass::CrossPartitionTraversal,
-        ordering: QueryOrderingContract::CanonicalRelationIdOrder,
-        access_contract: QueryAccessContract::DerivedIndexWithStorageParity,
-        execution_shape: QueryExecutionShape::BulkPacketized,
-        reduction: ReductionDiscipline::DeterministicMerge,
-        plan_key: DeterministicQueryPlanKey(1401),
-        target_count_hint: 0,
-    };
-    let baseline = runtime
-        .index_access()
-        .execute_query_plan_with_index_parity(
-            runtime
-                .read_truth()
-                .plan_query_packet(&snapshot, packet.clone())
-                .expect("baseline plan"),
-            IndexParityMode::CertificationParity,
-            execution,
-        )
-        .expect("request remains live")
-        .expect("baseline outcome");
-    let runtime = Arc::new(runtime);
-
-    std::thread::scope(|scope| {
-        let mut readers = Vec::new();
-        for _ in 0..8 {
-            let runtime = Arc::clone(&runtime);
-            let snapshot = snapshot.clone();
-            let packet = packet.clone();
-            let expected = baseline.clone();
-            readers.push(scope.spawn(move || {
-                // Each independent reader call owns its request budget.
-                let host_request = crate::test_execution_policy::serial_request();
-                let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-                let outcome = runtime
-                    .index_access()
-                    .execute_query_plan_with_index_parity(
-                        runtime
-                            .read_truth()
-                            .plan_query_packet(&snapshot, packet)
-                            .expect("thread plan"),
-                        IndexParityMode::CertificationParity,
-                        execution,
-                    )
-                    .expect("request remains live")
-                    .expect("thread outcome");
-                assert_eq!(outcome.access_path, expected.access_path);
-                assert_eq!(outcome.execution.result, expected.execution.result);
-                assert_eq!(outcome.parity_basis_digest, expected.parity_basis_digest);
-            }));
-        }
-
-        for reader in readers {
-            reader.join().unwrap();
-        }
-    });
-}
+#[path = "concurrency/relation_index_parity.rs"]
+mod relation_index_parity;

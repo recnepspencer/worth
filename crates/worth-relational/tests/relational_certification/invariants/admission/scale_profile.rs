@@ -77,7 +77,7 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
     ];
     let world =
         compile_supply_chain_baseline_with_budget_and_invariant_catalog_and_custom_invariants(
-            program, 200_000, catalog, custom,
+            execution, program, 200_000, catalog, custom,
         )
         .expect("the real Large causal baseline commits");
     let world = audit_supply_chain_baseline(execution, world)
@@ -127,6 +127,7 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
         graph_evaluation_calls.load(Ordering::Relaxed),
     );
     let large_follow_up = commit_vessel(
+        execution,
         &world.runtime,
         main.clone(),
         "large-follow-up-vessel",
@@ -160,6 +161,7 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
     let before_catalog = world.runtime.history().immutable_commit_count();
     let before_snapshot = current_snapshot_version(&world.runtime, &main);
     let duplicate = commit_vessel(
+        execution,
         &world.runtime,
         main.clone(),
         "large-duplicate-vessel",
@@ -283,6 +285,7 @@ fn contains_native_uniqueness(
 }
 
 fn commit_vessel(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: BranchId,
     client_key: &str,
@@ -314,6 +317,7 @@ fn commit_vessel(
         )
         .unwrap();
     transaction.commit(
+        execution,
         runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

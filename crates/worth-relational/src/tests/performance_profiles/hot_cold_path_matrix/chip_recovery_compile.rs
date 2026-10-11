@@ -16,11 +16,16 @@ pub(super) fn certify_chip_hot_compile_vs_recovery_compile(
                 profile.max_entries_per_artifact = 0;
             });
 
-            let source =
-                create_entity_in_partition(&runtime, "chip-hot-cold-source", PartitionId(7));
+            let source = create_entity_in_partition(
+                execution,
+                &runtime,
+                "chip-hot-cold-source",
+                PartitionId(7),
+            );
             let sinks = (0..8)
                 .map(|index| {
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("chip-hot-cold-sink-{index}"),
                         if index % 2 == 0 {
@@ -33,6 +38,7 @@ pub(super) fn certify_chip_hot_compile_vs_recovery_compile(
                 .collect::<Vec<_>>();
             for (index, sink) in sinks.iter().enumerate() {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     source,
                     *sink,
@@ -43,7 +49,7 @@ pub(super) fn certify_chip_hot_compile_vs_recovery_compile(
 
             runtime.performance_access().reset_counters();
             let hot_commit_started_at = Instant::now();
-            let hot_commit = update_entity(&runtime, source, "chip-hot-cold-updated");
+            let hot_commit = update_entity(execution, &runtime, source, "chip-hot-cold-updated");
             let hot_commit_micros = hot_commit_started_at.elapsed().as_micros();
             let latest_commit = runtime
                 .history()

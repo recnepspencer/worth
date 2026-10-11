@@ -17,7 +17,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = history_runtime();
-    let first = commit(&mut runtime, "first");
+    let first = commit(execution, &mut runtime, "first");
     let retained = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
@@ -60,7 +60,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         2,
         1
     ));
-    let changed = commit(&mut runtime, "second");
+    let changed = commit(execution, &mut runtime, "second");
     assert!(!remains_equal(&runtime, execution, &changed, &first, 2, 1));
     assert!(remains_equal(
         &runtime,
@@ -71,7 +71,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         1
     ));
     let mut foreign = history_runtime();
-    let foreign_snapshot = commit(&mut foreign, "first");
+    let foreign_snapshot = commit(execution, &mut foreign, "first");
     assert_eq!(foreign_snapshot.version_id(), first.version_id());
     assert!(!remains_equal(
         &foreign,
@@ -132,7 +132,11 @@ fn history_runtime() -> RelationalRuntime {
         .build()
 }
 
-fn commit(runtime: &mut RelationalRuntime, name: &str) -> SnapshotHandle {
+fn commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut RelationalRuntime,
+    name: &str,
+) -> SnapshotHandle {
     let basis = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
@@ -157,6 +161,7 @@ fn commit(runtime: &mut RelationalRuntime, name: &str) -> SnapshotHandle {
         .unwrap();
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

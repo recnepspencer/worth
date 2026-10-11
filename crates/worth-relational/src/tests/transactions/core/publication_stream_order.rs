@@ -2,8 +2,11 @@ use crate::tests::support::*;
 
 #[test]
 fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    create_entity(&runtime, "head-index-anchor");
+    create_entity(execution, &runtime, "head-index-anchor");
     fork_publication_branch(&mut runtime, "head-index-a");
     fork_publication_branch(&mut runtime, "head-index-b");
 
@@ -16,6 +19,7 @@ fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
         .expect("first publication stages");
     let first_candidate = runtime
         .prepare_branch_transaction(
+            execution,
             first_transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -28,13 +32,23 @@ fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
     };
     let first_version = first.canonical_commit().commit.version_id;
 
-    let branch_a = prepare_publication(&mut runtime, "head-index-a", "head-index-a-write");
+    let branch_a = prepare_publication(
+        execution,
+        &mut runtime,
+        "head-index-a",
+        "head-index-a-write",
+    );
     let crate::mvcc::RelationalPublicationOutcome::Performed(branch_a) =
         runtime.publication_port().compare_and_publish(branch_a)
     else {
         panic!("branch A publication performs");
     };
-    let branch_b = prepare_publication(&mut runtime, "head-index-b", "head-index-b-write");
+    let branch_b = prepare_publication(
+        execution,
+        &mut runtime,
+        "head-index-b",
+        "head-index-b-write",
+    );
     let crate::mvcc::RelationalPublicationOutcome::Performed(branch_b) =
         runtime.publication_port().compare_and_publish(branch_b)
     else {
@@ -67,13 +81,17 @@ fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
 
 #[test]
 fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    create_entity(&runtime, "stream-order-anchor");
+    create_entity(execution, &runtime, "stream-order-anchor");
     fork_publication_branch(&mut runtime, "prepared-first");
     fork_publication_branch(&mut runtime, "published-first");
 
-    let prepared_first = prepare_publication(&mut runtime, "prepared-first", "write-a");
-    let published_first = prepare_publication(&mut runtime, "published-first", "write-b");
+    let prepared_first = prepare_publication(execution, &mut runtime, "prepared-first", "write-a");
+    let published_first =
+        prepare_publication(execution, &mut runtime, "published-first", "write-b");
     let published_first = match runtime
         .publication_port()
         .compare_and_publish(published_first)
@@ -133,12 +151,13 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "recovery-order-anchor");
+    create_entity(execution, &runtime, "recovery-order-anchor");
     fork_publication_branch(&mut runtime, "prepared-first");
     fork_publication_branch(&mut runtime, "published-first");
 
-    let prepared_first = prepare_publication(&mut runtime, "prepared-first", "write-a");
-    let published_first = prepare_publication(&mut runtime, "published-first", "write-b");
+    let prepared_first = prepare_publication(execution, &mut runtime, "prepared-first", "write-a");
+    let published_first =
+        prepare_publication(execution, &mut runtime, "published-first", "write-b");
     let published_first = match runtime
         .publication_port()
         .compare_and_publish(published_first)
@@ -229,7 +248,7 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
         observed_entity_name(&recovered, "main", published_first_entity),
         None
     );
-    let continued = create_entity_outcome(&recovered, "recovery-order-continued");
+    let continued = create_entity_outcome(execution, &recovered, "recovery-order-continued");
     assert!(continued.commit.commit_id > published_first_id);
     assert!(continued.patch_position() > prepared_first_position);
     release_test_commit_snapshot(&recovered, &continued);
@@ -273,6 +292,7 @@ fn observed_entity_name(
 }
 
 fn prepare_publication(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     branch: &str,
     entity: &str,
@@ -286,6 +306,7 @@ fn prepare_publication(
         .expect("test staging stays within configured resource budgets");
     runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

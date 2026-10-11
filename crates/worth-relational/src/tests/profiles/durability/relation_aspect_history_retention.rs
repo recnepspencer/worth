@@ -16,15 +16,15 @@ fn retained_root_preserves_relation_aspect_history_without_record_pins() {
             retention_backend: RetentionBackend::PinTrackedRetention,
         })
         .build();
-    let source_outcome = create_entity_outcome(&runtime, "source");
-    let target_outcome = create_entity_outcome(&runtime, "target");
+    let source_outcome = create_entity_outcome(execution, &runtime, "source");
+    let target_outcome = create_entity_outcome(execution, &runtime, "target");
     let source = changed_entities(&source_outcome)[0];
     let target = changed_entities(&target_outcome)[0];
-    let relation = create_aspect_bearing_relation(&runtime, source, target);
+    let relation = create_aspect_bearing_relation(execution, &runtime, source, target);
     let identity = runtime.main_branch_identity();
     let (_, retained_basis) = runtime.observe_branch(&identity).unwrap();
 
-    let deleted = delete_relation(&runtime, relation);
+    let deleted = delete_relation(execution, &runtime, relation);
     runtime
         .visibility_authority()
         .release_snapshot(&source_outcome.snapshot)
@@ -69,6 +69,7 @@ struct DeletedAspectRelationEvidence {
 }
 
 fn create_aspect_bearing_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     source: crate::facade::identity::EntityId,
     target: crate::facade::identity::EntityId,
@@ -90,6 +91,7 @@ fn create_aspect_bearing_relation(
     .expect("test staging stays within configured resource budgets");
     let created = txn
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -101,6 +103,7 @@ fn create_aspect_bearing_relation(
 }
 
 fn delete_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     relation: crate::facade::identity::RelationId,
 ) -> DeletedAspectRelationEvidence {
@@ -118,6 +121,7 @@ fn delete_relation(
         .expect("test staging stays within configured resource budgets");
     let deleted = delete_txn
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

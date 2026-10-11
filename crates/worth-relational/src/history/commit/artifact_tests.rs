@@ -12,6 +12,9 @@ use crate::tests::support::{create_entity_outcome, persisted_runtime_with_test_s
 
 #[test]
 fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use crate::history::data::RelationalDescriptiveTouch;
     use crate::identity::data::KindId;
     use crate::tests::support::{create_entity_outcome_with_lease, test_execution_lease};
@@ -19,9 +22,14 @@ fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
     for checked in [false, true] {
         let runtime = persisted_runtime_with_test_schema();
         let committed = if checked {
-            create_entity_outcome_with_lease(&runtime, "touch-value", &test_execution_lease())
+            create_entity_outcome_with_lease(
+                execution,
+                &runtime,
+                "touch-value",
+                &test_execution_lease(),
+            )
         } else {
-            create_entity_outcome(&runtime, "touch-value")
+            create_entity_outcome(execution, &runtime, "touch-value")
         };
         let envelope = runtime
             .replay()
@@ -52,6 +60,9 @@ fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
 
 #[test]
 fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use crate::history::data::RelationalDescriptiveTouch;
     use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
     use crate::tests::support::{aspect_field_locator, aspect_key, field_key};
@@ -66,7 +77,7 @@ fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
         },
         branch_scoped: false,
     });
-    let committed = create_entity_outcome(&runtime, "indexed-value");
+    let committed = create_entity_outcome(execution, &runtime, "indexed-value");
     let envelope = runtime
         .replay()
         .canonical_commit_envelope(committed.commit.commit_id)
@@ -91,8 +102,11 @@ use super::{
 
 #[test]
 fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_root_checks() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "preencoded-recovery-root");
+    create_entity_outcome(execution, &runtime, "preencoded-recovery-root");
     let root = runtime
         .history
         .branch_cell(&crate::history::data::BranchId("main".to_owned()))
@@ -138,8 +152,11 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
 
 #[test]
 fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let committed = create_entity_outcome(&runtime, "artifact-allocation-basis");
+    let committed = create_entity_outcome(execution, &runtime, "artifact-allocation-basis");
     let mut envelope = runtime
         .replay()
         .canonical_commit_envelope(committed.commit.commit_id)
@@ -231,8 +248,11 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
 
 #[test]
 fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let committed = create_entity_outcome(&runtime, "derived-index-allocation-basis");
+    let committed = create_entity_outcome(execution, &runtime, "derived-index-allocation-basis");
     let mut envelope = runtime
         .replay()
         .canonical_commit_envelope(committed.commit.commit_id)

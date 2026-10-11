@@ -54,13 +54,22 @@ fn prepared_scope_with_access(
 
 #[test]
 fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     for index in 0..64 {
-        let leaf = create_entity(&runtime, &format!("leaf-{index}"));
-        create_relation(&runtime, shared, leaf, &format!("existing-{index}"));
+        let leaf = create_entity(execution, &runtime, &format!("leaf-{index}"));
+        create_relation(
+            execution,
+            &runtime,
+            shared,
+            leaf,
+            &format!("existing-{index}"),
+        );
     }
-    let target = create_entity(&runtime, "new-target");
+    let target = create_entity(execution, &runtime, "new-target");
     let relation = MutationIntent::Create(CreateIntent::Relation(RelationSpec {
         partition_id: crate::identity::data::PartitionId::main(),
         kind_id: KindId(2),

@@ -32,6 +32,7 @@ fn register(
 }
 
 fn prepare_on_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     key: &str,
 ) -> crate::mvcc::PreparedRelationalCommitCandidate {
@@ -44,6 +45,7 @@ fn prepare_on_main(
         .expect("candidate stages");
     runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -52,8 +54,11 @@ fn prepare_on_main(
 
 #[test]
 fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "same-head-anchor");
+    create_entity(execution, &runtime, "same-head-anchor");
     let handle = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let pending = runtime
         .publication_companion_port()
@@ -81,8 +86,8 @@ fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
         )
         .expect("the participant is active");
 
-    let winner = prepare_on_main(&runtime, "same-head-winner");
-    let loser = prepare_on_main(&runtime, "same-head-loser");
+    let winner = prepare_on_main(execution, &runtime, "same-head-winner");
+    let loser = prepare_on_main(execution, &runtime, "same-head-loser");
     let RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(winner)
     else {
@@ -109,10 +114,13 @@ fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
 
 #[test]
 fn companion_contention_on_an_unchanged_head_stays_a_retryable_deferral() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "unchanged-head-anchor");
+    create_entity(execution, &runtime, "unchanged-head-anchor");
     let _registration = register(&runtime, Arc::new(HeldReservationCompanion));
-    let candidate = prepare_on_main(&runtime, "unchanged-head-candidate");
+    let candidate = prepare_on_main(execution, &runtime, "unchanged-head-candidate");
     assert!(matches!(
         runtime.publication_port().compare_and_publish(candidate),
         RelationalPublicationOutcome::Deferred(RelationalPublicationDeferred::CompanionPreflight(

@@ -147,7 +147,13 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
         )
         .unwrap();
     handle.with_runtime_mut(request_execution, |runtime| {
-        write_field(runtime, entity, locator.clone(), "first-discard");
+        write_field(
+            request_execution,
+            runtime,
+            entity,
+            locator.clone(),
+            "first-discard",
+        );
         let (snapshot, basis) = snapshot(runtime);
         let first = owner
             .cell_for_read(&basis, &mut owner.edit_admission())
@@ -185,6 +191,7 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
             .unwrap();
         let candidate = runtime
             .prepare_branch_transaction(
+                request_execution,
                 transaction,
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )

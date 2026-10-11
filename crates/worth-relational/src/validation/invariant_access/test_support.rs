@@ -173,6 +173,7 @@ pub(super) fn relation_cardinality_runtime() -> RelationalRuntime {
 }
 
 pub(super) fn create_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
 ) -> crate::identity::data::EntityId {
@@ -200,6 +201,7 @@ pub(super) fn create_entity(
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

@@ -168,6 +168,9 @@ fn initial_schema_installation_retains_existing_kinds_and_rejects_duplicates() {
 
 #[test]
 fn held_preparation_port_observes_atomic_initial_schema_replacement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = RelationalRuntimeApi::builder().build();
     let preparation = runtime.preparation_port();
     install_entity_kind(&mut runtime, KindId(7), "held-port-installed");
@@ -188,6 +191,7 @@ fn held_preparation_port_observes_atomic_initial_schema_replacement() {
 
     let candidate = preparation
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -199,6 +203,9 @@ fn held_preparation_port_observes_atomic_initial_schema_replacement() {
 
 #[test]
 fn initial_schema_authority_closes_after_first_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(
             RelationalSchemaRegistry::new()
@@ -222,6 +229,7 @@ fn initial_schema_authority_closes_after_first_commit() {
         .unwrap();
     transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

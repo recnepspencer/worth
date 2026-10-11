@@ -26,6 +26,9 @@ fn request(memory: u64) -> LeaseRequest {
 }
 #[test]
 fn native_normalization_and_validation_footprint_retain_selected_policy() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     if std::env::var_os(CHILD).is_none() {
         let status = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
@@ -182,7 +185,7 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
     assert_eq!(transaction.last_merged_plan.as_ref(), Some(&plan));
     drop(stopped);
     let committed = transaction
-        .commit(&runtime, Policy::Execution(&parent))
+        .commit(execution, &runtime, Policy::Execution(&parent))
         .unwrap();
     assert_eq!(changed_entities(&committed).len(), 1);
     assert_ne!(runtime.observe_branch(&identity).unwrap().0, head);

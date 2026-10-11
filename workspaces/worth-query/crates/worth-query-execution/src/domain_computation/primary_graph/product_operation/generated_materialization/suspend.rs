@@ -181,6 +181,7 @@ where
                     .owner_component_services()
                     .materialization_port()
                     .prepare_generated_materialization_suspension(
+                        execution,
                         product.relational_basis(),
                         &generated_entities,
                     )

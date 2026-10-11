@@ -12,6 +12,9 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn production_preparation_port_observes_initial_schema_replacement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = RelationalRuntimeApi::builder().build();
     let preparation = runtime.preparation_port();
     runtime
@@ -47,6 +50,7 @@ fn production_preparation_port_observes_initial_schema_replacement() {
 
     let candidate = preparation
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

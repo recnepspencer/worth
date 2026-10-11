@@ -106,6 +106,9 @@ fn engine_executes_graph_composition_custom_invariant_packets() {
 
 #[test]
 fn engine_executes_custom_packets_against_real_structural_surfaces() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -132,8 +135,8 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         .custom_invariant(CustomInvariantRegistration::new(StructuralSurfaceRule).unwrap())
         .custom_invariant(CustomInvariantRegistration::new(RejectsPlannedRelationRule).unwrap())
         .build();
-    let source = create_entity_of_kind(&runtime, KindId(1), "structural-source");
-    let target = create_entity_of_kind(&runtime, KindId(1), "structural-target");
+    let source = create_entity_of_kind(execution, &runtime, KindId(1), "structural-source");
+    let target = create_entity_of_kind(execution, &runtime, KindId(1), "structural-target");
     runtime.performance_access().reset_counters();
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(3),
@@ -196,7 +199,14 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
     assert_eq!(counters.custom_invariant_candidate_reuse_hits, 33);
     assert!(counters.custom_invariant_traversal_frontier_count >= 2);
 
-    create_relation_of_kind(&runtime, KindId(2), source, target, "committed-edge");
+    create_relation_of_kind(
+        execution,
+        &runtime,
+        KindId(2),
+        source,
+        target,
+        "committed-edge",
+    );
     runtime.performance_access().reset_counters();
     let after_topology_change = InvariantEngine::new(&runtime).execute(
         InvariantExecutionRequest::from_profile_with_contract(

@@ -86,7 +86,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         );
         let prepared = prepare();
         publish(
-            runtime,
+            request_execution, runtime,
             WorkerIntentBatch::new("mixed-native-retirement").push(MutationIntent::Entity(
                 EntityMutationIntent::Delete(DeleteEntityIntent { entity_id: retired }),
             )),
@@ -249,7 +249,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
             .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
             .unwrap()
             .clone();
-        change_label(runtime, live, label.clone());
+        change_label(request_execution, runtime, live, label.clone());
         let later = snapshot(runtime);
         assert_eq!(
             retirement::native_metadata(&host_custody.borrowed_request_for_test(), runtime, &later, retired),
@@ -267,7 +267,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
             "live aspects still invalidate the mixed proof"
         );
         publish(
-            runtime,
+            request_execution, runtime,
             WorkerIntentBatch::new("mixed-output-aba").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                     entity_id: live,
@@ -333,7 +333,11 @@ fn mixed_correspondence(
     .unwrap()
 }
 
-fn publish(runtime: &mut RelationalRuntime, batch: WorkerIntentBatch) {
+fn publish(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut RelationalRuntime,
+    batch: WorkerIntentBatch,
+) {
     let basis = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
@@ -348,6 +352,7 @@ fn publish(runtime: &mut RelationalRuntime, batch: WorkerIntentBatch) {
         .unwrap();
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

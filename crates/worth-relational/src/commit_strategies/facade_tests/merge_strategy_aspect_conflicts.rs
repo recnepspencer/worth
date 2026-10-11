@@ -40,7 +40,7 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
             &replica_descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "shared");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch =
         crate::tests::support::create_branch_from_main(&runtime, "feature-aspects");
 
@@ -85,7 +85,7 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
             .validate_lowered_plan(&runtime, lowered)
             .expect("validated aspect plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("aspect strategy commit");
     }
 
@@ -127,7 +127,7 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
             .validate_lowered_plan(&runtime, lowered)
             .expect("validated replica plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("replica strategy commit");
     }
 
@@ -194,7 +194,7 @@ fn merge_planning_classifies_same_declared_aspect_field_as_strategy_intent_confl
             &aspect_descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "shared");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch =
         crate::tests::support::create_branch_from_main(&runtime, "feature-same-aspect");
 
@@ -252,7 +252,7 @@ fn merge_planning_classifies_same_declared_aspect_field_as_strategy_intent_confl
             .validate_lowered_plan(&runtime, lowered)
             .expect("validated aspect plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("aspect strategy commit");
     }
 

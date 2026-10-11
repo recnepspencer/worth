@@ -17,6 +17,7 @@ use super::super::recovered_schema_basis::RecoveredSchemaBasis;
 use super::owner_bindings::{owner_merge_parent_bases, owner_options_for_branch};
 
 pub(super) fn replay_envelope_effect(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
 ) -> Result<(), DurabilityError> {
@@ -61,14 +62,15 @@ pub(super) fn replay_envelope_effect(
         return Ok(());
     }
     if envelope.merge_parent_branches.is_empty() {
-        replay_ordinary_commit(restored, envelope, positioned.position())?;
+        replay_ordinary_commit(execution, restored, envelope, positioned.position())?;
     } else {
-        replay_merge_commit(restored, envelope, positioned.position())?;
+        replay_merge_commit(execution, restored, envelope, positioned.position())?;
     }
     Ok(())
 }
 
 pub(super) fn complete_incomplete_metadata_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     readmitted: crate::durability::migration::ReadmittedCanonicalCommit,
 ) -> Result<crate::history::data::PositionedCanonicalCommit, DurabilityError> {
@@ -89,7 +91,7 @@ pub(super) fn complete_incomplete_metadata_commit(
     let positioned = readmitted
         .complete_metadata(checkpoint)
         .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptSegment, detail))?;
-    replay_envelope_effect(restored, &positioned)?;
+    replay_envelope_effect(execution, restored, &positioned)?;
     Ok(positioned)
 }
 
@@ -113,6 +115,7 @@ pub(super) fn restore_authoritative_artifacts_when_required(
 }
 
 pub(super) fn replay_ordinary_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
@@ -150,6 +153,7 @@ pub(super) fn replay_ordinary_commit(
     })?;
     let outcome = restored
         .commit_branch_transaction(
+            execution,
             txn,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -214,6 +218,7 @@ fn apply_materialization_replay_mode(
 }
 
 pub(super) fn replay_merge_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
@@ -235,7 +240,7 @@ pub(super) fn replay_merge_commit(
             ),
         )
     })?;
-    let outcome = execute_authoritative_commit(restored, context).map_err(|_| {
+    let outcome = execute_authoritative_commit(execution, restored, context).map_err(|_| {
         DurabilityError::new(
             RecoveryFailureClass::ReplayFailure,
             format!(

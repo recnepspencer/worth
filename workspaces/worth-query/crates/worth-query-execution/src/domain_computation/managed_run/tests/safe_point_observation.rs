@@ -14,7 +14,7 @@ fn direct_run_observes_signal_and_pressure_through_its_bound_bridge_basis() {
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("direct safe-point attempt should reserve");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)
@@ -69,7 +69,7 @@ fn workflow_run_uses_the_same_managed_safe_point_authority() {
     let attempt = runtime
         .start_workflow_resource_attempt(&operation, resources)
         .expect("workflow safe-point attempt should reserve");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
@@ -120,6 +120,9 @@ fn repeated_safe_point_observation_has_no_heap_allocation() {
 #[test]
 #[cfg(feature = "allocation-probes")]
 fn isolated_managed_safe_point_allocation_probe() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     if std::env::var_os("WORTH_QUERY_SAFE_POINT_ALLOCATION_PROBE").is_none() {
         return;
     }
@@ -129,7 +132,7 @@ fn isolated_managed_safe_point_allocation_probe() {
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("allocation probe attempt should reserve");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(execution);
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
     let running = runtime

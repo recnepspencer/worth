@@ -65,6 +65,7 @@ fn ordinary_native_mutation_roundtrips_every_foundational_scalar_family() {
 
     let committed = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

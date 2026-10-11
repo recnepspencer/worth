@@ -110,7 +110,7 @@ pub(super) fn yielded_direct_with_plan_observation<T>(
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("managed graph operation should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)

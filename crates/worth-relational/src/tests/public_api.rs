@@ -52,7 +52,7 @@ fn admitted_observation_opens_its_selected_root_after_branch_movement() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = public_api_runtime();
-    let first = crate::tests::support::create_entity_outcome(&runtime, "observed");
+    let first = crate::tests::support::create_entity_outcome(execution, &runtime, "observed");
     let first_version = first.version_id;
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
@@ -62,7 +62,7 @@ fn admitted_observation_opens_its_selected_root_after_branch_movement() {
         .release_snapshot(&first.snapshot)
         .is_ok());
 
-    let second = crate::tests::support::create_entity_outcome(&runtime, "later");
+    let second = crate::tests::support::create_entity_outcome(execution, &runtime, "later");
     let observed = runtime
         .snapshots()
         .snapshot_for_observation(&observation)
@@ -95,8 +95,12 @@ fn foreign_runtime_identity_cannot_admit_a_branch_observation() {
 
 #[test]
 fn admitted_basis_clones_share_one_descriptor_and_observation_root() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = public_api_runtime();
-    let committed = crate::tests::support::create_entity_outcome(&runtime, "shared-basis");
+    let committed =
+        crate::tests::support::create_entity_outcome(execution, &runtime, "shared-basis");
     let identity = runtime.main_branch_identity();
     let (descriptor, basis) = runtime.observe_branch(&identity).unwrap();
     let cloned = basis.clone();
@@ -112,8 +116,12 @@ fn admitted_basis_clones_share_one_descriptor_and_observation_root() {
 
 #[test]
 fn main_movement_does_not_change_an_inherited_child_observation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = public_api_runtime();
-    let baseline = crate::tests::support::create_entity_outcome(&runtime, "child-baseline");
+    let baseline =
+        crate::tests::support::create_entity_outcome(execution, &runtime, "child-baseline");
     let baseline_version = baseline.snapshot.version_id;
     let main = runtime.main_branch_identity();
     let (_, source_basis) = runtime
@@ -123,7 +131,7 @@ fn main_movement_does_not_change_an_inherited_child_observation() {
     runtime
         .fork_branch(child_id.clone(), source_basis)
         .expect("child retains the inherited immutable root");
-    crate::tests::support::create_entity_outcome(&runtime, "main-advances");
+    crate::tests::support::create_entity_outcome(execution, &runtime, "main-advances");
     let child = runtime.branch_identity(&child_id).unwrap();
     let (_, child_basis) = runtime.observe_branch(&child).unwrap();
 

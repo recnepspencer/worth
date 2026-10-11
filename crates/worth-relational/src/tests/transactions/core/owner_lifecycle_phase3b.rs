@@ -19,10 +19,19 @@ const NEGATIVE_BUDGET: Duration = Duration::from_millis(100);
 /// and this court would fail on its bounded receive rather than hang.
 #[test]
 fn phase3b_owner_drop_during_off_thread_settlement_completes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "phase3b-detached-anchor");
+    create_entity(execution, &runtime, "phase3b-detached-anchor");
     let (reached, release, control) = settlement_pause();
-    let performed = perform_write_with_control(&runtime, "main", "phase3b-detached-write", control);
+    let performed = perform_write_with_control(
+        execution,
+        &runtime,
+        "main",
+        "phase3b-detached-write",
+        control,
+    );
     let commit_id = performed.canonical_commit().commit.commit_id;
     let port = runtime.settlement_port();
     let runtime_instance_id = runtime.runtime_instance_id();
@@ -77,15 +86,23 @@ fn phase3b_owner_drop_during_off_thread_settlement_completes() {
 /// a real result.
 #[test]
 fn phase3b_settlement_admitted_after_owner_drop_is_denied() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "phase3b-close-window-anchor");
+    create_entity(execution, &runtime, "phase3b-close-window-anchor");
     fork_from_main(&runtime, "phase3b-paused");
     fork_from_main(&runtime, "phase3b-late");
     let (reached, release, control) = settlement_pause();
-    let paused =
-        perform_write_with_control(&runtime, "phase3b-paused", "phase3b-paused-write", control);
+    let paused = perform_write_with_control(
+        execution,
+        &runtime,
+        "phase3b-paused",
+        "phase3b-paused-write",
+        control,
+    );
     let paused_commit_id = paused.canonical_commit().commit.commit_id;
-    let late = perform_write(&runtime, "phase3b-late", "phase3b-late-write");
+    let late = perform_write(execution, &runtime, "phase3b-late", "phase3b-late-write");
     let late_commit_id = late.canonical_commit().commit.commit_id;
     let port = runtime.settlement_port();
     let runtime_instance_id = runtime.runtime_instance_id();
@@ -141,7 +158,7 @@ fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let seeded = create_entity_outcome(&runtime, "phase3b-recovery-anchor");
+    let seeded = create_entity_outcome(execution, &runtime, "phase3b-recovery-anchor");
     let seeded_commit_id = seeded.commit.commit_id;
     release_test_commit_snapshot(&runtime, &seeded);
     let port = runtime.settlement_port();
@@ -244,6 +261,7 @@ fn fork_from_main(runtime: &RelationalRuntime, target: &str) {
 }
 
 fn perform_write(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &str,
     name: &str,
@@ -256,10 +274,11 @@ fn perform_write(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    perform_prepared(runtime, transaction)
+    perform_prepared(execution, runtime, transaction)
 }
 
 fn perform_write_with_control(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &str,
     name: &str,
@@ -284,15 +303,17 @@ fn perform_write_with_control(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    perform_prepared(runtime, transaction)
+    perform_prepared(execution, runtime, transaction)
 }
 
 fn perform_prepared(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     transaction: crate::mvcc::BranchBoundRelationalTransaction,
 ) -> crate::mvcc::PerformedRelationalCommit {
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

@@ -27,9 +27,14 @@ fn prepare_merge_execution_compiles_source_addition_record_plan() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let prepared = runtime
         .prepare_merge_execution(
@@ -91,10 +96,16 @@ fn prepare_merge_execution_compiles_exact_shared_record_plan() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "same");
-    update_entity_on_branch(&runtime, shared, "same", BranchId("feature".to_string()));
+    update_entity(execution, &runtime, shared, "same");
+    update_entity_on_branch(
+        execution,
+        &runtime,
+        shared,
+        "same",
+        BranchId("feature".to_string()),
+    );
 
     let prepared = runtime
         .prepare_merge_execution(
@@ -181,10 +192,15 @@ fn prepare_merge_execution_compiles_reconcile_record_plan() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity(&runtime, "shared-name");
-    create_entity_outcome_on_branch(&runtime, "shared-name", BranchId("feature".to_string()));
+    create_entity(execution, &runtime, "shared-name");
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "shared-name",
+        BranchId("feature".to_string()),
+    );
 
     let prepared = runtime
         .prepare_merge_execution(

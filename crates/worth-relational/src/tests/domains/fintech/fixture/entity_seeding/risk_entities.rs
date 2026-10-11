@@ -9,10 +9,12 @@ use super::super::RISK_PARTITION;
 use super::bulk_create::bulk_create_entities;
 
 pub(super) fn seed_risk_views(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-risk",
         RISK_PARTITION,
@@ -42,10 +44,12 @@ pub(super) fn seed_risk_views(
 }
 
 pub(super) fn seed_limits(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-limits",
         RISK_PARTITION,
@@ -75,10 +79,12 @@ pub(super) fn seed_limits(
 }
 
 pub(super) fn seed_breaches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-breaches",
         RISK_PARTITION,

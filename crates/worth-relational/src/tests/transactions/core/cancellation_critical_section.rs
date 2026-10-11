@@ -9,8 +9,11 @@ use crate::tests::support::*;
 
 #[test]
 fn cancellation_while_waiting_for_publication_coordination_denies_before_movement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "contended-cancellation-anchor");
+    create_entity(execution, &runtime, "contended-cancellation-anchor");
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let source = RelationalCancellationSource::new();
@@ -30,6 +33,7 @@ fn cancellation_while_waiting_for_publication_coordination_denies_before_movemen
         .unwrap();
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -73,8 +77,11 @@ fn cancellation_while_waiting_for_publication_coordination_denies_before_movemen
 
 #[test]
 fn cancellation_inside_publication_critical_section_defers_until_performed() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "critical-cancellation-anchor");
+    create_entity(execution, &runtime, "critical-cancellation-anchor");
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let source = RelationalCancellationSource::new();
@@ -97,6 +104,7 @@ fn cancellation_inside_publication_critical_section_defers_until_performed() {
         .unwrap();
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

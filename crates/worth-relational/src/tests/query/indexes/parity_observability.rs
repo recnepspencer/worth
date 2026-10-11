@@ -6,7 +6,7 @@ fn derived_index_contract_failure_unknown_index_keeps_truth_reads_correct() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let outcome = create_entity_outcome(&runtime, "main-a");
+    let outcome = create_entity_outcome(execution, &runtime, "main-a");
     let snapshot = runtime.visibility_authority().snapshot();
     let storage_only = execute_explicit_query(
         execution,
@@ -68,7 +68,7 @@ fn derived_index_contract_certification_mode_emits_stable_parity_digest() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let outcome = create_entity_outcome(&runtime, "main-a");
+    let outcome = create_entity_outcome(execution, &runtime, "main-a");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.global".to_string(),
@@ -128,7 +128,7 @@ fn derived_index_contract_sampled_parity_is_bounded_and_deterministic() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
+    let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(9),
         name: "entity.name.sampled".to_string(),
@@ -244,8 +244,8 @@ fn derived_index_contract_runtime_drop_releases_index_scratch_hints() {
     {
         let runtime = runtime_with_index_field_aspects();
         runtime_id = runtime.runtime_instance_id();
-        let _alpha_a = create_entity_outcome(&runtime, "alpha");
-        let _alpha_b = create_entity_outcome(&runtime, "alpha");
+        let _alpha_a = create_entity_outcome(execution, &runtime, "alpha");
+        let _alpha_b = create_entity_outcome(execution, &runtime, "alpha");
         let index = runtime.index_authority().register(DerivedIndexDefinition {
             index_id: DerivedIndexId(77),
             name: "entity.name.drop-release".to_string(),

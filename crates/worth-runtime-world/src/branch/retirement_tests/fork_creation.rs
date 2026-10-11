@@ -144,7 +144,7 @@ pub(super) fn seed_relational_source(
         initial.clone(),
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
             .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate("branch-fork-source-seed"),
+                fixture.prepare_relational_owner_candidate(&execution, "branch-fork-source-seed"),
             ),
         &cancellation.token(),
         None,

@@ -79,6 +79,7 @@ fn index_result_capacity_reaches_application_caller() {
                 .unwrap();
             let committed = transaction
                 .commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

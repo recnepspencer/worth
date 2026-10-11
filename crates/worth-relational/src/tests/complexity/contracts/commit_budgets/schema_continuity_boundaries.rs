@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn complexity_budget_schema_transition_classification_is_changed_atom_bounded() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _ = create_entity_outcome(&runtime, "anchor");
+    let _ = create_entity_outcome(execution, &runtime, "anchor");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -39,6 +42,7 @@ fn complexity_budget_schema_transition_classification_is_changed_atom_bounded() 
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
@@ -55,8 +59,11 @@ fn complexity_budget_schema_transition_classification_is_changed_atom_bounded() 
 
 #[test]
 fn complexity_budget_subscriber_resume_continuity_is_boundary_local() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _ = create_entity_outcome(&runtime, "anchor");
+    let _ = create_entity_outcome(execution, &runtime, "anchor");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -90,6 +97,7 @@ fn complexity_budget_subscriber_resume_continuity_is_boundary_local() {
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
@@ -113,7 +121,7 @@ fn complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let baseline = create_entity_outcome(&runtime, "anchor");
+    let baseline = create_entity_outcome(execution, &runtime, "anchor");
     let baseline_checkpoint =
         checkpoint_for_schema_version(baseline.patch_position(), SchemaVersionId(1));
 
@@ -152,6 +160,7 @@ fn complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_
     .expect("test staging stays within configured resource budgets");
     let transitioned = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

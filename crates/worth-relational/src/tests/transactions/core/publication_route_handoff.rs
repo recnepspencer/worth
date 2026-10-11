@@ -5,8 +5,11 @@ use crate::tests::support::*;
 
 #[test]
 fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "handoff-anchor");
+    create_entity(execution, &runtime, "handoff-anchor");
     let identity = runtime.main_branch_identity();
     let (_, old_basis) = runtime
         .observe_branch(&identity)
@@ -27,6 +30,7 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

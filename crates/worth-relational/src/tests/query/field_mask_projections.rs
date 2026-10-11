@@ -122,6 +122,7 @@ fn entity_field_mask_projection_reads_only_declared_struct_field() {
 
     let runtime = entity_summary_projection_runtime();
     let entity_id = create_entity_with_summary_fields(
+        execution,
         &runtime,
         "field-mask-entity",
         "visible-title",
@@ -147,6 +148,7 @@ fn whole_aspect_projection_still_reads_full_struct_aspect() {
 
     let runtime = entity_summary_projection_runtime();
     create_entity_with_summary_fields(
+        execution,
         &runtime,
         "whole-summary-entity",
         "whole-title",
@@ -169,7 +171,7 @@ fn scalar_aspect_rejects_field_mask_projection_at_use_boundary() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity(&runtime, "scalar-field-mask");
+    create_entity(execution, &runtime, "scalar-field-mask");
 
     let _ = runtime
         .read_truth()
@@ -183,9 +185,10 @@ fn relation_field_mask_projection_reads_only_declared_struct_field() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = relation_summary_projection_runtime();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
     create_relation_with_summary_fields(
+        execution,
         &runtime,
         source,
         target,
@@ -263,6 +266,7 @@ fn relation_summary_struct_aspect(
 }
 
 fn create_entity_with_summary_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,
     summary_title: &str,
@@ -305,6 +309,7 @@ fn create_entity_with_summary_fields(
     .expect("test staging stays within configured resource budgets");
     changed_entities(
         &txn.commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -313,6 +318,7 @@ fn create_entity_with_summary_fields(
 }
 
 fn create_relation_with_summary_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     source: EntityId,
     target: EntityId,
@@ -351,6 +357,7 @@ fn create_relation_with_summary_fields(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

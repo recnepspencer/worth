@@ -11,6 +11,7 @@ fn built_in_last_writer_wins_reject_retained_envelope_is_stable_across_recovery(
         AspectMergePolicyKind::LastWriterWins,
     );
     let entity = create_entity_with_aspect_fields(
+        execution,
         &mut runtime,
         "shared",
         crate::tests::support::single_string_aspect_field_patch(
@@ -126,6 +127,7 @@ fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
         AspectMergePolicyKind::LastWriterWins,
     );
     let entity = create_entity_with_aspect_fields(
+        execution,
         &mut runtime,
         "shared",
         crate::tests::support::single_string_aspect_field_patch(
@@ -265,6 +267,7 @@ fn auto_resolved_merge_reads_pinned_visible_value_through_declared_aspect_bindin
         AspectMergePolicyKind::PreferRicher,
     );
     let entity = create_entity_with_aspect_fields(
+        execution,
         &mut runtime,
         "identity",
         string_aspect_field_patch_for_target(

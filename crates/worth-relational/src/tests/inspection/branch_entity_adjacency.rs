@@ -12,19 +12,20 @@ fn a_fork_view_reads_its_own_adjacency_after_its_parent_writes_again() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let kept_target = create_entity(&runtime, "kept-target");
-    let other_target = create_entity(&runtime, "other-target");
-    let kept = create_relation(&runtime, source, kept_target, "kept");
+    let source = create_entity(execution, &runtime, "source");
+    let kept_target = create_entity(execution, &runtime, "kept-target");
+    let other_target = create_entity(execution, &runtime, "other-target");
+    let kept = create_relation(execution, &runtime, source, kept_target, "kept");
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
         .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
         .expect("the fork publishes");
-    delete_relation_on_branch(&runtime, kept, BranchId("main".to_owned()));
-    let later = create_relation(&runtime, source, other_target, "later");
+    delete_relation_on_branch(execution, &runtime, kept, BranchId("main".to_owned()));
+    let later = create_relation(execution, &runtime, source, other_target, "later");
     // The fork writes last, so its own version is newer than both parent writes.
     let forked = crate::tests::support::create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         other_target,

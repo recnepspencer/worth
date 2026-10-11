@@ -60,7 +60,7 @@ pub(super) fn execute_lowered_mutation(
         .validate_lowered_plan(runtime, lowered)
         .map_err(super::relational_execution_deferred::transaction_commit)?;
     let candidate = commit_authority
-        .prepare_validated_commit(runtime, validated)
+        .prepare_validated_commit(request_execution, runtime, validated)
         .map_err(super::relational_execution_deferred::transaction_commit)?;
     let performed = match runtime.publication_port().compare_and_publish(candidate) {
         worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {

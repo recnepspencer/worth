@@ -130,6 +130,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
                 .map_err(map_bootstrap_staging_denial)?;
             let candidate = runtime
                 .prepare_branch_transaction(
+                    execution,
                     transaction,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

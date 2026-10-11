@@ -233,7 +233,11 @@ where
                 .push_batch(batch, NativeAllocationPolicy::SystemAllocation)
                 .expect("the field update stays within resource budgets");
             runtime
-                .prepare_branch_transaction(transaction, NativeAllocationPolicy::SystemAllocation)
+                .prepare_branch_transaction(
+                    &execution,
+                    transaction,
+                    NativeAllocationPolicy::SystemAllocation,
+                )
                 .map(|_| ())
         });
         drop(application_basis);
@@ -306,7 +310,11 @@ where
                 .push_batch(batch, NativeAllocationPolicy::SystemAllocation)
                 .expect("the attachment stays within resource budgets");
             runtime
-                .prepare_branch_transaction(transaction, NativeAllocationPolicy::SystemAllocation)
+                .prepare_branch_transaction(
+                    &execution,
+                    transaction,
+                    NativeAllocationPolicy::SystemAllocation,
+                )
                 .map(|_| ())
         });
         drop(application_basis);

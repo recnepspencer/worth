@@ -24,7 +24,12 @@ fn lowered_mutation_execution_runs_through_relational_strategy_authority() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        request_execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),
@@ -76,7 +81,12 @@ fn performed_mutation_returns_settlement_deferred_without_denial_telemetry() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        request_execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     let baseline_published_snapshots = runtime
         .storage_access()
         .storage_stats()
@@ -135,7 +145,12 @@ fn lowered_merge_execution_runs_through_relational_merge_authority() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = relational_runtime_with_intent_strategy();
-    create_entity(&mut runtime, "main", BranchId("main".to_string()));
+    create_entity(
+        request_execution,
+        &mut runtime,
+        "main",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("candidate".to_string()),
@@ -143,6 +158,7 @@ fn lowered_merge_execution_runs_through_relational_merge_authority() {
     )
     .expect("candidate branch should be created");
     create_entity(
+        request_execution,
         &mut runtime,
         "feature-only",
         BranchId("candidate".to_string()),
@@ -209,7 +225,12 @@ fn lowered_mutation_execution_rejects_bridge_host_override() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        request_execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("branch-a".to_string()),

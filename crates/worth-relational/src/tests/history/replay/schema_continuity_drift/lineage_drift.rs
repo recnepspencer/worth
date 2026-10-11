@@ -6,7 +6,7 @@ fn replay_contract_reports_schema_lineage_drift_at_summary_layer_when_digest_is_
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -59,7 +59,9 @@ fn replay_contract_reports_schema_lineage_drift_at_summary_layer_when_digest_is_
     };
     txn.push_batch(batch_create("b"), Allocation::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(&runtime, Allocation::SystemAllocation).unwrap();
+    let outcome = txn
+        .commit(execution, &runtime, Allocation::SystemAllocation)
+        .unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         outcome.commit.commit_id,

@@ -11,11 +11,11 @@ fn perf_mixed_load_matrix() {
         capture_perf_samples(suite, "concurrent_snapshot_version_read_pressure", || {
             let runtime =
                 runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-            let created = create_entity_outcome(&runtime, "baseline");
+            let created = create_entity_outcome(execution, &runtime, "baseline");
             let created_version_id = created.version_id;
             let entity = changed_entities(&created)[0];
             let explicit_snapshot = runtime.visibility_authority().snapshot();
-            let updated = update_entity(&runtime, entity, "mutated");
+            let updated = update_entity(execution, &runtime, entity, "mutated");
 
             let serial_snapshot_name = {
                 let read = runtime
@@ -135,15 +135,16 @@ fn perf_mixed_load_matrix() {
     let relation_index_pressure_samples =
         capture_perf_samples(suite, "concurrent_relation_index_parity_pressure", || {
             let runtime = runtime_with_test_schema();
-            let source = create_entity_outcome(&runtime, "source");
+            let source = create_entity_outcome(execution, &runtime, "source");
             let source_id = changed_entities(&source)[0];
             let targets = [
-                create_entity_in_partition(&runtime, "r0", PartitionId(7)),
-                create_entity_in_partition(&runtime, "r1", PartitionId(11)),
-                create_entity_in_partition(&runtime, "r2", PartitionId(13)),
+                create_entity_in_partition(execution, &runtime, "r0", PartitionId(7)),
+                create_entity_in_partition(execution, &runtime, "r1", PartitionId(11)),
+                create_entity_in_partition(execution, &runtime, "r2", PartitionId(13)),
             ];
             for (index, target) in targets.into_iter().enumerate() {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     source_id,
                     target,
@@ -151,7 +152,7 @@ fn perf_mixed_load_matrix() {
                     PartitionId(23 + index as u32),
                 );
             }
-            let commit = create_entity_outcome(&runtime, "anchor");
+            let commit = create_entity_outcome(execution, &runtime, "anchor");
             let relation_index = runtime.index_authority().register(DerivedIndexDefinition {
                 index_id: DerivedIndexId(0),
                 name: "relation.name".to_string(),

@@ -6,10 +6,10 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    delete_entity(&runtime, entity);
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    delete_entity(execution, &runtime, entity);
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let prepared = runtime
         .prepare_merge_execution(

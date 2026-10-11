@@ -6,7 +6,7 @@ pub(super) fn run_replacement_strategy_certification(
     let root_path = unique_test_store_path("worth-relational-strategy-replacement-cert");
     let recovered_root = root_path.clone();
     let runtime = persisted_replacement_strategy_runtime(root_path);
-    let replacement_entity = create_entity(&runtime, "replace-target");
+    let replacement_entity = create_entity(execution, &runtime, "replace-target");
     let replacement_start_lineage = runtime
         .lineage_access()
         .for_record(replacement_entity)

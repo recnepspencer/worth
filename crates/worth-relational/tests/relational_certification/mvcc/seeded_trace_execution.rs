@@ -211,6 +211,7 @@ fn commit_evolve_and_probe(
     )
     .unwrap_or_else(|error| trace_panic(trace, scenario_index, "lower", error));
     let committed = commit_supply_chain_delta(
+        execution,
         &world.runtime,
         &world.program,
         branch.clone(),
@@ -241,6 +242,7 @@ fn commit_evolve_and_probe(
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, "snapshot release", error));
 
     let successor = commit_branch_batch_with_result(
+        execution,
         &world.runtime,
         branch.clone(),
         WorkerIntentBatch::new(format!("seeded-successor-{scenario_index}")),

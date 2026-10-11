@@ -60,6 +60,7 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
             .expect("test staging stays within configured resource budgets");
         transaction
             .commit(
+                &execution,
                 &runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -134,12 +135,15 @@ fn exact_reader_rejects_a_foreign_lease_despite_equal_snapshot_descriptors() {
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    fn retained_source() -> (
+    fn retained_source(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> (
         RuntimeBridgeRelationalSource,
         crate::relational_source::RelationalBridgeObservationLease,
     ) {
         let runtime = runtime_with_test_schema();
         crate::relational_source::relational_test_support::create_entity_outcome(
+            execution,
             &runtime,
             "retained-reader",
         );
@@ -155,8 +159,8 @@ fn exact_reader_rejects_a_foreign_lease_despite_equal_snapshot_descriptors() {
         (source, lease)
     }
 
-    let (first, first_lease) = retained_source();
-    let (second, second_lease) = retained_source();
+    let (first, first_lease) = retained_source(&resource_request);
+    let (second, second_lease) = retained_source(&resource_request);
     let snapshot = first_lease.snapshot_identity().clone();
     assert_eq!(snapshot, *second_lease.snapshot_identity());
     assert!(second.open_snapshot(&snapshot, resource_request).is_ok());

@@ -103,6 +103,7 @@ fn commit_only_other_outbox(
                 .expect("test staging stays within configured resource budgets");
             let committed = transaction
                 .commit(
+                    request_execution,
                     runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

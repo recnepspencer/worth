@@ -128,6 +128,7 @@ impl CustomInvariantRule for RequiredChild {
 }
 
 pub(super) fn deny_invalid_child_value(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     child: EntityId,
 ) {
@@ -147,6 +148,7 @@ pub(super) fn deny_invalid_child_value(
         .unwrap();
     let denial = transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

@@ -35,7 +35,12 @@ pub(crate) fn representative_effect_relational_mutation_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RepresentativeArtifacts {
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        execution,
+        &mut runtime,
+        "before",
+        BranchId("main".to_string()),
+    );
     let raw = RawEffectIntent::Mutation {
         binding: runtime_workflow_binding_for_snapshot_identity(exact_branch_snapshot_identity(
             &runtime, "main",
@@ -84,7 +89,12 @@ pub(crate) fn representative_effect_relational_merge_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RepresentativeArtifacts {
     let mut runtime = relational_runtime_with_intent_strategy();
-    create_entity(&mut runtime, "main", BranchId("main".to_string()));
+    create_entity(
+        execution,
+        &mut runtime,
+        "main",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("candidate".to_string()),
@@ -92,6 +102,7 @@ pub(crate) fn representative_effect_relational_merge_row(
     )
     .expect("candidate branch should exist");
     create_entity(
+        execution,
         &mut runtime,
         "candidate-only",
         BranchId("candidate".to_string()),

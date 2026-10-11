@@ -10,8 +10,11 @@ use crate::tests::support::*;
 
 #[test]
 fn cdc_certification_schema_boundary_continuation_is_explained_and_counted() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-    let _ = create_entity_outcome(&runtime, "anchor");
+    let _ = create_entity_outcome(execution, &runtime, "anchor");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -45,6 +48,7 @@ fn cdc_certification_schema_boundary_continuation_is_explained_and_counted() {
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
@@ -82,7 +86,7 @@ fn diff_cdc_truth_parity_test() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let baseline = create_entity_outcome(&runtime, "anchor");
+    let baseline = create_entity_outcome(execution, &runtime, "anchor");
     let baseline_checkpoint =
         checkpoint_for_schema_version(baseline.patch_position(), SchemaVersionId(1));
 
@@ -120,6 +124,7 @@ fn diff_cdc_truth_parity_test() {
         .expect("test staging stays within configured resource budgets");
     txn_v2
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -159,6 +164,7 @@ fn diff_cdc_truth_parity_test() {
         .expect("test staging stays within configured resource budgets");
     txn_v3
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

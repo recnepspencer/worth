@@ -14,7 +14,8 @@ fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry
         let (yielded, bridge, runtime) = yielded_direct(execution, resource_request);
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
-        let foreign_bridge = super::causal_fixture::managed_admission_context().bridge;
+        let foreign_bridge =
+            super::causal_fixture::managed_admission_context(&resource_request).bridge;
         let denied = {
             let fixture_phase_result = {
                 let installed_fixture_phase = yielded.fixture_phase(active_request);
@@ -187,7 +188,7 @@ fn successor_installation_denies_stale_yield_before_any_fresh_authority() {
                 runtime.installed_packages().successor_generation(),
             ))
             .expect("successor installation should commit");
-        let bridge = super::causal_fixture::managed_admission_context().bridge;
+        let bridge = super::causal_fixture::managed_admission_context(&resource_request).bridge;
         let denied = {
             let fixture_phase_result = {
                 let installed_fixture_phase = yielded.fixture_phase(active_request);

@@ -91,6 +91,7 @@ fn stateful_bridge_task_runtime_with_merge_posture(
     let mut relational =
         crate::harness::fixtures::effect_authorities::relational_runtime_with_intent_strategy();
     crate::harness::fixtures::effect_authorities::create_entity(
+        request_execution,
         &mut relational,
         "main",
         BranchId("main".to_string()),
@@ -102,6 +103,7 @@ fn stateful_bridge_task_runtime_with_merge_posture(
         .fork_branch(BranchId("candidate".to_string()), basis)
         .expect("candidate branch should be created");
     crate::harness::fixtures::effect_authorities::create_entity(
+        request_execution,
         &mut relational,
         "candidate-only",
         BranchId("candidate".to_string()),

@@ -10,7 +10,7 @@ fn exact_admitted_lookup_preserves_production_and_certification_results() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "admitted-lookup");
+    let created = create_entity_outcome(execution, &runtime, "admitted-lookup");
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let value = string_aspect_value("admitted-lookup");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -136,7 +136,7 @@ fn exact_admitted_lookup_keeps_a_one_short_stop_in_the_callers_lane() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "short-stop");
+    let created = create_entity_outcome(execution, &runtime, "short-stop");
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let value = string_aspect_value("short-stop");
     let index = runtime.index_authority().register(DerivedIndexDefinition {

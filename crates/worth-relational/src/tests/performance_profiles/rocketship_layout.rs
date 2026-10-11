@@ -130,6 +130,7 @@ pub(super) fn rocketship_query_target_count(node_count: usize) -> usize {
 }
 
 pub(super) fn seed_rocketship_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     node_count: usize,
 ) -> RocketshipSeedOutcome {
@@ -169,6 +170,7 @@ pub(super) fn seed_rocketship_world(
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -226,6 +228,7 @@ pub(super) fn seed_rocketship_world(
             )
             .expect("test staging stays within configured resource budgets");
             txn.commit(
+                execution,
                 runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )

@@ -73,13 +73,15 @@ fn setup_with_budgets(
     (fixture, owner, performed.product_branch().clone())
 }
 
-pub(super) fn setup_with_relational_source() -> (
+pub(super) fn setup_with_relational_source(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (
     RealReferenceFixture,
     Arc<TestOwner>,
     ProductBranchObservation,
 ) {
     let (fixture, owner, expected) = setup();
-    let ready = ready_relational_publication(&fixture, &owner, expected.clone());
+    let ready = ready_relational_publication(execution, &fixture, &owner, expected.clone());
     let cell = owner.state.branches.root_cell().expect("bootstrapped cell");
     match RuntimeWorldProductPublicationService::publish(
         owner.as_ref(),
@@ -99,6 +101,7 @@ pub(super) fn setup_with_relational_source() -> (
 }
 
 pub(super) fn prepare_relational(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     fixture: &RealReferenceFixture,
     owner: &TestOwner,
     expected: ProductBranchObservation,
@@ -109,7 +112,7 @@ pub(super) fn prepare_relational(
         expected,
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
             .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate(candidate_name),
+                fixture.prepare_relational_owner_candidate(execution, candidate_name),
             ),
         &crate::publication::RuntimeWorldCancellationSource::new().token(),
         None,
@@ -118,13 +121,14 @@ pub(super) fn prepare_relational(
 }
 
 pub(super) fn ready_relational_publication(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     fixture: &RealReferenceFixture,
     owner: &TestOwner,
     expected: ProductBranchObservation,
 ) -> crate::publication::CompositePublicationReady {
     ready_from_prepared(
         owner,
-        prepare_relational(fixture, owner, expected, "publication"),
+        prepare_relational(execution, fixture, owner, expected, "publication"),
         "the production owner execution must settle",
     )
 }
@@ -163,9 +167,12 @@ pub(super) fn ready_from_prepared(
 
 #[test]
 fn complete_ready_publish_path_derives_and_installs_the_successor_snapshot() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
     let cell = owner.state.branches.root_cell().expect("bootstrapped cell");
-    let ready = ready_relational_publication(&fixture, &owner, expected.clone());
+    let ready = ready_relational_publication(execution, &fixture, &owner, expected.clone());
     assert_eq!(owner.state.operation.active(), 1);
 
     let outcome = ready.publish(&cell, CompositeLateCancellationPosture::NotRequested);

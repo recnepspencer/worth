@@ -30,8 +30,8 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build();
-    let shared = create_entity(&runtime, "shared");
-    let unrelated = create_entity(&runtime, "unrelated");
+    let shared = create_entity(execution, &runtime, "shared");
+    let unrelated = create_entity(execution, &runtime, "unrelated");
     let external = |name: &str| {
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         transaction
@@ -48,7 +48,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
             )
             .unwrap();
         let committed = transaction
-            .commit(&runtime, Allocation::SystemAllocation)
+            .commit(execution, &runtime, Allocation::SystemAllocation)
             .unwrap();
         let id = changed_entities(&committed)[0];
         release_test_commit_snapshot(&runtime, &committed);
@@ -57,8 +57,8 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
     let left = external("left");
     let right = external("right");
     let replacement = external("replacement");
-    create_relation(&runtime, left, shared, "left-shared");
-    let initial = create_relation_outcome(&runtime, shared, right, "shared-right");
+    create_relation(execution, &runtime, left, shared, "left-shared");
+    let initial = create_relation_outcome(execution, &runtime, shared, right, "shared-right");
     let moved_relation = changed_relations(&initial)[0];
     let definitions = [
         DerivedIndexDefinition {
@@ -101,7 +101,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
     assert!(built.failed_indexes.is_empty());
     let retained = built.generations.clone();
     assert_selected_rows(&retained, shared, left, right, moved_relation);
-    let edited = update_entity(&runtime, unrelated, "unrelated-edited");
+    let edited = update_entity(execution, &runtime, unrelated, "unrelated-edited");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -147,7 +147,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
         )
         .unwrap();
     let rewired = transaction
-        .commit(&runtime, Allocation::SystemAllocation)
+        .commit(execution, &runtime, Allocation::SystemAllocation)
         .unwrap();
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
@@ -207,7 +207,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
         )
         .unwrap();
     let replaced = transaction
-        .commit(&runtime, Allocation::SystemAllocation)
+        .commit(execution, &runtime, Allocation::SystemAllocation)
         .unwrap();
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())

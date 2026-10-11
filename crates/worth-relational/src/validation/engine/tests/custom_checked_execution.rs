@@ -197,6 +197,9 @@ fn checked_custom_rule_stops_mid_scan_when_work_is_exhausted() {
 
 #[test]
 fn checked_custom_preparation_reads_declared_structural_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let target = Arc::new(OnceLock::new());
     let preparation_visits = Arc::new(AtomicUsize::new(0));
     let evaluation_visits = Arc::new(AtomicUsize::new(0));
@@ -215,7 +218,7 @@ fn checked_custom_preparation_reads_declared_structural_state() {
             .unwrap(),
         )
         .build();
-    let entity_id = create_entity_of_kind(&runtime, KindId(1), "checked-structural");
+    let entity_id = create_entity_of_kind(execution, &runtime, KindId(1), "checked-structural");
     target.set(entity_id).unwrap();
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
@@ -334,6 +337,9 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
 
 #[test]
 fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let cancellation = CancellationSource::new();
     let target = Arc::new(OnceLock::new());
     let visits = Arc::new(AtomicUsize::new(0));
@@ -353,7 +359,12 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
         )
         .build();
     target
-        .set(create_entity_of_kind(&runtime, KindId(1), "checked-cancel"))
+        .set(create_entity_of_kind(
+            execution,
+            &runtime,
+            KindId(1),
+            "checked-cancel",
+        ))
         .unwrap();
     let lease = checked_lease(8 * 1024 * 1024, 10_000, cancellation.token());
     let request = InvariantExecutionRequest::from_profile_with_contract(

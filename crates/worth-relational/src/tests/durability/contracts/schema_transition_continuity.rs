@@ -6,7 +6,7 @@ fn durable_recovery_and_schema_mismatch_test() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let _baseline = create_entity_outcome(&runtime, "main-a");
+    let _baseline = create_entity_outcome(execution, &runtime, "main-a");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -41,6 +41,7 @@ fn durable_recovery_and_schema_mismatch_test() {
     .expect("test staging stays within configured resource budgets");
     let transitioned = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -167,7 +168,7 @@ fn durability_contract_failure_aspect_plan_mismatch_is_explicit() {
 
     let runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity_outcome(&runtime, "main-a");
+    create_entity_outcome(execution, &runtime, "main-a");
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -276,9 +277,9 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
         .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
         .durable_store_layout(store_layout.clone())
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    create_relation_outcome(&runtime, source, target, "guarded");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    create_relation_outcome(execution, &runtime, source, target, "guarded");
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );

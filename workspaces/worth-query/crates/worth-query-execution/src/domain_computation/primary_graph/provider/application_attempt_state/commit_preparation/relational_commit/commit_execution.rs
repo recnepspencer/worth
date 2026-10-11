@@ -108,7 +108,7 @@ pub(super) fn commit(
     let mut candidate = provider
         .graph
         .with_runtime_mut(&execution, |runtime| {
-            runtime.prepare_validated_proposal(candidate)
+            runtime.prepare_validated_proposal(&execution, candidate)
         })
         .map_err(transaction_commit_stop)?;
     let prepared_touched_records = touched_records::PreparedTouchedRecords::prepare(

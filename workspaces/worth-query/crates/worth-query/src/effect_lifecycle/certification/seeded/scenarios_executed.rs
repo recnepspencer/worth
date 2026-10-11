@@ -29,7 +29,12 @@ pub(super) fn scalar_mutation_row(
     let entity_name = seeded_label("entity", stepper, index);
     let updated_name = seeded_label("updated", stepper, index);
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, &entity_name, BranchId("main".to_string()));
+    let entity_id = create_entity(
+        execution,
+        &mut runtime,
+        &entity_name,
+        BranchId("main".to_string()),
+    );
     fork_seed_branch_from_main(&mut runtime, &branch);
     let binding =
         runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, &branch), &branch);
@@ -213,7 +218,12 @@ pub(super) fn batch_mutation_row(
             "{}-{component_index}",
             seeded_label("entity", stepper, index)
         );
-        let entity_id = create_entity(&mut runtime, &entity_name, BranchId("main".to_string()));
+        let entity_id = create_entity(
+            execution,
+            &mut runtime,
+            &entity_name,
+            BranchId("main".to_string()),
+        );
         let desired = format!(
             "{}-{component_index}",
             seeded_label("after", stepper, index)

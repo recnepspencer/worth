@@ -56,6 +56,7 @@ fn unrelated_lease_through_public_commit() {
             let unrelated = authority()
                 .request_lease(request(32 * 1024 * 1024, 1_000_000))
                 .unwrap();
+            let execution = &worth_execution::ExecutionRequest::leased(&unrelated);
             // Only a flat Copy denial crosses this probe's kernel boundary; the
             // rejected transaction and its log are dropped before returning.
             let captured = std::sync::Mutex::new(None);
@@ -65,6 +66,7 @@ fn unrelated_lease_through_public_commit() {
             let outcome = scan.run(Some(&parent), (), 0, 0, 0, 0, |_, _, _| {
                 let error = runtime
                     .prepare_branch_transaction_with_lease(
+                        execution,
                         transaction(&runtime, "nested-target"),
                         &unrelated,
                     )

@@ -10,12 +10,19 @@ fn perf_inspection_budget_matrix() {
     let graph_kind_connectivity_samples =
         capture_perf_samples(suite, "graph_kind_connectivity_bundle", || {
             let runtime = runtime_with_test_schema();
-            let left_a = create_entity_in_partition(&runtime, "left-a", PartitionId(7));
-            let _left_b = create_entity_in_partition(&runtime, "left-b", PartitionId(7));
-            let _isolated = create_entity_in_partition(&runtime, "isolated", PartitionId(11));
-            let right = create_entity_in_partition(&runtime, "right", PartitionId(13));
-            let _relation =
-                create_relation_in_partition(&runtime, left_a, right, "rel", PartitionId(17));
+            let left_a = create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
+            let _left_b = create_entity_in_partition(execution, &runtime, "left-b", PartitionId(7));
+            let _isolated =
+                create_entity_in_partition(execution, &runtime, "isolated", PartitionId(11));
+            let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(13));
+            let _relation = create_relation_in_partition(
+                execution,
+                &runtime,
+                left_a,
+                right,
+                "rel",
+                PartitionId(17),
+            );
 
             runtime.performance_access().reset_counters();
 
@@ -108,9 +115,9 @@ fn perf_inspection_budget_matrix() {
         "structural_identity_historical_window",
         || {
             let mut runtime = runtime_with_test_schema();
-            let created = create_entity_outcome(&runtime, "alpha");
+            let created = create_entity_outcome(execution, &runtime, "alpha");
             let entity = changed_entities(&created)[0];
-            let _other = create_entity(&runtime, "beta");
+            let _other = create_entity(execution, &runtime, "beta");
             assert!(runtime.set_entity_structural_identity_for_test(
                 entity,
                 Some(crate::facade::identity::StructuralFingerprint::new(
@@ -119,7 +126,7 @@ fn perf_inspection_budget_matrix() {
                 )),
                 Some(crate::facade::identity::LineageId(77)),
             ));
-            let _updated = update_entity(&runtime, entity, "alpha-updated");
+            let _updated = update_entity(execution, &runtime, entity, "alpha-updated");
 
             runtime.performance_access().reset_counters();
 
@@ -205,9 +212,9 @@ fn perf_inspection_budget_matrix() {
 
     let retention_commit_samples = capture_perf_samples(suite, "retention_commit_window", || {
         let runtime = runtime_with_test_schema();
-        let left = create_entity(&runtime, "left");
-        let right = create_entity(&runtime, "right");
-        let _relation = create_relation(&runtime, left, right, "rel");
+        let left = create_entity(execution, &runtime, "left");
+        let right = create_entity(execution, &runtime, "right");
+        let _relation = create_relation(execution, &runtime, left, right, "rel");
         let latest_commit = runtime
             .history()
             .latest_commit()

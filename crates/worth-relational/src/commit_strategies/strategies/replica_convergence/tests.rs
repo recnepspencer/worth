@@ -53,7 +53,7 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
             &descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "before");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -106,7 +106,7 @@ fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
             &descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "before");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
         crate::transactions::data::WorkerIntentBatch::new("seed-replicas").push(
@@ -126,6 +126,7 @@ fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        request_execution,
         &runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

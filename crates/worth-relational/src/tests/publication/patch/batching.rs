@@ -3,10 +3,13 @@ use crate::tests::support::*;
 
 #[test]
 fn patch_stream_resume_batches_commits_without_duplication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
-    let _second = create_entity_outcome(&runtime, "b");
-    let _third = create_entity_outcome(&runtime, "c");
+    let _first = create_entity_outcome(execution, &runtime, "a");
+    let _second = create_entity_outcome(execution, &runtime, "b");
+    let _third = create_entity_outcome(execution, &runtime, "c");
 
     let first_batch = runtime
         .publication()
@@ -33,8 +36,11 @@ fn patch_stream_resume_batches_commits_without_duplication() {
 
 #[test]
 fn patch_stream_rejects_unknown_resume_position() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let _ = create_entity_outcome(&runtime, "anchor");
+    let _ = create_entity_outcome(execution, &runtime, "anchor");
 
     let error = runtime
         .publication()
@@ -52,11 +58,14 @@ fn patch_stream_rejects_unknown_resume_position() {
 
 #[test]
 fn patch_stream_uses_durable_canonical_history_when_retained_envelope_is_missing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "a");
+    let first = create_entity_outcome(execution, &runtime, "a");
     runtime.durability_authority().checkpoint().unwrap();
-    let _second = create_entity_outcome(&runtime, "b");
-    let _third = create_entity_outcome(&runtime, "c");
+    let _second = create_entity_outcome(execution, &runtime, "b");
+    let _third = create_entity_outcome(execution, &runtime, "c");
 
     assert!(runtime
         .history_authority()

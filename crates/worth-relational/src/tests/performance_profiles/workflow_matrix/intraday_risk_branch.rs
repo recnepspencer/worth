@@ -6,13 +6,13 @@ pub(super) fn certify_fintech_intraday_risk_branch_round_trip(
 ) {
     let fintech_intraday_risk_samples =
         capture_perf_samples(suite, "fintech_intraday_risk_branch_round_trip", || {
-            let mut world = setup_intraday_risk_perf_world();
+            let mut world = setup_intraday_risk_perf_world(execution);
             let baseline_observability = perf_capture_baseline_observability(&world);
             let analysis = perf_open_analysis_branch(&mut world);
 
             world.runtime.performance_access().reset_counters();
             let stress_started_at = Instant::now();
-            let stress_commit = perf_stress_intraday_risk(&mut world, analysis);
+            let stress_commit = perf_stress_intraday_risk(execution, &mut world, analysis);
             let stress_commit_micros = stress_started_at.elapsed().as_micros();
 
             let query_started_at = Instant::now();

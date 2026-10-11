@@ -242,7 +242,7 @@ fn start_run(
     let attempt = runtime
         .start_direct_resource_attempt(operation, plan)
         .expect("substitution attempt should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(operation, attempt, lower.read_request(), resource_request)

@@ -29,7 +29,7 @@ fn runtime_bridge_snapshot_reader_prefers_retained_observation_over_later_commit
             .expect("test graph role");
     let created = {
         let runtime = runtime.lock().expect("test runtime lock");
-        create_entity_outcome(&runtime, "alice")
+        create_entity_outcome(&execution, &runtime, "alice")
     };
     let active_entity_identity = active_entity_identity(&created);
     let branch_identity = runtime
@@ -45,7 +45,11 @@ fn runtime_bridge_snapshot_reader_prefers_retained_observation_over_later_commit
         .expect("retained active observation");
     let active_snapshot_identity = lease.snapshot_identity().clone();
 
-    replace_entity_after_snapshot(&mut runtime.lock().expect("test runtime lock"), &created);
+    replace_entity_after_snapshot(
+        &execution,
+        &mut runtime.lock().expect("test runtime lock"),
+        &created,
+    );
 
     let reader = source
         .open_snapshot(&active_snapshot_identity, execution)
@@ -85,7 +89,7 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "managed");
+    let created = create_entity_outcome(&execution, &runtime, "managed");
     let branch_id = created.snapshot.branch_id().clone();
     let branch_identity = runtime
         .branch_identity(&branch_id)
@@ -194,6 +198,7 @@ fn active_entity_identity(
 }
 
 fn replace_entity_after_snapshot(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     created: &worth_relational::facade::transactions::CommitResult,
 ) {
@@ -221,6 +226,7 @@ fn replace_entity_after_snapshot(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

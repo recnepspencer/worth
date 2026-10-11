@@ -68,9 +68,12 @@ fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
         .unwrap();
     let token = RuntimeWorldCancellationSource::new().token();
     let port = court.world.publication_port();
-    let candidate = court
-        .records
-        .candidate(root.basis().relational_basis(), "grain", "5");
+    let candidate = court.records.candidate(
+        request_execution,
+        root.basis().relational_basis(),
+        "grain",
+        "5",
+    );
     let intent =
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
             .with_prepared_relational_candidate(candidate);
@@ -237,9 +240,12 @@ fn combined_publication_routes_actual_settled_relational_successor() {
                 .links
                 .remove(&("manifest".into(), "steel".into()));
         }
-        let candidate = court
-            .records
-            .candidate(root.basis().relational_basis(), "grain", amount);
+        let candidate = court.records.candidate(
+            request_execution,
+            root.basis().relational_basis(),
+            "grain",
+            amount,
+        );
         let token = RuntimeWorldCancellationSource::new().token();
         let port = court.world.publication_port();
         let intent =

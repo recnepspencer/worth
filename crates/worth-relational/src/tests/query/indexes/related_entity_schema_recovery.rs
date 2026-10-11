@@ -94,11 +94,11 @@ fn v1_ordering_runtime(
         .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
         .durable_store_layout(store_layout)
         .build();
-    let parent = changed_entities(&create_entity_outcome(&runtime, "parent"))[0];
-    let alpha = changed_entities(&create_entity_outcome(&runtime, "alpha"))[0];
-    let beta = changed_entities(&create_entity_outcome(&runtime, "beta"))[0];
-    create_relation_outcome(&runtime, parent, beta, "owns-beta");
-    let v1_commit = create_relation_outcome(&runtime, parent, alpha, "owns-alpha");
+    let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
+    let alpha = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
+    let beta = changed_entities(&create_entity_outcome(execution, &runtime, "beta"))[0];
+    create_relation_outcome(execution, &runtime, parent, beta, "owns-beta");
+    let v1_commit = create_relation_outcome(execution, &runtime, parent, alpha, "owns-alpha");
     create_branch_from_main(&runtime, "v1-ordering");
     let index = register_related_ordering_index(&runtime);
     let v1_branch = runtime
@@ -165,6 +165,7 @@ fn transition_checkpoint_and_recover(
         .expect("test staging stays within configured resource budgets");
     let v2_commit = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

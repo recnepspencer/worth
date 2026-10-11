@@ -40,7 +40,12 @@ fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
         delta,
     )
     .expect("the named Port3 topology delta observes production pre-state");
-    commit_branch_batch(&world.runtime, BranchId("rewire".to_owned()), batch);
+    commit_branch_batch(
+        execution,
+        &world.runtime,
+        BranchId("rewire".to_owned()),
+        batch,
+    );
 
     world
         .runtime

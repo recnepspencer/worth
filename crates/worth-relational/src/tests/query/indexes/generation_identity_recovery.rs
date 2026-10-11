@@ -7,7 +7,7 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "before-recovery");
+    let created = create_entity_outcome(execution, &runtime, "before-recovery");
     let entity = changed_entities(&created)[0];
     let field = aspect_field_locator(aspect_key("name"), field_key("name"));
     let mut definition = DerivedIndexDefinition {
@@ -42,7 +42,7 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
     let fourth = recovered.index_authority().register(definition);
     assert!(third.index_id > second.index_id);
     assert!(fourth.index_id > third.index_id);
-    let committed = update_entity(&recovered, entity, "after-recovery");
+    let committed = update_entity(execution, &recovered, entity, "after-recovery");
     let after = recovered.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {

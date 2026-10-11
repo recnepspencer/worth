@@ -22,6 +22,9 @@ const PAUSE_SIGNAL_BUDGET: Duration = Duration::from_secs(30);
 /// counters are exact, and the deferred branch gives back everything it took.
 #[test]
 fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(test_schema_registry())
@@ -35,7 +38,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
             candidate_max_lifetime_millis: 30_000,
         })
         .build();
-    create_entity(&runtime, "patch-position-contention-anchor");
+    create_entity(execution, &runtime, "patch-position-contention-anchor");
     fork_contention_branch(&runtime, "winner");
     fork_contention_branch(&runtime, "loser");
 
@@ -52,6 +55,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     let (reached, reached_signal) = std::sync::mpsc::sync_channel::<()>(1);
     let release = Arc::new(RelationalPatchPositionReservationGate::default());
     let winner = prepared_write_on(
+        execution,
         &runtime,
         "winner",
         "contention-winner",
@@ -60,6 +64,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     );
     let winner_cell = winner.publication_cell_for_test();
     let loser = prepared_write_on(
+        execution,
         &runtime,
         "loser",
         "contention-loser",
@@ -235,12 +240,14 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     // The candidate slot is the one residue a counter cannot fake: if the
     // deferral kept it, the second refill below would be refused instead.
     let refill = prepared_write_on(
+        execution,
         &runtime,
         "loser",
         "post-contention-refill",
         RelationalOperationControl::uninterrupted(),
     );
     let second_refill = prepared_write_on(
+        execution,
         &runtime,
         "winner",
         "post-contention-second-refill",
@@ -260,6 +267,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     assert!(
         matches!(
             runtime.prepare_branch_transaction(
+                execution,
                 overflow,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             ),
@@ -307,6 +315,7 @@ fn begin_contention_transaction(
 }
 
 fn prepared_write_on(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &str,
     entity: &str,
@@ -321,6 +330,7 @@ fn prepared_write_on(
         .expect("test staging stays within configured resource budgets");
     runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

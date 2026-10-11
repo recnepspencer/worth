@@ -2,8 +2,11 @@ use crate::tests::support::*;
 
 #[test]
 fn publication_port_denies_candidate_after_owner_drop() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "owner-drop-anchor");
+    create_entity(execution, &runtime, "owner-drop-anchor");
     let basis =
         crate::tests::support::test_owner_main_basis(&runtime).expect("main basis is admitted");
     let mut transaction = runtime
@@ -17,6 +20,7 @@ fn publication_port_denies_candidate_after_owner_drop() {
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -56,8 +60,11 @@ fn publication_port_denies_candidate_after_owner_drop() {
 
 #[test]
 fn runtime_drop_waits_for_admitted_publication_to_leave_linearization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "in-flight-drop-anchor");
+    create_entity(execution, &runtime, "in-flight-drop-anchor");
     let basis =
         crate::tests::support::test_owner_main_basis(&runtime).expect("main basis is admitted");
     let mut transaction = runtime
@@ -71,6 +78,7 @@ fn runtime_drop_waits_for_admitted_publication_to_leave_linearization() {
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

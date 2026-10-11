@@ -24,6 +24,7 @@ fn v2_latest_replay_matches_the_canonical_envelope_and_reconstructs() {
     let branch = BranchId("main".to_owned());
     let batch = lower_hazard_v2_batch(&world.handles).unwrap();
     let committed = commit_supply_chain_delta(
+        execution,
         &world.runtime,
         &world.program,
         branch.clone(),
@@ -68,6 +69,7 @@ fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let branch = BranchId("main".to_owned());
     let transitioned = commit_supply_chain_delta(
+        execution,
         &world.runtime,
         &world.program,
         branch.clone(),
@@ -75,6 +77,7 @@ fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
         lower_hazard_v2_batch(&world.handles).unwrap(),
     );
     let successor = commit_branch_batch_with_result(
+        execution,
         &world.runtime,
         branch,
         WorkerIntentBatch::new("supply-chain-v2-successor"),
@@ -124,6 +127,7 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
     let branch = BranchId("hazard-v2".to_owned());
     fork_supply_chain_branch_from_main(&world.runtime, branch.clone());
     let transitioned = commit_supply_chain_delta(
+        execution,
         &world.runtime,
         &world.program,
         branch.clone(),
@@ -188,6 +192,7 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
         .collect::<std::collections::BTreeMap<_, _>>();
     drop(retained_view);
     let successor = commit_branch_batch_with_result(
+        execution,
         &world.runtime,
         branch,
         lower_cargo_footprint_batch(&world.handles, SupplyChainScale::court(), 1),

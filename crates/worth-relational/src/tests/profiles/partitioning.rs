@@ -38,12 +38,13 @@ fn bulk_create_entities_match_equivalent_singular_creates() {
         .expect("test staging stays within configured resource budgets");
     let bulk_outcome = bulk_txn
         .commit(
+            execution,
             &bulk_runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
 
-    let singular_runtime = apply_batches(vec![batch_create("a"), batch_create("b")]);
+    let singular_runtime = apply_batches(execution, vec![batch_create("a"), batch_create("b")]);
     let bulk_read = bulk_runtime
         .read_truth()
         .read_snapshot(&bulk_outcome.snapshot, execution)
@@ -123,9 +124,10 @@ fn staged_parallel_bulk_entity_import_matches_serial_reference() {
         )
         .expect("test staging stays within configured resource budgets");
         let outcome = if leased {
-            runtime.commit_branch_transaction_with_lease(txn, &test_execution_lease())
+            runtime.commit_branch_transaction_with_lease(execution, txn, &test_execution_lease())
         } else {
             txn.commit(
+                execution,
                 &runtime,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -160,10 +162,16 @@ fn cross_context_relations_preserve_partitioned_endpoints() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let source = create_entity_in_partition(&runtime, "left", PartitionId(7));
-    let target = create_entity_in_partition(&runtime, "right", PartitionId(11));
-    let relation =
-        create_relation_in_partition(&runtime, source, target, "bridge", PartitionId(29));
+    let source = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
+    let target = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
+    let relation = create_relation_in_partition(
+        execution,
+        &runtime,
+        source,
+        target,
+        "bridge",
+        PartitionId(29),
+    );
     let snapshot = runtime.visibility_authority().snapshot();
     let read = runtime
         .read_truth()
@@ -179,6 +187,9 @@ fn cross_context_relations_preserve_partitioned_endpoints() {
 
 #[test]
 fn cross_context_relations_respect_relation_kind_policy() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema_registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -204,8 +215,8 @@ fn cross_context_relations_respect_relation_kind_policy() {
         .schema_registry(schema_registry)
         .cross_context_policy(CrossContextPolicy::SchemaControlled)
         .build();
-    let source = create_entity_in_partition(&runtime, "left", PartitionId(7));
-    let target = create_entity_in_partition(&runtime, "right", PartitionId(11));
+    let source = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
+    let target = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
         WorkerIntentBatch::new("forbidden-cross-context").push(MutationIntent::Create(
@@ -224,6 +235,7 @@ fn cross_context_relations_respect_relation_kind_policy() {
 
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -243,10 +255,14 @@ fn cross_context_relations_respect_relation_kind_policy() {
 
 #[test]
 fn partition_registry_and_stats_expose_partition_owned_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-    let left = create_entity_in_partition(&runtime, "left", PartitionId(7));
-    let right = create_entity_in_partition(&runtime, "right", PartitionId(11));
-    let _ = create_relation_in_partition(&runtime, left, right, "bridge", PartitionId(29));
+    let left = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
+    let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
+    let _ =
+        create_relation_in_partition(execution, &runtime, left, right, "bridge", PartitionId(29));
 
     let partition_ids = runtime.storage_access().partition_ids();
     let stats = runtime.storage_access().partition_storage_stats();

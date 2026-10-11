@@ -67,7 +67,7 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
     let later = RecordedSettlementIdentity::retain(&source, coordinate, 1);
     let unwatched = unwatched_accounts(graph.layout(), CREATED, "undeclared-change");
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
-        write_field(runtime, entity, status.clone(), "prime");
+        write_field(request_execution, runtime, entity, status.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let facts: Arc<[_]> =
             Arc::from([field_fact(&host_custody.borrowed_request_for_test(), runtime, &before_handle, entity, status.clone())]);
@@ -81,7 +81,7 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
 
         // No selector of this commit matches the fact the reader holds; only
         // the delivery lost its keys.
-        let committed = write_batch(runtime, unwatched);
+        let committed = write_batch(request_execution, runtime, unwatched);
         release_test_commit_snapshot(runtime, &committed);
         let (after_handle, after) = snapshot(runtime);
         let report = owner

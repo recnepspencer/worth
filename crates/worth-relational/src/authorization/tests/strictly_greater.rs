@@ -30,7 +30,7 @@ fn strictly_greater_predicate_observes_the_open_numeric_boundary() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = comparison_runtime();
-    let scope = create_entity(&runtime, "predicate-scope");
+    let scope = create_entity(execution, &runtime, "predicate-scope");
     let cases = [
         ("greater", Some(5), AspectValue::UInt64(4), true),
         ("equal", Some(4), AspectValue::UInt64(4), false),
@@ -40,8 +40,9 @@ fn strictly_greater_predicate_observes_the_open_numeric_boundary() {
     ];
 
     for (case, observed, expected, should_match) in cases {
-        let principal = create_comparison_entity(&runtime, case, observed, None);
+        let principal = create_comparison_entity(execution, &runtime, case, observed, None);
         create_relation(
+            execution,
             &runtime,
             principal,
             scope,
@@ -78,11 +79,22 @@ fn strictly_greater_field_constraint_compares_one_complete_witness() {
     ];
 
     for (case, left_number, right_number, right_text, should_match) in cases {
-        let principal =
-            create_comparison_entity(&runtime, &format!("{case}-left"), left_number, None);
-        let scope =
-            create_comparison_entity(&runtime, &format!("{case}-right"), right_number, right_text);
+        let principal = create_comparison_entity(
+            execution,
+            &runtime,
+            &format!("{case}-left"),
+            left_number,
+            None,
+        );
+        let scope = create_comparison_entity(
+            execution,
+            &runtime,
+            &format!("{case}-right"),
+            right_number,
+            right_text,
+        );
         create_relation(
+            execution,
             &runtime,
             principal,
             scope,
@@ -115,9 +127,16 @@ fn strictly_greater_observation_stales_when_the_governing_field_reaches_equality
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = comparison_runtime();
-    let principal = create_comparison_entity(&runtime, "drifting-principal", Some(5), None);
-    let scope = create_entity(&runtime, "drift-scope");
-    create_relation(&runtime, principal, scope, "drift-predicate-scope");
+    let principal =
+        create_comparison_entity(execution, &runtime, "drifting-principal", Some(5), None);
+    let scope = create_entity(execution, &runtime, "drift-scope");
+    create_relation(
+        execution,
+        &runtime,
+        principal,
+        scope,
+        "drift-predicate-scope",
+    );
     let admitted = observe_predicate(
         execution,
         &runtime,
@@ -128,7 +147,7 @@ fn strictly_greater_observation_stales_when_the_governing_field_reaches_equality
     assert!(admitted.paths()[0].matched());
     assert_eq!(admitted.counters(), predicate_counters(true));
 
-    write_comparison_fields(&runtime, principal, Some(4), None);
+    write_comparison_fields(execution, &runtime, principal, Some(4), None);
     let current = runtime.visibility_authority().snapshot();
 
     assert_eq!(
@@ -158,19 +177,21 @@ fn comparison_runtime() -> crate::runtime::RelationalRuntime {
 }
 
 fn create_comparison_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     name: &str,
     remaining: Option<u64>,
     text_bound: Option<&str>,
 ) -> EntityId {
-    let entity = create_entity(runtime, name);
+    let entity = create_entity(execution, runtime, name);
     if remaining.is_some() || text_bound.is_some() {
-        write_comparison_fields(runtime, entity, remaining, text_bound);
+        write_comparison_fields(execution, runtime, entity, remaining, text_bound);
     }
     entity
 }
 
 fn write_comparison_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     entity: EntityId,
     remaining: Option<u64>,
@@ -205,6 +226,7 @@ fn write_comparison_fields(
         .expect("test staging stays within configured resource budgets");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

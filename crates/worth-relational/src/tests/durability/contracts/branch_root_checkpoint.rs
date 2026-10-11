@@ -6,7 +6,7 @@ fn checkpoint_recovery_rejects_missing_exact_branch_root_artifact() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "root-artifact-required");
+    create_entity_outcome(execution, &runtime, "root-artifact-required");
     runtime
         .durability_authority()
         .checkpoint()
@@ -37,7 +37,7 @@ fn checkpoint_recovery_rejects_root_artifact_without_commit_envelope() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "root-envelope-binding");
+    create_entity_outcome(execution, &runtime, "root-envelope-binding");
     runtime
         .durability_authority()
         .checkpoint()
@@ -65,7 +65,7 @@ fn checkpoint_recovery_rejects_duplicate_commit_envelopes_before_root_readmissio
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "duplicate-envelope-root");
+    create_entity_outcome(execution, &runtime, "duplicate-envelope-root");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime
         .durability()
@@ -98,7 +98,7 @@ fn checkpoint_recovery_readmits_shared_root_once_for_sibling_heads() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "shared-root-seed");
+    create_entity_outcome(execution, &runtime, "shared-root-seed");
     let sibling = create_branch_from_main(&runtime, "sibling");
     runtime.durability_authority().checkpoint().unwrap();
     let plan = runtime
@@ -146,15 +146,15 @@ fn tail_recovery_resolves_the_checkpoint_target_root_not_the_fork_source_head() 
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "shared-seed");
+    create_entity_outcome(execution, &runtime, "shared-seed");
     let storm = create_branch_from_main(&runtime, "storm");
     runtime
         .durability_authority()
         .checkpoint()
         .expect("checkpoint retains the shared pre-divergence root");
 
-    create_entity_outcome(&runtime, "main-tail-only");
-    create_entity_outcome_on_branch(&runtime, "storm-tail-only", storm.clone());
+    create_entity_outcome(execution, &runtime, "main-tail-only");
+    create_entity_outcome_on_branch(execution, &runtime, "storm-tail-only", storm.clone());
     let plan = runtime
         .durability()
         .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
@@ -181,7 +181,7 @@ fn checkpoint_recovery_rejects_duplicate_global_partition_images() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "duplicate-global-partition");
+    create_entity_outcome(execution, &runtime, "duplicate-global-partition");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime
         .durability()
@@ -208,7 +208,7 @@ fn checkpoint_recovery_rejects_duplicate_branch_root_partition_images() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "duplicate-root-partition");
+    create_entity_outcome(execution, &runtime, "duplicate-root-partition");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime
         .durability()
@@ -233,10 +233,10 @@ fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "lineage-seed");
+    create_entity_outcome(execution, &runtime, "lineage-seed");
     let feature = create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", feature.clone());
-    create_entity_outcome(&runtime, "main-only");
+    create_entity_outcome_on_branch(execution, &runtime, "feature-only", feature.clone());
+    create_entity_outcome(execution, &runtime, "main-only");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime
         .durability()
@@ -274,11 +274,16 @@ fn tail_recovery_rejects_foreign_branch_target_substitution() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "tail-lineage-seed");
+    create_entity_outcome(execution, &runtime, "tail-lineage-seed");
     let feature = create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-before-checkpoint", feature.clone());
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-before-checkpoint",
+        feature.clone(),
+    );
     runtime.durability_authority().checkpoint().unwrap();
-    let tail_commit = create_entity_outcome(&runtime, "main-tail");
+    let tail_commit = create_entity_outcome(execution, &runtime, "main-tail");
     let mut plan = runtime
         .durability()
         .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);

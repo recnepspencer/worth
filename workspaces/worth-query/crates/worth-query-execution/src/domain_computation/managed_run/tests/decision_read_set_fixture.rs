@@ -78,7 +78,7 @@ where
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("decision-capable graph attempt should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)
@@ -135,7 +135,7 @@ where
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("provisional-capable graph attempt should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)
@@ -197,7 +197,7 @@ where
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("invariant-capable graph attempt should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)

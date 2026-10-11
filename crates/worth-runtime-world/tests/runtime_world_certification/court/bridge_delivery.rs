@@ -22,7 +22,7 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
             .observe_branch(&records.runtime.main_branch_identity())
             .unwrap()
             .1;
-        let candidate = records.candidate(&basis, name, amount);
+        let candidate = records.candidate(request_execution, &basis, name, amount);
         let RelationalPublicationOutcome::Performed(performed) = records
             .runtime
             .owner_component_services()

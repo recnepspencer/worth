@@ -12,17 +12,18 @@ fn a_fork_view_scans_its_own_writes_and_not_its_parents_later_ones() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let kept_target = create_entity(&runtime, "kept-target");
-    let removed_target = create_entity(&runtime, "removed-target");
-    let kept = create_relation(&runtime, source, kept_target, "kept");
-    let removed = create_relation(&runtime, source, removed_target, "removed");
+    let source = create_entity(execution, &runtime, "source");
+    let kept_target = create_entity(execution, &runtime, "kept-target");
+    let removed_target = create_entity(execution, &runtime, "removed-target");
+    let kept = create_relation(execution, &runtime, source, kept_target, "kept");
+    let removed = create_relation(execution, &runtime, source, removed_target, "removed");
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
         .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
         .expect("the fork publishes");
     let forked = crate::tests::support::create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         removed_target,
         kept_target,
@@ -32,14 +33,15 @@ fn a_fork_view_scans_its_own_writes_and_not_its_parents_later_ones() {
         feature.clone(),
     );
     let forked_entity = crate::tests::support::create_entity_in_partition_on_branch(
+        execution,
         &runtime,
         "forked-entity",
         crate::facade::identity::PartitionId::main(),
         feature.clone(),
     );
-    delete_relation_on_branch(&runtime, removed, feature.clone());
-    let later = create_relation(&runtime, kept_target, removed_target, "later");
-    let later_entity = create_entity(&runtime, "later-entity");
+    delete_relation_on_branch(execution, &runtime, removed, feature.clone());
+    let later = create_relation(execution, &runtime, kept_target, removed_target, "later");
+    let later_entity = create_entity(execution, &runtime, "later-entity");
 
     let fork = branch_view_relations(execution, &runtime, &feature, 4);
     assert_eq!(fork, vec![kept, forked]);
@@ -75,14 +77,15 @@ fn a_historical_branch_view_scans_live_only_at_the_current_version() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let parent = create_entity(&runtime, "parent");
+    let parent = create_entity(execution, &runtime, "parent");
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
         .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
         .expect("the fork publishes");
-    let later = create_entity(&runtime, "later");
+    let later = create_entity(execution, &runtime, "later");
     let forked = crate::tests::support::create_entity_in_partition_on_branch(
+        execution,
         &runtime,
         "forked",
         crate::facade::identity::PartitionId::main(),

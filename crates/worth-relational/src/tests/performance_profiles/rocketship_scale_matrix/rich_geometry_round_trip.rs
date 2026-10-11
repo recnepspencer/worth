@@ -23,12 +23,13 @@ pub(super) fn certify_hundred_k_nodes_geometry_profile_narrow_round_trip(
                 config.publication.policy.max_patch_records_per_commit = node_count * 2
             });
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
-            let seeded = seed_rocketship_world(&runtime, node_count);
+            let seeded = seed_rocketship_world(execution, &runtime, node_count);
 
             runtime.performance_access().reset_counters();
             let target_index = seeded.entities.len() / 2;
             let hot_update_started_at = Instant::now();
             let update = update_entity(
+                execution,
                 &runtime,
                 seeded.entities[target_index],
                 "rocket-node-hot-update-rich",

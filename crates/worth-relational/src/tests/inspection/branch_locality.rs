@@ -15,7 +15,7 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
             recent_version_window: 0,
         })
         .build();
-    let created = create_entity_outcome(&runtime, "base");
+    let created = create_entity_outcome(execution, &runtime, "base");
     let entity = changed_entities(&created)[0];
     runtime
         .history_authority()
@@ -42,6 +42,7 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -67,6 +68,7 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -146,8 +148,11 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
 
 #[test]
 fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let base = create_entity_outcome(&runtime, "base");
+    let base = create_entity_outcome(execution, &runtime, "base");
     let entity = changed_entities(&base)[0];
     runtime
         .history_authority()
@@ -174,6 +179,7 @@ fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -199,6 +205,7 @@ fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

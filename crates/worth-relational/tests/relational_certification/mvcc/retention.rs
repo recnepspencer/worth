@@ -48,6 +48,7 @@ fn deletion_closes_admission_then_waits_for_transaction_and_candidate_operations
     let candidate = world
         .runtime
         .prepare_branch_transaction(
+            execution,
             candidate_transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -92,6 +93,7 @@ fn performed_publication_retains_the_branch_operation_until_settlement() {
     let candidate = world
         .runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -212,6 +214,7 @@ fn maintenance_reclaims_a_deleted_unique_root_only_after_last_pin_release() {
         .unwrap();
     let committed = transaction
         .commit(
+            execution,
             &world.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -269,6 +272,7 @@ fn exact_snapshot_carries_its_observation_obligation_until_release() {
         .unwrap();
     let committed = transaction
         .commit(
+            execution,
             &world.runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

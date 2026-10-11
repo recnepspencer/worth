@@ -7,6 +7,9 @@ use crate::tests::support::*;
 
 #[test]
 fn rolled_back_illegal_relation_work_leaves_zero_cdc_and_diagnostic_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = relation_integrity_schema(
         CascadeDeletePolicy::CascadeDeleteRelations,
         endpoint_kind_integrity_declarations(),
@@ -14,8 +17,8 @@ fn rolled_back_illegal_relation_work_leaves_zero_cdc_and_diagnostic_residue() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
     let checkpoint = checkpoint_for_schema_version(
         runtime.publication().latest_patch().unwrap().position,
         SchemaVersionId(1),
@@ -54,6 +57,7 @@ fn rolled_back_illegal_relation_work_leaves_zero_cdc_and_diagnostic_residue() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -85,9 +89,9 @@ fn rolled_back_endpoint_deletion_work_leaves_zero_cdc_and_diagnostic_residue() {
         .schema_registry(schema)
         .cascade_delete_policy(CascadeDeletePolicy::RetainDanglingForAudit)
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_outcome = create_relation_outcome(&runtime, source, target, "live");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "live");
     let relation = changed_relations(&relation_outcome)[0];
     let checkpoint = checkpoint_for_schema_version(
         runtime.publication().latest_patch().unwrap().position,
@@ -120,6 +124,7 @@ fn rolled_back_endpoint_deletion_work_leaves_zero_cdc_and_diagnostic_residue() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

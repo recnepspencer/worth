@@ -11,6 +11,7 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
         AspectMergePolicyKind::MonotonicCounter,
     );
     let entity = create_entity_with_aspect_fields(
+        execution,
         &mut runtime,
         "counter",
         crate::tests::support::aspect_field_patch_from_values([(

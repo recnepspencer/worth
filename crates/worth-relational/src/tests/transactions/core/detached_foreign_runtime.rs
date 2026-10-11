@@ -44,6 +44,9 @@ fn foreign_runtime_validation_denials_precede_raw_entity_and_relation_effects() 
 
 #[test]
 fn foreign_runtime_validated_proposal_denial_preserves_exact_target_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime_a = runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime_a);
     stage_raw_entity_relation_graph(&mut transaction, "validated");
@@ -57,7 +60,7 @@ fn foreign_runtime_validated_proposal_denial_preserves_exact_target_state() {
     let target_before = TargetRuntimeState::capture(&runtime_b);
 
     let error = runtime_b
-        .prepare_validated_proposal(candidate)
+        .prepare_validated_proposal(execution, candidate)
         .expect_err("validated authority cannot cross its runtime boundary");
     assert!(matches!(
         error,
@@ -72,6 +75,9 @@ fn foreign_runtime_validated_proposal_denial_preserves_exact_target_state() {
 
 #[test]
 fn foreign_runtime_discard_denies_without_public_residue_and_disposes_candidate() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime_a = runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime_a);
     transaction
@@ -82,6 +88,7 @@ fn foreign_runtime_discard_denies_without_public_residue_and_disposes_candidate(
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime_a
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

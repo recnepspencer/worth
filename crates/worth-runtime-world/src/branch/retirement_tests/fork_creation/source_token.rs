@@ -10,6 +10,9 @@ use super::*;
 /// before it reserves the destination, and the matching case must still fork.
 #[test]
 fn relational_fork_creation_compares_a_freshly_observed_source_token() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, source) = setup_with_relational_source(3);
     let history_before = owner.state.history.len();
     let matching = create_forked_branch(
@@ -26,7 +29,7 @@ fn relational_fork_creation_compares_a_freshly_observed_source_token() {
 
     // The Relational owner advances its own source branch out of band. The
     // product head never moves, so nothing before the fork itself can notice.
-    let _moved = fixture.perform_relational_owner_change();
+    let _moved = fixture.perform_relational_owner_change(execution);
     let lifecycles_before = super::super::owner_lifecycles(&owner);
     let branches_before = owner.state.branches.branch_count();
     let custody_before = owner.state.custody.installed();

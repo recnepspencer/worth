@@ -72,6 +72,9 @@ fn lease_request_with_work(
 
 #[test]
 fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = TEST_SERIAL.lock().unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
@@ -110,7 +113,7 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
                 .map(|_| ())
         } else {
             runtime
-                .prepare_branch_transaction_with_lease(transaction, &lease)
+                .prepare_branch_transaction_with_lease(execution, transaction, &lease)
                 .map(|candidate| {
                     runtime
                         .preparation_port()
@@ -168,7 +171,7 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
         .build();
-    let (created, _) = support::create_entity(&runtime, "leased-seed");
+    let (created, _) = support::create_entity(execution, &runtime, "leased-seed");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "leased.entity.name".to_owned(),
@@ -276,7 +279,7 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
         )
         .expect("entity intent stages");
     let error = runtime
-        .prepare_branch_transaction_with_lease(transaction, &cancelled_lease)
+        .prepare_branch_transaction_with_lease(execution, transaction, &cancelled_lease)
         .expect_err("cancelled lease prevents preparation");
     assert!(matches!(
         error,

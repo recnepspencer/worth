@@ -4,38 +4,47 @@ use crate::transactions::data::{CommitResult, TransactionCommitError};
 impl RelationalRuntime {
     pub fn commit_branch_transaction(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<CommitResult, TransactionCommitError> {
-        let candidate = self.prepare_branch_transaction(transaction, allocation_policy)?;
+        let candidate =
+            self.prepare_branch_transaction(execution, transaction, allocation_policy)?;
         self.publish_prepared_candidate(candidate)
     }
 
     pub fn commit_branch_transaction_with_lease(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
         lease: &worth_execution::ExecutionResourceLease<'_>,
     ) -> Result<CommitResult, TransactionCommitError> {
-        let candidate = self.prepare_branch_transaction_with_lease(transaction, lease)?;
+        let candidate =
+            self.prepare_branch_transaction_with_lease(execution, transaction, lease)?;
         self.publish_prepared_candidate(candidate)
     }
 
     pub fn prepare_branch_transaction(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-        self.preparation_port()
-            .prepare_branch_transaction(transaction, allocation_policy)
+        self.preparation_port().prepare_branch_transaction(
+            execution,
+            transaction,
+            allocation_policy,
+        )
     }
 
     pub fn prepare_branch_transaction_with_lease(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
         lease: &worth_execution::ExecutionResourceLease<'_>,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         self.preparation_port()
-            .prepare_branch_transaction_with_lease(transaction, lease)
+            .prepare_branch_transaction_with_lease(execution, transaction, lease)
     }
 
     /// The independently borrowable preparation service for this runtime.
@@ -77,7 +86,7 @@ impl RelationalRuntime {
     ///     .expect("one empty batch stages within the declared budget");
     ///
     /// let candidate = preparation
-    ///     .prepare_branch_transaction(transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+    ///     .prepare_branch_transaction(execution, transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
     ///     .expect("preparation validates without moving the branch");
     /// preparation
     ///     .discard_prepared_candidate(candidate)

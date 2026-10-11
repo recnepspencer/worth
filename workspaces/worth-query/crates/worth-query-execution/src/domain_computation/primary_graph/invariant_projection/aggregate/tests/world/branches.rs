@@ -113,11 +113,13 @@ impl AggregateWorld {
 
     pub(in super::super) fn remove_relation_on(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: WorthQueryProductBranch,
         relation_id: RelationId,
     ) {
         self.commit_on(
+            execution,
             phase_custody,
             branch,
             "aggregate-remove-contribution",
@@ -129,6 +131,7 @@ impl AggregateWorld {
 
     pub(in super::super) fn commit_on(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: WorthQueryProductBranch,
         label: &'static str,
@@ -155,6 +158,7 @@ impl AggregateWorld {
                     .expect("test staging stays within configured resource budgets");
                 let committed = transaction
                     .commit(
+                        execution,
                         runtime,
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     )

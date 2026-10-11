@@ -11,14 +11,20 @@ fn additive_foreign_edge_denies_exact_adjacency_and_stales_prior_observation() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut fixture = authorization_fixture();
+    let mut fixture = authorization_fixture(execution);
     let admitted = observe_exact_adjacency(execution, &mut fixture);
     let role = admitted.paths()[0]
         .witness()
         .and_then(|witness| witness.entity_at(1))
         .expect("the baseline must retain its intermediate role");
-    let foreign = create_entity(&fixture.runtime, "foreign-exact-target");
-    create_relation(&fixture.runtime, role, foreign, "foreign-exact-edge");
+    let foreign = create_entity(execution, &fixture.runtime, "foreign-exact-target");
+    create_relation(
+        execution,
+        &fixture.runtime,
+        role,
+        foreign,
+        "foreign-exact-edge",
+    );
 
     let current = observe_exact_adjacency(execution, &mut fixture);
 
@@ -41,12 +47,21 @@ fn unrelated_graph_population_does_not_expand_exact_adjacency_work() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut fixture = authorization_fixture();
+    let mut fixture = authorization_fixture(execution);
     let baseline = observe_exact_adjacency(execution, &mut fixture);
     for ordinal in 0..64 {
-        let source = create_entity(&fixture.runtime, &format!("unrelated-source-{ordinal}"));
-        let target = create_entity(&fixture.runtime, &format!("unrelated-target-{ordinal}"));
+        let source = create_entity(
+            execution,
+            &fixture.runtime,
+            &format!("unrelated-source-{ordinal}"),
+        );
+        let target = create_entity(
+            execution,
+            &fixture.runtime,
+            &format!("unrelated-target-{ordinal}"),
+        );
         create_relation(
+            execution,
             &fixture.runtime,
             source,
             target,

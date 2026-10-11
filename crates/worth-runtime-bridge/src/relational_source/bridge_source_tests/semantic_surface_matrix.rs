@@ -21,12 +21,21 @@ fn real_entity_and_relation_transactions_preserve_semantic_binding_surfaces() {
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let execution = &resource_request;
 
     let runtime = runtime_with_test_schema();
-    let source = changed_entities(&create_entity_outcome(&runtime, "source"))[0];
-    let target = changed_entities(&create_entity_outcome(&runtime, "target"))[0];
+    let source = changed_entities(&create_entity_outcome(
+        &resource_request,
+        &runtime,
+        "source",
+    ))[0];
+    let target = changed_entities(&create_entity_outcome(
+        &resource_request,
+        &runtime,
+        "target",
+    ))[0];
 
-    create_relation_outcome(&runtime, source, target, "edge");
+    create_relation_outcome(execution, &runtime, source, target, "edge");
     let commit = runtime
         .publication()
         .latest_bundle()
@@ -71,6 +80,7 @@ fn real_entity_transaction_preserves_field_lifecycle_and_structural_surfaces() {
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let execution = &resource_request;
 
     let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
@@ -104,6 +114,7 @@ fn real_entity_transaction_preserves_field_lifecycle_and_structural_surfaces() {
         .expect("test staging stays within configured resource budgets");
     let created = creation
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -135,6 +146,7 @@ fn real_entity_transaction_preserves_field_lifecycle_and_structural_surfaces() {
         .expect("test staging stays within configured resource budgets");
     let field_commit = transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

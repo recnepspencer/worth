@@ -6,7 +6,7 @@ fn observation_rejects_missing_snapshot_and_unbound_record_identities() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let missing_snapshot =
-        compile_supply_chain_baseline(court_program()).expect("Court world compiles");
+        compile_supply_chain_baseline(execution, court_program()).expect("Court world compiles");
     let released_snapshot = missing_snapshot.handles.snapshot.clone();
     assert!(missing_snapshot
         .runtime
@@ -27,7 +27,7 @@ fn observation_rejects_missing_snapshot_and_unbound_record_identities() {
     ));
 
     let mut unknown_entity =
-        compile_supply_chain_baseline(court_program()).expect("Court world compiles");
+        compile_supply_chain_baseline(execution, court_program()).expect("Court world compiles");
     let entity_key = *unknown_entity
         .handles
         .entities
@@ -44,7 +44,7 @@ fn observation_rejects_missing_snapshot_and_unbound_record_identities() {
     ));
 
     let mut unknown_relation =
-        compile_supply_chain_baseline(court_program()).expect("Court world compiles");
+        compile_supply_chain_baseline(execution, court_program()).expect("Court world compiles");
     let relation_key = *unknown_relation.handles.relations.keys().next().unwrap();
     unknown_relation.handles.relations.remove(&relation_key);
     let relation_error =

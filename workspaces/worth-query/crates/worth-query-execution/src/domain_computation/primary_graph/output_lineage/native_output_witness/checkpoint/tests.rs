@@ -230,7 +230,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         )
         .unwrap()
         .is_none());
-        change_label(runtime, entity, label);
+        change_label(request_execution, runtime, entity, label);
         let after = snapshot(runtime);
         let after_source = runtime
             .read_truth()
@@ -353,6 +353,7 @@ fn snapshot(runtime: &RelationalRuntime) -> SnapshotHandle {
 }
 
 fn change_label(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     entity: EntityId,
     locator: worth_foundational::facade::AspectFieldLocator,
@@ -381,6 +382,7 @@ fn change_label(
         .unwrap();
     let candidate = runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

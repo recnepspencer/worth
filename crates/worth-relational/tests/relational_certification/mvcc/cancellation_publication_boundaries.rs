@@ -35,6 +35,7 @@ fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothi
     let candidate = world
         .runtime
         .prepare_branch_transaction(
+            request_execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -89,6 +90,7 @@ fn cancellation_inside_the_supply_chain_critical_section_is_deferred() {
     let candidate = world
         .runtime
         .prepare_branch_transaction(
+            request_execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

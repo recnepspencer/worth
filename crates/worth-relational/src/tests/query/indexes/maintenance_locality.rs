@@ -7,7 +7,7 @@ fn unrelated_field_indexes_do_not_reread_changed_records() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "before");
+    let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let index_ids = ["name", "unrelated-a", "unrelated-b", "unrelated-c"]
         .into_iter()
@@ -34,7 +34,7 @@ fn unrelated_field_indexes_do_not_reread_changed_records() {
         .index_authority()
         .build_for_commit(execution, request(first.commit.commit_id));
     assert!(initial.failed_indexes.is_empty());
-    let second = update_entity(&runtime, entity, "after");
+    let second = update_entity(execution, &runtime, entity, "after");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -65,9 +65,9 @@ fn relation_field_deletion_removes_the_old_entry_with_one_read_per_basis() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let first = create_relation_outcome(&runtime, source, target, "link");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let first = create_relation_outcome(execution, &runtime, source, target, "link");
     let relation = changed_relations(&first)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -86,7 +86,7 @@ fn relation_field_deletion_removes_the_old_entry_with_one_read_per_basis() {
         .index_authority()
         .build_for_commit(execution, request(first.commit.commit_id));
     assert!(initial.failed_indexes.is_empty());
-    let second = delete_relation_on_branch(&runtime, relation, BranchId("main".into()));
+    let second = delete_relation_on_branch(execution, &runtime, relation, BranchId("main".into()));
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -116,7 +116,7 @@ fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "before");
+    let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let register = |name: &str, field: &str| {
         runtime.index_authority().register(DerivedIndexDefinition {
@@ -140,7 +140,7 @@ fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
     );
     assert!(initial.failed_indexes.is_empty());
     let cold = register("name-cold", "name");
-    let second = update_entity(&runtime, entity, "after");
+    let second = update_entity(execution, &runtime, entity, "after");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

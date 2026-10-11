@@ -211,11 +211,13 @@ fn string_aspect_field_patch_for_target(
 }
 
 fn create_entity_with_aspect_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     client_key: &str,
     fields: crate::transactions::data::AspectFieldPatch,
 ) -> crate::facade::identity::EntityId {
     create_entity_with_aspect_fields_on_branch(
+        execution,
         runtime,
         client_key,
         fields,
@@ -224,6 +226,7 @@ fn create_entity_with_aspect_fields(
 }
 
 fn create_entity_with_aspect_fields_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     client_key: &str,
     fields: crate::transactions::data::AspectFieldPatch,
@@ -245,6 +248,7 @@ fn create_entity_with_aspect_fields_on_branch(
     .expect("test staging stays within configured resource budgets");
     changed_entities(
         &txn.commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -281,6 +285,7 @@ fn update_entity_aspect_fields_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

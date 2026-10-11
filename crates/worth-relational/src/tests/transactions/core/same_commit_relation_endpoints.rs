@@ -8,6 +8,9 @@ use worth_foundational::facade::PortableRecordAspectPatch;
 
 #[test]
 fn same_commit_graph_creation_allows_relation_to_target_created_entities() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source_key = crate::symbols::data::ClientKey::raw("same-commit-source");
     let target_key = crate::symbols::data::ClientKey::raw("same-commit-target");
@@ -63,6 +66,7 @@ fn same_commit_graph_creation_allows_relation_to_target_created_entities() {
 
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -98,6 +102,9 @@ fn same_commit_graph_creation_allows_relation_to_target_created_entities() {
 
 #[test]
 fn bulk_relation_create_can_target_same_commit_created_entities() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source_key = crate::symbols::data::ClientKey::raw("bulk-created-source");
     let target_key = crate::symbols::data::ClientKey::raw("bulk-created-target");
@@ -154,6 +161,7 @@ fn bulk_relation_create_can_target_same_commit_created_entities() {
 
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -188,6 +196,9 @@ fn bulk_relation_create_can_target_same_commit_created_entities() {
 
 #[test]
 fn relation_aspect_create_records_exact_owner_correspondence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let source_key = crate::symbols::data::ClientKey::raw("aspect-created-source");
     let target_key = crate::symbols::data::ClientKey::raw("aspect-created-target");
@@ -242,6 +253,7 @@ fn relation_aspect_create_records_exact_owner_correspondence() {
 
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -261,6 +273,9 @@ fn relation_aspect_create_records_exact_owner_correspondence() {
 
 #[test]
 fn relation_create_rejects_created_entity_refs_missing_from_same_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let missing_key = crate::symbols::data::ClientKey::raw("missing-created-endpoint");
 
@@ -294,6 +309,7 @@ fn relation_create_rejects_created_entity_refs_missing_from_same_commit() {
 
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

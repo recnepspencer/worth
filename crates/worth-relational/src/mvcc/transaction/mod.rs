@@ -17,6 +17,7 @@ mod preparation_port;
 mod prepared_change_summary;
 mod read_projection;
 mod read_view;
+mod request_custody;
 mod savepoint;
 mod staging;
 mod staging_storage;

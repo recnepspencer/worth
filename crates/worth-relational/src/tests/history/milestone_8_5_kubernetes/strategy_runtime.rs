@@ -105,6 +105,6 @@ pub(super) fn execute_strategy_commit(
         .validate_lowered_plan(runtime, lowered)
         .expect("validated strategy plan");
     authority
-        .execute_validated_commit(runtime, validated)
+        .execute_validated_commit(request_execution, runtime, validated)
         .expect("strategy commit")
 }

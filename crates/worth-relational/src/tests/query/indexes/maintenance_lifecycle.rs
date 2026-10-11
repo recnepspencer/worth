@@ -11,13 +11,13 @@ fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
-    let parent = create_entity(&runtime, "parent");
-    let left = create_entity(&runtime, "left");
-    let shared = create_entity(&runtime, "shared");
-    let right = create_entity(&runtime, "right");
-    create_relation(&runtime, parent, shared, "parent-shared");
-    create_relation(&runtime, left, shared, "left-shared");
-    let before = create_relation_outcome(&runtime, shared, right, "shared-right");
+    let parent = create_entity(execution, &runtime, "parent");
+    let left = create_entity(execution, &runtime, "left");
+    let shared = create_entity(execution, &runtime, "shared");
+    let right = create_entity(execution, &runtime, "right");
+    create_relation(execution, &runtime, parent, shared, "parent-shared");
+    create_relation(execution, &runtime, left, shared, "left-shared");
+    let before = create_relation_outcome(execution, &runtime, shared, right, "shared-right");
     let definitions = [
         DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -65,7 +65,7 @@ fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
         .index_authority()
         .build_for_commit(execution, request(before.commit.commit_id));
     assert!(built.failed_indexes.is_empty());
-    let deleted = delete_entity(&runtime, shared);
+    let deleted = delete_entity(execution, &runtime, shared);
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -95,7 +95,7 @@ fn retained_dangling_endpoint_deletion_matches_full_index_builds() {
         assert_eq!(incremental.index_id, cold.index_id);
         assert_eq!(incremental.entries, cold.entries);
     }
-    let child_changed = update_entity(&runtime, right, "right-changed");
+    let child_changed = update_entity(execution, &runtime, right, "right-changed");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

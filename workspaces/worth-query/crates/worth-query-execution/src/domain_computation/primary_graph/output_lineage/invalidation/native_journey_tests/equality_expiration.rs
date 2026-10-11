@@ -92,9 +92,9 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
         .clone();
     let churn = if output_only { &note } else { &label };
     handle.with_runtime_mut(execution, |runtime| {
-        write_field(runtime, entity, label.clone(), "prime");
+        write_field(execution, runtime, entity, label.clone(), "prime");
         if output_only {
-            write_field(runtime, entity, note.clone(), "prime");
+            write_field(execution, runtime, entity, note.clone(), "prime");
         }
         let (origin_handle, origin_basis) = snapshot(runtime);
         let origin_fact = field_fact(execution, runtime, &origin_handle, entity, status.clone());
@@ -129,9 +129,9 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
                 &mut admission,
             )
             .unwrap();
-        write_field(runtime, entity, status.clone(), "closed");
+        write_field(execution, runtime, entity, status.clone(), "closed");
         if !expire_terminal {
-            expire(runtime, entity, churn);
+            expire(execution, runtime, entity, churn);
         }
         let (terminal_handle, terminal_basis) = snapshot(runtime);
         let prepared = owner
@@ -162,7 +162,7 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
             .unwrap();
         assert!(prepared.install().is_ok());
         if expire_terminal {
-            expire(runtime, entity, churn);
+            expire(execution, runtime, entity, churn);
         }
         let (current_handle, current_basis) = snapshot(runtime);
         assert!(matches!(
@@ -205,7 +205,7 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
         );
         if expire_terminal {
             write_field(
-                runtime,
+                execution, runtime,
                 entity,
                 if output_only {
                     label.clone()
@@ -214,7 +214,7 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
                 },
                 "changed-terminal",
             );
-            expire(runtime, entity, churn);
+            expire(execution, runtime, entity, churn);
             let (changed_handle, changed_basis) = snapshot(runtime);
             assert_eq!(
                 verify(runtime, &changed_handle, &changed_basis),
@@ -233,9 +233,15 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
  }).expect("the native journey owns its installed host call")
 }
 
-fn expire(runtime: &mut RelationalRuntime, entity: EntityId, label: &AspectFieldLocator) {
+fn expire(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut RelationalRuntime,
+    entity: EntityId,
+    label: &AspectFieldLocator,
+) {
     for index in 0..=WINDOW {
         write_field(
+            execution,
             runtime,
             entity,
             label.clone(),

@@ -6,10 +6,14 @@ fn durability_contract_recovery_rebuilds_branch_heads_and_latest_commit() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let main = create_entity_outcome(&runtime, "main-a");
+    let main = create_entity_outcome(execution, &runtime, "main-a");
     create_branch_from_main(&runtime, "feature");
-    let feature =
-        create_entity_outcome_on_branch(&runtime, "feature-a", BranchId("feature".to_string()));
+    let feature = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-a",
+        BranchId("feature".to_string()),
+    );
     let (outcome, recovered) =
         checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
 
@@ -36,9 +40,9 @@ fn durability_contract_recovery_preserves_aspect_bearing_patch_truth_and_history
 
     let runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "before");
+    let created = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
-    let updated = update_entity(&runtime, entity, "after");
+    let updated = update_entity(execution, &runtime, entity, "after");
     let expected_history =
         runtime
             .history()
@@ -89,11 +93,11 @@ fn durability_contract_recovery_preserves_relation_aspect_history_for_retained_a
 
     let runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_outcome = create_relation_outcome(&runtime, source, target, "r-audit");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "r-audit");
     let relation = changed_relations(&relation_outcome)[0];
-    let deleted = delete_entity(&runtime, source);
+    let deleted = delete_entity(execution, &runtime, source);
     let expected_history =
         runtime
             .history()
@@ -180,9 +184,9 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
         .durable_store_layout(store_layout.clone())
         .cascade_delete_policy(CascadeDeletePolicy::RetainDanglingForAudit)
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_outcome = create_relation_outcome(&runtime, source, target, "retained");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "retained");
     let relation = changed_relations(&relation_outcome)[0];
     runtime
         .history_authority()
@@ -191,8 +195,9 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let _main_delete = delete_entity(&runtime, source);
+    let _main_delete = delete_entity(execution, &runtime, source);
     let _feature_update = update_entity_on_branch(
+        execution,
         &runtime,
         target,
         "feature-target",

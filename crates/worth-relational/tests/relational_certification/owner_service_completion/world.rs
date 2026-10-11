@@ -14,6 +14,7 @@ pub(super) fn empty_runtime() -> RelationalRuntime {
 }
 
 pub(super) fn commit_through_services(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     services: &RelationalOwnerServicePorts,
     label: &str,
@@ -35,6 +36,7 @@ pub(super) fn commit_through_services(
     let candidate = services
         .preparation_port()
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -49,7 +51,11 @@ pub(super) fn commit_through_services(
         .expect("settlement service completes the performed publication")
 }
 
-pub(super) fn commit_direct(runtime: &RelationalRuntime, label: &str) -> CommitResult {
+pub(super) fn commit_direct(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    label: &str,
+) -> CommitResult {
     let identity = runtime.main_branch_identity();
     let basis = runtime
         .admit_branch_basis(&identity)
@@ -65,6 +71,7 @@ pub(super) fn commit_direct(runtime: &RelationalRuntime, label: &str) -> CommitR
         .expect("the direct empty batch remains within budget");
     transaction
         .commit(
+            execution,
             runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -93,6 +100,7 @@ pub(super) fn fork_direct(runtime: &RelationalRuntime, target: &str) -> Relation
 }
 
 pub(super) fn committed_fork(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     target: &str,
 ) -> (
     RelationalRuntime,
@@ -101,7 +109,7 @@ pub(super) fn committed_fork(
 ) {
     let runtime = empty_runtime();
     let services = runtime.owner_component_services();
-    commit_through_services(&runtime, &services, "owner-service-world");
+    commit_through_services(execution, &runtime, &services, "owner-service-world");
     let identity = fork_through_services(&services, target)
         .target_identity()
         .clone();

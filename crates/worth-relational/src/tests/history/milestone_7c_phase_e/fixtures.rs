@@ -14,10 +14,14 @@ pub(super) fn execute_feature_into_main_merge(
     CommitId,
 ) {
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "root");
+    create_entity_outcome(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    let feature_head =
-        create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    let feature_head = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
     let prepared = runtime
         .prepare_merge_execution(
             execution,

@@ -44,6 +44,9 @@ impl WorthQueryExternalEffectTransport for CompletingTransport {
 
 #[test]
 fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     {
         isolated(
             concat!(
@@ -87,15 +90,15 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                 expired.deadline = Some(Instant::now());
                 let refusals = [
                     (
-                        work_refusal(),
+                        work_refusal(execution),
                         Ok(Kind::ExecutionResource {
                             denial: Resource::WorkExhausted,
                             partition_identity: Some(1),
                             policy_ancestor: None,
                         }),
                     ),
-                    (refused_commit(canceled), Err(Control::Cancelled)),
-                    (refused_commit(expired), Err(Control::TimedOut)),
+                    (refused_commit(execution, canceled), Err(Control::Cancelled)),
+                    (refused_commit(execution, expired), Err(Control::TimedOut)),
                 ];
                 for (error, expected) in refusals {
                     for (preparation, stage) in [

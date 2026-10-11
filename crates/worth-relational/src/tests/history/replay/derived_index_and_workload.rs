@@ -6,7 +6,7 @@ fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_ar
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let commit = create_entity_outcome(&runtime, "indexed");
+    let commit = create_entity_outcome(execution, &runtime, "indexed");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity-name".to_string(),
@@ -68,14 +68,14 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
 
     let runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
-    let created = create_entity_outcome(&runtime, "anchor");
+    let created = create_entity_outcome(execution, &runtime, "anchor");
     let anchor = changed_entities(&created)[0];
-    let _updated = update_entity(&runtime, anchor, "anchor-updated");
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_outcome = create_relation_outcome(&runtime, source, target, "net-edge");
+    let _updated = update_entity(execution, &runtime, anchor, "anchor-updated");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "net-edge");
     let relation = changed_relations(&relation_outcome)[0];
-    let _retained = delete_entity(&runtime, source);
+    let _retained = delete_entity(execution, &runtime, source);
     let replace_outcome = {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
         txn.push_batch(
@@ -98,6 +98,7 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         )
         .expect("test staging stays within configured resource budgets");
         txn.commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -190,14 +191,15 @@ fn hostile_commit_replay_equivalence_test() {
 
     let mut runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
-    let created = create_entity_outcome(&runtime, "anchor");
+    let created = create_entity_outcome(execution, &runtime, "anchor");
     let anchor = changed_entities(&created)[0];
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_outcome = create_relation_outcome(&runtime, source, target, "net-edge");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "net-edge");
     let relation = changed_relations(&relation_outcome)[0];
     create_branch_from_main(&runtime, "feature");
     let _feature_update = update_entity_on_branch(
+        execution,
         &runtime,
         anchor,
         "feature-anchor",
@@ -236,12 +238,14 @@ fn hostile_commit_replay_equivalence_test() {
         .expect("test staging stays within configured resource budgets");
     let _transition_outcome = transition_txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
 
     let merge = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],

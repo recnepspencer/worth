@@ -7,7 +7,7 @@ pub(super) fn certify_lineage_branch_divergence_breadth(
     let lineage_divergence_samples =
         capture_perf_samples(suite, "lineage_branch_divergence_breadth", || {
             let runtime = runtime_with_test_schema();
-            let created = create_entity_outcome(&runtime, "main");
+            let created = create_entity_outcome(execution, &runtime, "main");
             let start_lineage = runtime
                 .lineage_access()
                 .for_record(changed_entities(&created)[0])
@@ -15,6 +15,7 @@ pub(super) fn certify_lineage_branch_divergence_breadth(
                 .lineage_id;
             create_branch_from_main(&runtime, "feature");
             let _ = create_entity_outcome_on_branch(
+                execution,
                 &runtime,
                 "feature",
                 BranchId("feature".to_string()),

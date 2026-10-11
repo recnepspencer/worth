@@ -7,9 +7,9 @@ fn durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commit
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let main = create_entity_outcome(&runtime, "main-a");
+    let main = create_entity_outcome(execution, &runtime, "main-a");
     let _checkpoint = runtime.durability_authority().checkpoint().unwrap();
-    let later = create_entity_outcome(&runtime, "main-b");
+    let later = create_entity_outcome(execution, &runtime, "main-b");
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -52,10 +52,14 @@ fn durability_tail_replay_releases_each_commit_snapshot_beyond_live_capacity() {
     let runtime = persisted_runtime_with_test_schema_profile(
         crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
     );
-    create_entity(&runtime, "replay-capacity-checkpoint");
+    create_entity(execution, &runtime, "replay-capacity-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
     for index in 0..70 {
-        create_entity(&runtime, &format!("replay-capacity-tail-{index}"));
+        create_entity(
+            execution,
+            &runtime,
+            &format!("replay-capacity-tail-{index}"),
+        );
     }
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -86,7 +90,7 @@ fn durability_contract_recovery_fails_closed_without_exact_branch_cells() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "branch-cell-required");
+    create_entity_outcome(execution, &runtime, "branch-cell-required");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -119,7 +123,7 @@ fn durability_contract_recovery_rejects_branch_cell_target_without_catalog_artif
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "branch-cell-artifact-required");
+    create_entity_outcome(execution, &runtime, "branch-cell-artifact-required");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -163,9 +167,9 @@ fn durability_contract_recovery_rejects_tail_checkpoint_drift_before_mutation() 
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "checkpoint-basis");
+    let _first = create_entity_outcome(execution, &runtime, "checkpoint-basis");
     runtime.durability_authority().checkpoint().unwrap();
-    let second = create_entity_outcome(&runtime, "tail-commit");
+    let second = create_entity_outcome(execution, &runtime, "tail-commit");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -208,7 +212,7 @@ fn durability_contract_checkpoint_recovers_index_metadata() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let commit = create_entity_outcome(&runtime, "indexed");
+    let commit = create_entity_outcome(execution, &runtime, "indexed");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity-name".to_string(),
@@ -249,8 +253,8 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "first");
-    let second = create_entity_outcome(&runtime, "second");
+    let first = create_entity_outcome(execution, &runtime, "first");
+    let second = create_entity_outcome(execution, &runtime, "second");
     let first_entity = changed_entities(&first)[0];
     let second_entity = changed_entities(&second)[0];
     let first_lineage = runtime
@@ -345,54 +349,11 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
     );
 }
 
-#[test]
-fn durability_contract_corrupt_latest_checkpoint_falls_back_to_prior_valid_checkpoint() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "first");
-    runtime.durability_authority().checkpoint().unwrap();
-    let second = create_entity_outcome(&runtime, "second");
-    runtime.durability_authority().checkpoint().unwrap();
-    let store = runtime
-        .durability()
-        .recovery_plan(
-            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .store
-        .unwrap();
-    let latest_checkpoint = store.checkpoints.last().unwrap();
-    std::fs::write(&latest_checkpoint.path, b"{not-json").unwrap();
-
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
-    let mut recovered = persisted_runtime_with_test_schema();
-    let outcome = recovered
-        .durability_recovery()
-        .recover(execution, plan)
-        .unwrap();
-
-    assert_eq!(outcome.latest_commit, Some(second.commit.clone()));
-    assert!(!outcome
-        .integrity_report
-        .skipped_corrupt_checkpoints
-        .is_empty());
-    assert_eq!(
-        recovered
-            .history()
-            .branch_head(&BranchId("main".to_string())),
-        Some(second.commit.clone())
-    );
-    assert!(recovered
-        .replay()
-        .canonical_commit_envelope(first.commit.commit_id)
-        .is_some());
-}
-
 #[path = "checkpoint_recovery/compaction.rs"]
 mod compaction;
 
 #[path = "checkpoint_recovery/empty_head.rs"]
 mod empty_head;
+
+#[path = "checkpoint_recovery/checkpoint_fallback.rs"]
+mod checkpoint_fallback;

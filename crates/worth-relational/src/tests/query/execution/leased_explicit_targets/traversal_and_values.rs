@@ -6,11 +6,16 @@ fn leased_traversal_stops_inside_high_fanout() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let seed = create_entity_in_partition(&runtime, "seed", PartitionId(7));
+    let seed = create_entity_in_partition(execution, &runtime, "seed", PartitionId(7));
     for ordinal in 0..24 {
-        let neighbor =
-            create_entity_in_partition(&runtime, &format!("neighbor-{ordinal}"), PartitionId(11));
+        let neighbor = create_entity_in_partition(
+            execution,
+            &runtime,
+            &format!("neighbor-{ordinal}"),
+            PartitionId(11),
+        );
         create_relation_in_partition(
+            execution,
             &runtime,
             seed,
             neighbor,
@@ -78,9 +83,9 @@ fn leased_any_of_scan_matches_serial_with_reversed_values() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity_in_partition(&runtime, "alpha", PartitionId(7));
-    create_entity_in_partition(&runtime, "omega", PartitionId(7));
-    create_entity_in_partition(&runtime, "other", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "alpha", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "omega", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "other", PartitionId(7));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
     let plan = runtime

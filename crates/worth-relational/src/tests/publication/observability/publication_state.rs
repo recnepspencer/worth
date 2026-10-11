@@ -2,8 +2,11 @@ use super::fixtures::*;
 
 #[test]
 fn diagnostics_and_replay_are_emitted_for_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let _entity = create_entity(&runtime, "first");
+    let _entity = create_entity(execution, &runtime, "first");
     let diagnostics = runtime.publication().diagnostics();
 
     assert!(diagnostics.artifacts().iter().any(|artifact| {
@@ -33,8 +36,11 @@ fn diagnostics_and_replay_are_emitted_for_commit() {
 
 #[test]
 fn publication_diagnostics_since_fail_closes_for_stale_cursor() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let _entity = create_entity(&runtime, "first");
+    let _entity = create_entity(execution, &runtime, "first");
     let artifact_count = runtime.publication().diagnostic_artifact_count();
 
     assert!(runtime
@@ -45,6 +51,9 @@ fn publication_diagnostics_since_fail_closes_for_stale_cursor() {
 
 #[test]
 fn publication_observation_snapshot_tracks_latest_publication_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
 
     let empty = runtime.publication().observation_snapshot();
@@ -56,7 +65,7 @@ fn publication_observation_snapshot_tracks_latest_publication_state() {
     assert!(!empty.latest_replay_present);
     assert_eq!(empty.diagnostics_artifact_count, 0);
 
-    let created = create_entity_outcome(&runtime, "first");
+    let created = create_entity_outcome(execution, &runtime, "first");
     let observed = runtime.publication().observation_snapshot();
     let publication = runtime.publication();
     let bundle = publication.latest_bundle().unwrap();
@@ -83,8 +92,11 @@ fn publication_observation_snapshot_tracks_latest_publication_state() {
 
 #[test]
 fn publication_artifact_snapshot_tracks_latest_patch_and_replay_with_observation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "first");
+    let created = create_entity_outcome(execution, &runtime, "first");
 
     let snapshot = runtime.publication().artifact_snapshot();
     let publication = runtime.publication();
@@ -100,8 +112,11 @@ fn publication_artifact_snapshot_tracks_latest_patch_and_replay_with_observation
 
 #[test]
 fn publication_diagnostics_snapshot_tracks_observation_and_artifacts_together() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let _created = create_entity_outcome(&runtime, "first");
+    let _created = create_entity_outcome(execution, &runtime, "first");
 
     let snapshot = runtime.publication().diagnostics_snapshot();
     let publication = runtime.publication();
@@ -112,8 +127,11 @@ fn publication_diagnostics_snapshot_tracks_observation_and_artifacts_together() 
 
 #[test]
 fn publication_bundle_is_the_single_visible_commit_surface() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let outcome = create_entity_outcome(&runtime, "first");
+    let outcome = create_entity_outcome(execution, &runtime, "first");
     let publication = runtime.publication();
     let bundle = publication.latest_bundle().unwrap();
 
@@ -130,6 +148,9 @@ fn publication_bundle_is_the_single_visible_commit_surface() {
 
 #[test]
 fn snapshot_audit_failure_blocks_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::snapshot_publication_blocking(
             InvariantRule::MaxSnapshotEntities(0),
@@ -143,6 +164,7 @@ fn snapshot_audit_failure_blocks_publication() {
     .expect("test staging stays within configured resource budgets");
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -162,7 +184,7 @@ fn bulk_packets_are_the_primary_read_surface() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "first");
+    let entity = create_entity(execution, &runtime, "first");
     let snapshot = runtime.visibility_authority().snapshot();
     let plan = runtime
         .storage_access()

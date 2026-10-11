@@ -3,15 +3,18 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_retention_reclaim_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let suite = "retention_reclaim_matrix";
 
     let snapshot_pin_samples =
         capture_perf_samples(suite, "snapshot_release_to_reclaimable_entity", || {
             let runtime = runtime_with_test_schema();
-            let created = create_entity_outcome(&runtime, "retained");
+            let created = create_entity_outcome(execution, &runtime, "retained");
             let created_snapshot = runtime.visibility_authority().snapshot();
             let entity = changed_entities(&created)[0];
-            let _deleted = delete_entity(&runtime, entity);
+            let _deleted = delete_entity(execution, &runtime, entity);
             let deleted_snapshot = runtime.visibility_authority().snapshot();
 
             assert!(runtime
@@ -77,9 +80,9 @@ fn perf_retention_reclaim_matrix() {
     let replay_pin_samples =
         capture_perf_samples(suite, "replay_pin_release_deleted_relation", || {
             let runtime = runtime_with_test_schema();
-            let source = create_entity(&runtime, "replay-left");
-            let target = create_entity(&runtime, "replay-right");
-            let created = create_relation_outcome(&runtime, source, target, "replay-r1");
+            let source = create_entity(execution, &runtime, "replay-left");
+            let target = create_entity(execution, &runtime, "replay-right");
+            let created = create_relation_outcome(execution, &runtime, source, target, "replay-r1");
             let relation = changed_relations(&created)[0];
             let deleted = {
                 let mut txn =
@@ -94,6 +97,7 @@ fn perf_retention_reclaim_matrix() {
                 )
                 .expect("test staging stays within configured resource budgets");
                 txn.commit(
+                    execution,
                     &runtime,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )

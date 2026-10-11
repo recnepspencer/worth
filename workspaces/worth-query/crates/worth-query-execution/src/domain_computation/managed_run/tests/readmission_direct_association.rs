@@ -49,7 +49,7 @@ fn shared_yielded_peers_with_provider(
         .expect("shared execution runtime should install")
         .into_parts()
         .0;
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let first = yield_peer(
         execution,
         &runtime,
@@ -226,7 +226,7 @@ fn same_scope_peer_inspection_survives_denial_while_the_other_owner_cleans_up() 
             second_inspection.yielded_attempt_identity()
         );
 
-        let foreign_bridge = causal_fixture::managed_admission_context().bridge;
+        let foreign_bridge = causal_fixture::managed_admission_context(&resource_request).bridge;
         let first = {
             let fixture_phase_result = {
                 let fixture_target = first;

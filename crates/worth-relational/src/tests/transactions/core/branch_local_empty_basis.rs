@@ -4,11 +4,14 @@ use crate::tests::support::{create_entity, install_empty_test_branch, runtime_wi
 
 #[test]
 fn empty_branch_validation_uses_local_zero_after_unrelated_main_progress() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let empty_branch = BranchId("empty-validation".to_owned());
     install_empty_test_branch(&runtime, empty_branch.clone());
 
-    create_entity(&runtime, "main-progress");
+    create_entity(execution, &runtime, "main-progress");
     let identity = runtime
         .branch_identity(&empty_branch)
         .expect("empty branch remains owner-registered");

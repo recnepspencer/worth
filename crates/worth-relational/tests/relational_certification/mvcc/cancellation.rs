@@ -95,6 +95,7 @@ fn cancellation_during_preparation_releases_the_transaction_once() {
     let error = world
         .runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -146,6 +147,7 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
     let candidate = world
         .runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -262,6 +264,7 @@ fn cancellation_after_linearization_preserves_performed_commit_and_settles_once(
     let candidate = world
         .runtime
         .prepare_branch_transaction(
+            execution,
             transaction,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

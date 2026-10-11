@@ -67,7 +67,7 @@ fn partition_dependency_crosses_the_real_relational_source_and_signal_delivery_p
             vec![target],
         )
         .unwrap();
-    let (bridge, request) = correspondence_bridge(registration);
+    let (bridge, request) = correspondence_bridge(request_execution, registration);
     {
         let mut graph_binding = bridge.bind_signal_graph(&mut signal_graph).unwrap();
 

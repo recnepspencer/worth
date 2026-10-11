@@ -124,13 +124,20 @@ fn measured_bounded_read(
     unrelated_partitions: usize,
 ) -> stats_alloc::Stats {
     let runtime = runtime_with_test_schema();
-    let anchor = create_entity(&runtime, "anchor-0000");
+    let anchor = create_entity(request_execution, &runtime, "anchor-0000");
     for edge in 0..fanout {
-        let target = create_entity(&runtime, &format!("target-{edge:04}"));
-        let _ = create_relation(&runtime, anchor, target, &format!("edge-{edge:04}"));
+        let target = create_entity(request_execution, &runtime, &format!("target-{edge:04}"));
+        let _ = create_relation(
+            request_execution,
+            &runtime,
+            anchor,
+            target,
+            &format!("edge-{edge:04}"),
+        );
     }
     for partition in 0..unrelated_partitions {
         let _ = create_entity_in_partition(
+            request_execution,
             &runtime,
             &format!("unrelated-{partition:04}"),
             PartitionId(64 + partition as u32),

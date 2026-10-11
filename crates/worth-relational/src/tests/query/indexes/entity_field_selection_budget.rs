@@ -12,9 +12,9 @@ fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
     let runtime = runtime_with_index_field_aspects();
     let mut entities = Vec::new();
     for ordinal in 0..65 {
-        let created = create_entity_outcome(&runtime, &format!("selected-{ordinal}"));
+        let created = create_entity_outcome(execution, &runtime, &format!("selected-{ordinal}"));
         let entity = changed_entities(&created)[0];
-        update_entity(&runtime, entity, "shared");
+        update_entity(execution, &runtime, entity, "shared");
         entities.push(entity);
     }
     entities.sort();

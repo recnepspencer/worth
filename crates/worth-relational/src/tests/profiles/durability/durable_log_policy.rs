@@ -2,6 +2,9 @@ use crate::tests::support::*;
 
 #[test]
 fn durable_log_compaction_respects_checkpoint_policy() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .durable_log_policy(DurableLogPolicy {
@@ -11,10 +14,10 @@ fn durable_log_compaction_respects_checkpoint_policy() {
         })
         .build();
 
-    create_entity(&runtime, "first");
+    create_entity(execution, &runtime, "first");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity(&runtime, "second");
-    create_entity(&runtime, "third");
+    create_entity(execution, &runtime, "second");
+    create_entity(execution, &runtime, "third");
 
     assert!(runtime.durability().durable_log().len() <= 1);
 }

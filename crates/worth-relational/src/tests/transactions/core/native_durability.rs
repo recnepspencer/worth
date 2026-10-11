@@ -19,8 +19,8 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
     );
     fixture.entity_aspects.push(summary_binding);
     let runtime = fixture.build_runtime();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
     let summary = StructAspectValue::new([
         (field_key("title"), AspectValue::String("durable".into())),
         (field_key("status"), AspectValue::String("transient".into())),
@@ -61,6 +61,7 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
         .expect("test staging stays within configured resource budgets");
     let initial = initial
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -89,6 +90,7 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
         .expect("test staging stays within configured resource budgets");
     let cleared = clear_transaction
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

@@ -56,11 +56,15 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "sibling-index-first");
+    let first = create_entity_outcome(execution, &runtime, "sibling-index-first");
     let sibling = create_branch_from_main(&runtime, "index-sibling");
     let index = name_index(&runtime);
-    let sibling_commit =
-        create_entity_outcome_on_branch(&runtime, "sibling-index-own-head", sibling.clone());
+    let sibling_commit = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "sibling-index-own-head",
+        sibling.clone(),
+    );
     let sibling_generation = build_on_branch(
         execution,
         &runtime,
@@ -68,7 +72,7 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
         &sibling_commit,
         sibling.clone(),
     );
-    let main = create_entity_outcome(&runtime, "main-index-new-head");
+    let main = create_entity_outcome(execution, &runtime, "main-index-new-head");
     let main_generation = build(execution, &runtime, index.index_id, &main);
     release_test_commit_snapshot(&runtime, &first);
     release_test_commit_snapshot(&runtime, &sibling_commit);
@@ -96,7 +100,7 @@ fn live_fork_scoped_generation_readmits_from_shared_basis() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let anchor = create_entity_outcome(&runtime, "scoped-fork-checkpoint-anchor");
+    let anchor = create_entity_outcome(execution, &runtime, "scoped-fork-checkpoint-anchor");
     let branch = create_branch_from_main(&runtime, "scoped-fork-checkpoint");
     let identity = runtime.branch_identity(&branch).unwrap();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
@@ -132,12 +136,13 @@ fn repeated_edits_checkpoint_only_the_live_index_payload() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "checkpoint-size-0");
+    let first = create_entity_outcome(execution, &runtime, "checkpoint-size-0");
     let index = name_index(&runtime);
     build(execution, &runtime, index.index_id, &first);
     release_test_commit_snapshot(&runtime, &first);
     for ordinal in 1..24 {
-        let outcome = create_entity_outcome(&runtime, &format!("checkpoint-size-{ordinal}"));
+        let outcome =
+            create_entity_outcome(execution, &runtime, &format!("checkpoint-size-{ordinal}"));
         build(execution, &runtime, index.index_id, &outcome);
         release_test_commit_snapshot(&runtime, &outcome);
     }
@@ -163,13 +168,13 @@ fn checkpoint_index_artifact_survives_tail_replay_without_envelope_caches() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "checkpoint-index-first");
+    let first = create_entity_outcome(execution, &runtime, "checkpoint-index-first");
     let index = name_index(&runtime);
     let first_generation = build(execution, &runtime, index.index_id, &first);
     let checkpoint = runtime.durability_authority().checkpoint().unwrap();
     assert!(checkpoint.derived_index_artifacts.is_empty());
     assert_eq!(checkpoint.derived_index_checkpoint_format, 2);
-    let second = create_entity_outcome(&runtime, "checkpoint-index-tail");
+    let second = create_entity_outcome(execution, &runtime, "checkpoint-index-tail");
     let unjournaled_cache = build(execution, &runtime, index.index_id, &second);
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -191,7 +196,7 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "checkpoint-missing-index-payload");
+    create_entity_outcome(execution, &runtime, "checkpoint-missing-index-payload");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -225,7 +230,7 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let commit = create_entity_outcome(&runtime, "foreign-affinity-index");
+    let commit = create_entity_outcome(execution, &runtime, "foreign-affinity-index");
     let index = name_index(&runtime);
     build(execution, &runtime, index.index_id, &commit);
     release_test_commit_snapshot(&runtime, &commit);
@@ -264,12 +269,12 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "pinned-index-first");
+    let first = create_entity_outcome(execution, &runtime, "pinned-index-first");
     let index = name_index(&runtime);
     let first_generation = build(execution, &runtime, index.index_id, &first);
-    let middle = create_entity_outcome(&runtime, "pinned-index-middle");
+    let middle = create_entity_outcome(execution, &runtime, "pinned-index-middle");
     let middle_generation = build(execution, &runtime, index.index_id, &middle);
-    let latest = create_entity_outcome(&runtime, "pinned-index-latest");
+    let latest = create_entity_outcome(execution, &runtime, "pinned-index-latest");
     let latest_generation = build(execution, &runtime, index.index_id, &latest);
     release_test_commit_snapshot(&runtime, &middle);
     release_test_commit_snapshot(&runtime, &latest);
@@ -303,7 +308,7 @@ fn repeated_closed_branches_leave_no_latest_generation_residue() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let anchor = create_entity_outcome(&runtime, "closed-index-anchor");
+    let anchor = create_entity_outcome(execution, &runtime, "closed-index-anchor");
     let index = scoped_name_index(&runtime);
     release_test_commit_snapshot(&runtime, &anchor);
     let mut runtime = runtime;
@@ -341,52 +346,6 @@ fn repeated_closed_branches_leave_no_latest_generation_residue() {
     assert!(runtime.index_access().generations_snapshot().is_empty());
 }
 
-#[test]
-fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = persisted_runtime_with_test_schema();
-    let anchor = create_entity_outcome(&runtime, "pinned-deleted-fork-anchor");
-    let index = scoped_name_index(&runtime);
-    release_test_commit_snapshot(&runtime, &anchor);
-    let mut runtime = runtime;
-    let branch = create_branch_from_main(&runtime, "pinned-deleted-fork");
-    let identity = runtime.branch_identity(&branch).unwrap();
-    let (_, basis) = runtime.observe_branch(&identity).unwrap();
-    let built = runtime.index_authority().build_for_basis(
-        execution,
-        DerivedIndexBuildRequest {
-            source_commit_id: anchor.commit.commit_id,
-            branch_id: branch.clone(),
-            index_ids: vec![index.index_id],
-        },
-        &basis,
-    );
-    assert!(built.failed_indexes.is_empty());
-    let generation = built.generations[0].generation_id;
-    assert!(runtime
-        .delete_branch(&identity)
-        .unwrap()
-        .deleted()
-        .is_some());
-    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(0));
-    assert!(runtime.indexes.generation(generation).is_some());
-    runtime.durability_authority().checkpoint().unwrap();
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
-    let mut recovered = persisted_runtime_with_test_schema();
-    recovered
-        .durability_recovery()
-        .recover(execution, plan)
-        .unwrap();
-    assert!(recovered.indexes.generation(generation).is_none());
-    drop(basis);
-    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(1));
-    assert!(runtime.indexes.generation(generation).is_none());
-}
-
 #[path = "derived_index_checkpoint/scoped_affinity.rs"]
 mod scoped_affinity;
 
@@ -395,3 +354,6 @@ mod lagging_scoped;
 
 #[path = "derived_index_checkpoint/historical_reader.rs"]
 mod historical_reader;
+
+#[path = "derived_index_checkpoint/deleted_branch_reader.rs"]
+mod deleted_branch_reader;

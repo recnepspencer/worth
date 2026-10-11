@@ -5,12 +5,15 @@ use crate::tests::support::*;
 
 #[test]
 fn relation_integrity_commit_boundary_rejects_source_cardinality_overflow() {
-    let runtime = source_max_one_runtime();
-    let source = create_entity(&runtime, "source");
-    let target_a = create_entity(&runtime, "target-a");
-    let target_b = create_entity(&runtime, "target-b");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    create_relation(&runtime, source, target_a, "a");
+    let runtime = source_max_one_runtime();
+    let source = create_entity(execution, &runtime, "source");
+    let target_a = create_entity(execution, &runtime, "target-a");
+    let target_b = create_entity(execution, &runtime, "target-b");
+
+    create_relation(execution, &runtime, source, target_a, "a");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -30,6 +33,7 @@ fn relation_integrity_commit_boundary_rejects_source_cardinality_overflow() {
 
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -44,6 +48,9 @@ fn relation_integrity_commit_boundary_rejects_source_cardinality_overflow() {
 
 #[test]
 fn commit_minimum_rejects_new_entity_without_required_edge() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = commit_source_min_one_runtime();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -60,6 +67,7 @@ fn commit_minimum_rejects_new_entity_without_required_edge() {
     .expect("stage orphan");
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -74,6 +82,9 @@ fn commit_minimum_rejects_new_entity_without_required_edge() {
 
 #[test]
 fn commit_minimum_uses_local_scope_and_rejects_removed_last_edge() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = commit_source_min_one_runtime();
     let created = crate::transactions::data::CreatedEntityRef {
         partition_id: PartitionId::main(),
@@ -115,6 +126,7 @@ fn commit_minimum_uses_local_scope_and_rejects_removed_last_edge() {
     runtime.performance_access().reset_counters();
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -146,6 +158,7 @@ fn commit_minimum_uses_local_scope_and_rejects_removed_last_edge() {
         .expect("stage edge removal");
     let error = delete
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -160,10 +173,13 @@ fn commit_minimum_uses_local_scope_and_rejects_removed_last_edge() {
 
 #[test]
 fn new_target_pair_limit_does_not_scan_existing_source_history() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = target_and_pair_max_one_runtime();
-    let source = create_entity(&runtime, "source");
-    let prior_target = create_entity(&runtime, "prior-target");
-    create_relation(&runtime, source, prior_target, "prior-edge");
+    let source = create_entity(execution, &runtime, "source");
+    let prior_target = create_entity(execution, &runtime, "prior-target");
+    create_relation(execution, &runtime, source, prior_target, "prior-edge");
     let created_target = crate::transactions::data::CreatedEntityRef {
         partition_id: PartitionId::main(),
         kind_id: KindId(1),
@@ -196,6 +212,7 @@ fn new_target_pair_limit_does_not_scan_existing_source_history() {
     runtime.performance_access().reset_counters();
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -243,6 +260,7 @@ fn new_target_pair_limit_does_not_scan_existing_source_history() {
         .expect("stage second owner");
     let error = duplicate_target
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -260,6 +278,9 @@ fn new_target_pair_limit_does_not_scan_existing_source_history() {
 
 #[test]
 fn deleting_endpoint_cannot_hide_survivor_minimum_underflow() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = commit_source_min_one_runtime();
     let source = crate::transactions::data::CreatedEntityRef {
         partition_id: PartitionId::main(),
@@ -314,6 +335,7 @@ fn deleting_endpoint_cannot_hide_survivor_minimum_underflow() {
         .expect("stage valid initial cardinality");
     let outcome = create
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -338,6 +360,7 @@ fn deleting_endpoint_cannot_hide_survivor_minimum_underflow() {
         .expect("stage endpoint deletion");
     let error = delete
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

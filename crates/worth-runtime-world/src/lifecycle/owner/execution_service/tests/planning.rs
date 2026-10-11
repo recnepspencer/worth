@@ -13,7 +13,7 @@ fn relational_only_executes_the_canonical_relational_owner_path() {
     );
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let prepared = prepare_relational(&fixture, &owner, &expected, "relational-only");
+    let prepared = prepare_relational(&execution, &fixture, &owner, &expected, "relational-only");
     let settlement = settled(execute_without_signal(execution, &owner, prepared));
     assert_eq!(
         settlement.progress().relational_posture(),
@@ -76,7 +76,7 @@ fn both_changed_settles_relational_before_signal_and_preserves_both_bases() {
         expected.clone(),
         CompositePublicationIntent::with_signal(Some(RelationalTransactionIntent::ordinary()))
             .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate("both-changed"),
+                fixture.prepare_relational_owner_candidate(&execution, "both-changed"),
             ),
         &cancellation.token(),
         None,
@@ -150,7 +150,7 @@ fn a_relational_publication_never_contacts_the_signal_owner() {
     );
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let prepared = prepare_relational(&fixture, &owner, &expected, "reuse-signal");
+    let prepared = prepare_relational(&execution, &fixture, &owner, &expected, "reuse-signal");
     let settlement = settled(execute_without_signal(execution, &owner, prepared));
     assert_eq!(
         settlement.progress().signal_posture(),

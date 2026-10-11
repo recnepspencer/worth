@@ -62,7 +62,7 @@ fn schema_evolution_cdc_contract_test() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = persisted_runtime_with_test_schema();
-    let baseline = create_entity_outcome(&runtime, "anchor");
+    let baseline = create_entity_outcome(execution, &runtime, "anchor");
     let baseline_checkpoint =
         checkpoint_for_schema_version(baseline.patch_position(), SchemaVersionId(1));
 
@@ -87,7 +87,7 @@ fn schema_evolution_cdc_contract_test() {
     txn.push_batch(batch_create("boundary"), AllocationPolicy::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
     let committed = txn
-        .commit(&runtime, AllocationPolicy::SystemAllocation)
+        .commit(execution, &runtime, AllocationPolicy::SystemAllocation)
         .unwrap();
 
     let live_batch = runtime

@@ -8,13 +8,13 @@ fn tail_replay_consumes_canonical_reused_record_allocation() {
     let runtime = persisted_runtime_with_test_schema_profile(
         crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
     );
-    let created = create_entity_outcome(&runtime, "allocation-before");
+    let created = create_entity_outcome(execution, &runtime, "allocation-before");
     let original = changed_entities(&created)[0];
     assert!(runtime
         .visibility_authority()
         .release_snapshot(&created.snapshot)
         .is_ok());
-    let deleted = delete_entity(&runtime, original);
+    let deleted = delete_entity(execution, &runtime, original);
     assert!(runtime
         .visibility_authority()
         .release_snapshot(&deleted.snapshot)
@@ -29,7 +29,7 @@ fn tail_replay_consumes_canonical_reused_record_allocation() {
     );
     runtime.durability_authority().checkpoint().unwrap();
 
-    let replacement = create_entity(&runtime, "allocation-after");
+    let replacement = create_entity(execution, &runtime, "allocation-after");
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -65,7 +65,7 @@ fn checkpoint_restores_burned_append_frontier_beyond_all_retained_roots() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let original = create_entity(&runtime, "frontier-root");
+    let original = create_entity(execution, &runtime, "frontier-root");
     let mut burned = runtime.record_identity.begin_allocations();
     let reservation = burned
         .reserve(
@@ -85,7 +85,7 @@ fn checkpoint_restores_burned_append_frontier_beyond_all_retained_roots() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap();
-    let after_recovery = create_entity(&recovered, "frontier-after-recovery");
+    let after_recovery = create_entity(execution, &recovered, "frontier-after-recovery");
 
     assert_eq!(after_recovery.local_slot.0, original.local_slot.0 + 2);
     assert_eq!(after_recovery.generation.0, 1);
@@ -97,7 +97,7 @@ fn recovery_releases_orphaned_append_reservation_without_reusing_its_gap() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let original = create_entity(&runtime, "orphan-append-root");
+    let original = create_entity(execution, &runtime, "orphan-append-root");
     let mut pending = runtime.record_identity.begin_allocations();
     let reservation = pending
         .reserve(
@@ -119,7 +119,7 @@ fn recovery_releases_orphaned_append_reservation_without_reusing_its_gap() {
         .unwrap();
 
     assert!(recovered.record_identity.pending_snapshot().is_empty());
-    let after_recovery = create_entity(&recovered, "orphan-append-after");
+    let after_recovery = create_entity(execution, &recovered, "orphan-append-after");
     assert_eq!(after_recovery.local_slot.0, original.local_slot.0 + 2);
 }
 
@@ -131,13 +131,13 @@ fn recovery_returns_orphaned_reclaimed_reservation_to_reuse() {
     let runtime = persisted_runtime_with_test_schema_profile(
         crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
     );
-    let created = create_entity_outcome(&runtime, "orphan-reclaimed-root");
+    let created = create_entity_outcome(execution, &runtime, "orphan-reclaimed-root");
     let original = changed_entities(&created)[0];
     assert!(runtime
         .visibility_authority()
         .release_snapshot(&created.snapshot)
         .is_ok());
-    let deleted = delete_entity(&runtime, original);
+    let deleted = delete_entity(execution, &runtime, original);
     assert!(runtime
         .visibility_authority()
         .release_snapshot(&deleted.snapshot)
@@ -166,7 +166,7 @@ fn recovery_returns_orphaned_reclaimed_reservation_to_reuse() {
         .unwrap();
 
     assert!(recovered.record_identity.pending_snapshot().is_empty());
-    let replacement = create_entity(&recovered, "orphan-reclaimed-after");
+    let replacement = create_entity(execution, &recovered, "orphan-reclaimed-after");
     assert_eq!(replacement.local_slot, original.local_slot);
     assert!(replacement.generation.0 > original.generation.0);
 }
@@ -177,9 +177,9 @@ fn tail_replay_rejects_canonical_allocation_targeting_a_live_slot() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let original = create_entity(&runtime, "allocation-live");
+    let original = create_entity(execution, &runtime, "allocation-live");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity(&runtime, "allocation-tail");
+    create_entity(execution, &runtime, "allocation-tail");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -220,9 +220,9 @@ fn tail_replay_rejects_missing_canonical_allocation_evidence() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "allocation-checkpoint");
+    create_entity(execution, &runtime, "allocation-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity(&runtime, "allocation-tail");
+    create_entity(execution, &runtime, "allocation-tail");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -249,9 +249,9 @@ fn tail_replay_gap_admission_cannot_replace_a_different_canonical_effect() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let checkpoint_entity = create_entity(&runtime, "allocation-gap-checkpoint");
+    let checkpoint_entity = create_entity(execution, &runtime, "allocation-gap-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
-    let tail_entity = create_entity(&runtime, "allocation-gap-tail");
+    let tail_entity = create_entity(execution, &runtime, "allocation-gap-tail");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -289,10 +289,15 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "allocation-shared");
+    let entity = create_entity(execution, &runtime, "allocation-shared");
     create_branch_from_main(&runtime, "allocation-feature");
-    delete_entity(&runtime, entity);
-    delete_entity_on_branch(&runtime, entity, BranchId("allocation-feature".to_owned()));
+    delete_entity(execution, &runtime, entity);
+    delete_entity_on_branch(
+        execution,
+        &runtime,
+        entity,
+        BranchId("allocation-feature".to_owned()),
+    );
     runtime.durability_authority().checkpoint().unwrap();
     let prepared = runtime
         .prepare_merge_execution(

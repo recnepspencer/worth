@@ -16,10 +16,16 @@ fn merge_planning_conflict_classification_carries_target_view_visibility_evidenc
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, entity, "same");
-    update_entity_on_branch(&runtime, entity, "same", BranchId("feature".to_string()));
+    update_entity(execution, &runtime, entity, "same");
+    update_entity_on_branch(
+        execution,
+        &runtime,
+        entity,
+        "same",
+        BranchId("feature".to_string()),
+    );
 
     let artifact = runtime
         .merge()
@@ -72,10 +78,16 @@ fn merge_planning_conflict_classification_carries_base_window_evidence_for_targe
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity_on_branch(&runtime, entity, "shared", BranchId("feature".to_string()));
-    delete_entity(&runtime, entity);
+    update_entity_on_branch(
+        execution,
+        &runtime,
+        entity,
+        "shared",
+        BranchId("feature".to_string()),
+    );
+    delete_entity(execution, &runtime, entity);
 
     let artifact = runtime
         .merge()
@@ -130,9 +142,9 @@ fn merge_planning_conflict_classification_carries_target_lookup_evidence_for_sou
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let artifact = runtime
         .merge()
@@ -218,9 +230,14 @@ fn merge_planning_digest_basis_carries_visibility_evidence_rows() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let artifact = runtime
         .merge()
@@ -267,10 +284,16 @@ fn merge_planning_policy_surface_is_explicitly_runtime_owned_before_lowering() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, entity, "same");
-    update_entity_on_branch(&runtime, entity, "same", BranchId("feature".to_string()));
+    update_entity(execution, &runtime, entity, "same");
+    update_entity_on_branch(
+        execution,
+        &runtime,
+        entity,
+        "same",
+        BranchId("feature".to_string()),
+    );
 
     let artifact = runtime
         .merge()
@@ -298,9 +321,14 @@ fn merge_planning_digest_basis_carries_policy_ownership_surface_rows() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let artifact = runtime
         .merge()

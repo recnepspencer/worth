@@ -23,9 +23,12 @@ mod variant_matrix;
 
 #[test]
 fn exact_field_footprint_keeps_record_aspect_and_field_distinct() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let changed = create_entity(&runtime, "changed");
-    let other = create_entity(&runtime, "other");
+    let changed = create_entity(execution, &runtime, "changed");
+    let other = create_entity(execution, &runtime, "other");
     let footprint = project(validate(&runtime, [update_name(changed, "after")]));
 
     assert!(footprint.mutates_field(&RecordRef::Entity(changed), &locator("name", "name")));
@@ -37,9 +40,12 @@ fn exact_field_footprint_keeps_record_aspect_and_field_distinct() {
 
 #[test]
 fn whole_aspect_footprint_keeps_its_record_and_aspect_boundaries() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let changed = create_entity(&runtime, "changed");
-    let other = create_entity(&runtime, "other");
+    let changed = create_entity(execution, &runtime, "changed");
+    let other = create_entity(execution, &runtime, "other");
     let contract = runtime
         .entity_aspect_plan(KindId(1))
         .unwrap()
@@ -68,9 +74,12 @@ fn whole_aspect_footprint_keeps_its_record_and_aspect_boundaries() {
 
 #[test]
 fn replace_and_delete_footprints_cover_only_the_exact_whole_record() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let changed = create_entity(&runtime, "changed");
-    let other = create_entity(&runtime, "other");
+    let changed = create_entity(execution, &runtime, "changed");
+    let other = create_entity(execution, &runtime, "other");
     let replace = MutationIntent::Entity(EntityMutationIntent::Replace(ReplaceEntityIntent {
         entity_id: changed,
         replacement: entity_spec("replacement"),
@@ -89,11 +98,14 @@ fn replace_and_delete_footprints_cover_only_the_exact_whole_record() {
 
 #[test]
 fn create_only_and_endpoint_only_intents_examine_work_but_name_no_prior_field() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let old_target = create_entity(&runtime, "old-target");
-    let new_target = create_entity(&runtime, "new-target");
-    let relation = create_relation(&runtime, source, old_target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let old_target = create_entity(execution, &runtime, "old-target");
+    let new_target = create_entity(execution, &runtime, "new-target");
+    let relation = create_relation(execution, &runtime, source, old_target, "edge");
 
     let created = project(validate(
         &runtime,
@@ -121,11 +133,14 @@ fn create_only_and_endpoint_only_intents_examine_work_but_name_no_prior_field() 
 
 #[test]
 fn mixed_breadth_reports_every_validated_intent_and_materialized_target() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let first = create_entity(&runtime, "first");
-    let second = create_entity(&runtime, "second");
-    let target = create_entity(&runtime, "target");
-    let relation = create_relation(&runtime, first, second, "edge");
+    let first = create_entity(execution, &runtime, "first");
+    let second = create_entity(execution, &runtime, "second");
+    let target = create_entity(execution, &runtime, "target");
+    let relation = create_relation(execution, &runtime, first, second, "edge");
     let footprint = project(validate(
         &runtime,
         [
@@ -149,9 +164,12 @@ fn mixed_breadth_reports_every_validated_intent_and_materialized_target() {
 
 #[test]
 fn omitted_demand_performs_no_footprint_scan_or_materialization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let first = create_entity(&runtime, "first");
-    let second = create_entity(&runtime, "second");
+    let first = create_entity(execution, &runtime, "first");
+    let second = create_entity(execution, &runtime, "second");
     let validated = validate(
         &runtime,
         [

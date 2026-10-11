@@ -18,9 +18,14 @@ fn merge_branch_basis_matches_planning_artifact_and_history_scope_authority() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
     let request = MergePlanningRequest::new(
         BranchId("main".to_string()),
         BranchId("feature".to_string()),
@@ -58,7 +63,7 @@ fn merge_branch_basis_denial_happens_before_planning_for_missing_or_disconnected
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     let main_branch = BranchId("main".to_string());
     let missing_branch = BranchId("missing".to_string());
 
@@ -84,7 +89,7 @@ fn merge_branch_basis_denial_happens_before_planning_for_missing_or_disconnected
     ));
 
     let orphan_branch = BranchId("orphan".to_string());
-    graft_disconnected_branch_head(&runtime, &orphan_branch);
+    graft_disconnected_branch_head(execution, &runtime, &orphan_branch);
     let missing_merge_base = runtime
         .history()
         .resolve_merge_branch_basis(&orphan_branch, &main_branch)
@@ -122,9 +127,14 @@ fn merge_branch_basis_survives_published_merge_outcome_and_durability_recovery()
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
     let prepared = runtime
         .prepare_merge_execution(
             execution,
@@ -213,9 +223,13 @@ fn assert_summary_projects_exact_basis(summary: &MergeExecutionSummary) {
     );
 }
 
-fn graft_disconnected_branch_head(runtime: &RelationalRuntime, branch_id: &BranchId) {
+fn graft_disconnected_branch_head(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch_id: &BranchId,
+) {
     let disconnected = persisted_runtime_with_test_schema();
-    create_entity(&disconnected, "orphan-root");
+    create_entity(execution, &disconnected, "orphan-root");
 
     let source_head = disconnected
         .history()

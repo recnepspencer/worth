@@ -5,8 +5,11 @@ use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, InternedStrin
 
 #[test]
 fn update_entity_fields_rejects_undeclared_aspect_targets() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity(&runtime, "field-guard");
+    let entity = create_entity(execution, &runtime, "field-guard");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -30,6 +33,7 @@ fn update_entity_fields_rejects_undeclared_aspect_targets() {
 
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -84,6 +88,9 @@ fn update_entity_fields_state_conflict_is_typed_not_json() {
 
 #[test]
 fn update_entity_fields_rejects_explicit_aspect_field_path_mismatch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(
@@ -99,6 +106,7 @@ fn update_entity_fields_rejects_explicit_aspect_field_path_mismatch() {
     }
     .build_runtime();
     let entity = super::struct_field_patch_authority::create_entity_with_summary_fields(
+        execution,
         &runtime,
         "ambiguous-title",
         "before",
@@ -127,6 +135,7 @@ fn update_entity_fields_rejects_explicit_aspect_field_path_mismatch() {
 
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -149,8 +158,11 @@ fn update_entity_fields_rejects_explicit_aspect_field_path_mismatch() {
 
 #[test]
 fn update_entity_fields_validation_denial_carries_aspect_field_path() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity(&runtime, "type-denial");
+    let entity = create_entity(execution, &runtime, "type-denial");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -172,6 +184,7 @@ fn update_entity_fields_validation_denial_carries_aspect_field_path() {
 
     let error = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

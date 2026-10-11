@@ -6,6 +6,7 @@ use crate::facade::transactions::{
 use super::super::fixture::FintechWorld;
 
 pub(crate) fn shock_market_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
 ) -> CommitResult {
@@ -47,13 +48,18 @@ pub(crate) fn shock_market_on_branch(
         .expect("test staging stays within configured resource budgets");
     }
     txn.commit(
+        execution,
         &world.runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap()
 }
 
-pub(crate) fn refresh_risk_views(world: &mut FintechWorld, branch_id: BranchId) -> CommitResult {
+pub(crate) fn refresh_risk_views(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &mut FintechWorld,
+    branch_id: BranchId,
+) -> CommitResult {
     let mut txn =
         crate::tests::support::test_owner_begin_transaction_for_branch(&world.runtime, branch_id);
     for (idx, risk_view) in world.risk.risk_views.iter().enumerate() {
@@ -90,6 +96,7 @@ pub(crate) fn refresh_risk_views(world: &mut FintechWorld, branch_id: BranchId) 
         .expect("test staging stays within configured resource budgets");
     }
     txn.commit(
+        execution,
         &world.runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
@@ -97,6 +104,7 @@ pub(crate) fn refresh_risk_views(world: &mut FintechWorld, branch_id: BranchId) 
 }
 
 pub(crate) fn stress_seeded_intraday_risk(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
 ) -> CommitResult {
@@ -238,6 +246,7 @@ pub(crate) fn stress_seeded_intraday_risk(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(
+        execution,
         &world.runtime,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

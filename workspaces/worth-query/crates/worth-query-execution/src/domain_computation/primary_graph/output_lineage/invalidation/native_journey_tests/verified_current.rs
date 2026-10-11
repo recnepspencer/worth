@@ -61,7 +61,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         .clone();
 
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
-        write_field(runtime, entity, label, "prime");
+        write_field(request_execution, runtime, entity, label, "prime");
         let (snapshot, basis) = snapshot(runtime);
         let facts: Arc<[_]> = Arc::from([field_fact(&host_custody.borrowed_request_for_test(), runtime, &snapshot, entity, status)]);
         register(

@@ -29,7 +29,7 @@ fn managed_run_work_is_invariant_to_unrelated_live_authority_width() {
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("target operation should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let admitted = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)
@@ -118,7 +118,7 @@ fn unrelated_artifact_run_in_runtime(
     let attempt = runtime
         .start_workflow_resource_attempt(&operation, resources)
         .expect("unrelated workflow should reserve");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_workflow(&operation, attempt, lower.read_request(), resource_request)

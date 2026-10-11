@@ -16,7 +16,7 @@ fn native_patch_state_survives_checkpoint_readmission() {
         ..AspectSchemaFixture::default()
     };
     let runtime = fixture.build_runtime();
-    let created = commit_entity_create(&runtime, whole_set(&note, text("durable")));
+    let created = commit_entity_create(execution, &runtime, whole_set(&note, text("durable")));
     let entity = changed_entities(&created)[0];
     let recovery_fixture = fixture.clone();
     let (_, recovered) = checkpoint_and_recover_with(execution, &runtime, move || {

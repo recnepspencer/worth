@@ -62,7 +62,7 @@ fn retained_re_registration_marks_existing_consumers_pending() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             handle.with_runtime_mut(request_execution, |runtime| {
-                write_field(runtime, entity, status.clone(), "prime");
+                write_field(request_execution, runtime, entity, status.clone(), "prime");
                 let (before_handle, before) = snapshot(runtime);
                 let before_facts: Arc<[_]> = Arc::from([field_fact(
                     &host_custody.borrowed_request_for_test(),
@@ -71,7 +71,7 @@ fn retained_re_registration_marks_existing_consumers_pending() {
                     entity,
                     status.clone(),
                 )]);
-                write_field(runtime, entity, status.clone(), "closed");
+                write_field(request_execution, runtime, entity, status.clone(), "closed");
                 let (after_handle, after) = snapshot(runtime);
                 let after_facts: Arc<[_]> = Arc::from([field_fact(
                     &host_custody.borrowed_request_for_test(),

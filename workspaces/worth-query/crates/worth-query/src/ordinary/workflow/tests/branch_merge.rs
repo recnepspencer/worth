@@ -287,7 +287,12 @@ fn explicit_merge(
     Option<EffectDiagnosticsMaterialization>,
 ) {
     let mut runtime = relational_runtime_with_intent_strategy();
-    create_entity(&mut runtime, "main", BranchId("main".to_string()));
+    create_entity(
+        request_execution,
+        &mut runtime,
+        "main",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("candidate".to_string()),
@@ -295,6 +300,7 @@ fn explicit_merge(
     )
     .expect("candidate branch should be created");
     create_entity(
+        request_execution,
         &mut runtime,
         "candidate-only",
         BranchId("candidate".to_string()),

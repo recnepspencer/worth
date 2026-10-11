@@ -18,9 +18,9 @@ fn lineage_graph_delete_emits_retire_event() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "retired");
+    let created = create_entity_outcome(execution, &runtime, "retired");
     let entity = changed_entities(&created)[0];
-    let deleted = delete_entity(&runtime, entity);
+    let deleted = delete_entity(execution, &runtime, entity);
     let graph = runtime.lineage_access().graph(
         execution,
         LineageGraphRequest {
@@ -46,7 +46,7 @@ fn lineage_graph_replace_emits_replace_edge() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -71,6 +71,7 @@ fn lineage_graph_replace_emits_replace_edge() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -101,8 +102,8 @@ fn lineage_graph_same_shape_replacements_do_not_cross_wire_targets() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
-    let left = create_entity_outcome(&runtime, "left");
-    let right = create_entity_outcome(&runtime, "right");
+    let left = create_entity_outcome(execution, &runtime, "left");
+    let right = create_entity_outcome(execution, &runtime, "right");
     let left_entity = changed_entities(&left)[0];
     let right_entity = changed_entities(&right)[0];
 
@@ -144,6 +145,7 @@ fn lineage_graph_same_shape_replacements_do_not_cross_wire_targets() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
@@ -192,8 +194,11 @@ fn lineage_graph_same_shape_replacements_do_not_cross_wire_targets() {
 
 #[test]
 fn lineage_graph_replace_commit_publishes_replace_decision_log_entry() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -218,6 +223,7 @@ fn lineage_graph_replace_commit_publishes_replace_decision_log_entry() {
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
         .commit(
+            execution,
             &runtime,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )

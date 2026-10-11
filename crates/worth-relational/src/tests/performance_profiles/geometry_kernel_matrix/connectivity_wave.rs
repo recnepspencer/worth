@@ -12,11 +12,13 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
             let mut cluster_b = Vec::new();
             for index in 0..6 {
                 cluster_a.push(create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("cluster-a-{index}"),
                     PartitionId((index % 3) as u32 + 1),
                 ));
                 cluster_b.push(create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("cluster-b-{index}"),
                     PartitionId((index % 3) as u32 + 5),
@@ -24,6 +26,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
             }
             for index in 0..(cluster_a.len() - 1) {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     cluster_a[index],
                     cluster_a[index + 1],
@@ -31,6 +34,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
                     PartitionId(11),
                 );
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     cluster_b[index],
                     cluster_b[index + 1],
@@ -42,6 +46,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
             runtime.performance_access().reset_counters();
             let bridge_started_at = Instant::now();
             let bridge_outcome = create_relation_outcome(
+                execution,
                 &runtime,
                 cluster_a[2],
                 cluster_b[2],
@@ -133,11 +138,13 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
             let mut cluster_b = Vec::new();
             for index in 0..6 {
                 cluster_a.push(create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("rich-cluster-a-{index}"),
                     PartitionId((index % 3) as u32 + 1),
                 ));
                 cluster_b.push(create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("rich-cluster-b-{index}"),
                     PartitionId((index % 3) as u32 + 5),
@@ -145,6 +152,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
             }
             for index in 0..(cluster_a.len() - 1) {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     cluster_a[index],
                     cluster_a[index + 1],
@@ -152,6 +160,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
                     PartitionId(11),
                 );
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     cluster_b[index],
                     cluster_b[index + 1],
@@ -163,6 +172,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
             runtime.performance_access().reset_counters();
             let bridge_started_at = Instant::now();
             let bridge_outcome = create_relation_outcome(
+                execution,
                 &runtime,
                 cluster_a[2],
                 cluster_b[2],
@@ -265,11 +275,13 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
             let mut cluster_b = Vec::new();
             for index in 0..6 {
                 cluster_a.push(create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("zero-cluster-a-{index}"),
                     PartitionId((index % 3) as u32 + 1),
                 ));
                 cluster_b.push(create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("zero-cluster-b-{index}"),
                     PartitionId((index % 3) as u32 + 5),
@@ -277,6 +289,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
             }
             for index in 0..(cluster_a.len() - 1) {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     cluster_a[index],
                     cluster_a[index + 1],
@@ -284,6 +297,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
                     PartitionId(11),
                 );
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     cluster_b[index],
                     cluster_b[index + 1],
@@ -295,6 +309,7 @@ pub(super) fn certify_topology_bridge_connectivity_wave(
             runtime.performance_access().reset_counters();
             let bridge_started_at = Instant::now();
             let bridge_outcome = create_relation_outcome(
+                execution,
                 &runtime,
                 cluster_a[2],
                 cluster_b[2],

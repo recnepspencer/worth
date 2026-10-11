@@ -22,11 +22,16 @@ fn runtime_bridge_lineage_source_resolves_real_relational_history() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(&execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
 
-    let replaced =
-        replace_entity_on_branch(&runtime, entity, "replacement", BranchId("main".to_owned()));
+    let replaced = replace_entity_on_branch(
+        &execution,
+        &runtime,
+        entity,
+        "replacement",
+        BranchId("main".to_owned()),
+    );
     let latest_bundle = runtime
         .publication()
         .latest_bundle()
@@ -106,6 +111,7 @@ fn retained_lineage_observation_excludes_later_same_branch_replacement() {
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let execution = &resource_request;
 
     let fixture = retained_lineage_fixture(resource_request);
     let before = lineage_authority_with_events(
@@ -120,6 +126,7 @@ fn retained_lineage_observation_excludes_later_same_branch_replacement() {
     );
 
     replace_entity_on_branch(
+        execution,
         &fixture.runtime.lock().unwrap(),
         fixture.successor,
         "later-replacement",
@@ -173,10 +180,15 @@ fn retained_lineage_fixture(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> RetainedLineageFixture {
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(&execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
-    let replaced =
-        replace_entity_on_branch(&runtime, entity, "replacement", BranchId("main".to_owned()));
+    let replaced = replace_entity_on_branch(
+        &execution,
+        &runtime,
+        entity,
+        "replacement",
+        BranchId("main".to_owned()),
+    );
     let successor = replacement_successor(&replaced, entity);
     let bundle = runtime
         .publication()
