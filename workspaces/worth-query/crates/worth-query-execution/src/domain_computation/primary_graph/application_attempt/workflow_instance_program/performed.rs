@@ -67,7 +67,7 @@ pub(super) fn inherited_effects(
         source,
         WorthQueryApplicationAdjacencyDirection::Outgoing,
         bound,
-    )
+    )?
     .filter(|carried| carried.len() <= maximum_transitions)
     .ok_or_else(|| unmapped("the source's prior effects are unavailable"))?;
     facts.push(WorthQueryApplicationObservedFact::Adjacency {
@@ -87,7 +87,7 @@ pub(super) fn inherited_effects(
             relation.to,
             WorthQueryApplicationAdjacencyDirection::Outgoing,
             2,
-        )
+        )?
         .ok_or_else(|| unmapped("a prior effect's node is unavailable"))?;
         let [node] = nodes.as_slice() else {
             return Err(unmapped("a prior effect names no single node"));

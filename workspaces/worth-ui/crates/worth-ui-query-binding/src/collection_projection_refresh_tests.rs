@@ -163,9 +163,9 @@ fn refresh_reports_empty_drain_without_inventing_semantic_delivery() {
     insert_collection_status(&mut workspace, "pulse.alpha", "Alpha");
     let mut live = open(&mut workspace, 1);
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             assert!(matches!(
-                live.refresh(execution, &mut workspace)
+                live.refresh(execution, workspace)
                     .expect("an empty Query drain is not a refresh error"),
                 UiCollectionProjectionRefreshOutcome::NoSemanticDelivery
             ))
@@ -295,10 +295,7 @@ fn open_with_snapshot(
     };
     let budget =
         UiCollectionProjectionBudget::new(rows, 64, 1, 1_048_576).expect("collection budget");
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = workspace
-        .with_advancement_mut(|phase, workspace| binding.open(&phase, budget, workspace))
-        .expect("workspace host call opens")
-    else {
+    let UiCollectionProjectionOpenOutcome::Opened(opened) = binding.open(budget, workspace) else {
         panic!("canonical collection binding must open");
     };
     opened.into_parts()

@@ -39,16 +39,10 @@ fn real_collection_snapshot_compiles_distinct_keyed_mounted_rows() {
             panic!("real collection binding must admit: {stop:?}")
         }
     };
-    let opened = match workspace
-        .with_advancement_mut(|phase, workspace| {
-            binding.open(
-                &phase,
-                UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
-                workspace,
-            )
-        })
-        .expect("fixture workspace host call opens")
-    {
+    let opened = match binding.open(
+        UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
+        &mut workspace,
+    ) {
         UiCollectionProjectionOpenOutcome::Opened(opened) => opened,
         UiCollectionProjectionOpenOutcome::Stopped(stop) => {
             panic!("real collection projection must open: {stop:?}")

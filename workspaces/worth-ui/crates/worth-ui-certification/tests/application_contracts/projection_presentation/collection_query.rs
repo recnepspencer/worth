@@ -212,16 +212,10 @@ fn open_live_collection(
             panic!("real collection binding admits: {stop:?}")
         }
     };
-    match workspace
-        .with_advancement_mut(|phase, workspace| {
-            binding.open(
-                &phase,
-                UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
-                workspace,
-            )
-        })
-        .expect("workspace host call opens")
-    {
+    match binding.open(
+        UiCollectionProjectionBudget::new(2, 2, 0, 1024).unwrap(),
+        workspace,
+    ) {
         UiCollectionProjectionOpenOutcome::Opened(opened) => opened,
         UiCollectionProjectionOpenOutcome::Stopped(stop) => {
             panic!("real collection projection opens: {stop:?}")

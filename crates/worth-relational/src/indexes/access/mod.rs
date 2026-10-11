@@ -1,6 +1,7 @@
 mod admitted_entity_field_lookup;
 mod admitted_generation;
 mod bounded_entity_field_lookup;
+#[cfg(test)]
 mod query_index_parity;
 pub use bounded_entity_field_lookup::BoundedEntityFieldLookupRead;
 mod selected_entity_field_lookup;
@@ -9,25 +10,32 @@ mod bounded_related_entity_ordered_lookup;
 mod bounded_relation_join_lookup;
 mod definition_lookup;
 mod entity_field_collection;
+#[cfg(test)]
 mod execution;
 mod generation_selection;
 mod prepared_entity_field_lookup;
 mod prepared_field_certification;
+#[cfg(test)]
 mod routing;
+#[cfg(test)]
 mod scratch;
 
 use crate::history::data::BranchId;
 use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexGeneration, DerivedIndexId};
+#[cfg(test)]
 use crate::query::data::{
     query_index_parity_basis_digest, IndexParityMode, IndexParityVerifiedQueryOutcome,
     QueryAccessContract, QueryAccessPath, SnapshotPinnedQueryPlan,
 };
 use crate::runtime::RelationalRuntime;
 
+#[cfg(test)]
 use self::execution::execute_index_backed_query_from_generation;
+#[cfg(test)]
 use self::routing::{admissible_access_path, should_verify_sampled_parity};
 #[cfg(test)]
 pub(crate) use self::scratch::index_query_scratch_hint_exists;
+#[cfg(test)]
 pub(crate) use self::scratch::purge_index_query_scratch_hints;
 pub use definition_lookup::DerivedIndexDefinitionLookup;
 pub use prepared_entity_field_lookup::PreparedEntityFieldLookup;
@@ -191,6 +199,7 @@ impl<'runtime> IndexAccess<'runtime> {
     }
 }
 
+#[cfg(test)]
 fn record_index_execution_shape(
     runtime: &RelationalRuntime,
     execution: &crate::query::data::QueryExecutionOutcome,
@@ -206,6 +215,7 @@ fn record_index_execution_shape(
     runtime.performance_access().count_query_serial_strategy();
 }
 
+#[cfg(test)]
 fn record_index_execution_counters(
     runtime: &RelationalRuntime,
     execution: &crate::query::data::QueryExecutionOutcome,

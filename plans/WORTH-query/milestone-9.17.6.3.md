@@ -110,9 +110,9 @@ budget or determinism contract.
   `crates/worth-relational/src/visibility/materialization/` bucket packets as
   `packets.len().min(rayon::current_num_threads())`, so bucket identity depends
   on the machine. Merges are deterministic: query fragments through
-  `reduce_query_fragments`, commit preparation and bulk create through
-  `OrderedReductionStream`. `PlanningContract` carries safety booleans such as
-  `deterministic_merge_required`.
+  `reduce_query_fragments_checked`; commit preparation and bulk create use
+  `OrderedReductionStream`. `PlanningContract` carries safety booleans such
+  as `deterministic_merge_required`.
 - **Query derived views.** `reconstruct_parallel/worker_pool.rs` spawns up to
   eight scoped threads on every call and reorders results through a `BTreeMap`.
 - **Query frontier planning.** `ParallelAdmissionRoute` is publicly exported from
@@ -937,8 +937,8 @@ Every Rayon use in Relational runs on the caller's lease:
 - commit preparation.
 
 Buckets derive from stable partition identity, never `current_num_threads()`.
-Merges keep `reduce_query_fragments` and `OrderedReductionStream`, now over the
-canonical order. `RelationalExecutionModel` and the safety booleans of
+Merges use `reduce_query_fragments_checked` and `OrderedReductionStream`
+over the canonical order. `RelationalExecutionModel` and the safety booleans of
 `PlanningContract` are deleted; Relational takes `ExecutionPosture` from the
 request policy, and the affected digests are re-baselined.
 

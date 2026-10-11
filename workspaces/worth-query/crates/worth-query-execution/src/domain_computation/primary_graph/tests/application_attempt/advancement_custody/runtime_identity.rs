@@ -62,7 +62,7 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             ).unwrap_err();
             assert_eq!(
                 denial.kind(),
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::ForeignPhase),
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase)),
             );
             assert_eq!(reads(), before, "foreign query cannot reach B's reader");
             a_product.require_current_output_settlements(
@@ -97,11 +97,12 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
         }).unwrap();
         let requests = reports();
         assert_eq!(requests.len(), 1, "B never opens or charges a request");
-        assert_eq!(
-            requests[0].as_ref().unwrap().charged_work(),
-            0,
-            "these inline reads and mutations charge no execution work in part one"
-        );
+        if matches!(placement, Placement::Leased(_)) {
+            assert!(
+                requests[0].as_ref().unwrap().charged_work() > 0,
+                "the admitted reads and commit charge their caller's lease"
+            );
+        }
     }
 }
 

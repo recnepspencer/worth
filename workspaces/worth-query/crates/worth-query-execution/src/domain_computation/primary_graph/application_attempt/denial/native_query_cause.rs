@@ -54,9 +54,7 @@ fn non_request_causes() -> Vec<QueryReadExecutionStop> {
     let first = PartitionIdentity::new(1);
     let second = PartitionIdentity::new(2);
     vec![
-        QueryReadExecutionStop::PreparationAdmission(ScanDenial::IdentitiesNotCanonical),
         QueryReadExecutionStop::CompletionAdmission(ScanDenial::CoverageMismatch),
-        QueryReadExecutionStop::PacketAdmission(MapDenial::ExpectedIdentitiesNotCanonical),
         QueryReadExecutionStop::PacketAdmission(MapDenial::CoverageMismatch),
         QueryReadExecutionStop::PacketAdmission(MapDenial::ReadKeysNotCanonical {
             partition: 0,
@@ -92,4 +90,39 @@ fn non_request_causes() -> Vec<QueryReadExecutionStop> {
             ),
         },
     ]
+}
+
+#[test]
+fn noncanonical_expected_identities_are_one_execution_cause_on_both_query_paths() {
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+    use worth_relational::facade::transactions::{
+        CommitExecutionDenialKind, RelationalExecutionDenialCause as Cause,
+    };
+    let sources: [fn() -> QueryReadExecutionStop; 3] = [
+        || QueryReadExecutionStop::PacketAdmission(MapDenial::ExpectedIdentitiesNotCanonical),
+        || QueryReadExecutionStop::PreparationAdmission(ScanDenial::IdentitiesNotCanonical),
+        || QueryReadExecutionStop::CompletionAdmission(ScanDenial::IdentitiesNotCanonical),
+    ];
+    for source in sources {
+        let stop = source();
+        assert_eq!(
+            stop.execution_denial().unwrap().kind,
+            CommitExecutionDenialKind::Cause(Cause::ExpectedIdentitiesNotCanonical)
+        );
+        let expected = Session::ExecutionIdentitiesNotCanonical {
+            partition_identity: None,
+        };
+        let attempt = WorthQueryApplicationAttemptDenial::query_read_denial(source(), "relation");
+        assert_eq!(
+            attempt.kind(),
+            WorthQueryApplicationAttemptDenialKind::ExecutionRequest(expected)
+        );
+        assert_eq!(attempt.native_query_read_stop(), Some(&stop));
+        let principal = query_read_resolution_denial(source(), "principal");
+        assert_eq!(
+            principal.kind(),
+            WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(expected)
+        );
+        assert_eq!(principal.native_query_read_stop(), Some(&stop));
+    }
 }

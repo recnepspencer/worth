@@ -128,8 +128,8 @@ pub(super) fn remains_equal(
     value: &AspectValue,
     candidate_limit: usize,
     expected: &[EntityId],
-) -> bool {
-    bounded_entity_field_selection(
+) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+    match bounded_entity_field_selection(
         runtime,
         execution,
         snapshot,
@@ -138,11 +138,19 @@ pub(super) fn remains_equal(
         locator,
         value,
         candidate_limit,
-    )
-    .is_ok_and(|current| {
-        current.retain_definition().as_ref() == definition.as_ref()
-            && current.candidate_entity_ids() == expected
-    })
+    ) {
+        Ok(current) => Ok(current.retain_definition().as_ref() == definition.as_ref()
+            && current.candidate_entity_ids() == expected),
+        Err(IndexedSelectionReobserveDenial::Lookup(
+            BoundedEntityFieldLookupDenialKind::Execution(cause),
+        )) => Err(
+            super::super::WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                cause,
+                "indexed selection comparison",
+            ),
+        ),
+        Err(_) => Ok(false),
+    }
 }
 
 fn bounded_entity_field_selection(

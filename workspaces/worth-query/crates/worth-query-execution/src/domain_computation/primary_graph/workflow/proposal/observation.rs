@@ -36,7 +36,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
         transition,
         direction,
         2,
-    )
+    )?
     .ok_or_else(|| denial("workflow operation input proposal is unavailable"))?;
     let [relation] = relations.as_slice() else {
         return Err(denial(
@@ -178,7 +178,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
         transition,
         direction,
         2,
-    )
+    )?
     .ok_or_else(|| denial("workflow proposal relation is unavailable"))?;
     let [relation] = relations.as_slice() else {
         return Err(denial(

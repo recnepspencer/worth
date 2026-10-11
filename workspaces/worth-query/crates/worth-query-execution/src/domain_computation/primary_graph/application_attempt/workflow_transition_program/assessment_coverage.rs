@@ -277,10 +277,13 @@ pub(super) fn observe_native_dependencies(
         )
     })?;
     let current = handle.with_runtime(execution, |runtime| {
-        dependencies
-            .iter()
-            .all(|fact| fact.remains_equal_in(runtime, execution, snapshot))
-    });
+        for fact in &dependencies {
+            if !fact.remains_equal_in(runtime, execution, snapshot)? {
+                return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
+            }
+        }
+        Ok(true)
+    })?;
     Ok((dependencies, facts, current))
 }
 

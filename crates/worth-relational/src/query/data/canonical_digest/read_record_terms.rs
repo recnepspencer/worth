@@ -11,6 +11,7 @@ use super::primitive_terms::{
     encode_usize, encode_version_id,
 };
 
+#[cfg(test)]
 pub(super) fn encode_authoritative_entity_records(
     bytes: &mut Vec<u8>,
     records: &[EntityReadRecord],
@@ -21,6 +22,7 @@ pub(super) fn encode_authoritative_entity_records(
     }
 }
 
+#[cfg(test)]
 pub(super) fn encode_authoritative_relation_records(
     bytes: &mut Vec<u8>,
     records: &[RelationReadRecord],

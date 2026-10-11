@@ -115,6 +115,56 @@ mod tests {
     }
 
     #[test]
+    fn relation_aspect_version_enumeration_spends_the_request_and_keeps_native_causes() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        use crate::execution::RelationalExecutionDenialCause as Cause;
+        use crate::transactions::data::CommitExecutionDenialKind;
+        use worth_execution::{CancellationToken, ExecutionRequest, LeaseRequest};
+        use worth_foundational::{
+            DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+        };
+        let runtime =
+            runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+        let source = create_entity(execution, &runtime, "alpha");
+        let target = create_entity(execution, &runtime, "beta");
+        let relation =
+            crate::tests::support::create_relation(execution, &runtime, source, target, "edge");
+        // The declared fixture has lifecycle and label: two symbolic versions,
+        // each costing one visit, cannot fit a one-unit request.
+        for (memory, work, expected_work) in [(64 * 1024 * 1024, 1, true), (0, 100, false)] {
+            let lease = crate::tests::support::test_execution_authority()
+                .request_lease(LeaseRequest {
+                    policy: ExecutionRequestPolicy::new(
+                        ExecutionPosture::Serial,
+                        DeterminismContract::CanonicalBitwise,
+                        ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), memory, work),
+                    ),
+                    deadline: None,
+                    cancellation: CancellationToken::new(),
+                })
+                .unwrap();
+            let stop = runtime
+                .read_truth()
+                .relation_aspect_versions(&ExecutionRequest::leased(&lease), relation)
+                .unwrap_err();
+            let kind = stop.execution_denial().unwrap().kind;
+            if expected_work {
+                assert_eq!(kind, CommitExecutionDenialKind::Cause(Cause::WorkExhausted));
+            } else {
+                assert!(matches!(
+                    kind,
+                    CommitExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
+                        admitted: 0,
+                        ..
+                    })
+                ));
+            }
+        }
+    }
+
+    #[test]
     fn unresolved_symbolic_aspect_versions_are_not_exposed_as_foundational_keys() {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);

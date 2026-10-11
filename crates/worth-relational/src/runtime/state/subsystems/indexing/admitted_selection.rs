@@ -25,8 +25,7 @@ impl IndexingSubsystem {
         mut prepare: impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop>,
     ) -> Result<ExactLookupInputs, SelectedIndexGenerationAdmissionStop<Stop>> {
         let state = self.state.read();
-        let work = navigation_work(state.definitions.len(), 1)
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+        let work = navigation_work(state.definitions.len(), 1)?;
         prepare(SelectedIndexReadWork::OrderedNavigation(work), 0)
             .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         let Some(definition) = state.definitions.get(&index) else {
@@ -118,8 +117,7 @@ impl IndexingSubsystem {
         SelectedIndexGenerationAdmissionStop<Stop>,
     > {
         let state = self.state.read();
-        let visits = navigation_work(state.definitions.len(), 1)
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+        let visits = navigation_work(state.definitions.len(), 1)?;
         prepare(visits, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         let Some(definition) = state.definitions.get(&index) else {
             return Ok(None);
@@ -146,8 +144,7 @@ impl IndexingSubsystem {
             return Ok(false);
         };
         let state = self.state.read();
-        let definition_work = navigation_work(state.definitions.len(), 1)
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+        let definition_work = navigation_work(state.definitions.len(), 1)?;
         prepare(SelectedIndexReadWork::OrderedNavigation(definition_work), 0)
             .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         let Some(definition) = state.definitions.get(&index) else {

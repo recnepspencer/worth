@@ -20,7 +20,7 @@ pub struct WorthQueryForeignAdvancementPhase(());
 
 impl From<WorthQueryForeignAdvancementPhase> for super::WorthQueryAdvancementDenial {
     fn from(_: WorthQueryForeignAdvancementPhase) -> Self {
-        Self::ForeignPhase
+        Self::Resource(super::Resource::ForeignAdvancementPhase)
     }
 }
 

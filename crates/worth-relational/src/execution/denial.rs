@@ -66,26 +66,51 @@ pub(crate) fn allocation_commit_error(
     }
 }
 
-/// WorkCeiling and WorkExhausted deliberately share WorkExhausted, mirroring
-/// the authority's one work budget whether a checkpoint or map admission stops.
-pub(crate) fn kernel_failure(failure: MapKernelFailure<PacketBudgetDenial>) -> Cause {
-    match failure {
-        MapKernelFailure::Stop(stop) => match stop {
-            MapKernelStop::Cancelled => Cause::Cancelled,
-            MapKernelStop::DeadlineElapsed => Cause::DeadlineElapsed,
-            MapKernelStop::WorkCounterOverflow => Cause::WorkCounterOverflow,
-            MapKernelStop::WorkCeiling => Cause::WorkExhausted,
-            MapKernelStop::NestedStopped => Cause::NestedStopped,
-        },
-        MapKernelFailure::ResultCapacityExceeded => Cause::ResultCapacityExceeded,
-        MapKernelFailure::Panic => Cause::WorkerFailed,
-        MapKernelFailure::Domain(PacketBudgetDenial::ScratchCapacityExceeded) => {
-            Cause::ScratchCapacityExceeded
-        }
-        MapKernelFailure::Domain(PacketBudgetDenial::UncheckedCustomKernel) => {
-            Cause::UncheckedCustomKernel
-        }
+pub(crate) fn kernel_stop(stop: MapKernelStop) -> Cause {
+    match stop {
+        MapKernelStop::Cancelled => Cause::Cancelled,
+        MapKernelStop::DeadlineElapsed => Cause::DeadlineElapsed,
+        MapKernelStop::WorkCounterOverflow => Cause::WorkCounterOverflow,
+        MapKernelStop::WorkCeiling => Cause::WorkExhausted,
+        MapKernelStop::NestedStopped => Cause::NestedStopped,
     }
+}
+
+fn map_kernel_failure<E, R>(
+    failure: &MapKernelFailure<E>,
+    native: impl FnOnce(Cause) -> R,
+    domain: impl FnOnce(&E) -> R,
+) -> R {
+    match failure {
+        MapKernelFailure::Stop(stop) => native(kernel_stop(*stop)),
+        MapKernelFailure::ResultCapacityExceeded => native(Cause::ResultCapacityExceeded),
+        MapKernelFailure::Panic => native(Cause::WorkerFailed),
+        MapKernelFailure::Domain(denial) => domain(denial),
+    }
+}
+
+pub(crate) fn map_stop<E, R>(
+    stop: &MapStop<E>,
+    native: impl FnOnce(Cause) -> R,
+    domain: impl FnOnce(&E) -> R,
+) -> R {
+    match stop {
+        MapStop::Admission(denial) => native(lease_denial(*denial)),
+        MapStop::WorkExhausted { .. } => native(Cause::WorkExhausted),
+        MapStop::Failure { cause, .. } => map_kernel_failure(cause, native, domain),
+    }
+}
+
+fn packet_budget_denial(denial: &PacketBudgetDenial) -> Cause {
+    match denial {
+        PacketBudgetDenial::ScratchCapacityExceeded => Cause::ScratchCapacityExceeded,
+        PacketBudgetDenial::UncheckedCustomKernel => Cause::UncheckedCustomKernel,
+    }
+}
+
+/// WorkCeiling and WorkExhausted share the authority's single work budget.
+pub(crate) fn kernel_failure(failure: MapKernelFailure<PacketBudgetDenial>) -> Cause {
+    map_kernel_failure(&failure, std::convert::identity, packet_budget_denial)
 }
 
 fn packet_admission(denial: PacketAdmissionDenial) -> Cause {
@@ -101,11 +126,7 @@ fn packet_denial(stop: PacketExecutionStop) -> (Cause, Option<u64>) {
     match stop {
         PacketExecutionStop::Admission(denial) => (packet_admission(denial), None),
         PacketExecutionStop::Execution { boundary, reason } => {
-            let cause = match reason {
-                MapStop::Admission(denial) => lease_denial(denial),
-                MapStop::WorkExhausted { .. } => Cause::WorkExhausted,
-                MapStop::Failure { cause, .. } => kernel_failure(cause),
-            };
+            let cause = map_stop(&reason, std::convert::identity, packet_budget_denial);
             (cause, boundary.map(PartitionIdentity::value))
         }
     }

@@ -44,6 +44,32 @@ where
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>;
 
+    /// Declares that this rule checkpoints preparation under a caller budget.
+    fn supports_checked_preparation(&self) -> bool {
+        false
+    }
+
+    /// Returns no checked implementation when the rule cannot honor the budget.
+    fn prepare_scope_checked(
+        &self,
+        _planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
+        _budget: &dyn worth_relational::facade::runtime::CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+        None
+    }
+
+    /// Evaluates cooperatively; every candidate and retained growth uses the budget.
+    fn evaluate_checked(
+        &self,
+        _context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
+        _scope: &Self::Scope,
+        _budget: &dyn worth_relational::facade::runtime::CustomInvariantLeaseBudget,
+    ) -> Option<
+        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+    > {
+        None
+    }
+
     fn evaluate(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,

@@ -243,7 +243,7 @@ pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
     let current = read_set.lease.handle().with_runtime(execution, |runtime| {
         for fact in currentness_facts {
             check_request_live(read_set.admission.publication_request(), subject)?;
-            if !fact.remains_equal_in(runtime, execution, read_set.lease.snapshot()) {
+            if !fact.remains_equal_in(runtime, execution, read_set.lease.snapshot())? {
                 return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
             }
         }

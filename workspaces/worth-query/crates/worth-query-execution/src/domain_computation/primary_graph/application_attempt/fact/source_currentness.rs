@@ -66,6 +66,7 @@ impl WorthQueryApplicationObservedFact {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop>
     {
+        check_request(execution)?;
         // Decision facts are value observations, not native revisions.
         // Output lineage must first rebase them at the committed snapshot.
         if matches!(self, Self::Field { .. } | Self::AbsentField { .. }) {
@@ -85,6 +86,7 @@ impl WorthQueryApplicationObservedFact {
                 &mut remaining,
             );
             reserved.settle(u64::try_from(reserved_work - remaining).unwrap_or(u64::MAX))?;
+            check_request(execution)?;
             return match comparison {
                 Ok(equal) => Ok(Ok(FactMovement::from_equal(equal))),
                 Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
@@ -101,7 +103,9 @@ impl WorthQueryApplicationObservedFact {
                 Err(failure) => Ok(Err(failure)),
             };
         }
-        match self.comparison(runtime, execution, snapshot, reserved_work) {
+        let comparison = self.comparison(runtime, execution, snapshot, reserved_work);
+        check_request(execution)?;
+        match comparison {
             Ok((equal, work)) => {
                 reserved.settle(u64::try_from(work).unwrap_or(u64::MAX))?;
                 Ok(Ok(FactMovement::from_equal(equal)))
@@ -143,4 +147,18 @@ impl WorthQueryApplicationObservedFact {
         let work = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
         Ok((movement, work))
     }
+}
+
+fn check_request(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), CompanionPreflightStop> {
+    if let Some(event) =
+        worth_relational::facade::mvcc::RelationalInterruptionEvent::observe_request(
+            execution,
+            worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
+        )
+    {
+        return Err(CompanionPreflightStop::Interrupted(event));
+    }
+    Ok(())
 }

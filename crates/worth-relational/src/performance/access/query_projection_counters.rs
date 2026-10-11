@@ -64,6 +64,7 @@ impl PerformanceAccess<'_> {
             .count(|counters| counters.query_index_path_count += 1);
     }
 
+    #[cfg(test)]
     pub(crate) fn count_query_index_rejection(&self) {
         self.runtime
             .services
@@ -78,6 +79,7 @@ impl PerformanceAccess<'_> {
             .count(|counters| counters.query_index_parity_verification_count += 1);
     }
 
+    #[cfg(test)]
     pub(crate) fn count_query_index_scratch_reuse(&self) {
         self.runtime
             .services

@@ -101,7 +101,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
                 entity_id: entity, kind: record.kind_id(), created_at: record.created_at_version(),
                 deleted_at: record.deleted_at_version(), read_locator: "output-role:7:Account:7:retired".into(),
             }];
-            assert!(facts[0].remains_equal_in(runtime,execution,  snapshot), "both actual tombstones match native truth");
+            assert!(facts[0].remains_equal_in(runtime,execution,  snapshot).unwrap(), "both actual tombstones match native truth");
             let correspondence = correspondence(entity);
             let candidate = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence,
                 graph.layout(), &facts, owner, &mut owner.edit_admission()).unwrap();

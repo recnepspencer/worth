@@ -38,7 +38,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         transition.entity(),
         direction,
         2,
-    )
+    )?
     .ok_or_else(|| denial("workflow proposal relation is unavailable"))?;
     let [relation] = relations.as_slice() else {
         return Err(denial(

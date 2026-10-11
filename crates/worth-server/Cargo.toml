@@ -23,6 +23,7 @@ flate2 = "1"
 tracing.workspace = true
 
 [dev-dependencies]
+worth-query-host = { path = "../../workspaces/worth-query/crates/worth-query-host", features = ["test-query-execution-observer"] }
 worth-runtime-bridge.workspace = true
 worth-relational.workspace = true
 sha2 = "0.10"

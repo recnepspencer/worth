@@ -241,15 +241,11 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
 // relation. Their record bounds are 819, 601 and 257 bytes; the fragment's
 // 2021 retained bytes fit one chunk. Visit digests use ceil((4*b+1024)/4096),
 // final digests use ceil(b/4096). No request report supplies these units.
-pub(super) const PRINCIPAL_TARGET_READ_WORK: u64 = {
-    let preparation = 1 + 1 + 1 + 1 + 2;
-    let traversal = 1 + 2 + 1;
-    let completion = 1 + 1 + (2 + 1 + 1) + 3 + 2 * 3 + 3;
-    preparation + traversal + completion
-};
+mod principal_target_read_work;
+pub(super) use principal_target_read_work::PRINCIPAL_TARGET_READ_WORK;
 
 #[test]
-fn mutation_handler_and_inline_commit_remain_in_one_request() {
+fn a_mutation_handler_and_commit_share_one_charged_request() {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None);
@@ -264,14 +260,13 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
         .unwrap();
     let before = observed.receipt().inspect().basis().version();
     let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
-    // This handler has no managed computation or Signal dispatch. Its one
-    // principal-target traversal pays the same read law as every backing.
+    // Admit the mutation's complete work, including its read and native commit.
     let restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(worth_foundational::ExecutionBudget::new(
             NonZeroUsize::MIN,
             policy.charged_memory_bytes(),
-            PRINCIPAL_TARGET_READ_WORK,
+            policy.work_ceiling(),
         ))),
     );
     let contacts = crate::handler::handler_contacts();
@@ -297,10 +292,12 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
     assert!(matches!(outcome, Outcome::Committed { .. }));
     let opened = reports();
     assert_eq!(opened.len(), 1);
-    assert_eq!(
-        opened[0].as_ref().unwrap().charged_work(),
-        PRINCIPAL_TARGET_READ_WORK
+    let charged = opened[0].as_ref().unwrap().charged_work();
+    assert!(
+        charged > PRINCIPAL_TARGET_READ_WORK,
+        "the commit also charges the shared request"
     );
+    assert!(charged <= policy.work_ceiling());
     drop(restore);
     let after = request
         .query(PlanarRead {

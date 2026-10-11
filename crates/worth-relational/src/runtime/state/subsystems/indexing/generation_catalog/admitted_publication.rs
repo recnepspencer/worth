@@ -48,8 +48,8 @@ impl GenerationCatalog {
                 width
                     .checked_add(3)
                     .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?,
-            )
-            .and_then(|n| n.checked_mul(26))
+            )?
+            .checked_mul(26)
             .and_then(|n| n.checked_add(copies as u64))
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
             let bytes = node_bytes

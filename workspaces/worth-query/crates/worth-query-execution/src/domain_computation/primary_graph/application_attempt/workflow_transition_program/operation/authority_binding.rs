@@ -53,7 +53,7 @@ impl<Schema, Operation, Input, Scope>
                         self.read_set.admission.publication_request(),
                         "workflow operation authority",
                     )?;
-                    if !fact.remains_equal_in(runtime, execution, self.read_set.lease.snapshot()) {
+                    if !fact.remains_equal_in(runtime, execution, self.read_set.lease.snapshot())? {
                         return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
                     }
                 }

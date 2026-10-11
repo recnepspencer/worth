@@ -327,7 +327,7 @@ impl WorkflowOperationAuthority {
             let mut current = true;
             for fact in self.facts.iter() {
                 check_request_live(request, "workflow operation authority")?;
-                if !fact.remains_equal_in(runtime,execution,  lease.snapshot()) {
+                if !fact.remains_equal_in(runtime,execution,  lease.snapshot())? {
                     current = false;
                     break;
                 }

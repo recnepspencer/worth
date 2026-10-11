@@ -51,16 +51,10 @@ pub(super) fn run_mixed_permutation(order: [MixedCause; 3], run: usize) -> UiAff
             panic!("collection binding admits: {stop:?}")
         }
     };
-    let opened = match workspace
-        .with_advancement_mut(|phase, workspace| {
-            binding.open(
-                &phase,
-                UiCollectionProjectionBudget::new(2, 4, 0, 2048).unwrap(),
-                workspace,
-            )
-        })
-        .expect("workspace host call opens")
-    {
+    let opened = match binding.open(
+        UiCollectionProjectionBudget::new(2, 4, 0, 2048).unwrap(),
+        &mut workspace,
+    ) {
         UiCollectionProjectionOpenOutcome::Opened(opened) => opened,
         UiCollectionProjectionOpenOutcome::Stopped(stop) => {
             panic!("collection projection opens: {stop:?}")
@@ -246,7 +240,7 @@ fn refresh_fact(
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
 ) -> worth_ui_query_binding::UiCollectionProjectionFactReceipt {
     match workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             live.refresh(execution, workspace).unwrap()
         })
         .expect("workspace host call opens")

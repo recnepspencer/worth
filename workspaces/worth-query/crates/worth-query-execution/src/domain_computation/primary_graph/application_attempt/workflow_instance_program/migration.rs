@@ -229,7 +229,7 @@ where
             {
                 let successor = handle.with_runtime(execution, |runtime| {
                     successor_identity(execution, runtime, snapshot, &layout, source.entity_id())
-                });
+                })?;
                 if successor.as_deref() != Some(instance_identity.as_str()) {
                     return Err(ended);
                 }

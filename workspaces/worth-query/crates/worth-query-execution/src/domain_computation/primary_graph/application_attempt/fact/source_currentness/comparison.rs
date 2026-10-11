@@ -14,9 +14,24 @@ impl WorthQueryApplicationObservedFact {
             return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
         }
         match self {
-            Self::RetiredOutputEntity { .. } => {
-                Ok((self.remains_equal_in(runtime, execution, snapshot), 1))
-            }
+            Self::RetiredOutputEntity {
+                entity_id,
+                kind,
+                created_at,
+                deleted_at,
+                ..
+            } => Ok((
+                super::super::retirement_equality::remains_equal(
+                    runtime,
+                    execution,
+                    snapshot,
+                    *entity_id,
+                    *kind,
+                    *created_at,
+                    *deleted_at,
+                ),
+                1,
+            )),
             Self::SourceEntity { entity_id } => {
                 let view = runtime
                     .read_truth()
@@ -284,6 +299,11 @@ fn map_adjacency_denial(
     denial: super::super::AdjacencyObservationDenial,
 ) -> WorthQuerySourceCurrentnessFailure {
     match denial {
+        // The caller observes request interruption again before accepting any
+        // comparison value, and returns its native preflight stop.
+        super::super::AdjacencyObservationDenial::Interrupted(_) => {
+            WorthQuerySourceCurrentnessFailure::Unavailable
+        }
         super::super::AdjacencyObservationDenial::SnapshotUnavailable => {
             WorthQuerySourceCurrentnessFailure::Unavailable
         }
