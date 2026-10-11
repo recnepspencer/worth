@@ -49,13 +49,14 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
                     application.required_refresh_stops_for_test(),
                 )
             });
+            // Hang guard for the held-Ready join; elapsed time is not the fact under test.
             let reached = pause.wait_until_joined(Duration::from_secs(5));
             cancellation.cancel();
             pause.release();
             let (stopped, joined, stops) = worker.join().unwrap();
             assert!(
                 reached,
-                "the interrupted refresh really joined C's held Stable Ready"
+                "held Stable Ready join rendezvous did not occur before cancellation"
             );
             assert_eq!(
                 joined

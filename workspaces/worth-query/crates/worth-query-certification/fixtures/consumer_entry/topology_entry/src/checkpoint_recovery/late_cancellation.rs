@@ -62,13 +62,14 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
             }
             panic!("the bounded progression never reached its final guard");
         });
+        // Hang guard for the final-read rendezvous; elapsed time is not the fact under test.
         let reached = pause.wait_until_reader_contended(Duration::from_secs(5));
         cancellation.cancel();
         pause.release();
         let terminal = advancing.join().unwrap();
         assert!(
             reached,
-            "the real final Product read must contend after preparation"
+            "final Product-read rendezvous did not occur after preparation"
         );
         assert!(
             matches!(terminal,

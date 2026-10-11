@@ -2,8 +2,8 @@
 use super::*;
 
 mod graph;
+pub(super) use crate::checkpoint_recovery::support::authentication_fixture;
 pub(super) use graph::{DependentRoot, Root};
-pub(super) mod authentication_fixture;
 mod seed;
 
 pub(super) struct Contribution;

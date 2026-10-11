@@ -38,6 +38,7 @@ fn a_world_superseding_a_joined_refresh_stops_it_and_the_next_demand_reads_curre
                 application.required_refresh_stops_for_test(),
             )
         });
+        // Hang guard for the World-interruption join; elapsed time is not the fact under test.
         let reached = pause.wait_until_joined(Duration::from_secs(5));
         // The World changes B after C's source was disclosed and joined.
         if reached {
@@ -45,7 +46,10 @@ fn a_world_superseding_a_joined_refresh_stops_it_and_the_next_demand_reads_curre
         }
         pause.release();
         let (result, joined, stops) = worker.join().unwrap();
-        assert!(reached, "the World races the held Stable join");
+        assert!(
+            reached,
+            "World-interruption Stable-join rendezvous did not occur"
+        );
         assert_eq!(
             joined
                 .iter()

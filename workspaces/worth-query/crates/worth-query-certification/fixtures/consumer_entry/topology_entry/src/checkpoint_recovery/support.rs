@@ -361,6 +361,6 @@ pub(super) fn limits_with_history_and_policy(
     )
 }
 
-mod authentication_fixture;
+pub(super) mod authentication_fixture;
 pub(super) use authentication_fixture::authenticate;
 pub(super) use authentication_fixture::external_identity;

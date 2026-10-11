@@ -77,6 +77,7 @@ static OVERLAP: (Mutex<Overlap>, Condvar) = (Mutex::new(DISARMED), Condvar::new(
 
 /// How long a lone kernel waits for a second. A run that placed a second
 /// worker never waits it out.
+// Hang guard for the kernel-overlap rendezvous; elapsed time is not the fact under test.
 const PATIENCE: Duration = Duration::from_secs(30);
 
 fn overlap() -> MutexGuard<'static, Overlap> {
@@ -100,7 +101,7 @@ impl Drop for Overlapping {
     fn drop(&mut self) {
         let met = std::mem::replace(&mut *overlap(), DISARMED).met;
         if !std::thread::panicking() {
-            assert!(met, "two kernels held workers at once");
+            assert!(met, "two-worker kernel-overlap rendezvous did not occur");
         }
     }
 }
