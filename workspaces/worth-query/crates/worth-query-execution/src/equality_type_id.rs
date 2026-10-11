@@ -30,7 +30,6 @@
 /// members.insert(a);
 /// assert!(members.contains(&identity::EqualityTypeId::of::<u8>()));
 /// ```
-#[repr(transparent)]
 #[derive(PartialEq, Eq, Hash)]
 pub(crate) struct EqualityTypeId(std::any::TypeId);
 

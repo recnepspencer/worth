@@ -23,26 +23,6 @@ const ADDRESS_CRATES: &[&str] = &[
     "worth-relational",
 ];
 
-/// Named exceptions are membership contracts, never permission to iterate for
-/// output, selection, or cost. Every exception names its membership consumer.
-const MEMBERSHIP_ONLY: &[(&str, &str, &str)] = &[
-    (
-        "src/domain_computation/primary_graph/output_lineage/family_selection/checkpoint_priors.rs",
-        "checkpoint_prior_outputs",
-        "membership only: installed bindings are queried by equality to validate checkpoint roles",
-    ),
-    (
-        "src/domain_computation/primary_graph/application_installation/program/output_roots.rs",
-        "append_required_bindings",
-        "membership only: public root vocabulary accumulates source binding membership",
-    ),
-    (
-        "src/domain_computation/primary_graph/application_installation/program/construction.rs",
-        "require_rostered_binding_membership",
-        "membership only: installation checks complete declared binding membership",
-    ),
-];
-
 pub(super) fn validate(root: &std::path::Path) -> Result<Vec<Diagnostic>, String> {
     let mut diagnostics = Vec::new();
     for workspace in ["", "workspaces/worth-query"] {
@@ -90,14 +70,4 @@ fn findings(files: &[(&str, &[syn::Item])]) -> Vec<inventory::Finding> {
     let mut found = inventory::scan(files);
     found.extend(address_order::scan(files));
     found
-        .into_iter()
-        .filter(|finding| {
-            finding.reason != "ordered container keyed by TypeId"
-                || !MEMBERSHIP_ONLY.iter().any(|(source, item, reason)| {
-                    *source == finding.source
-                        && *item == finding.item
-                        && reason.starts_with("membership only:")
-                })
-        })
-        .collect()
 }

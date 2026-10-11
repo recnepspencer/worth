@@ -243,18 +243,14 @@ where
     runtime
         .program_required_bindings
         .extend(action_bindings.iter().copied());
-    let mut output_source_bindings = std::collections::BTreeSet::new();
-    Program::Outputs::append_required_bindings(&mut output_source_bindings);
-    output_source_bindings.extend(installed.actions().iter().filter_map(|action| {
-        action
-            .required_output_source()
-            .then(|| action.mutation_binding_type())
-            .flatten()
-    }));
+    let output_source_bindings = super::output_roots::required_output_bindings::<
+        Schema,
+        Program::Outputs,
+    >(installed.actions());
     require_rostered_binding_membership(&runtime, &installed, &output_source_bindings)?;
     runtime
         .program_required_bindings
-        .extend(output_source_bindings.iter().copied().map(TypeId::from));
+        .extend(output_source_bindings.iter().copied());
     Ok(WorthQueryProgramApplicationRuntime {
         runtime,
         program: installed,
@@ -266,10 +262,7 @@ where
             .into_iter()
             .map(TypeId::from)
             .collect(),
-        output_source_bindings: output_source_bindings
-            .into_iter()
-            .map(TypeId::from)
-            .collect(),
+        output_source_bindings: output_source_bindings.into_boxed_slice(),
         action_bindings: action_bindings.into_iter().collect(),
         supported: supported.into_boxed_slice(),
     })
@@ -324,12 +317,16 @@ where
 fn require_rostered_binding_membership<Schema, Program>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     installed: &WorthQueryInstalledApplicationProgram<Schema, Program>,
-    output_source_bindings: &std::collections::BTreeSet<std::any::TypeId>,
+    output_source_bindings: &[TypeId],
 ) -> Result<(), WorthQueryInMemoryApplicationDenial>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
 {
-    let mut answered = output_source_bindings.clone();
+    let mut answered = output_source_bindings
+        .iter()
+        .copied()
+        .map(TypeId::into_external)
+        .collect::<std::collections::HashSet<_>>();
     if let Some(support) = runtime.installed_program_support() {
         answered.extend(
             support

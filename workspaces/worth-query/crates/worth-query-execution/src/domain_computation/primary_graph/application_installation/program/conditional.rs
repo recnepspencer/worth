@@ -18,11 +18,7 @@ pub(super) fn validate_conditional_actions(
     let conflicting_client_action = actions.iter().any(|action| {
         !action.conditional_only() && installed.contains(&TypeId::from(action.operation_type()))
     });
-    let complete = declared.len() == installed.len()
-        && actions
-            .iter()
-            .filter(|action| action.conditional_only())
-            .all(|action| installed.contains(&TypeId::from(action.operation_type())));
+    let complete = declared == installed;
     if complete && !conflicting_client_action {
         Ok(())
     } else {

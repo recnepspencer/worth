@@ -40,23 +40,15 @@ fn equality_and_declared_identity_order_are_valid_counterparts() {
 }
 
 #[test]
-fn containers_need_an_exact_named_membership_contract() {
-    let source = "pub trait Roots { fn append_required_bindings(bindings: &mut BTreeSet<TypeId>); fn ordered(bindings: &mut BTreeSet<TypeId>); }";
-    let file = crate::source_syntax::parse_file(source).unwrap();
-    let found = findings(&[(
-        super::MEMBERSHIP_ONLY
-            .iter()
-            .find(|(_, item, _)| *item == "append_required_bindings")
-            .unwrap()
-            .0,
-        &file.items,
-    )]);
-    assert_eq!(found.len(), 1);
-    assert_eq!(found[0].item, "ordered");
-    assert_eq!(
-        rejects("struct Registry { members: BTreeMap<TypeId, usize> }"),
-        ["ordered container keyed by TypeId"]
-    );
+fn obsolete_membership_exceptions_no_longer_allow_ordered_type_ids() {
+    for (source, item) in [
+        ("src/domain_computation/primary_graph/output_lineage/family_selection/checkpoint_priors.rs", "checkpoint_prior_outputs"),
+        ("src/domain_computation/primary_graph/application_installation/program/output_roots.rs", "append_required_bindings"),
+        ("src/domain_computation/primary_graph/application_installation/program/construction.rs", "require_rostered_binding_membership"),
+    ] {
+        let file = crate::source_syntax::parse_file(&format!("fn {item}(keys: BTreeSet<TypeId>) {{}}" )).unwrap();
+        assert_eq!(findings(&[(source, &file.items)]).len(), 1, "{item} no longer needs permission");
+    }
 }
 
 #[test]
