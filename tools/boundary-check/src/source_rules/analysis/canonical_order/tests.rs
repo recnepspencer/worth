@@ -56,6 +56,35 @@ fn debug_inventory_fixture_refuses_members_but_accepts_sizes() {
     }
 }
 
+#[test]
+fn debug_inventory_spellings_report_one_canonical_order_diagnostic_each() {
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");
+    let governed =
+        super::super::workspace_crates::discover_workspace_crates(&root, "workspaces/worth-query")
+            .unwrap()
+            .remove(0);
+    let mut graph = super::super::crate_modules::parse_crate_modules(&governed).unwrap();
+    let mut counts = Vec::new();
+    for source in [
+        include_str!("../../../../tests/fixtures/canonical_order_rules/debug_enum.rs"),
+        include_str!("../../../../tests/fixtures/canonical_order_rules/debug_collection_alias.rs"),
+        include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/debug_renamed_collection.rs"
+        ),
+        include_str!("../../../../tests/fixtures/canonical_order_rules/debug_optional_key.rs"),
+        include_str!("../../../../tests/fixtures/canonical_order_rules/debug_array_key.rs"),
+    ] {
+        graph.modules.values_mut().next().unwrap().items =
+            crate::source_syntax::parse_file(source).unwrap().items;
+        let diagnostics = super::enforce(&governed, &graph);
+        counts.push(diagnostics.len());
+        assert!(diagnostics.iter().all(|diagnostic| diagnostic.code()
+            == crate::diagnostics::DiagnosticCode::Bc7009CanonicalOrder));
+    }
+    assert_eq!(counts, [1, 1, 1, 1, 1]);
+}
+
 fn rejects(source: &str) -> Vec<&'static str> {
     let file = crate::source_syntax::parse_file(source).unwrap();
     findings(&[("src/ordinary.rs", &file.items)])
