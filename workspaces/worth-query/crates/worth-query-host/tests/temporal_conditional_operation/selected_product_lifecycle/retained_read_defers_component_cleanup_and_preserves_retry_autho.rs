@@ -36,9 +36,9 @@ fn retained_read_defers_component_cleanup_and_preserves_retry_authority() {
                 .expect("the survivor must be selectable before sibling cleanup")
                 .conditional_clock(request_execution, &world.clock)
                 .expect("the surviving selection must bind its managed clock")
-                .observe(request_execution)
         })
-        .expect("installed host call opens");
+        .expect("installed host call opens")
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(warm) = warm else {
         panic!("the surviving selection must establish its predecessor cursor")
     };

@@ -354,7 +354,6 @@ impl WorthQueryExternalRedispatchDenial {
             }
             Advancement::Resource(_)
             | Advancement::NestedOpening
-            | Advancement::ForeignPhase
             | Advancement::NestedStopped
             | Advancement::Panicked => {}
         }

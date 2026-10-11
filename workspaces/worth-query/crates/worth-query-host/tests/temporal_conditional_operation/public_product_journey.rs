@@ -88,9 +88,9 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence(
                 .unwrap()
                 .conditional_clock(request_execution, &world.clock)
                 .unwrap()
-                .observe(request_execution)
         })
-        .expect("installed host call opens");
+        .expect("installed host call opens")
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(warm) = warm else {
         panic!("the sibling condition must warm: {}", outcome_kind(&warm))
     };
@@ -173,9 +173,9 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence(
                 .unwrap()
                 .conditional_clock(request_execution, &world.clock)
                 .unwrap()
-                .observe(request_execution)
         })
-        .expect("installed host call opens");
+        .expect("installed host call opens")
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(execution) =
         execution
     else {

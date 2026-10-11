@@ -17,8 +17,6 @@ pub enum WorthQueryAdvancementDenial {
     Interrupted(WorthQueryManagedComputationInterruption),
     /// A public call tried to open a second advancement on the same thread.
     NestedOpening,
-    /// The phase belongs to a different installed runtime.
-    ForeignPhase,
     NestedStopped,
     Panicked,
 }
@@ -65,7 +63,6 @@ impl WorthQueryAdvancementDenial {
                 | WorthQueryManagedComputationInterruption::DeadlineExceeded,
             )
             | Self::NestedOpening
-            | Self::ForeignPhase
             | Self::NestedStopped
             | Self::Panicked => false,
         }
@@ -278,11 +275,6 @@ impl WorthQueryAdvancementDenial {
             }
             Self::NestedOpening => Ok(Kind::ExecutionResource {
                 denial: Resource::NestedAdvancementOpening,
-                partition_identity: None,
-                policy_ancestor: None,
-            }),
-            Self::ForeignPhase => Ok(Kind::ExecutionResource {
-                denial: Resource::ForeignAdvancementPhase,
                 partition_identity: None,
                 policy_ancestor: None,
             }),

@@ -157,15 +157,18 @@ impl WorthQueryWorkflowInstanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
-            Ok(request) => request,
-            Err(_) => return WorkflowInstanceCancellationOutcome::Application(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+        let phase_request =
+            match phase.execution_request_for(&runtime.product_runtime) {
+                Ok(request) => request,
+                Err(cause) => return WorkflowInstanceCancellationOutcome::Application(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                        cause,
+                    )
                     .into_commit_outcome()
                     .landed()
                     .expect_err("a foreign phase cannot commit"),
-            ),
-        };
+                ),
+            };
         let execution = &phase_request;
 
         runtime.compare_and_commit_workflow_instance_cancellation(
@@ -188,15 +191,18 @@ impl WorthQueryWorkflowInstanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
-            Ok(request) => request,
-            Err(_) => return WorkflowInstanceStartOutcome::Application(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+        let phase_request =
+            match phase.execution_request_for(&runtime.product_runtime) {
+                Ok(request) => request,
+                Err(cause) => return WorkflowInstanceStartOutcome::Application(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                        cause,
+                    )
                     .into_commit_outcome()
                     .landed()
                     .expect_err("a foreign phase cannot commit"),
-            ),
-        };
+                ),
+            };
         let execution = &phase_request;
 
         runtime.compare_and_commit_workflow_instance_start(execution, phase, prepared, idempotency)

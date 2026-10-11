@@ -235,9 +235,9 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> ErasedClockObservationOutcome {
         let execution = match phase.execution_request_for(&runtime.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return ErasedClockObservationOutcome::Failed {
+            Err(cause) => return ErasedClockObservationOutcome::Failed {
                 kind: super::WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase),
+                    cause.into()),
                 detail: "foreign conditional advancement phase".to_string(),
             },
         };

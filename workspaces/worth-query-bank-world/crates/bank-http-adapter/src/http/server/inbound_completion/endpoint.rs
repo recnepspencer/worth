@@ -106,10 +106,10 @@ fn status(denial: WorthQueryInboundAdmissionDenial) -> StatusCode {
         Denial::ExecutionDenied(cause) => {
             use worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial as Cause;
             match cause {
+                Cause::Resource(worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase) => StatusCode::INTERNAL_SERVER_ERROR,
                 Cause::Resource(_) => StatusCode::TOO_MANY_REQUESTS,
                 Cause::Interrupted(_) => StatusCode::SERVICE_UNAVAILABLE,
-                Cause::ForeignPhase
-                | Cause::NestedOpening
+                Cause::NestedOpening
                 | Cause::NestedStopped
                 | Cause::Panicked => StatusCode::INTERNAL_SERVER_ERROR,
             }

@@ -261,12 +261,14 @@ where
         admission: &mut InvalidationEditAdmission,
         performed: &mut PerformedMembers,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
-        let execution = phase.execution_request_for(&runtime.product_runtime).map_err(|_| {
-            WorthQueryOutputDemandDenial::new(
-                super::WorthQueryOutputDemandDenialKind::ExecutionRequest(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase),
-                "required successor advancement phase")
-        })?;
+        let execution = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "required successor advancement phase",
+                )
+            })?;
         self.run_again(
             &execution, phase, runtime, principal, request, branch, admission, performed,
         )

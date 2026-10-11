@@ -164,9 +164,6 @@ impl BankEstateEmergencyAccessActivityLiveLease<'_> {
                         Opening::Interrupted(Interruption::DeadlineExceeded) => {
                             BankEstateEmergencyAccessActivityLiveOutcome::DeadlineExceeded
                         }
-                        Opening::ForeignPhase => {
-                            BankEstateEmergencyAccessActivityLiveOutcome::ExecutionRequest(cause)
-                        }
                         Opening::Resource(_)
                         | Opening::NestedOpening
                         | Opening::NestedStopped

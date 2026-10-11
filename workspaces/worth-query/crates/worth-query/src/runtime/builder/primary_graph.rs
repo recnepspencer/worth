@@ -231,7 +231,7 @@ where
             use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial as Denial;
             match cause {
                 Denial::Resource(_) | Denial::Interrupted(_) | Denial::NestedOpening
-                    | Denial::ForeignPhase | Denial::NestedStopped | Denial::Panicked =>
+                    | Denial::NestedStopped | Denial::Panicked =>
                     primary_graph_runtime_error("primary_graph_request_admission", format!("{cause:?}")),
             }
         })?

@@ -46,7 +46,12 @@ where
 {
     let execution = match phase.execution_request_for(&owner.owned_runtime().product_runtime) {
         Ok(execution) => execution,
-        Err(_) => return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase.into_commit_outcome(),
+        Err(cause) => {
+            return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                cause,
+            )
+            .into_commit_outcome()
+        }
     };
     let binding = TypeId::of::<Binding>();
     if !owner.owns_action(binding) || owner.owns_output_source(binding) {

@@ -22,7 +22,9 @@ use crate::domain_computation::primary_graph::{
 #[derive(Debug)]
 pub enum MutationHandlerExecutionDenial {
     /// Another installed runtime lent the phase; no handler or read ran.
-    ForeignAdvancementPhase,
+    ForeignAdvancementPhase(
+        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+    ),
     /// The projection that feeds the handler's decision could not be read.
     Projection(WorthQueryOperationProjectionDenial),
     /// The read attempt, resource reservation, or candidate program failed.
@@ -42,7 +44,7 @@ pub enum MutationHandlerExecutionDenial {
 impl std::fmt::Display for MutationHandlerExecutionDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ForeignAdvancementPhase => {
+            Self::ForeignAdvancementPhase(_) => {
                 formatter.write_str("the phase belongs to another installed runtime")
             }
             Self::Projection(denial) => denial.fmt(formatter),
@@ -193,9 +195,11 @@ where
     {
         let execution = match phase.execution_for(&self.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => {
+            Err(cause) => {
                 return WorthQueryMutationHandlerExecutionReport::new(
-                    Err(MutationHandlerExecutionDenial::ForeignAdvancementPhase),
+                    Err(MutationHandlerExecutionDenial::ForeignAdvancementPhase(
+                        cause,
+                    )),
                     WorthQueryMutationHandlerWork::NotStarted,
                 )
             }
@@ -232,9 +236,11 @@ where
         let mut handler_contacted = false;
         let phase_request = match phase.execution_request_for(&self.product_runtime) {
             Ok(request) => request,
-            Err(_) => {
+            Err(cause) => {
                 return WorthQueryMutationHandlerExecutionReport::new(
-                    Err(MutationHandlerExecutionDenial::ForeignAdvancementPhase),
+                    Err(MutationHandlerExecutionDenial::ForeignAdvancementPhase(
+                        cause,
+                    )),
                     WorthQueryMutationHandlerWork::NotStarted,
                 )
             }
@@ -279,7 +285,7 @@ where
         let outcome = (|| {
             let request = phase
                 .execution_request_for(&self.product_runtime)
-                .map_err(|_| MutationHandlerExecutionDenial::ForeignAdvancementPhase)?;
+                .map_err(MutationHandlerExecutionDenial::ForeignAdvancementPhase)?;
             let decision = match decision {
                 HandlerResult::Completed(decision) => decision,
                 HandlerResult::DomainDenied(denial) => {

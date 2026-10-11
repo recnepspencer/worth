@@ -146,7 +146,10 @@ fn custody_fault_has_one_projection_through_opening_and_provider_routes() {
     use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Session;
     for (opening, resource) in [
         (Denial::NestedOpening, Resource::NestedAdvancementOpening),
-        (Denial::ForeignPhase, Resource::ForeignAdvancementPhase),
+        (
+            Denial::Resource(Resource::ForeignAdvancementPhase),
+            Resource::ForeignAdvancementPhase,
+        ),
     ] {
         let direct = advancement(opening);
         let provider = super::super::mutation_application::pending_execution_denial(

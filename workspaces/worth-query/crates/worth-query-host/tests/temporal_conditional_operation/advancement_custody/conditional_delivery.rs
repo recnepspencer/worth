@@ -131,7 +131,7 @@ fn foreign_phase_cannot_deliver_on_another_installed_world() {
                             .unwrap(),
                     )
                     .unwrap_err();
-                assert_eq!(denied.kind(), Kind::ExecutionRequest(Denial::ForeignPhase));
+                assert_eq!(denied.kind(), Kind::ExecutionRequest(Denial::Resource(worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase)));
                 assert_eq!(reads(), before);
             })
             .unwrap();
