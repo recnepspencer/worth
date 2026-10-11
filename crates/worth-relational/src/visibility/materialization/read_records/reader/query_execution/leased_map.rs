@@ -1,6 +1,6 @@
 use worth_execution::{
-    ChargedBytes, ExecutionMap, ExecutionResourceLease, MapDenial, MapKernelContext,
-    MapKernelFailure, MapOutcome, MapPartition, MapStop, ScanDenial,
+    ChargedBytes, ExecutionResourceLease, MapDenial, MapKernelContext, MapKernelFailure, MapStop,
+    ScanDenial,
 };
 use worth_foundational::{ExecutionReport, PartitionIdentity};
 
@@ -187,13 +187,12 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
         ) -> Result<QueryWorkerFragment, MapKernelFailure<QueryReadPacketDenial>>
         + Sync,
 ) -> Result<(Vec<QueryWorkerFragment>, ExecutionReport), QueryReadExecutionStop> {
-    let identities = packet_identity::identities(&packets);
-    schedule_query_packets(packets, identities, lease, execute)
+    let identities = packet_identity::identities(packets);
+    schedule_query_packets(identities, lease, execute)
 }
 
 fn schedule_query_packets(
-    packets: Vec<PacketizedQueryWork>,
-    identities: Vec<PartitionIdentity>,
+    packets: Vec<packet_identity::NamedQueryPacket>,
     lease: &ExecutionResourceLease<'_>,
     execute: impl Fn(
             &PacketizedQueryWork,
@@ -209,35 +208,5 @@ fn schedule_query_packets(
         / RESULT_BUDGET_DIVISOR
             .saturating_mul(packet_count_u64)
             .max(1);
-    let partitions = identities
-        .iter()
-        .copied()
-        .zip(packets.into_iter().enumerate())
-        .map(|(identity, (ordinal, work))| MapPartition {
-            identity,
-            value: QueryPacketMapInput { ordinal, work },
-            read_keys: Vec::<u64>::new(),
-            write_keys: Vec::new(),
-            kernel_scratch_bytes: per_packet_ceiling,
-            max_result_bytes: per_packet_ceiling,
-        })
-        .collect();
-    let map = ExecutionMap::try_from_declared_partitions(identities, partitions)
-        .map_err(QueryReadExecutionStop::PacketAdmission)?;
-    match map.run(Some(lease), |input, context| {
-        context.checkpoint(0)?;
-        execute(&input.work, input.ordinal, per_packet_ceiling, context)
-    }) {
-        MapOutcome::Complete { values, report } => Ok((values, report)),
-        MapOutcome::Stopped {
-            boundary,
-            reason,
-            report,
-            ..
-        } => Err(QueryReadExecutionStop::PacketStopped {
-            boundary,
-            reason,
-            report,
-        }),
-    }
+    packet_identity::run_packets(packets, per_packet_ceiling, lease, execute)
 }

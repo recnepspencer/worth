@@ -26,6 +26,7 @@ mod reservation;
 mod retained;
 mod room;
 mod worker_context;
+mod worker_width;
 pub use array_backing::{ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter};
 pub use byte_backing::{ExecutionByteBuffer, ExecutionImmutableBytes};
 pub use fixed_backing::{
