@@ -3,18 +3,22 @@ use super::super::production_scope::{
     visit_field_in_scope, visit_impl_item_in_scope, visit_item_in_scope, visit_trait_item_in_scope,
     visit_variant_in_scope, ScopedVisitor,
 };
+use super::raw_kind_types::{Aliases, RAW};
 use proc_macro2::{Span, TokenStream, TokenTree};
 use std::collections::BTreeSet;
 use syn::spanned::Spanned;
 use syn::visit::{self, Visit};
-use syn::{ImplItem, Item, TraitItem, Type, UseTree};
+use syn::{ImplItem, Item, TraitItem, UseTree};
 
-const RAW: &str = "ExecutionAllocationDenialKind";
-
-pub(super) fn findings(items: &[Item]) -> BTreeSet<(String, usize)> {
+pub(super) fn findings(
+    items: &[Item],
+    aliases: &Aliases,
+    source: &str,
+) -> BTreeSet<(String, usize)> {
     let mut visitor = RawAccess {
-        scope: Vec::new(),
+        scope: aliases.namespace(source),
         found: BTreeSet::new(),
+        aliases,
     };
     for item in items {
         visitor.visit_item(item);
@@ -22,27 +26,49 @@ pub(super) fn findings(items: &[Item]) -> BTreeSet<(String, usize)> {
     visitor.found
 }
 
-struct RawAccess {
+struct RawAccess<'a> {
     scope: Vec<String>,
     found: BTreeSet<(String, usize)>,
+    aliases: &'a Aliases,
 }
 
-impl ScopedVisitor for RawAccess {
+impl ScopedVisitor for RawAccess<'_> {
     fn scope(&mut self) -> &mut Vec<String> {
         &mut self.scope
     }
 }
 
-impl RawAccess {
+impl RawAccess<'_> {
     fn refuse(&mut self, span: Span) {
         self.found
             .insert((self.scope.join("::"), span.start().line));
     }
 
-    fn qualified_access(&mut self, qself: Option<&syn::QSelf>, path: &syn::Path) {
+    fn qualified_access(&mut self, qself: Option<&syn::QSelf>, path: &syn::Path) -> bool {
         if let Some(qself) = qself {
-            if path.segments.len() > qself.position && raw_self_type(&qself.ty) {
+            if path.segments.len() > qself.position
+                && self.aliases.mentions_raw(&qself.ty, &self.scope)
+            {
                 self.refuse(qself.ty.span());
+                return true;
+            }
+        }
+        false
+    }
+
+    fn path_access(&mut self, path: &syn::Path) {
+        let mut prefix = syn::Path {
+            leading_colon: path.leading_colon,
+            segments: syn::punctuated::Punctuated::new(),
+        };
+        for segment in path
+            .segments
+            .iter()
+            .take(path.segments.len().saturating_sub(1))
+        {
+            prefix.segments.push(segment.clone());
+            if self.aliases.raw_path(&prefix, &self.scope) {
+                self.refuse(segment.ident.span());
             }
         }
     }
@@ -56,7 +82,51 @@ impl RawAccess {
             }
             return;
         }
+        // Expression arguments also own their descendants once parsed. This
+        // covers literal aliases in matches!, including nested macro calls.
+        if let Ok(expressions) = syn::parse::Parser::parse2(
+            syn::punctuated::Punctuated::<syn::Expr, syn::Token![,]>::parse_terminated,
+            tokens.clone(),
+        ) {
+            for expression in &expressions {
+                self.visit_expr(expression);
+            }
+            return;
+        }
         let tokens: Vec<_> = tokens.into_iter().collect();
+        // A macro DSL may not parse as items or expressions. Inspect complete
+        // type-path prefixes without visiting their groups: recursion below
+        // owns those groups, including any nested macro bodies.
+        if self.aliases.has_member_aliases()
+            || tokens
+                .iter()
+                .any(|t| matches!(t, TokenTree::Ident(i) if i == RAW))
+        {
+            for start in 0..tokens.len() {
+                if start > 0
+                    && matches!(&tokens[start - 1], TokenTree::Punct(p) if p.as_char() == ':')
+                {
+                    continue;
+                }
+                if !matches!(&tokens[start], TokenTree::Ident(_) | TokenTree::Punct(_)) {
+                    continue;
+                }
+                for end in start + 2..tokens.len() {
+                    if !matches!(&tokens[end], TokenTree::Ident(_))
+                        || !matches!(&tokens[end - 1], TokenTree::Punct(p) if p.as_char() == ':')
+                        || !matches!(&tokens[end - 2], TokenTree::Punct(p) if p.as_char() == ':')
+                    {
+                        continue;
+                    }
+                    let candidate = tokens[start..=end].iter().cloned().collect();
+                    if let Ok(path) = syn::parse2::<syn::TypePath>(candidate) {
+                        if !self.qualified_access(path.qself.as_ref(), &path.path) {
+                            self.path_access(&path.path);
+                        }
+                    }
+                }
+            }
+        }
         for window in tokens.windows(3) {
             if let [TokenTree::Ident(name), TokenTree::Punct(first), TokenTree::Punct(second)] =
                 window
@@ -74,7 +144,7 @@ impl RawAccess {
     }
 }
 
-impl<'ast> Visit<'ast> for RawAccess {
+impl<'ast> Visit<'ast> for RawAccess<'_> {
     fn visit_item(&mut self, item: &'ast Item) {
         visit_item_in_scope(self, item);
     }
@@ -91,24 +161,38 @@ impl<'ast> Visit<'ast> for RawAccess {
         visit_variant_in_scope(self, variant);
     }
     fn visit_path(&mut self, path: &'ast syn::Path) {
-        for segment in path
-            .segments
-            .iter()
-            .take(path.segments.len().saturating_sub(1))
-        {
-            if segment.ident == RAW {
-                self.refuse(segment.ident.span());
-            }
-        }
+        self.path_access(path);
         visit::visit_path(self, path);
     }
     fn visit_expr_path(&mut self, path: &'ast syn::ExprPath) {
-        self.qualified_access(path.qself.as_ref(), &path.path);
+        if self.qualified_access(path.qself.as_ref(), &path.path) {
+            return;
+        }
         visit::visit_expr_path(self, path);
     }
     fn visit_type_path(&mut self, path: &'ast syn::TypePath) {
-        self.qualified_access(path.qself.as_ref(), &path.path);
+        if self.qualified_access(path.qself.as_ref(), &path.path) {
+            return;
+        }
         visit::visit_type_path(self, path);
+    }
+    fn visit_pat_tuple_struct(&mut self, pat: &'ast syn::PatTupleStruct) {
+        if self.qualified_access(pat.qself.as_ref(), &pat.path) {
+            for elem in &pat.elems {
+                self.visit_pat(elem);
+            }
+        } else {
+            visit::visit_pat_tuple_struct(self, pat);
+        }
+    }
+    fn visit_pat_struct(&mut self, pat: &'ast syn::PatStruct) {
+        if self.qualified_access(pat.qself.as_ref(), &pat.path) {
+            for field in &pat.fields {
+                self.visit_field_pat(field);
+            }
+        } else {
+            visit::visit_pat_struct(self, pat);
+        }
     }
     fn visit_use_tree(&mut self, tree: &'ast UseTree) {
         match tree {
@@ -122,13 +206,13 @@ impl<'ast> Visit<'ast> for RawAccess {
         visit::visit_use_tree(self, tree);
     }
     fn visit_item_type(&mut self, item: &'ast syn::ItemType) {
-        if raw_self_type(&item.ty) {
+        if self.aliases.raw_type(&item.ty, &self.scope) {
             self.refuse(item.ident.span());
         }
         visit::visit_item_type(self, item);
     }
     fn visit_impl_item_type(&mut self, item: &'ast syn::ImplItemType) {
-        if raw_self_type(&item.ty) {
+        if self.aliases.raw_type(&item.ty, &self.scope) {
             self.refuse(item.ident.span());
         }
         visit::visit_impl_item_type(self, item);
@@ -137,33 +221,19 @@ impl<'ast> Visit<'ast> for RawAccess {
         if item
             .default
             .as_ref()
-            .is_some_and(|(_, ty)| raw_self_type(ty))
+            .is_some_and(|(_, ty)| self.aliases.raw_type(ty, &self.scope))
         {
             self.refuse(item.ident.span());
         }
         visit::visit_trait_item_type(self, item);
     }
     fn visit_item_impl(&mut self, item: &'ast syn::ItemImpl) {
-        if item.trait_.is_some() && raw_self_type(&item.self_ty) {
+        if item.trait_.is_some() && self.aliases.raw_type(&item.self_ty, &self.scope) {
             self.refuse(item.self_ty.span());
         }
         visit::visit_item_impl(self, item);
     }
     fn visit_macro(&mut self, mac: &'ast syn::Macro) {
         self.macro_access(mac.tokens.clone());
-    }
-}
-
-fn raw_self_type(ty: &Type) -> bool {
-    match ty {
-        Type::Path(path) => path
-            .path
-            .segments
-            .last()
-            .is_some_and(|segment| segment.ident == RAW),
-        Type::Reference(reference) => raw_self_type(&reference.elem),
-        Type::Paren(paren) => raw_self_type(&paren.elem),
-        Type::Group(group) => raw_self_type(&group.elem),
-        _ => false,
     }
 }

@@ -201,3 +201,79 @@ fn a_variant_import_in_an_inline_module_inside_a_macro_is_refused_once() {
 fn a_variant_import_in_a_nested_inline_module_is_refused() {
     assert!(refused("mod outer { mod inner { use worth_execution::ExecutionAllocationDenialKind::Cancelled; } }"));
 }
+
+#[test]
+fn a_transparent_alias_cannot_read_a_raw_variant() {
+    assert_raw_kind_diagnostics(
+        "type Id<T> = T; fn f() { let raw = Id::<ExecutionAllocationDenialKind>::Cancelled; }",
+        1,
+    );
+}
+
+#[test]
+fn an_alias_of_a_transparent_alias_is_raw_at_both_sites() {
+    assert_raw_kind_diagnostics("type Id<T> = T; type K = Id<ExecutionAllocationDenialKind>; fn f() { let raw = K::Cancelled; }", 2);
+}
+
+#[test]
+fn a_nested_qualified_self_cannot_recover_a_raw_variant() {
+    assert_raw_kind_diagnostics("fn f() { let raw = <<Vec<ExecutionAllocationDenialKind> as IntoIterator>::Item>::Cancelled; }", 1);
+}
+
+#[test]
+fn transparent_alias_chains_preserve_the_selected_parameter() {
+    assert_raw_kind_diagnostics("type Id<T> = T; type Through<U> = Id<U>; type Again<V> = Through<Id<V>>; fn f() { let raw = Again::<ExecutionAllocationDenialKind>::Cancelled; }", 1);
+}
+
+#[test]
+fn same_named_container_and_identity_aliases_keep_their_scopes() {
+    assert_raw_kind_diagnostics("mod identity { type Id<T> = T; fn f() { let raw = Id::<ExecutionAllocationDenialKind>::Cancelled; } } mod container { type Id<T> = Vec<T>; type Kinds = Id<ExecutionAllocationDenialKind>; struct Holder { kinds: Kinds } }", 1);
+}
+
+#[test]
+fn a_transparent_alias_in_another_file_is_still_raw() {
+    let mut source = graph("mod aliases; use aliases::Id; fn f() { let raw = Id::<ExecutionAllocationDenialKind>::Cancelled; }");
+    source.modules.insert(
+        vec!["aliases".into()],
+        ModuleNode {
+            relative_source: "src/aliases.rs".into(),
+            public_from_parent: false,
+            attributes: Vec::new(),
+            items: crate::source_syntax::parse_file("pub type Id<T> = T;")
+                .unwrap()
+                .items,
+        },
+    );
+    let diagnostics = check_graphs("crates/consumer", &[source]);
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(
+        diagnostics[0].code(),
+        crate::diagnostics::DiagnosticCode::Bc7010AllocationDenialPattern
+    );
+}
+
+#[test]
+fn a_literal_alias_read_inside_a_macro_is_refused_once() {
+    assert_raw_kind_diagnostics("type Id<T> = T; fn f() { matches!(kind, Id::<ExecutionAllocationDenialKind>::Cancelled); }", 1);
+}
+
+#[test]
+fn a_literal_alias_read_in_guarded_or_token_macro_syntax_is_refused_once() {
+    for source in [
+        "type Id<T> = T; fn f() { matches!(kind, Id::<ExecutionAllocationDenialKind>::Cancelled if guard); }",
+        "type Id<T> = T; fn f() { tokens!(Id::<ExecutionAllocationDenialKind>::Cancelled => value); }",
+    ] { assert_raw_kind_diagnostics(source, 1); }
+}
+
+#[test]
+fn qualified_self_tuple_and_struct_patterns_are_reads() {
+    for source in [
+        "fn f(k: ExecutionAllocationDenialKind) { match k { <ExecutionAllocationDenialKind>::Lease(_) => (), _ => () } }",
+        "fn f(k: ExecutionAllocationDenialKind) { match k { <ExecutionAllocationDenialKind>::Cancelled {} => (), _ => () } }",
+    ] { assert_raw_kind_diagnostics(source, 1); }
+}
+
+#[test]
+fn a_multiline_qualified_self_read_is_one_diagnostic() {
+    assert_raw_kind_diagnostics("fn f() { let raw = <\n<Vec<ExecutionAllocationDenialKind> as IntoIterator>::Item\n>::Cancelled; }", 1);
+}

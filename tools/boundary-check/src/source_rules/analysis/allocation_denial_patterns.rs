@@ -1,4 +1,6 @@
 //! Allocation request/physical classification belongs to Execution alone.
+mod alias_declarations;
+mod raw_kind_types;
 mod source;
 #[cfg(test)]
 mod tests;
@@ -99,8 +101,9 @@ fn check_graphs(crate_root: &str, graphs: &[ModuleGraph]) -> Vec<Diagnostic> {
         return Vec::new();
     }
     let mut found = BTreeSet::new();
+    let aliases = raw_kind_types::Aliases::from_graphs(graphs);
     for module in production_modules(graphs) {
-        for (item, line) in source::findings(module.items) {
+        for (item, line) in source::findings(module.items, &aliases, module.relative_source) {
             found.insert((module.relative_source, item, line));
         }
     }
