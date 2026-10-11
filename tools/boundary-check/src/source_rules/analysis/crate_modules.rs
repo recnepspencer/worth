@@ -230,7 +230,7 @@ fn parse_module_tree(
     modules: &mut BTreeMap<Vec<String>, ModuleNode>,
     descend: ModuleFilter<'_>,
 ) -> Result<(), String> {
-    let text = fs::read_to_string(source_path)
+    let text = crate::scan_profile::measure("Rust file read", || fs::read_to_string(source_path))
         .map_err(|e| format!("read {}: {e}", source_path.display()))?;
     let file: File = crate::source_syntax::parse_file(&text)
         .map_err(|e| format!("parse {}: {e}", source_path.display()))?;

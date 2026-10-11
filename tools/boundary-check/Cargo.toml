@@ -21,3 +21,8 @@ worth-harness = { path = "../../crates/worth-harness" }
 # even in the dev profile that `make boundary-check` uses.
 [profile.dev.package."*"]
 opt-level = 3
+
+# These tools run on every edit; retain debug assertions while optimizing them.
+[profile.dev]
+opt-level = 3
+debug-assertions = true

@@ -10,8 +10,10 @@ use proc_macro2::{Group, Ident, TokenStream, TokenTree};
 use quote::ToTokens;
 
 pub(crate) fn parse_file(source: &str) -> syn::Result<syn::File> {
-    let parsed = syn::parse_file(source)?;
-    syn::parse2(bare_identifiers(parsed.into_token_stream()))
+    crate::scan_profile::measure("Rust parse and raw normalization", || {
+        let parsed = syn::parse_file(source)?;
+        syn::parse2(bare_identifiers(parsed.into_token_stream()))
+    })
 }
 
 fn bare_identifiers(tokens: TokenStream) -> TokenStream {
