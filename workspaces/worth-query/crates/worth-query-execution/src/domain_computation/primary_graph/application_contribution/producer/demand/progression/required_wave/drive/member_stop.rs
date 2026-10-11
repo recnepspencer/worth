@@ -17,7 +17,7 @@ impl MemberStop {
         Self {
             index,
             stop,
-            recording: StopRecording(Recording::Member),
+            recording: StopRecording::member(),
         }
     }
     pub(super) fn checkpoint(
@@ -40,6 +40,9 @@ impl MemberStop {
 
 pub(super) struct StopRecording(Recording);
 impl StopRecording {
+    pub(super) fn member() -> Self {
+        Self(Recording::Member)
+    }
     pub(super) fn record_if_needed(
         self,
         registry: &WorthQueryOutputDemandRegistry,

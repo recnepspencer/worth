@@ -12,7 +12,9 @@ use super::queued::QueuedRequiredRoots;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 pub(super) mod canonical_apply;
+mod member_refusal;
 mod member_stop;
+use member_refusal::{RefusalCustody, RefusalEnd, RefusalRow, RefusingMember};
 mod readiness_collection;
 mod requested_refusal;
 mod wave_execution;
@@ -148,17 +150,19 @@ where
                     frontier.members[index].state = MemberState::Pending;
                 }
                 requested_refusal::RequestedRefusal::Unavailable => {
-                    recording.record_if_needed(&runtime.output_demands, member.key(), &stop);
-                    if member.caller {
-                        return Err(stop);
+                    let custody = if frontier.members[index].caller {
+                        RefusalCustody::Caller
+                    } else {
+                        RefusalCustody::Queue(&mut *queue_custody)
+                    };
+                    let ended = RefusingMember {
+                        registry: &runtime.output_demands,
+                        member: &mut frontier.members[index],
+                        row: RefusalRow::Member,
+                        custody,
                     }
-                    queue_custody.end_refused(&stop);
-                    frontier.members[index].state = MemberState::Pending;
-                    if matches!(
-                        stop.kind(),
-                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-                            | WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-                    ) {
+                    .end(stop, recording, queue, admission)?;
+                    if matches!(ended, RefusalEnd::QueueBudget) {
                         return canonical_apply::finish(
                             runtime,
                             demand,
@@ -168,9 +172,6 @@ where
                             performed,
                             admission,
                         );
-                    }
-                    if let Some(queued) = frontier.members[index].queued.take() {
-                        queue.hold_root(queued, Some(stop), admission)?;
                     }
                 }
             }
@@ -257,10 +258,35 @@ where
                 Ok(HeldUpstream::Unfinished) => {
                     frontier.members[index].state = MemberState::Pending
                 }
-                Err(stop) if frontier.members[index].caller => return Err(stop),
                 Err(stop) => {
-                    runtime.output_demands.record_required_stop(&head, &stop);
-                    frontier.members[index].state = MemberState::Pending;
+                    let custody = if frontier.members[index].caller {
+                        RefusalCustody::Caller
+                    } else {
+                        RefusalCustody::Queue(&mut *queue_custody)
+                    };
+                    let ended = RefusingMember {
+                        registry: &runtime.output_demands,
+                        member: &mut frontier.members[index],
+                        row: RefusalRow::HeldHead(&head),
+                        custody,
+                    }
+                    .end(
+                        stop,
+                        member_stop::StopRecording::member(),
+                        queue,
+                        admission,
+                    )?;
+                    if matches!(ended, RefusalEnd::QueueBudget) {
+                        return canonical_apply::finish(
+                            runtime,
+                            demand,
+                            &wave,
+                            &mut frontier,
+                            queue,
+                            performed,
+                            admission,
+                        );
+                    }
                 }
             }
         }
