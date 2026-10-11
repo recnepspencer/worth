@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::marker::PhantomData;
 
 mod adoption;
@@ -60,8 +60,8 @@ impl WorthQueryApplicationProgramInstallationDenial {
 
     /// Hands back the structured support refusal this denial was raised from.
     ///
-    /// Installation denials that never reached support admission — an
-    /// undeclared program binding, for one — carry no support reason, so a
+    /// Installation denials that never reached support admission (an
+    /// undeclared program binding, for one) carry no support reason, so a
     /// caller reading `None` learns that the refusal happened elsewhere rather
     /// than that the reason was lost.
     pub const fn support_denial(&self) -> Option<&WorthQueryProgramSupportDenial> {
@@ -316,7 +316,7 @@ where
 pub fn require_complete_program_binding_membership<Schema, Program>(
     program: &WorthQueryInstalledApplicationProgram<Schema, Program>,
     installed_schema: &crate::facade::WorthQueryInstalledApplicationSchema<Schema>,
-    output_source_bindings: &BTreeSet<std::any::TypeId>,
+    output_source_bindings: &HashSet<std::any::TypeId>,
 ) -> Result<(), WorthQueryApplicationProgramInstallationDenial>
 where
     Schema: ApplicationSchema,
@@ -325,7 +325,7 @@ where
         .actions()
         .iter()
         .filter_map(ApplicationActionDeclaration::mutation_binding_type)
-        .collect::<BTreeSet<_>>();
+        .collect::<HashSet<_>>();
     if let Some(binding) = installed_schema
         .installed_mutation_binding_inventory()
         .find(|binding| {

@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
 };
@@ -218,35 +219,34 @@ where
         installed.actions(),
         runtime.installed_conditionals.operation_types(),
     )?;
+    let mut seen_action_bindings = std::collections::HashSet::new();
     let action_bindings = installed
         .actions()
         .iter()
         .filter_map(|action| action.mutation_binding_type())
-        .collect::<std::collections::BTreeSet<_>>();
+        .map(TypeId::from)
+        .filter(|binding| seen_action_bindings.insert(*binding))
+        .collect::<Vec<_>>();
     runtime.program_required_operations.extend(
         installed
             .actions()
             .iter()
-            .map(|action| action.operation_type()),
+            .map(|action| TypeId::from(action.operation_type())),
     );
     runtime.program_required_operations.extend(
         runtime
             .installed_schema
             .installed_mutation_binding_inventory()
-            .filter(|binding| action_bindings.contains(&binding.binding_type()))
-            .map(|binding| binding.operation_type()),
+            .filter(|binding| action_bindings.contains(&TypeId::from(binding.binding_type())))
+            .map(|binding| TypeId::from(binding.operation_type())),
     );
     runtime
         .program_required_bindings
         .extend(action_bindings.iter().copied());
-    let mut output_source_bindings = std::collections::BTreeSet::new();
-    Program::Outputs::append_required_bindings(&mut output_source_bindings);
-    output_source_bindings.extend(installed.actions().iter().filter_map(|action| {
-        action
-            .required_output_source()
-            .then(|| action.mutation_binding_type())
-            .flatten()
-    }));
+    let output_source_bindings = super::output_roots::required_output_bindings::<
+        Schema,
+        Program::Outputs,
+    >(installed.actions());
     require_rostered_binding_membership(&runtime, &installed, &output_source_bindings)?;
     runtime
         .program_required_bindings
@@ -254,9 +254,15 @@ where
     Ok(WorthQueryProgramApplicationRuntime {
         runtime,
         program: installed,
-        connection_types: Program::Outputs::connection_types().into_boxed_slice(),
-        root_graph_types: Program::Outputs::root_graph_types().into_boxed_slice(),
-        output_source_bindings: output_source_bindings.into_iter().collect(),
+        connection_types: Program::Outputs::connection_types()
+            .into_iter()
+            .map(TypeId::from)
+            .collect(),
+        root_graph_types: Program::Outputs::root_graph_types()
+            .into_iter()
+            .map(TypeId::from)
+            .collect(),
+        output_source_bindings: output_source_bindings.into_boxed_slice(),
         action_bindings: action_bindings.into_iter().collect(),
         supported: supported.into_boxed_slice(),
     })
@@ -311,14 +317,26 @@ where
 fn require_rostered_binding_membership<Schema, Program>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     installed: &WorthQueryInstalledApplicationProgram<Schema, Program>,
-    output_source_bindings: &std::collections::BTreeSet<std::any::TypeId>,
+    output_source_bindings: &[TypeId],
 ) -> Result<(), WorthQueryInMemoryApplicationDenial>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
 {
-    let mut answered = output_source_bindings.clone();
+    let mut answered = output_source_bindings
+        .iter()
+        .copied()
+        .map(TypeId::into_external)
+        .collect::<std::collections::HashSet<_>>();
     if let Some(support) = runtime.installed_program_support() {
-        answered.extend(support.rostered_mutation_bindings());
+        answered.extend(
+            runtime
+                .installed_schema()
+                .installed_mutation_binding_inventory()
+                .filter(|binding| {
+                    support.acts_through_mutation_binding(binding.binding_type().into())
+                })
+                .map(|binding| binding.binding_type()),
+        );
     }
     worth_query_installation::facade::require_complete_program_binding_membership(
         installed,

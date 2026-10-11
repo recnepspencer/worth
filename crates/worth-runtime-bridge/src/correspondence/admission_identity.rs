@@ -41,15 +41,3 @@ impl Hash for BridgeCorrespondenceAdmissionIdentity {
         (Arc::as_ptr(&self.0) as usize).hash(state);
     }
 }
-
-impl PartialOrd for BridgeCorrespondenceAdmissionIdentity {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for BridgeCorrespondenceAdmissionIdentity {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (Arc::as_ptr(&self.0) as usize).cmp(&(Arc::as_ptr(&other.0) as usize))
-    }
-}

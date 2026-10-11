@@ -6,6 +6,7 @@ use super::reconstruction_authority::{
 };
 use crate::domain_computation::primary_graph::application_runtime::installation::ApplicationRuntimePublication;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::{collections::BTreeSet, marker::PhantomData, sync::Arc};
 use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
@@ -33,7 +34,7 @@ type InstalledOutputProducers<Schema> =
     super::super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>;
 struct ApplicationConditionalBindingScope {
     binding: WorthQueryPortableApplicationConditionalOperationBinding,
-    operation_type: std::any::TypeId,
+    operation_type: TypeId,
     node_identity: String,
     initial_binding_count: usize,
     initial_readiness_count: usize,

@@ -1,5 +1,5 @@
 use std::any::TypeId;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_program::{
@@ -17,6 +17,8 @@ mod admission_tests;
 mod compatibility_tests;
 #[cfg(test)]
 mod installation_denial_tests;
+#[cfg(test)]
+mod membership_tests;
 
 pub use admission::{WorthQueryProgramSupportAdmission, WorthQueryProgramSupportDenial};
 pub use compatibility::WorthQueryProgramRuleKey;
@@ -38,8 +40,8 @@ pub struct WorthQueryProgramSupportEntry {
     revision: ApplicationProgramRevision,
     identity: ApplicationProgramIdentity,
     rules: Box<[WorthQueryProgramRuleKey]>,
-    action_operations: Box<[TypeId]>,
-    mutation_bindings: Box<[TypeId]>,
+    action_operations: HashSet<TypeId>,
+    mutation_bindings: HashSet<TypeId>,
     semantic_description: ApplicationSemanticDescription,
     effectful_action_subjects: Box<[String]>,
     action_dependencies: Box<[WorthQueryProgramActionDependency]>,
@@ -62,8 +64,8 @@ impl WorthQueryProgramSupportEntry {
         revision: ApplicationProgramRevision,
         identity: ApplicationProgramIdentity,
         rules: BTreeSet<WorthQueryProgramRuleKey>,
-        action_operations: BTreeSet<TypeId>,
-        mutation_bindings: BTreeSet<TypeId>,
+        action_operations: HashSet<TypeId>,
+        mutation_bindings: HashSet<TypeId>,
         semantic_description: ApplicationSemanticDescription,
         effectful_action_subjects: BTreeSet<String>,
         action_dependencies: BTreeSet<WorthQueryProgramActionDependency>,
@@ -72,8 +74,8 @@ impl WorthQueryProgramSupportEntry {
             revision,
             identity,
             rules: rules.into_iter().collect(),
-            action_operations: action_operations.into_iter().collect(),
-            mutation_bindings: mutation_bindings.into_iter().collect(),
+            action_operations,
+            mutation_bindings,
             semantic_description,
             effectful_action_subjects: effectful_action_subjects.into_iter().collect(),
             action_dependencies: action_dependencies.into_iter().collect(),
@@ -90,14 +92,6 @@ impl WorthQueryProgramSupportEntry {
 
     pub fn rules(&self) -> &[WorthQueryProgramRuleKey] {
         &self.rules
-    }
-
-    pub fn action_operations(&self) -> &[TypeId] {
-        &self.action_operations
-    }
-
-    pub fn mutation_bindings(&self) -> &[TypeId] {
-        &self.mutation_bindings
     }
 
     pub fn semantic_description(&self) -> &ApplicationSemanticDescription {

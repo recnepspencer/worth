@@ -5,6 +5,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::{
     DemandAdmissionKind, RetainedOutputReadmissionSource,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl<Schema, Family> WorthQueryAdmittedOutputDemand<Schema, Family>
 where
@@ -56,7 +57,7 @@ where
         })?;
         let key = rejoined.key();
         if key.family_identity() != Family::IDENTITY
-            || entry.declaration.output_family_type != std::any::TypeId::of::<Family>()
+            || entry.declaration.output_family_type != TypeId::of::<Family>()
             || entry.declaration.identity != key.producer_identity()
             || !entry
                 .declaration

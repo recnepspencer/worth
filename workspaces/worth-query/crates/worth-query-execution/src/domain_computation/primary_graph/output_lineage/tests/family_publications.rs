@@ -5,6 +5,7 @@ use super::super::*;
 use super::{checkpoint_identity, source_facts};
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
 mod checkpoint_locator_copy;
@@ -63,9 +64,9 @@ impl Court {
             panic!("real child occurrence");
         };
         let mut lineage = WorthQueryApplicationOutputLineage::default();
-        lineage.fixture_binding(std::any::TypeId::of::<Initial>(), "Initial");
-        lineage.fixture_binding(std::any::TypeId::of::<OtherRole>(), "OtherRole");
-        lineage.fixture_binding(std::any::TypeId::of::<Preserve>(), "Preserve");
+        lineage.fixture_binding(TypeId::of::<Initial>(), "Initial");
+        lineage.fixture_binding(TypeId::of::<OtherRole>(), "OtherRole");
+        lineage.fixture_binding(TypeId::of::<Preserve>(), "Preserve");
 
         lineage.install_output_families(BTreeMap::from([(
             "family".to_owned().into(),

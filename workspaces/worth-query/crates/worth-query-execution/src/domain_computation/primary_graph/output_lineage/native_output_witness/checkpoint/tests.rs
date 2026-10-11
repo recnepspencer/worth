@@ -14,7 +14,8 @@ use crate::domain_computation::primary_graph::{
     },
     WorthQueryPrincipalResolutionMode,
 };
-use std::{any::TypeId, collections::BTreeMap};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::collections::BTreeMap;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, InternedString, LocatorAuthority,
 };

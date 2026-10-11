@@ -2,16 +2,19 @@
 //! admits exactly one physical authority for a process lifetime. Query's other
 //! unit-test owners have their own authority; this scope cannot replace it.
 use crate::domain_computation::primary_graph::application_attempt::{
-    provider_compare_denial::preparation_outcome::application_outcome,
-    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationCommitOutcome as Outcome,
+    provider_compare_denial::{control_stopped_outcome, provider_compare_denied},
+    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryProviderProgressionOutcome as Outcome,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
 };
-use std::{num::NonZeroUsize, sync::OnceLock, time::Instant};
+use crate::domain_computation::{
+    WorthQueryProviderCompareAndCommitDenial as Compare,
+    WorthQueryProviderSessionCommitStop as Stop,
+};
+use std::{num::NonZeroUsize, sync::OnceLock};
 use worth_execution::{
-    CancellationSource, CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
-    LeaseRequest,
+    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, LeaseRequest,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -135,13 +138,14 @@ pub(super) fn transaction(
     transaction
 }
 
-fn check_requests(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    request: LeaseRequest,
-    check: impl Fn(Outcome),
-) {
+fn check_requests(request: LeaseRequest, check: impl Fn(Outcome)) {
     let lease = authority().request_lease(request).unwrap();
-    check_lease(execution, &lease, |outcome, _| check(outcome));
+    let host = crate::test_request_policy::serial_request();
+    check_lease(
+        &worth_execution::ExecutionRequest::serial(&host),
+        &lease,
+        |outcome, _| check(outcome),
+    );
 }
 
 fn related_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
@@ -171,7 +175,7 @@ fn check_lease(
         .unwrap();
     let index = related_index(&runtime);
     let index = runtime.index_authority().build_for_commit_with_lease(
-        execution,
+        &worth_execution::ExecutionRequest::leased(lease),
         DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
@@ -185,13 +189,15 @@ fn check_lease(
     // Direct index building exercises leased owner work and the same typed
     // cause conversion as the bootstrap index-build boundary. RequestWorkBudget
     // creates one child lease, so the full policy lease is ancestor 1.
-    check(
-        application_outcome(super::relational_execution_stop(
-            cause,
-            denial.partition_identity,
-        )),
-        1,
-    );
+    let stop = super::relational_execution_stop(cause, denial.partition_identity);
+    let outcome = match stop {
+        Stop::PreEffectDenied(failure) => {
+            provider_compare_denied(Compare::ProviderSession(failure))
+        }
+        Stop::ControlStopped(stopped) => control_stopped_outcome(stopped),
+        _ => panic!("unexpected preparation stop"),
+    };
+    check(outcome, 1);
 
     let before = runtime
         .observe_branch(&runtime.main_branch_identity())
@@ -204,7 +210,14 @@ fn check_lease(
         )
         .expect_err("commit preparation refused");
     assert!(matches!(error, TransactionCommitError::Execution { .. }));
-    let outcome = application_outcome(super::transaction_commit_stop(error));
+    let stop = super::transaction_commit_stop(error);
+    let outcome = match stop {
+        Stop::PreEffectDenied(failure) => {
+            provider_compare_denied(Compare::ProviderSession(failure))
+        }
+        Stop::ControlStopped(stopped) => control_stopped_outcome(stopped),
+        _ => panic!("unexpected preparation stop"),
+    };
     let Outcome::Denied(denial) = &outcome else {
         panic!("preparation cause folded");
     };
@@ -225,7 +238,7 @@ fn check_lease(
 
 fn resource(stop: Outcome) -> Resource {
     let Outcome::Denied(failure) = stop else {
-        panic!("wrong provider stop: {stop:?}")
+        panic!("wrong provider stop")
     };
     let Kind::ExecutionResource { denial, .. } = failure.kind() else {
         panic!("lost resource cause")
@@ -234,56 +247,11 @@ fn resource(stop: Outcome) -> Resource {
 }
 
 #[test]
-fn cancellation_through_both_public_doors() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    in_isolated_process(
-        concat!(module_path!(), "::cancellation_through_both_public_doors"),
-        || {
-            let source = CancellationSource::new();
-            source.cancel();
-            let mut request = request(32 * 1024 * 1024, 1_000_000);
-            request.cancellation = source.token();
-            check_requests(execution, request, |stop| {
-                let Outcome::Denied(denial) = stop else {
-                    panic!("lost cancellation cause");
-                };
-                assert_eq!(denial.execution_denial_cause(), Some(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)));
-            });
-        },
-    );
-}
-
-#[test]
-fn deadline_through_both_public_doors() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    in_isolated_process(
-        concat!(module_path!(), "::deadline_through_both_public_doors"),
-        || {
-            let mut request = request(32 * 1024 * 1024, 1_000_000);
-            request.deadline = Some(Instant::now());
-            check_requests(execution, request, |stop| {
-                let Outcome::Denied(denial) = stop else {
-                    panic!("lost deadline cause");
-                };
-                assert_eq!(denial.execution_denial_cause(), Some(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut)));
-            });
-        },
-    );
-}
-
-#[test]
 fn work_through_both_public_doors() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     in_isolated_process(
         concat!(module_path!(), "::work_through_both_public_doors"),
         || {
-            check_requests(execution, request(32 * 1024 * 1024, 0), |stop| {
+            check_requests(request(32 * 1024 * 1024, 0), |stop| {
                 assert_eq!(resource(stop), Resource::WorkExhausted)
             });
         },
@@ -292,13 +260,10 @@ fn work_through_both_public_doors() {
 
 #[test]
 fn policy_memory_through_both_public_doors() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     in_isolated_process(
         concat!(module_path!(), "::policy_memory_through_both_public_doors"),
         || {
-            check_requests(execution, request(0, 1_000_000), |stop| {
+            check_requests(request(0, 1_000_000), |stop| {
                 let Outcome::Denied(failure) = stop else {
                     panic!("wrong policy stop")
                 };
@@ -321,9 +286,6 @@ fn policy_memory_through_both_public_doors() {
 
 #[test]
 fn process_memory_through_both_public_doors() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     in_isolated_process(
         concat!(module_path!(), "::process_memory_through_both_public_doors"),
         || {
@@ -331,7 +293,7 @@ fn process_memory_through_both_public_doors() {
                 .request_lease(request(64 * 1024 * 1024, 1_000_000))
                 .unwrap();
             let _held = competing.reserve_memory(64 * 1024 * 1024).unwrap();
-            check_requests(execution, request(32 * 1024 * 1024, 1_000_000), |stop| {
+            check_requests(request(32 * 1024 * 1024, 1_000_000), |stop| {
                 assert!(matches!(
                     resource(stop),
                     Resource::MemoryLimit {
@@ -345,7 +307,62 @@ fn process_memory_through_both_public_doors() {
     );
 }
 
-mod healthy_fixture_completes_both_leased_preparations;
+#[test]
+fn healthy_fixture_completes_both_leased_preparations() {
+    in_isolated_process(
+        concat!(
+            module_path!(),
+            "::healthy_fixture_completes_both_leased_preparations"
+        ),
+        || {
+            let runtime = RelationalRuntimeApi::builder()
+                .schema_registry(schema())
+                .build();
+            let created = transaction(&runtime, "source")
+                .commit(
+                    &worth_execution::ExecutionRequest::serial(
+                        &crate::test_request_policy::serial_request(),
+                    ),
+                    &runtime,
+                )
+                .unwrap();
+            let index = related_index(&runtime);
+            let lease = authority()
+                .request_lease(request(32 * 1024 * 1024, 1_000_000))
+                .unwrap();
+            let outcome = runtime.index_authority().build_for_commit_with_lease(
+                &worth_execution::ExecutionRequest::leased(&lease),
+                DerivedIndexBuildRequest {
+                    source_commit_id: created.commit.commit_id,
+                    branch_id: BranchId("main".to_owned()),
+                    index_ids: vec![index.index_id],
+                },
+                &lease,
+            );
+            assert!(outcome.execution_denial.is_none());
+            assert!(outcome.basis_denial.is_none());
+            assert!(outcome.failed_indexes.is_empty());
+            assert_eq!(outcome.generations.len(), 1);
+            let before = runtime
+                .observe_branch(&runtime.main_branch_identity())
+                .unwrap()
+                .0;
+            let _prepared = runtime
+                .prepare_branch_transaction(
+                    &worth_execution::ExecutionRequest::leased(&lease),
+                    transaction(&runtime, "target"),
+                )
+                .expect("the same fixture admits ordinary leased preparation");
+            assert_eq!(
+                runtime
+                    .observe_branch(&runtime.main_branch_identity())
+                    .unwrap()
+                    .0,
+                before
+            );
+        },
+    );
+}
 
 #[cfg(test)]
 mod custom_kernels;
@@ -353,3 +370,5 @@ mod custom_kernels;
 mod nested_leases;
 #[cfg(test)]
 mod result_ceiling;
+
+mod request_control;

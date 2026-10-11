@@ -1,7 +1,7 @@
 #[cfg(test)]
 use super::PreparedComputationCustody;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_runtime_world::facade::PlannedProductReferenceSuccessor;
 

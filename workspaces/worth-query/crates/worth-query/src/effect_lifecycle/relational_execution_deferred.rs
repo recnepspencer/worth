@@ -222,16 +222,23 @@ pub(super) fn publication_failure(
 fn allocation_failure(
     denial: &worth_execution::ExecutionAllocationDenial,
 ) -> RelationalEffectExecutionFailure {
-    use worth_execution::ExecutionAllocationDenialKind as Kind;
-    let control = match denial.kind() {
-        Kind::Cancelled => Some(super::EffectExecutionControlStopKind::Cancelled),
-        Kind::DeadlineElapsed => Some(super::EffectExecutionControlStopKind::TimedOut),
-        Kind::Layout
-        | Kind::Lease(_)
-        | Kind::Allocator
-        | Kind::CapacityMismatch
-        | Kind::WriteBeyondReserved
-        | Kind::IncompleteSeal => None,
+    use worth_execution::{
+        ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
+        WorkCeilingDenial as Request,
+    };
+    let control = match denial.classify() {
+        Class::Request(Request::Stopped(Stop::Cancelled)) => {
+            Some(super::EffectExecutionControlStopKind::Cancelled)
+        }
+        Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
+            Some(super::EffectExecutionControlStopKind::TimedOut)
+        }
+        Class::Request(Request::Admission(_))
+        | Class::Request(Request::Stopped(
+            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+        ))
+        | Class::Request(Request::Panicked)
+        | Class::Physical(_) => None,
     };
     if let Some(kind) = control {
         RelationalEffectExecutionFailure::ControlStopped {

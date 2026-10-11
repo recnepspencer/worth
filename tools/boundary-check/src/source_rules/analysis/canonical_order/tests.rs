@@ -40,23 +40,15 @@ fn equality_and_declared_identity_order_are_valid_counterparts() {
 }
 
 #[test]
-fn containers_need_an_exact_named_membership_contract() {
-    let source = "pub trait Roots { fn append_required_bindings(bindings: &mut BTreeSet<TypeId>); fn ordered(bindings: &mut BTreeSet<TypeId>); }";
-    let file = crate::source_syntax::parse_file(source).unwrap();
-    let found = findings(&[(
-        super::MEMBERSHIP_ONLY
-            .iter()
-            .find(|(_, item, _)| *item == "append_required_bindings")
-            .unwrap()
-            .0,
-        &file.items,
-    )]);
-    assert_eq!(found.len(), 1);
-    assert_eq!(found[0].item, "ordered");
-    assert_eq!(
-        rejects("struct Registry { members: BTreeMap<TypeId, usize> }"),
-        ["ordered container keyed by TypeId"]
-    );
+fn obsolete_membership_exceptions_no_longer_allow_ordered_type_ids() {
+    for (source, item) in [
+        ("src/domain_computation/primary_graph/output_lineage/family_selection/checkpoint_priors.rs", "checkpoint_prior_outputs"),
+        ("src/domain_computation/primary_graph/application_installation/program/output_roots.rs", "append_required_bindings"),
+        ("src/domain_computation/primary_graph/application_installation/program/construction.rs", "require_rostered_binding_membership"),
+    ] {
+        let file = crate::source_syntax::parse_file(&format!("fn {item}(keys: BTreeSet<TypeId>) {{}}" )).unwrap();
+        assert_eq!(findings(&[(source, &file.items)]).len(), 1, "{item} no longer needs permission");
+    }
 }
 
 #[test]
@@ -136,6 +128,54 @@ fn named_identity_lookup_orders_the_declaration() {
 }
 
 #[test]
+fn named_identity_exemption_refuses_each_near_miss() {
+    for source in [
+        include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/named_identity_two_arguments.rs"
+        ),
+        include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/named_identity_field_receiver.rs"
+        ),
+        include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/named_identity_beside_type_id.rs"
+        ),
+    ] {
+        assert_eq!(rejects(source), ["ordering expression names TypeId"]);
+    }
+}
+
+#[test]
+fn address_order_fixture_refuses_order_but_allows_equality_hashing() {
+    assert_eq!(
+        rejects(include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/address_order.rs"
+        )),
+        ["ordering impl reads an address"; 3]
+    );
+}
+
+#[test]
+fn address_spellings_cannot_hide_an_order() {
+    let fixture = crate::source_syntax::parse_file(include_str!(
+        "../../../../tests/fixtures/canonical_order_rules/address_spellings.rs"
+    ))
+    .unwrap();
+    for item in fixture.items {
+        let syn::Item::Mod(case) = item else {
+            panic!("one module per spelling")
+        };
+        let items = case.content.unwrap().1;
+        let found = findings(&[("src/ordinary.rs", &items)]);
+        assert_eq!(
+            found.len(),
+            1,
+            "{} must refuse exactly its address order",
+            case.ident
+        );
+    }
+}
+
+#[test]
 fn every_runtime_owner_is_in_scope() {
     let root =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");
@@ -150,4 +190,66 @@ fn every_runtime_owner_is_in_scope() {
     }
     governed.package = "worth-signal".to_owned();
     assert!(super::enforce(&governed, &graph).is_empty());
+}
+
+#[test]
+fn every_lower_owner_refuses_address_order() {
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");
+    let mut governed =
+        super::super::workspace_crates::discover_workspace_crates(&root, "workspaces/worth-query")
+            .unwrap()
+            .remove(0);
+    let mut graph = super::super::crate_modules::parse_crate_modules(&governed).unwrap();
+    graph.modules.values_mut().next().unwrap().items = crate::source_syntax::parse_file(
+        include_str!("../../../../tests/fixtures/canonical_order_rules/address_order.rs"),
+    )
+    .unwrap()
+    .items;
+    for package in super::ADDRESS_CRATES {
+        governed.package = (*package).into();
+        assert_eq!(super::enforce(&governed, &graph).len(), 3, "{package}");
+    }
+}
+
+#[test]
+fn address_setup_in_test_only_modules_does_not_relax_production_order() {
+    use super::super::crate_modules::ModuleNode;
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");
+    let governed =
+        super::super::workspace_crates::discover_workspace_crates(&root, "workspaces/worth-query")
+            .unwrap()
+            .remove(0);
+    let mut graph = super::super::crate_modules::parse_crate_modules(&governed).unwrap();
+    graph.modules.insert(
+        vec!["address_fixture".into()],
+        ModuleNode {
+            relative_source: "src/address_fixture.rs".into(),
+            public_from_parent: false,
+            attributes: Vec::new(),
+            items: crate::source_syntax::parse_file(include_str!(
+                "../../../../tests/fixtures/canonical_order_rules/address_order.rs"
+            ))
+            .unwrap()
+            .items,
+        },
+    );
+    for (declaration, expected) in [
+        ("#[cfg(test)] mod address_fixture;", 0),
+        ("mod address_fixture;", 3),
+        ("#[cfg(any(test, unix))] mod address_fixture;", 3),
+        (
+            "#[cfg(test)] mod address_fixture; #[cfg(not(test))] mod address_fixture;",
+            3,
+        ),
+    ] {
+        graph.modules.get_mut(&Vec::new()).unwrap().items =
+            crate::source_syntax::parse_file(declaration).unwrap().items;
+        assert_eq!(
+            super::enforce(&governed, &graph).len(),
+            expected,
+            "{declaration}"
+        );
+    }
 }

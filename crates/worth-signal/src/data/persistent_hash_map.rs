@@ -9,8 +9,6 @@ use std::sync::Arc;
 mod entry_handle;
 #[path = "persistent_hash_map/iteration.rs"]
 mod iteration;
-#[path = "persistent_hash_map/serialization.rs"]
-mod serialization;
 #[path = "persistent_hash_map/traits.rs"]
 mod traits;
 

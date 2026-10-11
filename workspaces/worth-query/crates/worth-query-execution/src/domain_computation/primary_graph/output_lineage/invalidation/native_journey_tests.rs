@@ -61,7 +61,8 @@ mod verified_current;
 #[path = "native_journey_tests/consumed_custody.rs"]
 mod consumed_custody;
 
-use std::{any::TypeId, collections::BTreeMap, sync::Arc};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::{collections::BTreeMap, sync::Arc};
 
 use im::OrdSet;
 use worth_foundational::facade::{

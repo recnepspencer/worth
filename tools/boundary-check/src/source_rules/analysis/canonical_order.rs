@@ -1,4 +1,5 @@
 //! Query and its runtime owners order declared identity, never Rust build identity.
+mod address_order;
 mod expression_identity;
 mod inventory;
 #[cfg(test)]
@@ -9,36 +10,25 @@ use crate::diagnostics::{Diagnostic, DiagnosticCode};
 
 const CRATES: &[&str] = &[
     "worth-query-execution",
+    "worth-query-installation",
     "worth-runtime-world",
     "worth-execution",
     "worth-runtime-bridge",
 ];
-
-/// Named exceptions are membership contracts, never permission to iterate for
-/// output, selection, or cost. Every exception names its membership consumer.
-const MEMBERSHIP_ONLY: &[(&str, &str, &str)] = &[
-    (
-        "src/domain_computation/primary_graph/output_lineage/family_selection/checkpoint_priors.rs",
-        "checkpoint_prior_outputs",
-        "membership only: installed bindings are queried by equality to validate checkpoint roles",
-    ),
-    (
-        "src/domain_computation/primary_graph/application_installation/program/output_roots.rs",
-        "append_required_bindings",
-        "membership only: public root vocabulary accumulates source binding membership",
-    ),
-    (
-        "src/domain_computation/primary_graph/application_installation/program/construction.rs",
-        "require_rostered_binding_membership",
-        "membership only: installation checks complete declared binding membership",
-    ),
+const ADDRESS_CRATES: &[&str] = &[
+    "worth-query-execution",
+    "worth-runtime-world",
+    "worth-execution",
+    "worth-runtime-bridge",
+    "worth-signal",
+    "worth-relational",
 ];
 
 pub(super) fn validate(root: &std::path::Path) -> Result<Vec<Diagnostic>, String> {
     let mut diagnostics = Vec::new();
     for workspace in ["", "workspaces/worth-query"] {
         for governed in super::workspace_crates::discover_workspace_crates(root, workspace)? {
-            if CRATES.contains(&governed.package.as_str()) {
+            if in_scope(&governed.package) {
                 let graph = super::crate_modules::parse_crate_modules(&governed)?;
                 diagnostics.extend(enforce(&governed, &graph));
             }
@@ -48,7 +38,7 @@ pub(super) fn validate(root: &std::path::Path) -> Result<Vec<Diagnostic>, String
 }
 
 fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
-    if !CRATES.contains(&governed.package.as_str()) {
+    if !in_scope(&governed.package) {
         return Vec::new();
     }
     let files: Vec<_> = graph
@@ -56,8 +46,21 @@ fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
         .values()
         .map(|module| (module.relative_source.as_str(), module.items.as_slice()))
         .collect();
-    findings(&files)
+    let address_files: Vec<_> = graph
+        .modules
+        .iter()
+        .filter(|(path, _)| !super::authority_import_explicitness::module_is_test_only(graph, path))
+        .map(|(_, module)| (module.relative_source.as_str(), module.items.as_slice()))
+        .collect();
+    collect_findings(&files, &address_files)
         .into_iter()
+        .filter(|finding| {
+            if address_order::is_finding(finding.reason) {
+                ADDRESS_CRATES.contains(&governed.package.as_str())
+            } else {
+                CRATES.contains(&governed.package.as_str())
+            }
+        })
         .map(|finding| {
             Diagnostic::new(
                 DiagnosticCode::Bc7009CanonicalOrder,
@@ -74,16 +77,20 @@ fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
         .collect()
 }
 
+fn in_scope(package: &str) -> bool {
+    CRATES.contains(&package) || ADDRESS_CRATES.contains(&package)
+}
+
+fn collect_findings(
+    files: &[(&str, &[syn::Item])],
+    address_files: &[(&str, &[syn::Item])],
+) -> Vec<inventory::Finding> {
+    let mut found = inventory::scan(files);
+    found.extend(address_order::scan(address_files));
+    found
+}
+
+#[cfg(test)]
 fn findings(files: &[(&str, &[syn::Item])]) -> Vec<inventory::Finding> {
-    inventory::scan(files)
-        .into_iter()
-        .filter(|finding| {
-            finding.reason != "ordered container keyed by TypeId"
-                || !MEMBERSHIP_ONLY.iter().any(|(source, item, reason)| {
-                    *source == finding.source
-                        && *item == finding.item
-                        && reason.starts_with("membership only:")
-                })
-        })
-        .collect()
+    collect_findings(files, files)
 }

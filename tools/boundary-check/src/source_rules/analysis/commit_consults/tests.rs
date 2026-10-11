@@ -18,6 +18,15 @@ fn graph(owner: &str, extra: Option<(&str, &str)>) -> ModuleGraph {
 }
 const VALID: &str = "fn consult_stage_control(request: &ExecutionRequest) { request.consult(); }";
 #[test]
+fn commit_consults_do_not_require_relational_in_an_unrelated_fixture() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/canonical_order_rules");
+    assert!(root.is_dir());
+    assert!(!root.join(super::CRATE).exists());
+    assert!(super::validate(&root).is_empty());
+}
+
+#[test]
 fn commit_consults_admit_only_the_named_stage_owner() {
     assert!(check_graphs(&[graph(
         VALID,

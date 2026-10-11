@@ -1,5 +1,6 @@
 //! Native negative completion of a fixed leaf root, never a partial output tree.
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputLeaf, ApplicationRequiredOutputRoot,
 };
@@ -10,7 +11,6 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
     /// No successful output or publication is created by this operation.
     pub fn finish_unavailable_program_output<Root>(
         &self,
-
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedProgramOutput<
@@ -32,19 +32,21 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
             + ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
-            Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "program-source-phase")),
-        };
-        let execution = &phase_request;
-
-        if !self.contains_output_root::<Root>() || demand.target_feature != std::any::TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>() {
+        if !self.contains_output_root::<Root>() || demand.target_feature != TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>() {
             return Err(WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand, "unavailable completion differs from the installed root"));
         }
         self.runtime.output_demands.validate_owned_root_kind(prepared,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(std::any::TypeId::of::<Root>()))?;
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()))?;
+        let execution = phase.execution_request_for(&self.runtime.product_runtime).map_err(|_| {
+            WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase,
+                ),
+                "program-source-phase",
+            )
+        })?;
         self.runtime.finish_unavailable_output_demand(
-            execution,
+            &execution,
             phase,
             &mut demand.admitted,
             prepared,

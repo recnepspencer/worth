@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::{
     tests::fixture::Account, WorthQueryApplicationOutputCorrespondence,
     WorthQueryApplicationOutputPosture,
 };
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_relational::facade::transactions::RecordRef;
 
 #[test]

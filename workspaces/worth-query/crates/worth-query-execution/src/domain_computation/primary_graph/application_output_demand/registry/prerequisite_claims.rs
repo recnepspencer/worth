@@ -65,11 +65,9 @@ impl RequiredOutputDemandContext {
             .map_err(|_| capacity_denial())?;
         admission
             .charge_external_work(
-                self.key()
-                    .producer
-                    .len()
-                    .checked_add(1)
-                    .ok_or_else(work_denial)? as u64,
+                super::key_comparison::comparison_work([self.key()])
+                    .ok_or_else(work_denial)?
+                    .maximum as u64,
             )
             .map_err(|_| work_denial())?;
         let owner = WorthQueryOutputDemandRegistry::clone(self.registry());
@@ -99,17 +97,11 @@ impl RequiredOutputDemandContext {
             admission,
             &mut predecessors,
         )?;
-        let maximum_key_work = predecessors
-            .iter()
-            .map(|key| key.producer.len())
-            .max()
-            .unwrap_or(0)
-            .checked_add(1)
-            .ok_or_else(work_denial)?;
-        let comparisons = count
-            .checked_mul(usize::BITS as usize - count.max(1).leading_zeros() as usize + 1)
-            .and_then(|visits| visits.checked_mul(maximum_key_work))
-            .ok_or_else(work_denial)?;
+        let predecessor_keys =
+            super::key_comparison::comparison_work(predecessors.iter().map(Arc::as_ref))
+                .ok_or_else(work_denial)?;
+        let maximum_key_work = predecessor_keys.maximum;
+        let comparisons = predecessor_keys.sort_bound(count).ok_or_else(work_denial)?;
         admission
             .charge_external_work(comparisons as u64)
             .map_err(|_| work_denial())?;
@@ -159,13 +151,10 @@ impl RequiredOutputDemandContext {
         admission
             .charge_external_work(prior_keys.len() as u64)
             .map_err(|_| work_denial())?;
-        let prior_key_work = prior_keys.iter().try_fold(0usize, |maximum, key| {
-            key.producer
-                .len()
-                .checked_add(1)
-                .map(|work| maximum.max(work))
-                .ok_or_else(work_denial)
-        })?;
+        let prior_key_work =
+            super::key_comparison::comparison_work(prior_keys.iter().map(Arc::as_ref))
+                .ok_or_else(work_denial)?
+                .maximum;
         let minimum_member_bytes = super::required_members::minimum_member_bytes()
             .filter(|bytes| *bytes != 0)
             .ok_or_else(work_denial)?;

@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::ApplicationSchema;
 
 mod fact_denial;
@@ -16,7 +17,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer: &str,
-        output_binding: std::any::TypeId,
+        output_binding: TypeId,
         expected_idempotency_key: [u8; 32],
         observed_source: &WorthQueryObservedSource<Query>,
         source_epoch: crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,

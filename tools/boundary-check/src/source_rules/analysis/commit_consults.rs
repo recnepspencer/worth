@@ -19,6 +19,11 @@ const ROOTS: [&str; 4] = [
 ];
 
 pub(super) fn validate(root: &Path) -> Vec<Diagnostic> {
+    // This rule owns Relational's commit paths, not unrelated workspace roots.
+    // A present but unreadable crate still reports the parsing failure below.
+    if !root.join(CRATE).exists() {
+        return Vec::new();
+    }
     match production_graphs(root, CRATE) {
         Ok(graphs) => check_graphs(&graphs),
         Err(error) => vec![diagnostic(
@@ -28,7 +33,7 @@ pub(super) fn validate(root: &Path) -> Vec<Diagnostic> {
     }
 }
 fn diagnostic(subject: impl Into<String>, message: impl Into<String>) -> Diagnostic {
-    Diagnostic::new(DiagnosticCode::Bc7010CommitRequestConsult, subject, message)
+    Diagnostic::new(DiagnosticCode::Bc7011CommitRequestConsult, subject, message)
 }
 fn covered(source: &str) -> bool {
     ROOTS.iter().any(|root| source.starts_with(root))

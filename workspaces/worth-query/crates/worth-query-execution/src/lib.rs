@@ -12,6 +12,7 @@
 
 mod basis;
 mod domain_computation;
+mod equality_type_id;
 mod execution_digest;
 mod relational_snapshot_release;
 
