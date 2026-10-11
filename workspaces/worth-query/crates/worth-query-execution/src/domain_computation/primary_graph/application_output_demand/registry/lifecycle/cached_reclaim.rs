@@ -153,19 +153,20 @@ impl DemandRegistryState {
             let retired_row = super::super::refreshed_rejoin::price_mutation(
                 self, admission, &walks,
             )?
-            .complete(|state, charge| {
+            .complete(|priced| {
                 for dependent in dependents {
-                    infallible(state.follow_newest(&dependent, &key, charge));
+                    priced.follow_newest(&dependent, &key);
                 }
                 // A claim that did not move still resolves through this row.
-                if state
+                if priced
+                    .state()
                     .records
                     .get(&key)
                     .is_some_and(|record| record.framework_required_count != 0)
                 {
                     return Ok(false);
                 }
-                claims.extend(infallible(state.retire_row(&key, retired, charge)));
+                claims.extend(priced.retire_row(&key, retired));
                 Ok(true)
             });
             if retired_row {
@@ -196,7 +197,7 @@ impl DemandRegistryState {
                 let mut prepaid =
                     charge_whole_map(&self.records, admission, WholeMapPasses::One, 0)
                         .map_err(|_| work_denial())?;
-                if !held_by_row(record) && !prepaid.stale_owner(key) {
+                if !held_by_row(record) && !prepaid.stale_owner(key)? {
                     return Ok(Some(key.clone()));
                 }
             } else if behind_ready.is_none()
@@ -207,8 +208,8 @@ impl DemandRegistryState {
                     charge_whole_map(&self.records, admission, WholeMapPasses::Two, 0)
                         .map_err(|_| work_denial())?;
                 if claimed_only(record)
-                    && !prepaid.stale_owner(key)
-                    && ready_at_newest(&self.records, prepaid.newest(key))
+                    && !prepaid.stale_owner(key)?
+                    && ready_at_newest(&self.records, prepaid.newest(key)?)
                 {
                     behind_ready = Some(key.clone());
                 }

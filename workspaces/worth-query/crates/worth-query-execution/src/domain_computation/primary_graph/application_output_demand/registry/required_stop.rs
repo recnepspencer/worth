@@ -140,7 +140,7 @@ pub(super) fn lineage_head(
         0,
     )
     .map_err(|_| work_denial())?;
-    Ok(Some(prepaid.newest(key).unwrap_or_else(|| key.clone())))
+    Ok(Some(prepaid.newest(key)?.unwrap_or_else(|| key.clone())))
 }
 
 /// Why the head row of a refresh lineage can never become Ready: the row

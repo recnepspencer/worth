@@ -8,7 +8,7 @@ use super::{
     WorthQueryOutputCheckpoint, WorthQueryOutputDemandKey,
 };
 
-type ReleasedPrerequisiteResources = (
+pub(super) type ReleasedPrerequisiteResources = (
     Vec<Arc<WorthQueryOutputDemandKey>>,
     Vec<(Arc<RecordedSettlementIdentity>, usize)>,
     Option<super::prerequisite_claims::CheckpointPrerequisiteClaims>,

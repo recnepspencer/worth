@@ -1,5 +1,4 @@
 mod drain;
-use super::refreshed_rejoin::infallible;
 use super::refreshed_rejoin::price_mutation;
 use std::sync::Arc;
 
@@ -243,7 +242,8 @@ impl DemandRegistryState {
             .chain(std::iter::once((head.as_ref().clone(), 1)))
             .collect();
         let priced = price_mutation(self, admission, &walks)?;
-        Ok(priced.complete(|state, charge| {
+        Ok(priced.complete(|priced| {
+            let state = priced.state_mut();
             let head = state.pending_cleanup_head.take().unwrap();
             let record = state.records.get_mut(head.as_ref()).unwrap();
             state.pending_cleanup_head = record.pending_cleanup_next.take();
@@ -253,14 +253,11 @@ impl DemandRegistryState {
                 && record.framework_required_count == 0
                 && record.prepared_prerequisite_claims == 0;
             let (released, settlements, checkpoint, release_refund) = if release {
-                infallible(state.release_record_prerequisites_detached(
-                    head.as_ref(),
-                    &mut retired_members,
-                    charge,
-                ))
+                priced.release_prerequisites_detached(head.as_ref(), &mut retired_members)
             } else {
                 (Vec::new(), Vec::new(), None, 0)
             };
+            let state = priced.state_mut();
             let (obligations, refund_obligation_bytes) = if release_obligations {
                 let record = state.records.get_mut(head.as_ref()).unwrap();
                 let refund = record.obligation_reserved_bytes();
@@ -269,9 +266,8 @@ impl DemandRegistryState {
             } else {
                 (Vec::new(), 0)
             };
-            let own_member = infallible(
-                state.remove_required_member_if_released_detached(head.as_ref(), charge),
-            );
+            let own_member = priced.release_member(head.as_ref());
+            let state = priced.state_mut();
             let refund_required_bytes = retained_key_bytes
                 .checked_add(release_refund)
                 .and_then(|bytes| bytes.checked_add(own_member.refund_required_bytes))

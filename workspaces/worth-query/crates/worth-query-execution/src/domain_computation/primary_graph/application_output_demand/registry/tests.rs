@@ -32,6 +32,7 @@ mod payer_mutation;
 mod payer_publication;
 mod performed_release;
 pub(super) mod post_commit_bounds;
+mod prepaid_passes;
 mod prerequisite_retry;
 mod ready_reuse;
 mod record_capacity;

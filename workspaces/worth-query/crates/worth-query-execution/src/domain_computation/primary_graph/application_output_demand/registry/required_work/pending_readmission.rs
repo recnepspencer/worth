@@ -175,7 +175,7 @@ fn ready_member(
             0,
         )
         .map_err(|_| work_denial())?;
-        if !prepaid.stale_owner(key) {
+        if !prepaid.stale_owner(key)? {
             return Ok(None);
         }
     }

@@ -37,7 +37,11 @@ impl WorthQueryOutputDemandRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut prepaid = charge_whole_map(&state.records, admission, WholeMapPasses::One, 4)?;
         let key = &interest.key;
-        if !state.records.get(key).is_some_and(only_joined) || prepaid.stale_owner(key) {
+        if !state.records.get(key).is_some_and(only_joined)
+            || prepaid
+                .stale_owner(key)
+                .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?
+        {
             return Ok(false);
         }
         let walks: Vec<_> = state.records[key]
@@ -48,8 +52,9 @@ impl WorthQueryOutputDemandRegistry {
         let (ready, readmission, claims, retired) =
             super::super::refreshed_rejoin::price_mutation(&mut state, admission, &walks)
                 .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?
-                .complete(|state, charge| {
-                    let claims = infallible(state.release_record_prerequisites(key, charge));
+                .complete(|priced| {
+                    let claims = priced.release_prerequisites(key);
+                    let state = priced.state_mut();
                     let record = state.records.get_mut(key).expect("the row was checked");
                     let ready = std::mem::replace(&mut record.state, DemandState::Admitted);
                     let readmission = record.readmission_source.take();

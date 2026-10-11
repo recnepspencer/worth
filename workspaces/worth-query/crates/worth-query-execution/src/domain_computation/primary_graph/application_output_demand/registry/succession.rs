@@ -112,10 +112,7 @@ impl super::WorthQueryOutputDemandRegistry {
             0,
         )
         .map_err(|_| work_denial())?;
-        let replaced = match replaced_ready_key(&state.records, key, &mut prepaid) {
-            Ok(replaced) => replaced,
-            Err(never) => match never {},
-        };
+        let replaced = prepaid.replaced_ready(key)?;
         Ok(state.revive_ready_at(replaced))
     }
 }
@@ -175,7 +172,7 @@ impl super::DemandRegistryState {
     }
 }
 
-fn replaced_ready_key<C: super::refreshed_rejoin::OccurrenceSearchCharge>(
+pub(super) fn replaced_ready_key<C: super::refreshed_rejoin::OccurrenceSearchCharge>(
     records: &super::record_map::DemandRecords,
     key: &super::WorthQueryOutputDemandKey,
     charge: &mut C,

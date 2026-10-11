@@ -92,7 +92,7 @@ impl WorthQueryOutputDemandRegistry {
                 0,
             )
             .map_err(|_| work_denial())?;
-            prepaid.stale_owner(key)
+            prepaid.stale_owner(key)?
         };
         let same_member = required
             && record

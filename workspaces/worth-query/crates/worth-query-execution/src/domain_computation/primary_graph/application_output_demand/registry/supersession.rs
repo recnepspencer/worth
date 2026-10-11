@@ -99,8 +99,9 @@ pub(super) fn supersede_predecessors(
                 .map(|upstream| (upstream.as_ref().clone(), 3))
         })
         .collect();
-    super::refreshed_rejoin::price_mutation(state, admission, &walks)?.complete(|state, charge| {
+    super::refreshed_rejoin::price_mutation(state, admission, &walks)?.complete(|priced| {
     for key in &keys {
+        let state = priced.state_mut();
         if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less) {
             let record = state.records.get_mut(key).expect("occurrence key exists");
             let denial = superseded_denial(&key.producer);
@@ -110,9 +111,10 @@ pub(super) fn supersede_predecessors(
             }
             record.performed_source = None;
             record.wake.notify();
-            infallible(state.release_record_prerequisites(key, charge));
+            priced.release_prerequisites(key);
         }
     }
+    let state = priced.state_mut();
     for key in keys {
         let record = state.records.get(&key).expect("occurrence key exists");
         let keep = &key == successor

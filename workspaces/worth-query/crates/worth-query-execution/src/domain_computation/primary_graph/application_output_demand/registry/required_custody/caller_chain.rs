@@ -14,9 +14,7 @@
 
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::super::refreshed_rejoin::{
-    charge_whole_map, occurrence_rows, superseded, WholeMapPasses,
-};
+use super::super::refreshed_rejoin::{charge_whole_map, superseded, WholeMapPasses};
 use super::super::{
     DemandRecord, DemandRegistryState, DemandState, WorthQueryOutputAdvancement,
     WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
@@ -63,23 +61,10 @@ impl DemandRegistryState {
         let rows = count(self.records.len())?;
         // The chain's occurrences, each named by one of its rows. Rows of one
         // occurrence are contiguous, so each is visited once.
-        let mut prepaid = charge_whole_map(&self.records, admission, WholeMapPasses::One, 0)?;
-        let mut chain = vec![key.clone()];
-        let mut next = 0;
-        while let Some(occurrence) = chain.get(next).cloned() {
-            next += 1;
-            let occurrence_rows = match occurrence_rows(&self.records, &occurrence, &mut prepaid) {
-                Ok(rows) => rows,
-                Err(never) => match never {},
-            };
-            for (_, record) in occurrence_rows {
-                for claimed in &record.prerequisites {
-                    if !chain.iter().any(|known| known.same_occurrence(claimed)) {
-                        chain.push(claimed.as_ref().clone());
-                    }
-                }
-            }
-        }
+        let prepaid = charge_whole_map(&self.records, admission, WholeMapPasses::One, 0)?;
+        let chain = prepaid
+            .chain(key)
+            .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
         let comparisons = rows
             .checked_mul(count(chain.len())?)
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;

@@ -24,6 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     'records,
 > {
     records: &'records DemandRecords,
+    remaining: u8,
 }
 
 /// Keep combined payments atomic, including the two-pass reclaim and the
@@ -38,39 +39,90 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 ) -> Result<PrepaidOccurrenceWalk<'records>, CompanionPreflightStop> {
     let rows =
         u64::try_from(records.len()).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
-    let rows = match passes {
-        WholeMapPasses::One => rows,
-        WholeMapPasses::Two => rows.saturating_mul(2),
+    let remaining = match passes {
+        WholeMapPasses::One => 1,
+        WholeMapPasses::Two => 2,
     };
+    let rows = rows.saturating_mul(u64::from(remaining));
     let work = rows
         .checked_add(additional_work)
         .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
     admission.charge_external_work(work)?;
-    Ok(PrepaidOccurrenceWalk { records })
+    Ok(PrepaidOccurrenceWalk { records, remaining })
 }
 
 impl PrepaidOccurrenceWalk<'_> {
+    fn take_pass(&mut self) -> Result<PaidPass<'_>, WorthQueryOutputDemandDenial> {
+        self.remaining = self.remaining.checked_sub(1).ok_or_else(work_denial)?;
+        Ok(PaidPass {
+            records: self.records,
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn stale_owner(
         &mut self,
         key: &WorthQueryOutputDemandKey,
-    ) -> bool {
-        match awaited_by_stale_owner(self.records, key, self) {
-            Ok(awaited) => awaited,
-            Err(never) => match never {},
-        }
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        let mut pass = self.take_pass()?;
+        Ok(super::infallible(awaited_by_stale_owner(
+            pass.records,
+            key,
+            &mut pass,
+        )))
     }
 
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn newest(
         &mut self,
         key: &WorthQueryOutputDemandKey,
-    ) -> Option<WorthQueryOutputDemandKey> {
-        match newest_matching_row(self.records, key, self, |candidate, _| {
-            refresh_order(candidate, key) == Some(std::cmp::Ordering::Greater)
-        }) {
-            Ok(newest) => newest,
-            Err(never) => match never {},
-        }
+    ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
+        let mut pass = self.take_pass()?;
+        Ok(super::infallible(newest_matching_row(
+            pass.records,
+            key,
+            &mut pass,
+            |candidate, _| refresh_order(candidate, key) == Some(std::cmp::Ordering::Greater),
+        )))
     }
+
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn replaced_ready(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+    ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
+        let mut pass = self.take_pass()?;
+        Ok(super::infallible(
+            super::super::succession::replaced_ready_key(pass.records, key, &mut pass),
+        ))
+    }
+
+    /// One consuming pass over disjoint occurrences, including their upstream
+    /// occurrences. A discovered occurrence enters the chain only once.
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn chain(
+        mut self,
+        key: &WorthQueryOutputDemandKey,
+    ) -> Result<Vec<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
+        let mut pass = self.take_pass()?;
+        let mut chain = vec![key.clone()];
+        let mut next = 0;
+        while let Some(occurrence) = chain.get(next).cloned() {
+            next += 1;
+            let rows =
+                super::infallible(super::occurrence_rows(pass.records, &occurrence, &mut pass));
+            for (_, record) in rows {
+                for claimed in &record.prerequisites {
+                    if !chain.iter().any(|known| known.same_occurrence(claimed)) {
+                        chain.push(claimed.as_ref().clone());
+                    }
+                }
+            }
+        }
+        Ok(chain)
+    }
+}
+
+// Only receipt methods may construct or use a paid pass. The records cannot
+// be supplied separately by a registry caller, or changed during the pass.
+struct PaidPass<'records> {
+    records: &'records DemandRecords,
 }
 
 pub(in crate::domain_computation::primary_graph::application_output_demand::registry) trait OccurrenceSearchCharge
@@ -110,7 +162,7 @@ impl OccurrenceSearchCharge for super::super::lifecycle::release::CleanupWalk {
     }
 }
 
-impl OccurrenceSearchCharge for PrepaidOccurrenceWalk<'_> {
+impl OccurrenceSearchCharge for PaidPass<'_> {
     type Refusal = Infallible;
 
     fn occurrence_path(&mut self, _: usize) -> Result<(), Self::Refusal> {

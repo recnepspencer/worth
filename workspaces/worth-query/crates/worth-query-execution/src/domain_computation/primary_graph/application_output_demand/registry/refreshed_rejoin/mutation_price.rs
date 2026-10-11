@@ -16,8 +16,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     charge: PricedMutationWalk,
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct PricedMutationWalk
-{
+struct PricedMutationWalk {
     paths: u64,
     rows: u64,
 }
@@ -70,12 +69,71 @@ impl PricedMutation<'_> {
         T,
     >(
         mut self,
-        operation: impl FnOnce(
-            &mut DemandRegistryState,
-            &mut PricedMutationWalk,
-        ) -> Result<T, Infallible>,
+        operation: impl FnOnce(&mut Self) -> Result<T, Infallible>,
     ) -> T {
-        infallible(operation(self.state, &mut self.charge))
+        infallible(operation(&mut self))
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn state(
+        &self,
+    ) -> &DemandRegistryState {
+        self.state
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn state_mut(
+        &mut self,
+    ) -> &mut DemandRegistryState {
+        self.state
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_prerequisites(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+    ) -> Vec<std::sync::Arc<WorthQueryOutputDemandKey>> {
+        infallible(
+            self.state
+                .release_record_prerequisites(key, &mut self.charge),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_prerequisites_detached(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+        members: &mut Vec<super::super::required_members::DetachedRequiredMember>,
+    ) -> super::super::obligations::ReleasedPrerequisiteResources {
+        infallible(
+            self.state
+                .release_record_prerequisites_detached(key, members, &mut self.charge),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_member(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+    ) -> super::super::required_members::DetachedRequiredMember {
+        infallible(
+            self.state
+                .remove_required_member_if_released_detached(key, &mut self.charge),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn follow_newest(
+        &mut self,
+        dependent: &WorthQueryOutputDemandKey,
+        upstream: &WorthQueryOutputDemandKey,
+    ) -> Option<WorthQueryOutputDemandKey> {
+        infallible(
+            self.state
+                .follow_newest(dependent, upstream, &mut self.charge),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn retire_row(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+        retired: &mut Vec<super::super::DemandRecord>,
+    ) -> Vec<std::sync::Arc<WorthQueryOutputDemandKey>> {
+        infallible(self.state.retire_row(key, retired, &mut self.charge))
     }
 }
 

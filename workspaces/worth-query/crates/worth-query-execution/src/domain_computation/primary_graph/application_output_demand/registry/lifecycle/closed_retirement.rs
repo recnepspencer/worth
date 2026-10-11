@@ -71,7 +71,9 @@ impl DemandRegistryState {
 
     /// Remove `key`'s row with its claims, which it returns. A superseded
     /// row first hands its settlements to the newest row of its occurrence.
-    pub(super) fn retire_row<C: OccurrenceSearchCharge>(
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn retire_row<
+        C: OccurrenceSearchCharge,
+    >(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         retired: &mut Vec<DemandRecord>,
@@ -135,7 +137,9 @@ impl DemandRegistryState {
     /// Move `dependent`'s claim on `upstream` to the newest row of its
     /// occurrence when `upstream` is superseded, its own demands closed, and
     /// that newest row settled Ready. Returns the row the claim left.
-    pub(super) fn follow_newest<C: OccurrenceSearchCharge>(
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn follow_newest<
+        C: OccurrenceSearchCharge,
+    >(
         &mut self,
         dependent: &WorthQueryOutputDemandKey,
         upstream: &WorthQueryOutputDemandKey,
