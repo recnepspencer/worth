@@ -19,6 +19,18 @@ pub(in super::super) struct PaidCheckpointStage<'a, Schema: ApplicationSchema> {
 }
 
 impl<Schema: ApplicationSchema + 'static> RequiredFreshProgress<Schema> {
+    fn advance_checkpoint(
+        &mut self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        request: &WorthQueryRequestScope,
+        paid: PaidCheckpointAdvance<'_>,
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        self.successor
+            .advance_checkpoint(phase, runtime, request, paid)
+    }
+
     pub(in super::super) fn checkpoint<'a>(
         &'a mut self,
         admission: &'a mut InvalidationEditAdmission,
@@ -56,9 +68,9 @@ impl<Schema: ApplicationSchema + 'static> PaidCheckpointStage<'_, Schema> {
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        self.work.advance(|admission| {
+        self.work.advance(|paid| {
             self.progress
-                .advance_checkpoint(phase, runtime, request, admission)
+                .advance_checkpoint(phase, runtime, request, paid)
         })
     }
 }
@@ -82,6 +94,16 @@ fn inspect_checkpoint<'a, T>(
         None => CheckpointInspection::Awaiting(work),
     })
 }
+/// The raw successor consumes this grant; only the paid stage can issue it.
+pub(super) struct PaidCheckpointAdvance<'a> {
+    admission: &'a mut InvalidationEditAdmission,
+}
+impl<'a> PaidCheckpointAdvance<'a> {
+    pub(super) fn into_admission(self) -> &'a mut InvalidationEditAdmission {
+        self.admission
+    }
+}
+
 struct CheckpointWork<'a> {
     admission: &'a mut InvalidationEditAdmission,
     refusal: Refusal,
@@ -96,14 +118,14 @@ impl<'a> CheckpointWork<'a> {
     }
     fn advance(
         self,
-        advance: impl FnOnce(
-            &mut InvalidationEditAdmission,
-        ) -> Result<bool, WorthQueryOutputDemandDenial>,
+        advance: impl FnOnce(PaidCheckpointAdvance<'_>) -> Result<bool, WorthQueryOutputDemandDenial>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         self.admission
             .charge_external_work(1)
             .map_err(self.refusal)?;
-        advance(self.admission)
+        advance(PaidCheckpointAdvance {
+            admission: self.admission,
+        })
     }
 }
 
@@ -170,5 +192,36 @@ mod tests {
             .is_err());
         assert!(!advanced, "an unfunded stage performs no checkpoint work");
         assert_eq!(two.charged_work(), 2);
+    }
+    #[test]
+    fn an_unfunded_checkpoint_turn_never_inspects_or_advances_the_successor() {
+        let required_turns = 3;
+        let paid_turns = required_turns - 1;
+        let mut admission = admission(paid_turns * (2 + 1));
+        let mut inspections = 0;
+        let mut completed = 0;
+        let refusal = super::super::super::progression::admission_denial;
+        let stop = loop {
+            let paid = match inspect_checkpoint::<()>(&mut admission, refusal, |_| {
+                inspections += 1;
+                Ok(None)
+            }) {
+                Ok(CheckpointInspection::Awaiting(paid)) => paid,
+                Ok(CheckpointInspection::Current(())) => panic!("all three stages were declared"),
+                Err(stop) => break stop,
+            };
+            paid.advance(|_| {
+                completed += 1;
+                Ok(true)
+            })
+            .unwrap();
+        };
+        assert_eq!(stop.kind(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded);
+        assert_eq!(completed, paid_turns);
+        assert_eq!(
+            inspections, paid_turns,
+            "the unfunded third turn performs no lookup"
+        );
+        assert_eq!(admission.charged_work(), paid_turns * (2 + 1));
     }
 }

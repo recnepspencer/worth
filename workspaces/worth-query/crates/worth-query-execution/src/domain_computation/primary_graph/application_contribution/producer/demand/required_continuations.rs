@@ -37,6 +37,7 @@ use crate::domain_computation::primary_graph::{
     output_lineage::invalidation::InvalidationEditAdmission,
     WorthQueryApplicationProjection, WorthQueryPrimaryGraphApplicationRuntime,
 };
+use wave_checkpoint::PaidCheckpointAdvance;
 pub(super) use wave_checkpoint::WaveCheckpointTurn;
 pub(super) use wave_preparation::PreparedContinuationWave;
 use worth_query_admission::facade::authenticated_principal::{
@@ -80,7 +81,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
-        admission: &mut InvalidationEditAdmission,
+        paid: PaidCheckpointAdvance<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial>;
     /// Run the successor's own row again under the authority that issued it.
     fn resume(
@@ -210,8 +211,9 @@ where
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
-        admission: &mut InvalidationEditAdmission,
+        paid: PaidCheckpointAdvance<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        let admission = paid.into_admission();
         let demand = self
             .demand
             .as_mut()

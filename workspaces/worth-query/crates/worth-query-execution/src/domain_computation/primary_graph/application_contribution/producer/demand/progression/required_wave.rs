@@ -173,7 +173,9 @@ fn foreign_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-fn admission_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn admission_denial(
+    stop: CompanionPreflightStop,
+) -> WorthQueryOutputDemandDenial {
     use CompanionPreflightStop as Stop;
     match stop {
         Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => work_denial(),

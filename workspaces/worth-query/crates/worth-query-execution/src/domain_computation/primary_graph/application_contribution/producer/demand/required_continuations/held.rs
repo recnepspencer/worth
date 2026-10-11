@@ -239,10 +239,14 @@ where
             )?;
         }
         loop {
-            if let Some(ready) = registry.interest_ready_readmission(self.interest(), admission)? {
-                return Ok(Some(ready));
-            }
-            if !self.advance_checkpoint(phase, runtime, request, admission)? {
+            let stage = match self
+                .checkpoint(admission, super::super::progression::admission_denial)
+                .inspect(registry)?
+            {
+                WaveCheckpointTurn::Current(ready) => return Ok(Some(ready)),
+                WaveCheckpointTurn::Awaiting(stage) => stage,
+            };
+            if !stage.advance(phase, runtime, request)? {
                 return Ok(None);
             }
         }

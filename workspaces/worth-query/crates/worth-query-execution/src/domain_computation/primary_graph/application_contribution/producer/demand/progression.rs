@@ -22,6 +22,7 @@ mod refresh;
 mod rejoin;
 mod required_fresh;
 mod required_wave;
+pub(super) use required_wave::admission_denial;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::{DecisionInput, PerformedMembers, SelectedDecisionInput};
 mod retained_read;
 pub(in crate::domain_computation::primary_graph) use required_wave::{

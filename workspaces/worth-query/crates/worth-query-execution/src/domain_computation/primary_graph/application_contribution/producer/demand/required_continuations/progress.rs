@@ -1,7 +1,6 @@
 //! Borrow the exact successor and predecessor while caller custody is live.
 
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 impl<Schema> RequiredFreshProgress<Schema>
 where
@@ -19,18 +18,6 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn producer_contacts(&self) -> usize {
         self.successor.producer_contacts()
-    }
-
-    pub(super) fn advance_checkpoint(
-        &mut self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        request: &WorthQueryRequestScope,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        self.successor
-            .advance_checkpoint(phase, runtime, request, admission)
     }
 
     pub(in crate::domain_computation::primary_graph) fn is_family<Family>(&self) -> bool
