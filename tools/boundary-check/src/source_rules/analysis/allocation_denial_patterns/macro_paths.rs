@@ -1,9 +1,12 @@
 //! Recognize paths in macro DSL fragments, with disjoint token ownership.
-use proc_macro2::TokenTree;
+use proc_macro2::{Spacing, TokenTree};
+
+use super::raw_kind_types::RAW;
 
 pub(super) enum Fragment {
     Path(syn::TypePath),
     Group(proc_macro2::TokenStream),
+    RawMember(proc_macro2::Span),
 }
 
 pub(super) fn scan(tokens: &[TokenTree], mut path: impl FnMut(Fragment)) -> usize {
@@ -12,6 +15,16 @@ pub(super) fn scan(tokens: &[TokenTree], mut path: impl FnMut(Fragment)) -> usiz
     let mut angles = 0usize;
     for (index, token) in tokens.iter().enumerate() {
         operations += 1;
+        if let TokenTree::Ident(name) = token {
+            if name == RAW {
+                operations += 2;
+                if tokens.get(index + 1).is_some_and(colon)
+                    && tokens.get(index + 2).is_some_and(colon)
+                {
+                    path(Fragment::RawMember(name.span()));
+                }
+            }
+        }
         if let TokenTree::Group(group) = token {
             path(Fragment::Group(group.stream()));
         }
@@ -31,11 +44,19 @@ pub(super) fn scan(tokens: &[TokenTree], mut path: impl FnMut(Fragment)) -> usiz
                 angles -= 1;
                 true
             }
-            TokenTree::Punct(_) if angles > 0 => true,
-            TokenTree::Punct(_) if colon(token) => {
-                tokens.get(index + 1).is_some_and(colon)
-                    || index.checked_sub(1).is_some_and(|i| colon(&tokens[i]))
+            // Neither delimiter belongs to a type argument. In particular, an
+            // unclosed comparison angle must not absorb the next DSL entry.
+            TokenTree::Punct(p) if p.as_char() == ';' => false,
+            TokenTree::Punct(p)
+                if p.as_char() == '='
+                    && tokens.get(index + 1).is_some_and(
+                        |next| matches!(next, TokenTree::Punct(p) if p.as_char() == '>'),
+                    ) =>
+            {
+                false
             }
+            TokenTree::Punct(_) if angles > 0 => true,
+            TokenTree::Punct(_) if colon(token) => path_colon(tokens, index),
             _ => false,
         };
         if continues {
@@ -64,6 +85,15 @@ fn finish(candidate: &mut Vec<TokenTree>, path: &mut impl FnMut(Fragment), opera
 
 fn colon(token: &TokenTree) -> bool {
     matches!(token, TokenTree::Punct(p) if p.as_char() == ':')
+}
+
+fn path_colon(tokens: &[TokenTree], index: usize) -> bool {
+    matches!(&tokens[index], TokenTree::Punct(p) if p.spacing() == Spacing::Joint)
+        && tokens.get(index + 1).is_some_and(colon)
+        || index.checked_sub(1).is_some_and(|previous| {
+            matches!(&tokens[previous], TokenTree::Punct(p)
+                if p.as_char() == ':' && p.spacing() == Spacing::Joint)
+        })
 }
 
 #[cfg(test)]

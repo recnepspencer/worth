@@ -101,6 +101,7 @@ impl RawAccess<'_> {
         // A DSL fragment owns each token group once; path candidates are
         // disjoint, rather than reparsing every possible start/end pair.
         super::macro_paths::scan(&tokens, |fragment| match fragment {
+            super::macro_paths::Fragment::RawMember(span) => self.refuse(span),
             super::macro_paths::Fragment::Path(path) => {
                 if !self.qualified_access(path.qself.as_ref(), &path.path) {
                     self.path_access(&path.path);

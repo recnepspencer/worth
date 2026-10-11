@@ -295,3 +295,19 @@ fn paths_past_types_mentioning_raw_are_reads() {
 fn a_descendants_nominal_type_shadows_an_ancestor_alias() {
     assert_raw_kind_diagnostics("type K = ExecutionAllocationDenialKind; mod child { struct K; impl K { fn new() -> Self { Self } } fn f() { K::new(); } }", 1);
 }
+
+#[test]
+fn an_unclosed_angle_in_a_macro_cannot_hide_a_raw_kind_path() {
+    assert_raw_kind_diagnostics(
+        "fn f() { tokens!(a < b; ExecutionAllocationDenialKind::Cancelled => value); }",
+        1,
+    );
+}
+
+#[test]
+fn a_label_before_a_leading_path_in_a_macro_cannot_hide_a_raw_kind_path() {
+    assert_raw_kind_diagnostics(
+        "fn f() { tokens!(kind: ::worth_execution::ExecutionAllocationDenialKind::Cancelled => value); }",
+        1,
+    );
+}
