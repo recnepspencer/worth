@@ -194,7 +194,12 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut released_bytes = 0;
-        let replaced = refreshed_rejoin::replaced_under_refresh(&state.records, &interest.key);
+        let replaced = state
+            .records
+            .get(&interest.key)
+            .is_some_and(DemandRecord::has_cached_ready)
+            && refreshed_rejoin::replaced_under_refresh(&state.records, &interest.key);
+        let mut retirement = None;
         let remove = state.records.get_mut(&interest.key).is_some_and(|record| {
             record.interests = record.interests.saturating_sub(1);
             if interest.requires_output {
@@ -204,9 +209,11 @@ impl WorthQueryOutputDemandRegistry {
             // Source supersession and occurrence retirement remove it; closing
             // the handle releases only the caller's interest.
             let ready = record.has_cached_ready();
-            let stopped = matches!(record.state, DemandState::Failed(_))
-                || matches!(&record.state, DemandState::Output(output)
-                    if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. }));
+            retirement = match record.idle_disposition() {
+                IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => None,
+                IdleRowDisposition::Retired(reason) => Some(reason),
+            };
+            let stopped = retirement.is_some_and(RowRetirement::releases_finished_work);
             if stopped && record.interests == 0 && !record.pending_cleanup_queued {
                 released_bytes += record.release_obligations();
             }
@@ -218,25 +225,9 @@ impl WorthQueryOutputDemandRegistry {
                 && !(ready && replaced)
                 && record.performed_obligations.is_empty()
                 && record.performed_source.is_none()
-                && match &record.state {
-                    DemandState::Scheduling | DemandState::Running => false,
-                    DemandState::Output(output) => {
-                        matches!(
-                            output.advancement,
-                            WorthQueryOutputAdvancement::Stopped { .. }
-                        ) || matches!(
-                            output.checkpoint,
-                            Some(WorthQueryOutputCheckpoint::Ready(_))
-                        )
-                    }
-                    _ => true,
-                }
+                && retirement.is_some()
         });
-        let terminal = state.records.get(&interest.key).is_some_and(|record| {
-            matches!(record.state, DemandState::Failed(_))
-                || matches!(&record.state, DemandState::Output(output)
-                    if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. }))
-        });
+        let terminal = retirement.is_some_and(RowRetirement::releases_finished_work);
         let released_prerequisites =
             terminal.then(|| state.release_record_prerequisites(&interest.key));
         if remove {
@@ -263,7 +254,7 @@ impl WorthQueryOutputDemandRegistry {
             .and_then(DemandRecord::take_unawaited_reopened);
         // A closing stale owner may have been the last one awaiting the
         // newest row of its occurrence.
-        if terminal {
+        if matches!(retirement, Some(RowRetirement::Finished)) {
             if let Some(newest) =
                 refreshed_rejoin::newest_of_occurrence(&state.records, &interest.key)
             {
@@ -276,20 +267,32 @@ impl WorthQueryOutputDemandRegistry {
             .saturating_sub(released_bytes);
         // The closing row, each upstream its released claims leave unheld,
         // and each row it replaced, keeps only what it can still answer for.
-        let candidates = std::iter::once(interest.key.clone())
-            .chain(
-                released_prerequisites
-                    .iter()
-                    .flatten()
-                    .map(|upstream| upstream.as_ref().clone()),
-            )
-            .chain(refreshed_rejoin::replaced_by_published(
-                &state.records,
-                &interest.key,
-            ))
-            .collect();
-        let (retired, released_claims) = state.retire_closed_rows(candidates);
-        state.prune_completed_custody();
+        let (retired, released_claims) = match retirement {
+            Some(RowRetirement::AbandonedPublication) => {
+                // Only this row and its own claims close in Drop. Unheld
+                // upstreams were queued by release_record_prerequisites;
+                // their retirement is paid by the next admission.
+                (Vec::new(), Vec::new())
+            }
+            Some(RowRetirement::Unstarted | RowRetirement::Finished) | None => {
+                let candidates = std::iter::once(interest.key.clone())
+                    .chain(
+                        released_prerequisites
+                            .iter()
+                            .flatten()
+                            .map(|upstream| upstream.as_ref().clone()),
+                    )
+                    .chain(refreshed_rejoin::replaced_by_published(
+                        &state.records,
+                        &interest.key,
+                    ))
+                    .collect();
+                state.retire_closed_rows(candidates)
+            }
+        };
+        if !matches!(retirement, Some(RowRetirement::AbandonedPublication)) {
+            state.prune_completed_custody();
+        }
         drop(state);
         drop(retired);
         drop(released_claims);

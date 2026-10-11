@@ -127,3 +127,96 @@ impl Drop for RequiredWorkQueue {
         }
     }
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+impl<Schema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    #[doc(hidden)]
+    pub fn queued_required_work_for_test(&self) -> usize {
+        let queue = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .required_work_queue
+            .clone();
+        queue.map_or(0, |queue| queue.queued_count())
+    }
+
+    /// Scan oracle for the Published rows and their actual remaining owners.
+    #[doc(hidden)]
+    pub fn published_required_rows_for_test(&self) -> Vec<(String, usize, bool, String)> {
+        let state = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state
+            .records
+            .iter()
+            .filter_map(|(key, record)| {
+                let super::super::DemandState::Output(output) = &record.state else {
+                    return None;
+                };
+                matches!(
+                    output.checkpoint,
+                    Some(super::super::WorthQueryOutputCheckpoint::Published { .. })
+                )
+                .then(|| {
+                    (
+                        format!("{key:?}"),
+                        record.interests,
+                        record.held_successor.is_some(),
+                        format!(
+                            "framework={}, prepared={}, cleanup={}, obligations={}, source={}",
+                            record.framework_required_count,
+                            record.prepared_prerequisite_claims,
+                            record.pending_cleanup_queued,
+                            record.performed_obligations.len(),
+                            record.performed_source.is_some(),
+                        ),
+                    )
+                })
+            })
+            .collect()
+    }
+
+    /// Exact issued row keys queued for this root, retained before an advance.
+    #[doc(hidden)]
+    pub fn queued_required_rows_for_root_for_test(
+        &self,
+        root: worth_relational::facade::identity::EntityId,
+    ) -> Vec<String> {
+        let queue = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .required_work_queue
+            .clone();
+        let Some(queue) = queue else {
+            return Vec::new();
+        };
+        let queue = queue
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cursor = queue.head.as_ref().map(Arc::clone);
+        let mut keys = Vec::new();
+        while let Some(member) = cursor {
+            if member.key().source_epoch().root_entity_for_test() == root {
+                keys.push(format!("{:?}", member.key()));
+            }
+            cursor = member
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .next
+                .as_ref()
+                .map(Arc::clone);
+        }
+        keys.sort();
+        keys
+    }
+}

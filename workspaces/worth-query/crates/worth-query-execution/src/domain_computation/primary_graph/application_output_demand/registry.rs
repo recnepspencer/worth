@@ -138,6 +138,8 @@ pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identit
 mod admission;
 mod checkpoint;
 mod cleanup;
+mod disposition;
+use disposition::{IdleRowDisposition, RowRetirement};
 mod held_successor;
 mod lifecycle;
 mod notifications;

@@ -1,0 +1,69 @@
+//! Whether a row still owes work, keeps an answer, or can retire.
+use super::{DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint};
+
+pub(super) enum IdleRowDisposition {
+    InFlight,
+    KeptAnswer,
+    Retired(RowRetirement),
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum RowRetirement {
+    Unstarted,
+    Finished,
+    AbandonedPublication,
+}
+
+impl DemandRecord {
+    /// Checkpoints still owned by an interest await that owner's entry. Once
+    /// its last interest closes, an undelivered checkpoint answers nobody.
+    /// Holds from claims, cleanup and performed sources are checked separately.
+    pub(super) fn idle_disposition(&self) -> IdleRowDisposition {
+        use IdleRowDisposition::{InFlight, KeptAnswer, Retired};
+        match &self.state {
+            DemandState::Scheduling | DemandState::Running => InFlight,
+            DemandState::Admitted | DemandState::Scheduled => {
+                if self.interests == 0 {
+                    Retired(RowRetirement::Unstarted)
+                } else {
+                    InFlight
+                }
+            }
+            DemandState::Failed(_) => Retired(RowRetirement::Finished),
+            DemandState::Output(output) => match &output.advancement {
+                WorthQueryOutputAdvancement::Claimed(_) => InFlight,
+                WorthQueryOutputAdvancement::Stopped { .. } => Retired(RowRetirement::Finished),
+                WorthQueryOutputAdvancement::Idle => match &output.checkpoint {
+                    Some(WorthQueryOutputCheckpoint::Ready(_)) => KeptAnswer,
+                    Some(
+                        WorthQueryOutputCheckpoint::Published { .. }
+                        | WorthQueryOutputCheckpoint::Delivered { .. },
+                    ) => {
+                        if self.interests == 0 {
+                            Retired(RowRetirement::AbandonedPublication)
+                        } else {
+                            InFlight
+                        }
+                    }
+                    None => {
+                        if self.interests == 0 {
+                            Retired(RowRetirement::Unstarted)
+                        } else {
+                            InFlight
+                        }
+                    }
+                },
+            },
+        }
+    }
+}
+
+impl RowRetirement {
+    /// An unstarted row still owes any performed operation that holds it.
+    pub(super) fn releases_finished_work(self) -> bool {
+        match self {
+            Self::Unstarted => false,
+            Self::Finished | Self::AbandonedPublication => true,
+        }
+    }
+}

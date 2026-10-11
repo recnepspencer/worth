@@ -253,20 +253,3 @@ pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {
         "selected required-work lookup exceeds request work",
     )
 }
-
-#[cfg(feature = "test-query-execution-observer")]
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
-    #[doc(hidden)]
-    pub fn queued_required_work_for_test(&self) -> usize {
-        let queue = self
-            .output_demands
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .required_work_queue
-            .clone();
-        queue.map_or(0, |queue| queue.queued_count())
-    }
-}

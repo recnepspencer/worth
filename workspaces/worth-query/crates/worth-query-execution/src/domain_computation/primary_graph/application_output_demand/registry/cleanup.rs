@@ -1,7 +1,9 @@
+mod drain;
 use std::sync::Arc;
 
 use super::{
-    DemandRecord, DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
+    DemandRecord, DemandRegistryState, IdleRowDisposition, WorthQueryOutputDemandKey,
+    WorthQueryOutputDemandRegistry,
 };
 use crate::domain_computation::primary_graph::output_lineage::invalidation::{
     InvalidationEditAdmission, SourceInvalidationOwner,
@@ -21,8 +23,12 @@ impl DemandRegistryState {
         let Some(record) = self.records.get_mut(key.as_ref()) else {
             return false;
         };
-        if !record.terminal()
-            || record.framework_required_count != 0
+        match record.idle_disposition() {
+            IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => return false,
+            IdleRowDisposition::Retired(reason) if reason.releases_finished_work() => {}
+            IdleRowDisposition::Retired(_) => return false,
+        }
+        if record.framework_required_count != 0
             || record.prepared_prerequisite_claims != 0
             || record.pending_cleanup_queued
             || (record.prerequisites.capacity() == 0
@@ -87,10 +93,15 @@ impl DemandRegistryState {
             .records
             .get(head.as_ref())
             .expect("queued row stays retained");
-        let release_obligations = record.terminal()
-            && record.framework_required_count == 0
-            && record.prepared_prerequisite_claims == 0
-            && record.performed_obligations.capacity() != 0;
+        let release_obligations = match record.idle_disposition() {
+            IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => false,
+            IdleRowDisposition::Retired(reason) => {
+                reason.releases_finished_work()
+                    && record.framework_required_count == 0
+                    && record.prepared_prerequisite_claims == 0
+                    && record.performed_obligations.capacity() != 0
+            }
+        };
         if release_obligations {
             let slot = std::mem::size_of::<super::PerformedOutputObligation>();
             let destruction = record
@@ -235,9 +246,14 @@ impl DemandRegistryState {
         self.pending_cleanup_head = record.pending_cleanup_next.take();
         record.pending_cleanup_queued = false;
         let retained_key_bytes = std::mem::take(&mut record.pending_cleanup_key_bytes);
-        let release = record.terminal()
-            && record.framework_required_count == 0
-            && record.prepared_prerequisite_claims == 0;
+        let release = match record.idle_disposition() {
+            IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => false,
+            IdleRowDisposition::Retired(reason) => {
+                reason.releases_finished_work()
+                    && record.framework_required_count == 0
+                    && record.prepared_prerequisite_claims == 0
+            }
+        };
         let (released, settlements, checkpoint, release_refund) = if release {
             self.release_record_prerequisites_detached(head.as_ref(), &mut retired_members)
         } else {
@@ -261,11 +277,16 @@ impl DemandRegistryState {
             .and_then(|bytes| bytes.checked_add(own_member.refund_required_bytes))
             .expect("admitted terminal cleanup charge fits");
         let removed = if self.records.get(head.as_ref()).is_some_and(|record| {
-            record.terminal()
-                && record.interests == 0
-                && !record.is_required()
-                && record.performed_source.is_none()
-                && !record.pending_cleanup_queued
+            match record.idle_disposition() {
+                IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => false,
+                IdleRowDisposition::Retired(reason) => {
+                    reason.releases_finished_work()
+                        && record.interests == 0
+                        && !record.is_required()
+                        && record.performed_source.is_none()
+                        && !record.pending_cleanup_queued
+                }
+            }
         }) {
             self.records.remove(head.as_ref())
         } else {
@@ -304,74 +325,6 @@ struct RetiredTerminalCleanup {
     _member: Option<Arc<super::required_work::RequiredWorkMembership>>,
     refund_required_bytes: usize,
     refund_obligation_bytes: usize,
-}
-
-impl WorthQueryOutputDemandRegistry {
-    /// Released settlements leave the invalidation owner too, with every
-    /// upstream row only they still held.
-    pub(super) fn drain_terminal_cleanup_admitted(
-        &self,
-        owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let mut entry_paid = false;
-        loop {
-            let retired = {
-                let mut state = self
-                    .state
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                state.take_terminal_cleanup_step(admission, entry_paid)?
-            };
-            let Some(mut retired) = retired else {
-                return Ok(());
-            };
-            let refund = retired.refund_required_bytes;
-            let obligation_refund = retired.refund_obligation_bytes;
-            let released = std::mem::take(&mut retired._settlements);
-            drop(retired);
-            let mut state = self
-                .state
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            state.required_reserved_bytes = state.required_reserved_bytes.saturating_sub(refund);
-            state.obligation_reserved_bytes = state
-                .obligation_reserved_bytes
-                .saturating_sub(obligation_refund);
-            entry_paid = true;
-            drop(state);
-            self.retire_released_settlements(released, owner);
-        }
-    }
-}
-
-#[cfg(test)]
-impl DemandRegistryState {
-    pub(super) fn drain_terminal_cleanup(
-        &mut self,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let mut entry_paid = false;
-        while let Some(retired) = self.take_terminal_cleanup_step(admission, entry_paid)? {
-            let refund = retired.refund_required_bytes;
-            let obligation_refund = retired.refund_obligation_bytes;
-            drop(retired);
-            self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(refund);
-            self.obligation_reserved_bytes = self
-                .obligation_reserved_bytes
-                .saturating_sub(obligation_refund);
-            entry_paid = true;
-        }
-        Ok(())
-    }
-}
-
-impl DemandRecord {
-    pub(super) fn terminal(&self) -> bool {
-        matches!(&self.state, super::DemandState::Failed(_))
-            || matches!(&self.state, super::DemandState::Output(output)
-                if matches!(output.advancement, super::WorthQueryOutputAdvancement::Stopped { .. }))
-    }
 }
 
 fn key_work(key: &WorthQueryOutputDemandKey) -> Result<u64, WorthQueryOutputDemandDenial> {

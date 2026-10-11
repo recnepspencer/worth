@@ -14,7 +14,9 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::super::refreshed_rejoin::{awaited_by_stale_owner, newest_of_occurrence, superseded};
-use super::super::{DemandRecord, DemandRegistryState, WorthQueryOutputDemandKey};
+use super::super::{
+    DemandRecord, DemandRegistryState, IdleRowDisposition, WorthQueryOutputDemandKey,
+};
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
 type Records = super::super::record_map::DemandRecords;
@@ -55,7 +57,12 @@ impl DemandRegistryState {
             let Some(record) = self.records.get(&key) else {
                 continue;
             };
-            if !record.terminal() || held(&self.records, &key, record) {
+            match record.idle_disposition() {
+                IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => continue,
+                IdleRowDisposition::Retired(reason) if reason.releases_finished_work() => {}
+                IdleRowDisposition::Retired(_) => continue,
+            }
+            if held(&self.records, &key, record) {
                 continue;
             }
             let released = self.retire_row(&key, &mut retired);

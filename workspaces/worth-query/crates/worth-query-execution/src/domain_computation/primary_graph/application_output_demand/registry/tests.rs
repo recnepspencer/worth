@@ -27,6 +27,7 @@ mod demand_key;
 mod local_work;
 mod performed_release;
 mod prerequisite_retry;
+mod published_retirement;
 mod ready_reuse;
 mod record_capacity;
 mod recovery_posture;
