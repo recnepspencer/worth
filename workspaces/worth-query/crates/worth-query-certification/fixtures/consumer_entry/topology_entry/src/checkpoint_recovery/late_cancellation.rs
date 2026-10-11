@@ -1,7 +1,7 @@
 //! A request stopped while waiting for the real final Product read cannot publish.
 
 use super::*;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandProgress,
     WorthQueryOutputSettlementPosture,
@@ -42,10 +42,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
         .execute()
         .unwrap();
     let cancellation = authentication::WorthQueryCancellationSource::new();
-    let cancelled_scope = authentication::WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(30),
-        cancellation.token(),
-    );
+    let cancelled_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
     let cancellable_request = application.request(&principal, &cancelled_scope);
     let mut demand = cancellable_request
         .demand(PlanarOutputDemand::new("anchor-a"))

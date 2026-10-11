@@ -202,7 +202,9 @@ pub(super) fn observe_case(
             ScopeInterruption::Deadline => Interrupt::QueryDeadline {
                 root,
                 earlier,
-                deadline: scope.deadline(),
+                deadline: scope
+                    .deadline()
+                    .expect("this case supplies a query deadline"),
             },
         });
     }

@@ -69,7 +69,7 @@ impl<'a> QueryRequestExecution<'a> {
         request: &'a WorthQueryRequestScope,
     ) -> Self {
         let cancellation = request.cancellation().execution_token();
-        let deadline = Some(request.deadline());
+        let deadline = request.deadline();
         Self::open_control(placement, cancellation, deadline)
     }
 

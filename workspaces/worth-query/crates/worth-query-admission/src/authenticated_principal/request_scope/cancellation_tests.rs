@@ -52,3 +52,17 @@ fn cancelling_the_request_cancels_the_execution_token_it_hands_out() {
     assert!(execution.is_cancelled());
     assert!(token.execution_token().is_cancelled());
 }
+
+#[test]
+fn a_request_without_a_deadline_still_honors_cancellation() {
+    let source = WorthQueryCancellationSource::new();
+    let request = WorthQueryRequestScope::new(None, source.token());
+    assert_eq!(request.deadline(), None);
+    assert_eq!(request.interruption(), None);
+    assert!(request.same_request(&request.clone()));
+    source.cancel();
+    assert_eq!(
+        request.interruption(),
+        Some(WorthQueryRequestInterruption::Cancelled)
+    );
+}

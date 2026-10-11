@@ -214,7 +214,7 @@ pub(in crate::domain_computation::primary_graph) fn with_serial_host_advancement
 ) -> Result<R, WorthQueryAdvancementDenial> {
     let _custody = OpeningCustody::enter()?;
     let cancellation = request.cancellation().execution_token();
-    let deadline = Some(request.deadline());
+    let deadline = request.deadline();
     let execution = QueryRequestExecution {
         cancellation: cancellation.clone(),
         deadline,

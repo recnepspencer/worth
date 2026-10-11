@@ -37,9 +37,13 @@ impl ValidationRequestControl {
         {
             cancellation.0.cancel();
         }
+        let relational = RelationalOperationControl::from(cancellation.0.token());
+        let relational = match request.deadline() {
+            Some(deadline) => relational.with_deadline(deadline),
+            None => relational,
+        };
         Self {
-            relational: RelationalOperationControl::from(cancellation.0.token())
-                .with_deadline(request.deadline()),
+            relational,
             _registration: registration,
         }
     }

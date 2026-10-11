@@ -82,10 +82,8 @@ fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
     }
     if cancel_decision {
         let cancellation = authentication::WorthQueryCancellationSource::new();
-        let cancelled_scope = authentication::WorthQueryRequestScope::new(
-            std::time::Instant::now() + std::time::Duration::from_secs(120),
-            cancellation.token(),
-        );
+        let cancelled_scope =
+            authentication::WorthQueryRequestScope::new(None, cancellation.token());
         super::super::binding::cancel_during_next_decision("diamond-join", cancellation);
         let cancelled = application.request(&principal, &cancelled_scope);
         let stopped = join.advance(&cancelled);

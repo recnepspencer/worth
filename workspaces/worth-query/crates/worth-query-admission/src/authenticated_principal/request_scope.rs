@@ -127,19 +127,23 @@ impl Drop for WorthQueryCancellationFuture<'_> {
 
 #[derive(Clone)]
 pub struct WorthQueryRequestScope {
-    deadline: Instant,
+    deadline: Option<Instant>,
     cancellation: WorthQueryCancellationToken,
 }
 
 impl WorthQueryRequestScope {
-    pub fn new(deadline: Instant, cancellation: WorthQueryCancellationToken) -> Self {
+    /// A request may be cancellation-only; `None` supplies no wall-clock deadline.
+    pub fn new(
+        deadline: impl Into<Option<Instant>>,
+        cancellation: WorthQueryCancellationToken,
+    ) -> Self {
         Self {
-            deadline,
+            deadline: deadline.into(),
             cancellation,
         }
     }
 
-    pub fn deadline(&self) -> Instant {
+    pub fn deadline(&self) -> Option<Instant> {
         self.deadline
     }
 
@@ -148,13 +152,16 @@ impl WorthQueryRequestScope {
     }
 
     pub fn remaining(&self) -> Option<Duration> {
-        self.deadline.checked_duration_since(Instant::now())
+        self.deadline?.checked_duration_since(Instant::now())
     }
 
     pub fn interruption(&self) -> Option<WorthQueryRequestInterruption> {
         if self.cancellation.is_cancelled() {
             Some(WorthQueryRequestInterruption::Cancelled)
-        } else if Instant::now() >= self.deadline {
+        } else if self
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
+        {
             Some(WorthQueryRequestInterruption::DeadlineExceeded)
         } else {
             None

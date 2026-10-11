@@ -81,7 +81,7 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
     ) -> Result<R, WorthQueryAdvancementDenial> {
         self.open_host_advancement(
             request.cancellation().execution_token(),
-            Some(request.deadline()),
+            request.deadline(),
             body,
         )
     }

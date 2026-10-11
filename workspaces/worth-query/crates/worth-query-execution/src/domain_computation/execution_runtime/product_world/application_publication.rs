@@ -75,7 +75,7 @@ impl WorthQueryProductPublicationBinding {
             self.observation().clone(),
             intent,
             control.cancellation(),
-            Some(control.deadline()),
+            control.deadline(),
         )?;
         Ok(WorthQueryPreparedCombinedProductPublication {
             publication: self.publication().clone(),

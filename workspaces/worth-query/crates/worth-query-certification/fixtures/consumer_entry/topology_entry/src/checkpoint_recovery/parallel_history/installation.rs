@@ -5,7 +5,7 @@ use std::{
     future::Future,
     pin::pin,
     task::{Context, Poll, Waker},
-    time::{Duration, Instant, SystemTime},
+    time::{Duration, SystemTime},
 };
 use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::{
@@ -112,10 +112,8 @@ where
     Program: ApplicationProgramDefinition<Schema>,
 {
     let cancellation = authentication::WorthQueryCancellationSource::new();
-    let scope = authentication::WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(120),
-        cancellation.token(),
-    );
+    // Fixture law: a request carries a deadline only when the deadline is the fact under test.
+    let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
     let adapter = authentication::admit_authentication_adapter(
         application.installed_schema(),
         authentication::WorthQueryAuthenticationAdapterAdmission::new(

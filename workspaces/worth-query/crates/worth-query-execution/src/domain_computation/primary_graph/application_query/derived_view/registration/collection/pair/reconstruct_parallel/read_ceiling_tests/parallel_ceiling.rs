@@ -47,7 +47,7 @@ fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
             .request_lease(worth_execution::LeaseRequest {
                 policy: test_policy(NonZeroUsize::new(workers).unwrap(), 16 << 20),
                 cancellation: scope.cancellation().execution_token(),
-                deadline: Some(scope.deadline()),
+                deadline: scope.deadline(),
             })
             .unwrap();
         let request = worth_execution::ExecutionRequest::leased(&lease);
