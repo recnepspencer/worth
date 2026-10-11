@@ -30,8 +30,13 @@ pub(crate) fn active_serial_memory() -> Option<SerialMemoryBudget> {
 pub(crate) fn active_stop() -> Option<KernelStop> {
     ACTIVE_METER.with(|active| {
         let active = active.borrow();
-        let meter = active.last()?.borrow();
-        meter.limits.safe_point().err().or_else(|| {
+        let mut meter = active.last()?.borrow_mut();
+        let KernelMeter {
+            limits,
+            nested_stop,
+            ..
+        } = &mut *meter;
+        limits.safe_point(nested_stop).err().or_else(|| {
             (meter.checkpoint_stop == Some(KernelStop::WorkCeiling))
                 .then_some(KernelStop::WorkCeiling)
         })
