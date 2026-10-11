@@ -55,3 +55,45 @@ fn scope_follows_both_packetization_and_packet_execution() {
         "record byte width is not worker width"
     );
 }
+
+#[test]
+fn module_level_machine_facts_cannot_hide_in_constants_or_macros() {
+    for source in [
+        "static WIDTH: std::sync::LazyLock<usize> = std::sync::LazyLock::new(|| std::thread::available_parallelism().unwrap().get());",
+        "const MAX_WORKERS: usize = 4;",
+        "const WIDTH: usize = 4;",
+        "macro_rules! packet_names { () => { std::thread::available_parallelism() }; }",
+    ] {
+        let found = diagnostics(source);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].code(), DiagnosticCode::Bc7011PacketIdentity);
+    }
+    assert!(diagnostics("fn schedule_query_packets(width: usize) { use std::thread::available_parallelism; available_parallelism(); }").is_empty());
+}
+
+#[test]
+fn the_naming_signature_has_only_the_canonical_partition_set() {
+    let source = format!("{READER}query_execution/leased_map/packet_identity.rs");
+    for (signature, count) in [
+        ("fn identities(packets: &[PacketizedQueryWork]) {}", 0),
+        (
+            "fn identities(packets: &[PacketizedQueryWork], hidden: usize) {}",
+            1,
+        ),
+        ("fn identities(packets: &Lease) {}", 1),
+        ("fn identities(packets: &mut [PacketizedQueryWork]) {}", 1),
+    ] {
+        let file = crate::source_syntax::parse_file(signature).unwrap();
+        let found = findings(&source, &file.items);
+        let diagnostics: Vec<_> = found
+            .into_iter()
+            .map(|(_, item, reason)| {
+                Diagnostic::new(DiagnosticCode::Bc7011PacketIdentity, item, reason)
+            })
+            .collect();
+        assert_eq!(diagnostics.len(), count);
+        assert!(diagnostics
+            .iter()
+            .all(|d| d.code() == DiagnosticCode::Bc7011PacketIdentity));
+    }
+}

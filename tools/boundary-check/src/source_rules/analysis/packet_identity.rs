@@ -45,7 +45,9 @@ fn packetizes(source: &str) -> bool {
 
 fn contains(tokens: TokenStream, names: &[&str]) -> bool {
     tokens.into_iter().any(|token| match token {
-        TokenTree::Ident(name) => names.iter().any(|spelling| name == spelling),
+        TokenTree::Ident(name) => names
+            .iter()
+            .any(|spelling| name.to_string().eq_ignore_ascii_case(spelling)),
         TokenTree::Group(group) => contains(group.stream(), names),
         _ => false,
     })
@@ -63,9 +65,35 @@ fn placement_fact(tokens: TokenStream) -> bool {
     )
 }
 
+fn partition_set_only(signature: &syn::Signature) -> bool {
+    if signature.inputs.len() != 1
+        || signature
+            .generics
+            .params
+            .iter()
+            .any(|parameter| !matches!(parameter, syn::GenericParam::Lifetime(_)))
+    {
+        return false;
+    }
+    let Some(syn::FnArg::Typed(input)) = signature.inputs.first() else {
+        return false;
+    };
+    let syn::Type::Reference(reference) = input.ty.as_ref() else {
+        return false;
+    };
+    let syn::Type::Slice(slice) = reference.elem.as_ref() else {
+        return false;
+    };
+    let syn::Type::Path(element) = slice.elem.as_ref() else {
+        return false;
+    };
+    reference.mutability.is_none() && element.path.is_ident("PacketizedQueryWork")
+}
+
 struct NamingBoundary<'a> {
     source: &'a str,
     found: Vec<(usize, String, &'static str)>,
+    in_schedule: bool,
 }
 
 impl<'ast> Visit<'ast> for NamingBoundary<'_> {
@@ -74,6 +102,20 @@ impl<'ast> Visit<'ast> for NamingBoundary<'_> {
             if compiled_out_of_production(&module.attrs) {
                 return;
             }
+        }
+        if !matches!(
+            item,
+            syn::Item::Fn(_) | syn::Item::Mod(_) | syn::Item::Use(_)
+        ) && !self.in_schedule
+            && placement_fact(item.to_token_stream())
+        {
+            use syn::spanned::Spanned;
+            self.found.push((
+                item.span().start().line,
+                "item".to_owned(),
+                "placement facts belong only to the packet schedule",
+            ));
+            return;
         }
         visit::visit_item(self, item);
     }
@@ -84,7 +126,13 @@ impl<'ast> Visit<'ast> for NamingBoundary<'_> {
         }
         let schedule =
             self.source == format!("{READER}{SCHEDULE_SOURCE}") && function.sig.ident == SCHEDULE;
-        let reason = if schedule {
+        let naming = self
+            .source
+            .ends_with("query_execution/leased_map/packet_identity.rs")
+            && function.sig.ident == "identities";
+        let reason = if naming && !partition_set_only(&function.sig) {
+            Some("packet naming accepts only the immutable canonical partition set")
+        } else if schedule {
             contains(function.block.to_token_stream(), &["PartitionIdentity"])
                 .then_some("the schedule consumes identities; it cannot mint packet names")
         } else {
@@ -99,11 +147,14 @@ impl<'ast> Visit<'ast> for NamingBoundary<'_> {
             ));
         }
         // Nested functions do not inherit the schedule's permission.
+        let parent = self.in_schedule;
+        self.in_schedule = schedule;
         visit::visit_block(self, &function.block);
+        self.in_schedule = parent;
     }
 
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
-        if placement_fact(item.to_token_stream()) {
+        if !self.in_schedule && placement_fact(item.to_token_stream()) {
             self.found.push((
                 item.use_token.span.start().line,
                 "use".to_owned(),
@@ -117,6 +168,7 @@ fn findings(source: &str, items: &[syn::Item]) -> Vec<(usize, String, &'static s
     let mut visitor = NamingBoundary {
         source,
         found: Vec::new(),
+        in_schedule: false,
     };
     for item in items {
         visitor.visit_item(item);
