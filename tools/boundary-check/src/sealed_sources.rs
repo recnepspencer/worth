@@ -32,5 +32,5 @@ pub(crate) fn validate(root: &Path) -> Vec<Diagnostic> {
     diagnostics
 }
 fn failure(path: &str, message: impl Into<String>) -> Diagnostic {
-    Diagnostic::new(DiagnosticCode::Bc7011ControlSeal, path, message)
+    Diagnostic::new(DiagnosticCode::Bc7012ControlSeal, path, message)
 }
