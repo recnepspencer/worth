@@ -2,7 +2,7 @@
 use super::*;
 
 #[test]
-fn refused_basis_read_fails_the_slot_and_closes_the_lane() {
+fn refused_basis_advancement_fails_the_slot_and_closes_the_lane() {
     use worth_query_host::facade::primary_graph::{
         bound_advancement_requests_on_this_thread_for_test as bound,
         place_managed_computations_on_this_thread_for_test as place,
@@ -46,9 +46,15 @@ fn refused_basis_read_fails_the_slot_and_closes_the_lane() {
     assert_eq!(executed.counters().queue_closed_slot_count(), 1);
     match executed.outcomes()[0].failure_posture().unwrap() {
         WorthServerSchedulerFailurePosture::IsolatedRuntimeFailure { runtime_failure } => {
-            assert!(runtime_failure.detail().contains("ReadinessDenied"));
+            // The zero-work case stops the outer advancement. A custody
+            // refusal inside snapshot_identity has a separate typed stage.
             assert!(
-                runtime_failure.detail().contains("WorkExhausted"),
+                matches!(runtime_failure,
+                    worth_server::WorthServerSchedulerRuntimeFailure::BasisAdvancementDenied {
+                        denial: worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Resource(
+                            worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted
+                        ), ..
+                    }),
                 "{runtime_failure:?}"
             );
         }

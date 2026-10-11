@@ -74,25 +74,22 @@ fn execute_group(group: OrderedLaneExecution) -> GroupExecution {
                         .unwrap_or_else(|| current_basis_digest(&execution.slot))
                         .map(Some)
                 });
-        let observed_basis_digest =
-            match stale_basis {
-                Ok(observed) => observed,
-                Err(denial) => {
-                    counters.increment_isolated_failure_count();
-                    failed_slot_ordinal = Some(execution.slot.ordinal());
-                    outcomes.push(
-                        WorthServerScheduledOperationOutcome::failed_without_counters(
-                            execution.slot,
-                            WorthServerSchedulerFailurePosture::IsolatedRuntimeFailure {
-                                runtime_failure: WorthServerSchedulerRuntimeFailure::opaque(
-                                    format!("{:?}: {}", denial.code(), denial.detail(),),
-                                ),
-                            },
-                        ),
-                    );
-                    continue;
-                }
-            };
+        let observed_basis_digest = match stale_basis {
+            Ok(observed) => observed,
+            Err(denial) => {
+                counters.increment_isolated_failure_count();
+                failed_slot_ordinal = Some(execution.slot.ordinal());
+                outcomes.push(
+                    WorthServerScheduledOperationOutcome::failed_without_counters(
+                        execution.slot,
+                        WorthServerSchedulerFailurePosture::IsolatedRuntimeFailure {
+                            runtime_failure: denial,
+                        },
+                    ),
+                );
+                continue;
+            }
+        };
         if let Some(observed_basis_digest) = observed_basis_digest {
             let expected_basis_digest = execution
                 .slot
