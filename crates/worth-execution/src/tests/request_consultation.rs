@@ -141,6 +141,8 @@ fn consultation_reads_inherited_cancellation_before_a_backing_deadline() {
     assert_eq!(outcome.report.charged_work(), 0);
 }
 
+// Each kernel owns its latch; NestedStopped promotes a child's stop to its
+// parent. Consultation must preserve the invoking kernel's latch.
 fn nested_latch_case(backend: BackendKind, workers: usize) {
     let _serial = TEST_LOCK
         .lock()

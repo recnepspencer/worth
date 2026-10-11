@@ -1,4 +1,5 @@
-//! Completed custody follows the actual checkpoint owner's disposition.
+//! Completed custody follows checkpoint dispositions assigned by this fixture.
+//! The commit receipt is real; checkpoint and claim stages are set directly.
 use super::super::{
     BoundOutputSource, PreparedOutputRootKind, ReadyCompletion, SourceCustody,
     WorthQueryAcceptedOutputAuthority, WorthQueryCompletedOutputDemand,

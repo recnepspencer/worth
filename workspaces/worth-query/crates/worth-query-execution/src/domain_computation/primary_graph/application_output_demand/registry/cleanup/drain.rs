@@ -38,24 +38,3 @@ impl WorthQueryOutputDemandRegistry {
         }
     }
 }
-
-#[cfg(test)]
-impl DemandRegistryState {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn drain_terminal_cleanup(
-        &mut self,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let mut entry_paid = false;
-        while let Some(retired) = self.take_terminal_cleanup_step(admission, entry_paid)? {
-            let refund = retired.refund_required_bytes;
-            let obligation_refund = retired.refund_obligation_bytes;
-            drop(retired);
-            self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(refund);
-            self.obligation_reserved_bytes = self
-                .obligation_reserved_bytes
-                .saturating_sub(obligation_refund);
-            entry_paid = true;
-        }
-        Ok(())
-    }
-}
