@@ -143,3 +143,6 @@ impl WorthUiStatusIntegrityRule {
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }
 }
+
+#[cfg(test)]
+mod lease_tests;
