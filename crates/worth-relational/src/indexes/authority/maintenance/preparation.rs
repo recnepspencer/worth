@@ -64,10 +64,12 @@ impl MaintenanceWork<'_, '_, '_> {
             .and_then(|n| n.checked_mul(comparison_width))
             .and_then(|n| n.checked_add(1))
             .ok_or(Denial::WorkBudgetExceeded)?;
+        // Mutable std B-trees do not copy lookup paths. One node credit per
+        // offered entry covers every split: even minimum-occupancy trees have
+        // fewer nodes than entries, including a transient new root.
         let node_bytes = size_of::<(K, V)>()
             .checked_mul(11)
             .and_then(|n| n.checked_add(size_of::<usize>() * 14))
-            .and_then(|n| n.checked_mul(levels + 2))
             .and_then(|n| n.checked_add(owned_key_bytes))
             .ok_or(Denial::WorkBudgetExceeded)?;
         self.prepare(visits as u64, node_bytes as u64)

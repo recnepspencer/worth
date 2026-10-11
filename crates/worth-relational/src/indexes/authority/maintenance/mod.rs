@@ -11,6 +11,7 @@ mod field;
 mod field_keys;
 mod join;
 mod ordering;
+mod persistent_allocation;
 mod preparation;
 mod publication;
 mod refresh_preparation;

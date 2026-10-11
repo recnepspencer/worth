@@ -1659,6 +1659,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "sized-chunks",
  "smallvec",
  "stats_alloc",
  "trybuild",

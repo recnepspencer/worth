@@ -60,7 +60,9 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
     assert!(built.failed_indexes.is_empty(), "{built:?}");
     // Two 2-level map copies plus two singleton row edits, key encoding,
     // pending queues, locators and publication buffers reserve 112,204 bytes.
-    const PATCH_BYTES: u64 = 112_204;
+    // Former 112,204 less inline row nodes (17,152), absent key Arcs (80),
+    // and copied-path pricing for mutable scratch trees (2,984).
+    const PATCH_BYTES: u64 = 91_988;
     // The singleton scan also holds 320 framework bytes on this lease.
     const FRAMEWORK_BYTES: u64 = 320;
     for memory in [PATCH_BYTES + FRAMEWORK_BYTES - 1, MEMORY] {
@@ -106,8 +108,8 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
                 denied.kind,
                 crate::indexes::data::DerivedIndexMaintenanceDenialKind::Execution(
                     crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                        requested: 112_204,
-                        admitted: 112_203,
+                        requested: 91_988,
+                        admitted: 91_987,
                         ancestor: 0,
                     }
                 )

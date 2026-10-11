@@ -148,14 +148,18 @@ impl IndexAuthority<'_> {
                     cold_changes = Some(changes::ChangedRecords::cold(after, work)?);
                 }
                 match &definition.kind {
-                    DerivedIndexKind::EntityField { .. } => entry_edits::prepare_map::<
-                        crate::storage::data::AuthoritativeFieldComparisonKey,
-                        crate::identity::data::EntityId,
-                    >(0, 1, work)?,
-                    DerivedIndexKind::RelationField { .. } => entry_edits::prepare_map::<
-                        crate::storage::data::AuthoritativeFieldComparisonKey,
-                        crate::identity::data::RelationId,
-                    >(0, 1, work)?,
+                    DerivedIndexKind::EntityField { .. } => {
+                        super::persistent_allocation::prepare_empty_map::<
+                            crate::storage::data::AuthoritativeFieldComparisonKey,
+                            crate::identity::data::EntityId,
+                        >(work)?
+                    }
+                    DerivedIndexKind::RelationField { .. } => {
+                        super::persistent_allocation::prepare_empty_map::<
+                            crate::storage::data::AuthoritativeFieldComparisonKey,
+                            crate::identity::data::RelationId,
+                        >(work)?
+                    }
                     _ => {}
                 }
                 (

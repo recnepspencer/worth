@@ -80,6 +80,10 @@ impl<K: Ord + Clone, R: Clone> DerivedIndexEntryMap<K, R> {
 }
 
 impl<R> DerivedIndexRows<R> {
+    pub(crate) fn is_inline(&self) -> bool {
+        self.0.is_inline()
+    }
+
     pub fn len(&self) -> usize {
         self.0.len()
     }
