@@ -1,5 +1,3 @@
-post_effect_payer!(CompletedAdvancementWalk);
-use super::refreshed_rejoin::{infallible, post_effect_payer};
 mod ordinary_begin;
 mod replacement;
 mod selected_begin;
@@ -184,11 +182,11 @@ impl WorthQueryOutputDemandRegistry {
         };
         let terminal = matches!(record.state, DemandState::Failed(_));
         record.wake.notify();
-        let charge = &mut CompletedAdvancementWalk::after_effect();
-        let released_prerequisites =
-            terminal.then(|| infallible(state.release_record_prerequisites(&interest.key, charge)));
+        let released_prerequisites = terminal.then(|| {
+            super::post_commit::release_completed_prerequisites(&mut state, &interest.key)
+        });
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        infallible(state.remove_required_member_if_released(&interest.key, charge));
+        super::post_commit::release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
     }
@@ -228,11 +226,11 @@ impl WorthQueryOutputDemandRegistry {
             record.release_obligations()
         };
         record.wake.notify();
-        let charge = &mut CompletedAdvancementWalk::after_effect();
-        let released_prerequisites = (!rescheduled)
-            .then(|| infallible(state.release_record_prerequisites(&interest.key, charge)));
+        let released_prerequisites = (!rescheduled).then(|| {
+            super::post_commit::release_completed_prerequisites(&mut state, &interest.key)
+        });
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        infallible(state.remove_required_member_if_released(&interest.key, charge));
+        super::post_commit::release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
     }
@@ -275,9 +273,8 @@ impl WorthQueryOutputDemandRegistry {
                 let released = record.release_obligations();
                 state.obligation_reserved_bytes =
                     state.obligation_reserved_bytes.saturating_sub(released);
-                let charge = &mut CompletedAdvancementWalk::after_effect();
-        let released_prerequisites = infallible(state.release_record_prerequisites(&interest.key, charge));
-                infallible(state.remove_required_member_if_released(&interest.key, charge));
+                let released_prerequisites = super::post_commit::release_completed_prerequisites(&mut state, &interest.key);
+                super::post_commit::release_completed_member(&mut state, &interest.key);
                 drop(state);
                 drop(released_prerequisites);
                 return Err(stopped);
@@ -308,11 +305,11 @@ impl WorthQueryOutputDemandRegistry {
             0
         };
         record.wake.notify();
-        let charge = &mut CompletedAdvancementWalk::after_effect();
-        let released_prerequisites =
-            terminal.then(|| infallible(state.release_record_prerequisites(&interest.key, charge)));
+        let released_prerequisites = terminal.then(|| {
+            super::post_commit::release_completed_prerequisites(&mut state, &interest.key)
+        });
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        infallible(state.remove_required_member_if_released(&interest.key, charge));
+        super::post_commit::release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
         Ok(())

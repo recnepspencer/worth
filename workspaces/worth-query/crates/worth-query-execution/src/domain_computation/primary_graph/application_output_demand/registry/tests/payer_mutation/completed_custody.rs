@@ -1,4 +1,5 @@
 //! Request cleanup must pay for non-empty completed custody before editing.
+use super::super::super::refreshed_rejoin::infallible;
 use super::super::super::{BoundOutputSource, PreparedOutputRootKind, SourceCustody};
 use super::*;
 
@@ -33,7 +34,7 @@ fn check(entry: u8) {
         let mut state = registry.state.lock().unwrap();
         let source = key("completed", seed + 1, 3);
         let mut row = record(
-            occurrence(),
+            receipt.product_branch().occurrence(),
             DemandState::Failed(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::NoEffect,
                 "completed",
@@ -96,6 +97,114 @@ fn check(entry: u8) {
                     "entry {entry}, seed {seed}, k {k}"
                 );
             }
+        }
+    }
+}
+
+#[test]
+fn registry_completed_custody_is_not_swept_after_commit() {
+    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let commit = receipt
+        .committed_product_publication()
+        .composite_commit()
+        .clone();
+    let (scope, _) = super::super::source_custody::real_scope_and_occurrence();
+    for seed in 0..16 {
+        let make = || {
+            let registry = WorthQueryOutputDemandRegistry::default();
+            let mut state = registry.state.lock().unwrap();
+            let selected = key("queued-custody", seed + 1, 7);
+            for generation in 1..=1 + seed % 3 {
+                let mut row = record(
+                    receipt.product_branch().occurrence(),
+                    DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::NoEffect,
+                        "completed",
+                    )),
+                    0,
+                );
+                row.source_commits.push(commit.clone());
+                state
+                    .records
+                    .insert(key("queued-custody", generation, 7), row);
+            }
+            state.source_custody.insert(
+                commit.clone(),
+                SourceCustody {
+                    occurrence: receipt.product_branch().occurrence(),
+                    root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
+                    source: None,
+                    discovery: None,
+                    bound_sources: Some(vec![BoundOutputSource {
+                        scope,
+                        identity: selected.source.clone(),
+                    }]),
+                    consumed_sources: vec![selected.source],
+                    retired_sources: Vec::new(),
+                    retired: None,
+                    token_count: 0,
+                    completed: true,
+                },
+            );
+            drop(state);
+            registry
+        };
+        let eager = make();
+        infallible(
+            eager
+                .state
+                .lock()
+                .unwrap()
+                .prune_completed_custody(&mut super::super::OracleWalk::after_effect()),
+        );
+        let expected = value(&eager.state.lock().unwrap());
+        let deferred = make();
+        let before = super::super::super::record_map::occurrence_rows_visited();
+        deferred.complete_prepared_source(&receipt);
+        assert!(
+            !deferred.state.lock().unwrap().source_custody.is_empty(),
+            "a committed completion must leave an O(1) note, not sweep custody"
+        );
+        assert_eq!(
+            super::super::super::record_map::occurrence_rows_visited(),
+            before
+        );
+        assert!(deferred.state.lock().unwrap().pending_custody_prune);
+        let mut full = admission(1_000_000);
+        deferred
+            .state
+            .lock()
+            .unwrap()
+            .drain_terminal_cleanup(&mut full)
+            .unwrap();
+        assert_eq!(value(&deferred.state.lock().unwrap()), expected);
+        for k in 0..full.charged_work() {
+            let retry = make();
+            retry.complete_prepared_source(&receipt);
+            let snapshot = value(&retry.state.lock().unwrap());
+            let denial = retry
+                .state
+                .lock()
+                .unwrap()
+                .drain_terminal_cleanup(&mut admission(k))
+                .unwrap_err();
+            assert_eq!(
+                denial.kind(),
+                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+            );
+            assert_eq!(value(&retry.state.lock().unwrap()), snapshot);
+            assert!(retry.state.lock().unwrap().pending_custody_prune);
+            retry
+                .state
+                .lock()
+                .unwrap()
+                .drain_terminal_cleanup(&mut admission(1_000_000))
+                .unwrap();
+            assert_eq!(
+                value(&retry.state.lock().unwrap()),
+                expected,
+                "seed {seed}, k {k}"
+            );
         }
     }
 }

@@ -1,6 +1,3 @@
-post_effect_payer!(PublishedSettlementWalk, WorthQueryAcceptedOutputAuthority);
-use super::refreshed_rejoin::infallible;
-use super::refreshed_rejoin::post_effect_payer;
 use std::sync::Arc;
 
 use super::{
@@ -162,10 +159,7 @@ impl WorthQueryOutputDemandRegistry {
         }
         let released = record.release_obligations();
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        infallible(state.remove_required_member_if_released(
-            &interest.key,
-            &mut PublishedSettlementWalk::after_effect(accepted),
-        ));
+        super::post_commit::release_settled_member(&mut state, &interest.key, accepted);
         Ok(())
     }
 }

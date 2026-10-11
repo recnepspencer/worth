@@ -15,7 +15,9 @@ type Occurrence = (OutputFamilyIdentity, WorthQueryObservedSourceCoordinate);
 
 type Walks = Vec<(WorthQueryOutputDemandKey, u64)>;
 
-pub(super) fn price_cleanup<'a>(
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn price_cleanup<
+    'a,
+>(
     state: &'a mut DemandRegistryState,
     admission: &mut InvalidationEditAdmission,
     mut walks: Walks,
@@ -27,7 +29,7 @@ pub(super) fn price_cleanup<'a>(
     price_mutation_with_source_allowance(state, admission, &walks, kind, allowance)
 }
 
-fn custody_walks(
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn custody_walks(
     state: &DemandRegistryState,
     walks: &mut Walks,
     admission: &mut InvalidationEditAdmission,

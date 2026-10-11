@@ -141,6 +141,7 @@ mod held_successor;
 mod lifecycle;
 mod notifications;
 mod obligations;
+mod post_commit;
 mod prerequisite_claims;
 mod prerequisite_work;
 mod progression;
@@ -298,6 +299,7 @@ struct DemandRegistryState {
     required_custody_retained_bytes: Arc<std::sync::atomic::AtomicUsize>,
     settlement_keys: settlement_index::SettlementIndex,
     pending_cleanup_head: Option<Arc<WorthQueryOutputDemandKey>>,
+    pending_custody_prune: bool,
     source_preparations:
         HashMap<worth_runtime_world::facade::ProductBranchIncarnation, SourcePreparationState>,
     source_custody: BTreeMap<worth_runtime_world::facade::CompositeCommitIdentity, SourceCustody>,
@@ -320,6 +322,7 @@ impl Default for DemandRegistryState {
             required_custody_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             settlement_keys: settlement_index::SettlementIndex::default(),
             pending_cleanup_head: None,
+            pending_custody_prune: false,
             source_preparations: HashMap::new(),
             source_custody: BTreeMap::new(),
         }

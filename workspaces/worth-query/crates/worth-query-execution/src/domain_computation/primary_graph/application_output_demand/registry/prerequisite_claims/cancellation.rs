@@ -1,6 +1,3 @@
-post_effect_payer!(CancelledPrerequisiteWalk);
-use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::post_effect_payer;
 use super::{PreparedPrerequisiteClaims, WorthQueryOutputDemandRegistry};
 
 impl Drop for PreparedPrerequisiteClaims {
@@ -27,10 +24,9 @@ impl Drop for PreparedPrerequisiteClaims {
                 if !state.records[upstream].pending_cleanup_queued
                     && !state.defer_terminal_cleanup(upstream, 0)
                 {
-                    infallible(state.remove_required_member_if_released(
-                        upstream,
-                        &mut CancelledPrerequisiteWalk::after_effect(),
-                    ));
+                    super::super::lifecycle::release::cancelled_prerequisite_member(
+                        &mut state, upstream,
+                    );
                 }
             }
         }

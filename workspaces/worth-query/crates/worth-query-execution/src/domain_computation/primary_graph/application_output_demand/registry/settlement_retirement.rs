@@ -38,7 +38,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 type Identity = Arc<RecordedSettlementIdentity>;
-mod discovery;
+use super::post_commit::discovery;
 
 /// Returned by a settlement publication. Retiring needs the newest row
 /// registered with the invalidation owner, so the publisher calls it after.
@@ -65,7 +65,7 @@ impl SupersededSettlements {
     ) {
         let named = self
             .registry
-            .retire_superseded_settlements(&self.key, owner);
+            .retire_superseded_settlements(&self.key, owner, &self);
         // A named settlement is retried by the next supersession. One no row
         // of this occurrence posts retires as a released settlement does.
         if let Some(displaced) = displaced.filter(|displaced| !named.contains(displaced)) {
@@ -101,6 +101,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         key: &WorthQueryOutputDemandKey,
         owner: &SourceInvalidationOwner,
+        published: &SupersededSettlements,
     ) -> Vec<Identity> {
         let mut admission = owner.edit_admission();
         let candidates = {
@@ -108,7 +109,7 @@ impl WorthQueryOutputDemandRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            discovery::after_publication(&state, key)
+            discovery::after_publication(&state, key, published)
         };
         if !candidates.is_empty() {
             drop(self.retire_settlements(&candidates, owner, &mut admission));
@@ -222,7 +223,7 @@ impl DemandRegistryState {
 }
 
 #[cfg(test)]
-fn admit_slots(
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn admit_slots(
     count: usize,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenial> {

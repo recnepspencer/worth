@@ -1,6 +1,6 @@
-post_effect_payer!(RetiredProductWalk);
 use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::post_effect_payer;
+use super::super::refreshed_rejoin::OccurrenceSearchCharge;
+use super::walk_charge::PostCommitSweep;
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
@@ -12,7 +12,9 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut sweep = PostCommitSweep::after_effect();
         for custody in state.source_custody.values_mut() {
+            infallible(sweep.inspect_row());
             if custody.occurrence == occurrence {
                 custody.retire(WorthQueryOutputDemandDenial::new(
                     crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
@@ -27,6 +29,7 @@ impl WorthQueryOutputDemandRegistry {
         // Mark retained rows terminal before draining their descendants. A
         // descendant can release the final framework pin during this walk.
         for record in state.records.values_mut() {
+            infallible(sweep.inspect_row());
             if record.product_occurrence != occurrence
                 || (record.interests == 0
                     && record.framework_required_count == 0
@@ -48,7 +51,7 @@ impl WorthQueryOutputDemandRegistry {
         }
         infallible(state.release_matching_prerequisites(
             |_, record| record.product_occurrence == occurrence,
-            &mut RetiredProductWalk::after_effect(),
+            &mut sweep,
         ));
         let mut released_bytes = 0;
         let DemandRegistryState {
@@ -58,6 +61,7 @@ impl WorthQueryOutputDemandRegistry {
             ..
         } = &mut *state;
         records.retain(|key, record| {
+            infallible(sweep.inspect_row());
             if record.product_occurrence != occurrence {
                 return true;
             }
@@ -89,8 +93,66 @@ impl WorthQueryOutputDemandRegistry {
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
-        infallible(state.prune_completed_custody(&mut RetiredProductWalk::after_effect()));
+        state.pending_custody_prune = true;
         drop(state);
         drop(retired_cursors);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::super::tests::{key, record};
+    use super::*;
+    #[test]
+    fn registry_product_retirement_sweep_names_its_registry_bound() {
+        let receipts: Vec<_> = (0..5).map(|_| crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application()).collect();
+        let mut contacts = Vec::new();
+        for (rows, custody_entries) in [(2, 0), (5, 1), (9, 4)] {
+            let registry = WorthQueryOutputDemandRegistry::default();
+            let mut state = registry.state.lock().unwrap();
+            for generation in 1..=rows {
+                state.records.insert(
+                    key("retired", generation, 1),
+                    record(
+                        receipts[0].product_branch().occurrence(),
+                        DemandState::Admitted,
+                        1,
+                    ),
+                );
+            }
+            for receipt in receipts.iter().take(custody_entries) {
+                state.source_custody.insert(
+                    receipt
+                        .committed_product_publication()
+                        .composite_commit()
+                        .clone(),
+                    SourceCustody {
+                        occurrence: receipt.product_branch().occurrence(),
+                        root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
+                        source: None,
+                        discovery: None,
+                        bound_sources: None,
+                        consumed_sources: Vec::new(),
+                        retired_sources: Vec::new(),
+                        retired: None,
+                        token_count: 1,
+                        completed: false,
+                    },
+                );
+            }
+            drop(state);
+            let before = super::super::walk_charge::sweep_contacts();
+            registry.release_product_occurrence(receipts[0].product_branch().occurrence());
+            contacts.push(super::super::walk_charge::sweep_contacts() - before);
+            assert!(registry
+                .state
+                .lock()
+                .unwrap()
+                .records
+                .values()
+                .all(|row| row.terminal()));
+        }
+        // Four complete record passes plus one contact per custody entry.
+        assert_eq!(contacts, [8, 21, 40]);
     }
 }

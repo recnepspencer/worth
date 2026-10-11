@@ -1,9 +1,3 @@
-post_effect_payer!(
-    CompletedCheckpointWalk,
-    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt
-);
-use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::post_effect_payer;
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
@@ -121,11 +115,7 @@ impl WorthQueryOutputDemandRegistry {
                     ));
                 }
             }
-            infallible(
-                state.prune_completed_custody(&mut CompletedCheckpointWalk::after_effect(
-                    &source.receipt,
-                )),
-            );
+            state.pending_custody_prune = true;
         }
         let recovery = discovery.map(|discovery| super::super::DiscoveredSourceRecovery {
             receipt: source.receipt.clone(),

@@ -33,6 +33,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.drain_completed_custody(admission)?;
         let stable_refresh = matches!(successor_of, Some(OutputRefreshPredecessor::Stable { .. }));
         let selected_commit = selected_output.as_ref().map(|selected| selected.commit);
         let exact_retained_row = if let Some(selected) =

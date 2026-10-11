@@ -1,3 +1,4 @@
+mod custody;
 mod drain;
 use super::refreshed_rejoin::price_mutation;
 use std::sync::Arc;
@@ -53,6 +54,7 @@ impl DemandRegistryState {
                 .charge_external_work(2)
                 .map_err(|_| empty_work_denial())?;
         }
+        self.drain_completed_custody(admission)?;
         let Some(head) = self.pending_cleanup_head.as_ref() else {
             return Ok(None);
         };

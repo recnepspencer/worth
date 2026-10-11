@@ -1,6 +1,3 @@
-post_effect_payer!(CompletedReplacementWalk);
-use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::post_effect_payer;
 use super::super::*;
 
 mod preparation;
@@ -58,10 +55,7 @@ impl WorthQueryOutputDemandRegistry {
                 // Their credits remain reserved until their physical Drop.
                 state.obligation_reserved_bytes += prepared.bytes;
                 state.install_required_member(prepared.required_member);
-                infallible(state.remove_required_member_if_released(
-                    &replaced.key,
-                    &mut CompletedReplacementWalk::after_effect(),
-                ));
+                super::super::post_commit::release_replaced_member(&mut state, &replaced.key);
                 Some((
                     old_slots,
                     next_slots,

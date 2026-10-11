@@ -1,4 +1,4 @@
-//! Locally sealed no-refusal payers cannot widen an occurrence search.
+//! Canonical occurrence searches keep their producer/source boundary.
 use super::super::refreshed_rejoin::{
     awaited_by_stale_owner, newest_of_occurrence, occurrence_rows, OccurrenceSearchCharge,
 };
@@ -57,5 +57,9 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
         assert_eq!(contacts, vec![3, 3], "search {search}");
     }
     DemandRegistryState::assert_completed_walk_sites(&mut payer);
-    DemandRegistryState::assert_completed_custody_walk(payer);
+}
+
+#[test]
+fn registry_canonical_walks_keep_their_occurrence_boundary() {
+    check(OracleWalk::after_effect);
 }

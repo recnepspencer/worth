@@ -1,4 +1,4 @@
-use super::refreshed_rejoin::OccurrenceSearchCharge;
+use super::refreshed_rejoin::{infallible, OccurrenceSearchCharge};
 use core::convert::Infallible;
 use std::sync::Arc;
 
@@ -158,6 +158,7 @@ impl DemandRegistryState {
             .records
             .iter()
             .filter(|(key, record)| {
+                infallible(charge.inspect_row());
                 retired(key, record)
                     && record.prepared_prerequisite_claims == 0
                     && record.framework_required_count == 0
@@ -168,6 +169,7 @@ impl DemandRegistryState {
         let mut released = Vec::with_capacity(count);
         let mut settlements = Vec::with_capacity(count);
         for (key, record) in &mut self.records {
+            infallible(charge.inspect_row());
             if retired(key, record)
                 && record.prepared_prerequisite_claims == 0
                 && record.framework_required_count == 0

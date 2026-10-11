@@ -1,4 +1,5 @@
-super::refreshed_rejoin::post_effect_payer!(OracleWalk);
+mod cleanup_oracle;
+use cleanup_oracle::OracleWalk;
 use std::sync::{Arc, Condvar, Mutex};
 
 use super::record_capacity::fixture_capacity as test_record_capacity;

@@ -132,3 +132,26 @@ impl WorthQueryOutputDemandRegistry {
         drop(unawaited);
     }
 }
+
+impl WorthQueryOutputDemandRegistry {
+    pub(in crate::domain_computation::primary_graph) fn release_prepared_token(
+        &self,
+        source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(custody) = state.source_custody.get_mut(source_commit) {
+            custody.token_count = custody.token_count.saturating_sub(1);
+        }
+        infallible(state.prune_completed_custody(&mut CleanupWalk { _release: () }));
+    }
+}
+
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn cancelled_prerequisite_member(
+    state: &mut DemandRegistryState,
+    key: &WorthQueryOutputDemandKey,
+) {
+    infallible(state.remove_required_member_if_released(key, &mut CleanupWalk { _release: () }));
+}

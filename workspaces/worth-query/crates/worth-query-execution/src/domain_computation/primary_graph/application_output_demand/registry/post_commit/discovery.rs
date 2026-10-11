@@ -3,8 +3,11 @@ use super::super::refreshed_rejoin::{infallible, occurrence_rows, OccurrenceSear
 #[cfg(test)]
 use super::super::refreshed_rejoin::{WalkAdmission, WalkKind};
 #[cfg(test)]
-use super::admit_slots;
-use super::{DemandRegistryState, Identity, WorthQueryOutputDemandKey};
+use super::super::settlement_retirement::admit_slots;
+use super::*;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+type Identity = Arc<RecordedSettlementIdentity>;
+use super::walk_charge::PostCommitWalk;
 #[cfg(test)]
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 #[cfg(test)]
@@ -22,33 +25,26 @@ impl DiscoveryCharge for WalkAdmission<'_> {
     }
 }
 
-// Only this completed-publication entry can construct this payer. Its bound
-// is one occurrence's rows and their superseded settlement postings.
-struct PublishedOccurrenceWalk;
-impl OccurrenceSearchCharge for PublishedOccurrenceWalk {
-    type Refusal = Infallible;
-    fn occurrence_path(&mut self, _: usize) -> Result<(), Infallible> {
-        Ok(())
-    }
-    fn inspect_row(&mut self) -> Result<(), Infallible> {
-        Ok(())
-    }
-}
-impl DiscoveryCharge for PublishedOccurrenceWalk {
+impl DiscoveryCharge for PostCommitWalk {
     fn slots(&mut self, _: usize) -> Result<(), Infallible> {
         Ok(())
     }
 }
 
-pub(super) fn after_publication(
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn after_publication(
     state: &DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
+    published: &SupersededSettlements,
 ) -> Vec<Identity> {
-    infallible(discover(state, key, &mut PublishedOccurrenceWalk))
+    infallible(discover(
+        state,
+        key,
+        &mut PostCommitWalk::after_registered(published),
+    ))
 }
 
 #[cfg(test)]
-pub(super) fn under_request(
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn under_request(
     state: &DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
     admission: &mut InvalidationEditAdmission,

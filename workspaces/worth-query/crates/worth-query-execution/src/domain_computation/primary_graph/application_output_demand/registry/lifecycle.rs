@@ -1,12 +1,8 @@
-post_effect_payer!(CompletedSourceWalk);
-use super::refreshed_rejoin::infallible;
-use super::refreshed_rejoin::post_effect_payer;
 mod cached_reclaim;
-mod cleanup_price;
+pub(super) mod cleanup_price;
 mod closed_retirement;
 mod completed_custody;
 mod joined_ready;
-mod occurrence_retirement;
 mod performed_release;
 pub(super) mod release;
 mod selected_execution_finish;
@@ -63,20 +59,6 @@ impl WorthQueryOutputDemandRegistry {
         state.source_custody.remove(source_commit);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn release_prepared_token(
-        &self,
-        source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
-    ) {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(custody) = state.source_custody.get_mut(source_commit) {
-            custody.token_count = custody.token_count.saturating_sub(1);
-        }
-        infallible(state.prune_completed_custody(&mut CompletedSourceWalk::after_effect()));
-    }
-
     pub(in crate::domain_computation::primary_graph) fn complete_prepared_source(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -99,7 +81,7 @@ impl WorthQueryOutputDemandRegistry {
                 custody.discovery = None;
             }
         }
-        infallible(state.prune_completed_custody(&mut CompletedSourceWalk::after_effect()));
+        state.pending_custody_prune = true;
     }
 
     pub(in crate::domain_computation::primary_graph) fn begin_source_preparation(

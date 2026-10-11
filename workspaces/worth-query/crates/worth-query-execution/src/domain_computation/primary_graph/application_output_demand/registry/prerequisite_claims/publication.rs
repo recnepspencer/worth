@@ -1,8 +1,5 @@
 //! Prepared claims transfer into the exact published downstream row.
-post_effect_payer!(PublishedPrerequisiteWalk, RecordedSettlementIdentity);
 
-use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::post_effect_payer;
 use super::*;
 
 impl PreparedPrerequisiteClaims {
@@ -51,7 +48,6 @@ impl PreparedPrerequisiteClaims {
         mut self,
         identity: Arc<RecordedSettlementIdentity>,
     ) -> super::super::SupersededSettlements {
-        let mut completed_walk = PublishedPrerequisiteWalk::after_effect(&identity);
         let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
         let mut state = owner
             .state
@@ -79,7 +75,7 @@ impl PreparedPrerequisiteClaims {
         assert!(record.settlements.len() < record.settlements.capacity());
         record
             .settlements
-            .push((identity, self.context.retained_bytes()));
+            .push((Arc::clone(&identity), self.context.retained_bytes()));
         let old = std::mem::replace(
             &mut record.prerequisites,
             std::mem::take(&mut self.predecessors),
@@ -98,7 +94,9 @@ impl PreparedPrerequisiteClaims {
             if !state.records[upstream].pending_cleanup_queued
                 && !state.defer_terminal_cleanup(upstream, 0)
             {
-                infallible(state.remove_required_member_if_released(upstream, &mut completed_walk));
+                super::super::post_commit::release_published_member(
+                    &mut state, upstream, &identity,
+                );
             }
         }
         for upstream in &old {

@@ -28,7 +28,7 @@ pub(super) use mutation_price::{
 };
 pub(super) use walk_admission::{WalkAdmission, WalkKind};
 pub(super) use walk_charge::{
-    charge_whole_map, infallible, post_effect_payer, OccurrenceSearchCharge, WholeMapPasses,
+    charge_whole_map, infallible, OccurrenceSearchCharge, WholeMapPasses,
 };
 
 impl WorthQueryOutputDemandRegistry {

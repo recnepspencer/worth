@@ -3,8 +3,6 @@ use super::super::refreshed_rejoin::OccurrenceSearchCharge;
 use super::super::refreshed_rejoin::{infallible, source_rows};
 use super::*;
 use core::convert::Infallible;
-#[cfg(test)]
-mod walk_bounds;
 
 impl DemandRegistryState {
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prune_completed_custody<
@@ -93,6 +91,7 @@ impl DemandRegistryState {
                     .retain(|commit| self.source_custody.contains_key(commit));
             }
         }
+        self.pending_custody_prune = false;
         Ok(())
     }
 }
