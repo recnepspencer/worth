@@ -90,7 +90,7 @@ impl WorthQueryAggregateProjections {
             }
             // Every read is rooted at the committing branch: the runtime holds
             // every branch, and a version alone admits a sibling's commits.
-            let Some(sources) = affected_sources(execution, runtime, key, before, after, patches)
+            let Ok(sources) = affected_sources(execution, runtime, key, before, after, patches)
             else {
                 generation.materialized.clear();
                 generation.version = after.version_id();
@@ -118,7 +118,7 @@ impl WorthQueryAggregateProjections {
 }
 
 /// Every source a patch touched on the committing branch, before or after.
-/// `None` when either side no longer projects onto its branch root.
+/// Refused reads or unavailable branch roots invalidate the cached generation.
 fn affected_sources(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
@@ -126,21 +126,21 @@ fn affected_sources(
     before: &SnapshotHandle,
     after: &SnapshotHandle,
     patches: &[PublishedAuthoritativeRecordPatch],
-) -> Option<BTreeSet<EntityId>> {
+) -> Result<BTreeSet<EntityId>, ()> {
     let truth = runtime.read_truth();
     let views = [
-        truth.project_snapshot(before)?,
-        truth.project_snapshot(after)?,
+        truth.project_snapshot(before).ok_or(())?,
+        truth.project_snapshot(after).ok_or(())?,
     ];
     let mut sources = BTreeSet::new();
     for patch in patches {
         match patch.target {
             RecordRef::Entity(entity) => {
-                if views
-                    .iter()
-                    .any(|view| live_entity_kind(execution, view, entity) == Some(key.source_kind))
-                {
-                    sources.insert(entity);
+                for view in &views {
+                    if live_entity_kind(execution, view, entity)? == Some(key.source_kind) {
+                        sources.insert(entity);
+                        break;
+                    }
                 }
             }
             RecordRef::Relation(relation) => {
@@ -156,8 +156,7 @@ fn affected_sources(
                                     .then_some(record.source())
                             },
                         )
-                        .ok()
-                        .flatten()
+                        .map_err(|_| ())?
                     {
                         sources.insert(source);
                     }
@@ -165,7 +164,7 @@ fn affected_sources(
             }
         }
     }
-    Some(sources)
+    Ok(sources)
 }
 
 fn source_contributions(
@@ -176,7 +175,7 @@ fn source_contributions(
     source: EntityId,
 ) -> Result<BTreeMap<EntityId, i64>, ()> {
     let view = runtime.read_truth().project_snapshot(snapshot).ok_or(())?;
-    if live_entity_kind(execution, &view, source) != Some(key.source_kind) {
+    if live_entity_kind(execution, &view, source)? != Some(key.source_kind) {
         return Ok(BTreeMap::new());
     }
     let Some(AspectValue::Int64(value)) = super::application_attempt::observe_field_value(
@@ -199,7 +198,7 @@ fn source_contributions(
     }
     let mut contributions = BTreeMap::new();
     for relation in relations {
-        if live_entity_kind(execution, &view, relation.target) == Some(key.target_kind) {
+        if live_entity_kind(execution, &view, relation.target)? == Some(key.target_kind) {
             let entry = contributions.entry(relation.target).or_insert(0_i64);
             *entry = entry.checked_add(value).ok_or(())?;
         }
@@ -212,15 +211,14 @@ fn live_entity_kind(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView<'_>,
     entity: EntityId,
-) -> Option<KindId> {
+) -> Result<Option<KindId>, ()> {
     view.entity_record_with_projection_scope(
         execution,
         entity,
         ProjectionAspectScope::empty(),
         |record| (record.lifecycle() == RecordLifecycleState::Live).then_some(record.kind_id()),
     )
-    .ok()
-    .flatten()
+    .map_err(|_| ())
 }
 
 fn update_materialized_targets(

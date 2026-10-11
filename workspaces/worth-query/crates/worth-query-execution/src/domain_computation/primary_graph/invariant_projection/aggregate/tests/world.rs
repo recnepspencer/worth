@@ -386,3 +386,5 @@ mod branches;
 #[path = "world/population.rs"]
 mod population;
 use population::bind_world;
+#[path = "world/interrupted_refresh.rs"]
+mod interrupted_refresh;
