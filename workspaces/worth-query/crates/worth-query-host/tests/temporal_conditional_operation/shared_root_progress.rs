@@ -81,9 +81,9 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
                         .unwrap()
                         .conditional_clock(request_execution, clock)
                         .unwrap()
-                        .observe(request_execution)
                 })
-                .expect("installed host call opens");
+                .expect("installed host call opens")
+                .observe(request_execution);
             let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt) =
                 outcome
             else {

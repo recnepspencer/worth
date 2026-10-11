@@ -39,9 +39,9 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
                 .unwrap()
                 .conditional_clock(request_execution, &world.clock)
                 .unwrap()
-                .observe(request_execution)
         })
         .expect("installed host call opens")
+        .observe(request_execution)
     else {
         panic!("the predecessor definition must warm on the selected product")
     };
@@ -111,9 +111,9 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
                 .unwrap()
                 .conditional_clock(request_execution, &world.clock)
                 .unwrap()
-                .observe(request_execution)
         })
-        .expect("installed host call opens");
+        .expect("installed host call opens")
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(execution) =
         execution
     else {

@@ -135,9 +135,9 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .unwrap()
                 .conditional_clock(request_execution, &world.clock)
                 .unwrap()
-                .observe(request_execution)
         })
         .expect("installed host call opens")
+        .observe(request_execution)
     else {
         panic!("the initial blocked observation must be accepted")
     };
@@ -161,9 +161,9 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .unwrap()
                 .conditional_clock(request_execution, &world.clock)
                 .unwrap()
-                .observe(request_execution)
         })
-        .expect("installed host call opens");
+        .expect("installed host call opens")
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(sibling_warm) =
         sibling_warm
     else {
@@ -208,9 +208,9 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .unwrap()
                 .conditional_clock(request_execution, &world.clock)
                 .unwrap()
-                .observe(request_execution)
         })
-        .expect("installed host call opens");
+        .expect("installed host call opens")
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(mut executed) =
         outcome
     else {
@@ -272,9 +272,9 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .unwrap()
                 .conditional_clock(request_execution, &world.clock)
                 .unwrap()
-                .observe(request_execution)
         })
-        .expect("installed host call opens");
+        .expect("installed host call opens")
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(sibling_progress) =
         sibling_outcome
     else {
@@ -308,9 +308,9 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                     .unwrap()
                     .conditional_clock(request_execution, &world.clock)
                     .unwrap()
-                    .observe(request_execution)
             })
-            .expect("installed host call opens");
+            .expect("installed host call opens")
+            .observe(request_execution);
         let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt) =
             outcome
         else {
