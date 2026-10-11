@@ -4,12 +4,6 @@ use super::{DerivedIndexGeneration, DerivedIndexId};
 
 /// Explicit limits for patch-local work and optional cold reconstruction.
 /// A zero cold limit prohibits reconstruction, including a missing generation.
-/// Prepaid search receipts can only be minted by their payment owner:
-///
-/// ```compile_fail
-/// use worth_relational::indexes::authority::maintenance::comparison_payment::ComparisonPayment;
-/// let _ = ComparisonPayment { work: panic!("forged payer"), prepaid: Some(1) };
-/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DerivedIndexMaintenanceBudget {
     pub maximum_work_units: usize,

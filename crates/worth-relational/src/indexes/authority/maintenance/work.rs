@@ -3,6 +3,9 @@ use crate::indexes::data::{
     DerivedIndexMaintenanceDenialKind as Denial, DerivedIndexMaintenanceWork,
 };
 
+#[path = "comparison_payment.rs"]
+mod comparison_payment;
+
 pub(super) struct MaintenanceAdmissionRefusal;
 
 enum MaintenancePayer<'a, 'run, 'lease> {
@@ -17,11 +20,47 @@ enum MaintenancePayer<'a, 'run, 'lease> {
 
 pub(super) struct MaintenanceWork<'a, 'run, 'lease> {
     pub(super) budget: DerivedIndexMaintenanceBudget,
-    pub(super) counts: DerivedIndexMaintenanceWork,
+    counts: DerivedIndexMaintenanceWork,
     payer: MaintenancePayer<'a, 'run, 'lease>,
 }
 
 impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
+    pub(super) fn counts(&self) -> DerivedIndexMaintenanceWork {
+        self.counts
+    }
+    pub(super) fn search_payment(
+        &mut self,
+        rows: usize,
+    ) -> Result<comparison_payment::ComparisonPayment<'_, 'a, 'run, 'lease>, Denial> {
+        comparison_payment::ComparisonPayment::for_search(self, rows)
+    }
+    pub(super) fn note_patch_records(&mut self, count: usize) {
+        self.counts.patch_records += count;
+    }
+    pub(super) fn note_cold_record_slots(&mut self, count: usize) {
+        self.counts.cold_record_slots += count;
+    }
+    pub(super) fn note_seek_comparisons(&mut self, count: usize) {
+        self.counts.seek_comparisons += count;
+    }
+    pub(super) fn note_entry_edits(&mut self, count: usize) {
+        self.counts.entry_edits += count;
+    }
+    pub(super) fn note_path_copy_units_reserved(&mut self, count: usize) {
+        self.counts.path_copy_units_reserved += count;
+    }
+    pub(super) fn note_adjacency_work_units(&mut self, count: usize) {
+        self.counts.adjacency_work_units += count;
+    }
+    pub(super) fn note_reused_generations(&mut self, count: usize) {
+        self.counts.reused_generations += count;
+    }
+    pub(super) fn note_seeded_generations(&mut self, count: usize) {
+        self.counts.seeded_generations += count;
+    }
+    pub(super) fn reserve_generation_publications(&mut self, count: usize) {
+        self.counts.generation_publications_reserved = count;
+    }
     pub(super) fn has_preparation(&self) -> bool {
         matches!(self.payer, MaintenancePayer::Admission(_))
     }

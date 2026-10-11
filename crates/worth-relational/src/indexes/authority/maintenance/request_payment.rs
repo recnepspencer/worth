@@ -53,7 +53,7 @@ pub(super) fn run<T>(
             let outcome = scan.run(lease, (), 0, 0, 0, 0, |_, _, context| {
                 let mut work = MaintenanceWork::request_paid(budget, context, &mut memory);
                 prepared = Some(prepare(&mut work));
-                counts = work.counts;
+                counts = work.counts();
                 Ok::<_, MapKernelFailure<()>>(((), ()))
             });
             #[cfg(test)]

@@ -119,7 +119,7 @@ impl IndexAuthority<'_> {
         basis::validate_prepared(&request, before.as_ref(), &after)?;
         let prepared = self.prepare_refresh(execution, &request, before.as_ref(), &after, work)?;
         work.charge(prepared.entries.len())?;
-        work.counts.generation_publications_reserved = prepared.entries.len();
+        work.reserve_generation_publications(prepared.entries.len());
         work.array::<DerivedIndexGeneration>(prepared.entries.len())?;
         work.array::<crate::indexes::data::DerivedIndexGenerationId>(prepared.entries.len())?;
         work.prepare(

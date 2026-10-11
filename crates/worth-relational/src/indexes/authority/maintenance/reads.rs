@@ -67,13 +67,13 @@ pub(super) fn adjacency(
         Ok(read) => {
             let units = read.work_units();
             work.charge(units)?;
-            work.counts.adjacency_work_units += units;
+            work.note_adjacency_work_units(units);
             Ok(read.into_records())
         }
         Err(exceeded) => {
             let units = exceeded.consumed_work_units();
             work.charge(units)?;
-            work.counts.adjacency_work_units += units;
+            work.note_adjacency_work_units(units);
             Err(work.bounded_scan_denial())
         }
     }

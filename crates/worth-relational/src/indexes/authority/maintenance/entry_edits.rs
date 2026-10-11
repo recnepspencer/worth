@@ -20,13 +20,7 @@ pub(super) fn edit<K: Ord + Clone, R: Clone>(
 ) -> Result<(), Denial> {
     work.charge(1)?;
     let mut rows = entries.get(&key).cloned().unwrap_or_default();
-    let mut comparisons = 0;
-    let found = rows.binary_search_by(|candidate| {
-        comparisons += 1;
-        compare(candidate, &row)
-    });
-    work.charge(comparisons)?;
-    work.counts.seek_comparisons += comparisons;
+    let found = paid_position(&rows, &row, &compare, work)?;
     let position = match (insert, found) {
         (true, Err(position)) | (false, Ok(position)) => position,
         _ => return Err(Denial::PriorEntryMismatch),
@@ -40,7 +34,7 @@ pub(super) fn edit<K: Ord + Clone, R: Clone>(
         rows.remove(position);
     }
     entries.replace(key, rows);
-    work.counts.entry_edits += 1;
+    work.note_entry_edits(1);
     Ok(())
 }
 
@@ -58,28 +52,7 @@ pub(super) fn grouped<K: Ord + Clone, R: Clone>(
         let mut rows = entries.get(&key).cloned().unwrap_or_default();
         let mut map_reserved = false;
         for operation in operations {
-            let mut comparisons = 0;
-            let found = {
-                let mut payment =
-                    super::comparison_payment::ComparisonPayment::for_search(work, rows.len())?;
-                let mut refused = None;
-                let found = rows.binary_search_by(|candidate| {
-                    if refused.is_some() {
-                        return Ordering::Equal;
-                    }
-                    if let Err(denial) = payment.comparison() {
-                        refused = Some(denial);
-                        return Ordering::Equal;
-                    }
-                    comparisons += 1;
-                    compare(candidate, &operation.row)
-                });
-                if let Some(denial) = refused {
-                    return Err(denial);
-                }
-                found
-            };
-            work.counts.seek_comparisons += comparisons;
+            let found = paid_position(&rows, &operation.row, &compare, work)?;
             let position = match (operation.insert, found) {
                 (true, Err(position)) | (false, Ok(position)) => position,
                 _ => return Err(Denial::PriorEntryMismatch),
@@ -96,13 +69,42 @@ pub(super) fn grouped<K: Ord + Clone, R: Clone>(
             } else {
                 rows.remove(position);
             }
-            work.counts.entry_edits += 1;
+            work.note_entry_edits(1);
         }
         if map_reserved {
             entries.replace(key, rows);
         }
     }
     Ok(())
+}
+
+fn paid_position<R>(
+    rows: &DerivedIndexRows<R>,
+    row: &R,
+    compare: &impl Fn(&R, &R) -> Ordering,
+    work: &mut MaintenanceWork,
+) -> Result<Result<usize, usize>, Denial> {
+    let mut comparisons = 0;
+    let mut refused = None;
+    let found = {
+        let mut payment = work.search_payment(rows.len())?;
+        rows.binary_search_by(|candidate| {
+            if refused.is_some() {
+                return Ordering::Equal;
+            }
+            if let Err(denial) = payment.comparison() {
+                refused = Some(denial);
+                return Ordering::Equal;
+            }
+            comparisons += 1;
+            compare(candidate, row)
+        })
+    };
+    work.note_seek_comparisons(comparisons);
+    match refused {
+        Some(denial) => Err(denial),
+        None => Ok(found),
+    }
 }
 
 pub(super) fn prepare_map<K: Ord + Clone, R: Clone>(
@@ -167,7 +169,7 @@ fn reserve_paths<R>(
 ) -> Result<(), Denial> {
     let units = path_reservation(keys) + path_reservation(rows.len());
     work.charge(units)?;
-    work.counts.path_copy_units_reserved += units;
+    work.note_path_copy_units_reserved(units);
     Ok(())
 }
 
@@ -182,7 +184,7 @@ fn reserve_row_path(rows: usize, work: &mut MaintenanceWork) -> Result<(), Denia
 fn reserve_handle_path(size: usize, work: &mut MaintenanceWork) -> Result<(), Denial> {
     let units = path_reservation(size);
     work.charge(units)?;
-    work.counts.path_copy_units_reserved += units;
+    work.note_path_copy_units_reserved(units);
     Ok(())
 }
 
@@ -230,8 +232,8 @@ mod tests {
         for key in 0_u64..1_000 {
             edit(&mut entries, key, key + 20_000, true, Ord::cmp, &mut work).unwrap();
         }
-        assert_eq!(work.counts.entry_edits, 1_001);
-        assert!(work.counts.work_units < 2_000_000);
+        assert_eq!(work.counts().entry_edits, 1_001);
+        assert!(work.counts().work_units < 2_000_000);
         assert_eq!(entries.len(), 10_000);
         assert_eq!(retained.get(&5_000).unwrap().len(), 1);
         assert_eq!(entries.get(&5_000).unwrap().len(), 2);
@@ -247,8 +249,8 @@ mod tests {
             maximum_derived_rows: 0,
         });
         edit(&mut large_bucket, 1, 10_000, true, Ord::cmp, &mut work).unwrap();
-        assert_eq!(work.counts.entry_edits, 1);
-        assert!(work.counts.work_units < 10_000);
+        assert_eq!(work.counts().entry_edits, 1);
+        assert!(work.counts().work_units < 10_000);
         assert_eq!(retained_bucket.get(&1).unwrap().len(), 10_000);
         assert_eq!(large_bucket.get(&1).unwrap().len(), 10_001);
     }
@@ -294,14 +296,38 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![1, 3]
         );
-        assert_eq!(grouped_work.counts.entry_edits, 3);
+        assert_eq!(grouped_work.counts().entry_edits, 3);
         assert_eq!(
-            grouped_work.counts.seek_comparisons,
-            sequential_work.counts.seek_comparisons
+            grouped_work.counts().seek_comparisons,
+            sequential_work.counts().seek_comparisons
         );
         assert!(
-            grouped_work.counts.path_copy_units_reserved
-                < sequential_work.counts.path_copy_units_reserved
+            grouped_work.counts().path_copy_units_reserved
+                < sequential_work.counts().path_copy_units_reserved
         );
+    }
+    #[test]
+    fn unfunded_comparison_never_calls_the_comparator() {
+        let mut entries = DerivedIndexEntryMap::from(BTreeMap::from([(1_u64, vec![1_u64, 3, 5])]));
+        let retained = entries.clone();
+        let mut work = MaintenanceWork::new(DerivedIndexMaintenanceBudget {
+            maximum_work_units: 1,
+            maximum_cold_record_slots: 0,
+            maximum_derived_rows: 0,
+        });
+        let denied = edit(
+            &mut entries,
+            1,
+            2,
+            true,
+            |_, _| panic!("a comparison ran before its payment"),
+            &mut work,
+        )
+        .unwrap_err();
+        assert_eq!(denied, Denial::WorkBudgetExceeded);
+        assert_eq!(entries, retained);
+        assert_eq!(work.counts().work_units, 1);
+        assert_eq!(work.counts().seek_comparisons, 0);
+        assert_eq!(work.counts().entry_edits, 0);
     }
 }

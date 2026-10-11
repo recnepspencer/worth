@@ -17,7 +17,6 @@ mod refresh_preparation;
 use publication::PreparedRefresh;
 #[cfg(test)]
 pub(crate) mod charge_rendezvous;
-mod comparison_payment;
 mod reads;
 mod record_metadata;
 mod request_payment;

@@ -22,7 +22,7 @@ impl ChangedRecords {
             .patch
             .authoritative_record_patches;
         work.charge(patches.len())?;
-        work.counts.patch_records += patches.len();
+        work.note_patch_records(patches.len());
         let mut changed = Self {
             entities: BTreeSet::new(),
             relations: BTreeSet::new(),
@@ -56,12 +56,12 @@ impl ChangedRecords {
                 > work
                     .budget
                     .maximum_cold_record_slots
-                    .saturating_sub(work.counts.cold_record_slots)
+                    .saturating_sub(work.counts().cold_record_slots)
         {
             return Err(Denial::ColdReconstructionRequired);
         }
         work.charge(slots)?;
-        work.counts.cold_record_slots += slots;
+        work.note_cold_record_slots(slots);
         let mut entities = BTreeSet::new();
         let mut relations = BTreeSet::new();
         root.try_visit_partitions(|event| {
