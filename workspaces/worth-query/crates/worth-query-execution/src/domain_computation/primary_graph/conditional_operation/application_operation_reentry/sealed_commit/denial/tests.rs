@@ -133,6 +133,38 @@ fn pending_and_invariant_resources_keep_category_stage_and_terminal_posture() {
 }
 
 #[test]
+fn invariant_execution_control_stops_keep_stage_cause_and_terminal_posture() {
+    use crate::domain_computation::{
+        WorthQueryInvariantExecutionDenialKind as Invariant,
+        WorthQueryInvariantExecutionFailure as Failure,
+    };
+    use worth_relational::facade::mvcc::RelationalOperationInterruption as Interruption;
+
+    for (stop, control) in [
+        (Interruption::Cancelled, Control::Cancelled),
+        (Interruption::TimedOut, Control::TimedOut),
+    ] {
+        let denial = Denial::invariant_execution_denied(
+            Stage::InvariantExecution,
+            Failure::new(
+                Invariant::RequestInterrupted(stop),
+                "invariant request stopped",
+            ),
+        );
+        assert_eq!(denial.kind(), Kind::ProviderRejected);
+        assert_eq!(denial.stage(), Stage::InvariantExecution);
+        assert_eq!(denial.execution_denial_cause(), Some(Err(control)));
+        let Outcome::TerminalFailure(Terminal::ApplicationExecution { stage, cause }) =
+            classify_denial(&denial)
+        else {
+            panic!("invariant control stop lost its terminal execution posture");
+        };
+        assert_eq!(stage, Stage::InvariantExecution);
+        assert_eq!(cause, Err(control));
+    }
+}
+
+#[test]
 fn preparation_control_stops_retry_at_provider_commit() {
     use crate::domain_computation::primary_graph::application_attempt::WorthQueryProviderProgressionOutcome as Progression;
     use crate::domain_computation::WorthQueryProviderSessionCommitControlStopped as Stopped;
