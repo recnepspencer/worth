@@ -6,7 +6,10 @@ use worth_query_host::facade::{
         WorthQueryManagedComputationResourceDenial as Resource,
     },
     application_entry::WorthQueryApplicationOutputDemandDenial as OutputDenial,
-    primary_graph::signal_request_charges_on_this_thread_for_test as signal_charges,
+    primary_graph::{
+        signal_request_charges_on_this_thread_for_test as signal_charges,
+        signal_request_refusals_on_this_thread_for_test as signal_refusals, SignalCheckpointDenial,
+    },
 };
 
 #[test]
@@ -55,12 +58,18 @@ fn refused_delivery(placement: Placement) {
     )));
     reports();
     signal_charges();
+    signal_refusals();
     kernel_charges();
     room().clear();
     let stopped = interest.settle(&request);
     let OutputDenial::Demand(denial) = stopped.err().expect("delivery must refuse") else {
         panic!("the output consumer retains the delivery cause");
     };
+    assert_eq!(
+        signal_refusals(),
+        vec![SignalCheckpointDenial::WorkCeiling],
+        "delivery refuses at its Signal-owned checkpoint"
+    );
     assert_eq!(
         denial.kind(),
         WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::Resource(
