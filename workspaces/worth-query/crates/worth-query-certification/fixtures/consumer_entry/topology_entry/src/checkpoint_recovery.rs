@@ -32,8 +32,10 @@ mod demand_contact;
 mod demand_policy;
 mod generated_restoration;
 mod input_cutoff;
-#[cfg(all(feature = "test-world-operation-control", not(target_arch = "wasm32")))]
-mod late_cancellation;
+needs_os_threads! {
+    #[cfg(feature = "test-world-operation-control")]
+    mod late_cancellation;
+}
 pub(crate) mod mixed_retirement;
 #[cfg(feature = "test-query-execution-observer")]
 mod parallel_history;

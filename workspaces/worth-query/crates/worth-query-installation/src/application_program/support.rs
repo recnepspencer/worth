@@ -16,6 +16,8 @@ mod admission_tests;
 #[cfg(test)]
 mod compatibility_tests;
 #[cfg(test)]
+mod debug_tests;
+#[cfg(test)]
 mod installation_denial_tests;
 #[cfg(test)]
 mod membership_tests;
@@ -35,7 +37,7 @@ pub use retirement::{
 /// and the operations and mutation bindings it acts through. It is descriptive
 /// support evidence: it establishes neither branch activation nor publication
 /// authority.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct WorthQueryProgramSupportEntry {
     revision: ApplicationProgramRevision,
     identity: ApplicationProgramIdentity,
@@ -45,6 +47,21 @@ pub struct WorthQueryProgramSupportEntry {
     semantic_description: ApplicationSemanticDescription,
     effectful_action_subjects: Box<[String]>,
     action_dependencies: Box<[WorthQueryProgramActionDependency]>,
+}
+
+impl std::fmt::Debug for WorthQueryProgramSupportEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WorthQueryProgramSupportEntry")
+            .field("revision", &self.revision)
+            .field("identity", &self.identity)
+            .field("rules", &self.rules)
+            .field("action_operations", &self.action_operations.len())
+            .field("mutation_bindings", &self.mutation_bindings.len())
+            .field("semantic_description", &self.semantic_description)
+            .field("effectful_action_subjects", &self.effectful_action_subjects)
+            .field("action_dependencies", &self.action_dependencies)
+            .finish()
+    }
 }
 
 /// One name a workflow definition can depend on, paired with the semantic

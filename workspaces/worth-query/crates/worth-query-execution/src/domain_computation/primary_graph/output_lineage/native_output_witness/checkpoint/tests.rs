@@ -319,7 +319,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         ));
         let mut no_work = owner.edit_admission();
         no_work
-            .charge_external_work(u64::try_from(no_work.remaining_work()).unwrap())
+            .charge_external_work(no_work.remaining_work_amount())
             .unwrap();
         let exhausted = compare_retained_output_witness(&host_custody.borrowed_request_for_test(),
             runtime,

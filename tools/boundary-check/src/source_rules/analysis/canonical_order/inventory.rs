@@ -191,6 +191,12 @@ impl OrderingSites<'_> {
 impl<'ast> Visit<'ast> for OrderingSites<'_> {
     fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
         self.derives(&item.ident, &item.attrs, item.fields.iter().map(|f| &f.ty));
+        if super::debug_inventory::derives_members(item, self.type_ids) {
+            self.record(
+                item.ident.span().start().line,
+                "Debug derive walks a TypeId-keyed hash inventory",
+            );
+        }
         visit::visit_item_struct(self, item);
     }
     fn visit_item_enum(&mut self, item: &'ast syn::ItemEnum) {

@@ -21,6 +21,17 @@ pub use application_program::*;
 pub use contribution::TopologyConfiguration;
 pub use final_output::*;
 pub use initial_adjustment::*;
+// needs OS threads: this fixture crate has no OS-thread backend on wasm.
+#[cfg(test)]
+macro_rules! needs_os_threads {
+    ($($item:item)*) => {
+        $(
+            #[cfg(not(target_family = "wasm"))]
+            $item
+        )*
+    };
+}
+
 #[cfg(test)]
 mod checkpoint_recovery;
 #[cfg(test)]

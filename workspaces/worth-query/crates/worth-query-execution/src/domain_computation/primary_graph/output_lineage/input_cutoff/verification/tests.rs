@@ -19,15 +19,13 @@ fn currentness(work: u64) -> InvalidationEditAdmission {
 
 #[test]
 fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_stopping() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = installed_authorization_world(true);
-    let entity = world
+    world
         .application
         .with_host_advancement(|phase| {
-            world
-                .selected_product(&(phase).test_host_request())
+            let execution = phase.borrowed_request_for_test();
+            let entity = world
+                .selected_product(&phase.test_host_request())
                 .resolve_entity(
                     &phase,
                     AccountStatus::reference(),
@@ -36,31 +34,25 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
-        })
-        .expect("the fixture read owns its installed host call");
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let status_ref = AccountStatus::reference();
-    let status = graph
-        .layout()
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
-        .unwrap()
-        .clone();
-    let locator = AspectFieldLocator::new(
-        LocatorAuthority::Authoritative,
-        status.aspect().aspect_key().clone(),
-        status.field_path().clone(),
-    );
+                .entity_id();
+            let graph = world.application.runtime.primary_graph().unwrap();
+            let status_ref = AccountStatus::reference();
+            let status = graph
+                .layout()
+                .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+                .unwrap()
+                .clone();
+            let locator = AspectFieldLocator::new(
+                LocatorAuthority::Authoritative,
+                status.aspect().aspect_key().clone(),
+                status.field_path().clone(),
+            );
 
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
             world
                 .application
                 .primary_provider
                 .graph
-                .with_runtime(request_execution, |runtime| {
+                .with_runtime(&execution, |runtime| {
                     let basis = runtime
                         .admit_branch_basis(&runtime.main_branch_identity())
                         .unwrap();
@@ -70,13 +62,9 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
                         .unwrap();
                     let revision = runtime
                         .read_truth()
-                        .project_snapshot(&snapshot, &host_custody.borrowed_request_for_test())
+                        .project_snapshot(&snapshot, &execution)
                         .unwrap()
-                        .entity_field_revision(
-                            &host_custody.borrowed_request_for_test(),
-                            entity,
-                            &locator,
-                        )
+                        .entity_field_revision(&execution, entity, &locator)
                         .unwrap();
                     let facts = [WorthQueryApplicationObservedFact::SourceFieldRevision {
                         entity_id: entity,
@@ -87,18 +75,14 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
                     // An ample allowance proves the marked fact current, so any `false`
                     // below comes from exhaustion alone, never from a changed source.
                     let mut ample = currentness(1 << 20);
-                    let full = ample.remaining_work();
+                    let full = ample.remaining_work_amount();
                     assert!(matches!(
                         marked_facts_permit_reuse(
-                            &host_custody.borrowed_request_for_test(),
-                            &facts,
-                            runtime,
-                            &snapshot,
-                            &mut ample
+                            &execution, &facts, runtime, &snapshot, &mut ample
                         ),
                         Ok(true)
                     ));
-                    let required = u64::try_from(full - ample.remaining_work()).unwrap();
+                    let required = full - ample.remaining_work_amount();
                     assert!(required > 1, "re-verification costs a visit plus its probe");
 
                     // Every smaller allowance runs out inside re-verification. Each one
@@ -108,7 +92,7 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
                         assert!(
                             matches!(
                                 marked_facts_permit_reuse(
-                                    &host_custody.borrowed_request_for_test(),
+                                    &execution,
                                     &facts,
                                     runtime,
                                     &snapshot,
@@ -121,7 +105,7 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
                     }
                     assert!(matches!(
                         marked_facts_permit_reuse(
-                            &host_custody.borrowed_request_for_test(),
+                            &execution,
                             &facts,
                             runtime,
                             &snapshot,
@@ -130,9 +114,9 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
                         Ok(true)
                     ));
                     runtime.snapshots().release_snapshot(&snapshot).unwrap();
-                })
+                });
         })
-        .expect("the fixture read owns its installed host call");
+        .expect("the fixture borrows its installed host phase");
 }
 
 #[test]
@@ -370,5 +354,5 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                 runtime.snapshots().release_snapshot(&snapshot).unwrap();
             });
         })
-        .expect("the native fixture borrows its installed host phase");
+        .expect("the fixture borrows its installed host phase");
 }

@@ -26,9 +26,15 @@ fn exhaustion_at_the_performed_commit_boundary_keeps_a_retryable_checkpoint() {
         bits: 10_f64.to_bits(),
         read: OwnWriteRead::Observed,
     }));
+    app.caller_request_work_for_test();
     app.exhaust_request_at_performed_commit_for_test();
     let stopped = output.advance(&request);
     arm_own_write(None);
+    assert_eq!(
+        app.caller_request_work_for_test(),
+        vec![u64::MAX],
+        "the performed-commit hook charges the exact u64 remainder"
+    );
     assert!(
         matches!(&stopped,
         Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
