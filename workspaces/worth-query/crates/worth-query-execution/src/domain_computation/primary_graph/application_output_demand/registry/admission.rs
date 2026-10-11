@@ -260,7 +260,7 @@ impl WorthQueryOutputDemandRegistry {
             if successor_of.is_some() {
                 // Refresh transfers any performed obligation only after the
                 // replacement is admitted and its custody is prepared.
-                reject_older_successor(&state, &requested_key)?;
+                reject_older_successor(&state, &requested_key, admission)?;
             } else {
                 supersede_predecessors(&mut state, &requested_key, admission)?;
             }

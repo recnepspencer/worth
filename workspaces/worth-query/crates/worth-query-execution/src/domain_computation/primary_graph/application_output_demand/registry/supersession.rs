@@ -120,13 +120,19 @@ pub(super) fn supersede_predecessors(
 pub(super) fn reject_older_successor(
     state: &DemandRegistryState,
     successor: &WorthQueryOutputDemandKey,
+    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
+    use super::refreshed_rejoin::OccurrenceSearchCharge;
     // Another producer may still compute from this source until currentness
     // rejects its work; only a newer revision of this producer blocks it.
-    if super::refreshed_rejoin::occurrence_rows(&state.records, successor).any(|(key, _)| {
-        key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)
-    }) {
-        return Err(superseded_denial(&successor.producer));
+    for (key, _) in
+        super::refreshed_rejoin::search_occurrence_rows(&state.records, successor, admission)?
+    {
+        admission.inspect_row()?;
+        if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)
+        {
+            return Err(superseded_denial(&successor.producer));
+        }
     }
     Ok(())
 }

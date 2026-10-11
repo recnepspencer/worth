@@ -24,11 +24,14 @@
 
 use std::sync::Arc;
 
-use super::refreshed_rejoin::occurrence_rows;
+use super::refreshed_rejoin::{search_occurrence_rows, work_denial, OccurrenceSearchCharge};
 use super::{DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry};
 use crate::domain_computation::primary_graph::output_lineage::{
     invalidation::{InvalidationEditAdmission, SourceInvalidationOwner},
     RecordedSettlementIdentity,
+};
+use crate::domain_computation::primary_graph::{
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
 type Identity = Arc<RecordedSettlementIdentity>;
@@ -101,31 +104,9 @@ impl WorthQueryOutputDemandRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if state.charge_record_lookup(key, &mut admission).is_err()
-                || !state.records.contains_key(key)
-            {
+            let Ok(candidates) = state.prepare_superseded_settlements(key, &mut admission) else {
                 return Vec::new();
-            }
-            let mut candidates = Vec::new();
-            for (other, record) in occurrence_rows(&state.records, key) {
-                let superseded = if other == key {
-                    record.settlements.len().saturating_sub(1)
-                } else if key.replacement_order(other) == Some(std::cmp::Ordering::Greater) {
-                    record.settlements.len()
-                } else {
-                    0
-                };
-                if admission.charge_external_work(1).is_err()
-                    || admit_slots(superseded, &mut admission).is_err()
-                {
-                    return Vec::new();
-                }
-                candidates.extend(
-                    record.settlements[..superseded]
-                        .iter()
-                        .map(|(identity, _)| Arc::clone(identity)),
-                );
-            }
+            };
             candidates
         };
         if !candidates.is_empty() {
@@ -178,6 +159,36 @@ impl WorthQueryOutputDemandRegistry {
 }
 
 impl DemandRegistryState {
+    /// A denied owner edit leaves its postings intact for the next retirement.
+    pub(super) fn prepare_superseded_settlements(
+        &self,
+        key: &WorthQueryOutputDemandKey,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Vec<Identity>, WorthQueryOutputDemandDenial> {
+        self.charge_record_lookup(key, admission)?;
+        if !self.records.contains_key(key) {
+            return Ok(Vec::new());
+        }
+        let mut candidates = Vec::new();
+        for (other, record) in search_occurrence_rows(&self.records, key, admission)? {
+            admission.inspect_row()?;
+            let superseded = if other == key {
+                record.settlements.len().saturating_sub(1)
+            } else if key.replacement_order(other) == Some(std::cmp::Ordering::Greater) {
+                record.settlements.len()
+            } else {
+                0
+            };
+            admit_slots(superseded, admission)?;
+            candidates.extend(
+                record.settlements[..superseded]
+                    .iter()
+                    .map(|(identity, _)| Arc::clone(identity)),
+            );
+        }
+        Ok(candidates)
+    }
+
     fn forget_retired_settlements(
         &mut self,
         retired: &[Identity],
@@ -232,11 +243,22 @@ impl DemandRegistryState {
 fn admit_slots(
     count: usize,
     admission: &mut InvalidationEditAdmission,
-) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
+) -> Result<(), WorthQueryOutputDemandDenial> {
     let bytes = count
         .checked_mul(std::mem::size_of::<Identity>())
         .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or(worth_relational::facade::mvcc::CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-    admission.admit_read_scratch(bytes)?;
-    admission.charge_external_work(count as u64)
+        .ok_or_else(capacity_denial)?;
+    admission
+        .admit_read_scratch(bytes)
+        .map_err(|_| capacity_denial())?;
+    admission
+        .charge_external_work(count as u64)
+        .map_err(|_| work_denial())
+}
+
+fn capacity_denial() -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+        "superseded settlement preparation exceeds owner custody",
+    )
 }

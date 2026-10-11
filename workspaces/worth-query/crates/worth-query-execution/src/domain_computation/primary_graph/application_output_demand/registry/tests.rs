@@ -41,6 +41,7 @@ mod selected_execution_release;
 mod semantic_epoch;
 mod settlement_work;
 mod source_custody;
+mod walk_refusal;
 
 mod support;
 use support::*;

@@ -9,6 +9,12 @@ pub(super) struct DemandRecords(Map, BTreeMap<
     std::collections::BTreeSet<WorthQueryOutputDemandKey>>);
 #[cfg(feature = "test-query-execution-observer")]
 thread_local! { static WHOLE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
+#[cfg(test)]
+thread_local! { static OCCURRENCE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
+#[cfg(test)]
+pub(super) fn occurrence_rows_visited() -> u64 {
+    OCCURRENCE_ROWS.with(std::cell::Cell::get)
+}
 fn observe_row() {
     #[cfg(feature = "test-query-execution-observer")]
     WHOLE_ROWS.with(|count| count.set(count.get().checked_add(1).expect("row visit counter")));
@@ -111,7 +117,10 @@ impl DemandRecords {
             .0
             .range((Included(key), Unbounded))
             .take_while(move |(other, _)| other.same_occurrence(key));
-        before.chain(from)
+        let rows = before.chain(from);
+        #[cfg(test)]
+        let rows = rows.inspect(|_| OCCURRENCE_ROWS.with(|count| count.set(count.get() + 1)));
+        rows
     }
 }
 impl std::ops::Index<&WorthQueryOutputDemandKey> for DemandRecords {
