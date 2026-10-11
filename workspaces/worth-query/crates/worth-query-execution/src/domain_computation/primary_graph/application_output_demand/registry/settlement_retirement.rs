@@ -170,7 +170,12 @@ impl DemandRegistryState {
         let mut candidates = Vec::new();
         for (other, record) in occurrence_rows(&self.records, key, admission)? {
             admission.inspect_row()?;
-            let superseded = if other == key {
+            let same_row = {
+                #[cfg(test)]
+                super::demand_key::observe_row_comparison();
+                other == key
+            };
+            let superseded = if same_row {
                 record.settlements.len().saturating_sub(1)
             } else if key.replacement_order(other) == Some(std::cmp::Ordering::Greater) {
                 record.settlements.len()

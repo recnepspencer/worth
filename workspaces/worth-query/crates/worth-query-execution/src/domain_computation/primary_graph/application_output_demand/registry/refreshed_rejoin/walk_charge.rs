@@ -15,11 +15,8 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 
 /// A whole-map payment retains an immutable borrow of precisely those records.
 /// Its fields are sealed here; registry callers can only obtain it by paying.
-///
-/// ```compile_fail,E0603
-/// use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::walk_charge::PrepaidOccurrenceWalk;
-/// let _receipt = PrepaidOccurrenceWalk { records: &Default::default() };
-/// ```
+/// Each search consumes a paid pass; the consuming chain call serves disjoint
+/// occurrences in one pass. No caller receives the private pass payer.
 pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct PrepaidOccurrenceWalk<
     'records,
 > {

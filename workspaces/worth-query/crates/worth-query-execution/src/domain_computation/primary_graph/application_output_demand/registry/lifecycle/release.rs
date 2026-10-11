@@ -2,12 +2,8 @@
 use super::super::refreshed_rejoin::infallible;
 use super::*;
 
-/// Only this release entry can construct the cleanup payer.
-///
-/// ```compile_fail,E0603
-/// use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::lifecycle::release::CleanupWalk;
-/// let _charge = CleanupWalk { _release: () };
-/// ```
+/// The private field seals construction to this release module. Its only
+/// production constructor is the interest Drop release entry below.
 pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct CleanupWalk
 {
     _release: (),

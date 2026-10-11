@@ -154,8 +154,12 @@ pub(super) fn reject_older_successor(
     for (key, _) in super::refreshed_rejoin::occurrence_rows(&state.records, successor, admission)?
     {
         admission.inspect_row()?;
-        if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)
-        {
+        let other_row = {
+            #[cfg(test)]
+            super::demand_key::observe_row_comparison();
+            key != successor
+        };
+        if other_row && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater) {
             return Err(superseded_denial(&successor.producer));
         }
     }

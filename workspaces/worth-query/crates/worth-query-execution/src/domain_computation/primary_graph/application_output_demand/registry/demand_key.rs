@@ -6,6 +6,20 @@ use crate::domain_computation::primary_graph::application_contribution::WorthQue
 use crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity;
 use std::cmp::Ordering;
 
+// Observe semantic row comparisons, not the ordered navigation bought by a
+// path charge. The two explicit equality gates record their comparisons too.
+#[cfg(test)]
+thread_local! { static ROW_COMPARISONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
+#[cfg(test)]
+pub(super) fn row_key_comparisons() -> u64 {
+    ROW_COMPARISONS.with(std::cell::Cell::get)
+}
+#[cfg(test)]
+pub(super) fn observe_row_comparison() {
+    ROW_COMPARISONS
+        .with(|count| count.set(count.get().checked_add(1).expect("row comparison counter")));
+}
+
 // Family and source precede the binding: one output occurrence remains a
 // contiguous range even when Initial and Preserve have separate executors.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -72,6 +86,8 @@ impl WorthQueryOutputDemandKey {
     }
 
     pub(super) fn replacement_order(&self, other: &Self) -> Option<Ordering> {
+        #[cfg(test)]
+        observe_row_comparison();
         if self.family != other.family {
             return None;
         }

@@ -43,6 +43,7 @@ mod required_lifecycle;
 mod required_stop;
 mod required_work;
 mod retirement_refusal;
+mod row_work_refusal;
 mod scheduling_interruption;
 mod selected_execution_release;
 mod semantic_epoch;
