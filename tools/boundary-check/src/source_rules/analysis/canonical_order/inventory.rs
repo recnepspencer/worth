@@ -12,6 +12,7 @@ pub(super) struct Finding {
 }
 
 pub(super) fn scan(files: &[(&str, &[Item])]) -> Vec<Finding> {
+    let debug_inventory = super::debug_inventory::Inventories::from_files(files);
     let mut vocabulary = Vocabulary::default();
     vocabulary.type_ids.insert("TypeId".into());
     vocabulary
@@ -49,6 +50,7 @@ pub(super) fn scan(files: &[(&str, &[Item])]) -> Vec<Finding> {
             type_ids: &type_ids,
             local_fields: &local.fields,
             vocabulary: &vocabulary,
+            debug_inventory: &debug_inventory,
             findings: &mut findings,
         };
         for item in *items {
@@ -143,6 +145,7 @@ struct OrderingSites<'a> {
     type_ids: &'a BTreeSet<String>,
     local_fields: &'a BTreeMap<String, BTreeSet<String>>,
     vocabulary: &'a Vocabulary,
+    debug_inventory: &'a super::debug_inventory::Inventories,
     findings: &'a mut Vec<Finding>,
 }
 
@@ -191,7 +194,11 @@ impl OrderingSites<'_> {
 impl<'ast> Visit<'ast> for OrderingSites<'_> {
     fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
         self.derives(&item.ident, &item.attrs, item.fields.iter().map(|f| &f.ty));
-        if super::debug_inventory::derives_members(item, self.type_ids) {
+        if self.debug_inventory.derives_members(
+            &item.attrs,
+            item.fields.iter().map(|f| &f.ty),
+            self.type_ids,
+        ) {
             self.record(
                 item.ident.span().start().line,
                 "Debug derive walks a TypeId-keyed hash inventory",
@@ -207,6 +214,18 @@ impl<'ast> Visit<'ast> for OrderingSites<'_> {
                 .iter()
                 .flat_map(|v| v.fields.iter().map(|f| &f.ty)),
         );
+        if self.debug_inventory.derives_members(
+            &item.attrs,
+            item.variants
+                .iter()
+                .flat_map(|v| v.fields.iter().map(|f| &f.ty)),
+            self.type_ids,
+        ) {
+            self.record(
+                item.ident.span().start().line,
+                "Debug derive walks a TypeId-keyed hash inventory",
+            );
+        }
         visit::visit_item_enum(self, item);
     }
     fn visit_item_union(&mut self, item: &'ast syn::ItemUnion) {

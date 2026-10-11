@@ -16,7 +16,16 @@ use syn::visit::{self, Visit};
 use syn::{Attribute, ImplItem, Item, TraitItem, Type};
 
 /// The library and binary module graphs of the crate at `crate_root`.
-pub(super) fn production_graphs(root: &Path, crate_root: &str) -> Result<Vec<ModuleGraph>, String> {
+pub(super) fn production_graphs(
+    root: &Path,
+    crate_root: &str,
+) -> Result<std::rc::Rc<Vec<ModuleGraph>>, String> {
+    crate::source_documents::production_graphs(root, crate_root, || {
+        build_production_graphs(root, crate_root)
+    })
+}
+
+fn build_production_graphs(root: &Path, crate_root: &str) -> Result<Vec<ModuleGraph>, String> {
     let absolute_root = root.join(crate_root);
     let covered = GovernedCrate {
         package: package_name_from_manifest(&absolute_root.join("Cargo.toml"))?,

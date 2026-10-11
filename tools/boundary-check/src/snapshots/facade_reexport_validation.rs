@@ -6,12 +6,12 @@ pub(super) fn validate_exact_public_reexport(
     path: &Path,
     required_route: &str,
 ) -> Result<(), String> {
-    let text = std::fs::read_to_string(path)
+    let text = crate::source_documents::read_to_string(path)
         .map_err(|error| format!("read {}: {error}", path.display()))?;
-    let syntax = crate::source_syntax::parse_file(&text)
+    let syntax = crate::source_syntax::parse_named(path, &text)
         .map_err(|error| format!("parse {}: {error}", path.display()))?;
     let mut routes = Vec::new();
-    for item in syntax.items {
+    for item in syntax.items.clone() {
         if let Item::Use(item_use) = item {
             if matches!(item_use.vis, Visibility::Public(_)) {
                 collect_routes(&item_use.tree, &mut Vec::new(), &mut routes, path)?;

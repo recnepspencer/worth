@@ -50,7 +50,6 @@ impl Drop for ReleaseOnDrop {
 }
 
 #[test]
-#[ignore = "Scale: exhaust the fixed 64-operation owner bound"]
 fn operation_capacity_denies_the_65th_and_restores_after_release() {
     // This standalone caller declares the operational serial memory policy.
     let serial_request = worth_execution::SerialRequest::from_memory(
@@ -155,7 +154,6 @@ fn operation_capacity_denies_the_65th_and_restores_after_release() {
 }
 
 #[test]
-#[ignore = "Scale: exhaust the fixed 4,096 owner retention bound"]
 fn retention_capacity_denies_then_all_releases_restore_one_lease() {
     let world = AdversarialWorld::new();
     // The two exact bases held by this world already occupy two admitted
@@ -194,7 +192,6 @@ fn retention_capacity_denies_then_all_releases_restore_one_lease() {
 }
 
 #[test]
-#[ignore = "Scale: exhaust the fixed 4,096 live-branch bound"]
 fn live_branch_capacity_denies_then_retirement_restores_one_slot() {
     let world = AdversarialWorld::new();
     // A returned basis owns one bounded admitted lease. Keep only the basis

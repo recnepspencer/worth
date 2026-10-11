@@ -5,7 +5,6 @@
 //! from the `[workspace.lints]` it inherits. Neither may set the lint, or a
 //! group that holds it, to `allow`.
 
-use std::fs;
 use std::path::Path;
 
 /// The lints that silence Clippy's disallowed methods when allowed, by tool.
@@ -65,7 +64,7 @@ fn workspace_lints(root: &Path, crate_dir: &Path) -> Result<Option<toml::Value>,
 }
 
 fn read(manifest: &Path) -> Result<toml::Value, String> {
-    let text = fs::read_to_string(manifest)
+    let text = crate::source_documents::read_to_string(manifest)
         .map_err(|error| format!("read {}: {error}", manifest.display()))?;
     toml::from_str(&text).map_err(|error| format!("parse {}: {error}", manifest.display()))
 }

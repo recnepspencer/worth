@@ -13,7 +13,7 @@ use crate::tests::support::{GraphDependencyBatchExt, ASPECT_A};
 use super::{graph_metrics_delta, hot_family_contract, ZERO_BROAD_AND_ARTIFACT_ACCESS};
 
 #[test]
-#[ignore = "performance baseline capture; run with -- --ignored --nocapture"]
+#[ignore = "requires matched release capture runner; legacy goldens use obsolete sample counts"]
 fn perf_topology_rewiring_churn_serial() {
     let samples = with_perf_topology_asserts_disabled(|| {
         static TOPOLOGY_REWIRE_CHURN_WARMUP: Once = Once::new();
@@ -81,7 +81,7 @@ fn perf_topology_rewiring_churn_serial() {
 }
 
 #[test]
-#[ignore = "performance baseline capture; run with -- --ignored --nocapture"]
+#[ignore = "requires matched release capture runner; legacy goldens use obsolete sample counts"]
 fn perf_topology_rewiring_rotating_window_serial() {
     let samples = with_perf_topology_asserts_disabled(|| {
         static TOPOLOGY_REWIRE_WINDOW_WARMUP: Once = Once::new();

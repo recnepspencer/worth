@@ -41,7 +41,7 @@ pub(crate) fn validate_dependency_rules(
             }
 
             // Configured law substrates (worth-proof) are legal only for listed tiers/bands.
-            // Known substrate packages that miss admission fail closed — they must not fall
+            // Known substrate packages that miss admission fail closed - they must not fall
             // through the out-of-grammar `parse_crate_name` skip (worth-proof is outside the
             // {tier}-{band}-{domain} birth grammar).
             if is_legal_law_substrate_edge(
@@ -125,7 +125,7 @@ pub(crate) fn validate_worth_ui_query_edge(
         if !manifest_path.is_file() {
             continue;
         }
-        let text = std::fs::read_to_string(&manifest_path)
+        let text = crate::source_documents::read_to_string(&manifest_path)
             .map_err(|error| format!("failed to read {}: {error}", manifest_path.display()))?;
         let manifest: toml::Value = toml::from_str(&text)
             .map_err(|error| format!("failed to parse {}: {error}", manifest_path.display()))?;
@@ -220,9 +220,9 @@ fn validate_crate_query_source_edge(
             if path.extension().and_then(std::ffi::OsStr::to_str) != Some("rs") {
                 continue;
             }
-            let text = std::fs::read_to_string(&path)
+            let text = crate::source_documents::read_to_string(&path)
                 .map_err(|error| format!("failed to read {}: {error}", path.display()))?;
-            let syntax = crate::source_syntax::parse_file(&text)
+            let syntax = crate::source_syntax::parse_named(&path, &text)
                 .map_err(|error| format!("failed to parse {}: {error}", path.display()))?;
             let mut visitor = WorthQueryPathVisitor::default();
             syn::visit::Visit::visit_file(&mut visitor, &syntax);

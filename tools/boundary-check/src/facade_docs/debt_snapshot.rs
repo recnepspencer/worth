@@ -3,7 +3,6 @@
 use super::observation::{FacadeDocObservation, NameStatus};
 use crate::snapshots::document::{validate_rows, SCHEMA_VERSION};
 use serde::{Deserialize, Serialize};
-use std::fs;
 use std::path::{Path, PathBuf};
 
 /// The command that regenerates every governed snapshot, this debt included.
@@ -53,7 +52,8 @@ pub(crate) fn load_debt(root: &Path) -> Result<FacadeDocDebtDocument, String> {
             facades: Vec::new(),
         });
     }
-    let text = fs::read_to_string(&path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    let text = crate::source_documents::read_to_string(&path)
+        .map_err(|e| format!("read {}: {e}", path.display()))?;
     let document: FacadeDocDebtDocument =
         toml::from_str(&text).map_err(|e| format!("parse {}: {e}", path.display()))?;
     validate_rows(

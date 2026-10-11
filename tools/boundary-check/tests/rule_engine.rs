@@ -14,13 +14,14 @@ fn fixture_root(name: &str) -> PathBuf {
 
 fn run_fixture(name: &str) -> String {
     let root = copied_fixture(name);
-    let output = Command::new(env!("CARGO_BIN_EXE_boundary-check"))
-        .arg("--root")
-        .arg(&root)
-        .arg("--config")
-        .arg("tools/boundary-check/config/road1.toml")
-        .output()
-        .expect("run boundary-check fixture");
+    let output = worth_harness::tooling::process_deadline::output(
+        Command::new(env!("CARGO_BIN_EXE_boundary-check"))
+            .arg("--root")
+            .arg(&root)
+            .arg("--config")
+            .arg("tools/boundary-check/config/road1.toml"),
+    )
+    .expect("run boundary-check fixture");
     let _ = fs::remove_dir_all(root);
     assert!(
         !output.status.success(),
@@ -84,17 +85,18 @@ fn schema_query_import_is_rejected() {
 #[test]
 fn json_diagnostics_name_a_non_empty_legal_home() {
     let root = copied_fixture("schema_query_import");
-    let output = Command::new(env!("CARGO_BIN_EXE_boundary-check"))
-        .arg("--root")
-        .arg(&root)
-        .args([
-            "--config",
-            "tools/boundary-check/config/road1.toml",
-            "--format",
-            "json",
-        ])
-        .output()
-        .unwrap();
+    let output = worth_harness::tooling::process_deadline::output(
+        Command::new(env!("CARGO_BIN_EXE_boundary-check"))
+            .arg("--root")
+            .arg(&root)
+            .args([
+                "--config",
+                "tools/boundary-check/config/road1.toml",
+                "--format",
+                "json",
+            ]),
+    )
+    .unwrap();
     let _ = fs::remove_dir_all(root);
     assert!(!output.status.success());
     let diagnostics: serde_json::Value = serde_json::from_slice(&output.stderr).unwrap();

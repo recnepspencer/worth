@@ -39,7 +39,7 @@ pub(super) fn path_dependency_roots(
     crate_root: &Path,
 ) -> Result<BTreeMap<String, PathBuf>, String> {
     let manifest_path = crate_root.join("Cargo.toml");
-    let text = fs::read_to_string(&manifest_path)
+    let text = crate::source_documents::read_to_string(&manifest_path)
         .map_err(|e| format!("read {}: {e}", manifest_path.display()))?;
     let value: toml::Value =
         toml::from_str(&text).map_err(|e| format!("parse {}: {e}", manifest_path.display()))?;
@@ -86,7 +86,7 @@ pub(crate) fn path_backed_dependency_roots(
     crate_root: &Path,
 ) -> Result<BTreeMap<String, PathBuf>, String> {
     let manifest_path = crate_root.join("Cargo.toml");
-    let text = fs::read_to_string(&manifest_path)
+    let text = crate::source_documents::read_to_string(&manifest_path)
         .map_err(|e| format!("read {}: {e}", manifest_path.display()))?;
     let value: toml::Value =
         toml::from_str(&text).map_err(|e| format!("parse {}: {e}", manifest_path.display()))?;
@@ -136,7 +136,7 @@ fn resolve_dependency_entry(
     spec: &toml::Value,
 ) -> Result<(String, PathBuf), String> {
     match spec {
-        // `dep = "1.0"` version-only: ordinary non-path source — fail closed.
+        // `dep = "1.0"` version-only: ordinary non-path source - fail closed.
         toml::Value::String(version) => Err(non_path_source_error(
             dep_key,
             &format!("version string `{version}`"),
@@ -228,7 +228,7 @@ fn find_workspace_root(crate_root: &Path) -> Result<PathBuf, String> {
     loop {
         let candidate = dir.join("Cargo.toml");
         if candidate.is_file() {
-            if let Ok(text) = fs::read_to_string(&candidate) {
+            if let Ok(text) = crate::source_documents::read_to_string(&candidate) {
                 if let Ok(value) = toml::from_str::<toml::Value>(&text) {
                     if value.get("workspace").is_some() {
                         return Ok(dir);
@@ -250,8 +250,8 @@ fn load_workspace_dependency_table(
     if !manifest.is_file() {
         return Ok(BTreeMap::new());
     }
-    let text =
-        fs::read_to_string(&manifest).map_err(|e| format!("read {}: {e}", manifest.display()))?;
+    let text = crate::source_documents::read_to_string(&manifest)
+        .map_err(|e| format!("read {}: {e}", manifest.display()))?;
     let value: toml::Value =
         toml::from_str(&text).map_err(|e| format!("parse {}: {e}", manifest.display()))?;
     let Some(table) = value
@@ -279,7 +279,7 @@ fn normalize_dep_root(base_root: &Path, rel: &Path) -> Result<PathBuf, String> {
 }
 
 fn lib_path_from_manifest(dep_root: &Path) -> Option<PathBuf> {
-    let text = fs::read_to_string(dep_root.join("Cargo.toml")).ok()?;
+    let text = crate::source_documents::read_to_string(dep_root.join("Cargo.toml")).ok()?;
     let value: toml::Value = toml::from_str(&text).ok()?;
     let rel = value
         .get("lib")

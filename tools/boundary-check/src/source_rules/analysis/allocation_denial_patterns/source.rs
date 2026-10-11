@@ -4,7 +4,7 @@ use super::super::production_scope::{
     visit_variant_in_scope, ScopedVisitor,
 };
 use super::raw_kind_types::{Aliases, RAW};
-use proc_macro2::{Span, TokenStream, TokenTree};
+use proc_macro2::{Span, TokenStream};
 use std::collections::BTreeSet;
 use syn::spanned::Spanned;
 use syn::visit::{self, Visit};
@@ -67,7 +67,11 @@ impl RawAccess<'_> {
             .take(path.segments.len().saturating_sub(1))
         {
             prefix.segments.push(segment.clone());
-            if self.aliases.raw_path(&prefix, &self.scope) {
+            let ty = syn::Type::Path(syn::TypePath {
+                qself: None,
+                path: prefix.clone(),
+            });
+            if self.aliases.mentions_raw(&ty, &self.scope) {
                 self.refuse(segment.ident.span());
             }
         }
@@ -94,53 +98,17 @@ impl RawAccess<'_> {
             return;
         }
         let tokens: Vec<_> = tokens.into_iter().collect();
-        // A macro DSL may not parse as items or expressions. Inspect complete
-        // type-path prefixes without visiting their groups: recursion below
-        // owns those groups, including any nested macro bodies.
-        if self.aliases.has_member_aliases()
-            || tokens
-                .iter()
-                .any(|t| matches!(t, TokenTree::Ident(i) if i == RAW))
-        {
-            for start in 0..tokens.len() {
-                if start > 0
-                    && matches!(&tokens[start - 1], TokenTree::Punct(p) if p.as_char() == ':')
-                {
-                    continue;
-                }
-                if !matches!(&tokens[start], TokenTree::Ident(_) | TokenTree::Punct(_)) {
-                    continue;
-                }
-                for end in start + 2..tokens.len() {
-                    if !matches!(&tokens[end], TokenTree::Ident(_))
-                        || !matches!(&tokens[end - 1], TokenTree::Punct(p) if p.as_char() == ':')
-                        || !matches!(&tokens[end - 2], TokenTree::Punct(p) if p.as_char() == ':')
-                    {
-                        continue;
-                    }
-                    let candidate = tokens[start..=end].iter().cloned().collect();
-                    if let Ok(path) = syn::parse2::<syn::TypePath>(candidate) {
-                        if !self.qualified_access(path.qself.as_ref(), &path.path) {
-                            self.path_access(&path.path);
-                        }
-                    }
+        // A DSL fragment owns each token group once; path candidates are
+        // disjoint, rather than reparsing every possible start/end pair.
+        super::macro_paths::scan(&tokens, |fragment| match fragment {
+            super::macro_paths::Fragment::RawMember(span) => self.refuse(span),
+            super::macro_paths::Fragment::Path(path) => {
+                if !self.qualified_access(path.qself.as_ref(), &path.path) {
+                    self.path_access(&path.path);
                 }
             }
-        }
-        for window in tokens.windows(3) {
-            if let [TokenTree::Ident(name), TokenTree::Punct(first), TokenTree::Punct(second)] =
-                window
-            {
-                if name == RAW && first.as_char() == ':' && second.as_char() == ':' {
-                    self.refuse(name.span());
-                }
-            }
-        }
-        for token in tokens {
-            if let TokenTree::Group(group) = token {
-                self.macro_access(group.stream());
-            }
-        }
+            super::macro_paths::Fragment::Group(tokens) => self.macro_access(tokens),
+        });
     }
 }
 

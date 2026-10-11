@@ -46,9 +46,10 @@ pub(super) fn check(root: &Path) -> Result<Vec<Diagnostic>, String> {
     if !path.is_file() {
         return Ok(Vec::new());
     }
-    let mut expected: toml::Value =
-        toml::from_str(&std::fs::read_to_string(path).map_err(|error| error.to_string())?)
-            .map_err(|error| error.to_string())?;
+    let mut expected: toml::Value = toml::from_str(
+        &crate::source_documents::read_to_string(path).map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())?;
     let inherited = expected
         .get("disallowed-methods")
         .cloned()
@@ -82,7 +83,7 @@ pub(super) fn check(root: &Path) -> Result<Vec<Diagnostic>, String> {
             continue;
         }
         let subject = format!("{crate_root}/clippy.toml");
-        let local = std::fs::read_to_string(root.join(&subject))
+        let local = crate::source_documents::read_to_string(root.join(&subject))
             .map_err(|error| error.to_string())
             .and_then(|text| {
                 toml::from_str::<toml::Value>(&text).map_err(|error| error.to_string())

@@ -1,4 +1,3 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 use syn::{Item, Visibility};
 
@@ -22,7 +21,7 @@ pub(super) fn validate_facade_only_surface(manifest: &Path) -> Result<PathBuf, S
 fn validate_lib(path: &Path) -> Result<(), String> {
     let syntax = parse(path)?;
     let mut facade_bindings = 0usize;
-    for item in syntax.items {
+    for item in syntax.items.clone() {
         let allowed_facade = match &item {
             Item::Mod(module)
                 if matches!(module.vis, Visibility::Public(_)) && module.ident == "facade" =>
@@ -49,10 +48,10 @@ fn validate_lib(path: &Path) -> Result<(), String> {
     }
 }
 
-fn parse(path: &Path) -> Result<syn::File, String> {
-    let text =
-        fs::read_to_string(path).map_err(|error| format!("read {}: {error}", path.display()))?;
-    crate::source_syntax::parse_file(&text)
+fn parse(path: &Path) -> Result<std::rc::Rc<syn::File>, String> {
+    let text = crate::source_documents::read_to_string(path)
+        .map_err(|error| format!("read {}: {error}", path.display()))?;
+    crate::source_syntax::parse_named(path, &text)
         .map_err(|error| format!("parse {}: {error}", path.display()))
 }
 

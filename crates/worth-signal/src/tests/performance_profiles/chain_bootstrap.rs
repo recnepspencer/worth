@@ -16,7 +16,7 @@ use super::{
 };
 
 #[test]
-#[ignore = "performance baseline capture; run with -- --ignored --nocapture"]
+#[ignore = "requires matched release capture runner; legacy goldens use obsolete sample counts"]
 fn perf_chain_10k_bootstrap_serial() {
     let samples = with_perf_topology_asserts_disabled(|| {
         static CHAIN_10K_WARMUP: Once = Once::new();

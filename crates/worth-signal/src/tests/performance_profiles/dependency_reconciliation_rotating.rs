@@ -12,7 +12,7 @@ use crate::tests::support::ASPECT_A;
 use super::{graph_metrics_delta, perf_contract};
 
 #[test]
-#[ignore = "performance baseline capture; run with -- --ignored --nocapture"]
+#[ignore = "requires matched release capture runner; legacy goldens use obsolete sample counts"]
 fn perf_dependency_reconciliation_rotating_window_serial() {
     let samples = with_perf_topology_asserts_disabled(|| {
         capture_and_certify_perf_samples(

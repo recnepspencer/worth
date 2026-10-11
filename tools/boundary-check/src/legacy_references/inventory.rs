@@ -2,7 +2,7 @@
 //!
 //! Owns filesystem traversal, derived-directory pruning, symlink/junction
 //! boundary observation, encoding policy, and exact text scanning.
-//! Returns typed observations only — never final diagnostics or ratchet policy.
+//! Returns typed observations only - never final diagnostics or ratchet policy.
 
 use crate::cargo_graph::{normalize_path, normalize_str};
 use crate::config::LegacyReferenceRatchetConfig;
@@ -132,7 +132,8 @@ fn inventory_file(
         return Ok(());
     }
 
-    let bytes = fs::read(path).map_err(|error| format!("read file {}: {error}", path.display()))?;
+    let bytes = crate::source_documents::read(path)
+        .map_err(|error| format!("read file {}: {error}", path.display()))?;
     let Ok(text) = std::str::from_utf8(&bytes) else {
         return Ok(());
     };

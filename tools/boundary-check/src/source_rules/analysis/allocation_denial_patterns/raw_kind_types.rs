@@ -11,7 +11,6 @@ pub(super) struct Aliases {
     declarations: Declarations,
     transparent: BTreeMap<Name, BTreeSet<usize>>,
     raw: BTreeSet<Name>,
-    member_aliases: bool,
 }
 
 impl Aliases {
@@ -20,7 +19,6 @@ impl Aliases {
             declarations: Declarations::from_graphs(graphs),
             transparent: BTreeMap::new(),
             raw: BTreeSet::new(),
-            member_aliases: false,
         };
         loop {
             let mut transparent = aliases.transparent.clone();
@@ -45,22 +43,11 @@ impl Aliases {
             aliases.transparent = transparent;
             aliases.raw = raw;
         }
-        aliases.member_aliases = !aliases.transparent.is_empty()
-            || !aliases.raw.is_empty()
-            || aliases
-                .declarations
-                .definitions
-                .values()
-                .flatten()
-                .any(|d| aliases.mentions_raw(&d.ty, &d.namespace));
         aliases
     }
 
     pub fn namespace(&self, source: &str) -> Name {
         self.declarations.namespace(source)
-    }
-    pub fn has_member_aliases(&self) -> bool {
-        self.member_aliases
     }
 
     fn parameters(&self, ty: &Type, definition: &Definition) -> BTreeSet<usize> {
