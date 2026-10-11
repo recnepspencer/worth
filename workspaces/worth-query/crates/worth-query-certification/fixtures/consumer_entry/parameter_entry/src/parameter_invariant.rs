@@ -162,3 +162,6 @@ impl<Schema: ParameterSchemaBinding> PositiveParameterCountRule<Schema> {
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }
 }
+
+#[cfg(test)]
+mod lease_tests;
