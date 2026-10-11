@@ -1,0 +1,63 @@
+//! Supersession releases each retired row's own prepaid claims.
+use super::super::{
+    PreparedReadyBacking, WorthQueryOutputCheckpoint, WorthQueryOutputProgress,
+    WorthQueryPendingOutputDelivery,
+};
+use super::*;
+
+#[test]
+fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
+    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let occurrence = occurrence();
+    crate::domain_computation::primary_graph::with_test_advancement(|_| {
+        let mut state = DemandRegistryState::default();
+        let upstream = key("abandoned-upstream", 1, 2);
+        state.records.insert(
+            upstream.clone(),
+            record(occurrence, DemandState::Admitted, 1),
+        );
+        let baseline = state.required_reserved_bytes;
+        let abandoned = key_with_identity("abandoned-binding", 2, 1, 200);
+        let incoming = key_with_identity("incoming-binding", 2, 1, 201);
+        assert_eq!(
+            abandoned.replacement_order(&incoming),
+            None,
+            "different Preserve bindings do not establish a succession"
+        );
+        let backing = PreparedReadyBacking::prepare(&state, &mut record_admission(), 0).unwrap();
+        let output = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Published {
+            receipt,
+            delivery: WorthQueryPendingOutputDelivery::NoChange,
+            ready_backing: backing,
+        });
+        let mut abandoned_record = record(occurrence, DemandState::Output(output), 0);
+        abandoned_record.prerequisites = vec![Arc::new(upstream.clone())];
+        state.required_reserved_bytes += abandoned_record.prerequisites.capacity()
+            * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+        state
+            .records
+            .get_mut(&upstream)
+            .unwrap()
+            .framework_required_count = 1;
+        state.records.insert(abandoned.clone(), abandoned_record);
+        let member = state.prepare_required_member(&abandoned).unwrap();
+        state.install_required_member(member);
+        supersede_predecessors(&mut state, &incoming, &mut record_admission()).unwrap();
+        assert!(!state.records.contains_key(&abandoned));
+        assert_eq!(
+            state.records[&upstream].framework_required_count, 0,
+            "retiring the incomparable row releases its exact consumed edge"
+        );
+        assert_eq!(
+            state.required_reserved_bytes, baseline,
+            "both the admitted row key and prerequisite allocation are refunded"
+        );
+        assert_eq!(state.obligation_reserved_bytes, 0);
+        assert_eq!(
+            state
+                .required_custody_retained_bytes
+                .load(std::sync::atomic::Ordering::Acquire),
+            0
+        );
+    });
+}

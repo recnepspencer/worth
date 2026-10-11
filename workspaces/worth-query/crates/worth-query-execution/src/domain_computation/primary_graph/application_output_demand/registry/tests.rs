@@ -43,6 +43,7 @@ mod selected_execution_release;
 mod semantic_epoch;
 mod settlement_work;
 mod source_custody;
+mod supersession_refund;
 mod wave_admission;
 
 mod support;

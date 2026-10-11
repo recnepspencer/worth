@@ -112,6 +112,9 @@ pub(super) fn supersede_predecessors(
             || record.pending_cleanup_queued
             || unfinished;
         if !keep {
+            // An incomparable abandoned publication was not stopped in the
+            // predecessor pass, but owes the same release of its own claims.
+            state.release_record_prerequisites(&key);
             let record = state.records.remove(&key).expect("selected row exists");
             state.obligation_reserved_bytes = state
                 .obligation_reserved_bytes
