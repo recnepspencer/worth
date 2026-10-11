@@ -10,6 +10,7 @@ use crate::diagnostics::{Diagnostic, DiagnosticCode};
 
 const CRATES: &[&str] = &[
     "worth-query-execution",
+    "worth-query-installation",
     "worth-runtime-world",
     "worth-execution",
     "worth-runtime-bridge",
@@ -27,7 +28,7 @@ pub(super) fn validate(root: &std::path::Path) -> Result<Vec<Diagnostic>, String
     let mut diagnostics = Vec::new();
     for workspace in ["", "workspaces/worth-query"] {
         for governed in super::workspace_crates::discover_workspace_crates(root, workspace)? {
-            if ADDRESS_CRATES.contains(&governed.package.as_str()) {
+            if in_scope(&governed.package) {
                 let graph = super::crate_modules::parse_crate_modules(&governed)?;
                 diagnostics.extend(enforce(&governed, &graph));
             }
@@ -37,7 +38,7 @@ pub(super) fn validate(root: &std::path::Path) -> Result<Vec<Diagnostic>, String
 }
 
 fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
-    if !ADDRESS_CRATES.contains(&governed.package.as_str()) {
+    if !in_scope(&governed.package) {
         return Vec::new();
     }
     let files: Vec<_> = graph
@@ -54,7 +55,11 @@ fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
     collect_findings(&files, &address_files)
         .into_iter()
         .filter(|finding| {
-            CRATES.contains(&governed.package.as_str()) || address_order::is_finding(finding.reason)
+            if address_order::is_finding(finding.reason) {
+                ADDRESS_CRATES.contains(&governed.package.as_str())
+            } else {
+                CRATES.contains(&governed.package.as_str())
+            }
         })
         .map(|finding| {
             Diagnostic::new(
@@ -70,6 +75,10 @@ fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
             )
         })
         .collect()
+}
+
+fn in_scope(package: &str) -> bool {
+    CRATES.contains(&package) || ADDRESS_CRATES.contains(&package)
 }
 
 fn collect_findings(
