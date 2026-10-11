@@ -34,10 +34,10 @@ impl DemandRegistryState {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReleasedPerformedSource>, WorthQueryOutputDemandDenial> {
         let mut charge = |work: usize| {
-            u64::try_from(work)
-                .ok()
-                .and_then(|work| admission.charge_external_work(work).ok())
-                .ok_or_else(work_denial)
+            let work = u64::try_from(work).map_err(|_| work_denial())?;
+            admission
+                .charge_external_work(work)
+                .map_err(|_| work_denial())
         };
         // Commit order fixes which candidate comparisons are charged. After
         // the oldest unheld source, later commits cannot replace it.

@@ -353,9 +353,8 @@ fn publish_with_snapshot(
     let displaced = recorded.and_then(|recorded| recorded.displaced);
     match (superseded, displaced) {
         (Some(superseded), displaced) => {
-            // World already committed. Refusing this later owner edit cannot
-            // turn publication into a failure or classify displaced as released.
-            drop(superseded.retire(displaced, owner));
+            // Committed discovery cannot refuse and orphan the displaced settlement.
+            superseded.retire(displaced, owner);
         }
         (None, Some(displaced)) => {
             drop(owner.retire_released([displaced], &mut owner.edit_admission()));

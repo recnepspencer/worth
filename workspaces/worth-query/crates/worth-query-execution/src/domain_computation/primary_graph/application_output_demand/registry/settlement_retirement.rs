@@ -24,17 +24,21 @@
 
 use std::sync::Arc;
 
-use super::refreshed_rejoin::{occurrence_rows, OccurrenceSearchCharge, WalkAdmission, WalkKind};
+#[cfg(test)]
+use super::refreshed_rejoin::WalkKind;
 use super::{DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry};
 use crate::domain_computation::primary_graph::output_lineage::{
     invalidation::{InvalidationEditAdmission, SourceInvalidationOwner},
     RecordedSettlementIdentity,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+#[cfg(test)]
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+
+#[cfg(test)]
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 type Identity = Arc<RecordedSettlementIdentity>;
+mod discovery;
 
 /// Returned by a settlement publication. Retiring needs the newest row
 /// registered with the invalidation owner, so the publisher calls it after.
@@ -58,17 +62,16 @@ impl SupersededSettlements {
         self,
         displaced: Option<Identity>,
         owner: &SourceInvalidationOwner,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+    ) {
         let named = self
             .registry
-            .retire_superseded_settlements(&self.key, owner)?;
+            .retire_superseded_settlements(&self.key, owner);
         // A named settlement is retried by the next supersession. One no row
         // of this occurrence posts retires as a released settlement does.
         if let Some(displaced) = displaced.filter(|displaced| !named.contains(displaced)) {
             self.registry
                 .retire_released_settlements(vec![(displaced, 0)], owner);
         }
-        Ok(())
     }
 }
 
@@ -98,19 +101,19 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         key: &WorthQueryOutputDemandKey,
         owner: &SourceInvalidationOwner,
-    ) -> Result<Vec<Identity>, WorthQueryOutputDemandDenial> {
+    ) -> Vec<Identity> {
         let mut admission = owner.edit_admission();
         let candidates = {
             let state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            state.prepare_superseded_settlements(key, &mut admission)?
+            discovery::after_publication(&state, key)
         };
         if !candidates.is_empty() {
             drop(self.retire_settlements(&candidates, owner, &mut admission));
         }
-        Ok(candidates)
+        candidates
     }
 
     /// Released settlements already left this index; their rows may still
@@ -158,39 +161,13 @@ impl WorthQueryOutputDemandRegistry {
 
 impl DemandRegistryState {
     /// A denied owner edit leaves its postings intact for the next retirement.
+    #[cfg(test)]
     pub(super) fn prepare_superseded_settlements(
         &self,
         key: &WorthQueryOutputDemandKey,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Vec<Identity>, WorthQueryOutputDemandDenial> {
-        self.charge_record_lookup(key, admission)?;
-        if !self.records.contains_key(key) {
-            return Ok(Vec::new());
-        }
-        let mut candidates = Vec::new();
-        let mut charge = WalkAdmission::new(admission, WalkKind::SettlementRetirement);
-        for (other, record) in occurrence_rows(&self.records, key, &mut charge)? {
-            charge.inspect_row()?;
-            let same_row = {
-                #[cfg(test)]
-                super::demand_key::observe_row_comparison();
-                other == key
-            };
-            let superseded = if same_row {
-                record.settlements.len().saturating_sub(1)
-            } else if key.replacement_order(other) == Some(std::cmp::Ordering::Greater) {
-                record.settlements.len()
-            } else {
-                0
-            };
-            admit_slots(superseded, charge.admission_mut())?;
-            candidates.extend(
-                record.settlements[..superseded]
-                    .iter()
-                    .map(|(identity, _)| Arc::clone(identity)),
-            );
-        }
-        Ok(candidates)
+        discovery::under_request(self, key, admission)
     }
 
     fn forget_retired_settlements(
@@ -244,6 +221,7 @@ impl DemandRegistryState {
     }
 }
 
+#[cfg(test)]
 fn admit_slots(
     count: usize,
     admission: &mut InvalidationEditAdmission,
@@ -260,6 +238,7 @@ fn admit_slots(
         .map_err(|_| WalkKind::SettlementRetirement.denial())
 }
 
+#[cfg(test)]
 fn capacity_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
