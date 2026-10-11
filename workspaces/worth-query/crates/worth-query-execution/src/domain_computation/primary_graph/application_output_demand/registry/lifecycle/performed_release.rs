@@ -61,10 +61,8 @@ impl DemandRegistryState {
             return Ok(None);
         };
         charge(self.records.len())?;
-        self.forget_custody_note(&commit);
         let custody = self
-            .source_custody
-            .remove(&commit)
+            .remove_custody(&commit)
             .expect("the selected source is retained");
         let mut admitted = Vec::new();
         for record in self.records.values_mut() {

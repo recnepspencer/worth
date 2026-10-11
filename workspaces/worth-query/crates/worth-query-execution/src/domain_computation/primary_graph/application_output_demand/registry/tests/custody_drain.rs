@@ -34,11 +34,36 @@ fn fixture(
     receipts: &[WorthQueryApplicationCommitReceipt],
     rows: u64,
 ) -> (WorthQueryOutputDemandRegistry, WorthQueryOutputDemandKey) {
+    let (registry, own) = live_fixture(receipts, rows);
+    for receipt in receipts {
+        registry
+            .state
+            .lock()
+            .unwrap()
+            .source_custody
+            .get_mut(receipt.committed_product_publication().composite_commit())
+            .unwrap()
+            .completed = true;
+        registry.complete_prepared_source(receipt);
+    }
+    (registry, own)
+}
+
+fn live_fixture(
+    receipts: &[WorthQueryApplicationCommitReceipt],
+    rows: u64,
+) -> (WorthQueryOutputDemandRegistry, WorthQueryOutputDemandKey) {
     let registry = WorthQueryOutputDemandRegistry::default();
     let own = key("reader", 1, 250);
     {
         let mut state = registry.state.lock().unwrap();
-        walk_bounds::add_custody_in_scope(&mut state, receipts, rows, fixture_scope().0);
+        walk_bounds::add_custody_with_completion(
+            &mut state,
+            receipts,
+            rows,
+            fixture_scope().0,
+            false,
+        );
         for row in state.records.values_mut() {
             row.interests = 0;
             row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
@@ -49,9 +74,6 @@ fn fixture(
         state
             .records
             .insert(own.clone(), record(occurrence(), DemandState::Admitted, 0));
-    }
-    for receipt in receipts {
-        registry.complete_prepared_source(receipt);
     }
     (registry, own)
 }
@@ -329,13 +351,19 @@ fn eager_cleanup(state: &mut DemandRegistryState) {
 #[test]
 fn registry_custody_quote_prices_noted_entries_only() {
     let receipts = walk_bounds::receipt_batch();
-    let (registry, _) = fixture(&receipts, 1);
-    let mut state = registry.state.lock().unwrap();
-    for receipt in &receipts[2..] {
-        let commit = receipt.committed_product_publication().composite_commit();
-        state.forget_custody_note(commit);
-        state.source_custody.get_mut(commit).unwrap().completed = false;
+    let (registry, _) = live_fixture(&receipts, 1);
+    for receipt in &receipts[..2] {
+        registry
+            .state
+            .lock()
+            .unwrap()
+            .source_custody
+            .get_mut(receipt.committed_product_publication().composite_commit())
+            .unwrap()
+            .completed = true;
+        registry.complete_prepared_source(receipt);
     }
+    let mut state = registry.state.lock().unwrap();
     let mut paid = admission(u64::MAX);
     state.drain_completed_custody(&mut paid).unwrap();
     assert_eq!(

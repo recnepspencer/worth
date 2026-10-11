@@ -54,14 +54,11 @@ fn registry_drop_cascade_names_its_released_row_bound() {
     for length in [1, 2, 4] {
         let registry = WorthQueryOutputDemandRegistry::default();
         let mut state = registry.state.lock().unwrap();
-        walk_bounds::add_custody(&mut state, &receipts, 3);
+        walk_bounds::add_live_custody(&mut state, &receipts, 3);
         state.note_custody_changes(|_, entry| {
             entry.token_count = 1;
             false
         });
-        for receipt in &receipts {
-            state.forget_custody_note(receipt.committed_product_publication().composite_commit());
-        }
         for slot in 1..=length {
             let mut row = record(
                 occurrence(),

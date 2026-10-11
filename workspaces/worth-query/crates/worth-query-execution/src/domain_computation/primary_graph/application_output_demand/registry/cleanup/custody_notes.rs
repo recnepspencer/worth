@@ -79,7 +79,7 @@ impl DemandRegistryState {
         }
     }
 
-    pub(in super::super) fn forget_custody_note(&mut self, commit: &Commit) {
+    fn unlink_custody_note(&mut self, commit: &Commit) {
         let Some(custody) = self.source_custody.get_mut(commit) else {
             return;
         };
@@ -108,9 +108,26 @@ impl DemandRegistryState {
         self.custody_cleanup.len -= 1;
     }
 
+    pub(in super::super) fn take_custody_note(&mut self, commit: &Commit) -> CustodyNote<'_> {
+        assert!(self.source_custody[commit].cleanup.queued);
+        self.unlink_custody_note(commit);
+        CustodyNote {
+            state: self,
+            commit: commit.clone(),
+            outstanding: true,
+        }
+    }
+
+    pub(in super::super) fn remove_custody(&mut self, commit: &Commit) -> Option<SourceCustody> {
+        if !self.source_custody.contains_key(commit) {
+            return None;
+        }
+        self.note_custody(commit);
+        Some(self.take_custody_note(commit).prune())
+    }
+
     pub(in super::super) fn discard_custody(&mut self, commit: &Commit) {
-        self.forget_custody_note(commit);
-        self.source_custody.remove(commit);
+        drop(self.remove_custody(commit));
     }
 }
 
@@ -142,5 +159,39 @@ impl CustodyCleanupQueue {
         }
         self.tail = Some(commit.clone());
         self.len += 1;
+    }
+}
+
+/// Taking a note borrows the registry until pruning or requeueing finishes.
+/// Every non-prune exit, including unwinding, requeues through Drop. There is
+/// no destructor that forgets debt, nor an exposed unlink operation.
+#[must_use = "a custody visit must prune its entry or requeue its note"]
+pub(in super::super) struct CustodyNote<'a> {
+    state: &'a mut DemandRegistryState,
+    commit: Commit,
+    outstanding: bool,
+}
+impl CustodyNote<'_> {
+    pub(in super::super) fn state(&self) -> &DemandRegistryState {
+        self.state
+    }
+    pub(in super::super) fn prune(mut self) -> SourceCustody {
+        let custody = self
+            .state
+            .source_custody
+            .remove(&self.commit)
+            .expect("visited entry exists");
+        self.outstanding = false;
+        custody
+    }
+    pub(in super::super) fn requeue(self) {
+        drop(self);
+    }
+}
+impl Drop for CustodyNote<'_> {
+    fn drop(&mut self) {
+        if self.outstanding {
+            self.state.note_custody(&self.commit);
+        }
     }
 }

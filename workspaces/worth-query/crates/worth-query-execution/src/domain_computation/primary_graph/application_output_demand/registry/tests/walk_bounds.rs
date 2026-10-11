@@ -91,6 +91,25 @@ pub(in super::super) fn add_custody_in_scope(
     rows: u64,
     scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
 ) {
+    add_custody_with_completion(state, receipts, rows, scope, true);
+}
+
+pub(in super::super) fn add_live_custody(
+    state: &mut DemandRegistryState,
+    receipts: &[WorthQueryApplicationCommitReceipt],
+    rows: u64,
+) {
+    let (scope, _) = super::source_custody::real_scope_and_occurrence();
+    add_custody_with_completion(state, receipts, rows, scope, false);
+}
+
+pub(in super::super) fn add_custody_with_completion(
+    state: &mut DemandRegistryState,
+    receipts: &[WorthQueryApplicationCommitReceipt],
+    rows: u64,
+    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    completed: bool,
+) {
     for (i, receipt) in receipts.iter().enumerate() {
         let commit = receipt
             .committed_product_publication()
@@ -136,9 +155,11 @@ pub(in super::super) fn add_custody_in_scope(
                 retired: None,
                 token_count: 0,
                 cleanup: Default::default(),
-                completed: true,
+                completed,
             },
         );
-        state.note_custody(&commit);
+        if completed {
+            state.note_custody(&commit);
+        }
     }
 }

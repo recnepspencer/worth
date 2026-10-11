@@ -14,7 +14,7 @@ fn fixture(
     let selected = key("custody-unrelated-0", 1, 100);
     let ready = closed_retirement::ready();
     let mut state = registry.state.lock().unwrap();
-    walk_bounds::add_custody(&mut state, &receipts, 1);
+    walk_bounds::add_live_custody(&mut state, &receipts, 1);
     for row in state.records.values_mut() {
         row.interests = 0;
         row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
@@ -24,7 +24,6 @@ fn fixture(
     }
     for (index, receipt) in receipts.iter().enumerate() {
         let commit = receipt.committed_product_publication().composite_commit();
-        state.forget_custody_note(commit);
         state.source_custody.get_mut(commit).unwrap().token_count =
             usize::from(token || index != 0);
     }
@@ -34,7 +33,17 @@ fn fixture(
         row.interests = 1;
     }
     assert!(!state.pending_custody_prune());
+    state
+        .source_custody
+        .get_mut(
+            receipts[0]
+                .committed_product_publication()
+                .composite_commit(),
+        )
+        .unwrap()
+        .completed = true;
     drop(state);
+    registry.complete_prepared_source(&receipts[0]);
     (registry, selected, receipts)
 }
 

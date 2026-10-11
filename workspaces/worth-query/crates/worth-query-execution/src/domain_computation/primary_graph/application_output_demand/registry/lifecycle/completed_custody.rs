@@ -18,7 +18,11 @@ impl DemandRegistryState {
         &mut self,
         charge: &mut C,
     ) -> Result<(), Infallible> {
-        while let Some(commit) = self.custody_cleanup.head.clone() {
+        let visits = self.custody_cleanup.len;
+        for _ in 0..visits {
+            let Some(commit) = self.custody_cleanup.head.clone() else {
+                break;
+            };
             self.prune_custody_entry(&commit, charge)?;
         }
         Ok(())
@@ -31,14 +35,17 @@ impl DemandRegistryState {
     ) -> Result<(), Infallible> {
         #[cfg(test)]
         CONTACTS.with(|count| count.set(count.get() + 1));
-        self.forget_custody_note(commit);
+        let note = self.take_custody_note(commit);
+        let state = note.state();
         infallible(charge.inspect_row());
-        let custody = &self.source_custody[commit];
+        let custody = &state.source_custody[commit];
         if custody.token_count != 0 {
+            note.requeue();
             return Ok(());
         }
         if custody.retired.is_none() {
             let Some(bound) = &custody.bound_sources else {
+                note.requeue();
                 return Ok(());
             };
             let fully_superseded = !bound.is_empty()
@@ -46,22 +53,24 @@ impl DemandRegistryState {
                     .iter()
                     .all(|source| custody.source_denial(&source.identity).is_some());
             if !custody.completed && !fully_superseded {
+                note.requeue();
                 return Ok(());
             }
             if !bound.iter().all(|source| {
                 custody.consumed_sources.contains(&source.identity)
                     || custody.source_denial(&source.identity).is_some()
             }) {
+                note.requeue();
                 return Ok(());
             }
             let held = bound.iter().any(|source| {
-                infallible(source_rows(&self.records, &source.identity, charge)).any(
+                infallible(source_rows(&state.records, &source.identity, charge)).any(
                     |(key, record)| {
                         infallible(charge.inspect_row());
                         record.source_commits.contains(commit)
                             && (record.interests != 0
                                 || infallible(refreshed_rejoin::awaited_by_stale_owner(
-                                    &self.records,
+                                    &state.records,
                                     key,
                                     charge,
                                 ))
@@ -77,13 +86,11 @@ impl DemandRegistryState {
                 )
             });
             if held {
+                note.requeue();
                 return Ok(());
             }
         }
-        let custody = self
-            .source_custody
-            .remove(commit)
-            .expect("priced entry exists");
+        let custody = note.prune();
         for source in custody.bound_sources.iter().flatten() {
             infallible(charge.occurrence_path(self.records.len()));
             self.records

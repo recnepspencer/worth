@@ -13,7 +13,11 @@ impl DemandRegistryState {
         &mut self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        while let Some(commit) = self.custody_cleanup.head.clone() {
+        let visits = self.custody_cleanup.len;
+        for _ in 0..visits {
+            let Some(commit) = self.custody_cleanup.head.clone() else {
+                break;
+            };
             self.drain_custody_entry(&commit, admission)?;
         }
         Ok(())
@@ -43,27 +47,27 @@ impl DemandRegistryState {
         key: &WorthQueryOutputDemandKey,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let mut visited = None;
         while self.pending_custody_prune() {
             let mut found = None;
             for (_, row) in occurrence_rows(&self.records, key, admission)? {
                 admission.inspect_row()?;
                 for commit in &row.source_commits {
                     admission.inspect_row()?;
-                    if self
-                        .source_custody
-                        .get(commit)
-                        .is_some_and(|entry| entry.cleanup.queued)
+                    if visited.as_ref().is_none_or(|prior| commit > prior)
+                        && found.as_ref().is_none_or(|next| commit < next)
+                        && self
+                            .source_custody
+                            .get(commit)
+                            .is_some_and(|entry| entry.cleanup.queued)
                     {
                         found = Some(commit.clone());
-                        break;
                     }
-                }
-                if found.is_some() {
-                    break;
                 }
             }
             let Some(commit) = found else { break };
             self.drain_custody_entry(&commit, admission)?;
+            visited = Some(commit);
         }
         Ok(())
     }
@@ -74,7 +78,8 @@ impl DemandRegistryState {
         &mut self,
         admission: &mut InvalidationEditAdmission,
     ) {
-        for _ in 0..FOREIGN_CUSTODY_DRAIN_QUOTA {
+        let visits = self.custody_cleanup.len.min(FOREIGN_CUSTODY_DRAIN_QUOTA);
+        for _ in 0..visits {
             let Some(commit) = self.custody_cleanup.head.clone() else {
                 break;
             };

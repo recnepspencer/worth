@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
-fn record_admission() -> InvalidationEditAdmission {
+pub(super) fn record_admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: 1_000_000,
         maximum_preparation_bytes: 8 * 1024 * 1024,
@@ -26,6 +26,7 @@ mod caller_chain;
 pub(super) mod closed_retirement;
 mod consumer_custody;
 mod custody_drain;
+mod custody_note;
 mod custody_reader;
 mod demand_key;
 mod drop_cascade;
