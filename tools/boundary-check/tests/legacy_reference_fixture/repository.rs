@@ -206,7 +206,7 @@ worth-query = {{ path = "../worth-query" }}
         #[cfg(windows)]
         {
             // Directory junctions do not require Administrator rights.
-            // mklink treats `/` as switch separators — force Windows path form.
+            // mklink treats `/` as switch separators; force Windows path form.
             let link_s = link.to_string_lossy().replace('/', "\\");
             let target_s = target.to_string_lossy().replace('/', "\\");
             let status = worth_harness::tooling::process_deadline::output(
