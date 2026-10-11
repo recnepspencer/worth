@@ -22,6 +22,25 @@ fn queued(seed: u64) -> (DemandRegistryState, Arc<WorthQueryOutputDemandKey>) {
     row.framework_required_count = 1;
     row.prerequisites.reserve_exact(1);
     state.required_reserved_bytes = std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+    if seed != 0 {
+        let upstream = Arc::new(key("queued-prerequisite", seed + 1, 3));
+        row.prerequisites.push(Arc::clone(&upstream));
+        let mut prior = record(
+            occurrence(),
+            DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::Closed,
+                "",
+            )),
+            0,
+        );
+        prior.framework_required_count = 1;
+        prior.prerequisites.reserve_exact(1);
+        state.required_reserved_bytes +=
+            prior.prerequisites.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+        state.records.insert(upstream.as_ref().clone(), prior);
+        let member = state.prepare_required_member(&upstream).unwrap();
+        state.install_required_member(member);
+    }
     state.records.insert(selected.as_ref().clone(), row);
     let member = state.prepare_required_member(&selected).unwrap();
     state.install_required_member(member);
@@ -39,9 +58,9 @@ fn queued(seed: u64) -> (DemandRegistryState, Arc<WorthQueryOutputDemandKey>) {
 
 #[test]
 fn queued_member_cleanup_refuses_every_budget_then_matches_eager_release() {
-    for seed in 0..1 {
+    for seed in 0..2 {
         let (mut completed, selected) = queued(seed);
-        let mut full = admission(1_000_000);
+        let mut full = admission(u64::MAX);
         completed.drain_terminal_cleanup(&mut full).unwrap();
         assert!(
             completed.required_keys.is_empty(),
@@ -57,15 +76,18 @@ fn queued_member_cleanup_refuses_every_budget_then_matches_eager_release() {
                 denial.kind(),
                 WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
             );
-            assert_eq!(
-                retry.pending_cleanup_head.as_deref(),
-                Some(selected.as_ref())
-            );
-            assert!(retry.required_keys.contains(&selected));
-            assert!(retry.records[&selected].pending_cleanup_queued);
-            assert_eq!(totals(&retry), before);
+            let head = retry
+                .pending_cleanup_head
+                .as_ref()
+                .expect("refused work stays queued");
+            assert!(retry.records[head].pending_cleanup_queued);
+            if seed == 0 {
+                assert_eq!(head.as_ref(), selected.as_ref());
+                assert!(retry.required_keys.contains(&selected));
+                assert_eq!(totals(&retry), before);
+            }
             retry
-                .drain_terminal_cleanup(&mut admission(1_000_000))
+                .drain_terminal_cleanup(&mut admission(u64::MAX))
                 .unwrap();
             assert!(retry.records.is_empty());
             assert!(retry.required_keys.is_empty());
@@ -88,7 +110,7 @@ fn totals(state: &DemandRegistryState) -> (usize, usize, usize) {
 fn queued_member_reader_refuses_before_using_the_retained_set_as_truth() {
     let (state, selected) = queued(0);
     let before = totals(&state);
-    let mut full = admission(1_000_000);
+    let mut full = admission(u64::MAX);
     assert!(state.queued_member_released(&selected, &mut full).unwrap());
     // Two occurrence seeks and the one inspected queued row.
     assert_eq!(full.charged_work(), 3);

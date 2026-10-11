@@ -256,14 +256,14 @@ fn run(
 #[test]
 fn supersession_prices_all_release_walks_before_stopping_any_row() {
     for seed in 0..16 {
-        let successor = key("dependent", seed * 2 + 2, 2);
+        let successor = key("dependent", seed * 3 + 3, 2);
         let DemandState::Output(output) = closed_retirement::ready() else {
             panic!("Ready fixture")
         };
         let Some(WorthQueryOutputCheckpoint::Ready(completion)) = output.checkpoint else {
             panic!("Ready fixture")
         };
-        let (completed, interest) = fixture(seed * 2, &completion, true);
+        let (completed, interest) = two_predecessors(seed, &completion);
         let mut measured = admission(1_000_000);
         supersede_predecessors(
             &mut completed.state.lock().unwrap(),
@@ -273,7 +273,7 @@ fn supersession_prices_all_release_walks_before_stopping_any_row() {
         .unwrap();
         let expected = value(&completed.state.lock().unwrap());
         for k in 0..measured.charged_work() {
-            let (retry, _interest) = fixture(seed * 2, &completion, true);
+            let (retry, _interest) = two_predecessors(seed, &completion);
             let before = value(&retry.state.lock().unwrap());
             let denial = supersede_predecessors(
                 &mut retry.state.lock().unwrap(),
@@ -296,4 +296,42 @@ fn supersession_prices_all_release_walks_before_stopping_any_row() {
         }
         drop(interest);
     }
+}
+
+fn two_predecessors(
+    seed: u64,
+    completion: &super::super::ReadyCompletion,
+) -> (
+    WorthQueryOutputDemandRegistry,
+    WorthQueryOutputDemandInterest,
+) {
+    let (registry, interest) = fixture(seed * 3, completion, true);
+    let mut state = registry.state.lock().unwrap();
+    let upstream = key("upstream", seed * 3 + 1, 1);
+    let second = key("dependent", seed * 3 + 2, 2);
+    let mut row = record(occurrence(), ready(completion), 1);
+    row.prerequisites = vec![Arc::new(upstream.clone())];
+    state.required_reserved_bytes +=
+        row.prerequisites.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+    state
+        .records
+        .get_mut(&upstream)
+        .unwrap()
+        .framework_required_count += 1;
+    state.records.insert(second.clone(), row);
+    let member = state.prepare_required_member(&second).unwrap();
+    state.install_required_member(member);
+    assert_eq!(
+        super::super::refreshed_rejoin::infallible(
+            super::super::refreshed_rejoin::occurrence_rows(
+                &state.records,
+                &second,
+                &mut super::OracleWalk::after_effect()
+            )
+        )
+        .count(),
+        2
+    );
+    drop(state);
+    (registry, interest)
 }

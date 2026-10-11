@@ -1,4 +1,5 @@
 //! Committed claims queue terminal members; the next request owns their walk.
+use super::super::WorthQueryOutputCheckpoint;
 use super::*;
 
 #[test]
@@ -16,8 +17,8 @@ fn publication_queues_released_counts_then_drain_matches_eager_member_removal() 
     );
     let (_lineage, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
     for seed in 0..16 {
-        let (queued, selected, held) = published(seed, &identity, &owner);
-        let (eager, _, _) = published(seed, &identity, &owner);
+        let (queued, selected, held) = published(seed, &identity, &owner, None);
+        let (eager, _, _) = published(seed, &identity, &owner, None);
         // At 337d6d4b88 this member removal happened synchronously after the
         // decrement, before the same queue push. Its result is independent
         // of pending_cleanup_queued, so reproduce that eager decision here.
@@ -87,6 +88,7 @@ fn published(
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
     >,
     owner: &crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner,
+    completion: Option<&super::super::ReadyCompletion>,
 ) -> (
     WorthQueryOutputDemandRegistry,
     WorthQueryOutputDemandKey,
@@ -104,6 +106,11 @@ fn published(
         )),
         usize::from(held),
     );
+    if let Some(completion) = completion {
+        prior.state = DemandState::Output(super::super::WorthQueryOutputProgress::new(
+            WorthQueryOutputCheckpoint::Ready(completion.clone()),
+        ));
+    }
     prior.framework_required_count = 1;
     prior.prerequisites.reserve_exact(1);
     let mut row = record(occurrence(), DemandState::Running, 1);
@@ -138,4 +145,34 @@ fn published(
     // downstream is still live until this function returns its registry.
     drop(interest);
     (registry, upstream, held)
+}
+
+#[test]
+fn registry_ready_upstream_declines_queue_and_published_member_walk_completes() {
+    use crate::domain_computation::execution_runtime::source_invalidation::{
+        WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
+    };
+    let owner =
+        crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner::new(
+            WorthQueryInvalidationResources::install(
+                WorthQueryInvalidationResourceInstallation::bounded(1_000_000, 1 << 20, 1 << 20, 1),
+            )
+            .unwrap(),
+            1,
+        );
+    let (_lineage, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+    let DemandState::Output(output) = super::closed_retirement::ready() else {
+        panic!("Ready fixture")
+    };
+    let Some(WorthQueryOutputCheckpoint::Ready(completion)) = output.checkpoint else {
+        panic!("Ready fixture")
+    };
+    let (registry, selected, held) = published(0, &identity, &owner, Some(&completion));
+    let mut state = registry.state.lock().unwrap();
+    assert!(!held);
+    assert!(state.records[&selected].has_cached_ready());
+    assert_eq!(state.records[&selected].framework_required_count, 0);
+    assert!(!state.records[&selected].pending_cleanup_queued);
+    assert!(!state.defer_terminal_cleanup(&Arc::new(selected.clone()), 0));
+    assert!(!state.required_keys.contains(&selected));
 }

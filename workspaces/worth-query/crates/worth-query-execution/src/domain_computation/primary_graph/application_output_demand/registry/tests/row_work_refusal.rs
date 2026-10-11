@@ -71,3 +71,33 @@ fn supersession_paid_paths_refuse_the_first_row_before_any_key_comparison() {
     reject_older_successor(&state, &successor, &mut record_admission()).unwrap();
     assert!(row_key_comparisons() > before);
 }
+
+#[test]
+fn registry_supersede_predecessors_refuses_first_row_after_paid_seeks() {
+    let successor = key("collected-supersession", 3, 1);
+    let mut state = DemandRegistryState::default();
+    for generation in 1..=2 {
+        state.records.insert(
+            key("collected-supersession", generation, 1),
+            record(occurrence(), DemandState::Admitted, 1),
+        );
+    }
+    let mut short = admission(2);
+    let before = row_key_comparisons();
+    let denial = supersede_predecessors(&mut state, &successor, &mut short).unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+    );
+    assert_eq!(short.charged_work(), 2);
+    assert_eq!(row_key_comparisons(), before);
+    assert!(state
+        .records
+        .values()
+        .all(|row| matches!(row.state, DemandState::Admitted)));
+    supersede_predecessors(&mut state, &successor, &mut record_admission()).unwrap();
+    assert!(
+        row_key_comparisons() > before,
+        "the first row really reaches the semantic comparison"
+    );
+}

@@ -1,5 +1,5 @@
 mod cleanup_oracle;
-use cleanup_oracle::OracleWalk;
+pub(super) use cleanup_oracle::OracleWalk;
 use std::sync::{Arc, Condvar, Mutex};
 
 use super::record_capacity::fixture_capacity as test_record_capacity;
@@ -32,7 +32,6 @@ mod payer_cleanup;
 mod payer_mutation;
 mod payer_publication;
 mod performed_release;
-pub(super) mod post_commit_bounds;
 mod prepaid_passes;
 mod prerequisite_retry;
 mod ready_reuse;
@@ -50,6 +49,7 @@ mod selected_execution_release;
 mod semantic_epoch;
 mod settlement_work;
 pub(super) mod source_custody;
+pub(super) mod walk_bounds;
 mod walk_denial;
 mod walk_refusal;
 
