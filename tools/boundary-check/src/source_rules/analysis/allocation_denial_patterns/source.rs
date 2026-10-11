@@ -48,12 +48,13 @@ impl RawAccess {
     }
 
     fn macro_access(&mut self, tokens: TokenStream) {
-        // Item-generating macros are governed too; parse complete item fragments,
-        // then scan every group for the forbidden path spelling.
+        // Parsed items own their descendant groups. Recurse through tokens only
+        // when this fragment is not an item list, so each body is scanned once.
         if let Ok(file) = syn::parse2::<syn::File>(tokens.clone()) {
             for item in &file.items {
                 self.visit_item(item);
             }
+            return;
         }
         let tokens: Vec<_> = tokens.into_iter().collect();
         for window in tokens.windows(3) {

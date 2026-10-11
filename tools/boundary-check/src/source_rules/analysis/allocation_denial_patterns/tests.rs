@@ -159,3 +159,28 @@ fn alias_of_a_container_does_not_alias_the_raw_kind() {
         assert!(!refused(source), "rejected {source}");
     }
 }
+
+#[test]
+fn a_doubly_nested_macro_reports_one_raw_access_once() {
+    let source = r#"
+        macro_rules! outer {
+            () => {
+                macro_rules! inner {
+                    () => {
+                        fn generated() {
+                            let raw = ExecutionAllocationDenialKind::Cancelled;
+                        }
+                    };
+                }
+            };
+        }
+    "#;
+
+    let diagnostics = check_graphs("crates/consumer", &[graph(source)]);
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");
+}
+
+#[test]
+fn a_variant_import_in_a_nested_inline_module_is_refused() {
+    assert!(refused("mod outer { mod inner { use worth_execution::ExecutionAllocationDenialKind::Cancelled; } }"));
+}
