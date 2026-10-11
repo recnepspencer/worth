@@ -46,18 +46,18 @@ impl RelationalPreparationPort {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-        self.prepare_branch_transaction_inner(execution, transaction)
-    }
-
-    fn prepare_branch_transaction_inner(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        transaction: crate::mvcc::BranchBoundRelationalTransaction,
-    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Validation,
         )?;
+        self.prepare_consulted_branch_transaction(execution, transaction)
+    }
+
+    pub(crate) fn prepare_consulted_branch_transaction(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         let _operation = self.admit_operation()?;
         let configuration = self.binding.configuration_binding();
         let epoch = configuration.operation();
@@ -77,15 +77,11 @@ impl RelationalPreparationPort {
         self.prepare_validated_proposal_inner(execution, &runtime, proposal)
     }
 
-    pub(crate) fn prepare_validated_proposal(
+    pub(crate) fn prepare_consulted_validated_proposal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         proposal: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-        crate::authority::commit::pipeline::consult_stage(
-            execution,
-            crate::authority::commit::pipeline::CommitStage::Admission,
-        )?;
         let _operation = self.admit_operation()?;
         let configuration = self.binding.configuration_binding();
         let epoch = configuration.operation();

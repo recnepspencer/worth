@@ -101,19 +101,20 @@ pub(super) fn execution_denial(
             )
         }
     };
+    use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind as ControlStop;
     match translated {
-                Ok(kind) => RelationalEffectExecutionFailure::Denied {
-                    kind: EffectExecutionDenialKind::RelationalExecutionDenied(kind),
-                    message: format!("{denial:?}"),
-                },
-                Err(kind) => RelationalEffectExecutionFailure::ControlStopped {
-                    kind: match kind {
-                        worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled => super::EffectExecutionControlStopKind::Cancelled,
-                        worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut => super::EffectExecutionControlStopKind::TimedOut,
-                    },
-                    message: format!("{denial:?}"),
-                },
-            }
+        Ok(kind) => RelationalEffectExecutionFailure::Denied {
+            kind: EffectExecutionDenialKind::RelationalExecutionDenied(kind),
+            message: format!("{denial:?}"),
+        },
+        Err(kind) => RelationalEffectExecutionFailure::ControlStopped {
+            kind: match kind {
+                ControlStop::Cancelled => super::EffectExecutionControlStopKind::Cancelled,
+                ControlStop::TimedOut => super::EffectExecutionControlStopKind::TimedOut,
+            },
+            message: format!("{denial:?}"),
+        },
+    }
 }
 
 pub(super) fn transaction_commit(
@@ -126,8 +127,14 @@ pub(super) fn transaction_commit(
                 return allocation_failure(allocation);
             }
             let kind = match &error.class {
-                worth_relational::facade::transactions::ConflictClass::TransactionStagingCardinalityOverflow => EffectExecutionDenialKind::TransactionStagingCardinalityOverflow,
-                worth_relational::facade::transactions::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches } => EffectExecutionDenialKind::TransactionInputDirectoryAllocationDenied { requested_batches: *requested_batches },
+                worth_relational::facade::transactions::ConflictClass::TransactionStagingCardinalityOverflow => {
+                    EffectExecutionDenialKind::TransactionStagingCardinalityOverflow
+                }
+                worth_relational::facade::transactions::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches } => {
+                    EffectExecutionDenialKind::TransactionInputDirectoryAllocationDenied {
+                        requested_batches: *requested_batches,
+                    }
+                }
                 _ => return denied(&error),
             };
             RelationalEffectExecutionFailure::Denied {

@@ -31,15 +31,12 @@ where
             }
             crate::publication::RelationalComponentPlanPosture::PublishPrepared => {
                 // The candidate already owns its publication reservation. The
-                // caller's request still admits this owner contact; no new
+                // port consults the caller's request at publication; no new
                 // backing, speculative work reserve or post-effect refusal is
                 // introduced around the prepared publication.
                 let candidate = attempt
                     .take_relational_candidate()
                     .ok_or_else(|| pre_effect_failure(NoEffectCause::PreEffectFailure))?;
-                execution.consult().map_err(|denial| {
-                    pre_effect_failure(NoEffectCause::ExecutionRequest(denial))
-                })?;
                 attempt.counters_mut().record_relational_owner_contact();
                 self.publish_relational_candidate(&execution, attempt, candidate)
             }

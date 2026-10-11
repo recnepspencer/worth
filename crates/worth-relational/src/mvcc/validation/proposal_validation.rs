@@ -13,18 +13,6 @@ use super::validated_proposal::{
 };
 
 impl RelationalPreparationRuntime {
-    pub fn validate_branch_transaction(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        transaction: crate::mvcc::BranchBoundRelationalTransaction,
-    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        crate::authority::commit::pipeline::consult_stage(
-            execution,
-            crate::authority::commit::pipeline::CommitStage::Validation,
-        )?;
-        self.validate_consulted_branch_transaction(execution, transaction)
-    }
-
     pub(crate) fn validate_consulted_branch_transaction(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -228,8 +216,12 @@ impl RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Validation,
+        )?;
         self.preparation_runtime_snapshot()
-            .validate_branch_transaction(execution, transaction)
+            .validate_consulted_branch_transaction(execution, transaction)
     }
 
     pub(crate) fn validate_consulted_lowered_strategy_proposal(

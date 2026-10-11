@@ -1,18 +1,25 @@
 //! Test-local contacts at the split commit's owner boundaries.
 use std::cell::Cell;
 thread_local! {
-    static CONTACTS: Cell<(usize, usize)> = const { Cell::new((0, 0)) };
+    static CONTACTS: Cell<(usize, usize, usize)> = const { Cell::new((0, 0, 0)) };
 }
 pub(crate) fn admission() {
     CONTACTS.with(|counts| {
-        let (admissions, revalidations) = counts.get();
-        counts.set((admissions + 1, revalidations));
+        let (admissions, revalidations, captures) = counts.get();
+        counts.set((admissions + 1, revalidations, captures));
     });
 }
 pub(crate) fn revalidation() {
     CONTACTS.with(|counts| {
-        let (admissions, revalidations) = counts.get();
-        counts.set((admissions, revalidations + 1));
+        let (admissions, revalidations, captures) = counts.get();
+        counts.set((admissions, revalidations + 1, captures));
+    });
+}
+
+pub(crate) fn binding_capture() {
+    CONTACTS.with(|counts| {
+        let (admissions, revalidations, captures) = counts.get();
+        counts.set((admissions, revalidations, captures + 1));
     });
 }
 
@@ -51,7 +58,7 @@ fn split_entries_consult_before_admission_and_currency_contacts() {
             (None, Some(transaction))
         };
         cancellation.cancel();
-        CONTACTS.with(|counts| counts.set((0, 0)));
+        CONTACTS.with(|counts| counts.set((0, 0, 0)));
         let error = match proposal {
             Some(proposal) => runtime
                 .prepare_validated_proposal(&execution, proposal)
@@ -75,8 +82,28 @@ fn split_entries_consult_before_admission_and_currency_contacts() {
         );
         assert_eq!(
             CONTACTS.with(Cell::get),
-            (0, 0),
+            (0, 0, 0),
             "{entry}: no owner contact before consult"
         );
     }
+}
+
+#[test]
+fn admitted_validation_reaches_the_counted_owner_binding() {
+    let runtime = crate::tests::support::runtime_with_test_schema();
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let transaction = runtime
+        .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
+        .unwrap();
+    let backing = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&backing);
+    CONTACTS.with(|counts| counts.set((0, 0, 0)));
+    runtime
+        .validate_branch_transaction(&execution, transaction)
+        .unwrap();
+    // Validation really does capture the owner binding once. Its cancelled
+    // twin must refuse before this same reachable contact, not only admission.
+    assert_eq!(CONTACTS.with(Cell::get), (0, 0, 1));
 }

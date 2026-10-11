@@ -46,6 +46,8 @@ pub(crate) struct RelationalPreparationRuntime {
 
 impl RelationalPreparationOwnerBinding {
     pub(crate) fn from_runtime(runtime: &super::RelationalRuntime) -> Self {
+        #[cfg(test)]
+        crate::mvcc::split_contacts::binding_capture();
         Self {
             configuration: runtime.configuration_binding(),
             history: runtime.history.preparation_binding(),

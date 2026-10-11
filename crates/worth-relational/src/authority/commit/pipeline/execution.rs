@@ -9,15 +9,6 @@ use super::publication_execution::prepare_commit_publication_execution;
 use super::snapshot_validation::validate_snapshot_publication;
 use crate::transactions::data::{CommitResult, TransactionCommitError};
 
-pub(crate) fn prepare_authoritative_commit(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
-    context: AuthoritativeCommitContext,
-) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-    super::consult_stage(execution, super::CommitStage::Admission)?;
-    prepare_consulted_authoritative_commit(execution, runtime, context)
-}
-
 pub(crate) fn prepare_consulted_authoritative_commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
@@ -243,6 +234,7 @@ pub(crate) fn execute_authoritative_commit(
     runtime: &crate::runtime::RelationalRuntime,
     context: AuthoritativeCommitContext,
 ) -> Result<CommitResult, TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Admission)?;
     let preparation = runtime.preparation_runtime_snapshot();
     // A detached validated proposal retains its account; merge and replay
     // start theirs here. Every charged dispatch then spends the same ceiling.
@@ -251,6 +243,6 @@ pub(crate) fn execute_authoritative_commit(
     } else {
         preparation
     };
-    let candidate = prepare_authoritative_commit(execution, &preparation, context)?;
+    let candidate = prepare_consulted_authoritative_commit(execution, &preparation, context)?;
     publish_prepared_authoritative_commit(execution, runtime, candidate)
 }
