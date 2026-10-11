@@ -230,6 +230,7 @@ pub(super) fn several_refusals() -> (Vec<RegionEntry>, RegionOutcome) {
     (entries, least)
 }
 
+#[cfg(panic = "unwind")]
 #[test]
 fn refusals_in_several_regions_report_the_least_partition_identity() {
     let (entries, least) = several_refusals();
@@ -243,6 +244,7 @@ fn refusals_in_several_regions_report_the_least_partition_identity() {
     });
 }
 
+#[cfg(panic = "unwind")]
 #[test]
 fn kernel_panic_is_a_typed_stop_and_the_next_demand_runs() {
     let clean = [entry(1, 1, 2.0), entry(2, 2, 3.0)];
