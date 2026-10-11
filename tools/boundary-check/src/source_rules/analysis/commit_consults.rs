@@ -20,9 +20,9 @@ const ROOTS: [&str; 5] = [
 ];
 
 pub(super) fn validate(root: &Path) -> Vec<Diagnostic> {
-    // This rule owns Relational's commit paths, not unrelated workspace roots.
-    // A present but unreadable crate still reports the parsing failure below.
-    if !root.join(CRATE).exists() {
+    // Only explicitly declared tool fixtures may omit the governed crate.
+    // An undeclared missing or present unreadable crate is a diagnostic.
+    if !root.join(CRATE).exists() && root.join(".boundary-check-mock-root").is_file() {
         return Vec::new();
     }
     match production_graphs(root, CRATE) {

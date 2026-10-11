@@ -66,7 +66,7 @@ fn commit_consults_preserve_allocation_policy_safe_points() {
     )))]), 0);
 }
 #[test]
-fn commit_consults_do_not_require_relational_in_an_unrelated_fixture() {
+fn commit_consults_may_skip_relational_in_a_declared_mock_fixture() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/canonical_order_rules");
     assert!(root.is_dir());
@@ -146,3 +146,5 @@ fn commit_consults_skip_test_items_but_not_test_looking_production_files() {
         1,
     );
 }
+
+mod repository_roots;
