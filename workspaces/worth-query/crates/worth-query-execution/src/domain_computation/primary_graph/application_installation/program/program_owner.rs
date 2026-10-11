@@ -8,7 +8,7 @@
 //! activating it: the shared implementations resolve the occurrence's active
 //! program before any effect, and refuse a presented program that is not it.
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,

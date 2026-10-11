@@ -3,7 +3,7 @@
 //! it builds the erased use directly with [`stray`], the form a readmitted or
 //! portable role takes.
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationOutputContract, ApplicationMutationOutputPosture,

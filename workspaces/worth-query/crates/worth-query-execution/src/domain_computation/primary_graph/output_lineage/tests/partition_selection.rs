@@ -1,5 +1,6 @@
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::{Arc, OnceLock};
 
 use super::{checkpoint_identity, source_facts, RestoredOutputBinding};
@@ -45,7 +46,7 @@ fn unrelated_partition_selection(population: u64) {
     let sibling = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         "RestoredOutputBinding",
     );
 
@@ -293,7 +294,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
     let correspondence = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         "RestoredOutputBinding",
     );
 

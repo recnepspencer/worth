@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, live_scope, publish_relational_mutation, AccountLabel,
     AccountStatus,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
@@ -64,7 +65,7 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
         output_binding: OutputBindingIdentity::declared("()"),
     };
     let mut lineage = WorthQueryApplicationOutputLineage::default();
-    lineage.fixture_binding(std::any::TypeId::of::<()>(), "()");
+    lineage.fixture_binding(TypeId::of::<()>(), "()");
 
     lineage
         .retention

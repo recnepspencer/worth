@@ -1,6 +1,6 @@
 //! Output meaning of the exact registered provider effect program.
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use super::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture;

@@ -1,4 +1,5 @@
-use std::any::{Any, TypeId};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::any::Any;
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -233,8 +234,8 @@ where
                 .ok_or_else(|| denial(DenialKind::MissingMutationHandler, descriptor.identity()))?;
             if entry.identity != descriptor.identity()
                 || entry.handler_identity != descriptor.handler().identity()
-                || entry.decision_type != descriptor.handler().decision_type()
-                || entry.denial_type != descriptor.handler().denial_type()
+                || entry.decision_type != TypeId::from(descriptor.handler().decision_type())
+                || entry.denial_type != TypeId::from(descriptor.handler().denial_type())
             {
                 return Err(denial(
                     DenialKind::MutationHandlerMeaningMismatch,
@@ -264,14 +265,14 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema> {
                 .map(move |computation| (feature, computation))
         }) {
             let entry = (
-                computation.computation_type(),
+                TypeId::from(computation.computation_type()),
                 ManagedComputationExpectation {
                     composition_instance: feature.composition_instance(),
                     feature_identity: feature.identity(),
                     identity: computation.identity(),
-                    feature_type: computation.feature_type(),
-                    computation_type: computation.computation_type(),
-                    output_artifact_type: computation.output_artifact_type(),
+                    feature_type: TypeId::from(computation.feature_type()),
+                    computation_type: TypeId::from(computation.computation_type()),
+                    output_artifact_type: TypeId::from(computation.output_artifact_type()),
                 },
             );
             if let Some(position) = positions.get(&entry.0) {

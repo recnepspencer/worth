@@ -1,4 +1,5 @@
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
@@ -208,9 +209,7 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
         commit.clone(),
         super::super::SourceCustody {
             occurrence,
-            root_kind: super::super::PreparedOutputRootKind::Discovered(
-                std::any::TypeId::of::<()>(),
-            ),
+            root_kind: super::super::PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
             // Recovery consults retained ownership and consumed identities; a
             // performed source payload is deliberately unnecessary here.
             source: None,

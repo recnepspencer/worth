@@ -1,6 +1,7 @@
 //! Register exact checkpoint candidates without asserting current output truth.
 
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn record_recovered_output_candidates<Family>(
@@ -10,7 +11,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         >,
         observation: &crate::basis::WorthQueryProductBranchReadIdentity,
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        output_bindings: &[std::any::TypeId],
+        output_bindings: &[TypeId],
         lineage: &mut crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
     ) where
         Family: WorthQueryProducerOutputFamily<Schema>,

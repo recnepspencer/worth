@@ -1,4 +1,5 @@
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
@@ -32,7 +33,7 @@ where
                 "dependent output connection is not installed for this program",
             ));
         }
-        if parent.target_feature != std::any::TypeId::of::<Connection::SourceFeature>() {
+        if parent.target_feature != TypeId::of::<Connection::SourceFeature>() {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
                 "dependent output edge does not leave this settled program feature",
@@ -103,7 +104,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
-                target_feature: std::any::TypeId::of::<Connection::TargetFeature>(),
+                target_feature: TypeId::of::<Connection::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,
             })

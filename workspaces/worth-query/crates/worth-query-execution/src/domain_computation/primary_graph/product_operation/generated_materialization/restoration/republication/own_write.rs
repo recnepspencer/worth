@@ -13,7 +13,8 @@ use crate::domain_computation::primary_graph::{
     },
     WorthQueryCurrentOutputDenialKind,
 };
-use std::{any::TypeId, collections::BTreeMap};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 use worth_relational::facade::{

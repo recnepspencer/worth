@@ -5,7 +5,7 @@ use worth_signal::facade::branch::SignalBranchBasisAdmissionIdentity;
 
 /// Owner-issued identity of one exact admitted component/correspondence
 /// tuple. It is not a descriptor digest and does not collapse commit history.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CompositeBasisKey {
     owner: RuntimeWorldOwnerIdentity,
     relational: RelationalBranchBasisAdmissionIdentity,

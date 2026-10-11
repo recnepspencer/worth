@@ -1,10 +1,8 @@
 mod observation_reader;
 mod retained_candidates;
 
-use std::{
-    any::TypeId,
-    sync::{Arc, OnceLock},
-};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::sync::{Arc, OnceLock};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 

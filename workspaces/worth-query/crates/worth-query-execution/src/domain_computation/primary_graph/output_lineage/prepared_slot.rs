@@ -6,6 +6,7 @@ mod cancellation_custody;
 mod capacity;
 mod checkpoint_locator;
 mod computation;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use computation::PreparedComputationCustody;
 mod preparation;
 mod recovery;
@@ -29,7 +30,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlot {
     owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
     pub(super) source: SemanticSource,
-    pub(super) output_binding_type: std::any::TypeId,
+    pub(super) output_binding_type: TypeId,
     pub(super) coordinate: ProductCoordinate,
     pub(super) partition: Option<[u8; 32]>,
     pub(super) identity: Arc<RecordedSettlementIdentity>,

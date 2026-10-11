@@ -2,7 +2,9 @@
 
 use std::{cmp::Ordering, sync::Arc};
 
-use super::super::{WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry};
+use super::super::{
+    WorthQueryOutputDemandInterest, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
+};
 use super::selection::{charge_required_key_lookup, SelectedReadyReadmission};
 use super::*;
 
@@ -22,10 +24,7 @@ impl WorthQueryOutputDemandRegistry {
         let prior_key = predecessor.membership.key.as_ref();
         let successor_key = &successor.key;
         admission
-            .charge_external_work(replacement_comparison_work(
-                prior_key.producer.len(),
-                successor_key.producer.len(),
-            )?)
+            .charge_external_work(replacement_comparison_work(prior_key, successor_key)?)
             .map_err(|_| empty_work_denial())?;
         // Issuer/Required checks, the replacement result, and the selected
         // record's interest/required-state observations are separate from
@@ -57,10 +56,11 @@ impl WorthQueryOutputDemandRegistry {
 }
 
 fn replacement_comparison_work(
-    prior_len: usize,
-    successor_len: usize,
+    prior: &WorthQueryOutputDemandKey,
+    successor: &WorthQueryOutputDemandKey,
 ) -> Result<u64, WorthQueryOutputDemandDenial> {
-    // replacement_order compares both producer texts, then same_occurrence
+    // The key formula covers declared family, profile and producer text.
+    // replacement_order also reads same_occurrence
     // twice on the successful path. Each pass reads both operands' query,
     // parameters, root and occurrence. It finally compares two 32-byte
     // semantic identities and two u64 generations.
@@ -74,9 +74,10 @@ fn replacement_comparison_work(
             >())
         })
         .ok_or_else(empty_work_denial)?;
-    let work = prior_len
-        .checked_add(successor_len)
-        .and_then(|n| n.checked_add(1))
+    let work = super::super::key_comparison::comparison_work([prior, successor])
+        .ok_or_else(empty_work_denial)?
+        .total
+        .checked_add(1)
         .and_then(|n| n.checked_add(occurrence.checked_mul(4)?))
         .and_then(|n| n.checked_add(64 + 2 * std::mem::size_of::<u64>() + 4))
         .ok_or_else(empty_work_denial)?;
@@ -85,4 +86,26 @@ fn replacement_comparison_work(
 
 fn empty_work_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
+}
+
+#[cfg(test)]
+mod comparison_tests {
+    #[test]
+    fn successor_join_prices_both_declared_keys_and_occurrence_reads() {
+        let (short, long) = super::super::super::key_comparison::fixtures::keys();
+        let occurrence = 64
+            + std::mem::size_of::<worth_relational::facade::identity::EntityId>()
+            + std::mem::size_of::<worth_runtime_world::facade::ProductBranchIncarnation>();
+        let expected = (4 + 1 + 1 + 10)
+            + (4 + 15 + 16 + 10)
+            + 1
+            + 4 * occurrence
+            + 64
+            + 2 * std::mem::size_of::<u64>()
+            + 4;
+        assert_eq!(
+            super::replacement_comparison_work(&short, &long).unwrap(),
+            expected as u64
+        );
+    }
 }

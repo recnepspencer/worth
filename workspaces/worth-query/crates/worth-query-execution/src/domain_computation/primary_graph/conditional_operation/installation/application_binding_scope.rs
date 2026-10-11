@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryHostConditionalPredicateProvider,
     WorthQueryInstalledTemporalConditionalOperation, WorthQueryNamedClock,
@@ -38,7 +39,7 @@ where
     pub(in crate::domain_computation::primary_graph) fn begin_application_binding_scope(
         &mut self,
         binding: WorthQueryPortableApplicationConditionalOperationBinding,
-        operation_type: std::any::TypeId,
+        operation_type: TypeId,
         node_identity: String,
         required_producers: Vec<String>,
     ) {
@@ -137,7 +138,7 @@ where
             scope,
             node.operation().binding(),
             node.location().node_identity(),
-        ) || scope.operation_type != std::any::TypeId::of::<ApplicationOperation>()
+        ) || scope.operation_type != TypeId::of::<ApplicationOperation>()
         {
             return Err(denial(
                 DenialKind::ForeignBinding,
@@ -165,6 +166,7 @@ fn denial(
 
 #[cfg(test)]
 mod tests {
+    use crate::equality_type_id::EqualityTypeId as TypeId;
     use worth_query_installation::facade::{
         WorthQueryPortableApplicationConditionalOperationBinding,
         WorthQueryPortableApplicationConditionalOperationBindingParts,
@@ -189,7 +191,7 @@ mod tests {
     fn application_binding_scope_rejects_wrong_operation_and_node() {
         let scope = ApplicationConditionalBindingScope {
             binding: binding("expected"),
-            operation_type: std::any::TypeId::of::<()>(),
+            operation_type: TypeId::of::<()>(),
             node_identity: "ready".into(),
             initial_binding_count: 0,
             initial_readiness_count: 0,

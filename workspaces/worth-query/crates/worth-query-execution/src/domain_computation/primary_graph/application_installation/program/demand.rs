@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -55,7 +56,7 @@ where
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
-    target_feature: std::any::TypeId,
+    target_feature: TypeId,
     artifact: Option<Artifact>,
     marker: std::marker::PhantomData<fn() -> Program>,
 }
@@ -68,7 +69,7 @@ where
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     retained: std::sync::Arc<WorthQueryOutputDemandSettlement>,
-    target_feature: std::any::TypeId,
+    target_feature: TypeId,
     artifact: Option<Artifact>,
     marker: std::marker::PhantomData<fn() -> (Schema, Program, Demand)>,
 }
@@ -119,7 +120,7 @@ where
             >(source, limits)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
-                target_feature: std::any::TypeId::of::<
+                target_feature: TypeId::of::<
                     <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature,
                 >(),
                 artifact,
@@ -153,10 +154,10 @@ where
         }
         self.runtime.validate_recovered_output_root_kind(
             receipt,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(std::any::TypeId::of::<Root>()),
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
         )?;
         self.runtime
-            .recover_prepared_output_source(receipt, std::any::TypeId::of::<Root>())
+            .recover_prepared_output_source(receipt, TypeId::of::<Root>())
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
                     crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -272,7 +273,7 @@ where
         let limits = self.resolve_artifact_limits(limits, artifact)?;
         self.runtime.validate_recovered_output_root_kind(
             source_receipt,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(std::any::TypeId::of::<Root>()),
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
         )?;
         self.runtime
             .admit_recovered_output_demand::<
@@ -285,7 +286,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
-                target_feature: std::any::TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
+                target_feature: TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,
             })
@@ -323,7 +324,7 @@ where
             >(source, limits, prepared)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
-                target_feature: std::any::TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
+                target_feature: TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,
             })
