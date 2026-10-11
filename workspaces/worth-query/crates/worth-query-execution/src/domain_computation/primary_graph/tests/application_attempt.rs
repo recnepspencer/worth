@@ -357,3 +357,7 @@ mod read_rendezvous;
 
 #[path = "application_attempt/request_read_stops.rs"]
 mod request_read_stops;
+
+#[cfg(feature = "test-query-execution-observer")]
+#[path = "application_attempt/checked_invariant_hooks.rs"]
+mod checked_invariant_hooks;

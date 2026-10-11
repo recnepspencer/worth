@@ -3,12 +3,12 @@ use bank_domain::schema::{
     PostingAmount, Purpose,
 };
 use worth_query_host::facade::application_invariants::{
-    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
-    WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantExecutionError,
-    WorthQueryApplicationInvariantFieldBinding, WorthQueryApplicationInvariantPreparationError,
-    WorthQueryApplicationInvariantRelationBinding, WorthQueryApplicationInvariantRule,
-    WorthQueryApplicationInvariantSchemaResolver, WorthQueryApplicationInvariantScopePlanner,
-    WorthQueryApplicationInvariantVerdict,
+    CustomInvariantLeaseBudget, WorthQueryApplicationInvariantContext,
+    WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantEntityBinding,
+    WorthQueryApplicationInvariantExecutionError, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryApplicationInvariantPreparationError, WorthQueryApplicationInvariantRelationBinding,
+    WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantSchemaResolver,
+    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantVerdict,
 };
 
 pub(super) fn resolve_rule(
@@ -70,35 +70,32 @@ pub(super) struct BankPostingIntegrityRule {
 impl WorthQueryApplicationInvariantRule<BankSchema> for BankPostingIntegrityRule {
     type Scope = Vec<WorthQueryApplicationInvariantEntity<BankSchema, JournalEntry>>;
 
+    fn supports_checked_preparation(&self) -> bool {
+        true
+    }
+    fn prepare_scope_checked(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, BankSchema>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+        Some(self.prepare_under(planner, Some(budget)))
+    }
+    fn evaluate_checked(
+        &self,
+        context: &WorthQueryApplicationInvariantContext<'_, '_, BankSchema>,
+        scope: &Self::Scope,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<
+        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+    > {
+        Some(self.evaluate_under(context, scope, Some(budget)))
+    }
+
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, BankSchema>,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
-        let proposed = planner.proposed();
-        let journals = proposed
-            .touched_entities_of(&self.journal)
-            .map_err(preparation_error)?;
-        for journal in &journals {
-            proposed
-                .field(&self.journal_purpose, journal)
-                .map_err(preparation_error)?;
-            for relation in proposed
-                .relations_from(&self.journal_posting, journal)
-                .map_err(preparation_error)?
-            {
-                let posting = relation.to();
-                proposed
-                    .field(&self.posting_amount, posting)
-                    .map_err(preparation_error)?;
-                proposed
-                    .field(&self.posting_purpose, posting)
-                    .map_err(preparation_error)?;
-                proposed
-                    .relations_from(&self.posting_account, posting)
-                    .map_err(preparation_error)?;
-            }
-        }
-        Ok(journals)
+        self.prepare_under(planner, None)
     }
 
     fn evaluate(
@@ -107,12 +104,7 @@ impl WorthQueryApplicationInvariantRule<BankSchema> for BankPostingIntegrityRule
         scope: &Self::Scope,
     ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
     {
-        for journal in scope {
-            if !self.journal_is_balanced(context, journal)? {
-                return Ok(WorthQueryApplicationInvariantVerdict::Violation);
-            }
-        }
-        Ok(WorthQueryApplicationInvariantVerdict::Pass)
+        self.evaluate_under(context, scope, None)
     }
 }
 
@@ -121,6 +113,7 @@ impl BankPostingIntegrityRule {
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, BankSchema>,
         journal: &WorthQueryApplicationInvariantEntity<BankSchema, JournalEntry>,
+        budget: Option<&dyn CustomInvariantLeaseBudget>,
     ) -> Result<bool, WorthQueryApplicationInvariantExecutionError> {
         let proposed = context.proposed();
         let Some(journal_purpose) = proposed
@@ -134,6 +127,11 @@ impl BankPostingIntegrityRule {
             .map_err(execution_error)?;
         let mut balance = BankPostingBalance::default();
         for relation in postings {
+            if budget.is_some_and(|budget| !budget.checkpoint(1)) {
+                return Err(WorthQueryApplicationInvariantExecutionError::new(
+                    "caller stopped",
+                ));
+            }
             let posting = relation.to();
             let Some(amount) = proposed
                 .field(&self.posting_amount, posting)
@@ -236,5 +234,81 @@ mod tests {
             i64::MAX
         ));
         assert!(!overflow.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, 1));
+    }
+}
+
+impl BankPostingIntegrityRule {
+    fn prepare_under(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, BankSchema>,
+        budget: Option<&dyn CustomInvariantLeaseBudget>,
+    ) -> Result<
+        <Self as WorthQueryApplicationInvariantRule<BankSchema>>::Scope,
+        WorthQueryApplicationInvariantPreparationError,
+    > {
+        if budget.is_some_and(|budget| !budget.checkpoint(0)) {
+            return Err(WorthQueryApplicationInvariantPreparationError::new(
+                "caller stopped",
+            ));
+        }
+        let proposed = planner.proposed();
+        let journals = proposed
+            .touched_entities_of(&self.journal)
+            .map_err(preparation_error)?;
+        for journal in &journals {
+            if budget.is_some_and(|budget| !budget.checkpoint(1)) {
+                return Err(WorthQueryApplicationInvariantPreparationError::new(
+                    "caller stopped",
+                ));
+            }
+            proposed
+                .field(&self.journal_purpose, journal)
+                .map_err(preparation_error)?;
+            for relation in proposed
+                .relations_from(&self.journal_posting, journal)
+                .map_err(preparation_error)?
+            {
+                if budget.is_some_and(|budget| !budget.checkpoint(1)) {
+                    return Err(WorthQueryApplicationInvariantPreparationError::new(
+                        "caller stopped",
+                    ));
+                }
+                let posting = relation.to();
+                proposed
+                    .field(&self.posting_amount, posting)
+                    .map_err(preparation_error)?;
+                proposed
+                    .field(&self.posting_purpose, posting)
+                    .map_err(preparation_error)?;
+                proposed
+                    .relations_from(&self.posting_account, posting)
+                    .map_err(preparation_error)?;
+            }
+        }
+        Ok(journals)
+    }
+    fn evaluate_under(
+        &self,
+        context: &WorthQueryApplicationInvariantContext<'_, '_, BankSchema>,
+        scope: &<Self as WorthQueryApplicationInvariantRule<BankSchema>>::Scope,
+        budget: Option<&dyn CustomInvariantLeaseBudget>,
+    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
+    {
+        if budget.is_some_and(|budget| !budget.checkpoint(0)) {
+            return Err(WorthQueryApplicationInvariantExecutionError::new(
+                "caller stopped",
+            ));
+        }
+        for journal in scope {
+            if budget.is_some_and(|budget| !budget.checkpoint(1)) {
+                return Err(WorthQueryApplicationInvariantExecutionError::new(
+                    "caller stopped",
+                ));
+            }
+            if !self.journal_is_balanced(context, journal, budget)? {
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+            }
+        }
+        Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }
 }
