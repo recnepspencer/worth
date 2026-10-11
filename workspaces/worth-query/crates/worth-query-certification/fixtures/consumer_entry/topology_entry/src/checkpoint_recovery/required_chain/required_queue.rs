@@ -396,3 +396,5 @@ mod steady_retention;
 // Contact probes share this module's existing observer boundary.
 #[path = "performed_head_movement.rs"]
 mod performed_head_movement;
+
+mod current_consumption;
