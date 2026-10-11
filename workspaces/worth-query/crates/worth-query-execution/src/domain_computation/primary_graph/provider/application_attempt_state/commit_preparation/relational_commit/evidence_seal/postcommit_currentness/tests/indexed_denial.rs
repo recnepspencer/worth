@@ -350,3 +350,6 @@ fn request_admission() -> InvalidationEditAdmission {
         maximum_preparation_bytes: 1024 * 1024,
     })
 }
+
+#[path = "indexed_denial/large_allowance.rs"]
+mod large_allowance;

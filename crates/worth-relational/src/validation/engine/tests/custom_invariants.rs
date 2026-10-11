@@ -8,7 +8,7 @@ fn engine_executes_custom_invariant_packets() {
         .custom_invariant(CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap())
         .build();
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -47,7 +47,12 @@ fn leased_opaque_custom_rule_is_denied_before_evaluation() {
         None,
     );
     let denial = InvariantEngine::new(&runtime)
-        .execute_with_lease(request, &crate::tests::support::test_execution_lease())
+        .execute(
+            &worth_execution::ExecutionRequest::leased(
+                &crate::tests::support::test_execution_lease(),
+            ),
+            request,
+        )
         .expect_err("opaque custom execution must fail closed under a lease");
     assert!(matches!(
         denial,
@@ -72,7 +77,7 @@ fn engine_executes_graph_composition_custom_invariant_packets() {
         )
         .build();
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::GraphComposition,
             &runtime,
@@ -166,7 +171,7 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         ],
     };
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -208,7 +213,7 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         "committed-edge",
     );
     runtime.performance_access().reset_counters();
-    let after_topology_change = InvariantEngine::new(&runtime).execute(
+    let after_topology_change = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -243,7 +248,7 @@ fn engine_captures_custom_prepare_panics_as_typed_failures() {
         .build();
     runtime.performance_access().reset_counters();
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -298,7 +303,7 @@ fn engine_captures_custom_evaluate_panics_as_typed_failures() {
         .build();
     runtime.performance_access().reset_counters();
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,

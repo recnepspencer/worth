@@ -3,7 +3,7 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalR
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
 
-pub(super) fn replay_commit_stop(
+pub(crate) fn replay_commit_stop(
     error: TransactionCommitError,
     detail: String,
 ) -> RelationalRecoveryStop {
@@ -26,5 +26,50 @@ pub(super) fn replay_commit_stop(
         | TransactionCommitError::PerformedButDurabilityDeferred { .. } => {
             DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn replay_interrupted_commit_preserves_each_control_cause_by_value() {
+        use crate::mvcc::{
+            RelationalInterruptionBoundary, RelationalOperationControl,
+            RelationalOperationInterruption as Interrupt,
+        };
+        for (interruption, cause) in [
+            (Interrupt::Cancelled, Cause::Cancelled),
+            (Interrupt::TimedOut, Cause::DeadlineElapsed),
+        ] {
+            let boundary = RelationalInterruptionBoundary::ProposalValidation;
+            let event = RelationalOperationControl::uninterrupted()
+                .with_injected_interruption(boundary, interruption, 1)
+                .observe(boundary)
+                .unwrap();
+            let stop = replay_commit_stop(
+                TransactionCommitError::interrupted(event),
+                "not corrupt evidence".into(),
+            );
+            assert_eq!(stop, RelationalRecoveryStop::Request(cause));
+        }
+    }
+    #[test]
+    fn replay_conflict_keeps_its_durability_failure_by_value() {
+        let conflict = crate::transactions::data::CommitConflict::new(
+            crate::transactions::data::ConflictClass::InvalidMergeParent {
+                detail: "corrupt merge".into(),
+            },
+        );
+        assert_eq!(
+            replay_commit_stop(
+                TransactionCommitError::conflict(conflict),
+                "corrupt envelope".into()
+            ),
+            RelationalRecoveryStop::Durability(DurabilityError::new(
+                RecoveryFailureClass::ReplayFailure,
+                "corrupt envelope"
+            ))
+        );
     }
 }

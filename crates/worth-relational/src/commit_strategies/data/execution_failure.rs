@@ -23,16 +23,20 @@ pub enum StrategyExecutorFailureEvidence {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct StrategyExecutorFailure {
-    pub class: StrategyExecutorFailureClass,
-    pub detail: Arc<str>,
-    pub evidence: Option<StrategyExecutorFailureEvidence>,
+/// A transient executor refusal: request control cannot become a serialized domain failure.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StrategyExecutorFailure {
+    Request(crate::execution::RelationalExecutionDenialCause),
+    Domain {
+        class: StrategyExecutorFailureClass,
+        detail: Arc<str>,
+        evidence: Option<StrategyExecutorFailureEvidence>,
+    },
 }
 
 impl StrategyExecutorFailure {
     pub fn new(class: StrategyExecutorFailureClass, detail: impl Into<Arc<str>>) -> Self {
-        Self {
+        Self::Domain {
             class,
             detail: detail.into(),
             evidence: None,
@@ -44,7 +48,7 @@ impl StrategyExecutorFailure {
         detail: impl Into<Arc<str>>,
         evidence: StrategyExecutorFailureEvidence,
     ) -> Self {
-        Self {
+        Self::Domain {
             class,
             detail: detail.into(),
             evidence: Some(evidence),

@@ -49,7 +49,7 @@ pub(super) fn verify_strategy_reexecution_surface(
         return Ok(());
     };
     let Some(execution) =
-        execute_strategy_replay(&basis_runtime, expected_artifacts, mismatches, request)
+        execute_strategy_replay(&basis_runtime, expected_artifacts, mismatches, request)?
     else {
         return Ok(());
     };
@@ -60,7 +60,8 @@ pub(super) fn verify_strategy_reexecution_surface(
         expected_artifacts,
         &execution,
         mismatches,
-    ) else {
+    )?
+    else {
         return Ok(());
     };
     if strategy_artifacts_match(&execution, &observed, expected_artifacts) {
@@ -208,21 +209,40 @@ fn execute_strategy_replay(
     expected_artifacts: &StrategyCommitArtifactBundle,
     mismatches: &mut Vec<ReplayMismatch>,
     request: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Option<StrategyExecutionDraft> {
+) -> Result<Option<StrategyExecutionDraft>, RelationalRecoveryStop> {
+    crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
     let replay_request = expected_artifacts.replay_request();
     let snapshot = basis_runtime.visibility_authority().snapshot();
     match basis_runtime
         .commit_strategies()
         .execute(&replay_request, &snapshot, request)
     {
-        Ok(execution) => Some(execution),
+        Ok(execution) => Ok(Some(execution)),
         Err(error) => {
+            crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
             let mismatch_class = match error {
                 crate::commit_strategies::StrategyExecutionError::UnknownStrategyId { .. }
                 | crate::commit_strategies::StrategyExecutionError::UnboundStrategyExecutor {
                     ..
                 } => ReplayMismatchClass::StrategyExecutorUnavailable,
-                _ => ReplayMismatchClass::StrategyExecutionFailure,
+                crate::commit_strategies::StrategyExecutionError::ExecutorFailed {
+                    failure: crate::commit_strategies::data::StrategyExecutorFailure::Request(cause),
+                    ..
+                } => return Err(RelationalRecoveryStop::Request(cause)),
+                crate::commit_strategies::StrategyExecutionError::ExecutorFailed {
+                    failure: crate::commit_strategies::data::StrategyExecutorFailure::Domain { .. },
+                    ..
+                } => ReplayMismatchClass::StrategyExecutionFailure,
+                crate::commit_strategies::StrategyExecutionError::DescriptorDigestMismatch {
+                    ..
+                }
+                | crate::commit_strategies::StrategyExecutionError::UnsupportedReadContract {
+                    ..
+                }
+                | crate::commit_strategies::StrategyExecutionError::UnknownSnapshot { .. }
+                | crate::commit_strategies::StrategyExecutionError::ExecutorPanicked { .. } => {
+                    ReplayMismatchClass::StrategyExecutionFailure
+                }
             };
             mismatches.push(strategy_mismatch(
                 mismatch_class,
@@ -230,7 +250,7 @@ fn execute_strategy_replay(
                 expected_artifacts,
                 None,
             ));
-            None
+            Ok(None)
         }
     }
 }
@@ -242,7 +262,7 @@ fn lower_strategy_replay(
     expected_artifacts: &StrategyCommitArtifactBundle,
     execution: &StrategyExecutionDraft,
     mismatches: &mut Vec<ReplayMismatch>,
-) -> Option<StrategyCommitArtifactBundle> {
+) -> Result<Option<StrategyCommitArtifactBundle>, RelationalRecoveryStop> {
     let replay_request = expected_artifacts.replay_request();
     let options = match basis_admission::replay_transaction_context(
         basis_runtime,
@@ -257,7 +277,7 @@ fn lower_strategy_replay(
                 expected_artifacts,
                 None,
             ));
-            return None;
+            return Ok(None);
         }
     };
     let mut strategy_authority = basis_runtime.commit_strategies_authority();
@@ -275,7 +295,7 @@ fn lower_strategy_replay(
                 expected_artifacts,
                 None,
             ));
-            return None;
+            return Ok(None);
         }
     };
     let descriptor = basis_runtime
@@ -298,26 +318,34 @@ fn lower_strategy_replay(
                 expected_artifacts,
                 None,
             ));
-            return None;
+            return Ok(None);
         }
         match strategy_authority.validate_lowered_plan(request, basis_runtime, lowered) {
-            Ok(validated) => validated.strategy_commit_artifacts().cloned(),
+            Ok(validated) => Ok(validated.strategy_commit_artifacts().cloned()),
             Err(error) => {
+                let detail = format!("strategy replay re-validation failed: {error:?}");
+                let error = crate::execution::allocation_commit_error(error);
+                match crate::durability::authority::replay_commit_stop(error, detail.clone()) {
+                    RelationalRecoveryStop::Request(cause) => {
+                        return Err(RelationalRecoveryStop::Request(cause))
+                    }
+                    RelationalRecoveryStop::Durability(_) => {}
+                }
                 mismatches.push(strategy_mismatch(
                     ReplayMismatchClass::StrategyLoweringDrift,
-                    format!("strategy replay re-validation failed: {error:?}"),
+                    detail,
                     expected_artifacts,
                     None,
                 ));
-                None
+                Ok(None)
             }
         }
     } else {
-        Some(StrategyCommitArtifactBundle::from_lowered(
+        Ok(Some(StrategyCommitArtifactBundle::from_lowered(
             &lowered,
             &descriptor,
             basis_runtime.runtime_config(),
-        ))
+        )))
     }
 }
 

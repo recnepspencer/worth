@@ -98,12 +98,13 @@ fn unpublished_recovery_opens_before_authorization_for_all_three_entries() {
                 )
             })
             .expect("fixture control owns its host call");
+        let observed_outcome = ordinary!(request, source, &9130_u64)
+            .execute_in_program(&application, Allocation::SystemAllocation)
+            .unwrap();
         let OrdinaryOutcome::Commit(WorthQueryApplicationUncommitted::ProductUnpublished(partial)) =
-            ordinary!(request, source, &9130_u64)
-                .execute_in_program(&application, Allocation::SystemAllocation)
-                .unwrap()
+            observed_outcome
         else {
-            panic!("real durable append refusal retains ordinary recovery")
+            panic!("real durable append refusal retains ordinary recovery: {observed_outcome:?}; placement={placement:?}")
         };
         let recovery = partial.into_recovery();
         zero_work();
@@ -251,14 +252,17 @@ fn discovered_promotion_opens_before_its_receipt_reader_and_returns_custody_on_r
                 )
             })
             .expect("fixture control owns its host call");
-        let Outcome::ProductUnpublished(mut recovery) = fresh!(request, source, &9134_u64)
+        let observed_outcome = fresh!(request, source, &9134_u64)
             .execute_performed_discovered::<DiscoveredProgram, DiscoveredRoot>(
                 &application,
                 Allocation::SystemAllocation,
             )
-            .unwrap()
-        else {
-            panic!("native unpublished custody")
+            .unwrap();
+        let Outcome::ProductUnpublished(mut recovery) = observed_outcome else {
+            panic!(
+                "native unpublished custody: {}; placement={placement:?}",
+                super::outcome_observation::discovered(&observed_outcome)
+            )
         };
         fresh!(request, source, &9134_u64)
             .recover_unpublished_discovered_in_program(&mut recovery, &application)
@@ -301,14 +305,17 @@ fn required_promotion_opens_before_its_receipt_reader_and_returns_custody_on_ref
                 )
             })
             .expect("fixture control owns its host call");
-        let RequiredOutcome::ProductUnpublished(mut recovery) = fresh!(request, source, &9135_u64)
+        let observed_outcome = fresh!(request, source, &9135_u64)
             .execute_performed::<CheckpointProgram, CheckpointRoot>(
                 &application,
                 Allocation::SystemAllocation,
             )
-            .unwrap()
-        else {
-            panic!("native unpublished custody")
+            .unwrap();
+        let RequiredOutcome::ProductUnpublished(mut recovery) = observed_outcome else {
+            panic!(
+                "native unpublished custody: {}; placement={placement:?}",
+                super::outcome_observation::required(&observed_outcome)
+            )
         };
         fresh!(request, source, &9135_u64)
             .recover_unpublished_required_in_program(&mut recovery, &application)

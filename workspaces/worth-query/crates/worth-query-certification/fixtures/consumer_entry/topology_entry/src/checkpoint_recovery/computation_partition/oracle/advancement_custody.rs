@@ -16,16 +16,12 @@ impl Drop for Restore {
         arm_own_write(None);
     }
 }
-// Each producer independently declares a million-unit entry checkpoint.
-// The request funds both producers and declares half an entry checkpoint
-// for all delivery. One fresh pass fits; two deliveries must share that allowance.
+// Both producers retain their declared work; a successful run measures delivery.
 const RUNS: usize = 1;
 const ENTRY_WORK: usize = 1_000_000;
 const EVEN_WEIGHT_WORK: u64 = 1;
 const PRODUCER_WORK: usize = ENTRY_WORK + WORK_BESIDE_ENTRIES;
 const REQUIRED_PRODUCER_PASSES: u64 = 2;
-const DELIVERY_WORK_ALLOWANCE: u64 = ENTRY_WORK as u64 / 2;
-const CEILING: u64 = ENTRY_WORK as u64 * REQUIRED_PRODUCER_PASSES + DELIVERY_WORK_ALLOWANCE;
 
 #[test]
 fn caller_refresh_retry_spends_what_the_first_attempt_left() {
@@ -37,6 +33,8 @@ fn caller_refresh_retry_spends_what_the_first_attempt_left() {
     }
 }
 
+#[path = "advancement_custody/budget_measurement.rs"]
+mod budget_measurement;
 #[path = "advancement_custody/post_producer_delivery.rs"]
 mod post_producer_delivery;
 
@@ -49,26 +47,9 @@ fn run() {
         application_entry::WorthQueryApplicationOutputDemandDenial as OutputDenial,
         primary_graph::signal_request_charges_on_this_thread_for_test as signal_charges,
     };
+    let ceiling = budget_measurement::ceiling();
     bound(None);
-    let application = installation::install_configured::<false, PRODUCER_WORK, RUNS>(
-        None,
-        Default::default(),
-        |graph| {
-            facts::seed_set(graph, "even", -0.0);
-            seed_entry(
-                graph,
-                &["even"],
-                0,
-                RegionEntry {
-                    id: 0,
-                    region: 0,
-                    value: 1.0,
-                    work: ENTRY_WORK,
-                    fault: None,
-                },
-            );
-        },
-    );
+    let application = budget_measurement::application();
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut interest = request
@@ -86,7 +67,7 @@ fn run() {
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         policy.charged_memory_bytes(),
-        CEILING,
+        ceiling,
     )));
     reports();
     passes();
@@ -97,7 +78,7 @@ fn run() {
     let requests = reports();
     let attempts = passes();
     let charged = requests[0].as_ref().unwrap().charged_work();
-    assert!(charged <= CEILING);
+    assert!(charged <= ceiling);
     let diagnostics = {
         let runs = room();
         format!(
@@ -132,7 +113,7 @@ fn run() {
         "the first producer performs its declared entry and weight checkpoints"
     );
     // One declared producer attempt fits alone; the refusal requires carried spend.
-    assert!(kernel_work[0] <= CEILING);
+    assert!(kernel_work[0] <= ceiling);
     assert_eq!(
         attempts[1].1, attempts[0].1,
         "Ready refresh adds no Signal work"

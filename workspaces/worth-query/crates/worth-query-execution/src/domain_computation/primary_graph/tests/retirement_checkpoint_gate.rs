@@ -9,8 +9,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationObservedFact as Fact, WorthQueryApplicationOutputCorrespondence,
     WorthQueryPrincipalResolutionMode,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use crate::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
-use std::any::TypeId;
 use worth_relational::facade::{
     identity::EntityId,
     transactions::{DeleteEntityIntent, EntityMutationIntent, MutationIntent, WorkerIntentBatch},

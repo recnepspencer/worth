@@ -54,7 +54,7 @@ pub(in crate::domain_computation::primary_graph) mod registry_fixture;
 mod tests;
 
 use super::output_family_identity::OutputFamilyIdentity;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, OnceLock};
 

@@ -14,7 +14,8 @@ use crate::domain_computation::primary_graph::{
     },
     WorthQueryPrincipalResolutionMode,
 };
-use std::{any::TypeId, collections::BTreeMap};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::collections::BTreeMap;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, InternedString, LocatorAuthority,
 };
@@ -318,7 +319,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         ));
         let mut no_work = owner.edit_admission();
         no_work
-            .charge_external_work(u64::try_from(no_work.remaining_work()).unwrap())
+            .charge_external_work(no_work.remaining_work_amount())
             .unwrap();
         let exhausted = compare_retained_output_witness(&host_custody.borrowed_request_for_test(),
             runtime,
@@ -383,8 +384,9 @@ fn change_label(
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    let RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("the real native edit must publish");
     };

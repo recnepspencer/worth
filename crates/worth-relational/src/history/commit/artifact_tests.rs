@@ -17,16 +17,15 @@ fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
 
     use crate::history::data::RelationalDescriptiveTouch;
     use crate::identity::data::KindId;
-    use crate::tests::support::{create_entity_outcome_with_lease, test_execution_lease};
+    use crate::tests::support::test_execution_lease;
 
     for checked in [false, true] {
         let runtime = persisted_runtime_with_test_schema();
         let committed = if checked {
-            create_entity_outcome_with_lease(
-                execution,
+            create_entity_outcome(
+                &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
                 &runtime,
                 "touch-value",
-                &test_execution_lease(),
             )
         } else {
             create_entity_outcome(execution, &runtime, "touch-value")

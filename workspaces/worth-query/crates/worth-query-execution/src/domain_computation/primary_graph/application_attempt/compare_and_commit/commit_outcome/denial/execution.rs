@@ -165,15 +165,18 @@ fn allocation_control(
     >,
 > {
     use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
-    use worth_execution::ExecutionAllocationDenialKind as Kind;
-    match denial?.kind() {
-        Kind::Cancelled => Some(Err(Control::Cancelled)),
-        Kind::DeadlineElapsed => Some(Err(Control::TimedOut)),
-        Kind::Layout
-        | Kind::Lease(_)
-        | Kind::Allocator
-        | Kind::CapacityMismatch
-        | Kind::WriteBeyondReserved
-        | Kind::IncompleteSeal => None,
+    use worth_execution::{
+        ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
+        WorkCeilingDenial as Request,
+    };
+    match denial?.classify() {
+        Class::Request(Request::Stopped(Stop::Cancelled)) => Some(Err(Control::Cancelled)),
+        Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => Some(Err(Control::TimedOut)),
+        Class::Request(Request::Admission(_))
+        | Class::Request(Request::Stopped(
+            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+        ))
+        | Class::Request(Request::Panicked)
+        | Class::Physical(_) => None,
     }
 }

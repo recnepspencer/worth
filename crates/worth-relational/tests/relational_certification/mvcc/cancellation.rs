@@ -162,7 +162,7 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
         world
             .runtime
             .publication_port()
-            .compare_and_publish(candidate),
+            .compare_and_publish(execution, candidate),
         RelationalPublicationOutcome::Interrupted(_)
     ));
     assert_eq!(
@@ -264,7 +264,7 @@ fn cancellation_after_linearization_preserves_performed_commit_and_settles_once(
     let performed = match world
         .runtime
         .publication_port()
-        .compare_and_publish(candidate)
+        .compare_and_publish(execution, candidate)
     {
         RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("uncancelled Supply Chain publication performs: {outcome:?}"),

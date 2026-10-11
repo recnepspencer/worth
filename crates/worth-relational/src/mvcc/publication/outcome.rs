@@ -360,6 +360,7 @@ impl RelationalPublicationFailure {
 #[derive(Debug)]
 #[must_use = "publication outcomes carry performed work or a typed terminal posture"]
 pub enum RelationalPublicationOutcome {
+    RequestStopped(worth_execution::WorkCeilingDenial),
     Performed(PerformedRelationalCommit),
     Stale(StaleRelationalBranchObservation),
     Denied(RelationalPublicationDenial),

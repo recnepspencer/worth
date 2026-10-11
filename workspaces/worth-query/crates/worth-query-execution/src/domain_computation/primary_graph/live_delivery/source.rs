@@ -4,6 +4,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 mod custody;
 mod reservation;
+mod subscription;
+pub(in crate::domain_computation::primary_graph) use subscription::WorthQueryLiveSubscriptionCapacityExhausted;
 #[cfg(test)]
 mod testing;
 
@@ -109,46 +111,6 @@ impl WorthQueryLiveDeliverySource {
             byte_capacity: AtomicU64::new(byte_capacity),
             #[cfg(test)]
             after_reservation: Mutex::new(None),
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn open(
-        &self,
-        observation: &worth_runtime_world::facade::ProductBranchObservation,
-    ) -> WorthQueryLiveSubscription {
-        let key = WorthQueryLiveProductKey::from_observation(observation);
-        let batch_capacity = self.batch_capacity.load(Ordering::Acquire);
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let partition =
-            state
-                .partitions
-                .entry(key.clone())
-                .or_insert_with(|| WorthQueryLiveProductPartition {
-                    batches: VecDeque::with_capacity(batch_capacity),
-                    allocated_batch_capacity: batch_capacity,
-                    next_sequence: 0,
-                    last_product_commit: None,
-                    retained_payload_bytes: 0,
-                    subscriber_count: 0,
-                    reservation_live: false,
-                    retired: false,
-                });
-        partition.subscriber_count = partition
-            .subscriber_count
-            .checked_add(1)
-            .expect("live subscriber count is bounded by process memory");
-        let cursor = partition.next_sequence;
-        state.subscriber_count = state
-            .subscriber_count
-            .checked_add(1)
-            .expect("live subscriber count is bounded by process memory");
-        WorthQueryLiveSubscription {
-            state: Arc::clone(&self.state),
-            key,
-            cursor,
         }
     }
 
@@ -385,3 +347,6 @@ impl WorthQueryLiveDeliverySource {
             .subscriber_count
     }
 }
+
+#[cfg(test)]
+mod count_tests;

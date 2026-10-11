@@ -15,6 +15,11 @@ impl Repository {
             .as_nanos();
         let root = std::env::temp_dir().join(format!("snapshot-contract-{id}"));
         fs::create_dir_all(&root).unwrap();
+        write(
+            &root,
+            ".boundary-check-mock-root",
+            "Declared boundary-check mock root.\n",
+        );
         write(&root, "Cargo.toml", ROOT_MANIFEST);
         write(&root, "plans/worthy/NAMING.md", "fixture authority\n");
         write(

@@ -88,7 +88,7 @@ fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
         world
             .runtime
             .publication_port()
-            .compare_and_publish(candidate),
+            .compare_and_publish(execution, candidate),
         RelationalPublicationOutcome::Denied(RelationalPublicationDenial::Archived)
     ));
     drop(active);

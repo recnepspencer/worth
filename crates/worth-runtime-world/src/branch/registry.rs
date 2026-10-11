@@ -298,7 +298,7 @@ impl ProductBranchRegistry {
     /// created branches.
     pub(crate) fn release_non_root_branches(&self) -> usize {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let branches = close_order::non_root_branches(state.entries.keys(), state.root.as_ref());
+        let branches = close_order::non_root_branches(&state.entries, state.root.as_ref());
         let released: Vec<_> = branches
             .iter()
             .map(|branch| {

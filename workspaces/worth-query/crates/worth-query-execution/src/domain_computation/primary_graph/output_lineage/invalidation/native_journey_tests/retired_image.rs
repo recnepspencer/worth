@@ -196,7 +196,9 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
         let captured = owner
             .capture_full_verification(runtime, &snapshot, &basis, &mut owner.edit_admission())
             .unwrap();
-        let outcome = runtime.publication_port().compare_and_publish(candidate);
+        let outcome = runtime
+            .publication_port()
+            .compare_and_publish(request_execution, candidate);
         let RelationalPublicationOutcome::Performed(performed) = outcome else {
             panic!("the second discard must publish: {outcome:?}");
         };

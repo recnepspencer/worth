@@ -1,3 +1,4 @@
+#[cfg(target_pointer_width = "64")]
 use crate::data::graph::checked_segment_component_for_test;
 use crate::facade::*;
 
@@ -28,6 +29,9 @@ fn wrapped_slots_are_retired_and_never_reused() {
     assert!(graph.is_alive(replacement));
 }
 
+// The refusal cannot happen by type on 32 bits: usize cannot represent
+// a value past u32::MAX.
+#[cfg(target_pointer_width = "64")]
 #[test]
 fn edge_store_segment_width_seam_rejects_values_past_u32_capacity() {
     let err = checked_segment_component_for_test(u32::MAX as usize + 1).unwrap_err();

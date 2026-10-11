@@ -2,7 +2,7 @@ mod authoring;
 mod completion;
 mod contract;
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleCardinality;

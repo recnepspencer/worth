@@ -1,7 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+static NEXT_REPOSITORY: AtomicU64 = AtomicU64::new(0);
 
 struct Repository {
     root: PathBuf,
@@ -13,7 +16,16 @@ impl Repository {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let root = std::env::temp_dir().join(format!("snapshot-surface-{id}"));
+        let sequence = NEXT_REPOSITORY.fetch_add(1, Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!(
+            "snapshot-surface-{}-{id}-{sequence}",
+            std::process::id()
+        ));
+        write(
+            &root,
+            ".boundary-check-mock-root",
+            "Declared boundary-check mock root.\n",
+        );
         write(&root, "Cargo.toml", ROOT_MANIFEST);
         write(&root, "plans/worthy/NAMING.md", "fixture\n");
         write(

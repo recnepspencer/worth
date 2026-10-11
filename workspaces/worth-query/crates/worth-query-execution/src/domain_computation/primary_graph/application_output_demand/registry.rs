@@ -1,3 +1,4 @@
+mod key_comparison;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Condvar, Mutex};
 

@@ -1,6 +1,8 @@
 mod observation;
 pub(crate) mod publication;
 mod transaction;
+#[cfg(test)]
+pub(crate) use transaction::split_contacts;
 pub(crate) mod validation;
 
 pub use crate::runtime::{

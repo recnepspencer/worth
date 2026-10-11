@@ -81,7 +81,7 @@ use super::root_commitment::{
 /// let candidate = runtime
 ///     .prepare_branch_transaction(execution, transaction)
 ///     .expect("preparation validates");
-/// let performed = match runtime.publication_port().compare_and_publish(candidate) {
+/// let performed = match runtime.publication_port().compare_and_publish(execution, candidate) {
 ///     RelationalPublicationOutcome::Performed(performed) => performed,
 ///     outcome => panic!("unexpected publication outcome: {outcome:?}"),
 /// };

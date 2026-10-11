@@ -3,7 +3,8 @@
 //! These are derived from the admitted operation and the attempt's idempotency
 //! binding. Callers cannot supply them as assertions.
 
-use std::any::{Any, TypeId};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::any::Any;
 use std::sync::Arc;
 
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;

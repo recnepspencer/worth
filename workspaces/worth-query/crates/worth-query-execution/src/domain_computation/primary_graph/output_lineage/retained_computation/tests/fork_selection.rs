@@ -1,6 +1,7 @@
 //! Exact fork horizons select one prior, and local absence ends inheritance.
 use super::*;
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_runtime_world::facade::{
     ProductBranchCreationIntent, ProductBranchCreationPlans, RelationalBranchCreationPlan,
     RuntimeWorldBranchCreationOutcome, RuntimeWorldCancellationSource, SignalBranchCreationPlan,
@@ -49,7 +50,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         .unwrap();
     let nested = make(&admitted_child, "computation-nested");
     let mut lineage = WorthQueryApplicationOutputLineage::default();
-    lineage.fixture_binding(std::any::TypeId::of::<()>(), "()");
+    lineage.fixture_binding(TypeId::of::<()>(), "()");
 
     let entity = worth_relational::facade::identity::EntityId::new(
         worth_relational::facade::identity::PartitionId::main(),

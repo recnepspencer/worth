@@ -66,7 +66,7 @@ fn standard_runtime_public_graph_admission_is_touched_and_not_ordinary_commit_wo
     assert_eq!(graph_evaluation_calls.load(Ordering::Relaxed), 0);
 
     let branch = BranchId("main".to_owned());
-    let graph_execution = graph_execution(&world.runtime, &branch);
+    let graph_execution = graph_execution(execution, &world.runtime, &branch);
     assert_eq!(
         graph_execution.metadata().max_cost(),
         InvariantCostClass::Touched
@@ -112,8 +112,8 @@ fn graph_planning_uses_child_basis_after_main_diverges_and_rejects_stale_binding
     let main_identity = world.runtime.main_branch_identity();
     let main_version =
         snapshot_for_supply_chain_identity(&world.runtime, &main_identity).version_id();
-    let main_execution = graph_execution(&world.runtime, &main);
-    let child_execution = graph_execution(&world.runtime, &child);
+    let main_execution = graph_execution(execution, &world.runtime, &main);
+    let child_execution = graph_execution(execution, &world.runtime, &child);
     assert_ne!(main_version, child_version);
     assert!(matches!(
         custom_rule_verdict(&main_execution, RULE_ID),
@@ -210,7 +210,11 @@ fn custom_rule_verdict<'a>(
         .verdict
 }
 
-fn graph_execution(runtime: &RelationalRuntime, branch: &BranchId) -> InvariantExecutionResult {
+fn graph_execution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &BranchId,
+) -> InvariantExecutionResult {
     let identity = runtime
         .branch_identity(branch)
         .expect("branch identity is owner-issued");
@@ -230,7 +234,7 @@ fn graph_execution(runtime: &RelationalRuntime, branch: &BranchId) -> InvariantE
         )
         .unwrap();
     transaction
-        .graph_composition_plan(runtime)
+        .graph_composition_plan(execution, runtime)
         .expect("the Standard graph plan is branch-bound and owner-prepared")
 }
 

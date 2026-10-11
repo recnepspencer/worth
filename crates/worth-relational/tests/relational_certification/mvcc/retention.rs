@@ -63,7 +63,7 @@ fn deletion_closes_admission_then_waits_for_transaction_and_candidate_operations
         world
             .runtime
             .publication_port()
-            .compare_and_publish(candidate),
+            .compare_and_publish(execution, candidate),
         RelationalPublicationOutcome::Denied(RelationalPublicationDenial::Deleting)
     ));
     assert!(world
@@ -94,7 +94,7 @@ fn performed_publication_retains_the_branch_operation_until_settlement() {
     let performed = match world
         .runtime
         .publication_port()
-        .compare_and_publish(candidate)
+        .compare_and_publish(execution, candidate)
     {
         RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("prepared branch movement must perform: {outcome:?}"),

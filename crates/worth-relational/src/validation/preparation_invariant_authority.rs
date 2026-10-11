@@ -26,7 +26,7 @@ impl PreparationInvariantAuthority<'_> {
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         let result = self.execute(
@@ -36,7 +36,7 @@ impl PreparationInvariantAuthority<'_> {
             version,
             plan,
             proposal,
-            lease,
+            execution,
             control,
         )?;
         match result.summary().blocking_failure() {
@@ -71,7 +71,7 @@ impl PreparationInvariantAuthority<'_> {
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         let result = self.execute(
@@ -81,7 +81,7 @@ impl PreparationInvariantAuthority<'_> {
             version,
             plan,
             proposal,
-            lease,
+            execution,
             control,
         )?;
         match result.summary().blocking_failure() {
@@ -116,7 +116,7 @@ impl PreparationInvariantAuthority<'_> {
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         let result = self.execute(
@@ -126,7 +126,7 @@ impl PreparationInvariantAuthority<'_> {
             version,
             plan,
             proposal,
-            lease,
+            execution,
             control,
         )?;
         match result.summary().publication_failure() {
@@ -164,7 +164,7 @@ impl PreparationInvariantAuthority<'_> {
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         control.check()?;
@@ -228,10 +228,7 @@ impl PreparationInvariantAuthority<'_> {
                 request.proposal_identity(),
             )));
         }
-        match lease {
-            Some(lease) => InvariantEngine::from_view(&view).execute_with_lease(request, lease),
-            None => Ok(InvariantEngine::from_view(&view).execute(request)),
-        }
+        InvariantEngine::from_view(&view).execute(execution, request)
     }
 
     fn metadata(

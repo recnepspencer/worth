@@ -35,7 +35,6 @@ pub(super) fn validate_commit_boundary(
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<BoundaryValidatedCommitExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::Boundary)?;
-    let lease = super::request_lease(execution);
     let (admitted, proposed_working_state, proposed_version_id, proposal_identity) =
         prepared.boundary_parts();
     let prevalidated = admitted.take_prevalidated_boundary();
@@ -52,7 +51,7 @@ pub(super) fn validate_commit_boundary(
         merged_plan,
         Some(proposal_identity),
         prevalidated,
-        lease,
+        execution,
         control,
     )?;
     Ok(BoundaryValidatedCommitExecution {

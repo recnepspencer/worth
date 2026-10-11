@@ -42,7 +42,7 @@ pub(super) fn exhaust_after_commit(
     }
     if EXHAUST_AFTER_COMMIT.with(|armed| armed.replace(false)) {
         admission
-            .charge_external_work(admission.remaining_work() as u64)
+            .exhaust_work_for_test()
             .expect("the constructed exhaustion consumes exactly the remaining allowance");
     }
 }

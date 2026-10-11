@@ -110,7 +110,7 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
         causal_record_count,
         "the real Large fixture must be installed in the selected production snapshot"
     );
-    let graph_execution = graph_execution(&world.runtime, &main);
+    let graph_execution = graph_execution(execution, &world.runtime, &main);
     assert_eq!(
         graph_execution.metadata().max_cost(),
         InvariantCostClass::Touched,
@@ -319,7 +319,11 @@ fn commit_vessel(
     transaction.commit(execution, runtime)
 }
 
-fn graph_execution(runtime: &RelationalRuntime, branch: &BranchId) -> InvariantExecutionResult {
+fn graph_execution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &BranchId,
+) -> InvariantExecutionResult {
     let identity = runtime
         .branch_identity(branch)
         .expect("branch identity is owner-issued");
@@ -348,7 +352,7 @@ fn graph_execution(runtime: &RelationalRuntime, branch: &BranchId) -> InvariantE
         )
         .unwrap();
     transaction
-        .graph_composition_plan(runtime)
+        .graph_composition_plan(execution, runtime)
         .expect("the real Scale graph plan is branch-bound and owner-prepared")
 }
 

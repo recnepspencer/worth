@@ -15,6 +15,8 @@ mod settlement;
 
 #[cfg(test)]
 mod settlement_order_tests;
+#[cfg(test)]
+mod settlement_serial_order_tests;
 
 pub(crate) use admission::execution_memory_requirement;
 pub(crate) use admission::execution_memory_requirement_for_lease;

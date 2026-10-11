@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::application_output_demand::{
     BoundOutputSource, PreparedOutputRootKind, WorthQueryOutputCheckpoint,
     WorthQueryPerformedOutputDemandSource,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn an_open_ordinary_interest_is_required_until_its_last_handle_closes() {
@@ -121,7 +122,7 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
                 output_source_identity: None,
             },
             &preparation,
-            PreparedOutputRootKind::Required(std::any::TypeId::of::<()>()),
+            PreparedOutputRootKind::Required(TypeId::of::<()>()),
             None,
         )
         .expect("the performed source enters native custody");

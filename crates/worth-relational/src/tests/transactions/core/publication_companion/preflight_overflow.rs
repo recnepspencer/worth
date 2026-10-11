@@ -59,7 +59,9 @@ fn preflight_counter_overflow_denies_without_moving_the_native_head() {
         let candidate = runtime
             .prepare_branch_transaction(execution, transaction)
             .expect("candidate prepares");
-        let outcome = runtime.publication_port().compare_and_publish(candidate);
+        let outcome = runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate);
         let expected = match meter {
             OverflowMeter::Work => CompanionPreflightStop::WorkCounterOverflow,
             OverflowMeter::PreparationBytes => {

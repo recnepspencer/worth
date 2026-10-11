@@ -29,7 +29,8 @@ mod worker_context;
 pub use array_backing::{ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter};
 pub use byte_backing::{ExecutionByteBuffer, ExecutionImmutableBytes};
 pub use fixed_backing::{
-    ExecutionAllocationDenial, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
+    ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationDenialKind,
+    ExecutionAllocationPolicy, ExecutionPhysicalAllocationDenialKind,
 };
 pub(in crate::authority) use memory::LeaseMemory;
 pub(crate) use reservation::SlotRefusal;

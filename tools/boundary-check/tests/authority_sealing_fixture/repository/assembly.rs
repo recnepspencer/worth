@@ -13,6 +13,10 @@ impl AuthoritySealingTestRepository {
 
     /// Assemble with an explicit road1.toml body (for substrate-admission hostiles).
     pub fn assemble_with_lib_source_and_config(&self, lib_source: &str, config: &str) {
+        self.write_file(
+            ".boundary-check-mock-root",
+            "Declared boundary-check mock root.\n",
+        );
         self.write_file("cad/docs/worthy-foundations/NAMING.md", "# naming\n");
         fs::create_dir_all(self.root.join("cad/workspaces")).expect("cad/workspaces");
         self.write_file(

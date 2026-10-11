@@ -17,6 +17,55 @@ fn expectation() -> ManagedComputationExpectation {
 }
 
 #[test]
+fn deciding_handler_order_uses_instance_feature_and_computation() {
+    let mut types = [
+        TypeId::of::<Computation>(),
+        TypeId::of::<OtherFeature>(),
+        TypeId::of::<Artifact>(),
+        TypeId::of::<Feature>(),
+    ];
+    // The external IDs are an adversarial oracle only, never the declared key.
+    types.sort_by_key(|identity| identity.into_external());
+    let declared = [
+        ManagedComputationExpectation {
+            composition_instance: "alpha-instance",
+            feature_identity: "zulu-feature",
+            identity: "alpha-computation",
+            computation_type: types[3],
+            ..expectation()
+        },
+        ManagedComputationExpectation {
+            composition_instance: "alpha-instance",
+            feature_identity: "zulu-feature",
+            identity: "zulu-computation",
+            computation_type: types[2],
+            ..expectation()
+        },
+        ManagedComputationExpectation {
+            composition_instance: "zulu-instance",
+            feature_identity: "alpha-feature",
+            identity: "middle-computation",
+            computation_type: types[0],
+            ..expectation()
+        },
+        ManagedComputationExpectation {
+            composition_instance: "alpha-instance",
+            feature_identity: "zz-feature",
+            identity: "aardvark-computation",
+            computation_type: types[1],
+            ..expectation()
+        },
+    ];
+    assert!(declared[0].computation_type.into_external() > types[0].into_external());
+    for order in [[1, 3, 0, 2], [2, 3, 1, 0]] {
+        let entries = order.map(|index| (declared[index].computation_type, declared[index]));
+        let denial = validate_managed_computation_inventory(&HashMap::new(), &entries).unwrap_err();
+        assert_eq!(denial.kind(), DenialKind::MissingManagedComputationOwner);
+        assert_eq!(denial.subject(), "alpha-computation");
+    }
+}
+
+#[test]
 fn equal_feature_names_are_denied_in_declared_instance_order() {
     let alpha = ManagedComputationExpectation {
         composition_instance: "alpha-instance",

@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
 use worth_query_installation::facade::WorthQueryExecutionResourceEnvelope;
@@ -25,24 +25,30 @@ pub struct WorthQueryGraphCommitCallRequest {
 impl WorthQueryGraphCommitCallRequest {
     pub fn direct(
         scope_identity: impl Into<Arc<str>>,
-        commit_authority_identity: (u64, TypeId),
+        commit_authority_identity: (u64, std::any::TypeId),
     ) -> Self {
         Self {
             scope_identity: scope_identity.into(),
             stage_identity: None,
-            commit_authority_identity,
+            commit_authority_identity: (
+                commit_authority_identity.0,
+                TypeId::from(commit_authority_identity.1),
+            ),
         }
     }
 
     pub fn workflow_stage(
         scope_identity: impl Into<Arc<str>>,
         stage_identity: impl Into<Arc<str>>,
-        commit_authority_identity: (u64, TypeId),
+        commit_authority_identity: (u64, std::any::TypeId),
     ) -> Self {
         Self {
             scope_identity: scope_identity.into(),
             stage_identity: Some(stage_identity.into()),
-            commit_authority_identity,
+            commit_authority_identity: (
+                commit_authority_identity.0,
+                TypeId::from(commit_authority_identity.1),
+            ),
         }
     }
 

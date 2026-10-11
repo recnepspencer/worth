@@ -22,7 +22,7 @@ const PAUSE_SIGNAL_BUDGET: Duration = Duration::from_secs(30);
 /// counters are exact, and the deferred branch gives back everything it took.
 #[test]
 fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = RelationalRuntimeApi::builder()
@@ -74,7 +74,13 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     let position_before = runtime.patch_position_reservation_counters();
 
     let winner_port = runtime.publication_port();
-    let winner_thread = std::thread::spawn(move || winner_port.compare_and_publish(winner));
+    let winner_thread = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            winner_port.compare_and_publish(execution, winner)
+        }
+    });
     // The seam signal, not elapsed time, is what orders this test: the winner is
     // inside its cutover from here until the gate is opened. A seam that is
     // never reached times out by name rather than stalling the run.
@@ -95,7 +101,9 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
         .publication_binding()
         .pending_settlement_contact_count();
 
-    let loser_outcome = runtime.publication_port().compare_and_publish(loser);
+    let loser_outcome = runtime
+        .publication_port()
+        .compare_and_publish(execution, loser);
 
     // Every observation is taken before the winner is released, so the order of
     // the assertions below cannot change what any of them saw.

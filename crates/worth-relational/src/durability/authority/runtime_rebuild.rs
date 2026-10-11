@@ -2,6 +2,7 @@ use crate::durability::data::RelationalRecoveryStop;
 mod branch_readmission;
 mod checkpoint_restore;
 mod envelope_replay;
+pub(crate) use envelope_replay::replay_commit_stop;
 mod history_parity;
 mod merge_plan;
 mod recovered_counter_capacity;

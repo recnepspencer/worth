@@ -259,7 +259,7 @@ fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
     target.set(entity).unwrap();
     runtime.performance_access().reset_counters();
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -300,7 +300,10 @@ fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool
     let engine = InvariantEngine::new(runtime);
     let results = if leased {
         let denial = engine
-            .execute_with_lease(request, &test_execution_lease())
+            .execute(
+                &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
+                request,
+            )
             .expect_err("opaque custom rules cannot execute under a lease");
         assert!(matches!(
             denial,
@@ -318,7 +321,7 @@ fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool
         assert_eq!(counters.custom_invariant_execution_count, 0);
         return;
     } else {
-        engine.execute(request)
+        engine.execute_fixture(request)
     };
     assert_eq!(results.results().len(), 2);
     assert!(matches!(

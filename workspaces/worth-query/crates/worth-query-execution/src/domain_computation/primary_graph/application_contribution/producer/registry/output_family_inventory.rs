@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::{BTreeMap, HashSet};
 
 use worth_query_installation::facade::ApplicationSchema;

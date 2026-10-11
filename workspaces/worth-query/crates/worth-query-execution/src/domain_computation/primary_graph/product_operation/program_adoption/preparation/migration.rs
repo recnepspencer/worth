@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
@@ -204,7 +205,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let entry = support
             .present(target)
             .ok_or(WorthQueryProgramMigrationPreparationDenial::TargetProgramUnrostered)?;
-        if !entry.acts_through_mutation_binding(std::any::TypeId::of::<Binding>()) {
+        if !entry.acts_through_mutation_binding(TypeId::of::<Binding>()) {
             return Err(WorthQueryProgramMigrationPreparationDenial::TargetBindingUnowned);
         }
         Ok(())

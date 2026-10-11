@@ -12,6 +12,7 @@
 //! original and newly admitted snapshots before minting provider affinity.
 //! A later change is still fenced by the exact Product publication CAS.
 
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_foundational::facade::AspectValue;
 use worth_query_installation::facade::WorthQueryProgramSupportEntry;
 
@@ -70,7 +71,7 @@ pub(super) fn require_occurrence_acts_through<Operation: 'static>(
 ) -> Result<(), WorthQueryApplicationCommitDenial> {
     if !occurrence
         .entry()
-        .acts_through_operation(std::any::TypeId::of::<Operation>())
+        .acts_through_operation(TypeId::of::<Operation>().into_external())
     {
         return Err(
             WorthQueryApplicationCommitDenial::operation_not_declared_by_active_program::<Operation>(

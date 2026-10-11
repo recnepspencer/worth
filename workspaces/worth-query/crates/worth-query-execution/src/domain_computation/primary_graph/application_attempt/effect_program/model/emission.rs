@@ -1,6 +1,7 @@
 //! Retained and external emissions admitted into one effect program.
 
-use std::any::{Any, TypeId};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::any::Any;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::{
@@ -73,7 +74,7 @@ impl WorthQueryApplicationEmission {
         Self {
             effect: derived.effect(),
             payload_type: derived.payload_identity(),
-            payload_type_id: derived.payload_type_id(),
+            payload_type_id: TypeId::from(derived.payload_type_id()),
             payload: derived.payload(),
             retained_bytes: derived.retained_bytes(),
             measure_retained_bytes: derived.measure_retained_bytes(),
@@ -87,7 +88,7 @@ impl WorthQueryApplicationEmission {
     ) -> bool {
         self.effect == derived.effect()
             && self.payload_type == derived.payload_identity()
-            && self.payload_type_id == derived.payload_type_id()
+            && self.payload_type_id == TypeId::from(derived.payload_type_id())
             && self.retained_bytes == derived.retained_bytes()
             && derived.payload_is(&self.payload)
             && self.is_well_formed()
@@ -96,7 +97,7 @@ impl WorthQueryApplicationEmission {
     pub(in crate::domain_computation::primary_graph) fn is_well_formed(&self) -> bool {
         !self.effect.is_empty()
             && self.payload_type.is_valid()
-            && self.payload_type_id == self.payload.as_ref().type_id()
+            && self.payload_type_id == TypeId::from(self.payload.as_ref().type_id())
             && (self.measure_retained_bytes)(self.payload.as_ref()) == Some(self.retained_bytes)
     }
 

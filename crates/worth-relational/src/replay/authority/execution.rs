@@ -59,6 +59,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         request: RelationalReplayRequest,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let admission = match self.admit_replay_target(&request) {
             Ok(admission) => admission,
             Err(outcome) => return Ok(outcome),
@@ -299,7 +300,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &reconstruction.runtime,
             &request,
             selected_lineage_authority.as_ref(),
-        );
+        )?;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let outcome = replay_comparison_outcome(
             request,
@@ -360,3 +361,6 @@ impl<'runtime> ReplayAuthority<'runtime> {
         )
     }
 }
+
+#[cfg(test)]
+mod entry_stop_tests;

@@ -25,12 +25,12 @@ where
         self.revision
     }
 
-    fn owns_action(&self, binding: TypeId) -> bool {
-        self.action_bindings.contains(&binding)
+    fn owns_action(&self, binding: std::any::TypeId) -> bool {
+        self.action_bindings.contains(&TypeId::from(binding))
     }
 
-    fn owns_output_source(&self, binding: TypeId) -> bool {
-        self.output_source_bindings.contains(&binding)
+    fn owns_output_source(&self, binding: std::any::TypeId) -> bool {
+        self.output_source_bindings.contains(&TypeId::from(binding))
     }
 }
 
@@ -53,12 +53,12 @@ where
         self.installed_program().revision()
     }
 
-    fn owns_action(&self, binding: TypeId) -> bool {
-        self.declares_action_binding(binding)
+    fn owns_action(&self, binding: std::any::TypeId) -> bool {
+        self.declares_action_binding(TypeId::from(binding))
     }
 
-    fn owns_output_source(&self, binding: TypeId) -> bool {
-        self.requires_output_source(binding)
+    fn owns_output_source(&self, binding: std::any::TypeId) -> bool {
+        self.requires_output_source(TypeId::from(binding))
     }
 }
 
@@ -85,11 +85,11 @@ where
         self.program_runtime().owned_revision()
     }
 
-    fn owns_action(&self, binding: TypeId) -> bool {
+    fn owns_action(&self, binding: std::any::TypeId) -> bool {
         self.program_runtime().owns_action(binding)
     }
 
-    fn owns_output_source(&self, binding: TypeId) -> bool {
+    fn owns_output_source(&self, binding: std::any::TypeId) -> bool {
         self.program_runtime().owns_output_source(binding)
     }
 }
@@ -113,11 +113,11 @@ where
         self.record().revision()
     }
 
-    fn owns_action(&self, binding: TypeId) -> bool {
-        self.record().declares_action(binding)
+    fn owns_action(&self, binding: std::any::TypeId) -> bool {
+        self.record().declares_action(TypeId::from(binding))
     }
 
-    fn owns_output_source(&self, binding: TypeId) -> bool {
-        self.record().requires_output_source(binding)
+    fn owns_output_source(&self, binding: std::any::TypeId) -> bool {
+        self.record().requires_output_source(TypeId::from(binding))
     }
 }

@@ -32,7 +32,7 @@ use worth_relational::facade::mvcc::{
 
 #[test]
 fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) =
@@ -61,7 +61,7 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
     );
     let preparation = world.runtime.preparation_port();
     let storm_worker = std::thread::spawn(move || {
-        let host_request = crate::test_execution_policy::serial_request();
+        let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
         preparation.prepare_branch_transaction(request_execution, storm_transaction)
     });
@@ -101,7 +101,7 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
 
 #[test]
 fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) =
@@ -134,7 +134,14 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
         .prepare_branch_transaction(request_execution, storm_transaction)
         .expect("the storm candidate prepares before the publication court opens");
     let publication = world.runtime.publication_port();
-    let storm_worker = std::thread::spawn(move || publication.compare_and_publish(storm_candidate));
+    let storm_worker = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let request_execution =
+                &worth_execution::ExecutionRequest::serial(&publication_request);
+            publication.compare_and_publish(request_execution, storm_candidate)
+        }
+    });
     pause.await_arrival("publication critical-section entry");
 
     let before = court.capture(&world.runtime);
@@ -192,7 +199,7 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
 
 #[test]
 fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) =
@@ -228,7 +235,7 @@ fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() 
     let performed = match world
         .runtime
         .publication_port()
-        .compare_and_publish(storm_candidate)
+        .compare_and_publish(request_execution, storm_candidate)
     {
         RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("the uncontended storm candidate must perform: {outcome:?}"),

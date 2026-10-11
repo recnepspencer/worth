@@ -62,7 +62,10 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingInvariantWriteAuthorit
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         let relational_runtime = relational_runtime
             .expect("query-owned invariant registration should lower a relational runtime");
-        let certification = relational_runtime.validation().certification_state();
+        let certification = relational_runtime
+            .validation()
+            .certification_state(execution)
+            .expect("fixture invariant inspection");
         assert_eq!(certification.summary().result_count(), 1);
         assert_eq!(certification.summary().violation_count(), 1);
         assert!(certification.summary().publication_failure().is_some());

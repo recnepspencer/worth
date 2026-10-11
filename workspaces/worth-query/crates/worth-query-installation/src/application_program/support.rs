@@ -1,5 +1,5 @@
 use std::any::TypeId;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_program::{
@@ -16,7 +16,11 @@ mod admission_tests;
 #[cfg(test)]
 mod compatibility_tests;
 #[cfg(test)]
+mod debug_tests;
+#[cfg(test)]
 mod installation_denial_tests;
+#[cfg(test)]
+mod membership_tests;
 
 pub use admission::{WorthQueryProgramSupportAdmission, WorthQueryProgramSupportDenial};
 pub use compatibility::WorthQueryProgramRuleKey;
@@ -33,16 +37,31 @@ pub use retirement::{
 /// and the operations and mutation bindings it acts through. It is descriptive
 /// support evidence: it establishes neither branch activation nor publication
 /// authority.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct WorthQueryProgramSupportEntry {
     revision: ApplicationProgramRevision,
     identity: ApplicationProgramIdentity,
     rules: Box<[WorthQueryProgramRuleKey]>,
-    action_operations: Box<[TypeId]>,
-    mutation_bindings: Box<[TypeId]>,
+    action_operations: HashSet<TypeId>,
+    mutation_bindings: HashSet<TypeId>,
     semantic_description: ApplicationSemanticDescription,
     effectful_action_subjects: Box<[String]>,
     action_dependencies: Box<[WorthQueryProgramActionDependency]>,
+}
+
+impl std::fmt::Debug for WorthQueryProgramSupportEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WorthQueryProgramSupportEntry")
+            .field("revision", &self.revision)
+            .field("identity", &self.identity)
+            .field("rules", &self.rules)
+            .field("action_operations", &self.action_operations.len())
+            .field("mutation_bindings", &self.mutation_bindings.len())
+            .field("semantic_description", &self.semantic_description)
+            .field("effectful_action_subjects", &self.effectful_action_subjects)
+            .field("action_dependencies", &self.action_dependencies)
+            .finish()
+    }
 }
 
 /// One name a workflow definition can depend on, paired with the semantic
@@ -62,8 +81,8 @@ impl WorthQueryProgramSupportEntry {
         revision: ApplicationProgramRevision,
         identity: ApplicationProgramIdentity,
         rules: BTreeSet<WorthQueryProgramRuleKey>,
-        action_operations: BTreeSet<TypeId>,
-        mutation_bindings: BTreeSet<TypeId>,
+        action_operations: HashSet<TypeId>,
+        mutation_bindings: HashSet<TypeId>,
         semantic_description: ApplicationSemanticDescription,
         effectful_action_subjects: BTreeSet<String>,
         action_dependencies: BTreeSet<WorthQueryProgramActionDependency>,
@@ -72,8 +91,8 @@ impl WorthQueryProgramSupportEntry {
             revision,
             identity,
             rules: rules.into_iter().collect(),
-            action_operations: action_operations.into_iter().collect(),
-            mutation_bindings: mutation_bindings.into_iter().collect(),
+            action_operations,
+            mutation_bindings,
             semantic_description,
             effectful_action_subjects: effectful_action_subjects.into_iter().collect(),
             action_dependencies: action_dependencies.into_iter().collect(),
@@ -90,14 +109,6 @@ impl WorthQueryProgramSupportEntry {
 
     pub fn rules(&self) -> &[WorthQueryProgramRuleKey] {
         &self.rules
-    }
-
-    pub fn action_operations(&self) -> &[TypeId] {
-        &self.action_operations
-    }
-
-    pub fn mutation_bindings(&self) -> &[TypeId] {
-        &self.mutation_bindings
     }
 
     pub fn semantic_description(&self) -> &ApplicationSemanticDescription {

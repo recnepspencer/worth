@@ -147,7 +147,7 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    assert!(matches!(outcome, Outcome::Committed { .. }));
+    assert!(matches!(outcome, Outcome::Committed { .. }), "{outcome:?}");
     assert_eq!(
         reports().len(),
         1,

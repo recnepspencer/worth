@@ -39,7 +39,8 @@ fn complexity_budget_snapshot_entity_limit_uses_live_bitsets_for_current_version
     runtime.performance_access().reset_counters();
     let results = runtime
         .validation()
-        .snapshot_publication_state()
+        .snapshot_publication_state(execution)
+        .expect("invariant fixture request")
         .into_results();
     let counters = runtime.performance_access().counters();
 

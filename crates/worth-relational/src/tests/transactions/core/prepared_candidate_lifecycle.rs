@@ -2,7 +2,7 @@ use crate::tests::support::*;
 
 #[test]
 fn expired_candidate_is_typed_deferred_before_reference_movement() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = RelationalRuntimeApi::builder()
@@ -41,7 +41,9 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
 
     assert_eq!(runtime.reap_expired_prepared_candidates(), 1);
     assert!(matches!(
-        runtime.publication_port().compare_and_publish(candidate),
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate),
         crate::mvcc::RelationalPublicationOutcome::Deferred(
             crate::mvcc::RelationalPublicationDeferred::CandidateLifetimeExpired {
                 maximum_lifetime_millis: 0,
@@ -72,7 +74,7 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
 
 #[test]
 fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = RelationalRuntimeApi::builder()
@@ -96,7 +98,13 @@ fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference
     let before = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
     let port = runtime.publication_port();
 
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            port.compare_and_publish(execution, candidate)
+        }
+    });
     let wait_deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
     while coordination.wait_count() == 0 && std::time::Instant::now() < wait_deadline {
         std::thread::yield_now();
@@ -129,7 +137,7 @@ fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference
 
 #[test]
 fn foreign_publication_port_denies_before_reference_movement() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let source = runtime_with_test_schema();
@@ -153,7 +161,10 @@ fn foreign_publication_port_denies_before_reference_movement() {
         .expect("source candidate prepares");
     let foreign = runtime_with_test_schema();
 
-    match foreign.publication_port().compare_and_publish(candidate) {
+    match foreign
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         crate::mvcc::RelationalPublicationOutcome::Denied(
             crate::mvcc::RelationalPublicationDenial::ForeignRuntime {
                 expected_runtime_instance_id,
@@ -179,7 +190,7 @@ fn foreign_publication_port_denies_before_reference_movement() {
 
 #[test]
 fn candidate_population_exhaustion_is_typed_and_released_by_discard() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = RelationalRuntimeApi::builder()

@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
 use worth_relational::facade::transactions::{MutationIntent, WorkerIntentBatch};
@@ -120,7 +121,7 @@ impl WorthQueryRegisteredProviderEffects {
         self.output_correspondence.native_witness_roles()
     }
 
-    pub(super) const fn output_binding_type(&self) -> Option<std::any::TypeId> {
+    pub(super) const fn output_binding_type(&self) -> Option<TypeId> {
         self.output_correspondence.binding_type()
     }
 

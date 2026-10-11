@@ -13,13 +13,16 @@ use std::time::Duration;
 use worth_foundational::facade::ExecutionFallbackCause;
 use worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationDenial;
 use worth_query_host::facade::primary_graph::{
-    place_managed_computations_on_this_thread_for_test as place, test_execution_workers,
+    place_managed_computations_on_this_thread_for_test as place,
     WorthQueryExecutionPlacementForTest as Placement,
 };
 
 use super::execution::{association_sensitive_entries, entry, heavy_regions, several_refusals};
 use super::facts::{self, RegionEntry};
 use super::owner::{with_region_totals, RegionOutcome};
+
+needs_os_threads! {
+use worth_query_host::facade::primary_graph::test_execution_workers;
 
 /// The perturbation seeds of the certified placements.
 const SEEDS: [u64; 3] = [0x6_7000_0001, 0x6_7000_0002, 0x6_7000_0003];
@@ -46,6 +49,7 @@ pub(super) fn axis() -> Vec<Placement> {
             }),
     );
     axis
+}
 }
 
 /// The workers `placement` asks for: none when it holds no lease.
@@ -145,9 +149,13 @@ type Compared = Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>;
 /// fails here. On two workers or more each demand, denied ones too, must
 /// hold two kernels at once, so one that ran on one worker fails.
 /// Returns the serial outcomes.
-fn across_the_axis(sets: facts::Sets<'_>, demands: &[&str]) -> Vec<Compared> {
+fn across_the_axis(
+    sets: facts::Sets<'_>,
+    demands: &[&str],
+    placements: Vec<Placement>,
+) -> Vec<Compared> {
     let mut serial: Option<Vec<Compared>> = None;
-    for placement in axis() {
+    for placement in placements {
         let parallel = workers_of(placement) >= 2;
         let outcomes: Vec<RegionOutcome> = placed(placement, || {
             let mut outcomes = Vec::new();
@@ -189,32 +197,47 @@ fn across_the_axis(sets: facts::Sets<'_>, demands: &[&str]) -> Vec<Compared> {
     serial.expect("the axis has a serial placement")
 }
 
+needs_os_threads! {
 #[test]
-fn the_floating_point_sum_keeps_its_bits_and_its_work_at_every_worker_count() {
+fn the_floating_point_sum_keeps_its_bits_and_its_work_at_every_worker_count() { assert_floating_point(axis()); }
+}
+
+needs_os_threads! {
+#[cfg(panic = "unwind")]
+#[test]
+fn the_least_failing_partition_is_the_same_at_every_worker_count() {
+    let (entries, least) = several_refusals();
+    assert_least_failure(axis(), entries, least);
+}
+}
+
+needs_os_threads! {
+#[test]
+fn the_work_boundary_is_the_same_at_every_worker_count() { assert_work_boundary(axis()); }
+}
+
+#[test]
+fn the_floating_point_sum_keeps_its_bits_and_its_work_at_one_worker() {
+    assert_floating_point(one_worker());
+}
+
+fn assert_floating_point(placements: Vec<Placement>) {
     let sensitive = association_sensitive_entries();
     let exact = (1..=40_u32)
         .map(|id| entry(u64::from(id), id % 7, f64::from(id)))
         .collect::<Vec<_>>();
     let sets: facts::Sets<'_> = &[("sensitive", &sensitive), ("exact", &exact)];
-    let serial = across_the_axis(sets, &["sensitive", "exact"]);
+    let serial = across_the_axis(sets, &["sensitive", "exact"], placements);
     assert!(f64::from_bits(serial[0].as_ref().unwrap().0).is_finite());
     assert_eq!(serial[1].as_ref().unwrap().0, 820.0_f64.to_bits());
 }
 
 #[test]
-fn the_least_failing_partition_is_the_same_at_every_worker_count() {
-    let (descending, least) = several_refusals();
-    let mut ascending = descending.clone();
-    ascending.reverse();
-    let sets: facts::Sets<'_> = &[("descending", &descending), ("ascending", &ascending)];
-    let least = least.expect_err("the least failure is a denial");
-    for outcome in across_the_axis(sets, &["descending", "ascending"]) {
-        assert_eq!(outcome.err().as_ref(), Some(&least));
-    }
+fn the_work_boundary_is_the_same_at_one_worker() {
+    assert_work_boundary(one_worker());
 }
 
-#[test]
-fn the_work_boundary_is_the_same_at_every_worker_count() {
+fn assert_work_boundary(placements: Vec<Placement>) {
     let (heavy, exhausted) = heavy_regions();
     let mut reversed = heavy.clone();
     reversed.reverse();
@@ -227,10 +250,44 @@ fn the_work_boundary_is_the_same_at_every_worker_count() {
         ("reversed", &reversed),
         ("light", &light),
     ];
-    let [heavy, reversed, light] =
-        <[Compared; 3]>::try_from(across_the_axis(sets, &["heavy", "reversed", "light"])).unwrap();
+    let [heavy, reversed, light] = <[Compared; 3]>::try_from(across_the_axis(
+        sets,
+        &["heavy", "reversed", "light"],
+        placements,
+    ))
+    .unwrap();
     let exhausted = exhausted.expect_err("the work boundary is a denial");
     assert_eq!(heavy.err().as_ref(), Some(&exhausted));
     assert_eq!(reversed.err().as_ref(), Some(&exhausted));
     assert_eq!(light.unwrap().0, 3.0_f64.to_bits());
+}
+
+#[test]
+fn the_least_failing_partition_is_the_same_at_one_worker() {
+    let (mut entries, least) = several_refusals();
+    // Typed refusals pin canonical failure order without needing unwinding.
+    for entry in &mut entries {
+        if matches!(entry.fault, Some(facts::RegionFault::Panic)) {
+            entry.fault = Some(facts::RegionFault::Refuse);
+        }
+    }
+    assert_least_failure(one_worker(), entries, least);
+}
+
+fn assert_least_failure(
+    placements: Vec<Placement>,
+    descending: Vec<RegionEntry>,
+    least: RegionOutcome,
+) {
+    let mut ascending = descending.clone();
+    ascending.reverse();
+    let sets: facts::Sets<'_> = &[("descending", &descending), ("ascending", &ascending)];
+    let least = least.expect_err("the least failure is a denial");
+    for outcome in across_the_axis(sets, &["descending", "ascending"], placements) {
+        assert_eq!(outcome.err().as_ref(), Some(&least));
+    }
+}
+
+fn one_worker() -> Vec<Placement> {
+    vec![Placement::Serial, Placement::Leased(NonZeroUsize::MIN)]
 }

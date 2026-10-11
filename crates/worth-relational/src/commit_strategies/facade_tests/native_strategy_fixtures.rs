@@ -335,3 +335,21 @@ pub(super) fn execution_draft(request: &CanonicalStrategyCommitRequest) -> Strat
         StrategyExecutionSummary::default(),
     )
 }
+
+pub(crate) fn lowered_commit_fixture() -> (
+    crate::runtime::RelationalRuntime,
+    crate::commit_strategies::data::LoweredStrategyCommitPlan,
+) {
+    let runtime = RelationalRuntimeBuilder::new()
+        .schema_registry(strategy_schema_registry())
+        .commit_strategy(strategy_registration())
+        .build();
+    let request = canonical_request();
+    let draft = execution_draft(&request);
+    let (input, mut authority) =
+        crate::tests::support::test_owner_strategy_authority(&runtime, None);
+    let lowered = authority
+        .lower_execution_with_input(&runtime, &request, &draft, input)
+        .unwrap();
+    (runtime, lowered)
+}

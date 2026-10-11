@@ -117,6 +117,16 @@ impl WorthQueryRelationalSourceOwner {
         runtime.release_component_basis(retention)
     }
 
+    /// Metadata read: fixed-size counters, without row traversal or request work.
+    pub(in crate::domain_computation) fn custom_invariant_candidate_input_counters(
+        &self,
+    ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
+        self.runtime
+            .lock()
+            .expect("Relational source owner is available")
+            .custom_invariant_candidate_input_counters()
+    }
+
     pub fn with_runtime<T>(
         &self,
         // Required caller request proves custody for this callback.

@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     application_output_demand::{RetainedOutputReadmissionSource, SelectedReadyReadmission},
     output_lineage::AcceptedCurrentCandidate,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 #[path = "selected/contract.rs"]
@@ -247,7 +248,7 @@ where
         let entry_work = u64::try_from(
             std::mem::size_of::<RequiredOutputExecution>()
                 .checked_add(std::mem::size_of::<super::super::InstalledProducerEdition>() * 2)
-                .and_then(|work| work.checked_add(std::mem::size_of::<std::any::TypeId>() * 8))
+                .and_then(|work| work.checked_add(std::mem::size_of::<TypeId>() * 8))
                 .and_then(|work| work.checked_add(8))
                 .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?,
         )

@@ -20,20 +20,26 @@ pub(crate) fn evaluate_main_commit_boundary_plan(
     runtime: &RelationalRuntime,
     plan: &MergedCommitPlan,
 ) -> InvariantExecutionResult {
+    let backing = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&backing);
     let selected = selected_main_branch_state(runtime);
     runtime
         .validation()
-        .commit_boundary_for_selected_branch_plan(&selected, plan)
+        .commit_boundary_for_selected_branch_plan(execution, &selected, plan)
+        .expect("plan fixture request")
 }
 
 pub(crate) fn evaluate_main_graph_composition_plan(
     runtime: &RelationalRuntime,
     plan: &MergedCommitPlan,
 ) -> InvariantExecutionResult {
+    let backing = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&backing);
     let selected = selected_main_branch_state(runtime);
     runtime
         .validation()
-        .graph_composition_for_selected_branch_plan(&selected, plan)
+        .graph_composition_for_selected_branch_plan(execution, &selected, plan)
+        .expect("plan fixture request")
 }
 
 fn selected_main_branch_state(

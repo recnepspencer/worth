@@ -65,7 +65,7 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
         world
             .runtime
             .publication_port()
-            .compare_and_publish(candidate),
+            .compare_and_publish(request_execution, candidate),
         RelationalPublicationOutcome::Interrupted(_)
     ));
     assert_eq!(

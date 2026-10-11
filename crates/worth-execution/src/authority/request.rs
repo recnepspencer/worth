@@ -1,10 +1,10 @@
-//! Borrowed request carriage with closure-scoped optional-lease adaptation.
+//! Borrowed request authority with scoped execution and fixed-size backing metadata.
 
 use super::{ExecutionResourceLease, SerialRequest};
 use crate::{ExecutionWorkCeiling, WorkCeilingDenial};
 use worth_foundational::{ExecutionPosture, ExecutionReport};
 
-/// Either backing is sealed; lease absence is exposed only inside an active scope closure.
+/// Sealed serial or leased backing borrowed from the host call.
 #[derive(Clone, Copy, Debug)]
 pub struct ExecutionRequest<'request, 'authority> {
     form: RequestBacking<'request, 'authority>,
@@ -58,6 +58,9 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
 
     /// Fixed-size backing metadata; commits derive their allocation authority
     /// from this request rather than accepting an independent policy.
+    /// The policy borrows the backing, not its active scope. Use it only for
+    /// the originating host call: do not retain it after that scope closes,
+    /// carry it into another host call, or mint a request from its lease.
     pub fn allocation_policy(self) -> super::ExecutionAllocationPolicy<'request, 'authority> {
         match self.form {
             RequestBacking::Leased(lease) => super::ExecutionAllocationPolicy::Execution(lease),

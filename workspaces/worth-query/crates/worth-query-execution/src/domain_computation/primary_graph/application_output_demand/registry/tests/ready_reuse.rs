@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::{
     application_query::WorthQueryCheckpointSourceIdentity,
     WorthQueryApplicationOutputCorrespondence, WorthQueryOutputReadinessDeliveryEvidence,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
@@ -25,8 +26,8 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         })
         .expect("the fixture read owns its installed host call");
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-        std::any::TypeId::of::<()>(),
-        std::any::TypeId::of::<()>(),
+        TypeId::of::<()>(),
+        TypeId::of::<()>(),
         std::collections::BTreeSet::new(),
         Vec::new(),
         |_| None,

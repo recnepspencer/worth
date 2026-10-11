@@ -202,8 +202,9 @@ fn interruption_after_movement_retains_its_pending_settlement() {
             .branch_reference_state(&BranchId("main".to_owned()))
             .unwrap();
 
-        let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-            runtime.publication_port().compare_and_publish(candidate)
+        let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
         else {
             panic!("late interruption cannot erase performed movement");
         };
@@ -328,7 +329,10 @@ fn perform_main_write(
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares");
-    match runtime.publication_port().compare_and_publish(candidate) {
+    match runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("an uncontended candidate performs: {outcome:?}"),
     }

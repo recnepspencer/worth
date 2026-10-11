@@ -1,5 +1,6 @@
 //! Native negative completion of a fixed leaf root, never a partial output tree.
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputLeaf, ApplicationRequiredOutputRoot,
 };
@@ -38,11 +39,11 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
         };
         let execution = &phase_request;
 
-        if !self.contains_output_root::<Root>() || demand.target_feature != std::any::TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>() {
+        if !self.contains_output_root::<Root>() || demand.target_feature != TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>() {
             return Err(WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand, "unavailable completion differs from the installed root"));
         }
         self.runtime.output_demands.validate_owned_root_kind(prepared,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(std::any::TypeId::of::<Root>()))?;
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()))?;
         self.runtime.finish_unavailable_output_demand(
             execution,
             phase,

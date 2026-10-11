@@ -11,7 +11,7 @@ mod slot;
 
 pub(crate) use diagnostic_scan::GraphDiagnosticNode;
 pub(crate) use handles::{DependencySetId, SubscriberSetId};
-#[cfg(test)]
+#[cfg(all(test, target_pointer_width = "64"))]
 pub(crate) use segmented::checked_segment_component_for_test;
 pub(crate) use segmented::{
     DependencyEdgeStore, PreparedSegmentBatchInsertion, SubscriberEdgeStore,
