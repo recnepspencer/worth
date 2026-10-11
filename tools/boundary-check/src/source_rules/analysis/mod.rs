@@ -5,6 +5,7 @@
 //! sealing. Keeping that graph here makes the cycle explicit and prevents the
 //! `source_rules` facade from becoming a flat implementation directory.
 
+mod allocation_denial_patterns;
 mod authority_import_explicitness;
 pub(super) mod authority_sealing;
 mod authority_sealing_surface;
@@ -38,6 +39,7 @@ mod module_source;
 mod opaque_attributes;
 mod path_dependencies;
 mod production_cfg;
+mod production_crate_roots;
 mod production_scope;
 mod public_reachability;
 mod query_fence;
@@ -73,6 +75,7 @@ pub(super) fn validate(
     facade_exports: &FacadeVocabularyAuthority<'_>,
 ) -> Result<Vec<Diagnostic>, String> {
     let mut diagnostics = canonical_order::validate(root)?;
+    diagnostics.extend(allocation_denial_patterns::validate(root)?);
     diagnostics.extend(truth_types::check_hash_walk_configuration(root)?);
     let query_vocabulary = query_fence::QueryVocabulary::load(query_audience, facade_exports);
     let crates = governed_crates::discover_governed_crates(root, subworkspaces)?;

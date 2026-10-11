@@ -111,10 +111,12 @@ fn index_result_capacity_reaches_application_caller() {
                 .execution_denial
                 .expect("index result ceiling refused");
             let DerivedIndexExecutionDenialKind::Cause(cause) = denial.kind;
+            let stop = super::super::relational_execution_stop(cause, denial.partition_identity);
+            let Stop::PreEffectDenied(failure) = stop else {
+                panic!("result ceiling must reach pre-effect refusal");
+            };
             assert_eq!(
-                resource(application_outcome(
-                    super::super::relational_execution_stop(cause, denial.partition_identity,)
-                )),
+                resource(provider_compare_denied(Compare::ProviderSession(failure))),
                 Resource::ResultCapacityExceeded
             );
             assert_eq!(
