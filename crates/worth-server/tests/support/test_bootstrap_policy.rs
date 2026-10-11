@@ -1,14 +1,4 @@
-//! Host policy for Server's serial fixture entries.
-use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
-
-pub(crate) fn serial_request() -> SerialRequest {
-    SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
-        CancellationSource::new().token(),
-        None,
-    )
-}
-
+//! Bootstrap phase policy for Server fixture installation.
 pub(crate) fn with_bootstrap<R>(
     body: impl for<'scope> FnOnce(&worth_execution::ExecutionRequest<'scope, 'scope>) -> R,
 ) -> R {

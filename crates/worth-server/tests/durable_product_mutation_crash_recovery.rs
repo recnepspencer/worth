@@ -1,5 +1,6 @@
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
+#[path = "support/test_bootstrap_policy.rs"]
+mod test_bootstrap_policy;
+
 use serde_json::{json, Value};
 use worth_server::{
     WorthServerCompletedProductOperation, WorthServerDurableProductMutationConclusion,

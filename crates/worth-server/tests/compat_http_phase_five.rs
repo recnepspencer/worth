@@ -2,8 +2,8 @@
 mod compat_http_phase_five_runtime;
 #[path = "support/query_handoff/runtime.rs"]
 mod query_handoff_runtime;
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
+#[path = "support/test_bootstrap_policy.rs"]
+mod test_bootstrap_policy;
 
 #[path = "compat_http_phase_five/early_admission.rs"]
 mod early_admission;

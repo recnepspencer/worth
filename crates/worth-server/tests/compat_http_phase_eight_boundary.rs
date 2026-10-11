@@ -6,8 +6,8 @@ mod compat_http_phase_eight_resume_boundary_cases;
 mod compat_http_phase_eight_runtime;
 #[path = "support/query_handoff/runtime.rs"]
 mod query_handoff_runtime;
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
+#[path = "support/test_bootstrap_policy.rs"]
+mod test_bootstrap_policy;
 
 use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
 use worth_server::{

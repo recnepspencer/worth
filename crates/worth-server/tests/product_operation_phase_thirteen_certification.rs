@@ -2,8 +2,8 @@
 mod fixture;
 #[path = "support/product_operation_phase_thirteen/proof_builders.rs"]
 mod proof_builders;
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
+#[path = "support/test_bootstrap_policy.rs"]
+mod test_bootstrap_policy;
 
 use fixture::{build_server, StatefulEditorLikeBackend};
 use proof_builders::{blocked_editor_like_fixture, complete_editor_like_fixture};
