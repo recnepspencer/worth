@@ -66,9 +66,10 @@ fn reduction_shape_uses_identity_digest_for_a_cancelling_float_pair() {
     assert_eq!(
         tree.result().to_bits(),
         1.0_f64.to_bits(),
-        "reduction shape must follow partition identity digest"
+        "reduction shape must follow partition identity digest [1, 2, 3]"
     );
     // Equal ranks and values, different identity digests: 3 is now rank zero.
+    // -1e16 + 1 rounds to -1e16 (spacing 2), then 1e16 cancels to +0.0.
     let (tree, _) = from_plan(
         plan(&[3, 4, 5]),
         vec![1.0e16_f64, -1.0e16, 1.0],
@@ -79,7 +80,23 @@ fn reduction_shape_uses_identity_digest_for_a_cancelling_float_pair() {
     assert_eq!(
         tree.result().to_bits(),
         0.0_f64.to_bits(),
-        "reduction shape must follow partition identity digest"
+        "reduction shape must follow partition identity digest [3, 4, 5]"
+    );
+    // The first identity and length match [1, 2, 3], but digest root 1
+    // is rank zero in [1, 2, 6]. The right subtree rounds -1e16 + 1 to
+    // -1e16 (spacing 2), so adding 1e16 gives +0.0. Offset ranks still
+    // see [1, 2, 3], grouping cancellation before +1 at root 3.
+    let (tree, _) = from_plan(
+        plan(&[1, 2, 6]),
+        vec![1.0e16_f64, -1.0e16, 1.0],
+        0.0,
+        |left, right| left + right,
+    )
+    .unwrap();
+    assert_eq!(
+        tree.result().to_bits(),
+        0.0_f64.to_bits(),
+        "reduction shape must follow partition identity digest [1, 2, 6]"
     );
 }
 
