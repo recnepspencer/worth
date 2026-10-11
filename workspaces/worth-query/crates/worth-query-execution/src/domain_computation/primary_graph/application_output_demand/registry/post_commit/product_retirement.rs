@@ -57,7 +57,7 @@ impl WorthQueryOutputDemandRegistry {
             |_, record| record.product_occurrence == occurrence,
             &mut sweep,
         ));
-        let mut released_bytes = state.prune_queued_product_rows(occurrence, &mut sweep);
+        let mut released_bytes = 0;
         let DemandRegistryState {
             records,
             required_keys,
@@ -105,36 +105,6 @@ fn unheld_retired_row(record: &DemandRecord) -> bool {
         && !record.pending_cleanup_queued
 }
 
-impl DemandRegistryState {
-    /// Physical pruning consumes a queued row's links before the bulk retain.
-    /// This visits only the noted order, with no cloned-key map or worklist.
-    fn prune_queued_product_rows(
-        &mut self,
-        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        sweep: &mut PostCommitSweep,
-    ) -> usize {
-        let mut released = 0;
-        let mut cursor = self.closed_cleanup.head.as_ref().map(Arc::clone);
-        while let Some(key) = cursor {
-            infallible(sweep.inspect_row());
-            cursor = self.next_closed_note(&key);
-            let row = &self.records[&key];
-            if row.product_occurrence != occurrence || !unheld_retired_row(row) {
-                continue;
-            }
-            let row = self.remove_record(&key).expect("selected row exists");
-            released += row.obligation_reserved_bytes();
-            if let Some(member) = self.required_keys.take(key.as_ref()) {
-                self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(
-                    super::required_members::member_bytes(member.as_ref())
-                        .expect("admitted key charge fits"),
-                );
-            }
-        }
-        released
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::super::super::tests::{key, record, record_admission};
@@ -168,14 +138,13 @@ mod tests {
         };
         let before = super::super::walk_charge::sweep_contacts();
         registry.release_product_occurrence(receipt.product_branch().occurrence());
-        // Three three-row passes, three notes, then one retained-row contact.
-        assert_eq!(super::super::walk_charge::sweep_contacts() - before, 13);
+        // Four three-row passes; the owned notes are untouched by record retain.
+        assert_eq!(super::super::walk_charge::sweep_contacts() - before, 12);
         {
             let state = registry.state.lock().unwrap();
             assert_eq!(state.records.len(), 1);
-            assert_eq!(state.closed_cleanup.len, 1);
-            assert_eq!(state.closed_cleanup.head.as_deref(), Some(&held));
-            assert!(state.next_closed_note(&held).is_none());
+            assert_eq!(state.closed_cleanup.len, 3);
+            assert!(state.closed_cleanup.valid_order());
         }
         drop(WorthQueryOutputDemandInterest {
             key: held,
@@ -189,7 +158,7 @@ mod tests {
         let state = registry.state.lock().unwrap();
         assert!(state.records.is_empty());
         assert_eq!(state.closed_cleanup.len, 0);
-        assert!(state.closed_cleanup.head.is_none());
+        assert!(state.closed_cleanup.head().is_none());
     }
 
     #[test]

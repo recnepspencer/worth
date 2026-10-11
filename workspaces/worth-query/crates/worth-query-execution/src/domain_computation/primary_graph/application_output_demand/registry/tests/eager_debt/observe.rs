@@ -221,10 +221,5 @@ pub(super) fn dangling(world: &World<'_>) -> Option<WorthQueryOutputDemandKey> {
         .state
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    let live = state
-        .records
-        .values()
-        .filter(|r| r.closed_cleanup.queued())
-        .count();
-    (live != state.closed_cleanup.len).then(|| world.keys[2].clone())
+    (!state.closed_cleanup.valid_order()).then(|| world.keys[2].clone())
 }

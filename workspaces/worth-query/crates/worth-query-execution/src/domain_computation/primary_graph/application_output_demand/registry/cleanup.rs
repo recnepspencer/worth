@@ -1,5 +1,5 @@
 pub(super) mod closed;
-mod closed_notes;
+pub(super) mod closed_notes;
 pub(super) use closed_notes::{ClosedCleanupLinks, ClosedCleanupQueue};
 pub(super) mod custody;
 mod custody_notes;

@@ -11,6 +11,12 @@ impl DemandRegistryState {
         key: Arc<WorthQueryOutputDemandKey>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<RetiredClosedRows, WorthQueryOutputDemandDenial> {
+        if !self.records.contains_key(&key) {
+            admission.inspect_row()?;
+            return Ok(self
+                .take_closed_note(key)
+                .prune(|_| (Vec::new(), Vec::new())));
+        }
         // The candidates are one occurrence, and their cloned keys are admitted
         // before they are built. The cascade plan admits its own whole-map scratch.
         let count = self.records.len();
@@ -50,7 +56,7 @@ impl DemandRegistryState {
         admission: &mut InvalidationEditAdmission,
     ) -> Option<RetiredClosedRows> {
         debug_assert_eq!(FOREIGN_CLOSED_DRAIN_QUOTA, 1);
-        let key = Arc::clone(self.closed_cleanup.head.as_ref()?);
+        let key = self.closed_cleanup.head()?;
         match self.take_closed_cleanup_step(key, admission) {
             Ok(retired) => Some(retired),
             Err(denial) => {
@@ -114,7 +120,7 @@ impl WorthQueryOutputDemandRegistry {
                     .state
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
-                let Some(key) = state.closed_cleanup.head.as_ref().map(Arc::clone) else {
+                let Some(key) = state.closed_cleanup.head() else {
                     break;
                 };
                 state.take_closed_cleanup_step(key, admission)?

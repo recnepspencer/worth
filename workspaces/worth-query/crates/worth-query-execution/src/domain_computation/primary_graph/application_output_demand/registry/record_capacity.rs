@@ -135,6 +135,7 @@ impl DemandRegistryState {
                     .ok_or_else(capacity_denial)
             })
             .transpose()?;
+        let closed_note_bytes = arc_bytes::<super::cleanup::closed_notes::ClosedNoteBacking>()?;
         let membership_bytes = arc_bytes::<RequiredWorkMembership>()?
             .checked_add(arc_bytes::<WorthQueryOutputDemandKey>()?)
             .and_then(|bytes| bytes.checked_add(key.producer.len()))
@@ -142,6 +143,7 @@ impl DemandRegistryState {
         let work_backing = queue_bytes
             .unwrap_or(0)
             .checked_add(membership_bytes)
+            .and_then(|bytes| bytes.checked_add(closed_note_bytes))
             .ok_or_else(capacity_denial)?;
         admission
             .admit_read_scratch(u64::try_from(work_backing).map_err(|_| capacity_denial())?)
@@ -170,6 +172,10 @@ impl DemandRegistryState {
             membership_capacity,
         ));
         record_capacity.work_membership = Some(Arc::downgrade(&work_membership));
+        let closed_cleanup = super::cleanup::ClosedCleanupLinks::new(
+            Arc::clone(work_membership.key_arc()),
+            self.reserve_record_capacity(closed_note_bytes)?,
+        );
         let mut source_commits = Vec::new();
         if source_commit.is_some() {
             source_commits
@@ -199,7 +205,7 @@ impl DemandRegistryState {
             prepared_prerequisite_claims: 0,
             pending_cleanup_next: None,
             pending_cleanup_queued: false,
-            closed_cleanup: Default::default(),
+            closed_cleanup,
             pending_cleanup_key_bytes: 0,
             settlements: Vec::new(),
             product_occurrence,
