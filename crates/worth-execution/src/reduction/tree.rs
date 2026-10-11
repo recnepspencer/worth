@@ -144,6 +144,16 @@ impl<E: ChargedBytes> ChargedBytes for ReductionRunFailure<E> {
 
 /// Retained Cartesian reduction tree. Edits stage immutable path copies and
 /// publish one root only after every combine and validation succeeds.
+///
+/// Cutoff is decided by canonical bits. The tree's value bound does not
+/// permit substituting `PartialEq`: comparing its values is error E0369.
+///
+/// ```compile_fail,E0369
+/// use worth_execution::{CanonicalBits, ChargedBytes};
+/// fn cutoff<T: Clone + ChargedBytes + CanonicalBits>(left: &T, right: &T) -> bool {
+///     left == right
+/// }
+/// ```
 pub struct ReductionTree<T, F> {
     root: Link<T>,
     identity: T,

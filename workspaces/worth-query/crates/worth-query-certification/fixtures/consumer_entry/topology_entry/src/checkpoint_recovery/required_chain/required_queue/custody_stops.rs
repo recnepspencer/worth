@@ -221,14 +221,19 @@ fn a_refresh_cancelled_under_tight_custody_settles_on_the_next_advance() {
 #[test]
 fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() {
     let _guard = checkpoint_recovery_test_guard();
-    support::observation::capacity_region::search(
+    let budget = support::capacity_region::search(
         "publication terminal",
         1,
         128 * 1024,
-        support::observation::capacity_region::Goal::Hit,
-        publication_terminal,
+        support::capacity_region::Goal::Hit,
+        publication_budget::measure,
     )
     .require_hit("publication terminal");
+    assert_eq!(
+        publication_terminal(budget),
+        Attempt::Hit,
+        "the measured publication/no-publication window retains stable terminal stops"
+    );
 }
 
 fn publication_terminal(budget: usize) -> Attempt {
@@ -339,3 +344,5 @@ mod balance;
 mod stable_readmission;
 
 mod joined_refresh;
+
+mod publication_budget;

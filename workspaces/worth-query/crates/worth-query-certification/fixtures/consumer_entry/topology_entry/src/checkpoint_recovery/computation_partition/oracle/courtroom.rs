@@ -13,7 +13,7 @@ mod branches;
 pub(super) mod cancellation;
 mod correction_grant;
 mod equal_output;
-mod interleaving;
+needs_os_threads! { mod interleaving; }
 mod lifecycle;
 mod request_work;
 mod tree;
