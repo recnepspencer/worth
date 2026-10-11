@@ -140,7 +140,7 @@ fn cutoff_journey(successor: Successor) {
             let mut admission = owner.edit_admission();
             let basis = PreparedInputCutoffBasis::prepare(runtime, &live_handle, &mut admission).unwrap();
             let mut currentness = owner.edit_admission();
-            let available = currentness.remaining_work();
+            let available = currentness.remaining_work_amount();
             let result = candidate.clone().verify_for_reuse(
                 candidate.prepared_input_key().unwrap().continued_by_republication(), context, None,
                 runtime, &basis, owner, &mut admission, &mut currentness,
@@ -149,7 +149,7 @@ fn cutoff_journey(successor: Successor) {
                 assert!(matches!(result, Ok(InputCutoffDecision::Reuse(_))),
                     "the resolved pending edge must reach full verification");
                 let mut expected = owner.edit_admission();
-                let start = expected.remaining_work();
+                let start = expected.remaining_work_amount();
                 assert!(ConsumedOutputEvidence::own_evidence_is_current(
                     &prefix, &[], candidate.native_output_witness().unwrap(), runtime, &live_handle, &mut expected,
                 ).unwrap());
@@ -159,7 +159,7 @@ fn cutoff_journey(successor: Successor) {
                     expected.charge_external_work(1).unwrap();
                     assert_eq!(fact.source_currentness_in(runtime, &live_handle, &mut expected).unwrap().unwrap().movement(), Movement::Unmoved);
                 }
-                assert_eq!(available - currentness.remaining_work(), start - expected.remaining_work(),
+                assert_eq!(available - currentness.remaining_work_amount(), start - expected.remaining_work_amount(),
                     "resolved pending marks must still verify the whole handler prefix");
             } else {
                 assert!(matches!(result, Err(InputCutoffVerificationStop::PendingOutput(ref identity)) if identity == &a0),

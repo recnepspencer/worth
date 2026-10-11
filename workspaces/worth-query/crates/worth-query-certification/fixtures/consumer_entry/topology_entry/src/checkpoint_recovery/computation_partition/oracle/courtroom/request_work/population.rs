@@ -3,12 +3,35 @@ use super::*;
 pub(super) type ScaleProgram = OracleProgram<false, TOTALS_WORK, 1, 4>;
 type ScaleApplication =
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, ScaleProgram>;
+#[cfg(target_pointer_width = "64")]
+const REGISTRY_OBLIGATION_RETAINED_BYTES: usize = 1 << 40;
+#[cfg(target_pointer_width = "32")]
+const REGISTRY_OBLIGATION_RETAINED_BYTES: usize = usize::MAX;
+#[cfg(target_pointer_width = "64")]
+const LINEAGE_RETAINED_BYTES: usize = 1 << 40;
+#[cfg(target_pointer_width = "32")]
+const LINEAGE_RETAINED_BYTES: usize = usize::MAX;
+#[cfg(target_pointer_width = "64")]
+const REGISTRY_RECORD_RETAINED_BYTES: usize = 1 << 40;
+#[cfg(target_pointer_width = "32")]
+const REGISTRY_RECORD_RETAINED_BYTES: usize = usize::MAX;
+#[cfg(target_pointer_width = "64")]
+const REGISTRY_REQUIRED_RETAINED_BYTES: usize = 1 << 40;
+#[cfg(target_pointer_width = "32")]
+const REGISTRY_REQUIRED_RETAINED_BYTES: usize = usize::MAX;
+
 fn profile() -> worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile {
     worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard()
-        .with_registry_obligation_retained_bytes(std::num::NonZeroUsize::new(1 << 40).unwrap())
-        .with_lineage_retained_bytes(std::num::NonZeroUsize::new(1 << 40).unwrap())
-        .with_registry_record_retained_bytes(std::num::NonZeroUsize::new(1 << 40).unwrap())
-        .with_registry_required_retained_bytes(std::num::NonZeroUsize::new(1 << 40).unwrap())
+        .with_registry_obligation_retained_bytes(
+            std::num::NonZeroUsize::new(REGISTRY_OBLIGATION_RETAINED_BYTES).unwrap(),
+        )
+        .with_lineage_retained_bytes(std::num::NonZeroUsize::new(LINEAGE_RETAINED_BYTES).unwrap())
+        .with_registry_record_retained_bytes(
+            std::num::NonZeroUsize::new(REGISTRY_RECORD_RETAINED_BYTES).unwrap(),
+        )
+        .with_registry_required_retained_bytes(
+            std::num::NonZeroUsize::new(REGISTRY_REQUIRED_RETAINED_BYTES).unwrap(),
+        )
 }
 pub(super) fn install_population() -> ScaleApplication {
     author_population(1_008)
@@ -29,11 +52,11 @@ fn author_population(vertices: usize) -> ScaleApplication {
         1_000,
         |graph| model.seed(graph),
     );
-    let (scope, principal) = authenticate(&app);
-    let request = app.request(&principal, &scope);
     // Each public edit creates one valid triangle within its declared
     // invariant budget. Both lanes restore the same publicly authored truth.
     for triangle in 0..vertices.div_ceil(3) {
+        let (scope, principal) = authenticate(&app);
+        let request = app.request(&principal, &scope);
         use worth_query_consumer_values::{PlanarOperation, PlanarVertex};
         let source = request
             .query(PlanarRead {
@@ -68,6 +91,8 @@ fn author_population(vertices: usize) -> ScaleApplication {
         ));
     }
     for number in 0..vertices as u64 {
+        let (scope, principal) = authenticate(&app);
+        let request = app.request(&principal, &scope);
         let name = format!("unrelated-{number}");
         let source = request
             .query(PlanarRead {

@@ -261,14 +261,18 @@ where
     let read = runtime
         .execute_application_query_one_shot(plan)
         .map_err(|error| query_execution_denied(Binding::IDENTITY, error))?;
-    admission
-        .charge_external_work(read.receipt().total_work_units() as u64)
-        .map_err(|_| {
-            denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                Binding::IDENTITY,
-            )
-        })?;
+    let read_work = u64::try_from(read.receipt().total_work_units()).map_err(|_| {
+        denial(
+            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+            Binding::IDENTITY,
+        )
+    })?;
+    admission.charge_external_work(read_work).map_err(|_| {
+        denial(
+            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+            Binding::IDENTITY,
+        )
+    })?;
 
     super::super::demand::disclosure::validate_readmitted(
         runtime,

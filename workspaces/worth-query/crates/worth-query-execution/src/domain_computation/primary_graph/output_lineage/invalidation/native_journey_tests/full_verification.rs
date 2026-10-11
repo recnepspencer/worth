@@ -45,7 +45,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         };
         let mut exhausted = owner.edit_admission();
         exhausted
-            .charge_external_work(u64::try_from(exhausted.remaining_work()).unwrap())
+            .charge_external_work(exhausted.remaining_work_amount())
             .unwrap();
         assert_eq!(
             ConsumedOutputEvidence::verify_many_with_admission(
