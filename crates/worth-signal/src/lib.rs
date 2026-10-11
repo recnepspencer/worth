@@ -164,3 +164,6 @@ pub mod branch_bases_guide;
 
 #[cfg(test)]
 pub(crate) mod tests;
+
+#[cfg(test)]
+use worth_harness::facade::process_deadline;

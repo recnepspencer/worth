@@ -109,11 +109,12 @@ fn ordinary_decision_field_decodes_without_a_carrier_copy() {
         .split_once("::")
         .unwrap()
         .1;
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", filter, "--test-threads=1", "--nocapture"])
-        .env("WORTH_QUERY_BORROWED_FIELD_DECODE_PROBE", "1")
-        .output()
-        .unwrap();
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", filter, "--test-threads=1", "--nocapture"])
+            .env("WORTH_QUERY_BORROWED_FIELD_DECODE_PROBE", "1"),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "ordinary field allocation probe failed:\n{}\n{}",

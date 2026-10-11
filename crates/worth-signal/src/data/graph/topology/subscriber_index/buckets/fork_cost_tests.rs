@@ -17,14 +17,15 @@ const TEST_NAME: &str = "data::graph::topology::subscriber_index::buckets::fork_
 fn single_membership_first_write_is_bounded_by_nested_persistent_granule() {
     const CHILD_PROCESS: &str = "WORTH_SIGNAL_SUBSCRIBER_FORK_COST_CHILD";
     if env::var_os(CHILD_PROCESS).is_none() {
-        let output = Command::new(env::current_exe().expect("test executable resolves"))
-            .arg("--exact")
-            .arg(TEST_NAME)
-            .arg("--nocapture")
-            .arg("--test-threads=1")
-            .env(CHILD_PROCESS, "1")
-            .output()
-            .expect("isolated subscriber allocation probe starts");
+        let output = crate::process_deadline::output(
+            Command::new(env::current_exe().expect("test executable resolves"))
+                .arg("--exact")
+                .arg(TEST_NAME)
+                .arg("--nocapture")
+                .arg("--test-threads=1")
+                .env(CHILD_PROCESS, "1"),
+        )
+        .expect("isolated subscriber allocation probe starts");
         let stdout = String::from_utf8_lossy(&output.stdout);
         print!("{stdout}");
         eprint!("{}", String::from_utf8_lossy(&output.stderr));

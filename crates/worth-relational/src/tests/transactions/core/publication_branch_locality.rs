@@ -58,16 +58,16 @@ fn paused_storm_publication_does_not_contact_or_wait_on_maintenance() {
             .expect("maintenance completion receiver lives");
         outcome
     });
-    if maintenance_completion
-        .recv_timeout(std::time::Duration::from_secs(1))
-        .is_err()
-    {
+    if matches!(
+        maintenance_completion.recv_timeout(std::time::Duration::from_secs(1)),
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+    ) {
         drop(held_storm_gate.take());
         panic!("maintenance publication blocked behind the held Storm gate");
     }
     let maintenance_performed = match maintenance_thread
         .join()
-        .expect("maintenance publisher joins")
+        .unwrap_or_else(|worker_panic| std::panic::resume_unwind(worker_panic))
     {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("maintenance publishes while storm is paused: {outcome:?}"),
@@ -94,10 +94,13 @@ fn paused_storm_publication_does_not_contact_or_wait_on_maintenance() {
     );
 
     drop(held_storm_gate.take());
-    storm_completion
-        .recv_timeout(std::time::Duration::from_secs(1))
-        .expect("storm publication completes within one second after release");
-    let storm_performed = match storm_thread.join().expect("storm publisher joins") {
+    let storm_thread_result = join_completed_worker(
+        storm_completion.recv_timeout(std::time::Duration::from_secs(1)),
+        storm_thread,
+        std::time::Duration::from_secs(1),
+        "storm publication completes within one second after release",
+    );
+    let storm_performed = match storm_thread_result {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("storm performs after its branch gate opens: {outcome:?}"),
     };
