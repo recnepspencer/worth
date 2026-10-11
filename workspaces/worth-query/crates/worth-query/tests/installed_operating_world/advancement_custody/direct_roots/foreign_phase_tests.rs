@@ -46,7 +46,7 @@ fn borrowed_promotion_refuses_a_foreign_phase_before_contact() {
             assert_eq!(
                 denial.kind(),
                 domain::WorthQueryProjectionPromotionDenialKind::ExecutionRequest(
-                    Denial::ForeignPhase
+                    Denial::Resource(Resource::ForeignAdvancementPhase)
                 )
             );
             assert_eq!(denial.counters(), Default::default());
