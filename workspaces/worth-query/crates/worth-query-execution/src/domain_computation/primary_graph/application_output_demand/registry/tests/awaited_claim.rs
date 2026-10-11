@@ -21,8 +21,10 @@ fn last_claim_closes(held_successor: bool) {
     let _occurrence = occurrence();
     crate::domain_computation::primary_graph::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
-        let unrelated = admit(&registry, &key("independent-claim-baseline", 1, 7));
-        let baseline = balances(&registry);
+        let (unrelated, baseline) = super::reservation_baseline::install(
+            &mut registry.state.lock().unwrap(),
+            receipt.clone(),
+        );
         let stale_key = key("claim-awaited", 1, 1);
         let newest_key = key("claim-awaited", 2, 1);
         let dependent_key = key("claim-owner", 1, 2);
@@ -63,17 +65,35 @@ fn last_claim_closes(held_successor: bool) {
         ));
         drop(dependent);
         // Release leaves costly cleanup for the next paying admission.
-        registry
-            .drain_terminal_cleanup_admitted(&source_owner(), &mut record_admission())
-            .unwrap();
+        loop {
+            let before = registry.state.lock().unwrap().records.len();
+            match registry.drain_terminal_cleanup_admitted(&source_owner(), &mut record_admission())
+            {
+                Ok(()) => break,
+                Err(stop) => {
+                    assert_eq!(
+                        stop.kind(),
+                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+                    );
+                    assert!(
+                        registry.state.lock().unwrap().records.len() < before,
+                        "a fresh paying admission must retire at least one queued row"
+                    );
+                }
+            }
+        }
         {
             let state = registry.state.lock().unwrap();
             assert!(
                 !state.records.contains_key(&newest_key),
                 "the last claim's release retires the answer and any held successor"
             );
-            assert!(!state.records.values().any(|record| matches!(&record.state,
-                DemandState::Output(output) if matches!(output.checkpoint,
+            assert!(
+                !state.records.contains_key(&stale_key),
+                "the superseded row is retired too"
+            );
+            assert!(state.records.iter().all(|(key, record)| key == &unrelated ||
+                !matches!(&record.state, DemandState::Output(output) if matches!(output.checkpoint,
                     Some(super::super::WorthQueryOutputCheckpoint::Published { .. })))));
         }
         assert_eq!(
@@ -81,7 +101,12 @@ fn last_claim_closes(held_successor: bool) {
             baseline,
             "all three reservations return by value"
         );
-        drop(unrelated);
+        assert!(registry
+            .state
+            .lock()
+            .unwrap()
+            .records
+            .contains_key(&unrelated));
     });
 }
 

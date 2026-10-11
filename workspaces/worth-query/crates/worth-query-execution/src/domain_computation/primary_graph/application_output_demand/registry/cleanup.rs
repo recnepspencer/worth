@@ -16,6 +16,11 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
+enum CleanupTarget {
+    Allocations,
+    ReleasedMember,
+}
+
 impl DemandRegistryState {
     /// The selected Arc already owns this key. Linking it into the registry is
     /// allocation free, so a post-effect pin release can only defer cleanup.
@@ -33,6 +38,30 @@ impl DemandRegistryState {
         key: &Arc<WorthQueryOutputDemandKey>,
         retained_key_bytes: usize,
         awaited: bool,
+    ) -> bool {
+        self.defer_terminal_cleanup_target(
+            key,
+            retained_key_bytes,
+            awaited,
+            CleanupTarget::Allocations,
+        )
+    }
+
+    /// A released funded member also owes retirement of its empty terminal row.
+    pub(super) fn defer_released_member_cleanup(
+        &mut self,
+        key: &Arc<WorthQueryOutputDemandKey>,
+        awaited: bool,
+    ) -> bool {
+        self.defer_terminal_cleanup_target(key, 0, awaited, CleanupTarget::ReleasedMember)
+    }
+
+    fn defer_terminal_cleanup_target(
+        &mut self,
+        key: &Arc<WorthQueryOutputDemandKey>,
+        retained_key_bytes: usize,
+        awaited: bool,
+        target: CleanupTarget,
     ) -> bool {
         let Some(record) = self.records.get_mut(key.as_ref()) else {
             return false;
@@ -54,7 +83,8 @@ impl DemandRegistryState {
         if record.framework_required_count != 0
             || record.prepared_prerequisite_claims != 0
             || record.pending_cleanup_queued
-            || (record.prerequisites.capacity() == 0
+            || (matches!(target, CleanupTarget::Allocations)
+                && record.prerequisites.capacity() == 0
                 && record.checkpoint_prerequisites.is_none()
                 && record.settlements.capacity() == 0
                 && record.performed_obligations.capacity() == 0
@@ -134,8 +164,6 @@ impl DemandRegistryState {
                 reason.releases_finished_work()
                     && record.framework_required_count == 0
                     && record.prepared_prerequisite_claims == 0
-                    && (record.performed_obligations.capacity() != 0
-                        || matches!(reason, super::RowRetirement::AbandonedPublication))
             }
         };
         if release_obligations {
@@ -259,7 +287,7 @@ impl DemandRegistryState {
             let record = self.records.get_mut(head.as_ref()).unwrap();
             let refund = record.obligation_reserved_bytes();
             let obligations = std::mem::take(&mut record.performed_obligations);
-            let member = self.remove_required_member_if_released_detached(head.as_ref());
+            let member = self.remove_required_member_with_awaited(head.as_ref(), awaited);
             (obligations, refund, member)
         } else {
             (

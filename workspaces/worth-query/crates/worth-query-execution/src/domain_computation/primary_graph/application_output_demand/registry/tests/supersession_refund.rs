@@ -11,12 +11,14 @@ fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
     let occurrence = occurrence();
     crate::domain_computation::primary_graph::with_test_advancement(|_| {
         let mut state = DemandRegistryState::default();
+        let (_unrelated, baseline) =
+            super::reservation_baseline::install(&mut state, receipt.clone());
         let upstream = key("abandoned-upstream", 1, 2);
         state.records.insert(
             upstream.clone(),
             record(occurrence, DemandState::Admitted, 1),
         );
-        let baseline = state.required_reserved_bytes;
+
         let abandoned = key_with_identity("abandoned-binding", 2, 1, 200);
         let incoming = key_with_identity("incoming-binding", 2, 1, 201);
         assert_eq!(
@@ -49,15 +51,9 @@ fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
             "retiring the incomparable row releases its exact consumed edge"
         );
         assert_eq!(
-            state.required_reserved_bytes, baseline,
-            "both the admitted row key and prerequisite allocation are refunded"
-        );
-        assert_eq!(state.obligation_reserved_bytes, 0);
-        assert_eq!(
-            state
-                .required_custody_retained_bytes
-                .load(std::sync::atomic::Ordering::Acquire),
-            0
+            super::reservation_baseline::balances(&state),
+            baseline,
+            "the unrelated row keeps all three reservations after the exact refund"
         );
     });
 }

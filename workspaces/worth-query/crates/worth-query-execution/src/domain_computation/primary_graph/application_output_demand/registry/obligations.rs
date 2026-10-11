@@ -75,13 +75,13 @@ impl DemandRegistryState {
             let abandoned = self.records.get(&released).is_some_and(|record| {
                 matches!(
                     record.idle_disposition(awaited),
-                    super::IdleRowDisposition::Retired(super::RowRetirement::AbandonedPublication)
+                    super::IdleRowDisposition::Retired(reason) if reason.releases_finished_work() && record.interests == 0
                 ) || record.successor_is_orphaned(awaited)
             });
             if abandoned
                 && funded_key
                     .as_ref()
-                    .is_some_and(|key| self.defer_terminal_cleanup_with_awaited(key, 0, awaited))
+                    .is_some_and(|key| self.defer_released_member_cleanup(key, awaited))
             {
                 continue;
             }

@@ -42,6 +42,7 @@ mod requested_source;
 mod required_lifecycle;
 mod required_stop;
 mod required_work;
+mod reservation_baseline;
 mod scheduling_interruption;
 mod selected_execution_release;
 mod semantic_epoch;
