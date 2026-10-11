@@ -18,6 +18,8 @@ mod principal_target_read_work;
 
 const WIDTH: &str = "WORTH_QUERY_CUSTODY_DIFFERENTIAL_WIDTH";
 const DIGEST: &str = "CUSTODY_DIGEST ";
+const LEASED_DIGEST: &str = "LEASED_CUSTODY_DIGEST ";
+const LAST_WORK: &str = "LAST_REQUEST_WORK ";
 
 #[test]
 fn wake_and_reconsideration_keep_bits_and_order_with_exact_width_work() {
@@ -39,6 +41,8 @@ fn wake_and_reconsideration_keep_bits_and_order_with_exact_width_work() {
         module_path!().split_once("::").unwrap().1
     );
     let mut reference = None;
+    let mut leased_reference = None;
+    let mut serial_work = None;
     for width in ["0", "1", "4"] {
         let output = crate::process_deadline::output(
             Command::new(std::env::current_exe().unwrap())
@@ -64,6 +68,47 @@ fn wake_and_reconsideration_keep_bits_and_order_with_exact_width_work() {
             assert_eq!(&actual, reference, "width {width}");
         } else {
             reference = Some(actual);
+        }
+        let actual_work = stdout
+            .lines()
+            .filter_map(|line| line.strip_prefix(LAST_WORK))
+            .map(|line| {
+                line.split(',')
+                    .map(|units| units.parse::<u64>().unwrap())
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(actual_work.len(), 2);
+        if width == "0" {
+            serial_work = Some(actual_work);
+        } else {
+            // One committed operation uses one caller's request. Every other
+            // request must agree with Serial; only its checked native kernels
+            // are absent from the unleased engine.
+            let native_work = commit_work::quote(Placement::Leased(NonZeroUsize::MIN));
+            for (actual, serial) in actual_work.iter().zip(serial_work.as_ref().unwrap()) {
+                assert_eq!(actual.len(), serial.len());
+                let differences = actual
+                    .iter()
+                    .zip(serial)
+                    .map(|(actual, serial)| actual.checked_sub(*serial).unwrap())
+                    .collect::<Vec<_>>();
+                assert_eq!(differences.iter().sum::<u64>(), native_work);
+                assert_eq!(differences.iter().filter(|work| **work != 0).count(), 1);
+            }
+        }
+        if width != "0" {
+            let actual = stdout
+                .lines()
+                .filter(|line| line.starts_with(LEASED_DIGEST))
+                .map(str::to_owned)
+                .collect::<Vec<_>>();
+            assert_eq!(actual.len(), 2, "both leased semantic cases ran");
+            if let Some(reference) = &leased_reference {
+                assert_eq!(&actual, reference, "leased width {width}");
+            } else {
+                leased_reference = Some(actual);
+            }
         }
     }
 }
@@ -131,7 +176,7 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
             last_signal
                 + last_reads * principal_target_read_work::PRINCIPAL_TARGET_READ_WORK
                 + commit_work::quote(placement),
-            "every width pays its actual checked kernels and strategy facts"
+            "every leased width pays the same checked native kernels"
         );
         assert_eq!(last.committed_operation_count(), 1);
         assert_eq!(last.retained_due_wake_count(), 0);
@@ -198,12 +243,34 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
             IntentEffectField::reference(),
             "payload".to_string(),
         );
+        if matches!(placement, Placement::Leased(_)) {
+            println!(
+                "{LEASED_DIGEST}{:?}",
+                (
+                    first_counts,
+                    last_counts,
+                    &provenance,
+                    &first_work,
+                    &last_work,
+                    &order
+                )
+            );
+        }
+        println!(
+            "{LAST_WORK}{}",
+            last_work
+                .iter()
+                .map(u64::to_string)
+                .collect::<Vec<_>>()
+                .join(",")
+        );
         println!(
             "{DIGEST}{:?}",
             (
                 first_counts,
                 last_counts,
                 provenance,
+                first_work,
                 (first_signal, first_reads),
                 (last_signal, last_reads),
                 order

@@ -32,10 +32,9 @@ const TOUCHES: u64 = 14;
 const TOUCH_ORDERING_PASSES: u64 = (u64::BITS - TOUCHES.leading_zeros()) as u64;
 const PACKET_SCOPE_PARTITIONS: u64 = 6;
 const REDUCTION_SORT_STEPS: u64 = 2;
-const SERIAL_STRATEGY_FACT_PRICE: u64 = 1;
 
 pub(super) fn quote(placement: super::Placement) -> u64 {
-    let super::Placement::Leased(workers) = placement else {
+    let super::Placement::Leased(_) = placement else {
         // The unleased engine has no checked preparation, packet, or reducer
         // kernels. Signal and the read still charge the surrounding request.
         return 0;
@@ -70,14 +69,8 @@ pub(super) fn quote(placement: super::Placement) -> u64 {
         + SEMANTIC_CHANGES * SEMANTIC_CHANGE_PRICE
         + PUBLICATION_FRAGMENTS * FRAGMENT_ORDERING_PRICE;
     let merge = (PUBLICATION_PACKETS * 2 + PUBLICATION_FRAGMENTS * 2) * RECORD_VISIT;
-    // Only the two-packet boundary becomes parallel at width four. Plan and
-    // snapshot retain their serial-strategy facts at both leased widths.
-    let serial_facts = if workers.get() == 1 {
-        INVARIANT_POINTS
-    } else {
-        INVARIANT_POINTS - 1
-    };
-    let reduction = (REDUCTION_SORT_STEPS + INVARIANT_PACKETS * 2) * RECORD_VISIT
-        + serial_facts * SERIAL_STRATEGY_FACT_PRICE;
+    // The reducer sorts packets, collects results and forms decision records.
+    // Strategy diagnostics retain memory but charge no invariant work.
+    let reduction = (REDUCTION_SORT_STEPS + INVARIANT_PACKETS * 2) * RECORD_VISIT;
     planning + descriptive + preparation + dispatch + evaluation + publication + merge + reduction
 }

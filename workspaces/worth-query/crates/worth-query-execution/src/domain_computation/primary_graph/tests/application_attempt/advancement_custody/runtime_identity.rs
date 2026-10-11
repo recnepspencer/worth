@@ -1,6 +1,9 @@
 //! A public phase cannot fund another installation's reads or mutation.
 use super::*;
 
+#[path = "runtime_identity/native_commit_work.rs"]
+mod native_commit_work;
+
 #[test]
 fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
@@ -106,9 +109,10 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
                     "the empty output read and unleased commit run no checked kernels"
                 );
             }
-            Placement::Leased(_) => assert!(
-                charged > 0,
-                "the admitted reads and commit charge their caller's lease"
+            Placement::Leased(_) => assert_eq!(
+                charged,
+                native_commit_work::LEASED_COMMIT_WORK,
+                "the empty output read adds no kernel work to the commit invoice"
             ),
             Placement::World | Placement::Certified { .. } => {
                 panic!("this fixture declares only Serial and Leased placement")

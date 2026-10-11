@@ -108,8 +108,8 @@ const fn quote(s: Shape) -> u64 {
         + s.publication_fragments * FRAGMENT_ORDERING;
     // One stream per commit: count it, seed it, price its items, and pop them.
     let merge = (s.commits * 2 + s.publication_fragments * 2) * RECORD_VISIT;
-    let reduction =
-        (s.reduction_sort_steps + s.invariant_packets * 2 + s.commits * 3) * RECORD_VISIT; // one serial-strategy fact per engine
+    // Strategy diagnostics consult and retain storage, without invariant work.
+    let reduction = (s.reduction_sort_steps + s.invariant_packets * 2) * RECORD_VISIT;
     planning
         + custom_scope
         + descriptive
