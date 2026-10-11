@@ -55,7 +55,7 @@ pub(super) enum WorthQueryOutputAdvancement {
 }
 
 pub(super) struct WorthQueryOutputProgress {
-    pub(super) undelivered: Option<super::publication_head::UndeliveredPublication>,
+    undelivered: Option<super::publication_head::UndeliveredPublication>,
     /// Exact owner-issued commit retained while the sole full checkpoint is
     /// temporarily claimed for delivery. This fixed identity replaces a deep
     /// descriptive receipt clone after producer effects.

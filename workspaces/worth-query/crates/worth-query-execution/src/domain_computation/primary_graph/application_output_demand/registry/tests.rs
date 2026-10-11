@@ -27,6 +27,7 @@ mod closed_retirement;
 mod completed_custody_stages;
 mod consumer_custody;
 mod demand_key;
+mod discarded_successor;
 mod drained_cleanup;
 mod local_work;
 mod performed_release;

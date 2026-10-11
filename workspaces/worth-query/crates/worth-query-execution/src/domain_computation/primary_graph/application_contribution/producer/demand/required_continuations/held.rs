@@ -58,8 +58,9 @@ where
     ) {
         for progress in std::mem::take(&mut self.entries) {
             let bytes = std::mem::size_of::<HeldFrameSuccessor<Schema>>();
-            // Without custody the successor ends here, as it would have.
             let Ok(capacity) = registry.reserve_held_successor_capacity(bytes) else {
+                // Typed successor Drop preserves another delivery entry, or
+                // closes its otherwise orphaned Published checkpoint.
                 continue;
             };
             let held: HeldRequiredSuccessor = Box::new(HeldFrameSuccessor {
@@ -193,7 +194,8 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
             drop(held);
             return Ok(HeldUpstream::GaveBack);
         }
-        // Refused custody, the successor ends instead of holding its own.
+        // Refused custody ends the frame, retaining a real delivery owner or
+        // closing an undelivered row that no entry can now finish.
         Err(stop) if super::progress::refused_custody(&stop) => {
             drop(held);
             return Err(stop);

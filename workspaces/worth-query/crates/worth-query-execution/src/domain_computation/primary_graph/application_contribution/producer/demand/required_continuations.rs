@@ -29,6 +29,7 @@ mod prepared;
 mod progress;
 mod promotion;
 mod slot_preparation;
+mod successor_release;
 mod unavailable;
 mod wave_checkpoint;
 mod wave_preparation;

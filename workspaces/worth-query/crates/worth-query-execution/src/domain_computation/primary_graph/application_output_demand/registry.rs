@@ -146,6 +146,7 @@ pub(in crate::domain_computation::primary_graph) use publication_head::{
     LivePublicationHead, PublicationHeadSelection,
 };
 mod held_successor;
+mod successor_release;
 pub(in crate::domain_computation::primary_graph) use held_successor::RequiredUpstreamSuccessor;
 mod lifecycle;
 mod notifications;
