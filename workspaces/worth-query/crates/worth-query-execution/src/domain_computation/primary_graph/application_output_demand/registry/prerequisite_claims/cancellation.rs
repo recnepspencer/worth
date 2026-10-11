@@ -1,5 +1,6 @@
+post_effect_payer!(CancelledPrerequisiteWalk);
 use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::unpaid_under_request;
+use super::super::refreshed_rejoin::post_effect_payer;
 use super::{PreparedPrerequisiteClaims, WorthQueryOutputDemandRegistry};
 
 impl Drop for PreparedPrerequisiteClaims {
@@ -23,9 +24,14 @@ impl Drop for PreparedPrerequisiteClaims {
         for upstream in &self.predecessors {
             if let Some(record) = state.records.get_mut(upstream.as_ref()) {
                 record.framework_required_count -= 1;
-                infallible(
-                    state.remove_required_member_if_released(upstream, &mut unpaid_under_request()),
-                );
+                if !state.records[upstream].pending_cleanup_queued
+                    && !state.defer_terminal_cleanup(upstream, 0)
+                {
+                    infallible(state.remove_required_member_if_released(
+                        upstream,
+                        &mut CancelledPrerequisiteWalk::after_effect(),
+                    ));
+                }
             }
         }
         for upstream in &self.predecessors {

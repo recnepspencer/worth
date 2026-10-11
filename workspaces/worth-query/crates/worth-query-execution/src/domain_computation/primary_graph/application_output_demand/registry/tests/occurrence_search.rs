@@ -18,7 +18,7 @@ fn seeded_charged_and_uncharged_occurrence_searches_agree() {
             let plain: Vec<_> = infallible(occurrence_rows(
                 &records,
                 requested,
-                &mut unpaid_under_request(),
+                &mut OracleWalk::after_effect(),
             ))
             .collect();
             let mut admission = record_admission();
@@ -51,7 +51,7 @@ fn seeded_charged_and_uncharged_occurrence_searches_agree() {
                 infallible(newest_lawful_successor(
                     candidates.iter().copied(),
                     requested,
-                    &mut unpaid_under_request()
+                    &mut OracleWalk::after_effect()
                 )),
                 tally_fold(&candidates, requested, &mut visits),
                 "generated key walk, run {run}, {requested:?}"
@@ -62,7 +62,7 @@ fn seeded_charged_and_uncharged_occurrence_searches_agree() {
                 infallible(newest_lawful_successor(
                     plain.iter().map(|(key, _)| *key),
                     requested,
-                    &mut unpaid_under_request()
+                    &mut OracleWalk::after_effect()
                 ))
                 .cloned(),
                 newest_matching_row(&records, requested, &mut admission, |key, _| {
@@ -76,7 +76,7 @@ fn seeded_charged_and_uncharged_occurrence_searches_agree() {
                 infallible(awaited_by_stale_owner(
                     &records,
                     requested,
-                    &mut unpaid_under_request()
+                    &mut OracleWalk::after_effect()
                 )),
                 awaited_by_stale_owner(&records, requested, &mut admission).unwrap(),
                 "stale owner, run {run}, {requested:?}"
@@ -85,7 +85,7 @@ fn seeded_charged_and_uncharged_occurrence_searches_agree() {
                 infallible(awaited_by_stale_owner(
                     &records,
                     requested,
-                    &mut unpaid_under_request()
+                    &mut OracleWalk::after_effect()
                 )),
                 tally_stale_owner(&plain, requested, &mut visits)
             );

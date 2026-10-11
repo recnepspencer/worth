@@ -49,6 +49,28 @@ impl PreparedRequiredMember {
 }
 
 impl DemandRegistryState {
+    /// A queued member is derived custody, not proof that its count is live.
+    /// Readers without a drain owner check the count and stale owners using
+    /// their own admission before treating that queued key as required.
+    pub(super) fn queued_member_released(
+        &self,
+        key: &WorthQueryOutputDemandKey,
+        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        let Some(row) = self
+            .records
+            .get(key)
+            .filter(|row| row.pending_cleanup_queued)
+        else {
+            return Ok(false);
+        };
+        if row.is_required() {
+            return Ok(false);
+        }
+        super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key, admission)
+            .map(|awaited| !awaited)
+    }
+
     pub(super) fn prepare_required_member(
         &self,
         key: &WorthQueryOutputDemandKey,

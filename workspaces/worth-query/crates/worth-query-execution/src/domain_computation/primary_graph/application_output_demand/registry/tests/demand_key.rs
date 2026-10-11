@@ -1,5 +1,5 @@
 //! Lifecycle order does not collapse exact rows or cross output families.
-use super::super::refreshed_rejoin::{infallible, unpaid_under_request};
+use super::super::refreshed_rejoin::infallible;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::{
     WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,
@@ -98,7 +98,7 @@ fn incomparable_preserve_bindings_do_not_pick_a_successor_by_iteration_order() {
             infallible(super::super::refreshed_rejoin::newest_lawful_successor(
                 candidates.into_iter(),
                 &initial,
-                &mut unpaid_under_request()
+                &mut OracleWalk::after_effect()
             ))
             .is_none()
         );

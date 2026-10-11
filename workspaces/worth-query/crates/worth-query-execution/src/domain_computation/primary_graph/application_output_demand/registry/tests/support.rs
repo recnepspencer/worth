@@ -1,6 +1,7 @@
 use super::*;
 
-pub(super) fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn occurrence(
+) -> worth_runtime_world::facade::ProductBranchIncarnation {
     static OCCURRENCE: std::sync::OnceLock<worth_runtime_world::facade::ProductBranchIncarnation> =
         std::sync::OnceLock::new();
     *OCCURRENCE.get_or_init(|| {
@@ -17,7 +18,11 @@ pub(super) fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnat
     })
 }
 
-pub(super) fn key(producer: &str, revision: u64, tail: u8) -> WorthQueryOutputDemandKey {
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn key(
+    producer: &str,
+    revision: u64,
+    tail: u8,
+) -> WorthQueryOutputDemandKey {
     key_with_identity(producer, revision, tail, revision)
 }
 
@@ -70,7 +75,7 @@ pub(super) fn root(slot: u8) -> worth_relational::facade::identity::EntityId {
     )
 }
 
-pub(super) fn record(
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn record(
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     state: DemandState,
     interests: usize,

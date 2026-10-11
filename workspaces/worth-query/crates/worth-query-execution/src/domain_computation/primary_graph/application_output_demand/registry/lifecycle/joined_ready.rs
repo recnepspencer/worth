@@ -9,8 +9,10 @@
 //! lineage settlement the Ready posted leaves with it, so the execution
 //! decides Fresh and never reuses the output it evicted.
 
+post_effect_payer!(CompletedJoinedReleaseWalk);
+
 use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::unpaid_under_request;
+use super::super::refreshed_rejoin::post_effect_payer;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::super::refreshed_rejoin::{charge_whole_map, WholeMapPasses};
@@ -38,16 +40,33 @@ impl WorthQueryOutputDemandRegistry {
         if !state.records.get(key).is_some_and(only_joined) || prepaid.stale_owner(key) {
             return Ok(false);
         }
-        let claims =
-            infallible(state.release_record_prerequisites(key, &mut unpaid_under_request()));
-        let record = state.records.get_mut(key).expect("the row was checked");
-        let ready = std::mem::replace(&mut record.state, DemandState::Admitted);
-        let readmission = record.readmission_source.take();
-        record.required_stop = None;
-        record.wake.notify();
-        let upstream = claims.iter().map(|claim| claim.as_ref().clone()).collect();
-        let retired = infallible(state.retire_closed_rows(upstream, &mut unpaid_under_request()));
-        infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+        let walks: Vec<_> = state.records[key]
+            .prerequisites
+            .iter()
+            .map(|upstream| (upstream.as_ref().clone(), 3))
+            .collect();
+        let (ready, readmission, claims, retired) =
+            super::super::refreshed_rejoin::price_mutation(&mut state, admission, &walks)
+                .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?
+                .complete(|state, charge| {
+                    let claims = infallible(state.release_record_prerequisites(key, charge));
+                    let record = state.records.get_mut(key).expect("the row was checked");
+                    let ready = std::mem::replace(&mut record.state, DemandState::Admitted);
+                    let readmission = record.readmission_source.take();
+                    record.required_stop = None;
+                    record.wake.notify();
+                    let upstream = claims.iter().map(|claim| claim.as_ref().clone()).collect();
+                    let retired = infallible(state.retire_closed_rows(
+                        upstream,
+                        &mut CompletedJoinedReleaseWalk::after_effect(),
+                    ));
+                    infallible(
+                        state.prune_completed_custody(
+                            &mut CompletedJoinedReleaseWalk::after_effect(),
+                        ),
+                    );
+                    Ok((ready, readmission, claims, retired))
+                });
         drop(state);
         drop((ready, readmission, claims, retired));
         Ok(true)

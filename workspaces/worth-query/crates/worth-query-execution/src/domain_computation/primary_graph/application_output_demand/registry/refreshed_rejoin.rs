@@ -19,9 +19,11 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
+mod mutation_price;
 mod walk_charge;
+pub(super) use mutation_price::price_mutation;
 pub(super) use walk_charge::{
-    charge_whole_map, infallible, unpaid_under_request, OccurrenceSearchCharge, WholeMapPasses,
+    charge_whole_map, infallible, post_effect_payer, OccurrenceSearchCharge, WholeMapPasses,
 };
 
 impl WorthQueryOutputDemandRegistry {

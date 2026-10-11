@@ -122,20 +122,31 @@ impl OccurrenceSearchCharge for PrepaidOccurrenceWalk<'_> {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn unpaid_under_request(
-) -> impl OccurrenceSearchCharge<Refusal = Infallible> {
-    struct UnpaidUnderRequest;
-    impl OccurrenceSearchCharge for UnpaidUnderRequest {
-        type Refusal = Infallible;
-        fn occurrence_path(&mut self, _: usize) -> Result<(), Infallible> {
-            Ok(())
+// Each invocation lives in the module that owns the completed edit. Its
+// private constructor cannot be named by a sibling request entry.
+macro_rules! post_effect_payer {
+    ($name:ident $(, $evidence:ty)?) => {
+        struct $name { _completed: () }
+        impl $name {
+            fn after_effect($(_: &$evidence)?) -> Self { Self { _completed: () } }
         }
-        fn inspect_row(&mut self) -> Result<(), Infallible> {
-            Ok(())
+        impl $crate::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::OccurrenceSearchCharge for $name {
+            type Refusal = core::convert::Infallible;
+            fn occurrence_path(&mut self, _: usize) -> Result<(), Self::Refusal> { Ok(()) }
+            fn inspect_row(&mut self) -> Result<(), Self::Refusal> { Ok(()) }
         }
-    }
-    UnpaidUnderRequest
+        #[cfg(test)]
+        mod post_effect_walk_bounds {
+            #[test]
+            fn completed_walk_contacts_only_its_occurrence() {
+                $crate::domain_computation::primary_graph::application_output_demand::registry::tests::post_commit_bounds::check(
+                    || super::$name { _completed: () },
+                );
+            }
+        }
+    };
 }
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) use post_effect_payer;
 
 pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn infallible<
     T,

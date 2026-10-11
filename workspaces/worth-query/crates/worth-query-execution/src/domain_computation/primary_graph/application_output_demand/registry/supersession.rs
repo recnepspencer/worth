@@ -1,5 +1,6 @@
+post_effect_payer!(StoppedSupersessionWalk);
 use super::refreshed_rejoin::infallible;
-use super::refreshed_rejoin::unpaid_under_request;
+use super::refreshed_rejoin::post_effect_payer;
 use super::{
     DemandRegistryState, DemandState, WorthQueryOutputDemandInterest, WorthQueryOutputDemandKey,
     WorthQueryOutputDemandRegistry,
@@ -49,15 +50,20 @@ impl WorthQueryOutputDemandRegistry {
         if unpublished {
             // The row ends without an output of its own: the newest Ready it
             // replaced answers for the occurrence again.
-            infallible(state.revive_replaced_ready(&interest.key, &mut unpaid_under_request()));
+            infallible(state.revive_replaced_ready(
+                &interest.key,
+                &mut StoppedSupersessionWalk::after_effect(),
+            ));
         }
-        let released_prerequisites = infallible(
-            state.release_record_prerequisites(&interest.key, &mut unpaid_under_request()),
-        );
+        let released_prerequisites = infallible(state.release_record_prerequisites(
+            &interest.key,
+            &mut StoppedSupersessionWalk::after_effect(),
+        ));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        infallible(
-            state.remove_required_member_if_released(&interest.key, &mut unpaid_under_request()),
-        );
+        infallible(state.remove_required_member_if_released(
+            &interest.key,
+            &mut StoppedSupersessionWalk::after_effect(),
+        ));
         drop(state);
         drop(released_prerequisites);
         denial
@@ -83,6 +89,17 @@ pub(super) fn supersede_predecessors(
         }
         keys.push(key.clone());
     }
+    let walks: Vec<_> = keys
+        .iter()
+        .filter(|key| *key != successor)
+        .flat_map(|key| {
+            state.records[key]
+                .prerequisites
+                .iter()
+                .map(|upstream| (upstream.as_ref().clone(), 3))
+        })
+        .collect();
+    super::refreshed_rejoin::price_mutation(state, admission, &walks)?.complete(|state, charge| {
     for key in &keys {
         if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less) {
             let record = state.records.get_mut(key).expect("occurrence key exists");
@@ -93,7 +110,7 @@ pub(super) fn supersede_predecessors(
             }
             record.performed_source = None;
             record.wake.notify();
-            infallible(state.release_record_prerequisites(key, &mut unpaid_under_request()));
+            infallible(state.release_record_prerequisites(key, charge));
         }
     }
     for key in keys {
@@ -119,6 +136,8 @@ pub(super) fn supersede_predecessors(
             }
         }
     }
+        Ok(())
+    });
     Ok(())
 }
 

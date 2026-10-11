@@ -1,5 +1,6 @@
+post_effect_payer!(CompletedSourceWalk);
 use super::refreshed_rejoin::infallible;
-use super::refreshed_rejoin::unpaid_under_request;
+use super::refreshed_rejoin::post_effect_payer;
 mod cached_reclaim;
 mod closed_retirement;
 mod completed_custody;
@@ -72,7 +73,7 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(custody) = state.source_custody.get_mut(source_commit) {
             custody.token_count = custody.token_count.saturating_sub(1);
         }
-        infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+        infallible(state.prune_completed_custody(&mut CompletedSourceWalk::after_effect()));
     }
 
     pub(in crate::domain_computation::primary_graph) fn complete_prepared_source(
@@ -97,7 +98,7 @@ impl WorthQueryOutputDemandRegistry {
                 custody.discovery = None;
             }
         }
-        infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+        infallible(state.prune_completed_custody(&mut CompletedSourceWalk::after_effect()));
     }
 
     pub(in crate::domain_computation::primary_graph) fn begin_source_preparation(

@@ -1,5 +1,4 @@
 use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::unpaid_under_request;
 use std::cmp::Ordering;
 
 use super::*;
@@ -7,7 +6,8 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
     source_custody::root_revision_order, BoundOutputSource, PreparedOutputRootKind, SourceCustody,
 };
 
-fn real_scope_and_occurrence() -> (
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn real_scope_and_occurrence(
+) -> (
     crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     worth_runtime_world::facade::ProductBranchIncarnation,
 ) {
@@ -107,14 +107,14 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
             completed: true,
         },
     );
-    infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+    infallible(state.prune_completed_custody(&mut OracleWalk::after_effect()));
     assert_eq!(state.source_custody.len(), 1);
     state.source_custody.get_mut(&commit).unwrap().token_count = 0;
     let demand_key = key("producer", 5, 1);
     let mut active = record(occurrence, DemandState::Admitted, 1);
     active.source_commits.push(commit.clone());
     state.records.insert(demand_key.clone(), active);
-    infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+    infallible(state.prune_completed_custody(&mut OracleWalk::after_effect()));
     assert_eq!(state.source_custody.len(), 1);
     let record = state.records.get_mut(&demand_key).unwrap();
     record.interests = 0;
@@ -122,7 +122,7 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
         WorthQueryOutputDemandDenialKind::NoEffect,
         "terminal source",
     ));
-    infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+    infallible(state.prune_completed_custody(&mut OracleWalk::after_effect()));
     assert!(state.source_custody.is_empty());
 }
 
@@ -165,9 +165,9 @@ fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
             completed: false,
         },
     );
-    infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+    infallible(state.prune_completed_custody(&mut OracleWalk::after_effect()));
     assert_eq!(state.source_custody.len(), 1);
     state.source_custody.get_mut(&commit).unwrap().token_count = 0;
-    infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+    infallible(state.prune_completed_custody(&mut OracleWalk::after_effect()));
     assert!(state.source_custody.is_empty());
 }

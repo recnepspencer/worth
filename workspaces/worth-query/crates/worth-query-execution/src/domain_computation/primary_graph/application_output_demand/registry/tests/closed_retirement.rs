@@ -1,7 +1,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint;
 
-pub(super) fn ready() -> DemandState {
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn ready(
+) -> DemandState {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt),

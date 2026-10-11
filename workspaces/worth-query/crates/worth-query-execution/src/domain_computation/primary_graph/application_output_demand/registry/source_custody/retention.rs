@@ -1,5 +1,9 @@
+post_effect_payer!(
+    CompletedCheckpointWalk,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt
+);
 use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::unpaid_under_request;
+use super::super::refreshed_rejoin::post_effect_payer;
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
@@ -117,7 +121,11 @@ impl WorthQueryOutputDemandRegistry {
                     ));
                 }
             }
-            infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+            infallible(
+                state.prune_completed_custody(&mut CompletedCheckpointWalk::after_effect(
+                    &source.receipt,
+                )),
+            );
         }
         let recovery = discovery.map(|discovery| super::super::DiscoveredSourceRecovery {
             receipt: source.receipt.clone(),

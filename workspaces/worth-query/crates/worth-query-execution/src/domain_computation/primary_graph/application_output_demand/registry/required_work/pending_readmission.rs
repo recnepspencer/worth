@@ -92,7 +92,9 @@ impl WorthQueryOutputDemandRegistry {
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             charge_required_key_lookup(&state, head, admission)?;
-            if !state.required_keys.contains(head) {
+            if !state.required_keys.contains(head)
+                || state.queued_member_released(head, admission)?
+            {
                 drop(state);
                 if let Some((ready, claim)) = self.claim_cached_requested_ready(head, admission)? {
                     claims.retain(claim);

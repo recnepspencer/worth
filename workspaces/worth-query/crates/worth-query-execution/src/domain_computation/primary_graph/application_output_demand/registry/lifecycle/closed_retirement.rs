@@ -11,6 +11,8 @@
 //! in its lineage, which is what certifies it when it reopens.
 
 use super::super::refreshed_rejoin::OccurrenceSearchCharge;
+#[cfg(test)]
+mod walk_bounds;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 

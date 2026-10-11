@@ -1,6 +1,8 @@
 //! Completed source cleanup visits only its declared source occurrences.
 use super::super::refreshed_rejoin::OccurrenceSearchCharge;
 use super::*;
+#[cfg(test)]
+mod walk_bounds;
 
 impl DemandRegistryState {
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prune_completed_custody<

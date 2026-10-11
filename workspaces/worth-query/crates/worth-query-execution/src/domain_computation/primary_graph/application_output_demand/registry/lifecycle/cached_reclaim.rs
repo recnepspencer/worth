@@ -11,8 +11,10 @@
 //! or with none left releases a performed source nobody holds, and asks
 //! again: a refusal it still reports is one no unheld observation caused.
 
+post_effect_payer!(CompletedCacheReclaimWalk);
+
 use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::unpaid_under_request;
+use super::super::refreshed_rejoin::post_effect_payer;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
@@ -46,7 +48,9 @@ impl WorthQueryOutputDemandRegistry {
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             let reclaimed = state.reclaim_cached_rows(bytes, &mut retired, &mut claims, admission);
             if !retired.is_empty() {
-                infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+                infallible(
+                    state.prune_completed_custody(&mut CompletedCacheReclaimWalk::after_effect()),
+                );
             }
             reclaimed
         };
@@ -73,7 +77,9 @@ impl WorthQueryOutputDemandRegistry {
             let reclaimed =
                 state.retire_next_cached_row(&mut None, &mut retired, &mut claims, admission);
             if !retired.is_empty() {
-                infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+                infallible(
+                    state.prune_completed_custody(&mut CompletedCacheReclaimWalk::after_effect()),
+                );
             }
             match reclaimed {
                 Ok(false) => state
@@ -135,24 +141,37 @@ impl DemandRegistryState {
             let Some(key) = self.reclaimable_row(still_claimed.as_ref(), admission)? else {
                 return Ok(false);
             };
-            for dependent in claimants_where(&self.records, &key, |_| true) {
-                infallible(self.follow_newest(&dependent, &key, &mut unpaid_under_request()));
+            let dependents = claimants_where(&self.records, &key, |_| true);
+            let walks: Vec<_> = std::iter::once((key.clone(), 3 * dependents.len() as u64 + 2))
+                .chain(
+                    self.records[&key]
+                        .prerequisites
+                        .iter()
+                        .map(|upstream| (upstream.as_ref().clone(), 3)),
+                )
+                .collect();
+            let retired_row = super::super::refreshed_rejoin::price_mutation(
+                self, admission, &walks,
+            )?
+            .complete(|state, charge| {
+                for dependent in dependents {
+                    infallible(state.follow_newest(&dependent, &key, charge));
+                }
+                // A claim that did not move still resolves through this row.
+                if state
+                    .records
+                    .get(&key)
+                    .is_some_and(|record| record.framework_required_count != 0)
+                {
+                    return Ok(false);
+                }
+                claims.extend(infallible(state.retire_row(&key, retired, charge)));
+                Ok(true)
+            });
+            if retired_row {
+                return Ok(true);
             }
-            // A claim that did not move still resolves through this row.
-            if self
-                .records
-                .get(&key)
-                .is_some_and(|record| record.framework_required_count != 0)
-            {
-                *still_claimed = Some(key);
-                continue;
-            }
-            claims.extend(infallible(self.retire_row(
-                &key,
-                retired,
-                &mut unpaid_under_request(),
-            )));
-            return Ok(true);
+            *still_claimed = Some(key);
         }
     }
 

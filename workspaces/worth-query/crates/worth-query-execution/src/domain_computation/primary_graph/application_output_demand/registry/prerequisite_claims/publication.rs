@@ -1,6 +1,8 @@
 //! Prepared claims transfer into the exact published downstream row.
+post_effect_payer!(PublishedPrerequisiteWalk, RecordedSettlementIdentity);
+
 use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::unpaid_under_request;
+use super::super::refreshed_rejoin::post_effect_payer;
 use super::*;
 
 impl PreparedPrerequisiteClaims {
@@ -49,6 +51,7 @@ impl PreparedPrerequisiteClaims {
         mut self,
         identity: Arc<RecordedSettlementIdentity>,
     ) -> super::super::SupersededSettlements {
+        let mut completed_walk = PublishedPrerequisiteWalk::after_effect(&identity);
         let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
         let mut state = owner
             .state
@@ -92,9 +95,11 @@ impl PreparedPrerequisiteClaims {
                 .get_mut(upstream.as_ref())
                 .expect("settled prerequisite retained");
             prior.framework_required_count -= 1;
-            infallible(
-                state.remove_required_member_if_released(upstream, &mut unpaid_under_request()),
-            );
+            if !state.records[upstream].pending_cleanup_queued
+                && !state.defer_terminal_cleanup(upstream, 0)
+            {
+                infallible(state.remove_required_member_if_released(upstream, &mut completed_walk));
+            }
         }
         for upstream in &old {
             state.defer_terminal_cleanup(upstream, 0);

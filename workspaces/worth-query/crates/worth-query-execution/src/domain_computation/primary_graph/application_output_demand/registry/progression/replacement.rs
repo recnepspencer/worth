@@ -1,5 +1,6 @@
+post_effect_payer!(CompletedReplacementWalk);
 use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::unpaid_under_request;
+use super::super::refreshed_rejoin::post_effect_payer;
 use super::super::*;
 
 mod preparation;
@@ -59,7 +60,7 @@ impl WorthQueryOutputDemandRegistry {
                 state.install_required_member(prepared.required_member);
                 infallible(state.remove_required_member_if_released(
                     &replaced.key,
-                    &mut unpaid_under_request(),
+                    &mut CompletedReplacementWalk::after_effect(),
                 ));
                 Some((
                     old_slots,

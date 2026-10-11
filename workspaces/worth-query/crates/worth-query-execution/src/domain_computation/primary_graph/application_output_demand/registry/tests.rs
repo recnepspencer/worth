@@ -1,3 +1,4 @@
+super::refreshed_rejoin::post_effect_payer!(OracleWalk);
 use std::sync::{Arc, Condvar, Mutex};
 
 use super::record_capacity::fixture_capacity as test_record_capacity;
@@ -21,12 +22,16 @@ fn record_admission() -> InvalidationEditAdmission {
 }
 
 mod caller_chain;
-mod closed_retirement;
+pub(super) mod closed_retirement;
 mod consumer_custody;
 mod demand_key;
 mod local_work;
 mod occurrence_search;
+mod payer_cleanup;
+mod payer_mutation;
+mod payer_publication;
 mod performed_release;
+pub(super) mod post_commit_bounds;
 mod prerequisite_retry;
 mod ready_reuse;
 mod record_capacity;
@@ -40,11 +45,12 @@ mod scheduling_interruption;
 mod selected_execution_release;
 mod semantic_epoch;
 mod settlement_work;
-mod source_custody;
+pub(super) mod source_custody;
 mod walk_refusal;
 
 mod support;
 use support::*;
+pub(super) use support::{key, occurrence, record};
 
 #[test]
 fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {

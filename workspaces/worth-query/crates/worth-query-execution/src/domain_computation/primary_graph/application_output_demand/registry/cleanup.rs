@@ -1,6 +1,6 @@
 mod drain;
 use super::refreshed_rejoin::infallible;
-use super::refreshed_rejoin::unpaid_under_request;
+use super::refreshed_rejoin::price_mutation;
 use std::sync::Arc;
 
 use super::{
@@ -112,6 +112,8 @@ impl DemandRegistryState {
             admission
                 .charge_external_work(u64::try_from(destruction).map_err(|_| work_denial())?)
                 .map_err(|_| work_denial())?;
+        }
+        if release_obligations || !record.is_required() {
             for _ in 0..3 {
                 self.charge_record_lookup(head.as_ref(), admission)?;
             }
@@ -187,7 +189,8 @@ impl DemandRegistryState {
             record.settlements.iter().map(|(identity, _)| identity),
             admission,
         )?;
-        let member_backing = edges
+        let member_count = edges.checked_mul(2).ok_or_else(work_denial)?;
+        let member_backing = member_count
             .checked_mul(std::mem::size_of::<
                 super::required_members::DetachedRequiredMember,
             >())
@@ -204,11 +207,11 @@ impl DemandRegistryState {
                 _ => empty_capacity_denial(),
             })?;
         let mut retired_members = Vec::new();
-        if edges != 0 {
+        if member_count != 0 {
             retired_members
-                .try_reserve_exact(edges)
+                .try_reserve_exact(member_count)
                 .map_err(|_| empty_capacity_denial())?;
-            if retired_members.capacity() != edges {
+            if retired_members.capacity() != member_count {
                 return Err(empty_capacity_denial());
             }
         }
@@ -233,66 +236,70 @@ impl DemandRegistryState {
             .map_err(|_| empty_work_denial())?;
         let member = record.work_membership.as_ref().map(Arc::clone);
 
-        let head = self.pending_cleanup_head.take().unwrap();
-        let record = self.records.get_mut(head.as_ref()).unwrap();
-        self.pending_cleanup_head = record.pending_cleanup_next.take();
-        record.pending_cleanup_queued = false;
-        let retained_key_bytes = std::mem::take(&mut record.pending_cleanup_key_bytes);
-        let release = record.terminal()
-            && record.framework_required_count == 0
-            && record.prepared_prerequisite_claims == 0;
-        let mut charge = unpaid_under_request();
-        let (released, settlements, checkpoint, release_refund) = if release {
-            infallible(self.release_record_prerequisites_detached(
-                head.as_ref(),
-                &mut retired_members,
-                &mut charge,
-            ))
-        } else {
-            (Vec::new(), Vec::new(), None, 0)
-        };
-        let (obligations, refund_obligation_bytes, own_member) = if release_obligations {
-            let record = self.records.get_mut(head.as_ref()).unwrap();
-            let refund = record.obligation_reserved_bytes();
-            let obligations = std::mem::take(&mut record.performed_obligations);
-            let member = infallible(
-                self.remove_required_member_if_released_detached(head.as_ref(), &mut charge),
+        let walks: Vec<_> = record
+            .prerequisites
+            .iter()
+            .map(|upstream| (upstream.as_ref().clone(), 3))
+            .chain(std::iter::once((head.as_ref().clone(), 1)))
+            .collect();
+        let priced = price_mutation(self, admission, &walks)?;
+        Ok(priced.complete(|state, charge| {
+            let head = state.pending_cleanup_head.take().unwrap();
+            let record = state.records.get_mut(head.as_ref()).unwrap();
+            state.pending_cleanup_head = record.pending_cleanup_next.take();
+            record.pending_cleanup_queued = false;
+            let retained_key_bytes = std::mem::take(&mut record.pending_cleanup_key_bytes);
+            let release = record.terminal()
+                && record.framework_required_count == 0
+                && record.prepared_prerequisite_claims == 0;
+            let (released, settlements, checkpoint, release_refund) = if release {
+                infallible(state.release_record_prerequisites_detached(
+                    head.as_ref(),
+                    &mut retired_members,
+                    charge,
+                ))
+            } else {
+                (Vec::new(), Vec::new(), None, 0)
+            };
+            let (obligations, refund_obligation_bytes) = if release_obligations {
+                let record = state.records.get_mut(head.as_ref()).unwrap();
+                let refund = record.obligation_reserved_bytes();
+                let obligations = std::mem::take(&mut record.performed_obligations);
+                (obligations, refund)
+            } else {
+                (Vec::new(), 0)
+            };
+            let own_member = infallible(
+                state.remove_required_member_if_released_detached(head.as_ref(), charge),
             );
-            (obligations, refund, member)
-        } else {
-            (
-                Vec::new(),
-                0,
-                super::required_members::DetachedRequiredMember::default(),
-            )
-        };
-        let refund_required_bytes = retained_key_bytes
-            .checked_add(release_refund)
-            .and_then(|bytes| bytes.checked_add(own_member.refund_required_bytes))
-            .expect("admitted terminal cleanup charge fits");
-        let removed = if self.records.get(head.as_ref()).is_some_and(|record| {
-            record.terminal()
-                && record.interests == 0
-                && !record.is_required()
-                && record.performed_source.is_none()
-                && !record.pending_cleanup_queued
-        }) {
-            self.records.remove(head.as_ref())
-        } else {
-            None
-        };
-        Ok(Some(RetiredTerminalCleanup {
-            _released: released,
-            _settlements: settlements,
-            _checkpoint: checkpoint,
-            _retired_members: retired_members,
-            _obligations: obligations,
-            _own_member: own_member,
-            _removed: removed,
-            _head: head,
-            _member: member,
-            refund_required_bytes,
-            refund_obligation_bytes,
+            let refund_required_bytes = retained_key_bytes
+                .checked_add(release_refund)
+                .and_then(|bytes| bytes.checked_add(own_member.refund_required_bytes))
+                .expect("admitted terminal cleanup charge fits");
+            let removed = if state.records.get(head.as_ref()).is_some_and(|record| {
+                record.terminal()
+                    && record.interests == 0
+                    && !record.is_required()
+                    && record.performed_source.is_none()
+                    && !record.pending_cleanup_queued
+            }) {
+                state.records.remove(head.as_ref())
+            } else {
+                None
+            };
+            Ok(Some(RetiredTerminalCleanup {
+                _released: released,
+                _settlements: settlements,
+                _checkpoint: checkpoint,
+                _retired_members: retired_members,
+                _obligations: obligations,
+                _own_member: own_member,
+                _removed: removed,
+                _head: head,
+                _member: member,
+                refund_required_bytes,
+                refund_obligation_bytes,
+            }))
         }))
     }
 }

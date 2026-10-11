@@ -1,5 +1,6 @@
+post_effect_payer!(RetiredProductWalk);
 use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::unpaid_under_request;
+use super::super::refreshed_rejoin::post_effect_payer;
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
@@ -47,7 +48,7 @@ impl WorthQueryOutputDemandRegistry {
         }
         infallible(state.release_matching_prerequisites(
             |_, record| record.product_occurrence == occurrence,
-            &mut unpaid_under_request(),
+            &mut RetiredProductWalk::after_effect(),
         ));
         let mut released_bytes = 0;
         let DemandRegistryState {
@@ -88,7 +89,7 @@ impl WorthQueryOutputDemandRegistry {
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
-        infallible(state.prune_completed_custody(&mut unpaid_under_request()));
+        infallible(state.prune_completed_custody(&mut RetiredProductWalk::after_effect()));
         drop(state);
         drop(retired_cursors);
     }
