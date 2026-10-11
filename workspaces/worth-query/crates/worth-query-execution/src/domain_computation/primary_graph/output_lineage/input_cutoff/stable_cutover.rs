@@ -125,7 +125,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
             lineage.drain_cancelled_slots(admission)?;
             let actual = lineage.prior_input_cutoff_candidate::<Binding>(scope, observation, self.address.partition, admission)
                 .map_err(|stop| match stop {
-                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
+                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
                     | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => denial(Kind::WorkBudgetExceeded),
                     _ => denial(Kind::RetainedBasisUnavailable),
                 })?;

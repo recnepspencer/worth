@@ -368,7 +368,9 @@ fn foreign_denial() -> WorthQueryOutputDemandDenial {
 fn admission_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
     use CompanionPreflightStop as Stop;
     match stop {
-        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => work_denial(),
+        Stop::WorkExhausted { .. }
+        | Stop::WorkExhaustedWithoutRequirement { .. }
+        | Stop::WorkCounterOverflow => work_denial(),
         _ => capacity_denial(),
     }
 }

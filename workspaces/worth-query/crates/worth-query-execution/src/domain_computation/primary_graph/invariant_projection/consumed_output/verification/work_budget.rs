@@ -7,6 +7,7 @@ pub(in crate::domain_computation::primary_graph::invariant_projection) fn map_ad
 ) -> ConsumedOutputVerificationStop {
     match stop {
         CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => {
             ConsumedOutputVerificationStop::WorkExhausted
         }

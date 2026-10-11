@@ -148,10 +148,7 @@ fn comparison_work_failure(
         let maximum = admission
             .charged_work()
             .saturating_add(admission.remaining_work_amount());
-        Err(CompanionPreflightStop::WorkExhausted {
-            required: maximum.saturating_add(1),
-            maximum,
-        })
+        Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum })
     } else {
         Ok(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
     }
@@ -172,29 +169,35 @@ mod tests {
             matching_relations: Vec::new(),
         };
         let reserved = usize::try_from(u32::MAX).unwrap();
-        for maximum in [u64::from(u32::MAX), 1_u64 << 40] {
+        for (maximum, prior) in [
+            (u64::from(u32::MAX), 0),
+            (1_u64 << 40, (1_u64 << 40) - u64::from(u32::MAX)),
+            (1_u64 << 40, 0),
+        ] {
             let mut admission = InvalidationEditAdmission::new(
                 worth_relational::facade::mvcc::CompanionPreflightBudget {
                     maximum_work_visits: maximum,
                     maximum_preparation_bytes: 0,
                 },
             );
-            // Prior work leaves exactly u32::MAX for this comparison on both
-            // targets; forgetting its reservation keeps the paid count debit.
-            admission
-                .charge_external_work(maximum - u64::from(u32::MAX))
-                .unwrap();
+            admission.charge_external_work(prior).unwrap();
             {
                 let _reservation = admission
                     .reserve_external_work(u64::from(u32::MAX))
                     .unwrap();
             }
+            let paid = prior + u64::from(u32::MAX);
+            assert_eq!(admission.charged_work(), paid);
+            assert_eq!(admission.remaining_work_amount(), maximum - paid);
+            if maximum > u64::from(u32::MAX) && prior == 0 {
+                assert!(
+                    maximum - paid > u64::from(u32::MAX),
+                    "the unspent amount exceeds every 32-bit count bound"
+                );
+            }
             assert_eq!(
                 comparison_work_failure(fact.most_comparison_work(), reserved, &admission),
-                Err(CompanionPreflightStop::WorkExhausted {
-                    required: maximum + 1,
-                    maximum,
-                }),
+                Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum }),
                 "a relation has no fact limit: its overrun is WorkExhausted on every width"
             );
             assert_eq!(

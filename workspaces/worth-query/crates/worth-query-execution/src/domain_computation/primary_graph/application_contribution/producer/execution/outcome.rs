@@ -265,9 +265,9 @@ fn refused_budget(
         | WorthQueryApplicationCommitOutcome::Indeterminate(_) => return None,
     };
     match stop {
-        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
-            Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
-        }
+        Stop::WorkExhausted { .. }
+        | Stop::WorkExhaustedWithoutRequirement { .. }
+        | Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
         Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
         | Stop::RetainedCompanionCapacityExhausted { .. } => {

@@ -10,9 +10,9 @@ pub(super) fn admit_readiness_record(
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     let resource_denial = |stop| {
         let kind = match stop {
-            Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-            }
+            Stop::WorkExhausted { .. }
+            | Stop::WorkExhaustedWithoutRequirement { .. }
+            | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
             _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         };
         denial(kind, "")
