@@ -4,7 +4,9 @@ use crate::configured_dependency_denials::{
     validate_configured_dependency_denials, validate_dependency_target_allowlists,
 };
 use crate::configured_source_dependency_allowlists::validate_source_dependency_allowlists;
-use crate::configured_source_identifier_denials::validate_source_identifier_denials;
+use crate::configured_source_identifier_denials::{
+    prepare_source_identifier_denials, validate_prepared_identifier_denials,
+};
 use crate::configured_source_owner_isolations::validate_source_owner_isolations;
 use crate::context_workspace_rules::validate_context_workspaces;
 use crate::dependency_rules::{validate_dependency_rules, validate_worth_ui_query_edge};
@@ -57,6 +59,9 @@ pub(crate) fn run(
         )]
     })?;
 
+    let identifier_inputs = scan_profile::measure("source input preparation", || {
+        prepare_source_identifier_denials(&root, &config.source_identifier_denials)
+    });
     let mut diagnostics = Vec::<Diagnostic>::new();
     diagnostics.extend(scan_profile::measure("validate_hook_authority", || {
         validate_hook_authority(&root)
@@ -105,7 +110,7 @@ pub(crate) fn run(
     );
     diagnostics.extend(scan_profile::measure(
         "validate_source_identifier_denials",
-        || validate_source_identifier_denials(&root, &config.source_identifier_denials),
+        || validate_prepared_identifier_denials(&root, identifier_inputs),
     ));
     diagnostics.extend(scan_profile::measure("enforce_threading_boundary", || {
         enforce_threading_boundary(&root, &config.threading_sites)

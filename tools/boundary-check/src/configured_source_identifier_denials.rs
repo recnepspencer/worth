@@ -19,17 +19,38 @@ enum Work<'a> {
     },
 }
 
-pub(crate) fn validate_source_identifier_denials(
+pub(crate) struct PreparedInputs<'a>(Vec<inputs::Input<'a>>);
+
+pub(crate) fn prepare_source_identifier_denials<'a>(
     workspace: &Path,
-    rules: &[SourceIdentifierDenialConfig],
-) -> Vec<Diagnostic> {
+    rules: &'a [SourceIdentifierDenialConfig],
+) -> PreparedInputs<'a> {
     let inputs = inputs::collect(workspace, rules);
     crate::source_documents::prefetch(inputs.iter().filter_map(|input| match input {
         inputs::Input::File { path, .. } => Some(path.clone()),
         _ => None,
     }));
+    PreparedInputs(inputs)
+}
+
+#[cfg(test)]
+fn validate_source_identifier_denials(
+    workspace: &Path,
+    rules: &[SourceIdentifierDenialConfig],
+) -> Vec<Diagnostic> {
+    validate_prepared_identifier_denials(
+        workspace,
+        prepare_source_identifier_denials(workspace, rules),
+    )
+}
+
+pub(crate) fn validate_prepared_identifier_denials(
+    workspace: &Path,
+    inputs: PreparedInputs<'_>,
+) -> Vec<Diagnostic> {
     let mut facts = BTreeMap::new();
     let work: Vec<_> = inputs
+        .0
         .into_iter()
         .map(|input| match input {
             inputs::Input::Diagnostic(diagnostic) => Work::Diagnostic(diagnostic),
