@@ -1,5 +1,16 @@
 use super::*;
 
+pub(crate) fn expect_durability_failure(
+    stop: crate::durability::data::RelationalRecoveryStop,
+) -> crate::durability::data::DurabilityError {
+    match stop {
+        crate::durability::data::RelationalRecoveryStop::Durability(error) => error,
+        crate::durability::data::RelationalRecoveryStop::Request(cause) => {
+            panic!("expected failed durable evidence, received request stop: {cause:?}")
+        }
+    }
+}
+
 pub(crate) fn create_branch_from_main(runtime: &RelationalRuntime, branch_name: &str) -> BranchId {
     let branch_id = BranchId(branch_name.to_string());
     runtime

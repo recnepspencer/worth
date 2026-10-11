@@ -96,12 +96,7 @@ fn perf_retention_reclaim_matrix() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("delete relation")
+                txn.commit(execution, &runtime).expect("delete relation")
             };
 
             assert!(runtime

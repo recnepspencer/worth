@@ -156,13 +156,7 @@ fn commit_named_entity(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    transaction.commit(execution, runtime).unwrap()
 }
 
 /// Fork `new_branch` from the current root of `from_branch`.
@@ -210,11 +204,7 @@ pub(crate) fn replace_entity_on_branch(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("replacement should commit")
 }
 
@@ -256,13 +246,7 @@ pub(crate) fn create_relation_outcome(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    transaction.commit(execution, runtime).unwrap()
 }
 
 pub(crate) fn changed_relations(outcome: &CommitResult) -> Vec<RelationId> {

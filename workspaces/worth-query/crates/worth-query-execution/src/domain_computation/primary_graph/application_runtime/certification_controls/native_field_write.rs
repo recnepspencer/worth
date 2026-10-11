@@ -91,10 +91,7 @@ where
                 )
                 .expect("the native field write stays within resource budgets");
             runtime
-                .prepare_branch_transaction(
-                    &execution, transaction,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .prepare_branch_transaction(&execution, transaction)
                 .expect("the native field write prepares a Relational candidate")
         });
         let outcome = product

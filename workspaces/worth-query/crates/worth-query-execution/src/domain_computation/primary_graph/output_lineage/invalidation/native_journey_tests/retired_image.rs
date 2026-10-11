@@ -191,11 +191,7 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
             )
             .unwrap();
         let candidate = runtime
-            .prepare_branch_transaction(
-                request_execution,
-                transaction,
-                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(request_execution, transaction)
             .unwrap();
         let captured = owner
             .capture_full_verification(runtime, &snapshot, &basis, &mut owner.edit_admission())

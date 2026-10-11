@@ -24,11 +24,7 @@ fn a_revalidation_demand_makes_a_rule_judge_and_reject_an_unchanged_record() {
         )
         .expect("staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("the strict reading rejects the unchanged record");
 
     assert_rejected_by_strictness_rule(&error);
@@ -51,11 +47,7 @@ fn without_the_demand_the_same_candidate_leaves_the_record_unjudged() {
         )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the offending record is never touched, so no rule judges it");
 
     release_test_commit_snapshot(&runtime, &outcome);
@@ -84,11 +76,7 @@ fn a_demand_alone_is_enough_when_the_committed_mode_is_already_strict() {
         )
         .expect("staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("a candidate that changes nothing can still be rejected");
 
     assert_rejected_by_strictness_rule(&error);
@@ -116,11 +104,7 @@ fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
         )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the compliant record passes the strict reading");
 
     assert!(
@@ -166,11 +150,7 @@ fn a_demand_for_a_record_this_branch_does_not_have_is_refused_as_a_stale_target(
         )
         .expect("staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("a demand names an existing record or it names nothing");
 
     let TransactionCommitError::Conflict { error, .. } = &error else {

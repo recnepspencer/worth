@@ -75,13 +75,7 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let created = create
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = create.commit(execution, &runtime).unwrap();
     let entity = changed_entities(&created)[0];
     let created_commit = created.commit.commit_id;
 
@@ -111,13 +105,7 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let updated = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let updated = transaction.commit(execution, &runtime).unwrap();
     let mut publications = bridge_envelopes_at_current_observation(
         runtime,
         [created_commit, updated.commit.commit_id],

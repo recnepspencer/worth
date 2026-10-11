@@ -28,13 +28,7 @@ fn subscriber_stream_rejects_checkpoint_with_mismatched_authoritative_boundary_b
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let _ = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let _ = txn.commit(execution, &runtime).unwrap();
 
     let batch = runtime
         .publication()

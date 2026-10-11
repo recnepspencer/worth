@@ -1,3 +1,4 @@
+use crate::durability::data::RelationalRecoveryStop;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 use crate::history::data::CanonicalCommitAuthorityKind;
 use crate::runtime::RelationalRuntime;
@@ -5,9 +6,15 @@ use std::collections::BTreeSet;
 
 use super::root_inventory::RecoveredRootInventory;
 
+mod commit_stop;
 mod effect;
 mod owner_bindings;
 mod preparation;
+
+#[cfg(test)]
+mod interruption_tests;
+#[cfg(test)]
+mod observation;
 
 use effect::{
     complete_incomplete_metadata_commit, is_metadata_only_merge_commit, replay_envelope_effect,
@@ -22,7 +29,7 @@ pub(super) fn replay_readmitted_envelope(
     available_commit_ids: &BTreeSet<crate::history::data::CommitId>,
     restore_authoritative_envelope: bool,
     recovered_roots: &mut RecoveredRootInventory,
-) -> Result<crate::history::data::PositionedCanonicalCommit, DurabilityError> {
+) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
     let requires_completion = readmitted.needs_replay_completion();
     let envelope = readmitted.envelope();
     let commit_id = envelope.commit.commit_id;
@@ -61,7 +68,7 @@ pub(super) fn replay_readmitted_envelope(
                 "durable commit {} carries record allocation evidence without a mutation replay path",
                 envelope.commit.commit_id.0
             ),
-        ));
+        ).into());
     }
     if replays_mutation_pipeline {
         restored
@@ -79,7 +86,8 @@ pub(super) fn replay_readmitted_envelope(
                 "durable commit {} did not consume its canonical record allocation evidence",
                 envelope.commit.commit_id.0
             ),
-        ));
+        )
+        .into());
     }
     restore_authoritative_artifacts_when_required(
         restored,
@@ -99,7 +107,7 @@ fn replay_incomplete_envelope(
     restore_authoritative_envelope: bool,
     had_checkpoint_artifact: bool,
     recovered_roots: &mut RecoveredRootInventory,
-) -> Result<crate::history::data::PositionedCanonicalCommit, DurabilityError> {
+) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
     let envelope = readmitted.envelope();
     let positioned =
         if envelope.authority_kind() == CanonicalCommitAuthorityKind::BranchReferenceMovement {
@@ -109,7 +117,8 @@ fn replay_incomplete_envelope(
                 return Err(DurabilityError::new(
                     RecoveryFailureClass::CorruptSegment,
                     "incomplete recovery input unexpectedly carried current record allocations",
-                ));
+                )
+                .into());
             }
             if envelope.merge_parent_branches.is_empty() {
                 replay_ordinary_commit(execution, restored, envelope, readmitted.position())?;

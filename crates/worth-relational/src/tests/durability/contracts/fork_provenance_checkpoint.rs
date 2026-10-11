@@ -77,6 +77,7 @@ fn assert_recovery_rejects_fork_checkpoint(
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("malformed fork provenance must fail closed");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert_eq!(recovered.history().immutable_commit_count(), 0);
     assert!(recovered

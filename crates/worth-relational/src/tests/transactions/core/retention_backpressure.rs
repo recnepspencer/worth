@@ -83,11 +83,7 @@ fn live_obligation_capacity_denies_each_public_acquisition_without_residue() {
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();
     assert!(matches!(
-        candidate_runtime.prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        ),
+        candidate_runtime.prepare_branch_transaction(execution, transaction),
         Err(TransactionCommitError::PublicationDeferred {
             deferred: RelationalPublicationDeferred::RetentionBackpressure,
             ..
@@ -108,11 +104,7 @@ fn live_obligation_capacity_denies_each_public_acquisition_without_residue() {
         .begin_branch_transaction(&replacement_basis, RelationalTransactionIntent::ordinary())
         .unwrap();
     let replacement = candidate_runtime
-        .prepare_branch_transaction(
-            execution,
-            replacement,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, replacement)
         .unwrap();
     candidate_runtime
         .discard_prepared_candidate(replacement)
@@ -193,11 +185,7 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         )
         .unwrap();
     let candidate = publication_runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     assert!(matches!(
         publication_runtime
@@ -226,11 +214,7 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         .begin_branch_transaction(&replacement_basis, RelationalTransactionIntent::ordinary())
         .unwrap();
     let replacement = publication_runtime
-        .prepare_branch_transaction(
-            execution,
-            replacement,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, replacement)
         .unwrap();
     publication_runtime
         .discard_prepared_candidate(replacement)
@@ -282,11 +266,7 @@ fn capacity_consumed_after_preparation_defers_next_basis_before_movement() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let external = runtime.retain_component_basis(&basis).unwrap();
 
@@ -337,11 +317,7 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     assert_eq!(
         test_owner_main_basis(&runtime).unwrap().descriptor(),

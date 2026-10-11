@@ -277,11 +277,7 @@ fn checkpoint_lineage_node_swap_denies_before_installation() {
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("two-entity commit");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
@@ -323,11 +319,7 @@ fn checkpoint_duplicate_lineage_entity_mapping_denies_before_installation() {
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("two-entity commit");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
@@ -382,6 +374,7 @@ fn recover_error(
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("corrupt lineage artifact must deny recovery");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(recovered.history().immutable_commit_count(), 0);
     error
 }

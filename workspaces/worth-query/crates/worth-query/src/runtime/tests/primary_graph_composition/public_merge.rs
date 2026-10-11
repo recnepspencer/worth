@@ -203,11 +203,7 @@ fn create_duplicate_principal(
         )
         .expect("the fixture batch stages");
     let committed = transaction
-        .commit(
-            execution,
-            relational,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, relational)
         .expect("the raw duplicate commits");
     relational
         .snapshots()

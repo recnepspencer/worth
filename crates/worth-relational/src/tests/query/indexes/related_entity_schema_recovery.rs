@@ -164,11 +164,7 @@ fn transition_checkpoint_and_recover(
         )
         .expect("test staging stays within configured resource budgets");
     let v2_commit = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("v2 schema transition commits");
     let v2_build = runtime.index_authority().build_for_commit(
         execution,

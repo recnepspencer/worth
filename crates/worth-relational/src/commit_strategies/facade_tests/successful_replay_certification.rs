@@ -45,22 +45,25 @@ fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {
             )
             .expect("lowered strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated lowered strategy plan");
         authority
             .execute_validated_commit(request_execution, &runtime, validated)
             .expect("validated strategy commit executed")
     };
 
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: commit.publication().envelope.branch_context.clone(),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        request_execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: commit.publication().envelope.branch_context.clone(),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            request_execution,
+        )
+        .unwrap();
 
     assert!(
         replay.failure.is_none(),
@@ -133,7 +136,7 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
             )
             .expect("lowered strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated strategy plan");
         authority
             .execute_validated_commit(request_execution, &runtime, validated)
@@ -159,15 +162,18 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
         IntentReconciliationStrategy::DEFAULT_SEMANTIC_NAME
     );
 
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: commit.publication().envelope.branch_context.clone(),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        request_execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: commit.publication().envelope.branch_context.clone(),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            request_execution,
+        )
+        .unwrap();
 
     assert!(
         replay.failure.is_none(),
@@ -237,7 +243,7 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
             )
             .expect("lowered replacement strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated replacement strategy plan");
         authority
             .execute_validated_commit(request_execution, &runtime, validated)
@@ -300,15 +306,18 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
             |decision| decision.kind == crate::lineage::data::LineageDecisionKind::ReplaceAccepted
         ));
 
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: commit.publication().envelope.branch_context.clone(),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        request_execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: commit.publication().envelope.branch_context.clone(),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            request_execution,
+        )
+        .unwrap();
 
     assert!(
         replay.failure.is_none(),

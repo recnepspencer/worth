@@ -110,16 +110,10 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
         .is_none());
 
     let storm = storm
-        .validate(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .validate(execution, &runtime)
         .expect("storm relation overlay validates against its root");
     let maintenance = maintenance
-        .validate(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .validate(execution, &runtime)
         .expect("maintenance relation overlay validates against its root");
     assert_eq!(storm.footprint().basis(), storm_basis.descriptor());
     assert_eq!(

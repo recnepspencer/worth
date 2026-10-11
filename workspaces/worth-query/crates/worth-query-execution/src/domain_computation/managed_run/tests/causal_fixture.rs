@@ -269,7 +269,7 @@ fn create_fixture_entity(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(execution, runtime, NativeAllocationPolicy::SystemAllocation)
+        .commit(execution, runtime)
         .expect("managed-run fixture entity should commit")
 }
 

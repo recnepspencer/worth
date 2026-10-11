@@ -228,11 +228,7 @@ fn commit<const N: usize>(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("fixture truth commits")
 }
 

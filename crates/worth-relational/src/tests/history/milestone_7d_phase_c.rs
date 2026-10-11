@@ -298,11 +298,7 @@ fn branch_local_delete_allowance_does_not_make_same_branch_stale_delete_legal() 
     )
     .expect("test staging stays within configured resource budgets");
 
-    match txn.commit(
-        execution,
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    ) {
+    match txn.commit(execution, &runtime) {
         Err(TransactionCommitError::Conflict { error, .. }) => {
             assert_eq!(
                 error.code(),

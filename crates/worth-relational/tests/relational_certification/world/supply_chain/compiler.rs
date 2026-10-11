@@ -213,11 +213,7 @@ fn commit_definition(
             )
             .expect("empty baseline staging fits the configured transaction budget");
         return transaction
-            .commit(
-                execution,
-                runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .commit(execution, runtime)
             .map_err(transaction_error);
     }
 
@@ -245,11 +241,7 @@ fn commit_definition(
         )
         .expect("Supply Chain baseline staging fits its configured transaction budget");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .map_err(transaction_error)
 }
 

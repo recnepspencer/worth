@@ -47,11 +47,7 @@ fn deletion_closes_admission_then_waits_for_transaction_and_candidate_operations
         .unwrap();
     let candidate = world
         .runtime
-        .prepare_branch_transaction(
-            execution,
-            candidate_transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, candidate_transaction)
         .unwrap();
     assert_eq!(
         world
@@ -92,11 +88,7 @@ fn performed_publication_retains_the_branch_operation_until_settlement() {
         .unwrap();
     let candidate = world
         .runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let movement_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
     let performed = match world
@@ -212,13 +204,7 @@ fn maintenance_reclaims_a_deleted_unique_root_only_after_last_pin_release() {
         .runtime
         .begin_branch_transaction(&initial_basis, RelationalTransactionIntent::ordinary())
         .unwrap();
-    let committed = transaction
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = transaction.commit(execution, &world.runtime).unwrap();
     drop(initial_basis);
 
     let (_, current_basis) = world.runtime.observe_branch(&identity).unwrap();
@@ -270,13 +256,7 @@ fn exact_snapshot_carries_its_observation_obligation_until_release() {
         .runtime
         .begin_branch_transaction(&initial_basis, RelationalTransactionIntent::ordinary())
         .unwrap();
-    let committed = transaction
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = transaction.commit(execution, &world.runtime).unwrap();
     drop(initial_basis);
     assert!(world
         .runtime

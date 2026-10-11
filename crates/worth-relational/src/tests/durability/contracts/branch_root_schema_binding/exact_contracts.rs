@@ -58,11 +58,7 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
         )
         .expect("test staging stays within configured resource budgets");
     let new = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("v2 schema transition commits");
     let new_entity = changed_entities(&new)[0];
     let _legacy_before_recovery = update_entity_on_branch(
@@ -210,11 +206,7 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
         )
         .expect("test staging stays within configured resource budgets");
     let denial = v2_meaning_on_v1_root
-        .commit(
-            execution,
-            &recovered,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &recovered)
         .expect_err("a retained v1 root must deny v2-only meaning");
     assert!(matches!(
         denial,

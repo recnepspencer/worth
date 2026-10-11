@@ -100,13 +100,7 @@ fn explicit_schema_transition_is_lowered_into_canonical_commit_artifacts() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     let transition = outcome.schema_transition_summary().unwrap();
     assert_eq!(transition.changed_atom_count, 1);
@@ -269,13 +263,7 @@ fn schema_certification_transition_is_explained_and_counted() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     let diagnostics = outcome.diagnostics();
     let detailed_trace = diagnostics

@@ -24,7 +24,6 @@ fn phase3_settlement_receivers_take_a_shared_borrow() {
         &RelationalRuntime,
         &worth_execution::ExecutionRequest<'_, '_>,
         crate::mvcc::BranchBoundRelationalTransaction,
-        worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<CommitResult, TransactionCommitError> =
         RelationalRuntime::commit_branch_transaction;
 
@@ -88,11 +87,7 @@ fn phase3_settlement_port_is_a_cloneable_shared_borrow_service() {
         )
         .expect("test staging stays within configured resource budgets");
     let committed = runtime_shared
-        .commit_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit_branch_transaction(execution, transaction)
         .expect("the convenience commit path settles through a shared borrow");
     assert!(!cloned.retains_pending_settlement(committed.commit.commit_id));
     release_test_commit_snapshot(&runtime, &committed);
@@ -358,11 +353,7 @@ fn perform_prepared(
     transaction: crate::mvcc::BranchBoundRelationalTransaction,
 ) -> crate::mvcc::PerformedRelationalCommit {
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares");
     match runtime.publication_port().compare_and_publish(candidate) {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,

@@ -85,9 +85,7 @@ pub(crate) fn create_relation_in_partition_on_branch(
         Allocation::SystemAllocation,
     )
     .unwrap();
-    let outcome = txn
-        .commit(execution, runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let outcome = txn.commit(execution, runtime).unwrap();
     let relation = changed_relations(&outcome)[0];
     release_test_commit_snapshot(runtime, &outcome);
     relation
@@ -116,8 +114,7 @@ pub(crate) fn create_relation_outcome(
         Allocation::SystemAllocation,
     )
     .unwrap();
-    txn.commit(execution, runtime, Allocation::SystemAllocation)
-        .unwrap()
+    txn.commit(execution, runtime).unwrap()
 }
 
 fn relation_fields_for_runtime(runtime: &RelationalRuntime, label: &str) -> AspectFieldPatch {

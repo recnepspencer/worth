@@ -14,15 +14,18 @@ pub(super) fn certify(
         .durability_recovery()
         .recover(execution, missing_executor_plan)
         .expect("recover without executors");
-    let missing_executor_replay = missing_executor_runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let missing_executor_replay = missing_executor_runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(missing_executor_replay.mismatches.iter().any(|mismatch| {
         mismatch.class == ReplayMismatchClass::StrategyExecutorUnavailable
             && mismatch.surface == ReplayObservableSurface::Strategy
@@ -43,15 +46,18 @@ pub(super) fn certify(
         .durability_recovery()
         .recover(execution, failing_executor_plan)
         .expect("recover with failing intent executor");
-    let failing_executor_replay = failing_executor_runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let failing_executor_replay = failing_executor_runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(failing_executor_replay.mismatches.iter().any(|mismatch| {
         mismatch.class == ReplayMismatchClass::StrategyExecutionFailure
             && mismatch.surface == ReplayObservableSurface::Strategy

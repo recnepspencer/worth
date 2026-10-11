@@ -15,7 +15,7 @@ fn runtime_recovers_settlement_after_external_capability_is_dropped() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
@@ -41,7 +41,7 @@ fn runtime_recovers_settlement_after_external_capability_is_dropped() {
         )
         .unwrap();
     assert!(runtime
-        .prepare_branch_transaction(execution, blocked, AllocationPolicy::SystemAllocation,)
+        .prepare_branch_transaction(execution, blocked)
         .unwrap_err()
         .detail()
         .contains("requires explicit owner settlement"));

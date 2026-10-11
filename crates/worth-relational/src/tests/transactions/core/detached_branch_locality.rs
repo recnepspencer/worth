@@ -27,11 +27,7 @@ fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_r
         )
         .expect("test staging stays within configured resource budgets");
     let storm_commit = storm
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("storm create commits");
     let storm_only = storm_commit
         .changed_records
@@ -63,11 +59,7 @@ fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_r
     let before = RuntimeState::capture(&runtime);
 
     let error = maintenance
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("a sibling-only target is outside the admitted branch root");
 
     assert!(matches!(
@@ -111,11 +103,7 @@ fn unowned_created_endpoint_denial_precedes_normalization_and_leaves_zero_residu
     let before = RuntimeState::capture(&runtime);
 
     let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("created endpoints must belong to the same transaction");
 
     assert!(matches!(

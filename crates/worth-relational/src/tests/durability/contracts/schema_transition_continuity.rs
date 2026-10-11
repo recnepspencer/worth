@@ -39,13 +39,7 @@ fn durable_recovery_and_schema_mismatch_test() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let transitioned = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let transitioned = txn.commit(execution, &runtime).unwrap();
 
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -138,6 +132,7 @@ fn durable_recovery_and_schema_mismatch_test() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::SchemaMismatch);
     assert!(matches!(
@@ -211,6 +206,7 @@ fn durability_contract_failure_aspect_plan_mismatch_is_explicit() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_ne!(expected_revision, mismatched_revision);
     assert_eq!(error.class, RecoveryFailureClass::SchemaMismatch);
@@ -331,6 +327,7 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::SchemaMismatch);
     assert!(matches!(

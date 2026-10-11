@@ -26,15 +26,13 @@ fn cancelled_native_preparation_is_a_control_stop_not_no_kind() {
     let request = serial(source.token());
     let execution = ExecutionRequest::serial(&request);
     let admitted = transaction(&runtime, "admitted")
-        .commit(&execution, &runtime, Allocation::SystemAllocation)
+        .commit(&execution, &runtime)
         .unwrap();
     assert_eq!(admitted.changed_records.len(), 1);
     crate::relational_snapshot_release::release_query_snapshot(&mut runtime, &admitted.snapshot);
     let pending = transaction(&runtime, "cancelled");
     source.cancel();
-    let error = pending
-        .commit(&execution, &runtime, Allocation::SystemAllocation)
-        .unwrap_err();
+    let error = pending.commit(&execution, &runtime).unwrap_err();
     let failure = WorthQueryProviderSessionFailure::new(
         SessionKind::ProviderRejected,
         WorthQueryProviderSessionProtocolStage::Commit,
@@ -66,7 +64,7 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
     let execution = ExecutionRequest::serial(&request);
     let mut create_entity = |key| {
         let committed = transaction(&runtime, key)
-            .commit(&execution, &runtime, Allocation::SystemAllocation)
+            .commit(&execution, &runtime)
             .unwrap();
         let RecordRef::Entity(entity) = committed.changed_records[0] else {
             panic!("entity commit produced its entity");
@@ -100,9 +98,7 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
             Allocation::SystemAllocation,
         )
         .unwrap();
-    let committed = pending
-        .commit(&execution, &runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let committed = pending.commit(&execution, &runtime).unwrap();
     let RecordRef::Relation(relation) = committed.changed_records[0] else {
         panic!("relation commit produced its relation");
     };

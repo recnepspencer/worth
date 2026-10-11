@@ -66,7 +66,7 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
             )
             .expect("lowered main strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated main strategy plan");
         authority
             .execute_validated_commit(request_execution, &runtime, validated)
@@ -110,7 +110,7 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
             )
             .expect("lowered feature strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated feature strategy plan");
         authority
             .execute_validated_commit(request_execution, &runtime, validated)
@@ -219,7 +219,7 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
             )
             .expect("lowered intent plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated intent plan");
         authority
             .execute_validated_commit(request_execution, &runtime, validated)
@@ -261,7 +261,7 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
             )
             .expect("lowered replica plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated replica plan");
         authority
             .execute_validated_commit(request_execution, &runtime, validated)

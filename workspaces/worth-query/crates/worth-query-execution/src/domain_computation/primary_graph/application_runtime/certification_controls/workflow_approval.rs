@@ -67,11 +67,7 @@ where
                 )
                 .expect("the approval update stays within resource budgets");
             runtime
-                .prepare_branch_transaction(
-                    &execution,
-                    transaction,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .prepare_branch_transaction(&execution, transaction)
                 .map(|_| ())
         });
         drop(application_basis);
@@ -129,11 +125,7 @@ where
                 )
                 .expect("the approval link deletion stays within resource budgets");
             runtime
-                .prepare_branch_transaction(
-                    &execution,
-                    transaction,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .prepare_branch_transaction(&execution, transaction)
                 .map(|_| ())
         });
         drop(application_basis);

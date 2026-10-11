@@ -26,7 +26,7 @@ fn expired_candidate_summary_is_typed_and_cannot_retain_stale_scope() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     assert_eq!(
         runtime

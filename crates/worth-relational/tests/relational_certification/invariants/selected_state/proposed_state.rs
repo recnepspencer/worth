@@ -89,8 +89,13 @@ fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_s
         .expect("the original committed basis is admissible")
         .observation()
         .version_id();
-    let proposal = validate_status_update(&world.runtime, BranchId("main".to_owned()), target)
-        .expect("custom rule sees the proposed and committed status in both phases");
+    let proposal = validate_status_update(
+        execution,
+        &world.runtime,
+        BranchId("main".to_owned()),
+        target,
+    )
+    .expect("custom rule sees the proposed and committed status in both phases");
 
     assert_eq!(evidence.prepared(), 1);
     assert_eq!(evidence.evaluated(), 1);
@@ -149,8 +154,13 @@ fn malformed_proposal_denial_preserves_custom_rule_identity() {
 
     let target = world.handles.aurora_voyage().id;
     evidence.set_target(target);
-    let denial = validate_status_update(&world.runtime, BranchId("main".to_owned()), target)
-        .expect_err("the malformed proposed status must be denied");
+    let denial = validate_status_update(
+        execution,
+        &world.runtime,
+        BranchId("main".to_owned()),
+        target,
+    )
+    .expect_err("the malformed proposed status must be denied");
 
     let TransactionCommitError::Conflict { error, .. } = denial else {
         panic!("custom violation must deny as a typed conflict");
@@ -318,6 +328,7 @@ fn assert_snapshot_status(
 }
 
 fn validate_status_update(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     branch: BranchId,
     entity_id: EntityId,
@@ -350,8 +361,5 @@ fn validate_status_update(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction.validate(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    transaction.validate(execution, runtime)
 }

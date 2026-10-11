@@ -65,11 +65,7 @@ fn unrelated_lease_through_public_commit() {
                 ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).unwrap();
             let outcome = scan.run(Some(&parent), (), 0, 0, 0, 0, |_, _, _| {
                 let error = runtime
-                    .prepare_branch_transaction_with_lease(
-                        execution,
-                        transaction(&runtime, "nested-target"),
-                        &unrelated,
-                    )
+                    .prepare_branch_transaction(execution, transaction(&runtime, "nested-target"))
                     .expect_err("a public preparation cannot nest under an unrelated lease");
                 let TransactionCommitError::Execution { denial, .. } = error else {
                     panic!("wrong nested refusal")

@@ -104,7 +104,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
                 .push(outbox_intent)
                 .push(idempotency_intent),
          worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(execution, runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,).unwrap();
+        let committed = transaction.commit(execution, runtime).unwrap();
         let correct = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
             provider.graph.layout.provider_dispatch_outbox(),
             Some(pending.record()),
@@ -162,7 +162,7 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
         .expect("owner-admitted transaction context")
 };
         create.push_batch(WorkerIntentBatch::new("live-outbox-before-delete").push(intent), worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
-        let created = create.commit(execution, runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,).unwrap();
+        let created = create.commit(execution, runtime).unwrap();
         let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
             provider.graph.layout.provider_dispatch_outbox(),
             Some(pending.record()),
@@ -191,7 +191,7 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
                 EntityMutationIntent::Delete(DeleteEntityIntent { entity_id }),
             )),
          worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
-        let deleted = delete.commit(execution, runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,).unwrap();
+        let deleted = delete.commit(execution, runtime).unwrap();
         let commit = deleted.outcome().commit.clone();
         retain_commit_basis(provider, runtime, &deleted);
         release_commit_snapshot(runtime, &deleted);
@@ -252,7 +252,7 @@ fn committed_substituted_row(
                 .push(intent)
                 .push(MutationIntent::Create(CreateIntent::Entity(corrupted))),
          worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
-        let committed = transaction.commit(request_execution, runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,).unwrap();
+        let committed = transaction.commit(request_execution, runtime).unwrap();
         let corrupted_id = committed
             .created_entity(&CreatedEntityRef {
                 partition_id: layout_partition(),

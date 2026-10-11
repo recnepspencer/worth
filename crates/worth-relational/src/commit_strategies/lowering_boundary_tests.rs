@@ -131,11 +131,7 @@ fn sibling_strategy_target_denies_before_normalization_with_zero_residue() {
         )
         .expect("test staging stays within configured resource budgets");
     let storm_outcome = storm
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("storm create commits");
     let storm_only = storm_outcome
         .changed_records

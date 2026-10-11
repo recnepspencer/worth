@@ -29,15 +29,18 @@ fn merge_ready_history_shape_reports_counter_breadth_explicitly() {
     let _ = runtime
         .history()
         .ancestor_closure_by_commit_id_order(merge.commit.commit_id);
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: merge.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: merge.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(replay.failure.is_none(), "{:?}", replay);
 
     let runtime_counters = runtime.performance_access().counters();

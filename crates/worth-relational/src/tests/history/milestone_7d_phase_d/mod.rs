@@ -246,14 +246,7 @@ fn create_entity_with_aspect_fields_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(
-        &txn.commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap(),
-    )[0]
+    changed_entities(&txn.commit(execution, runtime).unwrap())[0]
 }
 
 fn update_entity_aspect_fields_on_branch(
@@ -284,12 +277,7 @@ fn update_entity_aspect_fields_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, runtime).unwrap();
 }
 
 fn aspect_fields_with_identity_name(

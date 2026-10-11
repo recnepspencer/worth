@@ -168,11 +168,7 @@ fn check_lease(
         .schema_registry(schema())
         .build();
     let created = transaction(&runtime, "source")
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .unwrap();
     let index = related_index(&runtime);
     let index = runtime.index_authority().build_for_commit_with_lease(
@@ -203,7 +199,10 @@ fn check_lease(
         .unwrap()
         .0;
     let error = runtime
-        .prepare_branch_transaction_with_lease(execution, transaction(&runtime, "target"), lease)
+        .prepare_branch_transaction(
+            &worth_execution::ExecutionRequest::leased(lease),
+            transaction(&runtime, "target"),
+        )
         .expect_err("commit preparation refused");
     assert!(matches!(error, TransactionCommitError::Execution { .. }));
     let outcome = application_outcome(super::transaction_commit_stop(error));

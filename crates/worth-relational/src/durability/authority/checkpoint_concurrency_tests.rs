@@ -19,11 +19,7 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("publication candidate prepares");
     let port = runtime.publication_port();
     let (captured_tx, captured_rx) = sync_channel(0);

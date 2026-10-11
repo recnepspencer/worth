@@ -65,11 +65,7 @@ where
                 .push_batch(batch, NativeAllocationPolicy::SystemAllocation)
                 .expect("the membership cycle stays within resource budgets");
             runtime
-                .prepare_branch_transaction(
-                    &execution,
-                    transaction,
-                    NativeAllocationPolicy::SystemAllocation,
-                )
+                .prepare_branch_transaction(&execution, transaction)
                 .map(|_| ())
         });
         drop(application_basis);

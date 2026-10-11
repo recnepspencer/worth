@@ -26,6 +26,7 @@ fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("tail lineage allocator exhaustion must deny");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
     assert!(error.detail.contains("tail lineage id exhausted"));
@@ -53,11 +54,7 @@ fn live_lineage_allocator_exhaustion_denies_before_public_effects() {
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("lineage reservation must deny at the allocator boundary");
 
     assert!(format!("{error:?}").contains("lineage id allocator exhausted"));

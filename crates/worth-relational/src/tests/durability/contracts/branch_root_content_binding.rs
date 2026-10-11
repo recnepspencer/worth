@@ -304,6 +304,7 @@ fn corrupt_recovery_error(
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("corrupt root binding cannot be readmitted");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(

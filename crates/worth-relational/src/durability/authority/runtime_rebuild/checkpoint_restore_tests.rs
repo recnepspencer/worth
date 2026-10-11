@@ -230,13 +230,7 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let committed = transaction
-        .commit(
-            execution,
-            &source,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = transaction.commit(execution, &source).unwrap();
     let secondary = changed_entities(&committed)[0];
     release_test_commit_snapshot(&source, &committed);
     create_relation_in_partition(

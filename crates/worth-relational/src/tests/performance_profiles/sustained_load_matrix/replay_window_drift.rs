@@ -28,15 +28,18 @@ pub(super) fn certify_replay_window_drift_stability(
 
             for commit_id in commit_ids.iter().rev().take(REPLAY_WINDOW) {
                 let replay_started_at = Instant::now();
-                let outcome = runtime.replay_authority().replay_commit(
-                    RelationalReplayRequest {
-                        commit_id: *commit_id,
-                        branch_id: BranchId("main".to_string()),
-                        execution_mode: ReplayExecutionMode::SerialDeterministic,
-                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                    },
-                    execution,
-                );
+                let outcome = runtime
+                    .replay_authority()
+                    .replay_commit(
+                        RelationalReplayRequest {
+                            commit_id: *commit_id,
+                            branch_id: BranchId("main".to_string()),
+                            execution_mode: ReplayExecutionMode::SerialDeterministic,
+                            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                        },
+                        execution,
+                    )
+                    .unwrap();
                 let replay_micros = replay_started_at.elapsed().as_micros();
                 assert!(
                     outcome.failure.is_none(),

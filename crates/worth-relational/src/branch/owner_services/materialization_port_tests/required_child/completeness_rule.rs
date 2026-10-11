@@ -147,11 +147,7 @@ pub(super) fn deny_invalid_child_value(
         )
         .unwrap();
     let denial = transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect_err("ordinary invalid child value is rejected");
     assert_custom_violation(&denial);
 }

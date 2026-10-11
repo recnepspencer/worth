@@ -128,7 +128,7 @@ fn contention(execution: &worth_execution::ExecutionRequest<'_, '_>, independent
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let port = runtime.publication_port();
     let drops = Arc::new(AtomicUsize::new(0));
@@ -145,7 +145,9 @@ fn contention(execution: &worth_execution::ExecutionRequest<'_, '_>, independent
                 };
                 runtime.settle_performed_publication(performed).unwrap()
             } else {
-                runtime.publish_prepared_candidate(candidate).unwrap()
+                runtime
+                    .publish_prepared_candidate(execution, candidate)
+                    .unwrap()
             }
         });
         observe_prepared.recv().unwrap();

@@ -307,14 +307,7 @@ fn create_entity_with_summary_fields(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(
-        &txn.commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap(),
-    )[0]
+    changed_entities(&txn.commit(execution, runtime).unwrap())[0]
 }
 
 fn create_relation_with_summary_fields(
@@ -356,12 +349,7 @@ fn create_relation_with_summary_fields(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, runtime).unwrap();
 }
 
 fn test_projection_contract_identity(aspect_key: &AspectKey) -> u64 {

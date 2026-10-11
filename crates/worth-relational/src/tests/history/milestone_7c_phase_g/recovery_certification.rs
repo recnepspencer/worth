@@ -24,16 +24,19 @@ where
     runtime
         .rebuild_runtime_from_plan(execution, direct_rebuild_plan)
         .unwrap_or_else(|error| panic!("direct replay rebuild failed: {error:?}"));
-    let replay = runtime.replay_authority().replay_commit(
-        crate::facade::replay::RelationalReplayRequest {
-            commit_id: merge.commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: crate::facade::replay::ReplayExecutionMode::SerialDeterministic,
-            verification_mode:
-                crate::facade::replay::ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            crate::facade::replay::RelationalReplayRequest {
+                commit_id: merge.commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: crate::facade::replay::ReplayExecutionMode::SerialDeterministic,
+                verification_mode:
+                    crate::facade::replay::ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         replay.failure.is_none(),
         "replay certification failure: {replay:?}"

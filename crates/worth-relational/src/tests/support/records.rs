@@ -89,9 +89,7 @@ pub(crate) fn create_entity_in_partition_on_branch(
         Allocation::SystemAllocation,
     )
     .unwrap();
-    let outcome = txn
-        .commit(execution, runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let outcome = txn.commit(execution, runtime).unwrap();
     let entity = changed_entities(&outcome)[0];
     release_test_commit_snapshot(runtime, &outcome);
     entity
@@ -126,8 +124,7 @@ pub(crate) fn create_entity_outcome_on_branch(
             },
         )));
     txn.push_batch(batch, Allocation::SystemAllocation).unwrap();
-    txn.commit(execution, runtime, Allocation::SystemAllocation)
-        .unwrap()
+    txn.commit(execution, runtime).unwrap()
 }
 
 pub(super) fn entity_fields_for_runtime(
@@ -173,8 +170,7 @@ pub(crate) fn delete_entity_on_branch(
         Allocation::SystemAllocation,
     )
     .unwrap();
-    txn.commit(execution, runtime, Allocation::SystemAllocation)
-        .unwrap()
+    txn.commit(execution, runtime).unwrap()
 }
 
 pub(crate) fn delete_relation_on_branch(
@@ -192,8 +188,7 @@ pub(crate) fn delete_relation_on_branch(
         Allocation::SystemAllocation,
     )
     .unwrap();
-    txn.commit(execution, runtime, Allocation::SystemAllocation)
-        .unwrap()
+    txn.commit(execution, runtime).unwrap()
 }
 
 pub(crate) fn update_entity(
@@ -250,7 +245,7 @@ pub(crate) fn try_update_entity_on_branch(
         )
         .unwrap();
     }
-    txn.commit(execution, runtime, Allocation::SystemAllocation)
+    txn.commit(execution, runtime)
 }
 
 pub(crate) fn changed_entities(outcome: &CommitResult) -> Vec<crate::facade::identity::EntityId> {
@@ -284,8 +279,7 @@ pub(crate) fn apply_batches(
     for batch in batches {
         txn.push_batch(batch, Allocation::SystemAllocation).unwrap();
     }
-    txn.commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap();
+    txn.commit(execution, &runtime).unwrap();
     runtime
 }
 
@@ -307,8 +301,7 @@ pub(crate) fn merge_commit_from_branches(
         target_branch,
         merge_parent_branches,
     );
-    txn.commit(execution, runtime, Allocation::SystemAllocation)
-        .unwrap()
+    txn.commit(execution, runtime).unwrap()
 }
 
 #[path = "records/relations.rs"]

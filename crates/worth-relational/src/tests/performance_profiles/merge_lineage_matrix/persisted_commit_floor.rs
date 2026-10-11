@@ -32,12 +32,8 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
             )
             .expect("test staging stays within configured resource budgets");
             let _feature_only = changed_entities(
-                &txn.commit(
-                    execution,
-                    &merge_runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("feature create"),
+                &txn.commit(execution, &merge_runtime)
+                    .expect("feature create"),
             )[0];
 
             let prepared = merge_runtime
@@ -70,12 +66,8 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    execution,
-                    &control_runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("control persisted single create")
+                txn.commit(execution, &control_runtime)
+                    .expect("control persisted single create")
             };
             let control_elapsed_micros = control_started_at.elapsed().as_micros();
             let control_counters = control_runtime.performance_access().counters();

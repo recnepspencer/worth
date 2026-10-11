@@ -28,7 +28,8 @@ fn replay_reports_owner_create_event_drift_at_digest_layer() {
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(replay_request(created.commit.commit_id), execution);
+        .replay_commit(replay_request(created.commit.commit_id), execution)
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(replay.mismatches.iter().any(|mismatch| {
@@ -58,7 +59,8 @@ fn replay_reports_owner_create_decision_drift_at_digest_layer() {
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(replay_request(created.commit.commit_id), execution);
+        .replay_commit(replay_request(created.commit.commit_id), execution)
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(replay.mismatches.iter().any(|mismatch| {
@@ -82,7 +84,8 @@ fn replay_uses_retained_owner_envelope_only_in_normal_mode() {
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(replay_request(created.commit.commit_id), execution);
+        .replay_commit(replay_request(created.commit.commit_id), execution)
+        .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert_eq!(
@@ -107,7 +110,10 @@ fn audit_replay_rejects_retained_owner_envelope_basis() {
     let mut request = replay_request(created.commit.commit_id);
     request.verification_mode = ReplayVerificationMode::AuditRecoveryVerification;
 
-    let replay = runtime.replay_authority().replay_commit(request, execution);
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(request, execution)
+        .unwrap();
 
     assert_eq!(
         replay.failure,
@@ -129,7 +135,10 @@ fn audit_replay_uses_checkpoint_owner_basis_when_tail_is_absent() {
     let mut request = replay_request(created.commit.commit_id);
     request.verification_mode = ReplayVerificationMode::AuditRecoveryVerification;
 
-    let replay = runtime.replay_authority().replay_commit(request, execution);
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(request, execution)
+        .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert_eq!(

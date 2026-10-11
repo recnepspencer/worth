@@ -385,11 +385,5 @@ fn retarget(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction
-        .commit(
-            execution,
-            &fixture.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    transaction.commit(execution, &fixture.runtime).unwrap();
 }

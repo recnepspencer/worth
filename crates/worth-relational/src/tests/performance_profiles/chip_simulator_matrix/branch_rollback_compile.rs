@@ -128,11 +128,7 @@ pub(super) fn certify_branch_rollback_compile_step_window(
             .expect("test staging stays within configured resource budgets");
             let commit_started_at = Instant::now();
             let commit_outcome = txn
-                .commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit(execution, &runtime)
                 .expect("chip branch step commit");
             let commit_micros = commit_started_at.elapsed().as_micros();
 

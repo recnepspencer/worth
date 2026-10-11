@@ -29,7 +29,11 @@ fn exact_field_footprint_keeps_record_aspect_and_field_distinct() {
     let runtime = runtime_with_test_schema();
     let changed = create_entity(execution, &runtime, "changed");
     let other = create_entity(execution, &runtime, "other");
-    let footprint = project(validate(&runtime, [update_name(changed, "after")]));
+    let footprint = project(validate(
+        execution,
+        &runtime,
+        [update_name(changed, "after")],
+    ));
 
     assert!(footprint.mutates_field(&RecordRef::Entity(changed), &locator("name", "name")));
     assert!(!footprint.mutates_field(&RecordRef::Entity(changed), &locator("name", "other")));
@@ -57,6 +61,7 @@ fn whole_aspect_footprint_keeps_its_record_and_aspect_boundaries() {
         value: ContractValidationInput::Scalar(AspectValue::String("after".into())),
     }]);
     let footprint = project(validate(
+        execution,
         &runtime,
         [MutationIntent::Entity(
             EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
@@ -84,10 +89,11 @@ fn replace_and_delete_footprints_cover_only_the_exact_whole_record() {
         entity_id: changed,
         replacement: entity_spec("replacement"),
     }));
-    let replaced = project(validate(&runtime, [replace]));
+    let replaced = project(validate(execution, &runtime, [replace]));
     assert_whole_record(&replaced, changed, other);
 
     let deleted = project(validate(
+        execution,
         &runtime,
         [MutationIntent::Entity(EntityMutationIntent::Delete(
             DeleteEntityIntent { entity_id: changed },
@@ -108,6 +114,7 @@ fn create_only_and_endpoint_only_intents_examine_work_but_name_no_prior_field() 
     let relation = create_relation(execution, &runtime, source, old_target, "edge");
 
     let created = project(validate(
+        execution,
         &runtime,
         [MutationIntent::Create(CreateIntent::Entity(entity_spec(
             "new",
@@ -117,6 +124,7 @@ fn create_only_and_endpoint_only_intents_examine_work_but_name_no_prior_field() 
     assert_work(&created, 1, 0);
 
     let endpoints = project(validate(
+        execution,
         &runtime,
         [MutationIntent::Relation(
             RelationMutationIntent::UpdateEndpoints(UpdateRelationEndpointsIntent {
@@ -142,6 +150,7 @@ fn mixed_breadth_reports_every_validated_intent_and_materialized_target() {
     let target = create_entity(execution, &runtime, "target");
     let relation = create_relation(execution, &runtime, first, second, "edge");
     let footprint = project(validate(
+        execution,
         &runtime,
         [
             update_name(first, "first-after"),
@@ -171,6 +180,7 @@ fn omitted_demand_performs_no_footprint_scan_or_materialization() {
     let first = create_entity(execution, &runtime, "first");
     let second = create_entity(execution, &runtime, "second");
     let validated = validate(
+        execution,
         &runtime,
         [
             update_name(first, "first-after"),
@@ -190,6 +200,7 @@ fn omitted_demand_performs_no_footprint_scan_or_materialization() {
 }
 
 fn validate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     intents: impl IntoIterator<Item = MutationIntent>,
 ) -> ValidatedRelationalProposal {
@@ -205,10 +216,7 @@ fn validate(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .validate(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .validate(execution, runtime)
         .expect("owner validates fixture mutation")
 }
 

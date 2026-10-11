@@ -41,6 +41,7 @@ fn durability_contract_recovery_rejects_tail_target_without_immutable_artifact()
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("tail admission must validate its target artifact");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("recovery root"));
     assert!(error.detail.contains("is unavailable"));

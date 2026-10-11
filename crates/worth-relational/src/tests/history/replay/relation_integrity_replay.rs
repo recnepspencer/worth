@@ -53,15 +53,18 @@ fn replay_contract_preserves_relation_integrity_declared_schema() {
     let target = create_entity(execution, &runtime, "target");
     let outcome = create_relation_outcome(execution, &runtime, source, target, "guarded");
 
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     let replay_access = runtime.replay();
     let envelope = replay_access
         .canonical_commit_envelope(outcome.commit.commit_id)
@@ -131,12 +134,7 @@ fn replay_contract_preserves_branch_local_relation_integrity_truth_after_rejecte
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
     let feature_head_before_reject = runtime
         .history()
@@ -161,13 +159,7 @@ fn replay_contract_preserves_branch_local_relation_integrity_truth_after_rejecte
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let rejected = rejected_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let rejected = rejected_txn.commit(execution, &runtime).unwrap_err();
 
     match rejected {
         TransactionCommitError::Conflict { error, .. } => {
@@ -182,15 +174,18 @@ fn replay_contract_preserves_branch_local_relation_integrity_truth_after_rejecte
         feature_head_before_reject
     );
 
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: accepted_feature.commit.commit_id,
-            branch_id: BranchId("feature".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: accepted_feature.commit.commit_id,
+                branch_id: BranchId("feature".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert!(replay

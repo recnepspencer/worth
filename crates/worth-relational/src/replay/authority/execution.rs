@@ -1,3 +1,5 @@
+use crate::durability::data::RelationalRecoveryStop;
+use std::ops::ControlFlow;
 mod comparison;
 mod envelope_self_audit;
 mod surface_audit;
@@ -56,15 +58,16 @@ impl<'runtime> ReplayAuthority<'runtime> {
         &self,
         request: RelationalReplayRequest,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> RelationalReplayOutcome {
+    ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
         let admission = match self.admit_replay_target(&request) {
             Ok(admission) => admission,
-            Err(outcome) => return outcome,
+            Err(outcome) => return Ok(outcome),
         };
-        let reconstruction = match self.reconstruct_replay_target(execution, &request, &admission) {
-            Ok(reconstruction) => reconstruction,
-            Err(outcome) => return outcome,
-        };
+        let reconstruction =
+            match self.reconstruct_replay_target(execution, &request, &admission)? {
+                ControlFlow::Continue(reconstruction) => reconstruction,
+                ControlFlow::Break(outcome) => return Ok(outcome),
+            };
         self.compare_replay_reconstruction(request, admission, reconstruction, execution)
     }
 
@@ -147,7 +150,8 @@ impl<'runtime> ReplayAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &RelationalReplayRequest,
         admission: &ReplayAdmission,
-    ) -> Result<ReplayReconstruction, RelationalReplayOutcome> {
+    ) -> Result<ControlFlow<RelationalReplayOutcome, ReplayReconstruction>, RelationalRecoveryStop>
+    {
         let replay_plan = replay_recovery_plan_for_chain(
             self.runtime,
             &admission.commit_closure,
@@ -158,8 +162,11 @@ impl<'runtime> ReplayAuthority<'runtime> {
             .rebuild_runtime_from_plan(execution, replay_plan)
         {
             Ok(runtime) => runtime,
-            Err(error) => {
-                return Err(self.fail_and_record(
+            Err(RelationalRecoveryStop::Request(cause)) => {
+                return Err(RelationalRecoveryStop::Request(cause))
+            }
+            Err(RelationalRecoveryStop::Durability(error)) => {
+                return Ok(ControlFlow::Break(self.fail_and_record(
                     request.clone(),
                     Some(&admission.envelope),
                     Some(&admission.commit_closure),
@@ -173,14 +180,14 @@ impl<'runtime> ReplayAuthority<'runtime> {
                         expected: Some("reconstructible canonical commit closure".to_owned()),
                         observed: Some(format!("{:?}", error.class)),
                     }),
-                ));
+                )));
             }
         };
         let Some(envelope) = runtime
             .replay()
             .canonical_commit_envelope(request.commit_id)
         else {
-            return Err(self.fail_and_record(
+            return Ok(ControlFlow::Break(self.fail_and_record(
                 request.clone(),
                 Some(&admission.envelope),
                 Some(&admission.commit_closure),
@@ -194,21 +201,24 @@ impl<'runtime> ReplayAuthority<'runtime> {
                     expected: Some(format!("{:?}", admission.envelope.commit.commit_id)),
                     observed: None,
                 }),
-            ));
+            )));
         };
         if let Err(mismatch) = validated_replay_continuity_envelope(
             self.runtime,
             &envelope,
             &admission.verification_plan,
         ) {
-            return Err(self.record_continuity_rejection(
+            return Ok(ControlFlow::Break(self.record_continuity_rejection(
                 request.clone(),
                 &admission.envelope,
                 &admission.commit_closure,
                 mismatch,
-            ));
+            )));
         }
-        Ok(ReplayReconstruction { runtime, envelope })
+        Ok(ControlFlow::Continue(ReplayReconstruction {
+            runtime,
+            envelope,
+        }))
     }
 
     fn compare_replay_reconstruction(
@@ -217,7 +227,8 @@ impl<'runtime> ReplayAuthority<'runtime> {
         admission: ReplayAdmission,
         reconstruction: ReplayReconstruction,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> RelationalReplayOutcome {
+    ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let compared_surfaces = promised_replay_surfaces(
             self.runtime,
             &admission.envelope,
@@ -233,8 +244,9 @@ impl<'runtime> ReplayAuthority<'runtime> {
                 &admission.commit_closure,
                 request.verification_mode,
                 execution,
-            );
+            )?;
         }
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let selected_lineage_authority =
             if compared_surfaces.contains(&ReplayObservableSurface::Lineage) {
                 match select_replay_lineage_authority(
@@ -244,13 +256,13 @@ impl<'runtime> ReplayAuthority<'runtime> {
                 ) {
                     Ok(selected) => Some(selected),
                     Err(()) => {
-                        return self.fail_and_record(
+                        return Ok(self.fail_and_record(
                             request,
                             Some(&admission.envelope),
                             Some(&admission.commit_closure),
                             ReplayFailureClass::AuthoritativeBasisUnavailable,
                             None,
-                        );
+                        ));
                     }
                 }
             } else {
@@ -288,6 +300,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &request,
             selected_lineage_authority.as_ref(),
         );
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let outcome = replay_comparison_outcome(
             request,
             &admission,
@@ -296,7 +309,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
             selected_lineage_authority.as_ref(),
         );
         record_replay_diagnostic(self.runtime, &outcome.requested, &outcome);
-        outcome
+        Ok(outcome)
     }
 
     pub fn replay_range(
@@ -305,7 +318,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         commits: &[CommitId],
         verification_mode: ReplayVerificationMode,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Vec<RelationalReplayOutcome> {
+    ) -> Result<Vec<RelationalReplayOutcome>, RelationalRecoveryStop> {
         commits
             .iter()
             .copied()

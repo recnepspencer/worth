@@ -73,7 +73,7 @@ fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
         transaction
             .push_batch(entity_batch(3), Allocation::SystemAllocation)
             .unwrap();
-        let error = match transaction.validate(&runtime, Allocation::SystemAllocation) {
+        let error = match transaction.validate(execution, &runtime) {
             Err(error) => error,
             Ok(_) => panic!("scope scan must observe the requested stop"),
         };
@@ -99,9 +99,7 @@ fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
         retry
             .push_batch(entity_batch(3), Allocation::SystemAllocation)
             .unwrap();
-        let outcome = retry
-            .commit(execution, &runtime, Allocation::SystemAllocation)
-            .unwrap();
+        let outcome = retry.commit(execution, &runtime).unwrap();
         for index in 0..3 {
             assert!(outcome
                 .created_entity(&crate::transactions::data::CreatedEntityRef {

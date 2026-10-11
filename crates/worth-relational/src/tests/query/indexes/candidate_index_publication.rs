@@ -40,11 +40,7 @@ fn candidate_for_update(
         )
         .unwrap();
     runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap()
 }
 
@@ -84,11 +80,7 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
         )
         .unwrap();
     let mut candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
 
     let denied = runtime

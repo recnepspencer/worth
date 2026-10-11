@@ -176,11 +176,7 @@ fn create_generated_group(
         .expect("the generated group fits the configured transaction budget");
     (
         transaction
-            .commit(
-                execution,
-                runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .commit(execution, runtime)
             .expect("the generated group publishes as one complete create commit"),
         entity_fields,
         relation_fields,
@@ -222,11 +218,7 @@ fn create_group_with_external_endpoint(
         )
         .expect("the open generated group fits transaction budgets");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("the open generated group is otherwise a valid all-create publication")
 }
 

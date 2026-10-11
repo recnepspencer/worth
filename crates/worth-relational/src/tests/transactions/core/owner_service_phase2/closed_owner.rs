@@ -23,7 +23,7 @@ fn phase2_ports_deny_after_their_runtime_owner_closes() {
     drop(runtime);
 
     assert!(matches!(
-        preparation.prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation,),
+        preparation.prepare_branch_transaction(execution, transaction),
         Err(crate::transactions::data::TransactionCommitError::PublicationDenied {
             denial: crate::mvcc::RelationalPublicationDenial::OwnerUnavailable {
                 runtime_instance_id: observed,

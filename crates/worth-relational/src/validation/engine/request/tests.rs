@@ -216,11 +216,7 @@ fn request_includes_rematerialized_relation_as_a_planned_edge() {
         )
         .expect("the exact relation suspension is staged");
     suspension
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the exact relation becomes unavailable");
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(15),

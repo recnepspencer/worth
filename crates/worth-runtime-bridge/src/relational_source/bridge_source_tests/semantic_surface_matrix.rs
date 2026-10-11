@@ -113,11 +113,7 @@ fn real_entity_transaction_preserves_field_lifecycle_and_structural_surfaces() {
         )
         .expect("test staging stays within configured resource budgets");
     let created = creation
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("real structural create");
     let entity = changed_entities(&created)[0];
     let structural_commit = runtime
@@ -145,11 +141,7 @@ fn real_entity_transaction_preserves_field_lifecycle_and_structural_surfaces() {
         )
         .expect("test staging stays within configured resource budgets");
     let field_commit = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("real struct-field update")
         .commit
         .commit_id;

@@ -86,9 +86,7 @@ fn schema_evolution_cdc_contract_test() {
         .expect("owner-admitted transaction context");
     txn.push_batch(batch_create("boundary"), AllocationPolicy::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
-    let committed = txn
-        .commit(execution, &runtime, AllocationPolicy::SystemAllocation)
-        .unwrap();
+    let committed = txn.commit(execution, &runtime).unwrap();
 
     let live_batch = runtime
         .publication()

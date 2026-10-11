@@ -31,14 +31,8 @@ pub(super) fn certify_merge_verify_vs_execute_feature_adoption(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-            let _feature_only = changed_entities(
-                &txn.commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("feature create"),
-            )[0];
+            let _feature_only =
+                changed_entities(&txn.commit(execution, &runtime).expect("feature create"))[0];
 
             let prepared = runtime
                 .prepare_merge_execution(

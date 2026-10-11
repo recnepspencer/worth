@@ -32,11 +32,7 @@ fn cancellation_while_waiting_for_publication_coordination_denies_before_movemen
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let publication_cell = candidate.publication_cell_for_test();
     let coordination = Arc::clone(publication_cell.coordination());
@@ -103,11 +99,7 @@ fn cancellation_inside_publication_critical_section_defers_until_performed() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let before = runtime
         .branch_reference_state(&BranchId("main".to_owned()))

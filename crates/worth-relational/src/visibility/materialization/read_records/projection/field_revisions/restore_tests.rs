@@ -176,13 +176,7 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let created = create
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = create.commit(execution, &runtime).unwrap();
     let entity = changed_entities(&created)[0];
     let prior_branch = create_branch_from_main(&runtime, "field-prior");
     let title = locator("summary", "title");
@@ -206,13 +200,7 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    let present = set
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let present = set.commit(execution, &runtime).unwrap();
     let present_revision =
         field_at(execution, &runtime, &present.snapshot, entity, &status).unwrap();
     assert_eq!(
@@ -240,13 +228,7 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let absent_again = clear
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let absent_again = clear.commit(execution, &runtime).unwrap();
     let final_absent =
         field_at(execution, &runtime, &absent_again.snapshot, entity, &status).unwrap();
     assert_eq!(final_absent.presence(), RelationalFieldPresence::Absent);
@@ -316,6 +298,7 @@ fn checkpoint_restore_rejects_incomplete_field_revision_column() {
         .durability_recovery()
         .recover(execution, recovery)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("field revision length"), "{error:?}");
     release_test_commit_snapshot(&runtime, &created);

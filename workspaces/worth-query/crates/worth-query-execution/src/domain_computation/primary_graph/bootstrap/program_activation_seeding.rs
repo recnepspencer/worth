@@ -90,11 +90,7 @@ pub(super) fn commit_initial_program_activation(
                 )
                 .map_err(map_bootstrap_staging_denial)?;
             let committed = transaction
-                .commit(
-                    execution,
-                    runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit(execution, runtime)
                 .map_err(map_bootstrap_commit_denial)?;
             let identity = committed.created_entity(&created);
             crate::relational_snapshot_release::release_query_snapshot(

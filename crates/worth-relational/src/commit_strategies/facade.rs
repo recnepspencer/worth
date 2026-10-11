@@ -78,10 +78,11 @@ impl CommitStrategiesAuthorityFacade {
 
     pub fn validate_lowered_plan(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         lowered: LoweredStrategyCommitPlan,
     ) -> Result<crate::mvcc::ValidatedRelationalProposal, TransactionCommitError> {
-        validate_lowered_strategy_plan(runtime, lowered)
+        validate_lowered_strategy_plan(execution, runtime, lowered)
     }
 
     pub fn prepare_validated_commit(
@@ -101,7 +102,7 @@ impl CommitStrategiesAuthorityFacade {
         validated: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::transactions::data::CommitResult, TransactionCommitError> {
         let candidate = self.prepare_validated_commit(execution, runtime, validated)?;
-        runtime.publish_prepared_candidate(candidate)
+        runtime.publish_prepared_candidate(execution, candidate)
     }
 }
 

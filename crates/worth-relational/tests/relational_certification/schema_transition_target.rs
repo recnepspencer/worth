@@ -242,15 +242,19 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
             .unwrap();
     }
     let (replay_branch, replay_commit, _) = transitioned_commits[0].clone();
-    let replay = world.runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: replay_commit,
-            branch_id: replay_branch,
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = world
+        .runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: replay_commit,
+                branch_id: replay_branch,
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert_eq!(replay.failure, None, "V2 sibling replay failed: {replay:?}");
     assert!(replay.mismatches.is_empty());
 
@@ -290,13 +294,7 @@ fn stale_schema_transition_basis_cannot_install_target_authority() {
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .unwrap();
-    let committed = ordinary
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = ordinary.commit(execution, &world.runtime).unwrap();
     world
         .runtime
         .snapshots()

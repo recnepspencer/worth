@@ -163,13 +163,7 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let created = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = transaction.commit(execution, &runtime).unwrap();
     let source = changed_entities(&created)[0];
     let target = source;
     let relation = changed_relations(&created)[0];
@@ -258,6 +252,7 @@ fn corrupt_native_checkpoint_is_denied_without_publishing_recovered_state() {
         .durability_recovery()
         .restore_native_checkpoint(execution, &corrupt)
         .expect_err("corrupt native bytes cannot become runtime authority");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert_eq!(recovered.history().immutable_commit_count(), 0);
@@ -288,6 +283,7 @@ fn native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state() {
         .durability_recovery()
         .restore_native_checkpoint(execution, &checkpoint)
         .expect_err("a foreign runtime checkpoint cannot be admitted");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::RuntimeNameMismatch);
     assert_eq!(recovered.history().immutable_commit_count(), 0);

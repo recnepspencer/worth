@@ -6,7 +6,7 @@
 //! # use worth_execution::ExecutionRequest;
 //! # use worth_relational::facade::{runtime::RelationalRuntime, mvcc::BranchBoundRelationalTransaction};
 //! fn prepare(request: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, transaction: BranchBoundRelationalTransaction) {
-//!     let _ = runtime.prepare_branch_transaction(transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
+//!     let _ = runtime.prepare_branch_transaction(transaction);
 //! }
 //! ```
 //!
@@ -16,7 +16,7 @@
 //! # use worth_execution::ExecutionRequest;
 //! # use worth_relational::facade::{runtime::RelationalRuntime, mvcc::BranchBoundRelationalTransaction};
 //! fn prepare(request: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, transaction: BranchBoundRelationalTransaction) {
-//!     let _ = runtime.prepare_branch_transaction(request, transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
+//!     let _ = runtime.prepare_branch_transaction(request, transaction);
 //! }
 //! ```
 //!
@@ -35,7 +35,7 @@
 //! #     let identity = runtime.main_branch_identity();
 //! #     let (_, basis) = runtime.observe_branch(&identity).unwrap();
 //! #     let transaction = runtime.begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()).unwrap();
-//! #     runtime.prepare_branch_transaction(request, transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation).unwrap()
+//! #     runtime.prepare_branch_transaction(request, transaction).unwrap()
 //! # }
 //! struct PreparedWithRequest<'scope> {
 //!     candidate: PreparedRelationalCommitCandidate,
@@ -64,7 +64,7 @@
 //! #     let identity = runtime.main_branch_identity();
 //! #     let (_, basis) = runtime.observe_branch(&identity).unwrap();
 //! #     let transaction = runtime.begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()).unwrap();
-//! #     runtime.prepare_branch_transaction(request, transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation).unwrap()
+//! #     runtime.prepare_branch_transaction(request, transaction).unwrap()
 //! # }
 //! struct PreparedWithRequest<'scope> {
 //!     candidate: PreparedRelationalCommitCandidate,
@@ -76,4 +76,24 @@
 //!     retained = Some(PreparedWithRequest { candidate, request: None });
 //! });
 //! drop(retained);
+//! ```
+
+//! An independent lease cannot override the caller's commit request.
+//!
+//! ```compile_fail,E0061
+//! # use worth_execution::{ExecutionRequest, ExecutionResourceLease};
+//! # use worth_relational::facade::{runtime::RelationalRuntime, mvcc::BranchBoundRelationalTransaction};
+//! fn prepare(request: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, transaction: BranchBoundRelationalTransaction, unrelated: &ExecutionResourceLease<'_>) {
+//!     let _ = runtime.prepare_branch_transaction(request, transaction, unrelated);
+//! }
+//! ```
+//!
+//! The passing twin lends only the caller request.
+//!
+//! ```
+//! # use worth_execution::{ExecutionRequest, ExecutionResourceLease};
+//! # use worth_relational::facade::{runtime::RelationalRuntime, mvcc::BranchBoundRelationalTransaction};
+//! fn prepare(request: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, transaction: BranchBoundRelationalTransaction, unrelated: &ExecutionResourceLease<'_>) {
+//!     let _ = runtime.prepare_branch_transaction(request, transaction);
+//! }
 //! ```

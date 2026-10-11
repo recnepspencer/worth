@@ -12,6 +12,7 @@ mod invariant_phase;
 mod mutation_execution;
 mod publication_execution;
 mod rejection;
+mod request_resources;
 mod result_assembly;
 mod snapshot_validation;
 
@@ -24,5 +25,9 @@ pub(crate) use publication_execution::publish_commit_execution;
 pub(crate) use publication_execution::CommitDurableAppendAdmission;
 pub(crate) use publication_execution::PreparedCommitPublicationCompletion;
 pub(crate) use publication_execution::PreparedCommitPublicationExecution;
+pub(crate) use request_resources::request_lease;
 pub(crate) use result_assembly::assemble_commit_result;
 pub(crate) use result_assembly::CommitResultSeal;
+
+mod request_checkpoints;
+pub(crate) use request_checkpoints::{consult_stage, CommitStage};

@@ -101,11 +101,7 @@ fn ordinary_convenience_commit(
 ) -> CommitResult {
     let basis = observe(runtime, branch);
     fresh_transaction(runtime, &basis, "branch-local-mvcc-seed")
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("an uncontended convenience commit settles through its owner")
 }
 
@@ -187,11 +183,7 @@ fn publish_one_branch(
         // rather than a claim that preparation always succeeds.
         let candidate = services
             .preparation
-            .prepare_branch_transaction(
-                execution,
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .expect(concat!(
                 "preparation refused before producing a candidate; the branch ",
                 "did not move, and this example models neither a bounded ",

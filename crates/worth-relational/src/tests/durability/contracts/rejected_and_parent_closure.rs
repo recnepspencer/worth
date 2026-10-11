@@ -65,13 +65,7 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationCardinalityViolation);
@@ -198,6 +192,7 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
         .durability_recovery()
         .recover(execution, corrupt_plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(parent.commit.commit_id.0, 1);
     assert_eq!(

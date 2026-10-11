@@ -169,12 +169,8 @@ pub(super) fn seed_rocketship_world(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("rocketship entity seed commit")
+        txn.commit(execution, runtime)
+            .expect("rocketship entity seed commit")
     };
     let entity_commit_micros = entity_commit_started_at.elapsed().as_micros();
     let entities = changed_entities(&entity_outcome);
@@ -227,12 +223,8 @@ pub(super) fn seed_rocketship_world(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-            txn.commit(
-                execution,
-                runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .expect("rocketship relation seed commit chunk")
+            txn.commit(execution, runtime)
+                .expect("rocketship relation seed commit chunk")
         };
         relation_commit_micros += relation_commit_started_at.elapsed().as_micros();
         relation_commit_phase_timing.draft_preparation_micros +=

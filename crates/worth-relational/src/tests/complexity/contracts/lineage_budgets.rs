@@ -155,15 +155,18 @@ fn complexity_budget_replay_lineage_parity_reports_authority_basis_and_digest_wi
     let replay_commit_id = second.commit.commit_id;
 
     runtime.performance_access().reset_counters();
-    let durable_replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: replay_commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    );
+    let durable_replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: replay_commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(
@@ -210,15 +213,18 @@ fn complexity_budget_replay_lineage_parity_reports_authority_basis_and_digest_wi
         .durability_authority()
         .remove_durable_envelope_for_test(replay_commit_id));
     runtime.performance_access().reset_counters();
-    let retained_envelope_replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: replay_commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    );
+    let retained_envelope_replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: replay_commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
     assert_eq!(
         retained_envelope_replay

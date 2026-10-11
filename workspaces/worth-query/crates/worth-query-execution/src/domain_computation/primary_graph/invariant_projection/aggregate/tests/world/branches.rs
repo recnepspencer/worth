@@ -157,11 +157,7 @@ impl AggregateWorld {
                     )
                     .expect("test staging stays within configured resource budgets");
                 let committed = transaction
-                    .commit(
-                        execution,
-                        runtime,
-                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                    )
+                    .commit(execution, runtime)
                     .expect("the branch commits");
                 crate::relational_snapshot_release::release_query_snapshot(
                     runtime,

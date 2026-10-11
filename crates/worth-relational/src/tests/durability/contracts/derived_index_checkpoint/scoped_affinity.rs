@@ -177,6 +177,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("digest-valid cache metadata cannot invent a scoped branch");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert_eq!(target.observe_branch(&identity).unwrap().0, head);
     assert_eq!(target.index_access().definitions_snapshot(), definitions);

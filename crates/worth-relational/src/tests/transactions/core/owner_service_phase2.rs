@@ -72,11 +72,7 @@ fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
     let paused_thread = std::thread::spawn(move || {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-        paused_port.prepare_branch_transaction(
-            execution,
-            paused_transaction,
-            Allocation::SystemAllocation,
-        )
+        paused_port.prepare_branch_transaction(execution, paused_transaction)
     });
 
     reached.wait();
@@ -85,11 +81,7 @@ fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
         "branch A remains paused in preparation"
     );
     let progressing_candidate = preparation
-        .prepare_branch_transaction(
-            execution,
-            progressing_transaction,
-            Allocation::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, progressing_transaction)
         .expect("branch B prepares while branch A is paused");
     assert!(
         !paused_thread.is_finished(),
@@ -314,10 +306,10 @@ fn cloned_preparation_ports_share_symbol_identity_and_public_snapshot_truth() {
         .expect("second symbol transaction stages");
 
     let first_candidate = cloned_preparation
-        .prepare_branch_transaction(execution, first, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, first)
         .expect("port clone prepares the first symbol");
     let second_candidate = preparation
-        .prepare_branch_transaction(execution, second, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, second)
         .expect("original port prepares the second symbol");
     let symbols = runtime.config().identity.symbol_table;
     let first_symbol = symbols

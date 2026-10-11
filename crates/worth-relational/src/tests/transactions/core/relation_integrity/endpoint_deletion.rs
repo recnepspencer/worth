@@ -23,9 +23,7 @@ fn relation_integrity_commit_boundary_rejects_endpoint_delete_with_live_relation
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(
@@ -92,9 +90,7 @@ fn relation_integrity_commit_boundary_rejects_replace_when_retained_relation_kee
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(
@@ -129,9 +125,7 @@ fn relation_integrity_commit_boundary_requires_relation_deletion_in_same_commit_
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(
@@ -303,9 +297,7 @@ fn relation_integrity_commit_boundary_rejects_relation_retirement_under_cascade_
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(

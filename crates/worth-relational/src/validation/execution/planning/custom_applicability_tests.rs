@@ -214,11 +214,7 @@ fn create_entity(
         )
         .expect("entity stages");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("entity publishes")
         .changed_records
         .iter()
@@ -252,11 +248,7 @@ fn create_relation(
         )
         .expect("relation stages");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("relation publishes")
         .changed_records
         .iter()

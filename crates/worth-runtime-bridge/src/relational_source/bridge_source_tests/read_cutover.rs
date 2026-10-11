@@ -80,13 +80,7 @@ fn rename_on_branch(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    transaction.commit(execution, runtime).unwrap();
 }
 
 fn read_name(

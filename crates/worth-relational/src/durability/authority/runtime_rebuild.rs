@@ -1,3 +1,4 @@
+use crate::durability::data::RelationalRecoveryStop;
 mod branch_readmission;
 mod checkpoint_restore;
 mod envelope_replay;
@@ -53,8 +54,9 @@ pub(super) fn rebuild_runtime_from_plan(
         crate::durability::data::RecoveryPlan,
         Option<crate::durability::data::CheckpointRestoreWork>,
     ),
-    DurabilityError,
+    RelationalRecoveryStop,
 > {
+    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let mut plan = admitted.into_plan();
     let tail_envelopes = plan.tail_envelopes_in_stream_order();
     validate_tail_lineage_allocator_capacity(tail_envelopes.iter().copied())?;

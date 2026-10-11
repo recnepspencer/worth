@@ -139,7 +139,7 @@ fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
         )
         .unwrap();
     assert!(matches!(
-        transaction.commit(execution, &runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation,),
+        transaction.commit(execution, &runtime),
         Err(crate::facade::transactions::TransactionCommitError::PublicationDeferred {
             deferred:
                 crate::facade::mvcc::RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted {

@@ -28,11 +28,7 @@ fn truth_sequence_overflow_is_rejected_before_publication_effects() {
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("sequence overflow must be a typed publication denial");
 
     match &error {

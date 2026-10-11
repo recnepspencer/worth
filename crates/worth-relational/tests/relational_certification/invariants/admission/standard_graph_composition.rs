@@ -255,11 +255,7 @@ fn commit_graph_entity(
         )
         .unwrap();
     let commit = transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("branch divergence commits");
     commit
         .changed_records

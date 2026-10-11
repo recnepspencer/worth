@@ -18,15 +18,18 @@ fn perf_replay_recovery_matrix() {
 
             runtime.performance_access().reset_counters();
             let replay_started_at = Instant::now();
-            let outcome = runtime.replay_authority().replay_commit(
-                RelationalReplayRequest {
-                    commit_id: replay_commit_id,
-                    branch_id: BranchId("main".to_string()),
-                    execution_mode: ReplayExecutionMode::SerialDeterministic,
-                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                },
-                execution,
-            );
+            let outcome = runtime
+                .replay_authority()
+                .replay_commit(
+                    RelationalReplayRequest {
+                        commit_id: replay_commit_id,
+                        branch_id: BranchId("main".to_string()),
+                        execution_mode: ReplayExecutionMode::SerialDeterministic,
+                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                    },
+                    execution,
+                )
+                .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();
 
@@ -97,15 +100,18 @@ fn perf_replay_recovery_matrix() {
                 .expect("recover plan");
             let recovery_micros = recovery_started_at.elapsed().as_micros();
             let replay_started_at = Instant::now();
-            let replay = recovered.replay_authority().replay_commit(
-                RelationalReplayRequest {
-                    commit_id: tail_commit_id,
-                    branch_id: BranchId("main".to_string()),
-                    execution_mode: ReplayExecutionMode::SerialDeterministic,
-                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                },
-                execution,
-            );
+            let replay = recovered
+                .replay_authority()
+                .replay_commit(
+                    RelationalReplayRequest {
+                        commit_id: tail_commit_id,
+                        branch_id: BranchId("main".to_string()),
+                        execution_mode: ReplayExecutionMode::SerialDeterministic,
+                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                    },
+                    execution,
+                )
+                .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
             let elapsed_micros = recovery_micros + replay_commit_micros;
             let counters = recovered.performance_access().counters();

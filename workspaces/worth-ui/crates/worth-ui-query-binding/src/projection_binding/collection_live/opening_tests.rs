@@ -107,12 +107,11 @@ fn collection_opening_fixture() -> (
             domain::WorthQueryConsumerSupportPosture::Supported,
         );
     }
-    let workspace =
-        crate::certification::request_custody::with_bootstrap_request(|execution| {
-            builder
-                .workspace(execution, "nested-collection-opening")
-                .unwrap()
-        });
+    let workspace = crate::certification::request_custody::with_bootstrap_request(|execution| {
+        builder
+            .workspace(execution, "nested-collection-opening")
+            .unwrap()
+    });
     let registration = crate::UiCollectionProjectionRegistration::text(
         workspace
             .worth_ui()
