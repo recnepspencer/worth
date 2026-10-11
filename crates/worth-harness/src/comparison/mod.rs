@@ -137,63 +137,6 @@ fn mismatch(path: impl Into<String>, detail: impl Into<String>) -> ComparisonMis
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use std::collections::BTreeMap;
-
-    use serde_json::json;
-
-    use super::{
-        numbers_within_tolerance, ComparisonMode, ComparisonOracle, ComparisonOracleSuite,
-        ComparisonProfile, NumericTolerance, OracleComparisonOutcome,
-    };
-
-    struct EqualityOracle;
-
-    impl ComparisonOracle<serde_json::Value> for EqualityOracle {
-        fn compare_with_oracle(
-            &self,
-            left: &serde_json::Value,
-            right: &serde_json::Value,
-            _profile: &ComparisonProfile,
-        ) -> Result<Option<OracleComparisonOutcome>, Box<dyn std::error::Error + Send + Sync>>
-        {
-            Ok(Some(OracleComparisonOutcome {
-                matched: left == right,
-                detail: "oracle equality".to_string(),
-                fields: BTreeMap::new(),
-            }))
-        }
-    }
-
-    #[test]
-    fn numeric_tolerance_supports_domain_comparison() {
-        assert!(numbers_within_tolerance(
-            10.0,
-            10.005,
-            NumericTolerance {
-                absolute: 0.01,
-                relative: Some(0.001),
-            },
-        ));
-    }
-
-    #[test]
-    fn comparison_oracle_suite_collects_oracle_results() {
-        let profile = ComparisonProfile {
-            mode: ComparisonMode::Semantic,
-            include_extensions: true,
-            numeric_tolerance: None,
-        };
-        let outcomes = ComparisonOracleSuite::new()
-            .with_oracle(EqualityOracle)
-            .evaluate(&json!({"a": 1}), &json!({"a": 1}), &profile)
-            .unwrap();
-        assert_eq!(outcomes.len(), 1);
-        assert!(outcomes[0].matched);
-    }
-}
-
 pub fn compare_run_records<TargetId>(
     left: &RunRecord<TargetId>,
     right: &RunRecord<TargetId>,
@@ -326,5 +269,62 @@ where
     ComparisonRecord {
         matched: mismatches.is_empty(),
         mismatches,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use serde_json::json;
+
+    use super::{
+        numbers_within_tolerance, ComparisonMode, ComparisonOracle, ComparisonOracleSuite,
+        ComparisonProfile, NumericTolerance, OracleComparisonOutcome,
+    };
+
+    struct EqualityOracle;
+
+    impl ComparisonOracle<serde_json::Value> for EqualityOracle {
+        fn compare_with_oracle(
+            &self,
+            left: &serde_json::Value,
+            right: &serde_json::Value,
+            _profile: &ComparisonProfile,
+        ) -> Result<Option<OracleComparisonOutcome>, Box<dyn std::error::Error + Send + Sync>>
+        {
+            Ok(Some(OracleComparisonOutcome {
+                matched: left == right,
+                detail: "oracle equality".to_string(),
+                fields: BTreeMap::new(),
+            }))
+        }
+    }
+
+    #[test]
+    fn numeric_tolerance_supports_domain_comparison() {
+        assert!(numbers_within_tolerance(
+            10.0,
+            10.005,
+            NumericTolerance {
+                absolute: 0.01,
+                relative: Some(0.001),
+            },
+        ));
+    }
+
+    #[test]
+    fn comparison_oracle_suite_collects_oracle_results() {
+        let profile = ComparisonProfile {
+            mode: ComparisonMode::Semantic,
+            include_extensions: true,
+            numeric_tolerance: None,
+        };
+        let outcomes = ComparisonOracleSuite::new()
+            .with_oracle(EqualityOracle)
+            .evaluate(&json!({"a": 1}), &json!({"a": 1}), &profile)
+            .unwrap();
+        assert_eq!(outcomes.len(), 1);
+        assert!(outcomes[0].matched);
     }
 }
