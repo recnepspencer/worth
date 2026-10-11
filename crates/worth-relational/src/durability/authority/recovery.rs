@@ -107,10 +107,11 @@ fn rebuild_admitted_recovery_or_emit(
             admission,
             checkpoint_restore_work,
         }),
-        Err(error) => {
+        Err(RelationalRecoveryStop::Durability(error)) => {
             admission.emit(runtime);
-            Err(error)
+            Err(RelationalRecoveryStop::Durability(error))
         }
+        Err(RelationalRecoveryStop::Request(cause)) => Err(RelationalRecoveryStop::Request(cause)),
     }
 }
 

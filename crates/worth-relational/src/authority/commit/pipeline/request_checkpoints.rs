@@ -55,7 +55,7 @@ impl From<worth_execution::WorkCeilingDenial> for CommitExecutionDenial {
 }
 
 #[cfg(test)]
-pub(super) mod observation;
+pub(crate) mod observation;
 #[cfg(test)]
 mod tests;
 

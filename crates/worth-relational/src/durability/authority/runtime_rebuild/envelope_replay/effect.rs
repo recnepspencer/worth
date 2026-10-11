@@ -25,8 +25,6 @@ pub(super) fn replay_envelope_effect(
     if envelope.authority_kind() == CanonicalCommitAuthorityKind::BranchReferenceMovement
         || is_metadata_only_merge_commit(envelope)
     {
-        #[cfg(test)]
-        super::observation::visit();
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         if governed_merge_authority_was_published(envelope) {
             require_merge_execution_authority(envelope)?;
@@ -156,8 +154,6 @@ pub(super) fn replay_ordinary_commit(
             format!("durable transaction staging denied: {denial:?}"),
         )
     })?;
-    #[cfg(test)]
-    super::observation::visit();
     let outcome = restored
         .commit_branch_transaction(execution, txn)
         .map_err(|error| {
@@ -242,8 +238,6 @@ pub(super) fn replay_merge_commit(
             ),
         )
     })?;
-    #[cfg(test)]
-    super::observation::visit();
     let outcome = execute_authoritative_commit(execution, restored, context).map_err(|error| {
         let detail = format!(
             "failed to replay durable merge commit {}",

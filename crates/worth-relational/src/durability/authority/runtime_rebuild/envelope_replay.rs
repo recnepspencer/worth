@@ -13,8 +13,6 @@ mod preparation;
 
 #[cfg(test)]
 mod interruption_tests;
-#[cfg(test)]
-mod observation;
 
 use effect::{
     complete_incomplete_metadata_commit, is_metadata_only_merge_commit, replay_envelope_effect,
