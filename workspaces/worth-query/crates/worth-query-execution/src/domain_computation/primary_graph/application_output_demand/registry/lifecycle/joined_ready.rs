@@ -11,7 +11,7 @@
 
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::super::refreshed_rejoin::awaited_by_stale_owner;
+use super::super::refreshed_rejoin::{charge_whole_map, WholeMapPasses};
 use super::super::{
     DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint,
     WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
@@ -31,15 +31,9 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let rows = u64::try_from(state.records.len())
-            .ok()
-            .and_then(|rows| rows.checked_add(4))
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        admission.charge_external_work(rows)?;
+        let mut prepaid = charge_whole_map(&state.records, admission, WholeMapPasses::One, 4)?;
         let key = &interest.key;
-        if !state.records.get(key).is_some_and(only_joined)
-            || awaited_by_stale_owner(&state.records, key)
-        {
+        if !state.records.get(key).is_some_and(only_joined) || prepaid.stale_owner(key) {
             return Ok(false);
         }
         let claims = state.release_record_prerequisites(key);

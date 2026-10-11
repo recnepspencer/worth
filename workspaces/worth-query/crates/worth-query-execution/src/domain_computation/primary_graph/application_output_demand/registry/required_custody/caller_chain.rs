@@ -14,7 +14,9 @@
 
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::super::refreshed_rejoin::{occurrence_rows, superseded};
+use super::super::refreshed_rejoin::{
+    charge_whole_map, search_occurrence_rows, superseded, WholeMapPasses,
+};
 use super::super::{
     DemandRecord, DemandRegistryState, DemandState, WorthQueryOutputAdvancement,
     WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
@@ -61,12 +63,17 @@ impl DemandRegistryState {
         let rows = count(self.records.len())?;
         // The chain's occurrences, each named by one of its rows. Rows of one
         // occurrence are contiguous, so each is visited once.
-        admission.charge_external_work(rows)?;
+        let mut prepaid = charge_whole_map(&self.records, admission, WholeMapPasses::One, 0)?;
         let mut chain = vec![key.clone()];
         let mut next = 0;
         while let Some(occurrence) = chain.get(next).cloned() {
             next += 1;
-            for (_, record) in occurrence_rows(&self.records, &occurrence) {
+            let occurrence_rows =
+                match search_occurrence_rows(&self.records, &occurrence, &mut prepaid) {
+                    Ok(rows) => rows,
+                    Err(never) => match never {},
+                };
+            for (_, record) in occurrence_rows {
                 for claimed in &record.prerequisites {
                     if !chain.iter().any(|known| known.same_occurrence(claimed)) {
                         chain.push(claimed.as_ref().clone());

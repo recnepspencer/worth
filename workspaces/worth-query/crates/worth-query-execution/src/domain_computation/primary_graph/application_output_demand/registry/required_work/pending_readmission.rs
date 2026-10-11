@@ -166,10 +166,14 @@ fn ready_member(
     // refreshed has yet to rejoin it; that owner's dependents read it.
     if !record.is_required() {
         // One pass over the rows compares each key's occurrence once.
-        admission
-            .charge_external_work(u64::try_from(state.records.len()).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
-        if !super::super::refreshed_rejoin::awaited_by_stale_owner(&state.records, key) {
+        let mut prepaid = super::super::refreshed_rejoin::charge_whole_map(
+            &state.records,
+            admission,
+            super::super::refreshed_rejoin::WholeMapPasses::One,
+            0,
+        )
+        .map_err(|_| work_denial())?;
+        if !prepaid.stale_owner(key) {
             return Ok(None);
         }
     }

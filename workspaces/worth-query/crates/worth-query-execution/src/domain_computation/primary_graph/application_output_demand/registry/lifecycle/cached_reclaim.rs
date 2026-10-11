@@ -15,12 +15,12 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use super::super::ready_backing::PreparedReadyBacking;
-use super::super::refreshed_rejoin::{awaited_by_stale_owner, superseded};
+use super::super::refreshed_rejoin::{charge_whole_map, superseded, WholeMapPasses};
 use super::super::{
     DemandRecord, DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
 };
 use super::closed_retirement::{
-    claimants_where, closed_cached, closed_superseded, held, newest_ready,
+    claimants_where, closed_cached, closed_superseded, held_by_row, ready_at_newest,
 };
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
@@ -168,22 +168,22 @@ impl DemandRegistryState {
         let mut behind_ready = None;
         for (key, record) in &self.records {
             if closed_cached(record) && !superseded(record) {
-                admission
-                    .charge_external_work(rows)
-                    .map_err(|_| work_denial())?;
-                if !held(&self.records, key, record) {
+                let mut prepaid =
+                    charge_whole_map(&self.records, admission, WholeMapPasses::One, 0)
+                        .map_err(|_| work_denial())?;
+                if !held_by_row(record) && !prepaid.stale_owner(key) {
                     return Ok(Some(key.clone()));
                 }
             } else if behind_ready.is_none()
                 && closed_superseded(record)
                 && still_claimed.is_none_or(|claimed| key > claimed)
             {
-                admission
-                    .charge_external_work(rows.saturating_mul(2))
-                    .map_err(|_| work_denial())?;
+                let mut prepaid =
+                    charge_whole_map(&self.records, admission, WholeMapPasses::Two, 0)
+                        .map_err(|_| work_denial())?;
                 if claimed_only(record)
-                    && !awaited_by_stale_owner(&self.records, key)
-                    && newest_ready(&self.records, key)
+                    && !prepaid.stale_owner(key)
+                    && ready_at_newest(&self.records, prepaid.newest(key))
                 {
                     behind_ready = Some(key.clone());
                 }

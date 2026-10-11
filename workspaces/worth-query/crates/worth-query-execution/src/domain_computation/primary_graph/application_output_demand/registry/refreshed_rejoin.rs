@@ -20,7 +20,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod walk_charge;
-use walk_charge::OccurrenceSearchCharge;
+pub(super) use walk_charge::{charge_whole_map, OccurrenceSearchCharge, WholeMapPasses};
 
 impl WorthQueryOutputDemandRegistry {
     /// Issue an interest in the newest joinable row of the same occurrence

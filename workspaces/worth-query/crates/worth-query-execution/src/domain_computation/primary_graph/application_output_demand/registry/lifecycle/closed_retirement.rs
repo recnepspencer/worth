@@ -173,7 +173,14 @@ pub(super) fn closed_superseded(record: &DemandRecord) -> bool {
 
 /// The newest row of `key`'s occurrence holds a Ready no refresh replaced.
 pub(super) fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool {
-    newest_of_occurrence(records, key)
+    ready_at_newest(records, newest_of_occurrence(records, key))
+}
+
+pub(super) fn ready_at_newest(
+    records: &Records,
+    newest: Option<WorthQueryOutputDemandKey>,
+) -> bool {
+    newest
         .and_then(|newest| records.get(&newest))
         .is_some_and(|newest| newest.has_cached_ready() && !superseded(newest))
 }
@@ -217,6 +224,10 @@ pub(super) fn held(
     key: &WorthQueryOutputDemandKey,
     record: &DemandRecord,
 ) -> bool {
+    held_by_row(record) || awaited_by_stale_owner(records, key)
+}
+
+pub(super) fn held_by_row(record: &DemandRecord) -> bool {
     record.interests != 0
         || record.required_interests != 0
         || record.framework_required_count != 0
@@ -225,5 +236,4 @@ pub(super) fn held(
         || !record.performed_obligations.is_empty()
         || record.performed_source.is_some()
         || record.held_successor.is_some()
-        || awaited_by_stale_owner(records, key)
 }
