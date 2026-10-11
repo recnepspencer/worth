@@ -19,6 +19,17 @@ fn refused(source: &str) -> bool {
     !check_graphs("crates/consumer", &[graph(source)]).is_empty()
 }
 
+fn assert_raw_kind_diagnostics(source: &str, count: usize) {
+    let diagnostics = check_graphs("crates/consumer", &[graph(source)]);
+    assert_eq!(diagnostics.len(), count, "{diagnostics:#?}");
+    for diagnostic in diagnostics {
+        assert_eq!(
+            diagnostic.code(),
+            crate::diagnostics::DiagnosticCode::Bc7010AllocationDenialPattern
+        );
+    }
+}
+
 #[test]
 fn raw_match_arm_is_refused() {
     assert!(refused("fn f(k: ExecutionAllocationDenialKind) { match k { ExecutionAllocationDenialKind::Cancelled => (), _ => () } }"));
@@ -125,21 +136,23 @@ fn only_the_execution_owner_can_match_raw_patterns() {
 
 #[test]
 fn qualified_self_pattern_is_refused() {
-    assert!(refused("fn f(k: ExecutionAllocationDenialKind) { match k { <ExecutionAllocationDenialKind>::Cancelled => (), _ => () } }"));
+    assert_raw_kind_diagnostics("fn f(k: ExecutionAllocationDenialKind) { match k { <ExecutionAllocationDenialKind>::Cancelled => (), _ => () } }", 1);
 }
 
 #[test]
 fn qualified_self_expression_is_refused() {
-    assert!(refused(
-        "fn f() { let raw = <ExecutionAllocationDenialKind>::Cancelled; }"
-    ));
+    assert_raw_kind_diagnostics(
+        "fn f() { let raw = <ExecutionAllocationDenialKind>::Cancelled; }",
+        1,
+    );
 }
 
 #[test]
 fn qualified_self_trait_projection_is_refused() {
-    assert!(refused(
-        "impl T for <ExecutionAllocationDenialKind as Id>::Out {}"
-    ));
+    assert_raw_kind_diagnostics(
+        "impl T for <ExecutionAllocationDenialKind as Id>::Out {}",
+        1,
+    );
 }
 
 #[test]
@@ -176,8 +189,12 @@ fn a_doubly_nested_macro_reports_one_raw_access_once() {
         }
     "#;
 
-    let diagnostics = check_graphs("crates/consumer", &[graph(source)]);
-    assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");
+    assert_raw_kind_diagnostics(source, 1);
+}
+
+#[test]
+fn a_variant_import_in_an_inline_module_inside_a_macro_is_refused_once() {
+    assert_raw_kind_diagnostics("macro_rules! outer { () => { mod inner { use worth_execution::ExecutionAllocationDenialKind::Cancelled; } }; }", 1);
 }
 
 #[test]
