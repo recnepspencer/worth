@@ -6,7 +6,7 @@
 //! heterogeneous programs stays typed instead of collapsing into strings or
 //! untyped identifiers.
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeSet;
 
 use worth_query_declaration::facade::application_program::{
@@ -81,8 +81,14 @@ where
             install_rostered_application_program(self.program, installed_schema, roster)?;
         Ok(WorthQuerySupportedProgramRecord::installed(
             installed,
-            &output_sources.into_iter().collect::<Vec<TypeId>>(),
-            &Program::Outputs::root_graph_types(),
+            &output_sources
+                .into_iter()
+                .map(TypeId::from)
+                .collect::<Vec<_>>(),
+            &Program::Outputs::root_graph_types()
+                .into_iter()
+                .map(TypeId::from)
+                .collect::<Vec<_>>(),
         ))
     }
 }

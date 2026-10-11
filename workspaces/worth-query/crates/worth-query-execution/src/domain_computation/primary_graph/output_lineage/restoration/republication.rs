@@ -1,7 +1,7 @@
 //! The lineage row of a republished generated output.
 
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::{Arc, OnceLock};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;

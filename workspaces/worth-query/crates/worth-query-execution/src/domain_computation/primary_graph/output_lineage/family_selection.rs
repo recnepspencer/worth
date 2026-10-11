@@ -3,6 +3,7 @@ use super::{
     ProductCoordinate, SemanticSource, WorthQueryApplicationOutputLineage,
     WorthQueryCurrentOutputCandidate, WorthQueryCurrentOutputFamilyResolution,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::{collections::BTreeSet, sync::Arc};
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 mod checkpoint_priors;
@@ -16,7 +17,7 @@ use publication_heads::PublicationHeads;
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn checkpoint_family_role(
         &self,
-        binding: Option<std::any::TypeId>,
+        binding: Option<TypeId>,
         admission: &mut super::InvalidationEditAdmission,
     ) -> Result<Option<(&str, &str)>, CheckpointPriorSelectionDenial> {
         let Some(binding) = binding else {

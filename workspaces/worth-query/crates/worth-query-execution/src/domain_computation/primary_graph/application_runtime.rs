@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
@@ -171,9 +172,9 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) next_application_mutation_partition: AtomicU32,
     pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
     pub(super) recovered_outputs: super::application_output_demand::WorthQueryRecoveredOutputs,
-    pub(super) program_required_bindings: std::collections::HashSet<std::any::TypeId>,
-    pub(super) program_required_operations: std::collections::HashSet<std::any::TypeId>,
-    pub(super) workflow_guarded_operations: std::collections::HashSet<std::any::TypeId>,
+    pub(super) program_required_bindings: std::collections::HashSet<TypeId>,
+    pub(super) program_required_operations: std::collections::HashSet<TypeId>,
+    pub(super) workflow_guarded_operations: std::collections::HashSet<TypeId>,
     pub(super) program_support:
         Option<super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>>,
     pub(super) installed_conditionals:
@@ -191,7 +192,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.program_support.is_some()
             || self
                 .program_required_operations
-                .contains(&std::any::TypeId::of::<Operation>())
+                .contains(&TypeId::of::<Operation>())
     }
 
     pub(in crate::domain_computation) fn operation_requires_workflow_authority<
@@ -200,7 +201,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
     ) -> bool {
         self.workflow_guarded_operations
-            .contains(&std::any::TypeId::of::<Operation>())
+            .contains(&TypeId::of::<Operation>())
     }
 
     pub fn requires_application_program<Binding>(&self) -> bool
@@ -213,10 +214,10 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.program_support.is_some()
             || self
                 .program_required_bindings
-                .contains(&std::any::TypeId::of::<Binding>())
+                .contains(&TypeId::of::<Binding>())
             || self
                 .program_required_operations
-                .contains(&std::any::TypeId::of::<Binding::Operation>())
+                .contains(&TypeId::of::<Binding::Operation>())
     }
 
     /// The immutable program support this host admitted at installation, when

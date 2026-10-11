@@ -7,7 +7,7 @@
 //! no longer runs is refused before any effect.
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use crate::facade::runtime::ExecutionAllocationPolicy;
 
@@ -143,7 +143,7 @@ where
         if !std::ptr::eq(owner.owned_runtime(), &self.runtime)
             || !self.root_graph_types.contains(&root)
             || !owner.owns_output_root(root)
-            || !owner.owns_output_source(source)
+            || !owner.owns_output_source(source.into_external())
         {
             return Err(WorthQueryApplicationCommitDenial::application_program_required());
         }

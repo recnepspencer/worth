@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::application_attempt::OutputRoleUse
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationProducerBinding,
 };
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_operation::{

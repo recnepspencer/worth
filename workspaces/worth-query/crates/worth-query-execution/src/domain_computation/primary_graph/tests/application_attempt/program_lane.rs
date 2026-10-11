@@ -2,6 +2,7 @@
 
 use super::program_fixture::admitted_program_required_program;
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
@@ -96,7 +97,7 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
     assert!(!world
         .application
         .program_required_operations
-        .contains(&std::any::TypeId::of::<TouchAccountOperation>()));
+        .contains(&TypeId::of::<TouchAccountOperation>()));
     world.application.program_support = Some(installed_program_support(
         &world.application.installed_schema,
     ));

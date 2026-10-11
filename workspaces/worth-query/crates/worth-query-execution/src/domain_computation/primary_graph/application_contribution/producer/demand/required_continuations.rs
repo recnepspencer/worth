@@ -8,7 +8,8 @@
 
 use super::progression::PerformedMembers;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use std::any::{Any, TypeId};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::any::Any;
 
 use worth_query_installation::facade::ApplicationSchema;
 

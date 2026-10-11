@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::application_output_demand::{
     PreparedOutputRootKind, WorthQueryPerformedOutputDemandSource,
 };
 use crate::domain_computation::primary_graph::tests::{application_attempt as attempts, fixture};
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
@@ -38,7 +39,7 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
     let retained_receipt = receipt.clone();
     let registry = &world.application.output_demands;
     let preparation = registry.begin_source_preparation(occurrence);
-    let kind = PreparedOutputRootKind::Required(std::any::TypeId::of::<()>());
+    let kind = PreparedOutputRootKind::Required(TypeId::of::<()>());
     let commit = registry
         .retain_performed_source(
             WorthQueryPerformedOutputDemandSource {

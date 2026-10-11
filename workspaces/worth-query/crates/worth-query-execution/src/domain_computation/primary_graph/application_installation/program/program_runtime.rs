@@ -1,7 +1,7 @@
 //! The published host paired with the initial program that governed its
 //! installation, and with every other program it rostered.
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,

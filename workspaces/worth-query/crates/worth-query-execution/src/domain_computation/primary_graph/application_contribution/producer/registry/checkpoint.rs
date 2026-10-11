@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
 use super::WorthQueryInstalledApplicationProducerRegistry;
@@ -29,7 +30,7 @@ where
                 .map(|descriptor| descriptor.name().to_owned())
                 .collect(),
             checkpoint.roles.clone(),
-            |entity| installed_schema.installed_entity_marker_type(entity),
+            |entity| installed_schema.installed_entity_marker_type(entity).map(TypeId::from),
         )
         .map(std::sync::Arc::new)
     }
