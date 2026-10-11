@@ -221,7 +221,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
             .lock()
             .unwrap()
             .install_output_families(BTreeMap::from([(
-                "test.retained-account-capacity".to_owned(),
+                "test.retained-account-capacity".to_owned().into(),
                 vec![(
                     TypeId::of::<OwnWriteOutputs>(),
                     "computed-account".to_owned(),

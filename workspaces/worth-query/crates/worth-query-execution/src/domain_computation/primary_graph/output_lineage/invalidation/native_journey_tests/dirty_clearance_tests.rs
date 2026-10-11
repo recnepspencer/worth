@@ -1,5 +1,6 @@
 //! A native add/remove restores the same observed relation set. Clearing its
 //! dirty mark requires native verification and a still-current companion image.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::super::{DirtyReverification, InvalidationEditAdmission, SettlementVerificationStop};
 use super::*;
@@ -15,8 +16,6 @@ use worth_relational::facade::{
         RelationMutationIntent, RelationSpec,
     },
 };
-
-struct RelationAbsenceOutput;
 
 #[test]
 fn native_reverification_clears_only_the_verified_live_image_with_admitted_work() {
@@ -63,7 +62,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity().clone(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(account),
-        output_binding: TypeId::of::<RelationAbsenceOutput>(),
+        output_binding: OutputBindingIdentity::declared("RelationAbsenceOutput"),
     }, coordinate, 0);
     handle.with_runtime_mut(|runtime| {
         write_field(runtime, account, label.clone(), "prime");

@@ -6,6 +6,7 @@ use worth_runtime_bridge::facade::{
 fn lowering_cannot_select_signal_basis(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     bridge: &BridgeSealedRuntimeAssembly,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     lowering: &BridgeInstalledConditionalLowering,
     snapshot: &TruthSnapshotIdentity,
     patch: RelationalCommittedPatchRequest,

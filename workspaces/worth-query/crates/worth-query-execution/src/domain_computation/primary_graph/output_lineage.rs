@@ -53,8 +53,9 @@ pub(in crate::domain_computation::primary_graph) mod registry_fixture;
 #[cfg(test)]
 mod tests;
 
+use super::output_family_identity::OutputFamilyIdentity;
 use std::any::TypeId;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, OnceLock};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
@@ -87,36 +88,9 @@ use super::{
     provider::WorthQueryPrimaryGraphCommittedApplication, WorthQueryApplicationOutputCorrespondence,
 };
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct SemanticSource {
-    runtime_authority: u64,
-    schema: ApplicationSchemaBindingIdentity,
-    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    output_binding: TypeId,
-}
-
-impl Ord for SemanticSource {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let key = |source: &Self| {
-            (
-                source.runtime_authority,
-                source.schema.runtime_ordinal(),
-                source.schema.generation(),
-                *source.schema.package_identity(),
-                *source.schema.schema_identity(),
-                source.scope,
-                source.output_binding,
-            )
-        };
-        key(self).cmp(&key(other))
-    }
-}
-
-impl PartialOrd for SemanticSource {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
+mod binding_inventory;
+mod semantic_source;
+pub(in crate::domain_computation::primary_graph) use semantic_source::SemanticSource;
 
 #[derive(Default)]
 pub(crate) struct WorthQueryApplicationOutputLineage {
@@ -127,11 +101,12 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
             BTreeMap<u64, RecordedGeneration>,
         >,
     >,
+    binding_identities: super::output_binding_identity::OutputBindingInventory,
     partition_index: partition_index::OutputPartitionIndex,
     origins: BTreeMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
     live_occurrences: BTreeSet<worth_runtime_world::facade::ProductBranchIncarnation>,
     cancelled_slots: Option<Box<prepared_slot::CancelledLineageSlot>>,
-    output_families: HashMap<String, Vec<(TypeId, String)>>,
+    output_families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
     retention: retained_capacity::LineageRetentionLedger,
 }
 
@@ -197,7 +172,7 @@ pub(super) struct WorthQueryCurrentOutputFamilyResolution {
 impl WorthQueryApplicationOutputLineage {
     pub(super) fn install_output_families(
         &mut self,
-        families: BTreeMap<String, Vec<(TypeId, String)>>,
+        families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
     ) {
         assert!(self.output_families.is_empty());
         self.output_families.extend(families);
@@ -235,12 +210,16 @@ impl WorthQueryApplicationOutputLineage {
         let output_binding = correspondence.binding_type()?;
         // The performed path borrows the pre-effect source. Constructing a
         // fresh source here could allocate after World has moved.
-        let fallback_source = prepared.is_none().then(|| SemanticSource {
-            runtime_authority: scope.runtime_authority(),
-            schema: scope.binding_identity().clone(),
-            scope: scope.scope(),
-            output_binding,
-        });
+        let fallback_source = if prepared.is_none() {
+            Some(SemanticSource {
+                runtime_authority: scope.runtime_authority(),
+                schema: scope.binding_identity().clone(),
+                scope: scope.scope(),
+                output_binding: self.binding_identity(output_binding)?,
+            })
+        } else {
+            None
+        };
         let source = prepared.map_or_else(
             || {
                 fallback_source
@@ -254,7 +233,7 @@ impl WorthQueryApplicationOutputLineage {
             assert_eq!(source.runtime_authority, scope.runtime_authority());
             assert_eq!(&source.schema, scope.binding_identity());
             assert_eq!(source.scope, scope.scope());
-            assert_eq!(source.output_binding, output_binding);
+            assert_eq!(prepared.output_binding_type, output_binding);
             assert_eq!(
                 prepared.coordinate, coordinate,
                 "World performed the prepared product address"

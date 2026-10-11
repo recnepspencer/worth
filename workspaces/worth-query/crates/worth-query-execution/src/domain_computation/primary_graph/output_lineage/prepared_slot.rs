@@ -29,6 +29,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlot {
     owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
     pub(super) source: SemanticSource,
+    pub(super) output_binding_type: std::any::TypeId,
     pub(super) coordinate: ProductCoordinate,
     pub(super) partition: Option<[u8; 32]>,
     pub(super) identity: Arc<RecordedSettlementIdentity>,

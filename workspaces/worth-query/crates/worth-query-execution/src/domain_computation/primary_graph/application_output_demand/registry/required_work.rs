@@ -331,3 +331,17 @@ impl Drop for SelectedRequiredWork {
         }
     }
 }
+
+#[cfg(test)]
+impl super::DemandRegistryState {
+    pub(super) fn fixture_page_required_discontinuity(
+        &mut self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        branch: &worth_relational::facade::history::BranchId,
+        epoch: worth_relational::facade::history::CommitId,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        self.page_required_discontinuity(occurrence, branch, epoch, admission)
+            .map(|_| ())
+    }
+}

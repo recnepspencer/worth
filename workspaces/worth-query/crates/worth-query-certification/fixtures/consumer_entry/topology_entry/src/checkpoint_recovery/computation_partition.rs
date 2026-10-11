@@ -24,6 +24,7 @@ use worth_query_host::facade::application_contribution::{
 
 use super::*;
 
+mod compiled_examples;
 mod demand;
 mod entry_correction;
 mod entry_edit;

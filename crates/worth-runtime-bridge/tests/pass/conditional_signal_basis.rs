@@ -6,6 +6,7 @@ use worth_runtime_bridge::facade::{
 fn admitted_operations(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     bridge: &BridgeSealedRuntimeAssembly,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     signal: &BridgeConditionalSignalBasisBinding,
     snapshot: &TruthSnapshotIdentity,
     patch: RelationalCommittedPatchRequest,
@@ -14,6 +15,7 @@ fn admitted_operations(
         BridgeConditionalEvaluationAdmissionRequest::source_present_at_signal_basis(
             signal, snapshot,
         ),
+        execution,
     );
     let _ = bridge.deliver_authoritative_change(execution, signal, 0, patch);
 }

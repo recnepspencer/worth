@@ -21,7 +21,7 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
             scope: scope.scope(),
-            output_binding,
+            output_binding: self.binding_identity(output_binding)?,
         };
         let publication = receipt.committed_product_publication();
         let recorded = self
@@ -64,7 +64,7 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
             scope: scope.scope(),
-            output_binding,
+            output_binding: self.binding_identity(output_binding)?,
         };
         let publication = receipt.committed_product_publication();
         self.by_source

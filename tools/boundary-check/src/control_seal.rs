@@ -57,7 +57,7 @@ fn entries(text: &str) -> impl Iterator<Item = (&str, &str)> {
         .filter_map(|line| line.split_once(' '))
 }
 fn failure(path: &str, message: impl Into<String>) -> Diagnostic {
-    Diagnostic::new(DiagnosticCode::Bc7009ControlSeal, path, message)
+    Diagnostic::new(DiagnosticCode::Bc7011ControlSeal, path, message)
 }
 fn permitted(path: &str, owners: &BTreeSet<String>) -> bool {
     owners.iter().any(|owner| path.starts_with(owner))

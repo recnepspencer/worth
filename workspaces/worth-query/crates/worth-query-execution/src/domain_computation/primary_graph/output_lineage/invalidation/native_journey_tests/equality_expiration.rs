@@ -1,4 +1,5 @@
 //! Equality recovery uses native revisions, never the expired origin's facts.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 
 use super::super::{ConsumedOutputCurrentness, FullVerificationReason};
@@ -52,7 +53,7 @@ fn chain_expiration(expire_terminal: bool, output_only: bool) {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<StatusOutput>(),
+        output_binding: OutputBindingIdentity::declared("StatusOutput"),
     };
     let origin = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let terminal = RecordedSettlementIdentity::retain(&source, coordinate, 1);

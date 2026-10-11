@@ -182,7 +182,10 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority,
             schema: schema.clone(),
             scope,
-            output_binding,
+            output_binding: pin
+                .map(|identity| identity.source().output_binding.clone())
+                .or_else(|| self.binding_identity(output_binding))
+                .ok_or(FullVerificationReason::NativeRevisionUnavailable)?,
         };
         let pin = match (pin, authority) {
             (Some(pin), _) => pin,

@@ -25,7 +25,7 @@ error[E0308]: mismatched types
    = note: expected reference `&BridgeConditionalSignalBasisBinding`
               found reference `&BridgeInstalledConditionalLowering`
 note: method defined here
-  --> src/conditional_execution/sealed_runtime_assembly.rs
+  --> src/conditional_execution/sealed_runtime_assembly/conditional_dispatch.rs
    |
    |     pub fn deliver_authoritative_change(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

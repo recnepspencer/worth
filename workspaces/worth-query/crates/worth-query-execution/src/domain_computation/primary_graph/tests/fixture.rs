@@ -70,14 +70,15 @@ mod current_output_source;
 #[path = "fixture/filtered_activity_query.rs"]
 mod filtered_activity_query;
 pub(super) use application_queries::{
-    cross_root_definition, AccountSummaryQuery, AccountSummaryResult, CrossRootQuery,
-    GovernedAccountSummaryQuery, OrderedAccountSummaryQuery, PublicAccountMembershipQuery,
-    PublicAccountMembershipResult, ScopedAccountSummaryQuery,
+    cross_root_definition, AccountSummaryQuery, CrossRootQuery, GovernedAccountSummaryQuery,
+    OrderedAccountSummaryQuery, PublicAccountMembershipQuery, PublicAccountMembershipResult,
+    ScopedAccountSummaryQuery,
 };
 pub(in crate::domain_computation::primary_graph) use application_queries::{
-    status_parameter, AccountSummaryParameters, PublicScopedAccountSummaryQuery,
+    status_parameter, AccountSummaryParameters, AccountSummaryResult,
+    PublicScopedAccountSummaryQuery,
 };
-pub(super) use current_output_source::TestAccountSourceBinding;
+pub(in crate::domain_computation::primary_graph) use current_output_source::TestAccountSourceBinding;
 pub(super) use filtered_activity_query::{
     selected_activity_parameters, SelectedActivityParameters, SelectedActivityQuery,
     SelectedActivityResult,
@@ -188,9 +189,9 @@ pub(in crate::domain_computation::primary_graph) use capability_world_installati
     installed_elevated_capability_world,
 };
 pub(in crate::domain_computation::primary_graph) use schema_types::*;
+pub(in crate::domain_computation) use world_installation::installed_authorization_world;
 pub(in crate::domain_computation::primary_graph) use world_installation::{
-    installed_authorization_world, installed_authorization_world_with_label,
-    installed_authorization_world_with_product_resources,
+    installed_authorization_world_with_label, installed_authorization_world_with_product_resources,
     installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
     installed_two_principal_authorization_world,
 };

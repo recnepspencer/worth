@@ -3,7 +3,7 @@ use super::{
     BridgeConditionalRuntimeReconstitutionReport, BridgeInstalledConditionalLowering,
     BridgeOwnedSignalRuntime,
 };
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, RwLock};
 use worth_signal::facade::branch::{AdmittedSignalBranchBasis, SignalConditionalExecutionPort};
 
@@ -16,11 +16,11 @@ pub struct BridgePreparedConditionalReconstitution {
     runtime_key: u64,
     retention: Arc<super::retention::BridgeRetentionLedger>,
     bridge: crate::facade::RuntimeBridge,
-    predecessor: HashMap<
+    predecessor: BTreeMap<
         super::lowering_registry::BridgeConditionalLoweringKey,
         Arc<BridgeInstalledConditionalLowering>,
     >,
-    lowerings: HashMap<
+    lowerings: BTreeMap<
         super::lowering_registry::BridgeConditionalLoweringKey,
         Arc<BridgeInstalledConditionalLowering>,
     >,
@@ -76,7 +76,7 @@ impl BridgeOwnedSignalRuntime {
             .map(|(key, installed)| {
                 lowering::readmit(installed, &service).map(|readmitted| (key.clone(), readmitted))
             })
-            .collect::<Result<HashMap<_, _>, _>>()?;
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
         let report = BridgeConditionalRuntimeReconstitutionReport::new(
             signal,
             correspondence,
