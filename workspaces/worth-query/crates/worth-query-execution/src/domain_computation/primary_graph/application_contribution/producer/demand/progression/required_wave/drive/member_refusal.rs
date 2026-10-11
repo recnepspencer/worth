@@ -24,7 +24,26 @@ pub(super) struct RefusingMember<'a, Schema: ApplicationSchema> {
     pub row: RefusalRow<'a>,
     pub custody: RefusalCustody<'a, Schema>,
 }
-impl<Schema: ApplicationSchema + 'static> RefusingMember<'_, Schema> {
+impl<'a, Schema: ApplicationSchema + 'static> RefusingMember<'a, Schema> {
+    pub(super) fn from_driver(
+        registry: &'a WorthQueryOutputDemandRegistry,
+        member: &'a mut RequiredMember,
+        row: RefusalRow<'a>,
+        queue_custody: &'a mut RequiredContinuations<Schema>,
+    ) -> Self {
+        let custody = if member.caller {
+            RefusalCustody::Caller
+        } else {
+            RefusalCustody::Queue(queue_custody)
+        };
+        Self {
+            registry,
+            member,
+            row,
+            custody,
+        }
+    }
+
     pub(super) fn end(
         self,
         stop: WorthQueryOutputDemandDenial,
@@ -74,25 +93,12 @@ pub(super) fn member_stop(
     }
 }
 impl RefusalEnd {
-    /// The same budget ending releases and holds the canonical cursor for both routes.
-    pub(super) fn finish<Schema, Family>(
-        self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-        wave: &RequiredWaveSelection<'_, Schema>,
-        frontier: &mut RequiredFrontier,
-        queue: &mut QueuedRequiredRoots,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Option<Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>>
-    where
-        Schema: ApplicationSchema + 'static,
-        Family: WorthQueryProducerOutputFamily<Schema>,
-    {
+    /// The caller's refusal returns before this door. A held queue row leaves
+    /// its cursor open; a queue-budget stop invokes the owner's canonical end.
+    pub(super) fn finish<T>(self, finish_cursor: impl FnOnce() -> T) -> Option<T> {
         match self {
             Self::Held => None,
-            Self::QueueBudget => Some(canonical_apply::finish(
-                runtime, demand, wave, frontier, queue, admission,
-            )),
+            Self::QueueBudget => Some(finish_cursor()),
         }
     }
 }

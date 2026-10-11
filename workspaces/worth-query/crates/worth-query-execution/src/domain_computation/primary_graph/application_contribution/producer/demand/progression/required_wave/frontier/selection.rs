@@ -1,37 +1,19 @@
 //! Native selections and queue claims keep their own admission payer.
-//! A checkpoint binding retains the sealed, paid inspection's provenance.
+//! The checkpoint handoff consumes the sealed paid inspection; storage carries its Ready.
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkClaim;
 pub(in super::super) enum MemberInput<Ready> {
     /// The popped claim pays its registry selection at first inspection.
     Queued {
         claim: RequiredWorkClaim,
-        ready: Option<ReadyBinding<Ready>>,
+        ready: Option<Ready>,
     },
-    Selected(ReadyBinding<Ready>),
-}
-pub(in super::super) enum ReadyBinding<Ready> {
-    /// Caller admission, native Upstream certification, or held-resume inspection
-    /// issued this pin; a checkpoint driver must use the paid binding instead.
-    Native(Ready),
-    Checkpoint(CheckpointReady<Ready>),
-}
-/// Only consuming PaidCheckpointReady constructs this private payload.
-pub(in super::super) struct CheckpointReady<Ready> {
-    ready: Ready,
-}
-impl<Ready> ReadyBinding<Ready> {
-    fn ready(&self) -> &Ready {
-        match self {
-            Self::Native(ready) => ready,
-            Self::Checkpoint(paid) => &paid.ready,
-        }
-    }
+    Selected(Ready),
 }
 impl<Ready> MemberInput<Ready> {
     /// The actual owner that issued this native pin has paid for its selection.
     pub(in super::super) fn native(ready: Ready) -> Self {
-        Self::Selected(ReadyBinding::Native(ready))
+        Self::Selected(ready)
     }
     pub(in super::super) fn selected(&self) -> &Ready {
         self.bound_ready()
@@ -39,8 +21,8 @@ impl<Ready> MemberInput<Ready> {
     }
     pub(super) fn bound_ready(&self) -> Option<&Ready> {
         match self {
-            Self::Selected(ready) => Some(ready.ready()),
-            Self::Queued { ready, .. } => ready.as_ref().map(ReadyBinding::ready),
+            Self::Selected(ready) => Some(ready),
+            Self::Queued { ready, .. } => ready.as_ref(),
         }
     }
     pub(super) fn claim(&self) -> Option<&RequiredWorkClaim> {
@@ -70,9 +52,9 @@ impl<Ready> MemberInput<Ready> {
         self.rebind_native(next);
     }
     pub(super) fn rebind_native(&mut self, next: Ready) {
-        self.bind(ReadyBinding::Native(next));
+        self.bind(next);
     }
-    fn bind(&mut self, next: ReadyBinding<Ready>) {
+    fn bind(&mut self, next: Ready) {
         match self {
             Self::Selected(ready) => *ready = next,
             Self::Queued { ready, .. } => *ready = Some(next),
@@ -84,9 +66,7 @@ impl MemberInput<SelectedReadyReadmission> {
         &mut self,
         paid: super::super::super::super::required_continuations::PaidCheckpointReady,
     ) {
-        self.bind(ReadyBinding::Checkpoint(CheckpointReady {
-            ready: paid.into_readmission(),
-        }));
+        self.bind(paid.into_readmission());
     }
 }
 impl RequiredMember {

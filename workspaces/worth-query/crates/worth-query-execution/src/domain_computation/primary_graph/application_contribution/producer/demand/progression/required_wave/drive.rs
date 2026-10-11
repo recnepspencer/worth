@@ -14,7 +14,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 pub(super) mod canonical_apply;
 mod member_refusal;
 mod member_stop;
-use member_refusal::{RefusalCustody, RefusalRow, RefusingMember};
+use member_refusal::{RefusalRow, RefusingMember};
 mod frozen_collection;
 mod readiness_collection;
 mod requested_refusal;
@@ -151,21 +151,23 @@ where
                     frontier.members[index].state = MemberState::Pending;
                 }
                 requested_refusal::RequestedRefusal::Unavailable => {
-                    let custody = if frontier.members[index].caller {
-                        RefusalCustody::Caller
-                    } else {
-                        RefusalCustody::Queue(&mut *queue_custody)
-                    };
-                    let ended = RefusingMember {
-                        registry: &runtime.output_demands,
-                        member: &mut frontier.members[index],
-                        row: RefusalRow::Member,
-                        custody,
-                    }
+                    let ended = RefusingMember::from_driver(
+                        &runtime.output_demands,
+                        &mut frontier.members[index],
+                        RefusalRow::Member,
+                        &mut *queue_custody,
+                    )
                     .end(stop, recording, queue, admission)?;
-                    if let Some(outcome) =
-                        ended.finish(runtime, demand, &wave, &mut frontier, queue, admission)
-                    {
+                    if let Some(outcome) = ended.finish(|| {
+                        canonical_apply::finish(
+                            runtime,
+                            demand,
+                            &wave,
+                            &mut frontier,
+                            queue,
+                            admission,
+                        )
+                    }) {
                         return outcome;
                     }
                 }
@@ -258,26 +260,28 @@ where
                     frontier.members[index].state = MemberState::Pending
                 }
                 Err(stop) => {
-                    let custody = if frontier.members[index].caller {
-                        RefusalCustody::Caller
-                    } else {
-                        RefusalCustody::Queue(&mut *queue_custody)
-                    };
-                    let ended = RefusingMember {
-                        registry: &runtime.output_demands,
-                        member: &mut frontier.members[index],
-                        row: RefusalRow::HeldHead(&head),
-                        custody,
-                    }
+                    let ended = RefusingMember::from_driver(
+                        &runtime.output_demands,
+                        &mut frontier.members[index],
+                        RefusalRow::HeldHead(&head),
+                        &mut *queue_custody,
+                    )
                     .end(
                         stop,
                         member_stop::StopRecording::member(),
                         queue,
                         admission,
                     )?;
-                    if let Some(outcome) =
-                        ended.finish(runtime, demand, &wave, &mut frontier, queue, admission)
-                    {
+                    if let Some(outcome) = ended.finish(|| {
+                        canonical_apply::finish(
+                            runtime,
+                            demand,
+                            &wave,
+                            &mut frontier,
+                            queue,
+                            admission,
+                        )
+                    }) {
                         return outcome;
                     }
                 }

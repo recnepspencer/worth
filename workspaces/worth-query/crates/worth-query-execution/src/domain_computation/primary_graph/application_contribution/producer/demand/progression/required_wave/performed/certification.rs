@@ -4,18 +4,6 @@ use super::PerformedMembers;
 mod current_basis;
 pub(in crate::domain_computation::primary_graph) use current_basis::CurrentBasis;
 
-/// No accessor exposes a stale decision. Reinspection obtains a new value.
-#[cfg(test)]
-pub(in super::super) struct CertifiedDecision<T> {
-    commit_generation: u64,
-    value: T,
-}
-#[cfg(test)]
-impl<T> CertifiedDecision<T> {
-    pub(in super::super) fn into_current(self, owner: &PerformedMembers) -> Option<T> {
-        (self.commit_generation == owner.commit_generation).then_some(self.value)
-    }
-}
 impl PerformedMembers {
     fn current<T>(
         &self,
@@ -27,14 +15,6 @@ impl PerformedMembers {
             value,
             basis,
             record,
-        }
-    }
-
-    #[cfg(test)]
-    fn certify<T>(&self, value: T) -> CertifiedDecision<T> {
-        CertifiedDecision {
-            commit_generation: self.commit_generation,
-            value,
         }
     }
 }
@@ -59,12 +39,6 @@ impl<T> CurrentProof<T> {
     }
     pub(in super::super) fn into_value(self) -> T {
         self.value
-    }
-}
-#[cfg(test)]
-impl PerformedMembers {
-    pub(in super::super) fn certify_for_test<T>(&self, value: T) -> CertifiedDecision<T> {
-        self.certify(value)
     }
 }
 

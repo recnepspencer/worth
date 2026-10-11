@@ -1,5 +1,6 @@
 //! One wave: owner preparation, owned compute dispatch, consuming ordered apply.
 use super::*;
+use super::member_refusal::RefusalCustody;
 use super::super::super::super::required_continuations::WaveCheckpointTurn;
 use super::readiness_collection::{self, MemberStop};
 use super::super::selection::committed_ready;

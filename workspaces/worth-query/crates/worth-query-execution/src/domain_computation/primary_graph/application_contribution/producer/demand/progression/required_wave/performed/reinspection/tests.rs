@@ -90,7 +90,6 @@ fn assert_publication_credit(replay: bool, publish: bool) {
         let m = key("M");
         let mut record = PerformedMembers::start();
         let inspected = record.inspection();
-        let certified = record.certify_for_test("Current at this generation");
         let permission = record
             .fresh(
                 &a,
@@ -113,11 +112,6 @@ fn assert_publication_credit(replay: bool, publish: bool) {
                 .unwrap_or_else(|_| panic!("receipt retained"));
             record.publication(permission, publication, |member| member.performed());
         }
-        assert_eq!(
-            certified.into_current(&record),
-            (!publish || replay).then_some("Current at this generation"),
-            "only a new publication invalidates the certified decision"
-        );
         assert!(
             record
                 .reinspection(&a, inspected, &mut admission)

@@ -34,7 +34,11 @@ fn a_queue_refusal_uses_its_advance_custody_not_the_rows_caller_tag() {
             &mut admission,
         );
         match result {
-            Ok(RefusalEnd::Held) => {}
+            Ok(end @ RefusalEnd::Held) => {
+                assert!(end
+                    .finish(|| panic!("a held queue row does not end its cursor"))
+                    .is_none());
+            }
             Ok(RefusalEnd::QueueBudget) => panic!("the row's stop is not a request budget"),
             Err(stop) => panic!(
                 "Queue custody owns this refusal regardless of the row tag: {:?}",
@@ -78,7 +82,20 @@ fn a_queue_budget_refusal_returns_its_typed_end() {
         &mut queue,
         &mut admission,
     );
-    assert!(matches!(result, Ok(RefusalEnd::QueueBudget)));
+    let end = result.unwrap_or_else(|_| panic!("queue custody returns its budget end"));
+    let mut finished = false;
+    let returned = end.finish(|| {
+        finished = true;
+        WorthQueryOutputDemandAdvance::Pending
+    });
+    assert!(
+        finished,
+        "the budget door invokes the owner's canonical finish once"
+    );
+    assert!(matches!(
+        returned,
+        Some(WorthQueryOutputDemandAdvance::Pending)
+    ));
     assert!(matches!(frontier.members[0].state, MemberState::Pending));
 }
 
@@ -108,7 +125,18 @@ fn a_caller_refusal_returns_its_stop_even_for_a_queue_origin_row() {
         &mut queue,
         &mut admission,
     );
+    let mut finished = false;
+    let result = result.map(|end| {
+        end.finish(|| {
+            finished = true;
+            WorthQueryOutputDemandAdvance::Pending
+        })
+    });
     assert!(matches!(result,Err(stop) if stop.kind()==kind));
+    assert!(
+        !finished,
+        "caller custody returns its own stop before the cursor finish"
+    );
     assert_eq!(registry.fixture_stop_kind(&key), Some(kind));
     assert!(!queue.draining());
 }
