@@ -328,7 +328,12 @@ where
             &self.primary_provider.live_delivery,
             retained_product.observation(),
             buffer_capacity,
-        );
+        ).map_err(|_| open_denial(
+            WorthQueryApplicationLiveOpenDenialKind::Admission(
+                crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAdmissionDenialKind::RetentionCapacityExhausted,
+            ),
+            request.query.name(),
+        ))?;
         Ok(WorthQueryApplicationLiveLease {
             runtime: self,
             query: request.query,

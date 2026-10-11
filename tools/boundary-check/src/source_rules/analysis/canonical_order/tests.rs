@@ -136,6 +136,23 @@ fn named_identity_lookup_orders_the_declaration() {
 }
 
 #[test]
+fn named_identity_exemption_refuses_each_near_miss() {
+    for source in [
+        include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/named_identity_two_arguments.rs"
+        ),
+        include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/named_identity_field_receiver.rs"
+        ),
+        include_str!(
+            "../../../../tests/fixtures/canonical_order_rules/named_identity_beside_type_id.rs"
+        ),
+    ] {
+        assert_eq!(rejects(source), ["ordering expression names TypeId"]);
+    }
+}
+
+#[test]
 fn address_order_fixture_refuses_order_but_allows_equality_hashing() {
     assert_eq!(
         rejects(include_str!(
