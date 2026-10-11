@@ -60,7 +60,7 @@ impl WorthQueryOutputDemandRegistry {
         let DemandState::Output(output) = &record.state else {
             return Ok(None);
         };
-        if !matches!(output.advancement, WorthQueryOutputAdvancement::Idle) {
+        if !matches!(output.advancement(), WorthQueryOutputAdvancement::Idle) {
             return Ok(None);
         }
         let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {

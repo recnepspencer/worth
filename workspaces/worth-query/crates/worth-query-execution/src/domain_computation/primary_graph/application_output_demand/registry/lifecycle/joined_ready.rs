@@ -60,7 +60,7 @@ impl WorthQueryOutputDemandRegistry {
 /// An idle Ready one interest holds and nothing else does.
 fn only_joined(record: &DemandRecord) -> bool {
     let idle_ready = matches!(&record.state, DemandState::Output(output)
-        if matches!(output.advancement, WorthQueryOutputAdvancement::Idle)
+        if matches!(output.advancement(), WorthQueryOutputAdvancement::Idle)
             && matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_))));
     idle_ready
         && record.interests == 1

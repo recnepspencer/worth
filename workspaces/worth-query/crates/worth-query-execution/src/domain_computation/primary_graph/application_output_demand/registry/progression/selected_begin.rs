@@ -98,7 +98,7 @@ pub(super) fn begin_admitted<'a>(
         .map_err(|_| empty_begin_work_denial())?;
     let existing_denial = match &record.state {
         DemandState::Failed(denial) => Some(denial),
-        DemandState::Output(output) => match &output.advancement {
+        DemandState::Output(output) => match output.advancement() {
             WorthQueryOutputAdvancement::Stopped { denial, .. } => Some(denial),
             _ => None,
         },

@@ -105,7 +105,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
             .is_some_and(|member| Arc::ptr_eq(member, &self.member))
             || !matches!(&record.state,
                 DemandState::Output(output)
-                    if matches!(output.advancement, WorthQueryOutputAdvancement::Idle)
+                    if matches!(output.advancement(), WorthQueryOutputAdvancement::Idle)
                         && matches!(&output.checkpoint,
                             Some(WorthQueryOutputCheckpoint::Published { .. }
                                 | WorthQueryOutputCheckpoint::Delivered { .. })))
@@ -156,7 +156,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 checkpoint,
             ));
         };
-        match &output.advancement {
+        match output.advancement() {
             WorthQueryOutputAdvancement::Stopped {
                 denial: stopped,
                 interrupted_claim: Some(active),
@@ -166,10 +166,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                     return Err(SelectedCheckpointFinishStop::Returned(stopped, checkpoint));
                 }
                 output.install_checkpoint(checkpoint);
-                output.advancement = WorthQueryOutputAdvancement::Stopped {
-                    denial: retained_denial(&stopped),
-                    interrupted_claim: None,
-                };
+                output.finish_stopped(retained_denial(&stopped));
                 record.wake.notify();
                 state.defer_terminal_cleanup(self.member.key_arc(), 0);
                 drop(state);
@@ -181,14 +178,11 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 // it; any other stays with the advance that met it, and the
                 // row's checkpoint waits for a later claim.
                 let terminal = denial.is_some_and(super::super::required_stop::fails_row);
-                output.advancement = if terminal {
-                    WorthQueryOutputAdvancement::Stopped {
-                        denial: retained_denial(denial.expect("terminal cause exists")),
-                        interrupted_claim: None,
-                    }
+                if terminal {
+                    output.finish_stopped(retained_denial(denial.expect("terminal cause exists")));
                 } else {
-                    WorthQueryOutputAdvancement::Idle
-                };
+                    output.reopen();
+                }
                 record.wake.notify();
                 if terminal {
                     // Existing admitted cleanup destroys variable obligations

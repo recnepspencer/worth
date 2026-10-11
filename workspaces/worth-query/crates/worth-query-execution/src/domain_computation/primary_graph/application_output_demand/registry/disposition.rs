@@ -32,7 +32,7 @@ impl DemandRecord {
                 }
             }
             DemandState::Failed(_) => Retired(RowRetirement::Finished),
-            DemandState::Output(output) => match &output.advancement {
+            DemandState::Output(output) => match output.advancement() {
                 WorthQueryOutputAdvancement::Claimed(_) => InFlight,
                 WorthQueryOutputAdvancement::Stopped { .. } => Retired(RowRetirement::Finished),
                 WorthQueryOutputAdvancement::Idle => match &output.checkpoint {

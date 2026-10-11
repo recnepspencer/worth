@@ -240,7 +240,7 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
         &commit,
     );
     assert!(matches!(
-        output.advancement,
+        output.advancement(),
         super::super::WorthQueryOutputAdvancement::Stopped { .. }
     ));
     drop(state);

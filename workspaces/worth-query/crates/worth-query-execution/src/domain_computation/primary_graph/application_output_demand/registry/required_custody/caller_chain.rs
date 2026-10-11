@@ -103,7 +103,10 @@ fn holds_custody(record: &DemandRecord) -> bool {
 fn refreshing(record: &DemandRecord) -> bool {
     match &record.state {
         DemandState::Output(output) => {
-            matches!(output.advancement, WorthQueryOutputAdvancement::Claimed(_))
+            matches!(
+                output.advancement(),
+                WorthQueryOutputAdvancement::Claimed(_)
+            )
         }
         DemandState::Failed(_) => false,
         _ => true,

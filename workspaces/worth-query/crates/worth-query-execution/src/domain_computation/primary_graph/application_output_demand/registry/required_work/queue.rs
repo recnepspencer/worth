@@ -261,6 +261,6 @@ impl<Schema>
     pub fn undelivered_publication_counts_for_test(&self) -> (usize, usize) {
         let state = self.output_demands.state.lock().unwrap();
         (state.records.publication_count_for_test(), state.records.values().filter(|record|
-            matches!(&record.state, super::super::DemandState::Output(output) if !matches!(output.advancement, super::super::WorthQueryOutputAdvancement::Stopped { .. }) && matches!(output.checkpoint, Some(super::super::WorthQueryOutputCheckpoint::Published { .. })))).count())
+            matches!(&record.state, super::super::DemandState::Output(output) if !matches!(output.advancement(), super::super::WorthQueryOutputAdvancement::Stopped { .. }) && matches!(output.checkpoint, Some(super::super::WorthQueryOutputCheckpoint::Published { .. })))).count())
     }
 }

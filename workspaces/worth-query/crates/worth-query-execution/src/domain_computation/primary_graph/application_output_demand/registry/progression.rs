@@ -89,7 +89,7 @@ fn begin_record(
         DemandState::Scheduling | DemandState::Running => {
             WorthQueryOutputDemandAdvanceAdmission::Pending
         }
-        DemandState::Output(output) => match &output.advancement {
+        DemandState::Output(output) => match output.advancement() {
             WorthQueryOutputAdvancement::Claimed(_) => {
                 WorthQueryOutputDemandAdvanceAdmission::Pending
             }
@@ -114,7 +114,7 @@ fn begin_record(
                     .checkpoint
                     .take()
                     .expect("idle output retains its checkpoint");
-                output.advancement = WorthQueryOutputAdvancement::Claimed(claim);
+                output.claim(claim);
                 WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint }
             }
         },
@@ -259,15 +259,12 @@ impl WorthQueryOutputDemandRegistry {
                 ),
             });
         };
-        match &output.advancement {
+        match output.advancement() {
             WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {}
             WorthQueryOutputAdvancement::Stopped { denial: stopped, interrupted_claim: Some(active) } if *active == claim => {
                 let stopped = stopped.clone();
                 if output.checkpoint.is_none() { output.install_checkpoint(checkpoint); }
-                output.advancement = WorthQueryOutputAdvancement::Stopped {
-                    denial: stopped.clone(),
-                    interrupted_claim: None,
-                };
+                output.finish_stopped(stopped.clone());
                 let released = record.release_obligations();
                 state.obligation_reserved_bytes =
                     state.obligation_reserved_bytes.saturating_sub(released);
@@ -283,18 +280,13 @@ impl WorthQueryOutputDemandRegistry {
             )),
         }
         output.install_checkpoint(checkpoint);
-        output.advancement = match denial {
+        match denial {
             Some(denial) if denial.recovery_posture()
-                != crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable => {
-                WorthQueryOutputAdvancement::Stopped {
-                    denial: denial.clone(),
-                    interrupted_claim: None,
-                }
-            }
-            _ => WorthQueryOutputAdvancement::Idle,
+                != crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable => output.finish_stopped(denial.clone()),
+            _ => output.reopen(),
         };
         let terminal = matches!(
-            output.advancement,
+            output.advancement(),
             WorthQueryOutputAdvancement::Stopped { .. }
         );
         let released = if terminal {

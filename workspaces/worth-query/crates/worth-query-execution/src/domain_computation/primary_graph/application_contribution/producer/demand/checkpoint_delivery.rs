@@ -269,3 +269,6 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod stopped_delivery;

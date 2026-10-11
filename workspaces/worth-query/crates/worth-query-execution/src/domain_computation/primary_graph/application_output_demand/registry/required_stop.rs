@@ -151,7 +151,7 @@ pub(super) fn head_stop(
     let record = records.get(key)?;
     let stopped = match &record.state {
         DemandState::Failed(denial) => Some(denial),
-        DemandState::Output(output) => match &output.advancement {
+        DemandState::Output(output) => match output.advancement() {
             WorthQueryOutputAdvancement::Stopped { denial, .. } => Some(denial),
             _ => None,
         },

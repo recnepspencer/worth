@@ -102,7 +102,7 @@ impl WorthQueryOutputDemandRegistry {
         let same_ready = matches!(
             &record.state,
             DemandState::Output(output)
-                if matches!(output.advancement, WorthQueryOutputAdvancement::Idle)
+                if matches!(output.advancement(), WorthQueryOutputAdvancement::Idle)
                     && matches!(&output.checkpoint,
                         Some(WorthQueryOutputCheckpoint::Ready(current))
                             if current.same_cell(&selected.completion))

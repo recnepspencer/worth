@@ -146,7 +146,7 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
     assert!(matches!(
         &record.state,
         DemandState::Output(output)
-            if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. })
+            if matches!(output.advancement(), WorthQueryOutputAdvancement::Stopped { .. })
                 && matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_)))
     ));
 }

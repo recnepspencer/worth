@@ -25,14 +25,9 @@ impl WorthQueryOutputDemandRegistry {
             .records
             .iter()
             .filter_map(|(key, record)| {
-                let DemandState::Output(WorthQueryOutputProgress {
-                    checkpoint: Some(WorthQueryOutputCheckpoint::Ready(completion)),
-                    advancement: WorthQueryOutputAdvancement::Idle,
-                    ..
-                }) = &record.state
-                else {
-                    return None;
-                };
+                let DemandState::Output(output) = &record.state else { return None; };
+                if !matches!(output.advancement(), WorthQueryOutputAdvancement::Idle) { return None; }
+                let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else { return None; };
                 match &completion.authority {
                     WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
                         let idempotency = receipt.idempotency_binding();

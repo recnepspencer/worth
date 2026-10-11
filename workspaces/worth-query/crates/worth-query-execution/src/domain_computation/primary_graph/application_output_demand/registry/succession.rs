@@ -164,10 +164,10 @@ impl super::DemandRegistryState {
         // and its publication replaces whatever claims it kept.
         if let DemandState::Output(output) = &mut record.state {
             if matches!(
-                output.advancement,
+                output.advancement(),
                 WorthQueryOutputAdvancement::Stopped { .. }
             ) {
-                output.advancement = WorthQueryOutputAdvancement::Idle;
+                output.reopen();
                 record.wake.notify();
             }
         }
@@ -180,7 +180,7 @@ impl super::DemandRegistryState {
 fn replaced_ready(record: &DemandRecord) -> bool {
     matches!(&record.state, DemandState::Output(output)
         if matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_)))
-            && (!matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. })
+            && (!matches!(output.advancement(), WorthQueryOutputAdvancement::Stopped { .. })
                 || super::refreshed_rejoin::superseded(record)))
 }
 

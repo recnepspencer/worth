@@ -2,9 +2,8 @@
 //! The commit receipt is real; checkpoint and claim stages are set directly.
 use super::super::{
     BoundOutputSource, PreparedOutputRootKind, ReadyCompletion, SourceCustody,
-    WorthQueryAcceptedOutputAuthority, WorthQueryCompletedOutputDemand,
-    WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity,
-    WorthQueryOutputProgress,
+    WorthQueryAcceptedOutputAuthority, WorthQueryCompletedOutputDemand, WorthQueryOutputCheckpoint,
+    WorthQueryOutputClaimIdentity, WorthQueryOutputProgress,
 };
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
@@ -44,23 +43,13 @@ fn completed_stage(claimed_with_ready: bool) {
             resources: None,
         });
         let mut progress = WorthQueryOutputProgress::restored(completion);
-        progress.advancement =
-            WorthQueryOutputAdvancement::Claimed(WorthQueryOutputClaimIdentity(1));
+        progress.claim(WorthQueryOutputClaimIdentity(1));
         progress
     } else {
-        WorthQueryOutputProgress {
-            undelivered: None,
-            published_commit: None,
-            checkpoint: None,
-            advancement: WorthQueryOutputAdvancement::Stopped {
-                denial: WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::NoEffect,
-                    "finished without an answer",
-                ),
-                interrupted_claim: None,
-            },
-            next_claim: 0,
-        }
+        WorthQueryOutputProgress::stopped_without_checkpoint(WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::NoEffect,
+            "finished without an answer",
+        ))
     };
     let mut row = record(occurrence(), DemandState::Output(output), 0);
     row.source_commits.push(commit.clone());
@@ -80,7 +69,7 @@ fn completed_stage(claimed_with_ready: bool) {
         else {
             panic!("the actual checkpoint row is retained")
         };
-        output.advancement = WorthQueryOutputAdvancement::Idle;
+        output.reopen();
         assert!(matches!(
             output.checkpoint,
             Some(WorthQueryOutputCheckpoint::Ready(_))

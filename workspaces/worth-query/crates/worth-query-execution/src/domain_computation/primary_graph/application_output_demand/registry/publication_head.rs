@@ -161,3 +161,16 @@ impl WorthQueryOutputDemandRegistry {
             .last_selection_frozen = Some(frozen);
     }
 }
+
+#[cfg(test)]
+impl WorthQueryOutputDemandRegistry {
+    pub(in crate::domain_computation::primary_graph) fn publication_counts_for_registry_test(
+        &self,
+    ) -> (usize, usize) {
+        let state = self.state.lock().unwrap();
+        let scan = state.records.values().filter(|record| matches!(&record.state,
+            DemandState::Output(output) if !matches!(output.advancement(), WorthQueryOutputAdvancement::Stopped { .. })
+            && matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. })))).count();
+        (state.records.publication_count_for_test(), scan)
+    }
+}

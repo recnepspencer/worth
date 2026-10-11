@@ -123,10 +123,10 @@ fn an_unpublished_refresh_its_last_owner_lets_go_gives_the_occurrence_back() {
     let DemandState::Output(output) = &mut replaced_record.state else {
         unreachable!("the replaced row holds a Ready");
     };
-    output.advancement = super::super::WorthQueryOutputAdvancement::Stopped {
-        denial: WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::Superseded, ""),
-        interrupted_claim: None,
-    };
+    output.finish_stopped(WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::Superseded,
+        "",
+    ));
     let refresh_record = DemandRecord {
         successor_of: Some(super::super::succession::Succession::new([0; 32])),
         ..record(occurrence(), DemandState::Scheduled, 1)
@@ -143,7 +143,7 @@ fn an_unpublished_refresh_its_last_owner_lets_go_gives_the_occurrence_back() {
     // The Ready the refresh replaced answers for the occurrence again.
     assert!(
         matches!(&state.records[&replaced].state, DemandState::Output(output)
-        if matches!(output.advancement, super::super::WorthQueryOutputAdvancement::Idle))
+        if matches!(output.advancement(), super::super::WorthQueryOutputAdvancement::Idle))
     );
 }
 

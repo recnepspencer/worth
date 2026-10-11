@@ -224,3 +224,15 @@ impl ReadyCompletion {
         .complete(completion)
     }
 }
+
+#[cfg(test)]
+impl PreparedReadyBacking {
+    pub(in crate::domain_computation::primary_graph) fn for_registry_test(
+        registry: &super::WorthQueryOutputDemandRegistry,
+    ) -> Self {
+        let capacity = registry
+            .reserve_required_custody_capacity(Self::retained_bytes())
+            .unwrap();
+        Self::new(capacity)
+    }
+}

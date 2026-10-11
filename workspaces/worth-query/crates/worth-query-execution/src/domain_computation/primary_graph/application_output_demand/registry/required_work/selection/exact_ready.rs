@@ -38,7 +38,7 @@ impl SelectedReadyReadmission {
                 .is_some_and(|source| Arc::ptr_eq(source, &self.readmission))
             && matches!(&record.state,
                 DemandState::Output(output)
-                    if matches!(output.advancement, WorthQueryOutputAdvancement::Idle)
+                    if matches!(output.advancement(), WorthQueryOutputAdvancement::Idle)
                         && matches!(&output.checkpoint,
                             Some(WorthQueryOutputCheckpoint::Ready(current))
                                 if current.same_cell(&self.completion)))

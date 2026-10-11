@@ -80,7 +80,7 @@ impl WorthQueryOutputDemandRegistry {
 pub(super) fn superseded(record: &DemandRecord) -> bool {
     match &record.state {
         DemandState::Output(output) => matches!(
-            &output.advancement,
+            output.advancement(),
             WorthQueryOutputAdvancement::Stopped { denial, .. }
                 if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
         ),

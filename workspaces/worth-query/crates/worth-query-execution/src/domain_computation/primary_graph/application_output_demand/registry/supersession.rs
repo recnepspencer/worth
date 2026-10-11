@@ -28,7 +28,7 @@ impl WorthQueryOutputDemandRegistry {
             }
             DemandState::Output(output) => {
                 if let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
-                    &output.advancement
+                    output.advancement()
                 {
                     return denial.clone();
                 }

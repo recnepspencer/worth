@@ -194,7 +194,7 @@ impl WorthQueryOutputDemandRegistry {
                 });
                 if matches_ready {
                     if let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
-                        &output.advancement
+                        output.advancement()
                     {
                         return Err(denial.clone());
                     }
@@ -286,7 +286,7 @@ impl WorthQueryOutputDemandRegistry {
             let reopens_exact_ready = matches!(
                 &record.state,
                 DemandState::Output(output)
-                    if matches!(output.advancement, super::WorthQueryOutputAdvancement::Idle)
+                    if matches!(output.advancement(), super::WorthQueryOutputAdvancement::Idle)
                     && output.checkpoint.as_ref().is_some_and(|checkpoint| {
                         matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
                             if successor.matches_ready(&completion.authority))
@@ -333,7 +333,7 @@ pub(super) fn accepts_semantic_join(record: &DemandRecord) -> bool {
     match &record.state {
         DemandState::Failed(_) => false,
         DemandState::Output(output) => !matches!(
-            output.advancement,
+            output.advancement(),
             super::WorthQueryOutputAdvancement::Stopped { .. }
         ),
         _ => true,
