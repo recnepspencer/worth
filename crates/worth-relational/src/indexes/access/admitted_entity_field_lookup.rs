@@ -41,6 +41,9 @@ impl IndexAccess<'_> {
         parity: BoundedIndexParityMode,
         mut prepare: impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
     ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
+        let mut prepare = |work, bytes| {
+            super::prepared_lookup_admission::admit(execution, index, &mut || prepare(work, bytes))
+        };
         if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
             return Err(Stop::ExactBasisRequired);
         }
@@ -66,9 +69,7 @@ impl IndexAccess<'_> {
                 &mut prepare,
             )
             .map_err(|stop| match stop {
-                crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission(stop) => {
-                    Stop::Admission(stop)
-                }
+                crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
                 crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
                     Stop::AccountingOverflow
                 }
@@ -113,7 +114,7 @@ impl IndexAccess<'_> {
                 .ok_or(Stop::AccountingOverflow)?,
             0,
         )?;
-        prepare(SelectedIndexReadWork::OrderedNavigation(seek), 0).map_err(Stop::Admission)?;
+        prepare(SelectedIndexReadWork::OrderedNavigation(seek), 0)?;
         let rows = entries.get(&key);
         let mut read = AdmittedCollectionRead {
             index,
@@ -161,7 +162,7 @@ struct AdmittedCollectionRead<'a, 'runtime, F> {
     value: &'a AspectValue,
     prepare: &'a mut F,
 }
-impl<E, F: FnMut(SelectedIndexReadWork, u64) -> Result<(), E>>
+impl<E, F: FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop<E>>>
     super::entity_field_collection::EntityFieldCollectionRead<E>
     for AdmittedCollectionRead<'_, '_, F>
 {
@@ -210,7 +211,7 @@ fn certify_storage<E>(
     index: DerivedIndexId,
     limit: usize,
     outcome: &BoundedEntityFieldLookupOutcome,
-    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop<E>>,
 ) -> Result<(), Stop<E>> {
     let root = view.selected_root().ok_or(Stop::ExactBasisRequired)?;
     let slots = root.entity_slot_count();
@@ -263,7 +264,7 @@ fn certify_storage<E>(
 /// initialized slot exchange is admitted immediately before it occurs.
 fn sort_fixed_ids<E>(
     ids: &mut [EntityId],
-    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop<E>>,
 ) -> Result<(), Stop<E>> {
     for start in (0..ids.len() / 2).rev() {
         sift_down(ids, start, ids.len(), prepare)?;
@@ -280,7 +281,7 @@ fn sift_down<E>(
     ids: &mut [EntityId],
     mut root: usize,
     end: usize,
-    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop<E>>,
 ) -> Result<(), Stop<E>> {
     loop {
         charge(prepare, 1, 0)?;
@@ -309,11 +310,11 @@ fn sift_down<E>(
 }
 
 fn charge<E>(
-    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop<E>>,
     work: u64,
     bytes: u64,
 ) -> Result<(), Stop<E>> {
-    prepare(SelectedIndexReadWork::Operation(work), bytes).map_err(Stop::Admission)
+    prepare(SelectedIndexReadWork::Operation(work), bytes)
 }
 
 fn width<E>(value: usize) -> Result<u64, Stop<E>> {

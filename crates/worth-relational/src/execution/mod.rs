@@ -18,6 +18,3 @@ pub(crate) use read_only_packets::{
     execute_read_only_packets, execute_read_only_packets_with_budget, PacketBudgetDenial,
     PacketExecutionStop, PacketKernelContext, ReadOnlyPacket,
 };
-
-mod request_custody;
-pub(crate) use request_custody::check_request;

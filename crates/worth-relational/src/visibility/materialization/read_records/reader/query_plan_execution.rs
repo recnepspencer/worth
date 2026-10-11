@@ -10,7 +10,7 @@ use super::query_execution::{
     QueryLeasedReadOutcome, QueryReadExecutionStop,
 };
 use super::query_preparation::{
-    check_query_preparation_request, combine_query_reports, combine_query_stop,
+    combine_query_reports, combine_query_stop, consult_query_preparation_request,
     prepare_query_packets, remaining_work_lease, QueryPreparationBudget,
 };
 use super::query_preparation_packetization::{
@@ -28,7 +28,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         plan: SnapshotPinnedQueryPlan,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<QueryLeasedReadOutcome>, QueryReadExecutionStop> {
-        check_query_preparation_request(execution)?;
+        consult_query_preparation_request(execution)?;
         let read = execution
             .in_scope(|lease| self.execute_query_plan_internal(plan, lease, execution))
             .map_err(QueryReadExecutionStop::Request)?;

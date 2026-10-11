@@ -60,7 +60,7 @@ where
         parity: BoundedIndexParityMode,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
-        crate::execution::check_request(execution)
+        crate::visibility::materialization::read_records::read_request::consult(execution)
             .map_err(|cause| Stop::Lookup(Denial::new(Kind::Execution(cause), self.index)))?;
         access.collect_admitted_entity_field_lookup(
             execution,

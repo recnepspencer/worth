@@ -8,11 +8,9 @@ impl IndexAccess<'_> {
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<IndexParityVerifiedQueryOutcome>, crate::runtime::QueryReadExecutionStop>
     {
-        request.check_live().map_err(|stop| {
-            crate::runtime::QueryReadExecutionStop::Request(
-                worth_execution::WorkCeilingDenial::Stopped(stop),
-            )
-        })?;
+        request
+            .consult()
+            .map_err(crate::runtime::QueryReadExecutionStop::Request)?;
         if plan.packet.access_contract == QueryAccessContract::DerivedIndexWithStorageParity {
             self.runtime
                 .performance_access()

@@ -45,23 +45,26 @@ impl QueryPreparationBudget<'_, '_, '_> {
 
 /// Interruption before preparation starts retains its canonical boundary and
 /// reports no executed work, active workers or allocated packet memory.
-pub(super) fn check_query_preparation_request(
+pub(super) fn consult_query_preparation_request(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), QueryReadExecutionStop> {
-    execution
-        .check_live()
-        .map_err(|stop| QueryReadExecutionStop::PreparationStopped {
-            reason: worth_execution::MapStop::Failure {
-                identity: PartitionIdentity::new(1),
-                cause: MapKernelFailure::Stop(stop),
-            },
-            report: ExecutionReport::new(
-                execution.resolved_posture(),
-                0,
-                0,
-                ExecutionPhysicalReport::new(0, 0, None, 0, 0),
-            ),
-        })
+    execution.consult().map_err(|denial| match denial {
+        worth_execution::WorkCeilingDenial::Stopped(stop) => {
+            QueryReadExecutionStop::PreparationStopped {
+                reason: worth_execution::MapStop::Failure {
+                    identity: PartitionIdentity::new(1),
+                    cause: MapKernelFailure::Stop(stop),
+                },
+                report: ExecutionReport::new(
+                    execution.resolved_posture(),
+                    0,
+                    0,
+                    ExecutionPhysicalReport::new(0, 0, None, 0, 0),
+                ),
+            }
+        }
+        denial => QueryReadExecutionStop::Request(denial),
+    })
 }
 
 pub(super) fn prepare_query_packets(

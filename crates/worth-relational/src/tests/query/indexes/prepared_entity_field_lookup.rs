@@ -1,4 +1,5 @@
 use super::*;
+mod admitted_request_precedence;
 use crate::facade::indexes::{
     BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenialKind,
     BoundedIndexParityMode,
@@ -212,13 +213,45 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
             baseline.candidate_entity_ids(),
             &[first_entity, changed_entities(&created)[0]]
         );
-        // Admission five follows the completed first index candidate. Seven
-        // follows the completed first certification candidate and precedes
-        // certification's final admission after the second storage candidate.
+        admitted_request_precedence::assert_admitted_request_precedence(
+            &runtime,
+            &view,
+            &prepared,
+            parity,
+            baseline.candidate_entity_ids(),
+        );
+        let cancellation = worth_execution::CancellationSource::new();
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(1 << 26),
+            cancellation.token(),
+            None,
+        );
+        let request = worth_execution::ExecutionRequest::serial(&host);
+        cancellation.cancel();
+        let mut calls = 0;
+        let stopped = runtime.index_access().execute_prepared_entity_field_lookup(
+            &prepared,
+            &string_aspect_value("cancellation-order"),
+            16,
+            parity,
+            &request,
+            || {
+                calls += 1;
+                Err::<(), _>("admission exhausted")
+            },
+        );
+        assert!(
+            matches!(stopped, Err(Stop::Lookup(denial)) if denial.kind() ==
+            BoundedEntityFieldLookupDenialKind::Execution(crate::execution::RelationalExecutionDenialCause::Cancelled))
+        );
+        assert_eq!(calls, 0, "pre-cancelled {parity:?} admission");
+        // Admissions one and two guard entry and the encoded key, three the
+        // result reservation, and four/five the two index candidates. Seven
+        // guards Certification's final admission after its storage candidates.
         let rendezvous: &[usize] = if parity == BoundedIndexParityMode::Production {
-            &[5]
+            &[1, 2, 3, 4, 5]
         } else {
-            &[5, 7]
+            &[1, 2, 3, 4, 5, 7]
         };
         for &after in rendezvous {
             for exhaust_work in [false, true] {

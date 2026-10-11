@@ -62,7 +62,7 @@ impl IndexAccess<'_> {
         locator: &AspectFieldLocator,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PreparedEntityFieldLookup, BoundedEntityFieldLookupDenial> {
-        crate::execution::check_request(execution)
+        crate::visibility::materialization::read_records::read_request::consult(execution)
             .map_err(|cause| denied(Denial::Execution(cause), index))?;
         if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
             return Err(denied(Denial::SnapshotUnavailable, index));
@@ -116,12 +116,12 @@ impl IndexAccess<'_> {
         limit: usize,
         parity: BoundedIndexParityMode,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mut check_live: impl FnMut() -> Result<(), E>,
+        mut admission: impl FnMut() -> Result<(), E>,
     ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
         if prepared.runtime_identity != self.runtime.runtime_instance_id() {
             return Err(Stop::ExactBasisRequired);
         }
-        super::prepared_lookup_admission::admit(execution, prepared.index_id(), &mut check_live)?;
+        super::prepared_lookup_admission::admit(execution, prepared.index_id(), &mut admission)?;
         if limit == 0 || limit == usize::MAX {
             return Err(Stop::Lookup(denied(
                 Denial::InvalidCandidateLimit,
@@ -132,7 +132,7 @@ impl IndexAccess<'_> {
             .performance_access()
             .count_query_index_attempt();
         self.collect_prepared_entity_field_lookup(
-            prepared, value, limit, parity, execution, check_live,
+            prepared, value, limit, parity, execution, admission,
         )
     }
 
@@ -143,17 +143,17 @@ impl IndexAccess<'_> {
         limit: usize,
         parity: BoundedIndexParityMode,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mut check_live: impl FnMut() -> Result<(), E>,
+        mut admission: impl FnMut() -> Result<(), E>,
     ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
         let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
-        super::prepared_lookup_admission::admit(execution, prepared.index_id(), &mut check_live)?;
+        super::prepared_lookup_admission::admit(execution, prepared.index_id(), &mut admission)?;
         let DerivedIndexEntries::EntityField(entries) = &prepared.generation.entries else {
             unreachable!("prepared generation is an entity field index")
         };
         let mut read = PreparedCollectionRead {
             prepared,
             value,
-            check_live: &mut check_live,
+            admission: &mut admission,
             execution,
         };
         let (candidates, examined, overflowed) = collect(
@@ -180,13 +180,13 @@ impl IndexAccess<'_> {
                 value,
                 limit,
                 &outcome,
-                &mut check_live,
+                &mut admission,
             )?;
             self.runtime
                 .performance_access()
                 .count_query_index_parity_verification();
         }
-        super::prepared_lookup_admission::admit(execution, prepared.index_id(), &mut check_live)?;
+        super::prepared_lookup_admission::admit(execution, prepared.index_id(), &mut admission)?;
         self.runtime.performance_access().count_query_index_path();
         Ok(outcome)
     }
@@ -196,7 +196,7 @@ struct PreparedCollectionRead<'a, 'request, 'authority, F> {
     execution: &'a worth_execution::ExecutionRequest<'request, 'authority>,
     prepared: &'a PreparedEntityFieldLookup,
     value: &'a AspectValue,
-    check_live: &'a mut F,
+    admission: &'a mut F,
 }
 impl<E, F: FnMut() -> Result<(), E>> EntityFieldCollectionRead<E>
     for PreparedCollectionRead<'_, '_, '_, F>
@@ -205,7 +205,7 @@ impl<E, F: FnMut() -> Result<(), E>> EntityFieldCollectionRead<E>
         super::prepared_lookup_admission::admit(
             self.execution,
             self.prepared.index_id(),
-            self.check_live,
+            self.admission,
         )
     }
     fn compare(
@@ -217,7 +217,7 @@ impl<E, F: FnMut() -> Result<(), E>> EntityFieldCollectionRead<E>
         super::prepared_lookup_admission::admit(
             execution,
             self.prepared.index_id(),
-            self.check_live,
+            self.admission,
         )?;
         Ok(
             crate::indexes::projected_field_values::exact_entity_field_matches(

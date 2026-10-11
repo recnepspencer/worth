@@ -7,7 +7,7 @@ impl VisibilityReadContext<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
     ) -> Result<Option<Vec<(AspectKey, u64)>>, super::query_execution::QueryReadExecutionStop> {
-        super::query_preparation::check_query_preparation_request(execution)?;
+        super::query_preparation::consult_query_preparation_request(execution)?;
         let Some(partition) = self.runtime.partitions.partition(entity_id.partition_id) else {
             return Ok(None);
         };
@@ -34,7 +34,7 @@ impl VisibilityReadContext<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: crate::identity::data::RelationId,
     ) -> Result<Option<Vec<(AspectKey, u64)>>, super::query_execution::QueryReadExecutionStop> {
-        super::query_preparation::check_query_preparation_request(execution)?;
+        super::query_preparation::consult_query_preparation_request(execution)?;
         let Some(partition) = self.runtime.partitions.partition(relation_id.partition_id) else {
             return Ok(None);
         };

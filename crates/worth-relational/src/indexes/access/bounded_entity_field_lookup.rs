@@ -54,12 +54,13 @@ impl IndexAccess<'_> {
         parity_mode: BoundedIndexParityMode,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupDenial> {
-        crate::execution::check_request(execution).map_err(|cause| {
-            BoundedEntityFieldLookupDenial::new(
-                BoundedEntityFieldLookupDenialKind::Execution(cause),
-                request.index_id(),
-            )
-        })?;
+        crate::visibility::materialization::read_records::read_request::consult(execution)
+            .map_err(|cause| {
+                BoundedEntityFieldLookupDenial::new(
+                    BoundedEntityFieldLookupDenialKind::Execution(cause),
+                    request.index_id(),
+                )
+            })?;
         self.runtime
             .performance_access()
             .count_query_index_attempt();

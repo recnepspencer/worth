@@ -20,7 +20,7 @@ pub(super) fn certify<E>(
     value: &AspectValue,
     limit: usize,
     outcome: &BoundedEntityFieldLookupOutcome,
-    check_live: &mut impl FnMut() -> Result<(), E>,
+    admission: &mut impl FnMut() -> Result<(), E>,
 ) -> Result<(), Stop<E>> {
     let view =
         VisibilityProjectionView::new(runtime, SnapshotStateBasis::Exact(prepared.basis().clone()));
@@ -29,7 +29,7 @@ pub(super) fn certify<E>(
     view.try_for_each_entity_record(
         execution,
         Some(prepared.entity_kind()),
-        |_| super::prepared_lookup_admission::admit(execution, prepared.index_id(), check_live),
+        |_| super::prepared_lookup_admission::admit(execution, prepared.index_id(), admission),
         |record| {
             if entity_query_locus_comparison_key(record, prepared.field_locator()).as_ref()
                 == Some(&expected)
@@ -51,7 +51,7 @@ pub(super) fn certify<E>(
         }
     })?;
     storage_ids.sort();
-    super::prepared_lookup_admission::admit(execution, prepared.index_id(), check_live)?;
+    super::prepared_lookup_admission::admit(execution, prepared.index_id(), admission)?;
     let overflowed = storage_ids.len() > limit;
     storage_ids.truncate(limit);
     if storage_ids == outcome.candidate_entity_ids() && overflowed == outcome.overflowed() {
