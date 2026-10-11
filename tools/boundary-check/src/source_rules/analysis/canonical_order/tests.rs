@@ -1,5 +1,61 @@
 use super::findings;
 
+#[test]
+fn canonical_order_scope_is_pinned_by_name() {
+    assert_eq!(
+        super::CRATES,
+        &[
+            "worth-query-execution",
+            "worth-query-installation",
+            "worth-runtime-world",
+            "worth-execution",
+            "worth-runtime-bridge",
+        ]
+    );
+    assert_eq!(
+        super::ADDRESS_CRATES,
+        &[
+            "worth-query-execution",
+            "worth-runtime-world",
+            "worth-execution",
+            "worth-runtime-bridge",
+            "worth-signal",
+            "worth-relational",
+        ]
+    );
+}
+
+#[test]
+fn debug_inventory_fixture_refuses_members_but_accepts_sizes() {
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");
+    let governed =
+        super::super::workspace_crates::discover_workspace_crates(&root, "workspaces/worth-query")
+            .unwrap()
+            .remove(0);
+    let mut graph = super::super::crate_modules::parse_crate_modules(&governed).unwrap();
+    for (source, count) in [
+        (
+            include_str!("../../../../tests/fixtures/canonical_order_rules/debug_inventory.rs"),
+            2,
+        ),
+        (
+            include_str!(
+                "../../../../tests/fixtures/canonical_order_rules/debug_inventory_by_size.rs"
+            ),
+            0,
+        ),
+    ] {
+        graph.modules.values_mut().next().unwrap().items =
+            crate::source_syntax::parse_file(source).unwrap().items;
+        let diagnostics = super::enforce(&governed, &graph);
+        assert_eq!(diagnostics.len(), count);
+        assert!(diagnostics
+            .iter()
+            .all(|d| d.code() == crate::diagnostics::DiagnosticCode::Bc7009CanonicalOrder));
+    }
+}
+
 fn rejects(source: &str) -> Vec<&'static str> {
     let file = crate::source_syntax::parse_file(source).unwrap();
     findings(&[("src/ordinary.rs", &file.items)])
