@@ -68,8 +68,8 @@ pub(super) enum RequiredWaveTarget {
 
 /// A cue is only scheduling custody. A Current result comes from the exact
 /// accepted row, its installed producer, and the selected Product/native proof.
-pub(super) enum RequiredWaveStep<'owner, Schema: ApplicationSchema> {
-    Current(Arc<WorthQueryOutputDemandSettlement>),
+enum RequiredWaveStep<'owner, Schema: ApplicationSchema> {
+    Current(performed::CertifiedDecision<Arc<WorthQueryOutputDemandSettlement>>),
     Upstream(SelectedReadyReadmission),
     /// The upstream row is still refreshing.
     Held(WorthQueryOutputDemandKey),
@@ -120,101 +120,7 @@ pub(super) fn installed_for_selected_cue<'runtime, Schema>(
         })
 }
 
-/// Certify one exact Ready cell while the wave retains one selected Product.
-/// The registry's exact consumed-ID join converts PendingExact to owned
-/// scheduling custody before the candidate's borrowed proof leaves scope.
-pub(super) fn certify_required_ready<'owner, Schema>(
-    phase: &'owner WorthQueryAdvancementPhase<'owner>,
-
-    runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-    request_scope: &WorthQueryRequestScope,
-    wave: &'owner RequiredWaveSelection<'_, Schema>,
-    selected: &SelectedReadyReadmission,
-    caller_installed: Option<&InstalledProducerProvider<Schema>>,
-    resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
-    producer_contacts_in_this_demand: usize,
-    refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
-    performed: &'owner std::cell::RefCell<performed::PerformedMembers>,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<RequiredWaveStep<'owner, Schema>, WorthQueryOutputDemandDenial>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    preclaim_required_settlement_arguments(admission)?;
-    let candidate = runtime
-        .primary_provider
-        .graph
-        .output_lineage
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .resolve_required_settlement(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
-            selected.completion(),
-            admission,
-        );
-    // Without an exact candidate, Ready takes Fresh; this advance's record
-    // refuses a published member unless there is evidence of change.
-    let candidate = candidate.map_err(required_settlement_denial)?;
-    admission
-        .charge_external_work(1)
-        .map_err(admission_denial)?;
-    // Only the caller's exact InterestÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢Ready join may reuse the installed
-    // entry retained when that same demand was admitted. Other cues still
-    // resolve their own producer through the installed table.
-    performed
-        .borrow_mut()
-        .capture(selected.key(), &candidate, admission)?;
-    let candidate = candidate.ok().flatten();
-    let installed = match caller_installed {
-        Some(entry) => entry,
-        None => installed_for_selected_cue(runtime, selected.producer_identity(), admission)?,
-    };
-    let result = installed
-        .executor
-        .advance_ready_on_selected(
-            phase,
-            runtime,
-            principal,
-            request_scope,
-            &wave.shared,
-            &wave.positioned,
-            selected,
-            candidate.as_ref(),
-            resolved,
-            installed,
-            wave.branch,
-            producer_contacts_in_this_demand,
-            refresh_permission,
-            performed,
-            admission,
-        )
-        .map_err(|stop| match stop {
-            ProducerExecutionStop::RequestAdmissionDenied(rejection) => rejection.into_denial(),
-            ProducerExecutionStop::ExecutionStopped(denial) => denial,
-            ProducerExecutionStop::LiveOutputNotReused { producer, reason } => {
-                ProducerExecutionStop::live_output_not_reused(producer, reason)
-            }
-        })?;
-    match result {
-        RequiredCueProgress::Current(settlement) => Ok(RequiredWaveStep::Current(settlement)),
-        RequiredCueProgress::PendingExact(pending) => {
-            let upstream = runtime.output_demands.pending_exact_ready_readmission(
-                &pending,
-                &wave.positioned,
-                admission,
-            )?;
-            Ok(match upstream {
-                PendingUpstream::Ready(ready) => RequiredWaveStep::Upstream(ready),
-                PendingUpstream::Held(head) => RequiredWaveStep::Held(head),
-                PendingUpstream::Unavailable(_) => RequiredWaveStep::Pending,
-            })
-        }
-        RequiredCueProgress::PendingUnresolved => Ok(RequiredWaveStep::Pending),
-        RequiredCueProgress::Fresh(plan) => Ok(RequiredWaveStep::Fresh(plan)),
-    }
-}
+use performed::certify_required_ready;
 
 /// The schema getter materializes its inline identity before the lineage
 /// owner receives it. Pay that copy and the caller's fixed owner/getter visits.

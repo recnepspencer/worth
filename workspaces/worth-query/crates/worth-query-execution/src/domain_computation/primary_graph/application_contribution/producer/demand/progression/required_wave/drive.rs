@@ -11,7 +11,7 @@ use super::frontier::{
 use super::queued::QueuedRequiredRoots;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
-mod canonical_apply;
+pub(super) mod canonical_apply;
 mod member_stop;
 mod readiness_collection;
 mod requested_refusal;
@@ -80,7 +80,7 @@ where
             continue;
         }
         if wave.target == RequiredWaveTarget::Caller && !queue.draining() {
-            if let Some(outcome) = canonical_apply::accept_current_caller(
+            match canonical_apply::accept_current_caller(
                 runtime,
                 demand,
                 &wave,
@@ -88,7 +88,11 @@ where
                 performed,
                 admission,
             )? {
-                queue.finish_caller(outcome);
+                canonical_apply::CallerAcceptance::Accepted(outcome) => {
+                    queue.finish_caller(outcome)
+                }
+                canonical_apply::CallerAcceptance::Reinspect => continue,
+                canonical_apply::CallerAcceptance::Deferred => {}
             }
         }
         if !caller_was_current && queue.draining() {
@@ -272,7 +276,7 @@ where
             resolved.clear();
             continue;
         }
-        return canonical_apply::finish(
+        if let Some(outcome) = canonical_apply::finish(
             runtime,
             demand,
             &wave,
@@ -280,6 +284,8 @@ where
             queue,
             performed,
             admission,
-        );
+        )? {
+            return Ok(Some(outcome));
+        }
     }
 }

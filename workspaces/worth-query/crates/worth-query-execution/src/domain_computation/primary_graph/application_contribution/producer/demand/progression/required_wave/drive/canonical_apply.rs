@@ -1,4 +1,4 @@
-//! Accept only a Current caller, and acknowledge only Current queued roots.
+//! Consume a Current root; hold remaining unfinished queue claims.
 use super::*;
 
 pub(super) fn finish<Schema, Family>(
@@ -22,7 +22,7 @@ where
             .take()
             .expect("the requested target owns its decision");
         return Ok(match settlement.into_current(&performed.borrow()) {
-            Some(settlement) => Some(WorthQueryOutputDemandAdvance::Settled(settlement)),
+            Some(proof) => Some(return_requested(proof)),
             None => {
                 frontier.members[0].state = MemberState::Inspect;
                 None
@@ -30,10 +30,13 @@ where
         });
     }
     if !queue.draining() {
-        queue.finish_caller(
-            accept_current_caller(runtime, demand, wave, frontier, performed, admission)?
-                .unwrap_or(WorthQueryOutputDemandAdvance::Pending),
-        );
+        match accept_current_caller(runtime, demand, wave, frontier, performed, admission)? {
+            CallerAcceptance::Accepted(outcome) => queue.finish_caller(outcome),
+            CallerAcceptance::Deferred => {
+                queue.finish_caller(WorthQueryOutputDemandAdvance::Pending)
+            }
+            CallerAcceptance::Reinspect => return Ok(None),
+        }
     }
     for member in &frontier.members {
         if let Some(index) = member.queued {
@@ -52,23 +55,26 @@ pub(super) fn accept_current_caller<Schema, Family>(
     frontier: &mut RequiredFrontier,
     performed: &std::cell::RefCell<performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
-) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
+) -> Result<CallerAcceptance, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
     let caller = &mut frontier.members[0];
     let MemberState::Current(decision) = &mut caller.state else {
-        return Ok(None);
+        return Ok(CallerAcceptance::Deferred);
     };
     let decision = decision
         .take()
         .expect("the caller owns its Current decision");
-    let Some(settlement) = decision.into_current(&performed.borrow()) else {
-        caller.state = MemberState::Inspect;
-        return Ok(None);
+    let proof = match consume_caller_decision(decision, &performed.borrow()) {
+        Ok(proof) => proof,
+        Err(refusal) => {
+            caller.state = MemberState::Inspect;
+            return Ok(refusal);
+        }
     };
-    if super::super::caller::finish_current_caller(
+    if let Some(settlement) = super::super::caller::finish_current_caller(
         runtime,
         demand,
         super::super::caller::CurrentCaller {
@@ -78,13 +84,36 @@ where
             caller_current: !caller.caller_successor,
             current_contacts: demand.producer_contacts_in_this_demand,
         },
+        proof,
         admission,
     )? {
         let outcome = WorthQueryOutputDemandAdvance::Settled(settlement);
         frontier.members[0].state = MemberState::AcceptedCaller;
-        Ok(Some(outcome))
+        Ok(CallerAcceptance::Accepted(outcome))
     } else {
         caller.state = MemberState::Pending;
-        Ok(None)
+        Ok(CallerAcceptance::Deferred)
     }
+}
+
+/// Distinguish a refused proof from a genuinely deferred caller promotion.
+pub(in super::super) enum CallerAcceptance {
+    Accepted(WorthQueryOutputDemandAdvance),
+    Deferred,
+    Reinspect,
+}
+
+pub(in super::super) fn consume_caller_decision<T>(
+    decision: performed::CertifiedDecision<T>,
+    owner: &performed::PerformedMembers,
+) -> Result<performed::CurrentProof<T>, CallerAcceptance> {
+    decision
+        .into_current(owner)
+        .ok_or(CallerAcceptance::Reinspect)
+}
+
+fn return_requested(
+    proof: performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
+) -> WorthQueryOutputDemandAdvance {
+    WorthQueryOutputDemandAdvance::Settled(proof.into_value())
 }

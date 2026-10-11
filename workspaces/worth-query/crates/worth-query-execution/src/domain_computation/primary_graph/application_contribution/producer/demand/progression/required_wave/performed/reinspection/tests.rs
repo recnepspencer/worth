@@ -90,7 +90,8 @@ fn assert_publication_credit(replay: bool, publish: bool) {
         let m = key("M");
         let mut record = PerformedMembers::start();
         let inspected = record.inspection();
-        let certified = record.certify("Current at this generation");
+        let certified = record.certify_for_test("Current at this generation");
+        let caller_decision = record.certify_for_test("the caller's certified settlement");
         let permission = record
             .fresh(
                 &a,
@@ -113,8 +114,28 @@ fn assert_publication_credit(replay: bool, publish: bool) {
                 .unwrap_or_else(|_| panic!("receipt retained"));
             record.publication(permission, publication, |member| member.performed());
         }
+        let caller = super::super::super::drive::canonical_apply::consume_caller_decision(
+            caller_decision,
+            &record,
+        );
+        if publish && !replay {
+            assert!(
+                matches!(
+                    caller,
+                    Err(super::super::super::drive::canonical_apply::CallerAcceptance::Reinspect)
+                ),
+                "a stale caller proof requests inspection in this advance, not Pending",
+            );
+        } else {
+            assert!(matches!(
+                caller.map(super::super::CurrentProof::into_value),
+                Ok("the caller's certified settlement")
+            ));
+        }
         assert_eq!(
-            certified.into_current(&record),
+            certified
+                .into_current(&record)
+                .map(super::super::CurrentProof::into_value),
             (!publish || replay).then_some("Current at this generation"),
             "only a new publication invalidates the certified decision"
         );

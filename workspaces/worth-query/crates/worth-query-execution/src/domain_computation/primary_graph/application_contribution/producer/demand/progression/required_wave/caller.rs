@@ -185,8 +185,9 @@ pub(super) fn finish_current_caller<Schema, Family>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     caller: CurrentCaller<'_>,
+    proof: performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
     admission: &mut InvalidationEditAdmission,
-) -> Result<bool, WorthQueryOutputDemandDenial>
+) -> Result<Option<Arc<WorthQueryOutputDemandSettlement>>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
@@ -225,7 +226,7 @@ where
         successor.producer_contacts_in_this_demand = current_contacts;
         *demand = successor;
     } else if !caller_current {
-        return Ok(false);
+        return Ok(None);
     }
     let interest = demand
         .interest
@@ -235,5 +236,5 @@ where
         .output_demands
         .finish_settlement_admitted(interest, selected, admission)?;
     drop(demand.required_continuations.take_all());
-    Ok(true)
+    Ok(Some(proof.into_value()))
 }

@@ -157,8 +157,7 @@ where
                 })
                 .map_err(admission_denial)?;
             match result {
-                Ok(RequiredWaveStep::Current(settlement)) => {
-                    let decision = performed.borrow().certify(settlement);
+                Ok(RequiredWaveStep::Current(decision)) => {
                     let storage = if caller {
                         &mut *caller_storage
                     } else {
@@ -172,7 +171,7 @@ where
                             members: Vec::new(),
                         });
                     }
-                    let Some(settlement) = decision.into_current(&performed.borrow()) else {
+                    let Some(proof) = decision.into_current(&performed.borrow()) else {
                         frontier.members[index].state = MemberState::Inspect;
                         continue;
                     };
@@ -186,12 +185,12 @@ where
                     if queued.is_none() || refresh || required_by_member {
                         resolved.push(
                             member.ready.selected().retain(admission)?,
-                            Arc::clone(&settlement),
+                            Arc::clone(proof.value()),
                             admission,
                         )?;
                     }
                     if let Some(queued) = queued {
-                        queue.acknowledge_root(queued, admission)?;
+                        queue.acknowledge_root(queued, proof, admission)?;
                         frontier.members[index].ready.finish_claim();
                         frontier.members[index].queued = None;
                     }

@@ -44,11 +44,11 @@ impl PerformedMembers {
         if receipt.published_in_this_advance() {
             // Every publication paid positive owner work under the bounded
             // request, so the number of publications cannot exhaust this counter.
-            self.publication_generation = self
-                .publication_generation
+            self.commit_generation = self
+                .commit_generation
                 .checked_add(1)
                 .expect("bounded positive publication work leaves a finite generation");
-            self.entries[readiness.member].published_at = self.publication_generation;
+            self.entries[readiness.member].published_at = self.commit_generation;
         }
         let performed = &mut self.entries[readiness.member].performed;
         let receipt = receipt.record_publication(|| mark(PublishedMember { performed }));

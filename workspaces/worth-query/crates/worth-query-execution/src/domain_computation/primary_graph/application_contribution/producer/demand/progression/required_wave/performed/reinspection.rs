@@ -8,7 +8,7 @@ pub(in super::super) struct ReinspectionCredit {
 }
 impl PerformedMembers {
     pub(in super::super) fn inspection(&self) -> InspectionStamp {
-        InspectionStamp(self.publication_generation)
+        InspectionStamp(self.commit_generation)
     }
     pub(in super::super) fn reinspection(
         &self,

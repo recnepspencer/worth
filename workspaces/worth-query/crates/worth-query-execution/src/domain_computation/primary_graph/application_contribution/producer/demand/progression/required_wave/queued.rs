@@ -232,6 +232,7 @@ impl QueuedRequiredRoots {
     pub(super) fn acknowledge_root(
         &mut self,
         index: usize,
+        _proof: performed::CurrentProof<std::sync::Arc<super::WorthQueryOutputDemandSettlement>>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let Some(work) = self.roots[index].take() else {

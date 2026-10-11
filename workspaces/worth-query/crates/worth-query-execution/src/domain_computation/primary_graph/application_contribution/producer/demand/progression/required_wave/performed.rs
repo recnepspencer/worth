@@ -13,7 +13,8 @@ use crate::domain_computation::primary_graph::{
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PerformedMembers
 {
     entries: Vec<PerformedMember>,
-    publication_generation: u64,
+    // Counts new committed producer publications, not checkpoint delivery or replay.
+    commit_generation: u64,
 }
 struct PerformedMember {
     key: WorthQueryOutputDemandKey,
@@ -41,7 +42,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 
 mod captured_input;
 mod certification;
-pub(super) use certification::CertifiedDecision;
+pub(super) use certification::{certify_required_ready, CertifiedDecision, CurrentProof};
 mod member_keys;
 use captured_input::CapturedDecisionInput;
 mod ordinary;
@@ -57,7 +58,7 @@ impl PerformedMembers {
     ) -> Self {
         Self {
             entries: Vec::new(),
-            publication_generation: 0,
+            commit_generation: 0,
         }
     }
 

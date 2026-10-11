@@ -1,21 +1,143 @@
-//! A certification can be consumed only before another publication moves it.
+//! Native certification issues the sole consuming key for a Current result.
+use super::super::*;
 use super::PerformedMembers;
 
 /// No accessor exposes a stale decision. Reinspection obtains a new value.
 pub(in super::super) struct CertifiedDecision<T> {
-    generation: u64,
+    commit_generation: u64,
     value: T,
 }
 impl<T> CertifiedDecision<T> {
-    pub(in super::super) fn into_current(self, owner: &PerformedMembers) -> Option<T> {
-        (self.generation == owner.publication_generation).then_some(self.value)
+    pub(in super::super) fn into_current(
+        self,
+        owner: &PerformedMembers,
+    ) -> Option<CurrentProof<T>> {
+        (self.commit_generation == owner.commit_generation)
+            .then_some(CurrentProof { value: self.value })
     }
 }
 impl PerformedMembers {
-    pub(in super::super) fn certify<T>(&self, value: T) -> CertifiedDecision<T> {
+    fn certify<T>(&self, value: T) -> CertifiedDecision<T> {
         CertifiedDecision {
-            generation: self.publication_generation,
+            commit_generation: self.commit_generation,
             value,
         }
+    }
+}
+
+/// A move-only key to acknowledgement, caller acceptance or requested return.
+pub(in super::super) struct CurrentProof<T> {
+    value: T,
+}
+impl<T> CurrentProof<T> {
+    pub(in super::super) fn value(&self) -> &T {
+        &self.value
+    }
+    pub(in super::super) fn into_value(self) -> T {
+        self.value
+    }
+}
+#[cfg(test)]
+impl PerformedMembers {
+    pub(in super::super) fn certify_for_test<T>(&self, value: T) -> CertifiedDecision<T> {
+        self.certify(value)
+    }
+}
+
+/// Certify one exact Ready cell while the wave retains one selected Product.
+/// The registry's exact consumed-ID join converts PendingExact to owned
+/// scheduling custody before the candidate's borrowed proof leaves scope.
+pub(in super::super) fn certify_required_ready<'owner, Schema>(
+    phase: &'owner WorthQueryAdvancementPhase<'owner>,
+
+    runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request_scope: &WorthQueryRequestScope,
+    wave: &'owner RequiredWaveSelection<'_, Schema>,
+    selected: &SelectedReadyReadmission,
+    caller_installed: Option<&InstalledProducerProvider<Schema>>,
+    resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
+    producer_contacts_in_this_demand: usize,
+    refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
+    performed: &'owner std::cell::RefCell<performed::PerformedMembers>,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<RequiredWaveStep<'owner, Schema>, WorthQueryOutputDemandDenial>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    preclaim_required_settlement_arguments(admission)?;
+    let candidate = runtime
+        .primary_provider
+        .graph
+        .output_lineage
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .resolve_required_settlement(
+            runtime.runtime.authority_identity().as_u64(),
+            &runtime.installed_schema.binding_identity(),
+            selected.completion(),
+            admission,
+        );
+    // Without an exact candidate, Ready takes Fresh; this advance's record
+    // refuses a published member unless there is evidence of change.
+    let candidate = candidate.map_err(required_settlement_denial)?;
+    admission
+        .charge_external_work(1)
+        .map_err(admission_denial)?;
+    // Only the caller's exact InterestÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢Ready join may reuse the installed
+    // entry retained when that same demand was admitted. Other cues still
+    // resolve their own producer through the installed table.
+    performed
+        .borrow_mut()
+        .capture(selected.key(), &candidate, admission)?;
+    let candidate = candidate.ok().flatten();
+    let installed = match caller_installed {
+        Some(entry) => entry,
+        None => installed_for_selected_cue(runtime, selected.producer_identity(), admission)?,
+    };
+    let result = installed
+        .executor
+        .advance_ready_on_selected(
+            phase,
+            runtime,
+            principal,
+            request_scope,
+            &wave.shared,
+            &wave.positioned,
+            selected,
+            candidate.as_ref(),
+            resolved,
+            installed,
+            wave.branch,
+            producer_contacts_in_this_demand,
+            refresh_permission,
+            performed,
+            admission,
+        )
+        .map_err(|stop| match stop {
+            ProducerExecutionStop::RequestAdmissionDenied(rejection) => rejection.into_denial(),
+            ProducerExecutionStop::ExecutionStopped(denial) => denial,
+            ProducerExecutionStop::LiveOutputNotReused { producer, reason } => {
+                ProducerExecutionStop::live_output_not_reused(producer, reason)
+            }
+        })?;
+    match result {
+        RequiredCueProgress::Current(settlement) => Ok(RequiredWaveStep::Current(
+            performed.borrow().certify(settlement),
+        )),
+        RequiredCueProgress::PendingExact(pending) => {
+            let upstream = runtime.output_demands.pending_exact_ready_readmission(
+                &pending,
+                &wave.positioned,
+                admission,
+            )?;
+            Ok(match upstream {
+                PendingUpstream::Ready(ready) => RequiredWaveStep::Upstream(ready),
+                PendingUpstream::Held(head) => RequiredWaveStep::Held(head),
+                PendingUpstream::Unavailable(_) => RequiredWaveStep::Pending,
+            })
+        }
+        RequiredCueProgress::PendingUnresolved => Ok(RequiredWaveStep::Pending),
+        RequiredCueProgress::Fresh(plan) => Ok(RequiredWaveStep::Fresh(plan)),
     }
 }
