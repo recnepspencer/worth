@@ -94,3 +94,7 @@ pub(super) fn compile_invariant_definition(
 
 #[path = "invariant/execution.rs"]
 mod execution;
+
+#[cfg(test)]
+#[path = "invariant/lease_tests.rs"]
+mod lease_tests;
