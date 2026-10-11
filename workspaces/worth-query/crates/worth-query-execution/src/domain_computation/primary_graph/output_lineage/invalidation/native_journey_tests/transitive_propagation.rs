@@ -29,10 +29,10 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
         .unwrap()
         .clone();
     let identities = [
-        TypeId::of::<StatusOutput>(),
-        TypeId::of::<LabelOutput>(),
-        TypeId::of::<DownstreamOutput>(),
-        TypeId::of::<LateOutput>(),
+        OutputBindingIdentity::declared("StatusOutput"),
+        OutputBindingIdentity::declared("LabelOutput"),
+        OutputBindingIdentity::declared("DownstreamOutput"),
+        OutputBindingIdentity::declared("LateOutput"),
     ]
     .map(|output_binding| {
         RecordedSettlementIdentity::retain(
