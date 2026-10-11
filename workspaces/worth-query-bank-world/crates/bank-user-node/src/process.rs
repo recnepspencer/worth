@@ -112,9 +112,13 @@ async fn install_cold_node(
     let redirect = installation
         .external_redirect_url
         .ok_or("cold user-node installation requires an external redirect URL")?;
-    crate::cold_certification::install(binding, installation.configuration, redirect)
-        .await
-        .map_err(Into::into)
+    crate::cold_certification_for_test::install_for_test(
+        binding,
+        installation.configuration,
+        redirect,
+    )
+    .await
+    .map_err(Into::into)
 }
 
 fn write_posture(

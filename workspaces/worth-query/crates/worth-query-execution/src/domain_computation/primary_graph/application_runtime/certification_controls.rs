@@ -341,15 +341,15 @@ where
     }
 
     #[cfg(test)]
-    pub(crate) fn provider_session_resource_count(&self) -> usize {
+    pub(crate) fn provider_session_resource_count_for_test(&self) -> usize {
         self.primary_provider.application_attempt_resource_count()
     }
 
     #[cfg(test)]
-    pub(crate) fn application_attempt_work(
+    pub(crate) fn application_attempt_work_for_test(
         &self,
     ) -> crate::domain_computation::primary_graph::provider::WorthQueryApplicationAttemptWorkSnapshot
     {
-        self.primary_provider.application_attempt_work()
+        self.primary_provider.application_attempt_work_for_test()
     }
 }

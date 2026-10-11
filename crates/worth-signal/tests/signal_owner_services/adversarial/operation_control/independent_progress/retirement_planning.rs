@@ -3,7 +3,7 @@ use std::thread;
 
 use worth_signal::facade::branch::{
     AdmittedSignalBranchBasis, SignalBranchRetirementReason, SignalOwnerCancellationSource,
-    SignalOwnerOperationBoundary,
+    SignalOwnerOperationBoundaryForTest,
 };
 
 use super::super::super::world::PROGRESS_BOUND;
@@ -18,9 +18,10 @@ pub(super) fn exercise(
     let control = runtime
         .as_ref()
         .expect("the strong root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the sealed owner issues operation control");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::ExactBasisPreflight);
+    let pause =
+        control.arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::ExactBasisPreflight);
     let worker_lifecycle = lifecycle.clone();
     let worker_mutation = mutation.clone();
     let worker_root_basis = root_basis.clone();
@@ -59,6 +60,6 @@ pub(super) fn exercise(
     runtime
         .as_ref()
         .expect("the owner root remains live through retirement planning")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the owner control remains available after contenders finish");
 }

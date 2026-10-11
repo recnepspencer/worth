@@ -224,11 +224,12 @@ fn settlement_pause() -> (
 ) {
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
-    let control = crate::mvcc::RelationalOperationControl::uninterrupted().with_boundary_pause(
-        crate::mvcc::RelationalInterruptionBoundary::Settlement,
-        Arc::clone(&reached),
-        Arc::clone(&release),
-    );
+    let control = crate::mvcc::RelationalOperationControl::uninterrupted()
+        .with_boundary_pause_for_test(
+            crate::mvcc::RelationalInterruptionBoundary::Settlement,
+            Arc::clone(&reached),
+            Arc::clone(&release),
+        );
     (reached, release, control)
 }
 

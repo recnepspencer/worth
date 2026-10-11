@@ -1,54 +1,83 @@
-//! Law 1, reach: derive doors from control files, never maintain a door-name list.
+//! Law 1, reach: discover every exported test door throughout its owning crate.
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 use proc_macro2::{TokenStream, TokenTree};
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fs,
     path::Path,
 };
+mod macro_items;
 mod public_items;
-const FILES: &str = include_str!("../config/control-files.txt");
+mod shipping_sources;
+mod source_regions;
+const SCOPES: &[&str] = &[
+    "crates/worth-relational",
+    "crates/worth-execution",
+    "crates/worth-signal",
+    "crates/worth-signal-wasm",
+    "crates/worth-runtime-bridge",
+    "crates/worth-runtime-world",
+    "workspaces/worth-query",
+    "workspaces/worth-query-bank-world",
+];
 const CALLERS: &str = include_str!("../config/control-callers.txt");
 
 pub(crate) type Doors = BTreeMap<String, BTreeSet<String>>;
 pub(crate) fn load(root: &Path) -> (Vec<Diagnostic>, Doors) {
     let mut diagnostics = Vec::new();
     let mut doors = Doors::new();
-    for (owner, path) in entries(FILES) {
-        let file = root.join(path);
-        // Small tool contract repositories need not contain every platform owner.
-        if !root.join(owner).exists() {
+    for scope in SCOPES {
+        let directory = root.join(scope);
+        if !directory.is_dir() {
             continue;
         }
-        let mut sources = vec![file.clone()];
-        let children = file.with_extension("");
-        if children.is_dir() {
-            match crate::governed_sources::files_under(&children) {
-                Ok(files) => sources.extend(
-                    files
-                        .into_iter()
-                        .filter(|file| file.extension().is_some_and(|ext| ext == "rs")),
-                ),
-                Err(error) => diagnostics.push(failure(path, error)),
+        let files = match shipping_sources::files_under(&directory) {
+            Ok(files) => files,
+            Err(error) => {
+                diagnostics.push(failure(scope, error));
+                continue;
             }
-        }
-        for source_file in sources {
-            match fs::read_to_string(&source_file)
-                .and_then(|source| public_items::names(&source).map_err(std::io::Error::other))
-            {
+        };
+        for (file, source) in files {
+            let path = file
+                .strip_prefix(root)
+                .unwrap()
+                .to_string_lossy()
+                .replace('\\', "/");
+            let Some(owner) = owner(&path) else {
+                continue;
+            };
+            if !source.contains("_for_test") && !source.contains("ForTest") {
+                continue;
+            }
+            match public_items::test_names(&source) {
                 Ok(names) => {
                     for name in names {
-                        doors.entry(name).or_default().insert(owner.into());
+                        doors.entry(name).or_default().insert(owner.clone());
                     }
                 }
                 Err(error) => diagnostics.push(failure(
-                    path,
-                    format!("cannot derive sealed control items: {error}"),
+                    &path,
+                    format!("cannot derive sealed test items: {error}"),
                 )),
             }
         }
     }
     (diagnostics, doors)
+}
+
+fn owner(path: &str) -> Option<String> {
+    for scope in SCOPES {
+        if let Some(tail) = path.strip_prefix(&format!("{scope}/")) {
+            if scope.starts_with("workspaces/") {
+                return tail
+                    .strip_prefix("crates/")
+                    .and_then(|tail| tail.split('/').next())
+                    .map(|name| format!("{scope}/crates/{name}/"));
+            }
+            return Some(format!("{scope}/"));
+        }
+    }
+    None
 }
 
 fn entries(text: &str) -> impl Iterator<Item = (&str, &str)> {
@@ -62,19 +91,32 @@ fn failure(path: &str, message: impl Into<String>) -> Diagnostic {
 fn permitted(path: &str, owners: &BTreeSet<String>) -> bool {
     owners.iter().any(|owner| path.starts_with(owner))
         || entries(CALLERS).any(|(owner, caller)| owners.contains(owner) && caller == path)
-        // A sealed control may delegate to another owner's sealed control.
-        || entries(FILES).any(|(_, control)| control == path)
 }
 pub(crate) fn references(path: &str, source: &str, doors: &Doors) -> Vec<Diagnostic> {
     let relevant: BTreeSet<_> = doors
         .keys()
-        .filter(|name| source.contains(name.as_str()))
+        .filter(|name| source.contains(name.as_str()) && !permitted(path, &doors[*name]))
         .cloned()
         .collect();
     if relevant.is_empty() {
         return Vec::new();
     }
-    let tokens: TokenStream = match source.parse() {
+    let control_source = owner(path).is_some_and(|owner| {
+        public_items::test_names(source).is_ok_and(|names| {
+            names.into_iter().any(|name| {
+                doors
+                    .get(&name)
+                    .is_some_and(|owners| owners.contains(&owner))
+            })
+        })
+    });
+    let tokens: TokenStream = match if control_source {
+        source_regions::ordinary_tokens(source)
+    } else {
+        source
+            .parse()
+            .map_err(|error: proc_macro2::LexError| error.to_string())
+    } {
         Ok(tokens) => tokens,
         Err(error) => {
             return vec![failure(

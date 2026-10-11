@@ -24,7 +24,7 @@ impl ApplicationQueryBindingKey {
         }
     }
 
-    pub(crate) fn from_reference<Schema, Query, Parameters, QueryResult, Scope>(
+    pub(crate) fn from_reference_for_test<Schema, Query, Parameters, QueryResult, Scope>(
         reference: &ApplicationQueryReference<Schema, Query, Parameters, QueryResult, Scope>,
     ) -> Self {
         Self {

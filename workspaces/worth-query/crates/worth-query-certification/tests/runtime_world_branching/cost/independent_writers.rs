@@ -25,7 +25,7 @@ pub(crate) fn assert_sibling_writer_progress_while_combined_is_parked() {
     let pause = world
         .application
         .world_operation_control_for_test()
-        .pause_before_product_compare(NonZeroUsize::new(1).unwrap());
+        .pause_before_product_compare_for_test(NonZeroUsize::new(1).unwrap());
     let (parked_done, parked_observation) = std::sync::mpsc::sync_channel(1);
 
     std::thread::scope(|scope| {
@@ -102,7 +102,8 @@ pub(crate) fn assert_independent_writer_slopes() {
             })
             .collect::<Vec<_>>();
         let control = world.application.world_operation_control_for_test();
-        let pause = control.pause_before_product_compare(NonZeroUsize::new(width).unwrap());
+        let pause =
+            control.pause_before_product_compare_for_test(NonZeroUsize::new(width).unwrap());
         let registered = world
             .application
             .pause_after_application_attempt_registration_for_test(

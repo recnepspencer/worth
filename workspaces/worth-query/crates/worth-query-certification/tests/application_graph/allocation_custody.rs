@@ -76,7 +76,8 @@ fn assert_all_budget_available(lease: &ExecutionResourceLease<'_>) {
 #[test]
 fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_allocation() {
     // Obtain the process authority; the lease owns this proof's payload limit.
-    let authority = worth_query_host::facade::primary_graph::query_test_execution_authority();
+    let authority =
+        worth_query_host::facade::primary_graph::query_test_execution_authority_for_test();
     let parent = authority
         .request_lease(lease_request(PAYLOAD_BUDGET, CancellationToken::new()))
         .unwrap();

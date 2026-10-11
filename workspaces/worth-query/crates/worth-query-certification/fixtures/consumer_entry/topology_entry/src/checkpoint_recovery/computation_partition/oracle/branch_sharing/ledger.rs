@@ -86,6 +86,6 @@ fn child_publication_and_parent_deletion_keep_each_states_one_charge() {
 pub(super) fn state_bytes(runs: &[OracleRun]) -> u64 {
     runs.iter()
         .flat_map(|run| &run.published)
-        .map(|state| state.retained_bytes().unwrap())
+        .map(|state| state.retained_bytes_for_test().unwrap())
         .sum()
 }

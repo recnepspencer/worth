@@ -57,7 +57,8 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
         assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
         return;
     }
-    let authority = worth_query_host::facade::primary_graph::query_test_execution_authority();
+    let authority =
+        worth_query_host::facade::primary_graph::query_test_execution_authority_for_test();
     let token = worth_query_host::facade::runtime::CancellationSource::new();
     let zero = authority
         .request_lease(LeaseRequest {

@@ -77,7 +77,7 @@ impl WorthQueryApplicationCheckpoint {
     }
 
     #[doc(hidden)]
-    pub fn rewrite_authenticated_body_for_durability_test(
+    pub fn rewrite_authenticated_checkpoint_body_for_test(
         &self,
         rewrite: impl FnOnce(&mut [u8]),
     ) -> Self {

@@ -78,7 +78,7 @@ pub(in crate::domain_computation) fn observe_discarded(
 impl WorthQueryPublishedComputationStateForTest {
     /// The measured full state charge, including the custodied allocation.
     /// This reads payload measurement, not the runtime ledger or ticket.
-    pub fn retained_bytes(&self) -> Option<u64> {
+    pub fn retained_bytes_for_test(&self) -> Option<u64> {
         self.state
             .as_ref()
             .and_then(|state| CustodiedComputation::retained_bytes_for(state))
@@ -89,7 +89,7 @@ impl WorthQueryPublishedComputationStateForTest {
     /// items: different installations intentionally encode different authority
     /// identities, even over the same Native entities.
     /// Execution exposes leaves, root and size, but no full tree encoding.
-    pub fn same_fields<
+    pub fn same_fields_for_test<
         Key: 'static,
         Item: ApplicationComputationPartition + ChargedBytes + 'static,
         Reduced: Clone + ChargedBytes + CanonicalBits + 'static,
@@ -170,7 +170,7 @@ impl WorthQueryPublishedComputationStateForTest {
     /// A leaf value lives inline in its immutable tree node. Its address is
     /// therefore a node identity, not a result-equality or call-count proxy.
     #[doc(hidden)]
-    pub fn tree_node_sharing_with<
+    pub fn tree_node_sharing_with_for_test<
         Key: 'static,
         Item: 'static,
         Reduced: Clone + ChargedBytes + CanonicalBits + 'static,

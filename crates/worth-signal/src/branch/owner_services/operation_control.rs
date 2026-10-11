@@ -2,7 +2,7 @@
 ///
 /// The names are stable operation boundaries, not alternate operation engines.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum SignalOwnerOperationBoundary {
+pub enum SignalOwnerOperationBoundaryForTest {
     OwnerLifecycleAdmission,
     BranchRegistryLookup,
     BranchRegistryReservation,
@@ -21,7 +21,7 @@ mod deterministic {
     use std::sync::{Arc, Condvar, Mutex, Weak};
     use std::time::{Duration, Instant};
 
-    use super::SignalOwnerOperationBoundary;
+    use super::SignalOwnerOperationBoundaryForTest;
 
     #[derive(Debug, Default)]
     struct SignalOwnerOperationControlState {
@@ -31,8 +31,11 @@ mod deterministic {
 
     #[derive(Debug, Default)]
     struct SignalOwnerArmedOperationControl {
-        pause: Option<(SignalOwnerOperationBoundary, Arc<SignalOwnerPauseLatch>)>,
-        panic: Option<SignalOwnerOperationBoundary>,
+        pause: Option<(
+            SignalOwnerOperationBoundaryForTest,
+            Arc<SignalOwnerPauseLatch>,
+        )>,
+        panic: Option<SignalOwnerOperationBoundaryForTest>,
     }
 
     #[derive(Debug, Default)]
@@ -48,12 +51,12 @@ mod deterministic {
     }
 
     #[derive(Debug, Clone)]
-    pub struct SignalOwnerOperationControl {
+    pub struct SignalOwnerOperationControlForTest {
         state: Arc<SignalOwnerOperationControlState>,
     }
 
     #[derive(Debug)]
-    pub struct SignalOwnerOperationPause {
+    pub struct SignalOwnerOperationPauseForTest {
         receiver: Weak<SignalOwnerOperationControlState>,
         latch: Arc<SignalOwnerPauseLatch>,
     }
@@ -65,17 +68,17 @@ mod deterministic {
             reason = "Phase 4 service operation controls consume this in-process seam"
         )
     )]
-    impl SignalOwnerOperationControl {
+    impl SignalOwnerOperationControlForTest {
         pub(in crate::branch::owner_services) fn new() -> Self {
             Self {
                 state: Arc::new(SignalOwnerOperationControlState::default()),
             }
         }
 
-        pub fn arm_pause_once(
+        pub fn arm_pause_once_for_test(
             &self,
-            boundary: SignalOwnerOperationBoundary,
-        ) -> SignalOwnerOperationPause {
+            boundary: SignalOwnerOperationBoundaryForTest,
+        ) -> SignalOwnerOperationPauseForTest {
             let latch = Arc::new(SignalOwnerPauseLatch::default());
             let mut armed = self
                 .state
@@ -85,13 +88,13 @@ mod deterministic {
             assert!(armed.pause.is_none(), "only one owner pause may be armed");
             armed.pause = Some((boundary, Arc::clone(&latch)));
             self.state.active.store(true, Ordering::Release);
-            SignalOwnerOperationPause {
+            SignalOwnerOperationPauseForTest {
                 latch,
                 receiver: Arc::downgrade(&self.state),
             }
         }
 
-        pub fn inject_panic_once(&self, boundary: SignalOwnerOperationBoundary) {
+        pub fn inject_panic_once_for_test(&self, boundary: SignalOwnerOperationBoundaryForTest) {
             let mut armed = self
                 .state
                 .armed
@@ -104,7 +107,7 @@ mod deterministic {
 
         pub(in crate::branch::owner_services) fn reach(
             &self,
-            boundary: SignalOwnerOperationBoundary,
+            boundary: SignalOwnerOperationBoundaryForTest,
         ) {
             if !self.state.active.load(Ordering::Acquire) {
                 return;
@@ -173,7 +176,7 @@ mod deterministic {
             reason = "Phase 4 service operation controls consume this in-process seam"
         )
     )]
-    impl SignalOwnerOperationPause {
+    impl SignalOwnerOperationPauseForTest {
         pub fn wait_until_reached(&self, timeout: Duration) -> bool {
             let deadline = Instant::now() + timeout;
             let mut state = self
@@ -203,7 +206,7 @@ mod deterministic {
         }
     }
 
-    impl Drop for SignalOwnerOperationPause {
+    impl Drop for SignalOwnerOperationPauseForTest {
         fn drop(&mut self) {
             // Law 2, scope: dropping even an unreached pause disarms its receiver.
             if let Some(receiver) = self.receiver.upgrade() {
@@ -230,13 +233,15 @@ mod deterministic {
         use super::*;
         #[test]
         fn dropping_an_unreached_pause_does_not_leave_its_owner_armed() {
-            let control = SignalOwnerOperationControl::new();
-            let pause =
-                control.arm_pause_once(SignalOwnerOperationBoundary::OwnerLifecycleAdmission);
+            let control = SignalOwnerOperationControlForTest::new();
+            let pause = control.arm_pause_once_for_test(
+                SignalOwnerOperationBoundaryForTest::OwnerLifecycleAdmission,
+            );
             drop(pause);
             assert!(!control.state.active.load(Ordering::Acquire));
-            let _next =
-                control.arm_pause_once(SignalOwnerOperationBoundary::OwnerLifecycleAdmission);
+            let _next = control.arm_pause_once_for_test(
+                SignalOwnerOperationBoundaryForTest::OwnerLifecycleAdmission,
+            );
         }
     }
 }
@@ -245,4 +250,4 @@ mod deterministic {
     unused_imports,
     reason = "the frozen controller contract names the pause type for service-lane consumers"
 )]
-pub use deterministic::{SignalOwnerOperationControl, SignalOwnerOperationPause};
+pub use deterministic::{SignalOwnerOperationControlForTest, SignalOwnerOperationPauseForTest};

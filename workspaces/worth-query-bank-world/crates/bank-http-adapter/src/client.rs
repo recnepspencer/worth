@@ -23,7 +23,7 @@ pub(crate) fn http_client() -> Result<reqwest::Client, AuthentikOidcAdapterBuild
         .map_err(|_| AuthentikOidcAdapterBuildError::HttpClient)
 }
 
-pub(crate) fn cold_certification_http_client(
+pub(crate) fn cold_certification_http_client_for_test(
 ) -> Result<reqwest::Client, AuthentikOidcAdapterBuildError> {
     // A cold court must hand us its named TLS root. The current court supplies
     // only issuer URLs, so fail closed until that certificate handoff exists.
@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn cold_certification_without_its_trusted_root_is_refused() {
         assert!(matches!(
-            super::cold_certification_http_client(),
+            super::cold_certification_http_client_for_test(),
             Err(super::AuthentikOidcAdapterBuildError::MissingColdCertificationTrustedRoot)
         ));
     }

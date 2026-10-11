@@ -225,7 +225,7 @@ The bundle accessors are exactly `basis_port()`, `mutation_port()`, and
 `lifecycle_port()`. The bundle and every returned port are cloneable weak
 bindings; they expose no constructors, close authority, cells, registries, or
 generic service trait. A sealed runtime also issues
-`owner_operation_control() -> Result<SignalOwnerOperationControl, SignalOwnerUnavailable>`;
+`owner_operation_control_for_test() -> Result<SignalOwnerOperationControlForTest, SignalOwnerUnavailable>`;
 this handle names real progression boundaries but cannot mint authority or
 change production semantics.
 
@@ -420,10 +420,10 @@ workflow for the handoff into 9.17.2.
 ### Deterministic operation control
 
 Tests may obtain
-`runtime.owner_operation_control()` after owner-service issuance. The control
-handle only names real owner boundaries: `arm_pause_once(boundary)` returns a
+`runtime.owner_operation_control_for_test()` after owner-service issuance. The control
+handle only names real owner boundaries: `arm_pause_once_for_test(boundary)` returns a
 drop-safe pause whose `wait_until_reached(Duration)` is bounded and whose
-`release()` resumes the owner; `inject_panic_once(boundary)` faults the next
+`release()` resumes the owner; `inject_panic_once_for_test(boundary)` faults the next
 operation at that boundary. It exposes no constructor, evaluator, authority,
 or alternate engine. Schedules use channels/barriers, never sleeps. Unarmed
 control must leave outcomes, observations, counters, and cleanup unchanged.

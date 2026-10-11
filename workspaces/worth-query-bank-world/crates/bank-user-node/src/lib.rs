@@ -8,7 +8,8 @@ mod protocol;
 mod server;
 mod session;
 
-pub mod cold_certification;
+#[path = "cold_certification.rs"]
+pub mod cold_certification_for_test;
 
 pub use configuration::{
     BankUserNodeConfiguration, BankUserNodeConfigurationBuilder, BankUserNodeConfigurationError,

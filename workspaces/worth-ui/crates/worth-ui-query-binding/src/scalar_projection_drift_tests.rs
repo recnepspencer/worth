@@ -92,8 +92,9 @@ fn bridge_late_result_maps_to_basis_drift_without_reusing_the_predecessor_value(
     ));
     let (revalidating_fact, _) = revalidating.into_fact_and_predecessor();
 
-    let late =
-        worth_runtime_bridge::certification::observe_late_async_completion(&bridge, &request);
+    let late = worth_runtime_bridge::certification_for_test::observe_late_async_completion_for_test(
+        &bridge, &request,
+    );
     let late_batch = admit_input(
         &bridge,
         &mut workspace,
@@ -115,7 +116,7 @@ fn bridge_late_result_maps_to_basis_drift_without_reusing_the_predecessor_value(
 #[test]
 fn bridge_late_result_maps_to_generation_drift_when_basis_is_stable() {
     let bridge = projection_bridge();
-    let request = worth_runtime_bridge::certification::retryable_async_request(
+    let request = worth_runtime_bridge::certification_for_test::retryable_async_request_for_test(
         &bridge,
         NodeId::new(317, 0),
         authoritative_async_basis("commit-stable", "snapshot-stable"),
@@ -125,7 +126,9 @@ fn bridge_late_result_maps_to_generation_drift_when_basis_is_stable() {
     let view = scalar_async_view(&mut workspace, &request);
     let mut binding = scalar_binding(&workspace);
     let (cancelled, retry) =
-        worth_runtime_bridge::certification::cancel_and_retry_async_request(&bridge, &request);
+        worth_runtime_bridge::certification_for_test::cancel_and_retry_async_request_for_test(
+            &bridge, &request,
+        );
     let cancelled_batch = admit_input(
         &bridge,
         &mut workspace,
@@ -153,8 +156,9 @@ fn bridge_late_result_maps_to_generation_drift_when_basis_is_stable() {
     ));
     assert_unavailable(retried.fact(), UiProjectionUnavailableKind::Retried);
 
-    let late =
-        worth_runtime_bridge::certification::observe_late_async_completion(&bridge, &request);
+    let late = worth_runtime_bridge::certification_for_test::observe_late_async_completion_for_test(
+        &bridge, &request,
+    );
     let late_batch = admit_input(
         &bridge,
         &mut workspace,

@@ -51,18 +51,18 @@ impl WorthQueryInstalledApplicationQueryCatalog {
             .map(|binding| binding.query_identity())
     }
 
-    pub(crate) fn get_query(
+    pub(crate) fn get_query_for_test(
         &self,
         key: &ApplicationQueryBindingKey,
     ) -> Option<Arc<WorthQueryCompiledApplicationQuery>> {
-        self.certification.get_query(key)
+        self.certification.get_query_for_test(key)
     }
 
-    pub(crate) fn get_query_by_name(
+    pub(crate) fn get_query_by_name_for_test(
         &self,
         name: &str,
     ) -> Option<Arc<WorthQueryCompiledApplicationQuery>> {
-        self.certification.get_query_by_name(name)
+        self.certification.get_query_by_name_for_test(name)
     }
 
     #[cfg(test)]

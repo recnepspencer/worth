@@ -12,7 +12,7 @@ use super::super::{
     SignalOwnerUnavailable,
 };
 use super::{SignalBranchCellAdmissionDenial, SignalBranchCellWork, SignalBranchExecutionCell};
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 
 #[cfg(test)]
 #[derive(Debug, Clone, PartialEq)]
@@ -142,7 +142,8 @@ where
             .map_err(|denial| map_restore_cell_denial(denial, self.branch_id))?;
         self.require_live_posture()
             .map_err(|denial| map_restore_cell_denial(denial, self.branch_id))?;
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::ExactBasisPreflight);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::ExactBasisPreflight);
         let live = state.observation().map_err(owner_restore_failure)?;
         if let Err(mismatch) = live.compare(expected.observation()) {
             return Err(SignalBranchRestoreDenial::BasisMismatch {
@@ -154,7 +155,8 @@ where
             .map_err(owner_restore_failure)?;
         let observation = prepared.observation.clone();
         before_movement();
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
         let permit = cancellation
             .preflight_movement()
             .map_err(|_| SignalBranchRestoreDenial::CancelledNoMovement)?;
@@ -164,7 +166,8 @@ where
             movements: &self.movements,
         }
         .record_canonical_movement(&permit);
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::AfterCanonicalMovement);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
         after_movement();
         Ok(SignalBranchRestoreCellOutcome {
             branch_id: self.branch_id,

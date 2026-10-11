@@ -6,12 +6,13 @@ use std::sync::{
 };
 use std::time::Duration;
 
+#[path = "operation_control/currentness_hold.rs"]
 mod currentness_hold;
-pub(crate) use currentness_hold::ProductCurrentnessLatch;
-pub use currentness_hold::RuntimeWorldProductCurrentnessPause;
+pub(crate) use currentness_hold::ProductCurrentnessLatchForTest;
+pub use currentness_hold::RuntimeWorldProductCurrentnessPauseForTest;
 
 #[derive(Clone, Default)]
-pub struct RuntimeWorldOperationControl {
+pub struct RuntimeWorldOperationControlForTest {
     pending_product_compare: Arc<ProductCompareSlot>,
     pending_currentness: Arc<ProductCurrentnessSlot>,
 }
@@ -23,7 +24,7 @@ struct ProductCompareSlot {
 #[derive(Default)]
 struct ProductCurrentnessSlot {
     armed: AtomicBool,
-    pending: Mutex<Option<Arc<ProductCurrentnessLatch>>>,
+    pending: Mutex<Option<Arc<ProductCurrentnessLatchForTest>>>,
 }
 
 enum ProductCompareControl {
@@ -36,18 +37,18 @@ struct ExactPause {
     state: Mutex<(usize, bool)>,
     changed: Condvar,
 }
-pub struct RuntimeWorldProductComparePause {
+pub struct RuntimeWorldProductComparePauseForTest {
     receiver: Weak<ProductCompareSlot>,
     latch: Arc<ExactPause>,
 }
-impl RuntimeWorldOperationControl {
+impl RuntimeWorldOperationControlForTest {
     /// Park an exact number of attempts at BeforeProductCompareAndPublish,
     /// after each last unlocked expected-head check and before acquiring its
     /// product cell.
-    pub fn pause_before_product_compare(
+    pub fn pause_before_product_compare_for_test(
         &self,
         attempts: NonZeroUsize,
-    ) -> RuntimeWorldProductComparePause {
+    ) -> RuntimeWorldProductComparePauseForTest {
         let latch = Arc::new(ExactPause {
             target: attempts.get(),
             state: Mutex::new((0, false)),
@@ -63,7 +64,7 @@ impl RuntimeWorldOperationControl {
         self.pending_product_compare
             .armed
             .store(true, Ordering::Release);
-        RuntimeWorldProductComparePause {
+        RuntimeWorldProductComparePauseForTest {
             latch,
             receiver: Arc::downgrade(&self.pending_product_compare),
         }
@@ -71,7 +72,7 @@ impl RuntimeWorldOperationControl {
 
     /// Inject one unwind after owner execution and before product movement.
     /// Armed only through this owner-issued control handle.
-    pub fn panic_before_product_compare_once(&self) {
+    pub fn panic_before_product_compare_once_for_test(&self) {
         let mut pending = self
             .pending_product_compare
             .pending
@@ -87,7 +88,7 @@ impl RuntimeWorldOperationControl {
             .store(true, Ordering::Release);
     }
 
-    pub(crate) fn before_product_compare(&self) {
+    pub(crate) fn before_product_compare_for_test(&self) {
         if !self.pending_product_compare.armed.load(Ordering::Acquire) {
             return;
         }
@@ -126,7 +127,7 @@ impl RuntimeWorldOperationControl {
         assert!(state.1, "product comparison pause exceeded release budget");
     }
 }
-impl RuntimeWorldProductComparePause {
+impl RuntimeWorldProductComparePauseForTest {
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
         let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
         self.latch
@@ -142,7 +143,7 @@ impl RuntimeWorldProductComparePause {
         self.latch.changed.notify_all();
     }
 }
-impl Drop for RuntimeWorldProductComparePause {
+impl Drop for RuntimeWorldProductComparePauseForTest {
     fn drop(&mut self) {
         // Law 2, scope: only this receiver's matching pause is cleared.
         if let Some(receiver) = self.receiver.upgrade() {
@@ -169,7 +170,7 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    pub fn world_operation_control_for_test(&self) -> RuntimeWorldOperationControl {
+    pub fn world_operation_control_for_test(&self) -> RuntimeWorldOperationControlForTest {
         self.root.state.operation_control.clone()
     }
 }
@@ -179,9 +180,9 @@ mod scope_tests {
     use super::*;
     #[test]
     fn unwinding_an_unreached_compare_pause_clears_its_receiver() {
-        let control = RuntimeWorldOperationControl::default();
+        let control = RuntimeWorldOperationControlForTest::default();
         assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _pause = control.pause_before_product_compare(NonZeroUsize::MIN);
+            let _pause = control.pause_before_product_compare_for_test(NonZeroUsize::MIN);
             panic!("exercise pause cleanup");
         }))
         .is_err());
@@ -189,6 +190,6 @@ mod scope_tests {
             .pending_product_compare
             .armed
             .load(Ordering::Acquire));
-        let _next = control.pause_before_product_compare(NonZeroUsize::MIN);
+        let _next = control.pause_before_product_compare_for_test(NonZeroUsize::MIN);
     }
 }

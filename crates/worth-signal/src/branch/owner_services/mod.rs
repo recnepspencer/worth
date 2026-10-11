@@ -78,7 +78,8 @@ pub use definition_publication_port::{
 };
 pub use lifecycle_observation::SignalOwnerLifecycleObservation;
 pub use operation_control::{
-    SignalOwnerOperationBoundary, SignalOwnerOperationControl, SignalOwnerOperationPause,
+    SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest,
+    SignalOwnerOperationPauseForTest,
 };
 pub use owner::SignalOwnerServiceIssuanceDenial;
 pub use service_ports::SignalOwnerServicePorts;

@@ -93,12 +93,12 @@ const PATCH_POSITION_RESERVATION_PAUSE_BUDGET: std::time::Duration =
 /// a seam that is moved out of the reservation window fails a run by name
 /// instead of hanging it.
 #[derive(Debug, Default)]
-pub struct RelationalPatchPositionReservationGate {
+pub struct RelationalPatchPositionReservationGateForTest {
     opened: std::sync::Mutex<bool>,
     signal: std::sync::Condvar,
 }
 
-impl RelationalPatchPositionReservationGate {
+impl RelationalPatchPositionReservationGateForTest {
     pub fn open(&self) {
         let mut opened = self.opened.lock().expect("the release gate stays usable");
         *opened = true;
@@ -124,7 +124,7 @@ impl RelationalPatchPositionReservationGate {
 #[derive(Debug, Clone)]
 struct RelationalPatchPositionReservationPause {
     reached: std::sync::mpsc::SyncSender<()>,
-    release: Arc<RelationalPatchPositionReservationGate>,
+    release: Arc<RelationalPatchPositionReservationGateForTest>,
 }
 
 #[derive(Debug, Clone)]
@@ -202,21 +202,21 @@ impl RelationalOperationControl {
             })
     }
 
-    pub(crate) fn pause_after_linearization(&self) {
+    pub(crate) fn pause_after_linearization_for_test(&self) {
         if let Some(pause) = &self.post_linearization_pause {
             pause.reached.wait();
             pause.release.wait();
         }
     }
 
-    pub(crate) fn pause_inside_critical_section(&self) {
+    pub(crate) fn pause_inside_critical_section_for_test(&self) {
         if let Some(pause) = &self.critical_section_pause {
             pause.reached.wait();
             pause.release.wait();
         }
     }
 
-    pub(crate) fn pause_holding_patch_position_reservation(&self) {
+    pub(crate) fn pause_holding_patch_position_reservation_for_test(&self) {
         if let Some(pause) = &self.patch_position_reservation_pause {
             // A dropped observer is an observer that already gave up, so the
             // publisher must not wait on a gate nobody is left to open.

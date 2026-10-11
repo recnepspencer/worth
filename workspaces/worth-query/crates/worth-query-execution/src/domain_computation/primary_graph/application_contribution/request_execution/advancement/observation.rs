@@ -41,7 +41,7 @@ pub fn caller_pass_reports_on_this_thread_for_test() -> Vec<(
 )> {
     CALLER_PASSES.with(|passes| std::mem::take(&mut *passes.borrow_mut()))
 }
-pub(in crate::domain_computation::primary_graph) fn record_caller_pass<R>(
+pub(in crate::domain_computation::primary_graph) fn record_caller_pass_for_test<R>(
     result: &Result<R, crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial>,
 ) {
     if !crate::domain_computation::execution_observation::is_installed() {

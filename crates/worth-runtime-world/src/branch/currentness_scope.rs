@@ -9,7 +9,11 @@ pub(crate) struct ProductBranchCurrentnessScope<'selected> {
     cell: ProductBranchReferenceCell,
     expected: &'selected ProductBranchObservation,
     _operation: crate::lifecycle::owner::RuntimeWorldOperationReservation,
-    control: Option<std::sync::Arc<crate::lifecycle::operation_control::ProductCurrentnessLatch>>,
+    control: Option<
+        std::sync::Arc<
+            crate::lifecycle::operation_control_for_test::ProductCurrentnessLatchForTest,
+        >,
+    >,
 }
 
 /// Exact expected-head currentness, valid only during the owner's guarded
@@ -46,7 +50,9 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
         expected: &'selected ProductBranchObservation,
         operation: crate::lifecycle::owner::RuntimeWorldOperationReservation,
         control: Option<
-            std::sync::Arc<crate::lifecycle::operation_control::ProductCurrentnessLatch>,
+            std::sync::Arc<
+                crate::lifecycle::operation_control_for_test::ProductCurrentnessLatchForTest,
+            >,
         >,
     ) -> Self {
         Self {
@@ -77,10 +83,13 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
         let result = match self.control {
             None => self.cell.while_current(self.expected, argument, callback),
             Some(control) => {
-                let hold = control.hold_reference(self.cell.clone());
-                let result =
-                    self.cell
-                        .while_current_controlled(self.expected, argument, callback, &control);
+                let hold = control.hold_reference_for_test(self.cell.clone());
+                let result = self.cell.while_current_controlled_for_test(
+                    self.expected,
+                    argument,
+                    callback,
+                    &control,
+                );
                 drop(hold);
                 result
             }

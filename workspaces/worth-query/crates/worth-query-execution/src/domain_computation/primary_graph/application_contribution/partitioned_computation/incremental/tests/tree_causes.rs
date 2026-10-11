@@ -50,7 +50,7 @@ fn edit_capacity_overflow_rebuilds_and_matches_reuse_off() {
         TreeRun::Rebuilt(Rebuild::EditCapacityOverflow, _)
     ));
     assert!(
-        edited.report.metrics().combine_calls > 64,
+        edited.report.metrics_for_test().combine_calls > 64,
         "successful edits preceded the overflow"
     );
     let rebuilt = run(None);
@@ -228,7 +228,7 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
         TreeRun::Rebuilt(Rebuild::WorkCounterOverflow, _)
     ));
     assert_eq!(
-        reported.report.metrics().structural_visits,
+        reported.report.metrics_for_test().structural_visits,
         u128::from(u64::MAX)
     );
     for (reason, cause) in [

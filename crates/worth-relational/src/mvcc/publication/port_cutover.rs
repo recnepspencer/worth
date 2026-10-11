@@ -60,7 +60,7 @@ impl PreparedBranchPublicationPreflight {
                 .record_interruption(event);
             return RelationalPublicationOutcome::interrupted(event);
         }
-        self.control.pause_inside_critical_section();
+        self.control.pause_inside_critical_section_for_test();
         let mut publication_state = self.publication_cell.enter_state();
         match publication_state.lifecycle_posture() {
             crate::branch::RelationalBranchLifecyclePosture::Live => {}
@@ -133,7 +133,7 @@ impl PreparedBranchPublicationPreflight {
                 // The cutover is the only orchestration this port runs while the
                 // global patch-position reservation is held, so this is where a
                 // concurrent publisher can be made to meet it.
-                reservation_pause.pause_holding_patch_position_reservation();
+                reservation_pause.pause_holding_patch_position_reservation_for_test();
                 let previous_root = publication_state.replace_with(self.next_state);
                 if let Some(companion) = &mut companion_cutover {
                     companion.install_at(position);
@@ -161,7 +161,7 @@ impl PreparedBranchPublicationPreflight {
         let retired_root = retired_root
             .into_inner()
             .expect("performed cutover returns the exact previous head root");
-        self.control.pause_after_linearization();
+        self.control.pause_after_linearization_for_test();
         drop(_critical_section);
         self.head_retirement.replace_head(retired_root);
         drop(_publication_lifecycle);

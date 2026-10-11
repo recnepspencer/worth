@@ -76,8 +76,9 @@ mod adapter;
 mod authorization;
 mod builder;
 mod canonical_basis;
-pub mod certification;
 mod certification_constructor;
+#[path = "certification.rs"]
+pub mod certification_for_test;
 mod clone_budget;
 mod conditional_execution;
 mod continuity;

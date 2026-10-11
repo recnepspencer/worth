@@ -106,10 +106,10 @@ impl WorthQueryProductWorldResources {
 #[cfg(test)]
 pub(in crate::domain_computation) fn test_product_world_resources(
 ) -> WorthQueryProductWorldResources {
-    test_product_world_resources_with_history_limit(1_024)
+    test_product_world_resources_with_history_limit_for_test(1_024)
 }
 
-pub(crate) fn test_product_world_resources_with_history_limit(
+pub(crate) fn test_product_world_resources_with_history_limit_for_test(
     retained_composite_commits: u64,
 ) -> WorthQueryProductWorldResources {
     use worth_runtime_world::facade::{

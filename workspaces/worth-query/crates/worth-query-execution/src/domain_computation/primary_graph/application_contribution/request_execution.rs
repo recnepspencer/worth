@@ -24,11 +24,11 @@ mod test_placement;
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
 pub use test_placement::{
     bound_advancement_requests_on_this_thread_for_test,
-    place_managed_computations_on_this_thread_for_test, test_execution_workers,
+    place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
 mod test_authority;
-pub use test_authority::query_test_execution_authority;
+pub use test_authority::query_test_execution_authority_for_test;
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
@@ -340,4 +340,4 @@ pub use advancement::with_bootstrap_advancement;
 
 pub use advancement::WorthQueryBootstrapAdvancementPhase;
 
-pub(in crate::domain_computation::primary_graph) use advancement::record_caller_pass;
+pub(in crate::domain_computation::primary_graph) use advancement::record_caller_pass_for_test;

@@ -130,7 +130,7 @@ fn currentness_control_observes_real_reference_contention_without_head_movement(
     let hold = owner
         .state
         .operation_control
-        .pause_product_currentness(expected.lifecycle_incarnation());
+        .pause_product_currentness_for_test(expected.lifecycle_incarnation());
     std::thread::scope(|threads| {
         let reader = threads.spawn(|| {
             port.while_product_branch_current(&expected, 7, |value, head| {

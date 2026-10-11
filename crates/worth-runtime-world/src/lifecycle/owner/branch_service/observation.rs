@@ -55,7 +55,7 @@ where
             operation,
             self.state
                 .operation_control
-                .currentness_latch(expected.lifecycle_incarnation()),
+                .currentness_latch_for_test(expected.lifecycle_incarnation()),
         ))
     }
 

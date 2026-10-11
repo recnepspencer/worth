@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 use std::thread;
 
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::{validate_signal_branch_name, SignalOwnerLifecycleObservation};
 
 use super::super::progress_bound::PROGRESS_BOUND;
@@ -11,15 +11,15 @@ use crate::branch::owner_services::SignalOwnerCancellationSource;
 #[test]
 fn operation_control_reaches_registry_and_both_fork_boundaries_with_exact_handle() {
     for boundary in [
-        SignalOwnerOperationBoundary::BranchRegistryReservation,
-        SignalOwnerOperationBoundary::ForkSourceCapture,
-        SignalOwnerOperationBoundary::ForkDestinationInstallation,
+        SignalOwnerOperationBoundaryForTest::BranchRegistryReservation,
+        SignalOwnerOperationBoundaryForTest::ForkSourceCapture,
+        SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation,
     ] {
         exercise_fork_pause(boundary);
     }
 }
 
-fn exercise_fork_pause(boundary: SignalOwnerOperationBoundary) {
+fn exercise_fork_pause(boundary: SignalOwnerOperationBoundaryForTest) {
     let (mut runtime, _, source, basis) = runtime_with_two_branches();
     let (_, mutation, _) = runtime.owner_port_slots().expect("fork owner seals");
     let owner = mutation.upgrade_owner().expect("fork owner remains live");
@@ -29,7 +29,9 @@ fn exercise_fork_pause(boundary: SignalOwnerOperationBoundary) {
         .expect("fork source is live");
     drop(setup);
     let before = owner.cost_snapshot();
-    let pause = owner.operation_control().arm_pause_once(boundary);
+    let pause = owner
+        .operation_control_for_test()
+        .arm_pause_once_for_test(boundary);
     let (done_tx, done_rx) = mpsc::sync_channel(1);
     let worker_owner = owner.clone();
     thread::spawn(move || {
@@ -57,11 +59,11 @@ fn exercise_fork_pause(boundary: SignalOwnerOperationBoundary) {
 
     assert!(pause.wait_until_reached(PROGRESS_BOUND));
     match boundary {
-        SignalOwnerOperationBoundary::BranchRegistryReservation => {
+        SignalOwnerOperationBoundaryForTest::BranchRegistryReservation => {
             assert_eq!(owner.live_count(), 2);
             assert_eq!(owner.reservation_count(), 0);
         }
-        SignalOwnerOperationBoundary::ForkSourceCapture => {
+        SignalOwnerOperationBoundaryForTest::ForkSourceCapture => {
             assert_eq!(owner.live_count(), 2);
             assert_eq!(owner.reservation_count(), 1);
             assert_eq!(
@@ -69,7 +71,7 @@ fn exercise_fork_pause(boundary: SignalOwnerOperationBoundary) {
                 before.fork_source_captures() + 1
             );
         }
-        SignalOwnerOperationBoundary::ForkDestinationInstallation => {
+        SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation => {
             assert_eq!(owner.live_count(), 3);
             assert_eq!(owner.reservation_count(), 0);
             assert_eq!(
@@ -99,8 +101,8 @@ fn operation_control_reaches_detached_owner_close_batch() {
     drop(basis);
     let before = owner.cost_snapshot().close_batches();
     let pause = owner
-        .operation_control()
-        .arm_pause_once(SignalOwnerOperationBoundary::OwnerCloseBatch);
+        .operation_control_for_test()
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::OwnerCloseBatch);
     let (done_tx, done_rx) = mpsc::sync_channel(1);
     let worker_owner = owner.clone();
     thread::spawn(move || {

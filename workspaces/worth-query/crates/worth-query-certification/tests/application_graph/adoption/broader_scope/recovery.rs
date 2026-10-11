@@ -177,7 +177,7 @@ fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_su
     let pause = host
         .runtime()
         .world_operation_control_for_test()
-        .pause_before_product_compare(NonZeroUsize::new(1).unwrap());
+        .pause_before_product_compare_for_test(NonZeroUsize::new(1).unwrap());
     let outcome = std::thread::scope(|threads| {
         let recovering = threads.spawn(|| {
             host.runtime()

@@ -27,11 +27,11 @@ fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
         TreeRun::Rebuilt(Rebuild::ReducerPanicked, _)
     ));
     assert_eq!(
-        next.report.metrics().combine_calls,
+        next.report.metrics_for_test().combine_calls,
         u128::from(failed_entry + 64)
     );
     assert_eq!(
-        next.report.metrics().recombined_nodes,
+        next.report.metrics_for_test().recombined_nodes,
         u128::from(first_depth + 32)
     );
     assert_eq!(*next.outcome.unwrap().result(), 35);
@@ -82,12 +82,12 @@ fn edit_memory_refusal_keeps_prior_work_and_releases_transient_hold_before_rebui
         TreeRun::Rebuilt(Rebuild::EditMemory, _)
     ));
     assert!(
-        next.report.metrics().recombined_nodes > 32,
+        next.report.metrics_for_test().recombined_nodes > 32,
         "some edits ran before rebuilding"
     );
     assert_eq!(
-        next.report.metrics().combine_calls,
-        2 * next.report.metrics().recombined_nodes
+        next.report.metrics_for_test().combine_calls,
+        2 * next.report.metrics_for_test().recombined_nodes
     );
     assert_eq!(*next.outcome.unwrap().result(), 64);
 }
@@ -138,8 +138,8 @@ fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
         TreeRun::Rebuilt(Rebuild::ReducerPanicked, _)
     ));
     assert!(next.outcome.is_err());
-    assert_eq!(next.report.metrics().combine_calls, 2);
-    assert_eq!(next.report.metrics().recombined_nodes, 0);
+    assert_eq!(next.report.metrics_for_test().combine_calls, 2);
+    assert_eq!(next.report.metrics_for_test().recombined_nodes, 0);
     PANIC_AT.set(None);
 }
 
@@ -176,5 +176,5 @@ fn a_work_stopped_rebuild_reports_the_work_it_entered() {
         TreeRun::Rebuilt(Rebuild::WorkCeiling, _)
     ));
     assert!(next.outcome.is_err());
-    assert!(next.report.metrics().combine_calls > 0);
+    assert!(next.report.metrics_for_test().combine_calls > 0);
 }

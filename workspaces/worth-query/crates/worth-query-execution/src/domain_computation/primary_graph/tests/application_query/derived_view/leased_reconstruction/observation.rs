@@ -4,7 +4,7 @@ use super::{Case, Observation, ScopeInterruption};
 mod denial_custody;
 mod verification;
 use crate::domain_computation::primary_graph::application_contribution::{
-    query_test_execution_authority, test_policy,
+    query_test_execution_authority_for_test, test_policy,
 };
 use crate::domain_computation::primary_graph::tests::fixture::{
     NestedAccountQuery, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
@@ -145,7 +145,7 @@ pub(super) fn observe_case(
         deadline,
     );
     let lease = workers.map(|workers| {
-        query_test_execution_authority()
+        query_test_execution_authority_for_test()
             .request_lease(LeaseRequest {
                 policy: test_policy(NonZeroUsize::new(workers).unwrap(), serial.memory().limit()),
                 cancellation: caller_cancel.token(),

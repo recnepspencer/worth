@@ -15,7 +15,7 @@ pub use crate::domain_computation::primary_graph::{
     partitioned_computation_tree_work_on_this_thread_for_test,
 };
 pub use crate::domain_computation::primary_graph::{
-    place_managed_computations_on_this_thread_for_test, test_execution_workers,
+    place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
 pub use crate::domain_computation::primary_graph::{
@@ -27,7 +27,7 @@ pub use crate::domain_computation::primary_graph::{
     required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
 };
 
-pub use crate::domain_computation::primary_graph::query_test_execution_authority;
+pub use crate::domain_computation::primary_graph::query_test_execution_authority_for_test;
 
 pub use worth_relational::facade::{
     indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
@@ -298,7 +298,7 @@ pub use worth_signal::facade::{
 };
 
 /// The Signal owner's typed safe-point refusal, exposed for request-custody probes.
-pub use worth_signal::facade::SignalCheckpointDenial;
+pub use worth_signal::facade::SignalCheckpointDenial as SignalCheckpointDenialForTest;
 
 pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
 pub use crate::domain_computation::primary_graph::ExecutionRequest;
@@ -313,7 +313,7 @@ pub use worth_signal::facade::SignalRequestWorkObservation;
 /// Owns this thread's actual World read observation; grants no publication authority.
 pub use worth_runtime_world::facade::RuntimeWorldReadObservation;
 
-pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationEquivalence;
+pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationEquivalenceForTest;
 
 /// Owns passive execution observation without granting request authority.
 pub use crate::domain_computation::execution_observation::WorthQueryExecutionObservation;

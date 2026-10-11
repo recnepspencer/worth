@@ -126,12 +126,12 @@ fn run(
 
 fn reconcile(report: TreeRun) {
     assert_eq!(
-        report.metrics().recombined_nodes,
+        report.metrics_for_test().recombined_nodes,
         u128::from(NODES.get()),
         "independently completed combine pairs"
     );
     assert_eq!(
-        report.metrics().combine_calls,
+        report.metrics_for_test().combine_calls,
         u128::from(CALLS.get()),
         "reported combine entries equal independent reducer entries"
     );
@@ -160,22 +160,22 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         let same = run(&retained, &keys, BTreeMap::from([(*key, 1)]), u64::MAX);
         reconcile(same.report);
         assert_eq!(
-            same.report.metrics().recombined_nodes,
+            same.report.metrics_for_test().recombined_nodes,
             0,
             "identical bits cut off"
         );
-        assert_eq!(same.report.metrics().combine_calls, 0);
+        assert_eq!(same.report.metrics_for_test().combine_calls, 0);
         let deleted: Vec<_> = keys.iter().copied().filter(|id| id != key).collect();
         reset_counts();
         let next = run(&retained, &deleted, BTreeMap::new(), u64::MAX);
         reconcile(next.report);
         assert!(matches!(next.report, TreeRun::Edited(_)));
         assert_eq!(
-            next.report.metrics().combine_calls,
-            2 * next.report.metrics().recombined_nodes
+            next.report.metrics_for_test().combine_calls,
+            2 * next.report.metrics_for_test().recombined_nodes
         );
         assert!(
-            next.report.metrics().recombined_nodes
+            next.report.metrics_for_test().recombined_nodes
                 <= u128::from(shape::Shape::deletion_depth(&shape, *key))
         );
         assert_eq!(*next.outcome.unwrap().result(), 127);
@@ -190,10 +190,13 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         reconcile(next.report);
         assert!(matches!(next.report, TreeRun::Edited(_)));
         assert_eq!(
-            next.report.metrics().combine_calls,
-            2 * next.report.metrics().recombined_nodes
+            next.report.metrics_for_test().combine_calls,
+            2 * next.report.metrics_for_test().recombined_nodes
         );
-        assert_eq!(next.report.metrics().recombined_nodes, u128::from(bound));
+        assert_eq!(
+            next.report.metrics_for_test().recombined_nodes,
+            u128::from(bound)
+        );
         assert_eq!(*next.outcome.unwrap().result(), 130);
     }
 }
@@ -213,7 +216,7 @@ fn public_incremental_observation_reports_actual_work_apart_from_charge() {
     let [tree] = next.tree_runs.as_slice() else {
         panic!("one terminal report")
     };
-    assert_eq!(tree.partitions(), Run::Incremental);
+    assert_eq!(tree.partitions_for_test(), Run::Incremental);
     reconcile(*tree);
     assert!(matches!(tree, TreeRun::Edited(_)));
     assert_eq!(next.outcome.unwrap().1, charge);

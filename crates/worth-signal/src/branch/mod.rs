@@ -80,7 +80,8 @@ pub use owner_services::{
     SignalPreparedConditionalInstallationExtension,
 };
 pub use owner_services::{
-    SignalOwnerOperationBoundary, SignalOwnerOperationControl, SignalOwnerOperationPause,
+    SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest,
+    SignalOwnerOperationPauseForTest,
 };
 pub use readmission::{
     SignalBranchBasisCompatibilityDenial, SignalBranchBasisObservationDenial,

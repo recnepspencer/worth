@@ -36,7 +36,7 @@ pub use partitioned_computation::{
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,
-    WorthQueryPartitionedComputationRun, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeMetrics,
     WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
     WorthQueryPublishedComputationStateForTest,
 };
@@ -72,13 +72,13 @@ pub use producer::{
     WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
-pub use request_execution::query_test_execution_authority;
+pub use request_execution::query_test_execution_authority_for_test;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;
 pub(in crate::domain_computation::primary_graph) use request_execution::QueryRequestExecution;
 pub use request_execution::{
     bound_advancement_requests_on_this_thread_for_test,
-    place_managed_computations_on_this_thread_for_test, test_execution_workers,
+    place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
 pub use request_execution::{

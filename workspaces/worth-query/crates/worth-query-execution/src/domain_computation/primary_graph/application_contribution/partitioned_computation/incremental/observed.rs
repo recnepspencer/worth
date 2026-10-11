@@ -2,11 +2,11 @@
 
 use worth_foundational::facade::ExecutionReport;
 
-use super::retained::WorthQueryPartitionedComputationRun;
+use super::retained::WorthQueryPartitionedComputationRunForTest;
 use super::tree_report::WorthQueryPartitionedTreeRun;
 
 thread_local! {
-    static RUNS: std::cell::RefCell<Vec<(WorthQueryPartitionedComputationRun, Option<ExecutionReport>)>> =
+    static RUNS: std::cell::RefCell<Vec<(WorthQueryPartitionedComputationRunForTest, Option<ExecutionReport>)>> =
         const { std::cell::RefCell::new(Vec::new()) };
     static TREES: std::cell::RefCell<Vec<WorthQueryPartitionedTreeRun>> =
         const { std::cell::RefCell::new(Vec::new()) };
@@ -35,7 +35,10 @@ pub fn full_partitioned_computation_preparations_on_this_thread_for_test(
 
 /// Shows a completed run to the test observer. The handler and the owner
 /// never see how a run ran.
-pub(super) fn observe(run: WorthQueryPartitionedComputationRun, report: Option<ExecutionReport>) {
+pub(super) fn observe(
+    run: WorthQueryPartitionedComputationRunForTest,
+    report: Option<ExecutionReport>,
+) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;
     }
@@ -111,8 +114,10 @@ pub fn partitioned_computation_tree_work_on_this_thread_for_test(
 
 /// Takes every partitioned computation run completed on this thread since the
 /// last call: how it ran, and execution's report of a full run.
-pub fn partitioned_computation_runs_on_this_thread_for_test(
-) -> Vec<(WorthQueryPartitionedComputationRun, Option<ExecutionReport>)> {
+pub fn partitioned_computation_runs_on_this_thread_for_test() -> Vec<(
+    WorthQueryPartitionedComputationRunForTest,
+    Option<ExecutionReport>,
+)> {
     RUNS.with(|runs| std::mem::take(&mut *runs.borrow_mut()))
 }
 

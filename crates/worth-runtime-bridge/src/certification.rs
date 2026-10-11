@@ -18,7 +18,7 @@ use worth_signal::facade::{
     ResourceRejectionReason, ResourceRetryPolicyDeclaration, TemporalDuration,
 };
 
-pub fn reject_async_request(
+pub fn reject_async_request_for_test(
     bridge: &RuntimeBridge,
     request: &AdmittedBridgeAsyncRequestIdentity,
 ) -> BridgeAsyncDeniedCompletion {
@@ -34,7 +34,7 @@ pub fn reject_async_request(
     denied_completion(bridge, request)
 }
 
-pub fn cancel_async_request(
+pub fn cancel_async_request_for_test(
     bridge: &RuntimeBridge,
     request: &AdmittedBridgeAsyncRequestIdentity,
 ) -> BridgeAsyncDeniedCompletion {
@@ -42,7 +42,7 @@ pub fn cancel_async_request(
     denied_completion(bridge, request)
 }
 
-pub fn deny_oversized_async_completion(
+pub fn deny_oversized_async_completion_for_test(
     bridge: &RuntimeBridge,
     request: &AdmittedBridgeAsyncRequestIdentity,
 ) -> BridgeAsyncDeniedCompletion {
@@ -52,14 +52,14 @@ pub fn deny_oversized_async_completion(
         .clone()
 }
 
-pub fn observe_late_async_completion(
+pub fn observe_late_async_completion_for_test(
     bridge: &RuntimeBridge,
     request: &AdmittedBridgeAsyncRequestIdentity,
 ) -> BridgeAsyncDeniedCompletion {
     denied_completion(bridge, request)
 }
 
-pub fn supersede_async_request(
+pub fn supersede_async_request_for_test(
     bridge: &RuntimeBridge,
     request: &AdmittedBridgeAsyncRequestIdentity,
 ) -> (
@@ -78,7 +78,7 @@ pub fn supersede_async_request(
     (denied_completion(bridge, request), replacement)
 }
 
-pub fn retryable_async_request(
+pub fn retryable_async_request_for_test(
     bridge: &RuntimeBridge,
     node: NodeId,
     truth_basis: BridgeAsyncRequestTruthViewBasis,
@@ -117,7 +117,7 @@ pub fn retryable_async_request(
         .expect("certification retry request must admit")
 }
 
-pub fn cancel_and_retry_async_request(
+pub fn cancel_and_retry_async_request_for_test(
     bridge: &RuntimeBridge,
     prior: &AdmittedBridgeAsyncRequestIdentity,
 ) -> (BridgeAsyncDeniedCompletion, BridgeAsyncRetryLineage) {

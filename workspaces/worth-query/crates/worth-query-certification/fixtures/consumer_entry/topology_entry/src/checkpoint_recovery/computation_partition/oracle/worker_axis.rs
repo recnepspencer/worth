@@ -12,7 +12,7 @@ use super::*;
 /// A run's outcome and how it ran.
 type Ran = (
     Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
-    Vec<WorthQueryPartitionedComputationRun>,
+    Vec<WorthQueryPartitionedComputationRunForTest>,
     Vec<worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun>,
 );
 

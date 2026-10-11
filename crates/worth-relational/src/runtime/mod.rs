@@ -42,7 +42,7 @@ pub use initial_schema_installation::{
     RelationalInitialSchemaInstallationReceipt,
 };
 pub use interruption_counters::RelationalInterruptionCostCounters;
-pub use operation_control::RelationalPatchPositionReservationGate;
+pub use operation_control::RelationalPatchPositionReservationGateForTest;
 pub use operation_control::{
     RelationalCancellationSource, RelationalCancellationToken, RelationalInterruptionBoundary,
     RelationalInterruptionEvent, RelationalOperationControl, RelationalOperationInterruption,

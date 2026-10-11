@@ -7,12 +7,12 @@ where
     T: Copy + Ord,
 {
     /// Issue deterministic control over the real owner progression through its owned handle.
-    pub fn owner_operation_control(
+    pub fn owner_operation_control_for_test(
         &self,
     ) -> Result<
-        crate::branch::owner_services::SignalOwnerOperationControl,
+        crate::branch::owner_services::SignalOwnerOperationControlForTest,
         crate::branch::owner_services::SignalOwnerUnavailable,
     > {
-        self.owner_services.operation_control()
+        self.owner_services.operation_control_for_test()
     }
 }

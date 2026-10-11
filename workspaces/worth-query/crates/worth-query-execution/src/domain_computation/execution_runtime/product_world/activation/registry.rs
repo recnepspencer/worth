@@ -170,7 +170,7 @@ impl WorthQueryProductActivationRegistry {
             .find(|occurrence| !state.live_occurrences.contains(occurrence)))
     }
 
-    pub(crate) fn installed_branch_count(&self) -> usize {
+    pub(crate) fn installed_branch_count_for_test(&self) -> usize {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

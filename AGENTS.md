@@ -39,9 +39,9 @@ tables and feature arrays on governed dependencies are refused. Unit-test-only
 hooks use `cfg(test)`; other controls and observers compile and use owned handles.
 The rule is enforced by `tools/boundary-check/src/one_build.rs`.
 
-Law 1, reach: every public control entry in the named files in
-`tools/boundary-check/config/control-files.txt` is sealed to its owner and the
-closed test/certification callers in `control-callers.txt`. Law 2, scope: a
+Law 1, reach: exported and crate-visible test doors are discovered throughout
+their owners by the `*_for_test` and `*ForTest` conventions and sealed to their
+owner and closed test/certification callers in `control-callers.txt`. Law 2, scope: a
 control's arm lives on its receiver. Pre-runtime placement and read-only
 recorders may use thread-local guards that clear their state during unwinding.
 

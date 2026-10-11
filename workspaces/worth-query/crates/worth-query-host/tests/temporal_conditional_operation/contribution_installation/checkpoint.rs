@@ -184,19 +184,19 @@ pub(crate) fn application_checkpoint_denies_corrupt_incompatible_and_forged_byte
     let mut corrupt_payload = checkpoint.bytes().to_vec();
     *corrupt_payload.last_mut().unwrap() ^= 0x01;
     let forged_commit = checkpoint
-        .rewrite_authenticated_body_for_durability_test(|body| {
+        .rewrite_authenticated_checkpoint_body_for_test(|body| {
             body[2..10].copy_from_slice(&u64::MAX.to_be_bytes());
         })
         .bytes()
         .to_vec();
     let unsupported_version = checkpoint
-        .rewrite_authenticated_body_for_durability_test(|body| {
+        .rewrite_authenticated_checkpoint_body_for_test(|body| {
             body[..2].copy_from_slice(&u16::MAX.to_be_bytes());
         })
         .bytes()
         .to_vec();
     let invalid_payload_length = checkpoint
-        .rewrite_authenticated_body_for_durability_test(|body| {
+        .rewrite_authenticated_checkpoint_body_for_test(|body| {
             body[10..18].copy_from_slice(&u64::MAX.to_be_bytes());
         })
         .bytes()

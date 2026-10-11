@@ -78,7 +78,7 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    pub(super) operation_control: super::RuntimeWorldOperationControl,
+    pub(super) operation_control: super::RuntimeWorldOperationControlForTest,
     pub(super) owner_present: AtomicBool,
     pub(super) owner_identity: RuntimeWorldOwnerIdentity,
     pub(super) identities: Mutex<RuntimeWorldIdentityIssuer>,
@@ -154,7 +154,7 @@ where
             RuntimeWorldPublicationCapacityLedger::new(budgets.active_publication_attempts());
         Ok(Self {
             state: Arc::new(RuntimeWorldOwnerState {
-                operation_control: super::RuntimeWorldOperationControl::default(),
+                operation_control: super::RuntimeWorldOperationControlForTest::default(),
                 owner_present: AtomicBool::new(true),
                 owner_identity,
                 identities: Mutex::new(identities),

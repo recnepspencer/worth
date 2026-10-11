@@ -115,8 +115,8 @@ pub use crate::retention::{
 pub use worth_relational::facade::transactions::CommitResult;
 
 pub use crate::lifecycle::{
-    RuntimeWorldOperationControl, RuntimeWorldProductComparePause,
-    RuntimeWorldProductCurrentnessPause,
+    RuntimeWorldOperationControlForTest, RuntimeWorldProductComparePauseForTest,
+    RuntimeWorldProductCurrentnessPauseForTest,
 };
 
 pub use crate::lifecycle::{

@@ -105,7 +105,7 @@ async fn install_cold_identity(
     world: bank_server::BankWorldSeed,
     scope: &WorthQueryRequestScope,
 ) -> Result<AuthentikBankIdentity, BankHttpProcessConfigurationError> {
-    crate::cold_certification::install_world(oidc, world, scope)
+    crate::cold_certification_for_test::install_world_for_test(oidc, world, scope)
         .await
         .map_err(BankHttpProcessConfigurationError::Identity)
 }

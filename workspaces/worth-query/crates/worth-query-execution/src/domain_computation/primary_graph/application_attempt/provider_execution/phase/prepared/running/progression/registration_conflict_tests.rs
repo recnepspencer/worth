@@ -61,7 +61,7 @@ fn occupied_real_registration_cleans_the_conflict_and_preserves_an_interleaved_p
                 WorthQueryApplicationCommitOutcome::Denied(ref denial)
                     if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
             ));
-            assert_eq!(world.application.provider_session_resource_count(), 0);
+            assert_eq!(world.application.provider_session_resource_count_for_test(), 0);
         })
         .expect("fixture owner admits its advancement");
 }

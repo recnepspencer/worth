@@ -36,10 +36,11 @@ pub use ports::RuntimeWorldBranchCreationOutcome;
 mod service_denial;
 pub use service_denial::RuntimeWorldServiceDenial;
 
-pub(crate) mod operation_control;
-pub use operation_control::{
-    RuntimeWorldOperationControl, RuntimeWorldProductComparePause,
-    RuntimeWorldProductCurrentnessPause,
+#[path = "operation_control.rs"]
+pub(crate) mod operation_control_for_test;
+pub use operation_control_for_test::{
+    RuntimeWorldOperationControlForTest, RuntimeWorldProductComparePauseForTest,
+    RuntimeWorldProductCurrentnessPauseForTest,
 };
 
 #[cfg(test)]

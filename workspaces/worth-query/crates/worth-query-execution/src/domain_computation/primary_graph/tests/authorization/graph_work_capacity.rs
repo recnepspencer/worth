@@ -62,5 +62,8 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
     drop(retained.pop());
     retained.push(authorize().expect("dropping one session returns its provider reservations"));
     drop(retained);
-    assert_eq!(world.application.provider_session_resource_count(), 0);
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
 }

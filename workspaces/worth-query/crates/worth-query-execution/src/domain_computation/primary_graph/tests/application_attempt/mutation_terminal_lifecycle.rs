@@ -187,14 +187,14 @@ fn program(
 fn baselines(world: &super::super::fixture::AuthorizationWorld) -> (usize, usize) {
     (
         world.invariant.active_snapshot_count(),
-        world.application.provider_session_resource_count(),
+        world.application.provider_session_resource_count_for_test(),
     )
 }
 
 fn assert_baselines(world: &super::super::fixture::AuthorizationWorld, expected: (usize, usize)) {
     assert_eq!(world.invariant.active_snapshot_count(), expected.0);
     assert_eq!(
-        world.application.provider_session_resource_count(),
+        world.application.provider_session_resource_count_for_test(),
         expected.1
     );
 }

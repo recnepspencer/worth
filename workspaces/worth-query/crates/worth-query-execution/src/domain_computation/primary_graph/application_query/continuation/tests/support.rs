@@ -178,7 +178,12 @@ impl ContinuationTestContext {
         let buffers = self.world.application.result_buffer_observer().observe();
         assert_eq!(buffers.active_buffers(), 0);
         assert_eq!(buffers.retained_bytes(), 0);
-        assert_eq!(self.world.application.provider_session_resource_count(), 0);
+        assert_eq!(
+            self.world
+                .application
+                .provider_session_resource_count_for_test(),
+            0
+        );
     }
 
     pub(super) fn advance_installation(&mut self) {

@@ -103,7 +103,7 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
         let reports = runs();
         use worth_query_host::facade::application_contribution::{
             WorthQueryPartitionedComputationFullCause as Cause,
-            WorthQueryPartitionedComputationRun as Run,
+            WorthQueryPartitionedComputationRunForTest as Run,
         };
         let [(Run::Full(Cause::Unretained), Some(report))] = reports.as_slice() else {
             panic!("exactly one full computation run per completed member: {reports:?}");

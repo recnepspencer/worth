@@ -84,11 +84,11 @@ impl DurabilitySubsystem {
         self.state.write().store = store.map(Arc::new);
     }
 
-    pub(crate) fn arm_append_failure(&self) {
+    pub(crate) fn arm_append_failure_for_test(&self) {
         self.fail_next_append.store(true, Ordering::Release);
     }
 
-    pub(crate) fn take_armed_append_failure(&self) -> bool {
+    pub(crate) fn take_armed_append_failure_for_test(&self) -> bool {
         self.fail_next_append.load(Ordering::Acquire)
             && self.fail_next_append.swap(false, Ordering::AcqRel)
     }

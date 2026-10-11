@@ -128,7 +128,7 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
         });
         Ok(WorthQueryCertificationCostScope {
             relational,
-            application_work: self.primary_provider.application_attempt_work(),
+            application_work: self.primary_provider.application_attempt_work_for_test(),
             output_producer_attempts: self.next_output_producer_attempt.load(Ordering::Relaxed),
             world_retention: self.certification_world_retention(),
             world_history: self.certification_world_history(),
@@ -146,7 +146,7 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
             .with_runtime(|runtime| runtime.observe_mvcc_cost(&scope.relational))?;
         let application_work = WorthQueryCertificationApplicationWork::from(
             self.primary_provider
-                .application_attempt_work()
+                .application_attempt_work_for_test()
                 .since(scope.application_work),
         );
         let world_retention_after = self.certification_world_retention();

@@ -3,29 +3,29 @@
 use super::*;
 use crate::identity::ProductBranchIncarnation;
 
-pub(crate) struct ProductCurrentnessLatch {
+pub(crate) struct ProductCurrentnessLatchForTest {
     occurrence: ProductBranchIncarnation,
     state: Mutex<(bool, bool, bool)>,
     changed: Condvar,
 }
 
 /// Arms one final currentness read; the real writer starts at that boundary.
-pub struct RuntimeWorldProductCurrentnessPause {
-    latch: Arc<ProductCurrentnessLatch>,
+pub struct RuntimeWorldProductCurrentnessPauseForTest {
+    latch: Arc<ProductCurrentnessLatchForTest>,
     pending: Arc<ProductCurrentnessSlot>,
 }
 
-pub(crate) struct ProductCurrentnessHold {
+pub(crate) struct ProductCurrentnessHoldForTest {
     worker: Option<std::thread::JoinHandle<()>>,
-    latch: Arc<ProductCurrentnessLatch>,
+    latch: Arc<ProductCurrentnessLatchForTest>,
 }
 
-impl RuntimeWorldOperationControl {
-    pub fn pause_product_currentness(
+impl RuntimeWorldOperationControlForTest {
+    pub fn pause_product_currentness_for_test(
         &self,
         occurrence: ProductBranchIncarnation,
-    ) -> RuntimeWorldProductCurrentnessPause {
-        let latch = Arc::new(ProductCurrentnessLatch {
+    ) -> RuntimeWorldProductCurrentnessPauseForTest {
+        let latch = Arc::new(ProductCurrentnessLatchForTest {
             occurrence,
             state: Mutex::new((false, false, false)),
             changed: Condvar::new(),
@@ -40,16 +40,16 @@ impl RuntimeWorldOperationControl {
         self.pending_currentness
             .armed
             .store(true, Ordering::Release);
-        RuntimeWorldProductCurrentnessPause {
+        RuntimeWorldProductCurrentnessPauseForTest {
             latch,
             pending: Arc::clone(&self.pending_currentness),
         }
     }
 
-    pub(crate) fn currentness_latch(
+    pub(crate) fn currentness_latch_for_test(
         &self,
         occurrence: ProductBranchIncarnation,
-    ) -> Option<Arc<ProductCurrentnessLatch>> {
+    ) -> Option<Arc<ProductCurrentnessLatchForTest>> {
         if !self.pending_currentness.armed.load(Ordering::Acquire) {
             return None;
         }
@@ -72,11 +72,11 @@ impl RuntimeWorldOperationControl {
     }
 }
 
-impl ProductCurrentnessLatch {
-    pub(crate) fn hold_reference(
+impl ProductCurrentnessLatchForTest {
+    pub(crate) fn hold_reference_for_test(
         self: &Arc<Self>,
         cell: crate::branch::ProductBranchReferenceCell,
-    ) -> ProductCurrentnessHold {
+    ) -> ProductCurrentnessHoldForTest {
         let latch = Arc::clone(self);
         let worker = std::thread::spawn(move || {
             let guard = cell.hold_for_test();
@@ -92,7 +92,7 @@ impl ProductCurrentnessLatch {
             drop(guard);
             assert!(released, "currentness hold exceeded release budget");
         });
-        let hold = ProductCurrentnessHold {
+        let hold = ProductCurrentnessHoldForTest {
             worker: Some(worker),
             latch: Arc::clone(self),
         };
@@ -105,13 +105,13 @@ impl ProductCurrentnessLatch {
         hold
     }
 
-    pub(crate) fn reader_contended(&self) {
+    pub(crate) fn reader_contended_for_test(&self) {
         self.state.lock().unwrap_or_else(|e| e.into_inner()).1 = true;
         self.changed.notify_all();
     }
 }
 
-impl RuntimeWorldProductCurrentnessPause {
+impl RuntimeWorldProductCurrentnessPauseForTest {
     pub fn wait_until_reader_contended(&self, timeout: Duration) -> bool {
         let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
         self.latch
@@ -126,7 +126,7 @@ impl RuntimeWorldProductCurrentnessPause {
         self.latch.changed.notify_all();
     }
 }
-impl Drop for RuntimeWorldProductCurrentnessPause {
+impl Drop for RuntimeWorldProductCurrentnessPauseForTest {
     fn drop(&mut self) {
         self.release();
         let mut pending = self
@@ -143,7 +143,7 @@ impl Drop for RuntimeWorldProductCurrentnessPause {
         }
     }
 }
-impl Drop for ProductCurrentnessHold {
+impl Drop for ProductCurrentnessHoldForTest {
     fn drop(&mut self) {
         self.latch.state.lock().unwrap_or_else(|e| e.into_inner()).2 = true;
         self.latch.changed.notify_all();

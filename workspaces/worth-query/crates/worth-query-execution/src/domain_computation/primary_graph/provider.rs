@@ -270,7 +270,9 @@ impl WorthQueryPrimaryGraphProvider {
         self.live_delivery.active_subscriber_count()
     }
 
-    pub(super) fn application_attempt_work(&self) -> WorthQueryApplicationAttemptWorkSnapshot {
+    pub(super) fn application_attempt_work_for_test(
+        &self,
+    ) -> WorthQueryApplicationAttemptWorkSnapshot {
         self.application_attempt_work.snapshot()
     }
 

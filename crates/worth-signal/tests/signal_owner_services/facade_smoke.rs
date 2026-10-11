@@ -82,17 +82,18 @@ fn public_facade_issues_weak_ports_over_the_canonical_owner() {
 #[test]
 fn public_facade_issues_drop_safe_control_for_real_owner_boundaries() {
     use worth_signal::facade::branch::{
-        SignalOwnerOperationBoundary, SignalOwnerOperationControl, SignalOwnerOperationPause,
+        SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest,
+        SignalOwnerOperationPauseForTest,
     };
 
     let mut runtime = runtime();
     runtime
         .owner_component_services()
         .expect("owner service issuance seals the canonical owner");
-    let control: SignalOwnerOperationControl = runtime
-        .owner_operation_control()
+    let control: SignalOwnerOperationControlForTest = runtime
+        .owner_operation_control_for_test()
         .expect("the sealed owner issues feature-gated deterministic control");
-    let pause: SignalOwnerOperationPause =
-        control.arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    let pause: SignalOwnerOperationPauseForTest = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     pause.release();
 }

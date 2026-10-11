@@ -379,7 +379,7 @@ exports = [
     "RuntimeWorldRecoveryPage",
     "RuntimeWorldServiceDenial",
     "RuntimeWorldSettledRelationalAdoptionDenial",
-    "SignalCheckpointDenial",
+    "SignalCheckpointDenialForTest",
     "SignalConditionalEvaluationBudget",
     "SignalRequestWorkObservation",
     "WorthQueryAdmittedApplicationCapabilityAccess",
@@ -648,7 +648,7 @@ exports = [
     "WorthQueryInboundVerifierHandle",
     "WorthQueryInboundVerifierInstallationDenial",
     "WorthQueryInspectedOperationInvariantProjection",
-    "WorthQueryInvalidationEquivalence",
+    "WorthQueryInvalidationEquivalenceForTest",
     "WorthQueryInvariantAggregate",
     "WorthQueryInvariantAggregateDenial",
     "WorthQueryInvariantAggregateDenialKind",
@@ -836,7 +836,7 @@ exports = [
     "place_managed_computations_on_this_thread_for_test",
     "query_read_kernel_entries_by_root_on_this_thread_for_test",
     "query_read_kernel_entries_on_this_thread_for_test",
-    "query_test_execution_authority",
+    "query_test_execution_authority_for_test",
     "reconcile_recovery_handle",
     "relational_execution_kind",
     "required_custody_layout_for_test",
@@ -846,7 +846,7 @@ exports = [
     "safe_retry_recovery_handle",
     "signal_request_charges_on_this_thread_for_test",
     "signal_request_refusals_on_this_thread_for_test",
-    "test_execution_workers",
+    "test_execution_workers_for_test",
 ]
 
 [[facades]]

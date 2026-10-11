@@ -60,5 +60,6 @@ pub use crate::branch::{
 };
 
 pub use crate::branch::{
-    SignalOwnerOperationBoundary, SignalOwnerOperationControl, SignalOwnerOperationPause,
+    SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest,
+    SignalOwnerOperationPauseForTest,
 };

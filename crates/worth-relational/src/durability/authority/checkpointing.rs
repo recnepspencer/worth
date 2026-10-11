@@ -202,7 +202,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
     ) -> Result<(), DurabilityError> {
         let envelope = positioned.envelope();
         authority.validate(self.runtime.runtime_instance_id(), envelope)?;
-        if self.runtime.durability.take_armed_append_failure() {
+        if self.runtime.durability.take_armed_append_failure_for_test() {
             return Err(DurabilityError::new(
                 crate::durability::data::RecoveryFailureClass::DurableIoFailure,
                 "test-injected durable append failure",

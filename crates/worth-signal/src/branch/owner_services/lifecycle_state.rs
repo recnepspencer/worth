@@ -3,8 +3,8 @@ use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 
 use super::admission_table::SignalOwnerAdmissionTable;
 use super::counters::SignalOwnerServiceCounters;
-use super::operation_control::SignalOwnerOperationBoundary;
-use super::operation_control::SignalOwnerOperationControl;
+use super::operation_control::SignalOwnerOperationBoundaryForTest;
+use super::operation_control::SignalOwnerOperationControlForTest;
 use super::SignalOwnerLifecycleObservation;
 
 #[path = "lifecycle_state/cleanup_claim.rs"]
@@ -75,7 +75,7 @@ pub(crate) struct SignalOwnerLifecycleState {
     cleanup_waiters: std::sync::atomic::AtomicUsize,
     counters: Arc<SignalOwnerServiceCounters>,
     recovered_poison: AtomicBool,
-    operation_control: SignalOwnerOperationControl,
+    operation_control: SignalOwnerOperationControlForTest,
 }
 
 impl SignalOwnerLifecycleState {
@@ -95,7 +95,7 @@ impl SignalOwnerLifecycleState {
             cleanup_waiters: std::sync::atomic::AtomicUsize::new(0),
             counters,
             recovered_poison: AtomicBool::new(false),
-            operation_control: SignalOwnerOperationControl::new(),
+            operation_control: SignalOwnerOperationControlForTest::new(),
         })
     }
 
@@ -139,7 +139,8 @@ impl SignalOwnerLifecycleState {
             published,
             reservation.commit(),
         );
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::OwnerLifecycleAdmission);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::OwnerLifecycleAdmission);
         Ok(admission)
     }
 
@@ -247,11 +248,11 @@ impl SignalOwnerLifecycleState {
         Arc::clone(&self.counters)
     }
 
-    pub(crate) fn reach_operation_boundary(&self, boundary: SignalOwnerOperationBoundary) {
+    pub(crate) fn reach_operation_boundary(&self, boundary: SignalOwnerOperationBoundaryForTest) {
         self.operation_control.reach(boundary);
     }
 
-    pub(super) fn operation_control(&self) -> SignalOwnerOperationControl {
+    pub(super) fn operation_control_for_test(&self) -> SignalOwnerOperationControlForTest {
         self.operation_control.clone()
     }
 

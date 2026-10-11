@@ -1,7 +1,7 @@
 //! Law 1, reach: injection doors are isolated from ordinary cancellation.
 use super::*;
 impl RelationalOperationControl {
-    pub fn with_injected_interruption(
+    pub fn with_injected_interruption_for_test(
         mut self,
         boundary: RelationalInterruptionBoundary,
         interruption: RelationalOperationInterruption,
@@ -20,7 +20,7 @@ impl RelationalOperationControl {
         self
     }
 
-    pub fn with_post_linearization_pause(
+    pub fn with_post_linearization_pause_for_test(
         mut self,
         reached: Arc<std::sync::Barrier>,
         release: Arc<std::sync::Barrier>,
@@ -29,7 +29,7 @@ impl RelationalOperationControl {
         self
     }
 
-    pub fn with_critical_section_pause(
+    pub fn with_critical_section_pause_for_test(
         mut self,
         reached: Arc<std::sync::Barrier>,
         release: Arc<std::sync::Barrier>,
@@ -47,17 +47,17 @@ impl RelationalOperationControl {
     /// reached over `reached`, so a seam that never runs is a timed-out receive
     /// rather than a stalled run, and the publisher stops waiting once the
     /// observer is gone.
-    pub fn with_patch_position_reservation_pause(
+    pub fn with_patch_position_reservation_pause_for_test(
         mut self,
         reached: std::sync::mpsc::SyncSender<()>,
-        release: Arc<RelationalPatchPositionReservationGate>,
+        release: Arc<RelationalPatchPositionReservationGateForTest>,
     ) -> Self {
         self.patch_position_reservation_pause =
             Some(RelationalPatchPositionReservationPause { reached, release });
         self
     }
 
-    pub fn with_boundary_pause(
+    pub fn with_boundary_pause_for_test(
         mut self,
         boundary: RelationalInterruptionBoundary,
         reached: Arc<std::sync::Barrier>,

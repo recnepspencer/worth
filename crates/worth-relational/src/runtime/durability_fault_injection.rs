@@ -3,6 +3,6 @@ impl super::RelationalRuntime {
     /// tests through this runtime's in-process handle.
     #[doc(hidden)]
     pub fn fail_next_durable_append_for_test(&self) {
-        self.durability.arm_append_failure();
+        self.durability.arm_append_failure_for_test();
     }
 }

@@ -58,7 +58,7 @@ pub use super::application_checkpoint::{
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
 };
-pub use super::application_contribution::query_test_execution_authority;
+pub use super::application_contribution::query_test_execution_authority_for_test;
 pub use super::application_contribution::{
     bound_advancement_requests_on_this_thread_for_test,
     discarded_computation_retention_on_this_thread_for_test,
@@ -66,9 +66,9 @@ pub use super::application_contribution::{
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test,
-    published_partitioned_computations_on_this_thread_for_test, test_execution_workers,
+    published_partitioned_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest, WorthQueryPartitionedComputationFullCause,
-    WorthQueryPartitionedComputationRun, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeMetrics,
     WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
     WorthQueryPublishedComputationStateForTest,
 };

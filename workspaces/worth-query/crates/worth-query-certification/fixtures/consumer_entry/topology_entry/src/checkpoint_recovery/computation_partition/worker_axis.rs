@@ -13,7 +13,7 @@ use std::time::Duration;
 use worth_foundational::facade::ExecutionFallbackCause;
 use worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationDenial;
 use worth_query_host::facade::primary_graph::{
-    place_managed_computations_on_this_thread_for_test as place, test_execution_workers,
+    place_managed_computations_on_this_thread_for_test as place, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest as Placement,
 };
 
@@ -30,7 +30,7 @@ const SEEDS: [u64; 3] = [0x6_7000_0001, 0x6_7000_0002, 0x6_7000_0003];
 pub(super) fn axis() -> Vec<Placement> {
     let width = std::thread::available_parallelism().map_or(1, NonZeroUsize::get);
     assert!(
-        test_execution_workers().get() >= 2 * width,
+        test_execution_workers_for_test().get() >= 2 * width,
         "the authority admits twice the machine's width"
     );
     let workers = |count: usize| NonZeroUsize::new(count).expect("a worker count is not zero");

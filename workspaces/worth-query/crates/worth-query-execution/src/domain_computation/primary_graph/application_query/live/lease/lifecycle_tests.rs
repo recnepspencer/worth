@@ -183,7 +183,10 @@ mod tests {
         );
         let lease = context.open();
         let bridge = observer(&lease);
-        let provider_session_baseline = context.world.application.provider_session_resource_count();
+        let provider_session_baseline = context
+            .world
+            .application
+            .provider_session_resource_count_for_test();
         assert_live(&bridge);
 
         let WorthQueryApplicationLiveCloseOutcome::Completed(completion) = lease.close() else {
@@ -192,7 +195,10 @@ mod tests {
         assert_eq!(completion.release().released_reservation_count(), 1);
         assert!(completion.basis_release().released());
         assert_eq!(
-            context.world.application.provider_session_resource_count(),
+            context
+                .world
+                .application
+                .provider_session_resource_count_for_test(),
             provider_session_baseline
         );
         assert_terminal(

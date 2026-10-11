@@ -75,14 +75,14 @@ impl CompositePublicationReady {
         cell: &ProductBranchReferenceCell,
         cancellation: &super::RuntimeWorldCancellationToken,
         clock: &crate::lifecycle::RuntimeWorldClock,
-        control: &crate::lifecycle::RuntimeWorldOperationControl,
+        control: &crate::lifecycle::RuntimeWorldOperationControlForTest,
     ) -> RuntimeWorldPublicationOutcome {
         let cutoff = super::ProductMovementCutoff::new(cancellation, clock, self.deadline);
         self.publish_with_cutoff(
             cell,
             CompositeLateCancellationPosture::NotRequested,
             Some(cutoff),
-            || control.before_product_compare(),
+            || control.before_product_compare_for_test(),
         )
     }
 

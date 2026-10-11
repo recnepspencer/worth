@@ -3,7 +3,7 @@ use std::thread;
 
 use worth_signal::facade::branch::{
     SignalBranchAdvanceDenial, SignalOwnerCancellationSource, SignalOwnerLifecycleObservation,
-    SignalOwnerOperationBoundary,
+    SignalOwnerOperationBoundaryForTest,
 };
 
 use super::super::world::{AdversarialWorld, PROGRESS_BOUND};
@@ -15,9 +15,10 @@ fn close_fences_new_work_but_releases_an_already_admitted_operation() {
         .runtime
         .as_ref()
         .expect("the root remains live until the close request")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let mutation = world.mutation.clone();
     let basis = world.child_basis.clone();
     let (in_flight_tx, in_flight_rx) = mpsc::sync_channel(1);
@@ -78,9 +79,10 @@ fn dropping_a_public_pause_is_a_release_guard() {
         .runtime
         .as_ref()
         .expect("the root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let mutation = world.mutation.clone();
     let basis = world.child_basis.clone();
     let (tx, rx) = mpsc::sync_channel(1);
@@ -114,9 +116,10 @@ fn close_batch_pause_is_releasable_and_cannot_admit_new_work() {
         .runtime
         .as_ref()
         .expect("the strong root remains until the close thread takes it")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the sealed owner issues operation control");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::OwnerCloseBatch);
+    let pause =
+        control.arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::OwnerCloseBatch);
     let runtime = world
         .runtime
         .take()

@@ -37,13 +37,13 @@ impl CertificationQueryCatalog {
             (queries, names)
         })
     }
-    pub(super) fn get_query(
+    pub(super) fn get_query_for_test(
         &self,
         key: &ApplicationQueryBindingKey,
     ) -> Option<Arc<WorthQueryCompiledApplicationQuery>> {
         self.maps().0.get(key).map(Arc::clone)
     }
-    pub(super) fn get_query_by_name(
+    pub(super) fn get_query_by_name_for_test(
         &self,
         name: &str,
     ) -> Option<Arc<WorthQueryCompiledApplicationQuery>> {

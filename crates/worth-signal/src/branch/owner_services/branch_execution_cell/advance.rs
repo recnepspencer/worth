@@ -9,7 +9,7 @@ use super::super::{
     SignalOwnerUnavailable,
 };
 use super::{SignalBranchCellAdmissionDenial, SignalBranchCellWork, SignalBranchExecutionCell};
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 
 pub(crate) struct SignalBranchAdvanceCellOutcome {
     branch_id: crate::state::SignalBranchId,
@@ -106,7 +106,8 @@ where
         self.require_live_posture()
             .map_err(|denial| map_advance_cell_denial(denial, self.branch_id))?;
 
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::ExactBasisPreflight);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::ExactBasisPreflight);
         let live = state
             .observation()
             .map_err(|error| SignalBranchAdvanceDenial::MutationFailedNoMovement { error })?;
@@ -118,7 +119,8 @@ where
         let observation = state
             .next_advance_observation()
             .map_err(|error| SignalBranchAdvanceDenial::MutationFailedNoMovement { error })?;
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
         let permit = cancellation
             .preflight_movement()
             .map_err(|_| SignalBranchAdvanceDenial::CancelledNoMovement)?;
@@ -158,7 +160,8 @@ where
             observation,
             transaction,
         });
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::AfterCanonicalMovement);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
         Ok(())
     }
 }

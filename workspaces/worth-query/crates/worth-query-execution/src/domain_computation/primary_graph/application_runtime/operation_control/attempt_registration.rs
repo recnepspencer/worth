@@ -30,12 +30,12 @@ struct ExactAttemptPause {
     changed: Condvar,
 }
 
-pub struct WorthQueryApplicationAttemptRegistrationPause {
+pub struct WorthQueryApplicationAttemptRegistrationPauseForTest {
     control: WorthQueryApplicationAttemptOperationControl,
     latch: Arc<ExactAttemptPause>,
 }
 
-pub struct WorthQueryApplicationCandidatePreparationPause {
+pub struct WorthQueryApplicationCandidatePreparationPauseForTest {
     control: WorthQueryApplicationAttemptOperationControl,
     latch: Arc<ExactAttemptPause>,
 }
@@ -44,9 +44,9 @@ impl WorthQueryApplicationAttemptOperationControl {
     pub(super) fn pause_after_registration(
         &self,
         attempts: NonZeroUsize,
-    ) -> WorthQueryApplicationAttemptRegistrationPause {
+    ) -> WorthQueryApplicationAttemptRegistrationPauseForTest {
         let latch = arm(&self.pending_registration, attempts);
-        WorthQueryApplicationAttemptRegistrationPause {
+        WorthQueryApplicationAttemptRegistrationPauseForTest {
             control: self.clone(),
             latch,
         }
@@ -59,9 +59,9 @@ impl WorthQueryApplicationAttemptOperationControl {
     pub(super) fn pause_after_candidate_preparation(
         &self,
         attempts: NonZeroUsize,
-    ) -> WorthQueryApplicationCandidatePreparationPause {
+    ) -> WorthQueryApplicationCandidatePreparationPauseForTest {
         let latch = arm(&self.pending_candidate, attempts);
-        WorthQueryApplicationCandidatePreparationPause {
+        WorthQueryApplicationCandidatePreparationPauseForTest {
             control: self.clone(),
             latch,
         }
@@ -130,7 +130,7 @@ fn clear(slot: &PendingAttemptPause, latch: &Arc<ExactAttemptPause>) {
     }
 }
 
-impl WorthQueryApplicationAttemptRegistrationPause {
+impl WorthQueryApplicationAttemptRegistrationPauseForTest {
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
         let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
         self.latch
@@ -149,13 +149,13 @@ impl WorthQueryApplicationAttemptRegistrationPause {
     }
 }
 
-impl Drop for WorthQueryApplicationAttemptRegistrationPause {
+impl Drop for WorthQueryApplicationAttemptRegistrationPauseForTest {
     fn drop(&mut self) {
         self.release();
     }
 }
 
-impl WorthQueryApplicationCandidatePreparationPause {
+impl WorthQueryApplicationCandidatePreparationPauseForTest {
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
         let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
         self.latch
@@ -174,7 +174,7 @@ impl WorthQueryApplicationCandidatePreparationPause {
     }
 }
 
-impl Drop for WorthQueryApplicationCandidatePreparationPause {
+impl Drop for WorthQueryApplicationCandidatePreparationPauseForTest {
     fn drop(&mut self) {
         self.release();
     }

@@ -96,7 +96,7 @@ fn close_admission_excludes_bootstrap_before_component_acquisition() {
 #[test]
 fn cancellation_and_owner_loss_during_pin_acquisition_never_expose_a_root() {
     use std::time::Duration;
-    use worth_signal::facade::branch::SignalOwnerOperationBoundary;
+    use worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest;
     for lose_owner in [false, true] {
         let (fixture, owner) = empty_world();
         let mut owner = Some(owner);
@@ -108,10 +108,12 @@ fn cancellation_and_owner_loss_during_pin_acquisition_never_expose_a_root() {
             .bootstrap_intent()
             .with_cancellation(cancellation.token());
         let control = fixture.signal_operation_control();
-        let admission = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+        let admission = control
+            .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
         let worker = std::thread::spawn(move || lifecycle.bootstrap_root(intent));
         assert!(admission.wait_until_reached(Duration::from_secs(5)));
-        let pin = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+        let pin = control
+            .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
         admission.release();
         assert!(pin.wait_until_reached(Duration::from_secs(5)));
         assert_eq!(

@@ -4,7 +4,7 @@
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use worth_foundational::facade::ExecutionReport;
-use worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationRun;
+use worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationRunForTest;
 use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
     WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
@@ -224,7 +224,7 @@ where
 fn observed_report() -> ExecutionReport {
     let runs = runs_on_this_thread();
     assert_eq!(runs.len(), 1, "one run per decision");
-    assert_eq!(runs[0].0, WorthQueryPartitionedComputationRun::Full(
+    assert_eq!(runs[0].0, WorthQueryPartitionedComputationRunForTest::Full(
         worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationFullCause::Unretained));
     runs[0]
         .1

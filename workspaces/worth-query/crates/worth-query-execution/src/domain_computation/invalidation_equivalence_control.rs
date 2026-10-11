@@ -24,13 +24,13 @@ enum OwnedArm {
 /// Owns differential verification on the runtime receivers it armed.
 /// This grants no execution, publication or installation authority.
 #[must_use = "the differential oracle is armed only while the guard is held"]
-pub struct WorthQueryInvalidationEquivalence {
+pub struct WorthQueryInvalidationEquivalenceForTest {
     arm: OwnedArm,
 }
-impl WorthQueryInvalidationEquivalence {
+impl WorthQueryInvalidationEquivalenceForTest {
     /// Arm receivers constructed on this thread until this factory guard drops.
     /// Once constructed, each receiver also shadows verification on its workers.
-    pub fn arm_on_this_thread() -> Self {
+    pub fn arm_on_this_thread_for_test() -> Self {
         let factory = Rc::new(ConstructionFactory::default());
         FACTORIES.with(|factories| factories.borrow_mut().push(Rc::downgrade(&factory)));
         Self {
@@ -38,7 +38,9 @@ impl WorthQueryInvalidationEquivalence {
         }
     }
     /// Arm one existing runtime's resources, including its verification workers.
-    pub fn arm_for_invalidation_resources(resources: &WorthQueryInvalidationResources) -> Self {
+    pub fn arm_for_invalidation_resources_for_test(
+        resources: &WorthQueryInvalidationResources,
+    ) -> Self {
         let receiver = Arc::clone(resources.retention_receiver());
         receiver.oracle_guards.fetch_add(1, Ordering::AcqRel);
         Self {
@@ -58,7 +60,7 @@ impl WorthQueryInvalidationEquivalence {
         }
     }
 }
-impl Drop for WorthQueryInvalidationEquivalence {
+impl Drop for WorthQueryInvalidationEquivalenceForTest {
     fn drop(&mut self) {
         match &self.arm {
             OwnedArm::Receiver(receiver) => {
@@ -108,7 +110,7 @@ mod scope_tests {
     #[test]
     fn constructing_under_a_factory_covers_the_receivers_workers_and_ends_on_drop() {
         let ordinary = resources();
-        let guard = WorthQueryInvalidationEquivalence::arm_on_this_thread();
+        let guard = WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
         let controlled = resources();
         assert!(!ordinary.invalidation_equivalence_is_armed());
         let worker = controlled.clone();
@@ -122,7 +124,7 @@ mod scope_tests {
     }
     #[test]
     fn resources_installed_here_carry_the_arm_into_worker_construction() {
-        let guard = WorthQueryInvalidationEquivalence::arm_on_this_thread();
+        let guard = WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
         let resources = WorthQueryInvalidationResources::install(super::super::execution_runtime::source_invalidation::WorthQueryInvalidationResourceInstallation::bounded(1, 1, 17, 1)).unwrap();
         let worker = resources.clone();
         assert!(std::thread::spawn(move || {
@@ -140,7 +142,9 @@ mod scope_tests {
         let other = resources();
         assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _guard =
-                WorthQueryInvalidationEquivalence::arm_for_invalidation_resources(&controlled);
+                WorthQueryInvalidationEquivalenceForTest::arm_for_invalidation_resources_for_test(
+                    &controlled,
+                );
             assert!(controlled.invalidation_equivalence_is_armed());
             assert!(!other.invalidation_equivalence_is_armed());
             panic!("exercise receiver oracle cleanup");

@@ -27,7 +27,7 @@ use super::observed::{
 };
 use super::{
     ComputationPrior, SealedComputationRun, WorthQueryPartitionedComputationFullCause as Cause,
-    WorthQueryPartitionedComputationRun as Run,
+    WorthQueryPartitionedComputationRunForTest as Run,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationRead, WorthQueryApplicationObservedFact,

@@ -15,7 +15,7 @@ pub(in crate::domain_computation::primary_graph) struct PauseState {
 }
 #[derive(Clone)]
 #[doc(hidden)]
-pub struct StableJoinPause {
+pub struct StableJoinPauseForTest {
     latch: Arc<(Mutex<PauseState>, Condvar)>,
     receiver: Weak<Mutex<DemandRegistryState>>,
 }
@@ -35,7 +35,7 @@ pub(super) fn take_pause(state: &mut DemandRegistryState, root: Root) -> Option<
     }
 }
 impl WorthQueryOutputDemandRegistry {
-    fn arm_join_pause(&self, root: Root) -> StableJoinPause {
+    fn arm_join_pause(&self, root: Root) -> StableJoinPauseForTest {
         let latch = Arc::new((Mutex::new(PauseState::default()), Condvar::new()));
         let mut state = self
             .state
@@ -46,13 +46,13 @@ impl WorthQueryOutputDemandRegistry {
             "one stable-join pause per registry"
         );
         state.join_pause = Some((root, Arc::clone(&latch)));
-        StableJoinPause {
+        StableJoinPauseForTest {
             latch,
             receiver: Arc::downgrade(&self.state),
         }
     }
 }
-impl StableJoinPause {
+impl StableJoinPauseForTest {
     #[doc(hidden)]
     pub fn wait_until_joined(&self, timeout: std::time::Duration) -> bool {
         let (lock, cv) = &*self.latch;
@@ -73,7 +73,7 @@ impl StableJoinPause {
         cv.notify_all();
     }
 }
-impl Drop for StableJoinPause {
+impl Drop for StableJoinPauseForTest {
     fn drop(&mut self) {
         if let Some(receiver) = self.receiver.upgrade() {
             let mut state = receiver
@@ -141,7 +141,7 @@ impl<Schema>
         READS.with(|reads| std::mem::take(&mut *reads.borrow_mut()))
     }
     #[doc(hidden)]
-    pub fn pause_stable_join_for_test(&self, root: Root) -> StableJoinPause {
+    pub fn pause_stable_join_for_test(&self, root: Root) -> StableJoinPauseForTest {
         self.output_demands.arm_join_pause(root)
     }
     #[doc(hidden)]

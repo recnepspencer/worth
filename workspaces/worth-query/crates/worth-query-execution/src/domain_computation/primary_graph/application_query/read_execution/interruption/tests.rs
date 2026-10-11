@@ -131,7 +131,10 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
             .active(),
         0
     );
-    assert_eq!(world.application.provider_session_resource_count(), 0);
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
 }
 
 #[test]
@@ -201,7 +204,10 @@ fn direct_query_admission_cannot_bypass_host_work_policy() {
             .active(),
         0
     );
-    assert_eq!(world.application.provider_session_resource_count(), 0);
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
 }
 
 #[test]

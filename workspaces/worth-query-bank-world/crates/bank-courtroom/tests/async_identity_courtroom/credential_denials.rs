@@ -1,5 +1,5 @@
 use bank_domain::model::BankPrincipalId;
-use bank_http_adapter::cold_certification;
+use bank_http_adapter::cold_certification_for_test;
 use bank_http_adapter::{
     AuthentikBankAuthenticationError, AuthentikBankIdentity, AuthentikOidcConfiguration,
     AuthentikOidcCredential,
@@ -21,7 +21,7 @@ pub async fn prove_real_hostile_credential_denials(
     substitution_source: &AuthentikOidcCredential,
     scope: &WorthQueryRequestScope,
 ) {
-    let forged = cold_certification::corrupt_signature(credential.clone())
+    let forged = cold_certification_for_test::corrupt_signature_for_test(credential.clone())
         .expect("real compact ID token should support signature corruption");
     let forged_error = identity
         .authenticate_credential(forged, scope)
@@ -33,7 +33,7 @@ pub async fn prove_real_hostile_credential_denials(
     );
     assert_eq!(identity.jwks_refresh_count(), 0);
 
-    let wrong_nonce = cold_certification::mismatch_nonce(credential.clone());
+    let wrong_nonce = cold_certification_for_test::mismatch_nonce_for_test(credential.clone());
     let nonce_error = identity
         .authenticate_credential(wrong_nonce, scope)
         .await
@@ -44,18 +44,21 @@ pub async fn prove_real_hostile_credential_denials(
     );
     assert_eq!(identity.jwks_refresh_count(), 0);
 
-    let malformed = cold_certification::replace_with_malformed_id_token(credential.clone());
+    let malformed =
+        cold_certification_for_test::replace_with_malformed_id_token_for_test(credential.clone());
     assert_eq!(
         malformed.expect_err("malformed compact tokens must fail at the adapter boundary"),
-        cold_certification::HostileCredentialError::MalformedIdToken
+        cold_certification_for_test::HostileCredentialErrorForTest::MalformedIdToken
     );
 
     identity
         .authenticate_credential(substitution_source.clone(), scope)
         .await
         .expect("the real substitution-source credential must be independently valid");
-    let crossed =
-        cold_certification::substitute_access_token(credential.clone(), substitution_source);
+    let crossed = cold_certification_for_test::substitute_access_token_for_test(
+        credential.clone(),
+        substitution_source,
+    );
     let crossed_error = identity
         .authenticate_credential(crossed, scope)
         .await
@@ -79,7 +82,7 @@ pub async fn prove_real_wrong_audience_denial(
         fixture.primary_participant().username(),
     )
     .expect("wrong-audience mapping identity should admit");
-    let wrong_audience = cold_certification::install_identity(
+    let wrong_audience = cold_certification_for_test::install_identity_for_test(
         configuration,
         [BankPrincipalSeed::enabled(
             BankPrincipalId::new(2).expect("bank principal id should admit"),
@@ -152,7 +155,7 @@ async fn prove_real_wrong_issuer_denial(
     let external_identity =
         WorthQueryExternalPrincipalIdentity::new(&issuer, fixture.primary_participant().username())
             .expect("alternate issuer mapping should admit");
-    let alternate = cold_certification::install_identity(
+    let alternate = cold_certification_for_test::install_identity_for_test(
         configuration,
         [BankPrincipalSeed::enabled(
             BankPrincipalId::new(3).expect("bank principal id should admit"),

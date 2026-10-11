@@ -285,15 +285,15 @@ where
             reason = "Phase 4 service operation tests consume this feature-only seam"
         )
     )]
-    pub(in crate::branch::owner_services) fn operation_control(
+    pub(in crate::branch::owner_services) fn operation_control_for_test(
         &self,
-    ) -> super::operation_control::SignalOwnerOperationControl {
-        self.lifecycle.operation_control()
+    ) -> super::operation_control::SignalOwnerOperationControlForTest {
+        self.lifecycle.operation_control_for_test()
     }
 
     pub(super) fn reach_operation_boundary(
         &self,
-        boundary: super::operation_control::SignalOwnerOperationBoundary,
+        boundary: super::operation_control::SignalOwnerOperationBoundaryForTest,
     ) {
         self.lifecycle.reach_operation_boundary(boundary);
     }

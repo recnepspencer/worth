@@ -20,7 +20,7 @@ pub(crate) fn assert_active_attempt_slopes() {
             })
             .collect::<Vec<_>>();
         let control = world.application.world_operation_control_for_test();
-        let pause = control.pause_before_product_compare(NonZeroUsize::new(size).unwrap());
+        let pause = control.pause_before_product_compare_for_test(NonZeroUsize::new(size).unwrap());
         let registered = world
             .application
             .pause_after_application_attempt_registration_for_test(

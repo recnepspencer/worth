@@ -139,7 +139,7 @@ impl DiagnosticCode {
             Self::Bc7006LifecycleStateDefault => "tools/boundary-check/config/road1.toml [[truth_type_denials]]; name the variant at each construction site instead of a Default",
             Self::Bc7007ThreadingBoundary => "tools/boundary-check/config/road1.toml [[threading_sites]]; parallel work belongs in worth-execution, while every non-compute thread needs an exact category and reason",
             Self::Bc7012CertificationConstructionSeal => "tools/boundary-check/config/certification-construction-callers.txt; sealed construction references belong only to owners and the closed caller paths",
-            Self::Bc7011ControlSeal => "tools/boundary-check/config/control-files.txt; Law 1, reach: control references belong only to owners and closed test/certification callers",
+            Self::Bc7011ControlSeal => "tools/boundary-check/src/control_seal.rs; Law 1, reach: control references belong only to owners and closed test/certification callers",
             Self::Bc9001OneBuild => "tools/boundary-check/src/one_build.rs; remove the build predicate or feature declaration and use an owned inert control",
             Self::Bc7008RequestConstruction => "tools/boundary-check/config/road1.toml [[request_constructor_denials]]; borrow the caller request or construct backing only at the declared policy-taking host entry",
             Self::Bc7009CanonicalOrder => "tools/boundary-check/src/source_rules/analysis/canonical_order.rs; order Query Execution by declared identity; named TypeId containers are membership only",

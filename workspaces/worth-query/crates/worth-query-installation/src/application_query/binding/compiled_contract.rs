@@ -154,7 +154,7 @@ impl WorthQueryCompiledApplicationQuery {
         )
     }
 
-    pub(crate) fn matches_reference<Schema, Query, Parameters, QueryResult, Scope>(
+    pub(crate) fn matches_reference_for_test<Schema, Query, Parameters, QueryResult, Scope>(
         &self,
         reference: ApplicationQueryReference<Schema, Query, Parameters, QueryResult, Scope>,
     ) -> bool {

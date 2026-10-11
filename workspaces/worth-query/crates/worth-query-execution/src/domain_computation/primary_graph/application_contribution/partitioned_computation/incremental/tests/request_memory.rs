@@ -8,7 +8,9 @@ use std::num::NonZeroUsize;
 use worth_execution::KeyedPartitioner;
 use worth_foundational::ExecutionRequestPolicy;
 
-use super::super::super::super::request_execution::{query_test_execution_authority, test_policy};
+use super::super::super::super::request_execution::{
+    query_test_execution_authority_for_test, test_policy,
+};
 use super::super::super::super::WorthQueryManagedComputationResourceDenial as Resource;
 use super::super::super::super::WorthQueryMemoryLimitLevel;
 use super::*;
@@ -35,7 +37,7 @@ fn under(memory: u64) -> [Attempt; 2] {
     let installed = installed(StatusRead::Gather(1), sum);
     [
         RuntimeWorldExecutionPlacement::Leased {
-            authority: query_test_execution_authority(),
+            authority: query_test_execution_authority_for_test(),
             policy: policy(memory),
         },
         RuntimeWorldExecutionPlacement::Serial(policy(memory)),

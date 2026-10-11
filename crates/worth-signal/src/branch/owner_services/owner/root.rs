@@ -108,15 +108,15 @@ where
         }
     }
 
-    pub(crate) fn operation_control(
+    pub(crate) fn operation_control_for_test(
         &self,
     ) -> Result<
-        crate::branch::owner_services::operation_control::SignalOwnerOperationControl,
+        crate::branch::owner_services::operation_control::SignalOwnerOperationControlForTest,
         SignalOwnerUnavailable,
     > {
         match &self.state {
             SignalOwnerRootState::Unsealed { .. } => Err(SignalOwnerUnavailable),
-            SignalOwnerRootState::Sealed(owner) => Ok(owner.operation_control()),
+            SignalOwnerRootState::Sealed(owner) => Ok(owner.operation_control_for_test()),
         }
     }
 }

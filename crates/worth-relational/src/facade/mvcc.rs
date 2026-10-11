@@ -38,4 +38,4 @@ pub use crate::transactions::data::{
     CommitConflict, CommitResult, ConflictClass, TransactionCommitError, WorkerIntentBatch,
 };
 
-pub use crate::runtime::RelationalPatchPositionReservationGate;
+pub use crate::runtime::RelationalPatchPositionReservationGateForTest;

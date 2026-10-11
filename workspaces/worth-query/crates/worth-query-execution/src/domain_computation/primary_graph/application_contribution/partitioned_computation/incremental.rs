@@ -65,7 +65,7 @@ pub use observed::partitioned_computation_runs_on_this_thread_for_test;
 pub(super) use recording::{observe_unretained, FullRecording};
 pub(in crate::domain_computation::primary_graph) use retained::ComputationInstallation;
 pub use retained::WorthQueryPartitionedComputationFullCause;
-pub use retained::WorthQueryPartitionedComputationRun;
+pub use retained::WorthQueryPartitionedComputationRunForTest;
 pub(in crate::domain_computation) use retained::{
     ComputationPrior, RetainedComputation, SealedComputationRun,
 };

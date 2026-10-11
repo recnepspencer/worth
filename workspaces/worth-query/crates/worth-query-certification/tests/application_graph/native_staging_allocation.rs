@@ -66,7 +66,8 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
     }
     // The fixture World has no execution authority. This caller supplies its
     // real process authority; no World identity gate or allocation fallback.
-    let authority = worth_query_host::facade::primary_graph::query_test_execution_authority();
+    let authority =
+        worth_query_host::facade::primary_graph::query_test_execution_authority_for_test();
     let zero = authority.request_lease(request(0)).unwrap();
     let host = publish_on_first_program();
     let runtime = host.runtime();

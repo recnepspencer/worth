@@ -17,21 +17,23 @@ fn lifecycle_ordinal(observation: SignalOwnerLifecycleObservation) -> u8 {
     }
 }
 
-fn operation_boundary_ordinal(boundary: crate::facade::branch::SignalOwnerOperationBoundary) -> u8 {
-    use crate::facade::branch::SignalOwnerOperationBoundary;
+fn operation_boundary_ordinal(
+    boundary: crate::facade::branch::SignalOwnerOperationBoundaryForTest,
+) -> u8 {
+    use crate::facade::branch::SignalOwnerOperationBoundaryForTest;
 
     match boundary {
-        SignalOwnerOperationBoundary::OwnerLifecycleAdmission => 0,
-        SignalOwnerOperationBoundary::BranchRegistryLookup => 1,
-        SignalOwnerOperationBoundary::BranchRegistryReservation => 2,
-        SignalOwnerOperationBoundary::ExactBasisPreflight => 3,
-        SignalOwnerOperationBoundary::TargetCellAdmission => 4,
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement => 5,
-        SignalOwnerOperationBoundary::AfterCanonicalMovement => 6,
-        SignalOwnerOperationBoundary::ForkSourceCapture => 7,
-        SignalOwnerOperationBoundary::ForkDestinationInstallation => 8,
-        SignalOwnerOperationBoundary::OutcomeConstruction => 9,
-        SignalOwnerOperationBoundary::OwnerCloseBatch => 10,
+        SignalOwnerOperationBoundaryForTest::OwnerLifecycleAdmission => 0,
+        SignalOwnerOperationBoundaryForTest::BranchRegistryLookup => 1,
+        SignalOwnerOperationBoundaryForTest::BranchRegistryReservation => 2,
+        SignalOwnerOperationBoundaryForTest::ExactBasisPreflight => 3,
+        SignalOwnerOperationBoundaryForTest::TargetCellAdmission => 4,
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement => 5,
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement => 6,
+        SignalOwnerOperationBoundaryForTest::ForkSourceCapture => 7,
+        SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation => 8,
+        SignalOwnerOperationBoundaryForTest::OutcomeConstruction => 9,
+        SignalOwnerOperationBoundaryForTest::OwnerCloseBatch => 10,
     }
 }
 
@@ -59,20 +61,20 @@ fn branch_facade_preserves_existing_exports_and_adds_owner_vocabulary() {
 
 #[test]
 fn operation_control_feature_exports_the_frozen_progression_roster() {
-    use crate::facade::branch::SignalOwnerOperationBoundary;
+    use crate::facade::branch::SignalOwnerOperationBoundaryForTest;
 
     let boundaries = [
-        SignalOwnerOperationBoundary::OwnerLifecycleAdmission,
-        SignalOwnerOperationBoundary::BranchRegistryLookup,
-        SignalOwnerOperationBoundary::BranchRegistryReservation,
-        SignalOwnerOperationBoundary::ExactBasisPreflight,
-        SignalOwnerOperationBoundary::TargetCellAdmission,
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement,
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
-        SignalOwnerOperationBoundary::ForkSourceCapture,
-        SignalOwnerOperationBoundary::ForkDestinationInstallation,
-        SignalOwnerOperationBoundary::OutcomeConstruction,
-        SignalOwnerOperationBoundary::OwnerCloseBatch,
+        SignalOwnerOperationBoundaryForTest::OwnerLifecycleAdmission,
+        SignalOwnerOperationBoundaryForTest::BranchRegistryLookup,
+        SignalOwnerOperationBoundaryForTest::BranchRegistryReservation,
+        SignalOwnerOperationBoundaryForTest::ExactBasisPreflight,
+        SignalOwnerOperationBoundaryForTest::TargetCellAdmission,
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::ForkSourceCapture,
+        SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation,
+        SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
+        SignalOwnerOperationBoundaryForTest::OwnerCloseBatch,
     ];
 
     let ordinals = boundaries.map(operation_boundary_ordinal);
