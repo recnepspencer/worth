@@ -17,7 +17,7 @@ mod structural_span;
 use construction::Shape;
 use edit::{contains, delete, insert, update};
 use memory::node_bytes;
-pub use memory::ReductionEditMemoryBoundError;
+pub use memory::{ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError};
 use recombine::Engine;
 pub(crate) use scheduled::ScheduledReductionError;
 

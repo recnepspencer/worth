@@ -4,8 +4,8 @@ mod tree;
 pub use plan::{ReductionDenial, ReductionPlan};
 pub(crate) use tree::ScheduledReductionError;
 pub use tree::{
-    ReductionEditMemoryBoundError, ReductionMetrics, ReductionRunFailure, ReductionRunStop,
-    ReductionTree,
+    ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError, ReductionMetrics,
+    ReductionRunFailure, ReductionRunStop, ReductionTree,
 };
 
 #[cfg(test)]

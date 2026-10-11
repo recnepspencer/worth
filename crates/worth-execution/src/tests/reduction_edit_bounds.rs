@@ -1,6 +1,8 @@
 //! Edit-bound identity refusals precede arithmetic and have no request effects.
 use super::*;
-use crate::{ReductionEditMemoryBoundError, ReductionPlan, ReductionTree};
+use crate::{
+    ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError, ReductionPlan, ReductionTree,
+};
 
 #[test]
 fn a_delete_bound_names_absence_without_latching_or_charging() {
@@ -44,7 +46,7 @@ fn edit_bounds_distinguish_identity_refusals_from_arithmetic_overflow() {
         .unwrap();
     assert_eq!(
         tree.checked_insert_memory_bound(present, u64::MAX),
-        Err(ReductionEditMemoryBoundError::AlreadyPresent(present))
+        Err(ReductionInsertMemoryBoundError::AlreadyPresent(present))
     );
     assert_eq!(
         tree.checked_update_memory_bound(absent, u64::MAX),
@@ -53,10 +55,13 @@ fn edit_bounds_distinguish_identity_refusals_from_arithmetic_overflow() {
     for bound in [
         tree.checked_delete_memory_bound(present, u64::MAX),
         tree.checked_update_memory_bound(present, u64::MAX),
-        tree.checked_insert_memory_bound(absent, u64::MAX),
     ] {
         assert_eq!(bound, Err(ReductionEditMemoryBoundError::Overflow));
     }
+    assert_eq!(
+        tree.checked_insert_memory_bound(absent, u64::MAX),
+        Err(ReductionInsertMemoryBoundError::Overflow),
+    );
     assert!(tree.checked_delete_memory_bound(present, 0).is_ok());
     assert!(tree.checked_insert_memory_bound(absent, 0).is_ok());
 }

@@ -111,9 +111,6 @@ where
                     ReductionEditMemoryBoundError::UnknownIdentity(identity) => {
                         DecomposeInputDenial::UnknownIdentity(identity)
                     }
-                    ReductionEditMemoryBoundError::AlreadyPresent(_) => {
-                        unreachable!("update bounds never refuse an already present identity")
-                    }
                     ReductionEditMemoryBoundError::Overflow => {
                         LeaseDenial::charged_bytes_overflow();
                         DecomposeInputDenial::MemoryOverflow
