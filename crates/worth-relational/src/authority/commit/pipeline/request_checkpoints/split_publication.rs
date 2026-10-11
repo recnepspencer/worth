@@ -90,3 +90,74 @@ fn split_publication_cancelled_request_releases_candidate_and_records_discard() 
         0
     );
 }
+
+#[test]
+fn foreign_candidate_leaves_the_target_owner_and_its_counters_unchanged() {
+    let source = runtime_with_test_schema();
+    let target = runtime_with_test_schema();
+    let backing = crate::test_execution_policy::serial_request();
+    let execution = ExecutionRequest::serial(&backing);
+    let source_identity = source.main_branch_identity();
+    let (source_head, basis) = source.observe_branch(&source_identity).unwrap();
+    let target_identity = target.main_branch_identity();
+    let target_head = target.observe_branch(&target_identity).unwrap().0;
+    let target_slots = target
+        .preparation_runtime_snapshot()
+        .published_snapshot_count();
+    let source_slots = source
+        .preparation_runtime_snapshot()
+        .published_snapshot_count();
+    let scope = crate::inspection::mvcc::cost::RelationalMvccCostScope::capture(
+        &target,
+        vec![target_identity.clone()],
+    );
+    let transaction = source
+        .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
+        .unwrap();
+    let candidate = source
+        .prepare_branch_transaction(&execution, transaction)
+        .unwrap();
+    assert_eq!(source.publication_binding().prepared_candidate_count(), 1);
+    let outcome = target
+        .publication_port()
+        .compare_and_publish(&execution, candidate);
+    assert!(
+        matches!(outcome, crate::mvcc::RelationalPublicationOutcome::Denied(
+        crate::mvcc::RelationalPublicationDenial::ForeignRuntime {
+            expected_runtime_instance_id, actual_runtime_instance_id,
+        }
+    ) if expected_runtime_instance_id == target.runtime_instance_id()
+        && actual_runtime_instance_id == source.runtime_instance_id()),
+        "{outcome:?}"
+    );
+    let cost = target
+        .observe_mvcc_counters(&scope)
+        .unwrap()
+        .sharing_cost_delta();
+    assert_eq!(cost.publication_attempts, 0);
+    assert_eq!(cost.candidate_discards, 0);
+    assert_eq!(target.publication_binding().prepared_candidate_count(), 0);
+    assert_eq!(
+        target
+            .preparation_runtime_snapshot()
+            .published_snapshot_count(),
+        target_slots
+    );
+    assert_eq!(
+        target.observe_branch(&target_identity).unwrap().0,
+        target_head
+    );
+    // Consuming the foreign value releases the source's registration and slot;
+    // it does not record a discard against the target owner's branch.
+    assert_eq!(source.publication_binding().prepared_candidate_count(), 0);
+    assert_eq!(
+        source
+            .preparation_runtime_snapshot()
+            .published_snapshot_count(),
+        source_slots
+    );
+    assert_eq!(
+        source.observe_branch(&source_identity).unwrap().0,
+        source_head
+    );
+}

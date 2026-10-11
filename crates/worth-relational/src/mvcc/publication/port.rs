@@ -70,6 +70,16 @@ impl RelationalPublicationPort {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: PreparedRelationalCommitCandidate,
     ) -> RelationalPublicationOutcome {
+        if candidate.runtime_instance_id() != self.runtime_instance_id
+            || !candidate.belongs_to_publication_owner(&self.publication_binding)
+        {
+            return RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::ForeignRuntime {
+                    expected_runtime_instance_id: self.runtime_instance_id,
+                    actual_runtime_instance_id: candidate.runtime_instance_id(),
+                },
+            );
+        }
         if let Err(stop) = crate::authority::commit::pipeline::consult_stage_control(
             execution,
             crate::authority::commit::pipeline::CommitStage::Publication,
@@ -91,16 +101,6 @@ impl RelationalPublicationPort {
         &self,
         candidate: PreparedRelationalCommitCandidate,
     ) -> RelationalPublicationOutcome {
-        if candidate.runtime_instance_id() != self.runtime_instance_id
-            || !candidate.belongs_to_publication_owner(&self.publication_binding)
-        {
-            return RelationalPublicationOutcome::denied(
-                RelationalPublicationDenial::ForeignRuntime {
-                    expected_runtime_instance_id: self.runtime_instance_id,
-                    actual_runtime_instance_id: candidate.runtime_instance_id(),
-                },
-            );
-        }
         let Some(_owner_operation) = self.owner_binding.admit() else {
             return RelationalPublicationOutcome::denied(
                 RelationalPublicationDenial::OwnerUnavailable {
