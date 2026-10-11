@@ -68,7 +68,7 @@ fn placement_fact(tokens: TokenStream) -> bool {
     )
 }
 
-fn packetization_source(source: &str) -> bool {
+fn packetizes(source: &str) -> bool {
     let Some(relative) = source.strip_prefix(READER) else {
         return false;
     };
@@ -76,7 +76,7 @@ fn packetization_source(source: &str) -> bool {
         .iter()
         .any(|name| relative == format!("{name}.rs") || relative.starts_with(&format!("{name}/")))
         || relative == SCHEDULE_SOURCE
-        || relative == "query_execution/leased_map/packet_identity.rs"
+        || relative.starts_with("query_execution/leased_map/")
 }
 
 fn mints_partition_identity(block: &syn::Block) -> bool {
@@ -139,7 +139,11 @@ struct NamingBoundary<'a> {
 
 impl NamingBoundary<'_> {
     fn observes_placement(&self, tokens: TokenStream) -> bool {
-        if packetization_source(self.source) {
+        if self.source == format!("{READER}query_execution/leased_map/packet_identity.rs")
+            && contains(tokens.clone(), &["ExecutionResourceLease", "lease"])
+        {
+            true
+        } else if packetizes(self.source) {
             placement_fact(tokens)
         } else {
             machine_fact(tokens)
@@ -240,10 +244,7 @@ impl<'ast> Visit<'ast> for NamingBoundary<'_> {
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
         if !self.in_schedule
             && !self.in_width_home
-            && (self.observes_placement(item.to_token_stream())
-                || (self.source
-                    == format!("{READER}query_execution/leased_map/packet_identity.rs")
-                    && contains(item.to_token_stream(), &["ExecutionResourceLease", "lease"])))
+            && self.observes_placement(item.to_token_stream())
         {
             self.found.push((
                 item.use_token.span.start().line,

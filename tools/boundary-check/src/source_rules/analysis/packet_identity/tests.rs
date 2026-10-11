@@ -42,25 +42,43 @@ fn scope_follows_both_packetization_and_packet_execution() {
     for suffix in [
         "query_packetization.rs",
         "query_packetization/targets.rs",
+        "query_execution/leased_map.rs",
+        "query_execution/leased_map/packet_identity.rs",
+    ] {
+        assert!(packetizes(&format!("{READER}{suffix}")));
+    }
+    assert!(
+        !packetizes(&format!("{READER}query_execution/leased_scan.rs")),
+        "record byte width is not worker width"
+    );
+}
+
+#[test]
+fn placement_is_refused_in_each_packetizing_file() {
+    let sources = [
+        "query_packetization.rs",
+        "query_packetization/targets.rs",
         "query_preparation_packetization.rs",
         "query_preparation_packetization/targets.rs",
         "query_execution/leased_map.rs",
         "query_execution/leased_map/packet_identity.rs",
-    ] {
+        "query_execution/leased_map/naming.rs",
+    ];
+    let mut actual = Vec::new();
+    for suffix in sources {
         let file = crate::source_syntax::parse_file("fn chunk(max_workers: usize) {}").unwrap();
         let found = findings(&format!("{READER}{suffix}"), &file.items);
-        assert_eq!(
-            found.len(),
-            1,
-            "packetization cannot depend on placement: {suffix}"
-        );
-        let diagnostic = Diagnostic::new(
-            DiagnosticCode::Bc7011PacketIdentity,
-            found[0].1.clone(),
-            found[0].2,
-        );
-        assert_eq!(diagnostic.code(), DiagnosticCode::Bc7011PacketIdentity);
+        actual.push((suffix, found.len()));
+        for (_, item, reason) in found {
+            let diagnostic = Diagnostic::new(DiagnosticCode::Bc7011PacketIdentity, item, reason);
+            assert_eq!(diagnostic.code(), DiagnosticCode::Bc7011PacketIdentity);
+        }
     }
+    let expected: Vec<_> = sources.into_iter().map(|source| (source, 1)).collect();
+    assert_eq!(
+        actual, expected,
+        "packetization cannot depend on placement in any packetizing file"
+    );
     let file = crate::source_syntax::parse_file("fn record(width: usize) {}").unwrap();
     assert!(
         findings(
@@ -74,28 +92,30 @@ fn scope_follows_both_packetization_and_packet_execution() {
 
 #[test]
 fn packet_declaration_has_no_lease() {
-    for source in [
+    let sources = [
         "fn declare_packets(packets: Vec<NamedQueryPacket>, lease: &ExecutionResourceLease) {}",
         "use worth_execution::ExecutionResourceLease as Authority;",
         "fn declare_packets(packets: Vec<NamedQueryPacket>) { let lease = authority(); }",
-    ] {
+        "type Authority = &'static worth_execution::ExecutionResourceLease<'static>;",
+    ];
+    let mut actual = Vec::new();
+    for source in sources {
         let file = crate::source_syntax::parse_file(source).unwrap();
         let found = findings(
             &format!("{READER}query_execution/leased_map/packet_identity.rs"),
             &file.items,
         );
-        assert_eq!(
-            found.len(),
-            1,
-            "packet declaration precedes scheduling authority: {source}"
-        );
-        let diagnostic = Diagnostic::new(
-            DiagnosticCode::Bc7011PacketIdentity,
-            found[0].1.clone(),
-            found[0].2,
-        );
-        assert_eq!(diagnostic.code(), DiagnosticCode::Bc7011PacketIdentity);
+        actual.push((source, found.len()));
+        for (_, item, reason) in found {
+            let diagnostic = Diagnostic::new(DiagnosticCode::Bc7011PacketIdentity, item, reason);
+            assert_eq!(diagnostic.code(), DiagnosticCode::Bc7011PacketIdentity);
+        }
     }
+    let expected: Vec<_> = sources.into_iter().map(|source| (source, 1)).collect();
+    assert_eq!(
+        actual, expected,
+        "packet declaration precedes scheduling authority in every item"
+    );
 }
 
 #[test]
