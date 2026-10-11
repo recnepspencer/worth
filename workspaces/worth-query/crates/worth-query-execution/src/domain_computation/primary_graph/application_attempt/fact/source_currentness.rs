@@ -164,6 +164,20 @@ fn comparison_work_failure(
     }
 }
 
+fn check_request(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), CompanionPreflightStop> {
+    if let Some(event) =
+        worth_relational::facade::mvcc::RelationalInterruptionEvent::observe_request(
+            execution,
+            worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
+        )
+    {
+        return Err(CompanionPreflightStop::Interrupted(event));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,18 +225,4 @@ mod tests {
             );
         }
     }
-}
-
-fn check_request(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<(), CompanionPreflightStop> {
-    if let Some(event) =
-        worth_relational::facade::mvcc::RelationalInterruptionEvent::observe_request(
-            execution,
-            worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
-        )
-    {
-        return Err(CompanionPreflightStop::Interrupted(event));
-    }
-    Ok(())
 }
