@@ -3,7 +3,7 @@ use super::ExecutionArrayIntoIter;
 use std::ops::Deref;
 
 /// Immutable move-only custody of the same allocation admitted by the builder.
-/// Sharing is explicit through Arc<ExecutionArray<T>>, without cloning T or
+/// Sharing is explicit through `Arc<ExecutionArray<T>>`, without cloning T or
 /// issuing another ticket. Retaining custody grants no execution authority.
 /// Interior mutability inside T remains T's responsibility.
 ///

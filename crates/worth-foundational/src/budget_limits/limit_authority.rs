@@ -2,7 +2,7 @@
 //! names no proof substrate, so a narrow mechanism crate whose dependencies
 //! are exactly foundational plus its format can still own its limits.
 
-/// Expansion support for [`limit_authority!`] only; not vocabulary. It
+/// Expansion support for [`crate::limit_authority!`] only; not vocabulary. It
 /// re-exports no proof type, so diagnostics keep naming proof types at home.
 #[doc(hidden)]
 pub mod __limit_authority {

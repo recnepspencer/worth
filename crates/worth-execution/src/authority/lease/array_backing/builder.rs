@@ -4,7 +4,7 @@ use super::super::fixed_backing::{
 use super::ExecutionArray;
 
 /// Move-only author for an exact logical number of independently moved values.
-/// Charges Layout::array::<T>(element_count); nested heaps remain their owners'.
+/// Charges `Layout::array::<T>(element_count)`; nested heaps remain their owners'.
 /// No growth, mutable slice, arbitrary Vec adoption, or copied Clone payload.
 /// Each push polls live status before and after moving a value. A stop after
 /// that move can leave an initialized prefix; it cannot seal a stopped array.
