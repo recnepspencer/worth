@@ -19,9 +19,7 @@ impl<Ready> QueuedMember<'_, Ready> {
             self.member.state = MemberState::Pending;
             return false;
         };
-        if let MemberInput::Queued { ready, .. } = &mut self.member.ready {
-            *ready = None;
-        }
+        self.member.ready.clear_claim_binding();
         self.member.state = MemberState::Inspect;
         true
     }

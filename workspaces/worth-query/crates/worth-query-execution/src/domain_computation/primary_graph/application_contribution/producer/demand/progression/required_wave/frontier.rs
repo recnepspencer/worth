@@ -79,9 +79,9 @@ impl RequiredFrontier {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<RequiredUpstream, WorthQueryOutputDemandDenial> {
         for (index, member) in self.members.iter_mut().enumerate() {
-            let same = match &member.ready {
-                MemberInput::Selected(current) => ready.same_record(current, admission)?,
-                MemberInput::Queued { claim, .. } => claim.same_record(&ready, admission)?,
+            let same = match member.ready.claim() {
+                Some(claim) => claim.same_record(&ready, admission)?,
+                None => ready.same_record(member.ready.selected(), admission)?,
             };
             if same {
                 // An owner rejected this claim without issuing a Ready. Its
@@ -95,13 +95,9 @@ impl RequiredFrontier {
                 }
                 // Membership identifies the physical row, not its current
                 // readmission binding. Keep the exact pin the owner just issued.
-                let changed = match &member.ready {
-                    MemberInput::Selected(current)
-                    | MemberInput::Queued {
-                        ready: Some(current),
-                        ..
-                    } => !ready.same_ready_cell(current, admission)?,
-                    MemberInput::Queued { ready: None, .. } => true,
+                let changed = match member.ready.bound_ready() {
+                    Some(current) => !ready.same_ready_cell(current, admission)?,
+                    None => true,
                 };
                 if changed {
                     member.ready.rebind_native(ready);
@@ -118,7 +114,7 @@ impl RequiredFrontier {
         self.reserve_slot(admission)?;
         let index = self.members.len();
         self.members.push(RequiredMember {
-            ready: MemberInput::Selected(ready),
+            ready: MemberInput::native(ready),
             caller,
             queued,
             caller_successor: false,
@@ -255,14 +251,3 @@ impl<Ready> RequiredFrontier<Ready> {
 
 #[cfg(test)]
 mod tests;
-
-impl MemberInput<SelectedReadyReadmission> {
-    /// A checkpoint binding consumes the inspection owner's paid proof.
-    /// Native upstream rebinding remains private to the frontier.
-    pub(super) fn rebind_checkpoint(
-        &mut self,
-        paid: super::super::super::required_continuations::PaidCheckpointReady,
-    ) {
-        self.rebind_native(paid.into_readmission());
-    }
-}

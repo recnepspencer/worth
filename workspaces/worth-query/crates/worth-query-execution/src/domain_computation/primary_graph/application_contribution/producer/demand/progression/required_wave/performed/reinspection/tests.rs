@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::{
 fn queue() -> RequiredFrontier<()> {
     RequiredFrontier {
         members: vec![RequiredMember {
-            ready: MemberInput::Selected(()),
+            ready: MemberInput::native(()),
             caller: false,
             caller_successor: false,
             resolved_successor: false,

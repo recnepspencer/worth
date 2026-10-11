@@ -82,7 +82,7 @@ where
             }
             let queued = frontier.members[index].queued;
             let successor = frontier.members[index].resolved_successor;
-            if let MemberInput::Queued { claim, ready } = &mut frontier.members[index].ready {
+            if let Some(claim) = frontier.members[index].ready.claim_mut() {
                 let queued = queued.expect("a claim has queue custody");
                 if successor {
                     queue.select_successor_cause(queued, claim, runtime, wave, admission)?;
@@ -95,7 +95,9 @@ where
                         index += 1;
                         continue;
                     };
-                    *ready = Some(selected);
+                    frontier.members[index]
+                        .ready
+                        .bind_inspected_native(selected);
                 }
             }
             let inspection = performed.borrow().inspection();
