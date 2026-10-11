@@ -94,6 +94,13 @@ fn every_changed_reduction_leaf_reaches_the_root_aggregate() {
         15,
         "every changed reduction leaf must reach the root aggregate"
     );
+    tree.update(id(2), 20).unwrap();
+    assert_eq!(tree.leaf(id(2)), Some(&20));
+    assert_eq!(
+        *tree.result(),
+        33,
+        "every changed reduction leaf must reach the root aggregate"
+    );
 }
 
 #[test]
