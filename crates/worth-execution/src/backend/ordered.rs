@@ -100,7 +100,7 @@ where
         };
     }
     if lease.is_none() && RunLimits::has_leased_parent() {
-        return denied(initial, LeaseDenial::UnrelatedNestedLease);
+        return denied(initial, LeaseDenial::unrelated_nested_lease());
     }
     // The chain itself is ordered; an independent nested pattern may still
     // spend the lease's parallel worker budget at a round boundary.
@@ -125,15 +125,12 @@ where
         .and_then(|bytes| bytes.checked_add(input_bytes))
         .and_then(|bytes| bytes.checked_add(limits.framework_context_bytes(1, 1)?));
     let Some(memory_bytes) = memory_bytes else {
-        return denied(initial, LeaseDenial::ChargedBytesOverflow);
+        return denied(initial, LeaseDenial::charged_bytes_overflow());
     };
     let state_bytes = initial.additional_charged_bytes();
     if state_bytes > max_state_bytes {
-        let denial = MemoryLimitDenial {
-            requested: state_bytes,
-            admitted: max_state_bytes,
-            level: MemoryLimitLevel::Declared,
-        };
+        let denial =
+            MemoryLimitDenial::refused(state_bytes, max_state_bytes, MemoryLimitLevel::Declared);
         return denied(initial, LeaseDenial::MemoryExhausted(denial));
     }
     let reservation = if let Some(lease) = lease {
@@ -161,7 +158,7 @@ where
     let mut boundary = None;
     let mut completed_early = false;
     for (index, identity) in identities.as_slice().iter().copied().enumerate() {
-        let result = match limits.safe_point() {
+        let result = match context.safe_point() {
             Err(reason) => Err(KernelFailure::Stop(reason)),
             Ok(()) => {
                 let _meter_context = context.enter();
@@ -178,28 +175,35 @@ where
         } else {
             result
         };
-        let failure_owner = result
-            .as_ref()
-            .err()
-            .map(|cause| context.failure_owner(cause));
+        let result = match result {
+            Ok(step) => {
+                let (next, output) = match &step {
+                    OrderedStep::Continue(next, output) | OrderedStep::Complete(next, output) => {
+                        (next, output)
+                    }
+                };
+                if next.additional_charged_bytes() > max_state_bytes
+                    || output.additional_charged_bytes() > max_output_bytes
+                {
+                    Err(KernelFailure::ResultCapacityExceeded)
+                } else {
+                    Ok(step)
+                }
+            }
+            Err(KernelFailure::Domain(error))
+                if error.additional_charged_bytes() > max_error_bytes =>
+            {
+                Err(KernelFailure::ResultCapacityExceeded)
+            }
+            other => other,
+        };
+        let failure_owner = context.settle_result(&result, |cause| context.failure_owner(cause));
         match result {
             Ok(step) => {
                 let (next, output, done) = match step {
                     OrderedStep::Continue(next, output) => (next, output, false),
                     OrderedStep::Complete(next, output) => (next, output, true),
                 };
-                if next.additional_charged_bytes() > max_state_bytes
-                    || output.additional_charged_bytes() > max_output_bytes
-                {
-                    stop_owner =
-                        Some(context.failure_owner(&KernelFailure::<E>::ResultCapacityExceeded));
-                    stop = Some(BatchStop::Failure {
-                        identity,
-                        cause: KernelFailure::ResultCapacityExceeded,
-                    });
-                    boundary = Some(identity);
-                    break;
-                }
                 state = next;
                 outputs.push(output);
                 if done {
@@ -210,18 +214,6 @@ where
             Err(KernelFailure::Stop(KernelStop::WorkCeiling)) => {
                 stop_owner = failure_owner;
                 stop = Some(BatchStop::WorkExhausted { identity });
-                boundary = Some(identity);
-                break;
-            }
-            Err(KernelFailure::Domain(error))
-                if error.additional_charged_bytes() > max_error_bytes =>
-            {
-                stop_owner =
-                    Some(context.failure_owner(&KernelFailure::<E>::ResultCapacityExceeded));
-                stop = Some(BatchStop::Failure {
-                    identity,
-                    cause: KernelFailure::ResultCapacityExceeded,
-                });
                 boundary = Some(identity);
                 break;
             }

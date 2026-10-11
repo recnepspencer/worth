@@ -22,6 +22,7 @@ mod byte_backing;
 mod fixed_backing;
 mod limits;
 mod memory;
+mod refusal;
 mod reservation;
 mod retained;
 mod room;
@@ -218,7 +219,7 @@ impl ExecutionAuthority {
         request: LeaseRequest,
     ) -> Result<ExecutionResourceLease<'_>, LeaseDenial> {
         self.admits_policy(&request.policy)
-            .map_err(LeaseDenial::from)?;
+            .map_err(|denial| LeaseDenial::refused(denial.into()))?;
         let budget = request.policy.budget();
         let id = self.next_id();
         Ok(ExecutionResourceLease {
@@ -282,7 +283,7 @@ impl<'a> ExecutionResourceLease<'a> {
             Some((owner, active_node)) if owner == identity => {
                 let lineage = self.lineage();
                 let Some(position) = lineage.iter().position(|node| node.id == active_node) else {
-                    return Err(LeaseDenial::UnrelatedNestedLease);
+                    return Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease));
                 };
                 let worker_nodes = lineage[..position]
                     .iter()

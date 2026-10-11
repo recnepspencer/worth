@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::meter::{
-    record_nested, KernelContext, KernelFailure, KernelStop, NestedStopOwner, RunLimits,
+    record_nested_outcome, KernelContext, KernelFailure, KernelStop, NestedStopOwner, RunLimits,
 };
 
 #[derive(Debug)]
@@ -145,7 +145,7 @@ where
     F: FnOnce(&mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>>,
 {
     if lease.is_none() && RunLimits::has_leased_parent() {
-        return denied(LeaseDenial::UnrelatedNestedLease, charge_parent);
+        return denied(LeaseDenial::unrelated_nested_lease(), charge_parent);
     }
     let limits = RunLimits::for_run(lease, false)
         .within_work_ceiling(work_ceiling)
@@ -157,7 +157,7 @@ where
         .and_then(|bytes| bytes.checked_add(max_result_bytes))
         .and_then(|bytes| bytes.checked_add(limits.framework_context_bytes(1, 1)?));
     let Some(memory_bytes) = memory_bytes else {
-        return denied(LeaseDenial::ChargedBytesOverflow, charge_parent);
+        return denied(LeaseDenial::charged_bytes_overflow(), charge_parent);
     };
     // A held scope's memory is the caller's reservation; the entry holds
     // only its worker.
@@ -199,7 +199,7 @@ where
     let _worker_context = lease.map(ExecutionResourceLease::enter_worker_context);
     let _physical_worker = limits.enter_physical_worker(newly_active);
     let mut context = KernelContext::new(limits.clone());
-    let result = match limits.safe_point() {
+    let result = match context.safe_point() {
         Err(stop) => Err(KernelFailure::Stop(stop)),
         Ok(()) => {
             let _meter_context = context.enter();
@@ -246,13 +246,11 @@ where
         Some(hold) => settle_hold(hold, result),
         None => result.map_err(ScopeStop::Failure),
     };
-    if charge_parent {
-        let stop_owner = result.as_ref().err().map(|stop| match stop {
-            ScopeStop::Admission(_) => NestedStopOwner::Request,
-            ScopeStop::Failure(failure) => context.failure_owner(failure),
-        });
-        record_nested(report, stop_owner);
-    }
+    let stop_owner = context.settle_result(&result, |stop| match stop {
+        ScopeStop::Admission(_) => NestedStopOwner::Request,
+        ScopeStop::Failure(failure) => context.failure_owner(failure),
+    });
+    record_nested_outcome(report, stop_owner, charge_parent);
     drop(reservation);
     drop(serial_reservation);
     ScopeOutcome { result, report }
@@ -265,7 +263,7 @@ fn settle_hold<R, E>(
     result: Result<R, KernelFailure<E>>,
 ) -> Result<R, ScopeStop<E>> {
     let kept = match &result {
-        Ok(value) => (hold.kept)(value).ok_or(LeaseDenial::ChargedBytesOverflow),
+        Ok(value) => (hold.kept)(value).ok_or_else(LeaseDenial::charged_bytes_overflow),
         Err(_) => Ok(0),
     };
     let held = kept.and_then(|bytes| {
@@ -290,9 +288,7 @@ fn denied<R, E>(denial: LeaseDenial, charge_parent: bool) -> ScopeOutcome<R, E> 
         0,
         ExecutionPhysicalReport::default(),
     );
-    if charge_parent {
-        record_nested(report, Some(NestedStopOwner::Request));
-    }
+    record_nested_outcome(report, Some(NestedStopOwner::Request), charge_parent);
     ScopeOutcome {
         result: Err(ScopeStop::Admission(denial)),
         report,

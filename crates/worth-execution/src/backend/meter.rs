@@ -39,17 +39,23 @@ pub(crate) fn active_stop() -> Option<KernelStop> {
 }
 
 mod activity;
+mod checkpoint;
 mod framework_bytes;
+mod invoking_scope;
+pub(crate) use invoking_scope::run_invoking_scope;
 mod nested;
 mod nested_stop;
 mod prepared_context;
 mod run_context;
+mod structural_span;
 pub(crate) use activity::{enter_certification_activity, enter_retained_memory, has_active_kernel};
-pub(crate) use nested::record_nested;
+pub(crate) use nested::{record_nested, record_nested_outcome};
 pub use nested_stop::NestedComputationStop;
 use nested_stop::NestedStop;
 pub(crate) use nested_stop::NestedStopOwner;
+pub(crate) use nested_stop::{request_refusal, request_stop};
 pub(crate) use prepared_context::PreparedMeterContext;
+pub(crate) use structural_span::StructuralSpanFailure;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KernelStop {
@@ -58,6 +64,12 @@ pub enum KernelStop {
     WorkCounterOverflow,
     WorkCeiling,
     NestedStopped,
+}
+
+impl KernelStop {
+    pub(crate) fn work_counter_overflow() -> Self {
+        request_stop(Self::WorkCounterOverflow)
+    }
 }
 
 impl ChargedBytes for KernelStop {
@@ -142,14 +154,16 @@ impl RunLimits {
         })
     }
 
-    pub(crate) fn safe_point(&self) -> Result<(), KernelStop> {
+    fn safe_point(&self, stop: &mut NestedStop) -> Result<(), KernelStop> {
         if self.tokens.iter().any(CancellationToken::is_cancelled) {
+            stop.record(NestedStopOwner::Request);
             return Err(KernelStop::Cancelled);
         }
         if self
             .deadline
             .is_some_and(|deadline| Instant::now() >= deadline)
         {
+            stop.record(NestedStopOwner::Request);
             return Err(KernelStop::DeadlineElapsed);
         }
         Ok(())
@@ -216,6 +230,7 @@ struct KernelMeter {
     work: u64,
     span: u64,
     nested_stop: NestedStop,
+    pending_request_refusal: bool,
     checkpoint_stop: Option<KernelStop>,
 }
 
@@ -227,6 +242,15 @@ pub struct KernelContext<'a, 'lease> {
 }
 
 impl<'a, 'lease> KernelContext<'a, 'lease> {
+    pub(crate) fn safe_point(&self) -> Result<(), KernelStop> {
+        let mut meter = self.meter.borrow_mut();
+        let KernelMeter {
+            limits,
+            nested_stop,
+            ..
+        } = &mut *meter;
+        limits.safe_point(nested_stop)
+    }
     pub(crate) fn new(limits: RunLimits) -> Self {
         Self {
             meter: Rc::new(RefCell::new(KernelMeter {
@@ -234,6 +258,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
                 work: 0,
                 span: 0,
                 nested_stop: NestedStop::Clear,
+                pending_request_refusal: false,
                 checkpoint_stop: None,
             })),
             _lease: PhantomData,
@@ -250,31 +275,6 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
         (meter.work, meter.span)
     }
 
-    /// Replace the sequential checkpoint span of a completed stage with its
-    /// proven dependency span. Work remains the exact checkpoint count.
-    pub(crate) fn apply_structural_span(
-        &mut self,
-        before: (u64, u64),
-        stage_work: u64,
-        stage_span: u64,
-    ) -> bool {
-        let mut meter = self.meter.borrow_mut();
-        let Some(expected_work) = before.0.checked_add(stage_work) else {
-            return false;
-        };
-        let Some(expected_span) = before.1.checked_add(stage_work) else {
-            return false;
-        };
-        let Some(next_span) = before.1.checked_add(stage_span) else {
-            return false;
-        };
-        if meter.work != expected_work || meter.span != expected_span || stage_span > stage_work {
-            return false;
-        }
-        meter.span = next_span;
-        true
-    }
-
     pub(crate) fn nested_stopped(&self) -> bool {
         self.meter.borrow().nested_stop.owner().is_some()
     }
@@ -283,64 +283,35 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
         self.meter.borrow().checkpoint_stop
     }
 
-    /// Kernel checkpoint enforces the local remaining ceiling before work is
-    /// done, while canonical settlement determines the accepted prefix.
-    pub fn checkpoint(&mut self, units: u64) -> Result<(), KernelStop> {
-        let mut meter = self.meter.borrow_mut();
-        if let Some(stop) = meter.checkpoint_stop {
-            return Err(stop);
-        }
-        let result = (|| {
-            meter.limits.safe_point()?;
-            if meter.nested_stop.owner().is_some() {
-                return Err(KernelStop::NestedStopped);
-            }
-            let next = meter
-                .work
-                .checked_add(units)
-                .ok_or(KernelStop::WorkCounterOverflow)?;
-            if next > meter.limits.ceiling {
-                return Err(KernelStop::WorkCeiling);
-            }
-            let span = meter
-                .span
-                .checked_add(units)
-                .ok_or(KernelStop::WorkCounterOverflow)?;
-            meter.work = next;
-            meter.span = span;
-            Ok(())
-        })();
-        if let Err(stop) = result {
-            // The computational latch is the only memory of an untaken cause.
-            // A checkpoint cannot turn it into a second, irreversible latch.
-            if stop != KernelStop::NestedStopped
-                || meter.nested_stop.owner() == Some(NestedStopOwner::Request)
-            {
-                meter.checkpoint_stop = Some(stop);
-            }
-        }
-        result
-    }
-
     /// Account work completed by a domain-local checked meter after it stops.
     /// This does not authorize new work or clear the original stop; it keeps
     /// cancellation/deadline reports faithful to work already performed.
     pub fn account_completed_work(&mut self, units: u64) -> Result<(), KernelStop> {
         let mut meter = self.meter.borrow_mut();
-        let next = meter
-            .work
-            .checked_add(units)
-            .ok_or(KernelStop::WorkCounterOverflow)?;
-        let span = meter
-            .span
-            .checked_add(units)
-            .ok_or(KernelStop::WorkCounterOverflow)?;
-        if next > meter.limits.ceiling {
-            return Err(KernelStop::WorkCeiling);
+        let result = (|| {
+            let next = meter
+                .work
+                .checked_add(units)
+                .ok_or(KernelStop::WorkCounterOverflow)?;
+            let span = meter
+                .span
+                .checked_add(units)
+                .ok_or(KernelStop::WorkCounterOverflow)?;
+            if next > meter.limits.ceiling {
+                return Err(KernelStop::WorkCeiling);
+            }
+            meter.work = next;
+            meter.span = span;
+            Ok(())
+        })();
+        if let Err(stop) = result {
+            if stop == KernelStop::WorkCounterOverflow
+                || meter.limits.ceiling_owner == NestedStopOwner::Request
+            {
+                meter.nested_stop.record(NestedStopOwner::Request);
+            }
         }
-        meter.work = next;
-        meter.span = span;
-        Ok(())
+        result
     }
 
     pub fn remaining_work(&self) -> u64 {

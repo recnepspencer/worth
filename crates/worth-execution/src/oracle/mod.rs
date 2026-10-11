@@ -8,11 +8,11 @@ use canonical_bits::visit_exact;
 pub use canonical_bits::CanonicalBits;
 
 use crate::{
-    authority::ExecutionResourceLease,
+    authority::{ExecutionResourceLease, LeaseDenial},
     backend::{
         enter_retained_memory, run_admitting_scope, run_checked_batch,
-        run_checked_batch_with_charge, AdmittedBatch, BackendKind, BatchOutcome, KernelContext,
-        KernelFailure,
+        run_checked_batch_with_charge, run_invoking_scope, AdmittedBatch, BackendKind,
+        BatchOutcome, KernelContext, KernelFailure,
     },
     report::ChargedBytes,
 };
@@ -44,24 +44,43 @@ where
     E: Send + ChargedBytes + CanonicalBits,
     F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
 {
+    run_invoking_scope(
+        || certify_ports(lease, batch, selected, kernel),
+        |context, mismatch| context.failure_owner(&KernelFailure::Domain(*mismatch)),
+    )
+}
+
+fn certify_ports<T, R, E, F>(
+    lease: &ExecutionResourceLease<'_>,
+    batch: &AdmittedBatch<T>,
+    selected: BackendKind,
+    kernel: &F,
+) -> Result<BatchOutcome<R, E>, OracleMismatch>
+where
+    T: Sync + ChargedBytes,
+    R: Send + ChargedBytes + CanonicalBits,
+    E: Send + ChargedBytes + CanonicalBits,
+    F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
+{
     let retained_bytes = batch
         .retained_result_bytes::<R>()
-        .ok_or(ComparisonStop::Refused)
-        .map_err(ComparisonStop::finish)?;
+        .ok_or_else(LeaseDenial::charged_bytes_overflow)
+        .map_err(|_| OracleMismatch::Stop)?;
     let expected_retained = lease
         .reserve_retained_memory(retained_bytes)
-        .map_err(|_| ComparisonStop::Refused.finish())?;
+        .map_err(|_| ComparisonStop::refused().finish())?;
     let _expected_physical = enter_retained_memory(retained_bytes);
     let expected =
         run_checked_batch_with_charge(Some(lease), batch, BackendKind::Serial, kernel, false);
     let actual_retained = lease
         .reserve_retained_memory(retained_bytes)
-        .map_err(|_| ComparisonStop::Refused.finish())?;
+        .map_err(|_| ComparisonStop::refused().finish())?;
     let _actual_physical = enter_retained_memory(retained_bytes);
     let actual = run_checked_batch(Some(lease), batch, selected, kernel);
-    catch_unwind(AssertUnwindSafe(|| compare(lease, &expected, &actual)))
+    let comparison = catch_unwind(AssertUnwindSafe(|| compare(lease, &expected, &actual)))
         .unwrap_or(Err(ComparisonStop::Encoding(OracleMismatch::Stop)))
-        .map_err(ComparisonStop::finish)?;
+        .map_err(ComparisonStop::finish);
+    comparison?;
     drop((expected_retained, actual_retained));
     Ok(actual)
 }
@@ -109,15 +128,17 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     actual: &T,
 ) -> Result<bool, ComparisonStop> {
     let length = expected.canonical_len().ok_or(OracleMismatch::Stop)?;
-    let bytes = u64::try_from(length).map_err(|_| ComparisonStop::Refused)?;
+    let bytes = u64::try_from(length)
+        .map_err(|_| LeaseDenial::charged_bytes_overflow())
+        .map_err(|_| OracleMismatch::Stop)?;
     let _reservation = lease
         .reserve_retained_memory(bytes)
-        .map_err(|_| ComparisonStop::Refused)?;
+        .map_err(|_| ComparisonStop::refused())?;
     let _physical = enter_retained_memory(bytes);
     let mut reference = Vec::new();
     reference
         .try_reserve_exact(length)
-        .map_err(|_| ComparisonStop::Refused)?;
+        .map_err(|_| ComparisonStop::refused())?;
     if !visit_exact(expected, &mut |chunk| {
         reference.extend_from_slice(chunk);
         true
@@ -126,15 +147,17 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     }
     if let Some(predicate) = lease.equivalence_predicate() {
         let candidate_len = actual.canonical_len().ok_or(OracleMismatch::Stop)?;
-        let candidate_bytes = u64::try_from(candidate_len).map_err(|_| ComparisonStop::Refused)?;
+        let candidate_bytes = u64::try_from(candidate_len)
+            .map_err(|_| LeaseDenial::charged_bytes_overflow())
+            .map_err(|_| OracleMismatch::Stop)?;
         let _candidate_reservation = lease
             .reserve_retained_memory(candidate_bytes)
-            .map_err(|_| ComparisonStop::Refused)?;
+            .map_err(|_| ComparisonStop::refused())?;
         let _candidate_physical = enter_retained_memory(candidate_bytes);
         let mut candidate = Vec::new();
         candidate
             .try_reserve_exact(candidate_len)
-            .map_err(|_| ComparisonStop::Refused)?;
+            .map_err(|_| ComparisonStop::refused())?;
         if !visit_exact(actual, &mut |chunk| {
             candidate.extend_from_slice(chunk);
             true

@@ -229,7 +229,7 @@ fn add<E>(
 
 fn overflow<E>(metrics: ReductionMetrics) -> ReductionRunFailure<E> {
     ReductionRunFailure {
-        reason: ReductionRunStop::WorkCounterOverflow,
+        reason: ReductionRunStop::work_counter_overflow(),
         metrics,
     }
 }

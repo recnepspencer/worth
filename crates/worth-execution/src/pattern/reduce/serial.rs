@@ -78,16 +78,14 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                     Ok((_, metrics)) => *metrics,
                     Err(failure) => failure.metrics,
                 };
-                if !context.apply_structural_span(
+                if let Err(failure) = context.apply_structural_span(
                     before,
                     metrics.charged_work,
                     metrics.charged_span,
                 ) {
-                    reduction_failure = Some(ReductionRunFailure {
-                        reason: ReductionRunStop::WorkCounterOverflow,
-                        metrics,
-                    });
-                    return Err(KernelFailure::Stop(KernelStop::WorkCounterOverflow));
+                    return Err(KernelFailure::Domain(ReduceScopeError::Reduction(
+                        ReductionRunFailure::structural_span_failure(failure, metrics),
+                    )));
                 }
                 match reduced {
                     Ok((tree, metrics)) => Ok(ReduceComplete { tree, metrics }),

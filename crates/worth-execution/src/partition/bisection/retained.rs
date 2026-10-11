@@ -37,9 +37,9 @@ impl Bisection {
                 .items
                 .len()
                 .checked_add(usize::from(!self.items.contains_key(&item.item)))
-                .ok_or(PartitionUpdateDenial::Admission(
-                    LeaseDenial::ChargedBytesOverflow,
-                ))?;
+                .ok_or_else(|| {
+                    PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
+                })?;
             let bound = self.retained_bytes(count, self.edges.len())?;
             self.retained_charge.admit(lease, bound)?;
             self.upsert_item_structural_checked(lease, child, item)
@@ -76,9 +76,9 @@ impl Bisection {
                 .edges
                 .len()
                 .checked_add(usize::from(!self.edges.contains_key(&key)))
-                .ok_or(PartitionUpdateDenial::Admission(
-                    LeaseDenial::ChargedBytesOverflow,
-                ))?;
+                .ok_or_else(|| {
+                    PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
+                })?;
             let bound = self.retained_bytes(self.items.len(), count)?;
             self.retained_charge.admit(lease, bound)?;
             self.upsert_edge_structural_checked(lease, child, edge)
@@ -109,8 +109,6 @@ impl Bisection {
             .checked_mul(ITEM_RETAINED_BYTES)
             .and_then(|bytes| bytes.checked_add(edges.checked_mul(EDGE_RETAINED_BYTES)?))
             .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or(PartitionUpdateDenial::Admission(
-                LeaseDenial::ChargedBytesOverflow,
-            ))
+            .ok_or_else(|| PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow()))
     }
 }

@@ -28,9 +28,12 @@ static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
 pub(crate) static TEST_LOCK: Mutex<()> = Mutex::new(());
 
 mod adversarial;
+mod byte_counter_ownership;
 mod controlled_child;
+mod decompose_unknown_identity;
 mod map_dispatch;
 mod memory_level;
+mod nested_certification_refusal;
 mod nested_request_stops;
 mod nested_scope_ownership;
 mod nested_stop_dominance;
@@ -38,7 +41,10 @@ mod nested_stop_ownership;
 mod nested_two_causes;
 mod nesting;
 mod owned_map;
+mod pending_refusal;
 mod prepared_map;
+mod reduction_edit_bounds;
+mod refusal_kinds;
 mod request_consultation;
 
 pub(crate) fn authority() -> &'static ExecutionAuthority {

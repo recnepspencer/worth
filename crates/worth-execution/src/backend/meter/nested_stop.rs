@@ -1,3 +1,34 @@
+//! A refused question is pending until the invoking kernel settles.
+//! Success clears it; failure promotes it to the permanent request latch.
+//!
+//! | Family | Kind | Door |
+//! | --- | --- | --- |
+//! | Authority lease policy | Handed: pending | `ExecutionAuthority::request_lease` |
+//! | Child policy, lineage, reservation binding | Handed: pending | `LeaseDenial::refused` |
+//! | Lease, serial, declared memory room | Handed: pending | `MemoryLimitDenial::refused` |
+//! | Extra worker slot | Absorbed: nothing | `ClaimSlot::busy` |
+//! | Oracle encoding buffer admission | Handed: pending | `ComparisonStop::refused` |
+//! | Typed scope refusal | Handed: pending | `KernelContext::refuse_request` |
+//! | Cancellation/deadline observation | Fact: latch | `RunLimits::safe_point` |
+//! | Checkpoint request ceiling/counters | Fact: latch | `KernelContext::checkpoint_inner` |
+//! | Completed work ceiling/counters | Fact: latch | `KernelContext::account_completed_work` |
+//! | Joined work/span counters | Fact: latch | `record_nested` |
+//! | Structural span arithmetic | Fact: latch | `KernelContext::apply_structural_span` |
+//! | Partition work sum | Fact: latch | `KernelContext::stop_request` |
+//! | Framework/reduction counters | Fact: latch | `request_stop` |
+//! | Charged-byte and size counters | Fact: latch | `LeaseDenial::charged_bytes_overflow` |
+//!
+//! Handed refusals mark the invoking run; framework narrowing marks nothing.
+//! Fact doors latch overflowed work, span or byte counters on the active invoking
+//! kernel's meter, even without a lease; structural-metric mismatches mark nothing.
+//! Constructing a batch, map, scan, rounds input or keyed edit holds no lease and
+//! charges nothing: overflow is a typed value denial. Reduction batch admission
+//! converts byte overflow through `LeaseDenial::charged_bytes_overflow` to a latch;
+//! decompose's interface and back map admissions surface as computation-owned
+//! domain failures.
+//! An overflowing sum compared against declared capacity exceeds that capacity;
+//! an encoding whose length cannot be taken is invalid: both are computation-owned.
+
 /// A nested failure owned by the computation, rather than its request.
 /// The child's outcome retains its specific domain value and identity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -77,6 +108,34 @@ impl super::KernelContext<'_, '_> {
         self.meter.borrow_mut().nested_stop.record(owner);
     }
 
+    pub(crate) fn refuse_request<E>(&self, cause: E) -> E {
+        self.meter.borrow_mut().pending_request_refusal = true;
+        cause
+    }
+
+    /// A request fact stops this kernel even when its caller swallows the error.
+    pub(crate) fn stop_request<E>(&self, cause: E) -> E {
+        self.meter
+            .borrow_mut()
+            .nested_stop
+            .record(NestedStopOwner::Request);
+        cause
+    }
+
+    /// Settle the run's refused questions before classifying its final result.
+    pub(crate) fn settle_result<R, E>(
+        &self,
+        result: &Result<R, E>,
+        classify: impl FnOnce(&E) -> NestedStopOwner,
+    ) -> Option<NestedStopOwner> {
+        let mut meter = self.meter.borrow_mut();
+        if std::mem::take(&mut meter.pending_request_refusal) && result.is_err() {
+            meter.nested_stop.record(NestedStopOwner::Request);
+        }
+        drop(meter);
+        result.as_ref().err().map(classify)
+    }
+
     pub(crate) fn failure_owner<E>(&self, failure: &super::KernelFailure<E>) -> NestedStopOwner {
         use super::{KernelFailure, KernelStop};
         let meter = self.meter.borrow();
@@ -108,4 +167,27 @@ impl super::KernelContext<'_, '_> {
                 .unwrap_or(NestedStopOwner::Request),
         }
     }
+}
+
+/// Mark a refused question on the invoking run, without stopping its kernel.
+pub(crate) fn request_refusal<E>(cause: E) -> E {
+    super::ACTIVE_METER.with(|active| {
+        if let Some(meter) = active.borrow().last() {
+            meter.borrow_mut().pending_request_refusal = true;
+        }
+    });
+    cause
+}
+
+/// Record an established request stop rather than a refused question.
+pub(crate) fn request_stop<E>(cause: E) -> E {
+    super::ACTIVE_METER.with(|active| {
+        if let Some(meter) = active.borrow().last() {
+            meter
+                .borrow_mut()
+                .nested_stop
+                .record(NestedStopOwner::Request);
+        }
+    });
+    cause
 }

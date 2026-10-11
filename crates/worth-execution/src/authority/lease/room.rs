@@ -18,11 +18,7 @@ pub(super) fn check<'a>(
 ) -> Result<(), MemoryLimitDenial> {
     let refuse = |admitted: u64, level| {
         if requested > admitted {
-            Err(MemoryLimitDenial {
-                requested,
-                admitted,
-                level,
-            })
+            Err(MemoryLimitDenial::refused(requested, admitted, level))
         } else {
             Ok(())
         }

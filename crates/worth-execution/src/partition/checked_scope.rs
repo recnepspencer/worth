@@ -71,9 +71,9 @@ impl OwnedRetainedCharge {
                     .and_then(|lineage| base.checked_add(lineage))
             })
             .and_then(|overhead| overhead.checked_add(bytes))
-            .ok_or(PartitionUpdateDenial::Admission(
-                LeaseDenial::ChargedBytesOverflow,
-            ))?;
+            .ok_or_else(|| {
+                PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
+            })?;
         if let Some(reservation) = &mut self.reservation {
             lease
                 .rebind_retained_memory(reservation, bytes)
@@ -99,9 +99,13 @@ pub(super) fn checked_edit(
     edit: impl FnOnce(&mut KernelContext<'_, '_>) -> Result<PartitionWork, PartitionUpdateDenial>,
 ) -> Result<PartitionWork, PartitionUpdateDenial> {
     if !parent.is_active() {
-        return Err(PartitionUpdateDenial::Admission(
+        let refused = Err(parent.refuse_request(PartitionUpdateDenial::Admission(
             LeaseDenial::UnrelatedNestedLease,
-        ));
+        )));
+        // This checked edit has ended in admission failure on the context
+        // it was asked through, before a child scope could be entered.
+        parent.settle_result(&refused, |_| crate::backend::NestedStopOwner::Request);
+        return refused;
     }
     let scope = run_admitting_scope(Some(lease), 0, 0, true, |child| {
         let _structural_edit = StructuralEditGuard::enter();
@@ -148,3 +152,6 @@ impl From<PartitionUpdateDenial> for ScopeKernelFailure<PartitionUpdateDenial> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

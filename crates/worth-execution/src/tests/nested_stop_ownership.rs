@@ -313,3 +313,5 @@ fn child_panic_and_result_capacity_are_computation_owned() {
         }
     }
 }
+
+mod two_domain_children;
