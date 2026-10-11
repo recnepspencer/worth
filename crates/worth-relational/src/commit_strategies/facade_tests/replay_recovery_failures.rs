@@ -24,15 +24,18 @@ fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_la
         .history()
         .branch_head(&BranchId("main".to_string()));
 
-    let replay = recovered.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = recovered
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(replay
@@ -74,15 +77,18 @@ fn replay_commit_reports_strategy_execution_failure_when_recovered_executor_reje
         .history()
         .branch_head(&BranchId("main".to_string()));
 
-    let replay = recovered.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = recovered
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(replay

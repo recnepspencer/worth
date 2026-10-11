@@ -251,6 +251,7 @@ fn merge_collaboration_truth_denies_cross_family_witness_mismatch() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert_eq!(error.history_drift_class, None);
@@ -302,6 +303,7 @@ fn merge_collaboration_truth_denies_summary_only_and_planner_shortcuts() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert_eq!(error.history_drift_class, None);

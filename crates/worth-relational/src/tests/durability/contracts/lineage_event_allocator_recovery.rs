@@ -53,6 +53,7 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("tail allocator exhaustion must deny");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
     assert!(error.detail.contains("tail lineage event id exhausted"));

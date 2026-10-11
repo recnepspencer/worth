@@ -80,15 +80,18 @@ fn replay_contract_reports_schema_lineage_drift_at_summary_layer_when_digest_is_
         }
     ));
 
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(

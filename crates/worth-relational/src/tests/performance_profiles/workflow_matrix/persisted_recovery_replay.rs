@@ -39,15 +39,18 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(
             let recover_micros = recover_started_at.elapsed().as_micros();
 
             let replay_started_at = Instant::now();
-            let replay_outcome = recovered.replay_authority().replay_commit(
-                RelationalReplayRequest {
-                    commit_id: tail_commit_id,
-                    branch_id: BranchId("main".to_string()),
-                    execution_mode: ReplayExecutionMode::SerialDeterministic,
-                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                },
-                execution,
-            );
+            let replay_outcome = recovered
+                .replay_authority()
+                .replay_commit(
+                    RelationalReplayRequest {
+                        commit_id: tail_commit_id,
+                        branch_id: BranchId("main".to_string()),
+                        execution_mode: ReplayExecutionMode::SerialDeterministic,
+                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                    },
+                    execution,
+                )
+                .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
 
             let recovered_snapshot = recovered.visibility_authority().snapshot();

@@ -192,6 +192,7 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
         .durability_recovery()
         .recover(execution, corrupt_plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(parent.commit.commit_id.0, 1);
     assert_eq!(

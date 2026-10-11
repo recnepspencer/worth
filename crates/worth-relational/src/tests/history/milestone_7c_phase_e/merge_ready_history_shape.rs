@@ -44,6 +44,7 @@ fn execute_prepared_merge_produces_merge_ready_history_shape() {
                 },
                 execution
             )
+            .unwrap()
             .commit
             .expect("replayed merge commit")
             .ordered_parents()

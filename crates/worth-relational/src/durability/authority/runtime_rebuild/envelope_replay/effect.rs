@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::authority::commit::pipeline::{
     execute_authoritative_commit, AuthoritativeCommitContext,
 };
-use crate::durability::data::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::history::data::{CanonicalCommitAuthorityKind, CanonicalCommitEnvelope};
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::WorkerIntentBatch;
@@ -20,11 +20,14 @@ pub(super) fn replay_envelope_effect(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
-) -> Result<(), DurabilityError> {
+) -> Result<(), RelationalRecoveryStop> {
     let envelope = positioned.envelope();
     if envelope.authority_kind() == CanonicalCommitAuthorityKind::BranchReferenceMovement
         || is_metadata_only_merge_commit(envelope)
     {
+        #[cfg(test)]
+        super::observation::visit();
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         if governed_merge_authority_was_published(envelope) {
             require_merge_execution_authority(envelope)?;
         }
@@ -73,7 +76,8 @@ pub(super) fn complete_incomplete_metadata_commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     readmitted: crate::durability::migration::ReadmittedCanonicalCommit,
-) -> Result<crate::history::data::PositionedCanonicalCommit, DurabilityError> {
+) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
+    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let envelope = readmitted.envelope();
     let branch_basis = recovered_branch_basis(restored, &envelope.branch_context)?;
     let published_partition_delta = restored.storage_authority().affirm_no_partition_changes();
@@ -119,7 +123,8 @@ pub(super) fn replay_ordinary_commit(
     restored: &mut RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
-) -> Result<(), DurabilityError> {
+) -> Result<(), RelationalRecoveryStop> {
+    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let schema_basis = RecoveredSchemaBasis::admit(restored, envelope)?;
     let mut options = owner_options_for_branch(restored, &envelope.branch_context)?;
     options = options.with_merge_parent_bases(owner_merge_parent_bases(
@@ -151,16 +156,16 @@ pub(super) fn replay_ordinary_commit(
             format!("durable transaction staging denied: {denial:?}"),
         )
     })?;
+    #[cfg(test)]
+    super::observation::visit();
     let outcome = restored
         .commit_branch_transaction(execution, txn)
         .map_err(|error| {
-            DurabilityError::new(
-                RecoveryFailureClass::ReplayFailure,
-                format!(
-                    "failed to replay durable commit {}: {error:?}",
-                    envelope.commit.commit_id.0
-                ),
-            )
+            let detail = format!(
+                "failed to replay durable commit {}: {error:?}",
+                envelope.commit.commit_id.0
+            );
+            super::commit_stop::replay_commit_stop(error, detail)
         })?;
     let validation = if outcome.patch_position() != position {
         Err(DurabilityError::new(
@@ -171,7 +176,7 @@ pub(super) fn replay_ordinary_commit(
         schema_basis.validate_replayed(outcome.envelope())
     };
     release_replayed_snapshot(restored, &outcome.snapshot)?;
-    validation
+    validation.map_err(Into::into)
 }
 
 fn apply_materialization_replay_mode(
@@ -218,7 +223,8 @@ pub(super) fn replay_merge_commit(
     restored: &mut RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
-) -> Result<(), DurabilityError> {
+) -> Result<(), RelationalRecoveryStop> {
+    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let merge_plan = require_merge_execution_authority(envelope)?;
     let schema_basis = RecoveredSchemaBasis::admit(restored, envelope)?;
     let mut options = owner_options_for_branch(restored, &envelope.branch_context)?;
@@ -236,14 +242,14 @@ pub(super) fn replay_merge_commit(
             ),
         )
     })?;
-    let outcome = execute_authoritative_commit(execution, restored, context).map_err(|_| {
-        DurabilityError::new(
-            RecoveryFailureClass::ReplayFailure,
-            format!(
-                "failed to replay durable merge commit {}",
-                envelope.commit.commit_id.0
-            ),
-        )
+    #[cfg(test)]
+    super::observation::visit();
+    let outcome = execute_authoritative_commit(execution, restored, context).map_err(|error| {
+        let detail = format!(
+            "failed to replay durable merge commit {}",
+            envelope.commit.commit_id.0
+        );
+        super::commit_stop::replay_commit_stop(error, detail)
     })?;
     let validation = if outcome.patch_position() != position {
         Err(DurabilityError::new(
@@ -254,7 +260,7 @@ pub(super) fn replay_merge_commit(
         schema_basis.validate_replayed(outcome.envelope())
     };
     release_replayed_snapshot(restored, &outcome.snapshot)?;
-    validation
+    validation.map_err(Into::into)
 }
 
 fn release_replayed_snapshot(

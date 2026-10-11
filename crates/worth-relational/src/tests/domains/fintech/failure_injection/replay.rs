@@ -21,13 +21,18 @@ pub(crate) fn replay_latest_commit_on_wrong_branch(
     runtime: &RelationalRuntime,
 ) -> Option<RelationalReplayOutcome> {
     let latest = runtime.history().latest_commit()?.commit_id;
-    Some(runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: latest,
-            branch_id: BranchId("wrong".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    ))
+    Some(
+        runtime
+            .replay_authority()
+            .replay_commit(
+                RelationalReplayRequest {
+                    commit_id: latest,
+                    branch_id: BranchId("wrong".to_string()),
+                    execution_mode: ReplayExecutionMode::SerialDeterministic,
+                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                },
+                execution,
+            )
+            .unwrap(),
+    )
 }

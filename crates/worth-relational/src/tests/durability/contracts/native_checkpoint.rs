@@ -252,6 +252,7 @@ fn corrupt_native_checkpoint_is_denied_without_publishing_recovered_state() {
         .durability_recovery()
         .restore_native_checkpoint(execution, &corrupt)
         .expect_err("corrupt native bytes cannot become runtime authority");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert_eq!(recovered.history().immutable_commit_count(), 0);
@@ -282,6 +283,7 @@ fn native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state() {
         .durability_recovery()
         .restore_native_checkpoint(execution, &checkpoint)
         .expect_err("a foreign runtime checkpoint cannot be admitted");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::RuntimeNameMismatch);
     assert_eq!(recovered.history().immutable_commit_count(), 0);

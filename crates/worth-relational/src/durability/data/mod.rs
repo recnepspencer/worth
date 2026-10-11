@@ -6,6 +6,7 @@ mod native_checkpoint_capture_denial;
 mod recovery_errors;
 mod recovery_outcome;
 mod recovery_plan;
+mod recovery_stop;
 mod store_layout;
 
 pub(crate) use branch_root_schema_images::DurableBranchRootSchemaImage;
@@ -37,6 +38,7 @@ pub use recovery_plan::{
     RecoveryIntegrityReport, RecoveryPlan, RecoveryVerificationMode, RecoveryVerificationOutcome,
     RecoveryVerificationPlan,
 };
+pub use recovery_stop::RelationalRecoveryStop;
 pub use store_layout::{
     CheckpointCoverage, DurabilityMode, DurableCheckpointId, DurableCheckpointManifest,
     DurableIntegrityStatus, DurableSegmentId, DurableSegmentManifest, DurableStore,

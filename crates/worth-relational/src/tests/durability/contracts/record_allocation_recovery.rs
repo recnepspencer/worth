@@ -208,6 +208,7 @@ fn tail_replay_rejects_canonical_allocation_targeting_a_live_slot() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("replay must not overwrite a live checkpoint slot");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert!(error.detail.contains("selects unavailable Entity"));
@@ -237,6 +238,7 @@ fn tail_replay_rejects_missing_canonical_allocation_evidence() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("replay must require canonical allocation evidence");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert!(error.detail.contains("missing ordinal 0"));
@@ -277,6 +279,7 @@ fn tail_replay_gap_admission_cannot_replace_a_different_canonical_effect() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("gap admission cannot authorize a different replayed effect");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert!(error.detail.contains("canonical effect"));
@@ -328,6 +331,7 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("a metadata-only merge cannot carry allocation evidence");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert!(error.detail.contains("without a mutation replay path"));

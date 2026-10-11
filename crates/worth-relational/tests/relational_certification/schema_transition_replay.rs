@@ -40,15 +40,19 @@ fn v2_latest_replay_matches_the_canonical_envelope_and_reconstructs() {
     let latest = world.runtime.publication().latest_replay().unwrap().clone();
     assert_eq!(latest.commit_id, committed.commit.commit_id);
     assert_eq!(latest.schema_authority, envelope.schema_authority);
-    let replay = world.runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: committed.commit.commit_id,
-            branch_id: branch,
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = world
+        .runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: committed.commit.commit_id,
+                branch_id: branch,
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert_eq!(
         replay.failure, None,
         "V2 replay must reconstruct through envelope authority: {replay:?}"

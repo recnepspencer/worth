@@ -87,6 +87,7 @@ fn worth_query_9_16_1_1_native_tail_rejects_schema_authority_substitution() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("a configured registry cannot replace mismatched legacy authority");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(
         error.class,
         crate::durability::data::RecoveryFailureClass::SchemaMismatch
@@ -257,6 +258,7 @@ fn worth_query_9_16_1_1_rejected_correspondence_is_typed_unsupported() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("unsupported legacy lineage cannot be silently discarded");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(
         error.class,
         crate::durability::data::RecoveryFailureClass::UnsupportedLegacySemantics
