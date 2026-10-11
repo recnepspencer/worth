@@ -9,6 +9,7 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 pub(in super::super) const FOREIGN_CUSTODY_DRAIN_QUOTA: usize = 2;
 
 impl DemandRegistryState {
+    #[cfg(test)]
     pub(in super::super) fn drain_completed_custody(
         &mut self,
         admission: &mut InvalidationEditAdmission,
@@ -83,16 +84,13 @@ impl DemandRegistryState {
             let Some(commit) = self.custody_cleanup.head.clone() else {
                 break;
             };
-            match self.drain_custody_entry(&commit, admission) {
-                Ok(()) => {}
-                Err(denial) => {
-                    debug_assert_eq!(
-                        denial.kind(),
-                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-                    );
-                    // No entry was unlinked: the next admission resumes here.
-                    break;
-                }
+            if admission
+                .optional_cleanup_quote(|admission| self.drain_custody_entry(&commit, admission))
+                .is_none()
+            {
+                // A skipped visit uses its quota and preserves the note at the back.
+                let note = self.take_custody_note(&commit);
+                note.requeue();
             }
         }
     }

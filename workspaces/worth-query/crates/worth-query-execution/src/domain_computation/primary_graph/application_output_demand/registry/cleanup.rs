@@ -63,7 +63,6 @@ impl DemandRegistryState {
                 .charge_external_work(2)
                 .map_err(|_| empty_work_denial())?;
         }
-        self.drain_completed_custody(admission)?;
         let Some(head) = self.pending_cleanup_head.as_ref() else {
             return Ok(None);
         };

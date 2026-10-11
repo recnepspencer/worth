@@ -8,9 +8,16 @@ pub(in super::super) fn resolve_before_binding(
     state: &mut DemandRegistryState,
     receipt: &WorthQueryApplicationCommitReceipt,
 ) {
-    if state.pending_custody_prune() {
+    let visits = state
+        .custody_cleanup
+        .len
+        .min(super::super::cleanup::custody::FOREIGN_CUSTODY_DRAIN_QUOTA);
+    for _ in 0..visits {
+        let Some(commit) = state.custody_cleanup.head.clone() else {
+            break;
+        };
         infallible(
-            state.prune_completed_custody(&mut PostCommitSweep::after_source_commit(receipt)),
+            state.prune_custody_entry(&commit, &mut PostCommitSweep::after_source_commit(receipt)),
         );
     }
 }
@@ -75,11 +82,11 @@ mod tests {
                 let before = super::super::walk_charge::sweep_contacts();
                 resolve_before_binding(&mut state, &receipts[0]);
                 contacts.push(super::super::walk_charge::sweep_contacts() - before);
-                assert!(state.source_custody.is_empty());
-                assert!(!state.pending_custody_prune());
+                assert_eq!(state.source_custody.len(), count.saturating_sub(2));
+                assert_eq!(state.pending_custody_prune(), count > 2);
             }
         }
         // Each entry: custody entry + held row + three projected searches + retiring row.
-        assert_eq!(contacts, [6, 6, 12, 12, 24, 24]);
+        assert_eq!(contacts, [6, 6, 12, 12, 12, 12]);
     }
 }

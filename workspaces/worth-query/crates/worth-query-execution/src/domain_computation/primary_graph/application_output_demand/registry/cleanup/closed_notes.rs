@@ -96,6 +96,7 @@ struct ClosedOrder {
     len: usize,
 }
 impl ClosedCleanupQueue {
+    #[cfg(test)]
     pub(in super::super) fn len(&self) -> usize {
         self.0.lock().unwrap().len
     }
@@ -121,6 +122,13 @@ impl ClosedCleanupQueue {
         #[cfg(not(test))]
         let _ = key; // Production note backing already owns the admitted membership key.
         row.closed_cleanup.publish_owner_state(row);
+    }
+    pub(in super::super) fn rotate_front(&self) {
+        let mut order = self.0.lock().unwrap();
+        if let Some(node) = order.first.clone() {
+            order.unlink(&node);
+            order.enqueue(node);
+        }
     }
     fn enqueue(&self, node: Arc<ClosedNoteBacking>) {
         self.0.lock().unwrap().enqueue(node);

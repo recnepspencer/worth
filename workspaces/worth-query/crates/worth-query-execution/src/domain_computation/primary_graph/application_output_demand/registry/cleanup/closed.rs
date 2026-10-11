@@ -28,12 +28,13 @@ impl DemandRegistryState {
             producer = producer.max(candidate.producer.len());
             rows = rows.checked_add(1).ok_or_else(work_denial)?;
         }
+        // One root buffer for the cascade and one for its post-cascade members.
+        let slot = std::mem::size_of::<WorthQueryOutputDemandKey>()
+            .checked_add(producer)
+            .ok_or_else(work_denial)?;
         let scratch = rows
-            .checked_mul(
-                std::mem::size_of::<WorthQueryOutputDemandKey>()
-                    .checked_add(producer)
-                    .ok_or_else(work_denial)?,
-            )
+            .checked_mul(2)
+            .and_then(|rows| rows.checked_mul(slot))
             .ok_or_else(work_denial)?;
         admission
             .admit_read_scratch(u64::try_from(scratch).map_err(|_| work_denial())?)
@@ -58,52 +59,34 @@ impl DemandRegistryState {
     ) -> Option<RetiredClosedRows> {
         debug_assert_eq!(FOREIGN_CLOSED_DRAIN_QUOTA, 1);
         let note = self.closed_cleanup.front()?;
-        match self.take_closed_cleanup_step(note, admission) {
-            Ok(retired) => Some(retired),
-            Err(denial) => {
-                debug_assert!(matches!(
-                    denial.kind(),
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-                        | WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-                ));
-                None
-            }
+        let retired = admission
+            .optional_cleanup_quote(|admission| self.take_closed_cleanup_step(note, admission));
+        if retired.is_none() {
+            self.closed_cleanup.rotate_front();
         }
+        retired
     }
 }
 
 impl WorthQueryOutputDemandRegistry {
-    /// A reader needing the closed row pays for its claimant pass before use.
-    pub(in super::super) fn drain_closed_for_occurrence(
+    /// The own edit is complete before optional foreign maintenance starts.
+    pub(in super::super) fn drain_foreign_cleanup(
         &self,
-        key: &WorthQueryOutputDemandKey,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+    ) {
         let retired = {
             let mut state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if state.closed_cleanup.len() == 0 {
-                return Ok(());
-            }
-            let mut found = None;
-            for (_, row) in occurrence_rows(&state.records, key, admission)? {
-                admission.inspect_row()?;
-                if row.closed_cleanup.queued() {
-                    found = row.closed_cleanup.queued_note();
-                    break;
-                }
-            }
-            match found {
-                Some(note) => Some(state.take_closed_cleanup_step(note, admission)?),
-                None => None,
-            }
+            let retired = state.take_optional_closed_cleanup(admission);
+            state.drain_foreign_custody_quota(admission);
+            retired
         };
         drop(retired);
-        Ok(())
     }
 
+    #[cfg(test)]
     pub(in super::super) fn drain_closed_cleanup_admitted(
         &self,
         admission: &mut InvalidationEditAdmission,

@@ -27,16 +27,16 @@ impl WorthQueryOutputDemandRegistry {
         interest: &WorthQueryOutputDemandInterest,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        self.drain_closed_cleanup_admitted(admission)?;
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.drain_completed_custody(admission)?;
         let mut prepaid = charge_whole_map(&state.records, admission, WholeMapPasses::One, 4)
             .map_err(|_| super::super::refreshed_rejoin::WalkKind::JoinedReadyRelease.denial())?;
         let key = &interest.key;
         if !state.records.get(key).is_some_and(only_joined) || prepaid.stale_owner(key)? {
+            drop(state);
+            self.drain_foreign_cleanup(admission);
             return Ok(false);
         }
         let walks: Vec<_> = state.records[key]
@@ -71,6 +71,7 @@ impl WorthQueryOutputDemandRegistry {
         });
         drop(state);
         drop((ready, readmission, claims, retired));
+        self.drain_foreign_cleanup(admission);
         Ok(true)
     }
 }

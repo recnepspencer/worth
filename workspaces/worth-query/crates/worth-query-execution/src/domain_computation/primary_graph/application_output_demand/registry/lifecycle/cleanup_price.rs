@@ -1,8 +1,5 @@
 //! Prepay custody pruning and the closed-row cascade before their first edit.
-use super::super::refreshed_rejoin::{
-    charge_whole_map, price_mutation_with_source_allowance, PricedMutation, WalkKind,
-    WholeMapPasses,
-};
+use super::super::refreshed_rejoin::{charge_whole_map, PricedMutation, WalkKind, WholeMapPasses};
 use super::super::{DemandRegistryState, WorthQueryOutputDemandKey};
 use super::closed_retirement::{closed_cached, closed_superseded};
 use crate::domain_computation::primary_graph::application_query::observed_source;
@@ -19,18 +16,6 @@ type Occurrence = (
 );
 
 type Walks = Vec<(WorthQueryOutputDemandKey, u64)>;
-
-pub(in super::super) fn price_cleanup<'a>(
-    state: &'a mut DemandRegistryState,
-    admission: &mut InvalidationEditAdmission,
-    mut walks: Walks,
-    cascade: &[WorthQueryOutputDemandKey],
-    kind: WalkKind,
-) -> Result<PricedMutation<'a>, WorthQueryOutputDemandDenial> {
-    walks.extend(cascade_walks(state, cascade, admission, kind)?);
-    let allowance = super::super::cleanup::custody_price::noted_allowance(state, admission, kind)?;
-    price_mutation_with_source_allowance(state, admission, &walks, kind, allowance)
-}
 
 /// Quote a cascade whose caller leaves held custody for a later drain.
 pub(in super::super) fn price_cascade_mutation<'a>(

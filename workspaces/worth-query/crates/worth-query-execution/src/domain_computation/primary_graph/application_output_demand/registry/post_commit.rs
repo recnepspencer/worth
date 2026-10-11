@@ -8,5 +8,9 @@ mod publication;
 pub(super) mod source_retirement;
 mod supersession;
 mod walk_charge;
+#[cfg(test)]
+pub(super) fn sweep_contacts() -> u64 {
+    walk_charge::sweep_contacts()
+}
 pub(super) use advancement::{release_completed_member, release_completed_prerequisites};
 pub(super) use publication::{release_published_member, release_settled_member};

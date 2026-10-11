@@ -35,7 +35,6 @@ impl WorthQueryOutputDemandRegistry {
         bytes: usize,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        self.drain_closed_cleanup_admitted(admission)?;
         let mut retired = Vec::new();
         let mut claims = Vec::new();
         let reclaimed = {
@@ -47,6 +46,9 @@ impl WorthQueryOutputDemandRegistry {
         };
         drop(retired);
         drop(claims);
+        if reclaimed.is_ok() {
+            self.drain_foreign_cleanup(admission);
+        }
         reclaimed
     }
 
@@ -57,7 +59,6 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        self.drain_closed_cleanup_admitted(admission)?;
         let mut retired = Vec::new();
         let mut claims = Vec::new();
         let mut released = None;
@@ -81,6 +82,9 @@ impl WorthQueryOutputDemandRegistry {
         drop(retired);
         drop(claims);
         drop(released);
+        if reclaimed.is_ok() {
+            self.drain_foreign_cleanup(admission);
+        }
         reclaimed
     }
 }
@@ -124,7 +128,6 @@ impl DemandRegistryState {
         claims: &mut Vec<Arc<WorthQueryOutputDemandKey>>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        self.drain_completed_custody(admission)?;
         loop {
             let Some(key) = self.reclaimable_row(still_claimed.as_ref(), admission)? else {
                 return Ok(false);
@@ -138,7 +141,7 @@ impl DemandRegistryState {
                         .map(|upstream| (upstream.as_ref().clone(), 3)),
                 )
                 .collect();
-            let retired_row = super::cleanup_price::price_cleanup(
+            let retired_row = super::cleanup_price::price_cascade_mutation(
                 self,
                 admission,
                 walks,
@@ -159,7 +162,6 @@ impl DemandRegistryState {
                     return Ok(false);
                 }
                 claims.extend(priced.retire_row(&key, retired));
-                priced.prune_completed_custody();
                 Ok(true)
             });
             if retired_row {

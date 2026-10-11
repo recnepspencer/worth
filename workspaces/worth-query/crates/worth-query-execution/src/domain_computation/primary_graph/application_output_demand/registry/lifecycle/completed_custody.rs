@@ -12,6 +12,7 @@ pub(in super::super) fn contacts() -> u64 {
 }
 
 impl DemandRegistryState {
+    #[cfg(test)]
     pub(in super::super) fn prune_completed_custody<
         C: OccurrenceSearchCharge<Refusal = Infallible>,
     >(

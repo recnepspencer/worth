@@ -54,29 +54,6 @@ pub(in super::super) fn entry_allowance(
     Ok(allowance)
 }
 
-pub(in super::super) fn noted_allowance(
-    state: &DemandRegistryState,
-    admission: &mut InvalidationEditAdmission,
-    kind: WalkKind,
-) -> Result<SourceWalkAllowance, WorthQueryOutputDemandDenial> {
-    let mut total = SourceWalkAllowance {
-        paths: 0,
-        rows: 0,
-        entries: 0,
-        navigation: 0,
-    };
-    let mut next = state.custody_cleanup.head.as_ref();
-    while let Some(commit) = next {
-        let price = entry_allowance(state, commit, admission, kind)?;
-        add(&mut total.paths, Some(price.paths), kind)?;
-        add(&mut total.rows, Some(price.rows), kind)?;
-        add(&mut total.entries, Some(price.entries), kind)?;
-        add(&mut total.navigation, Some(price.navigation), kind)?;
-        next = state.source_custody[commit].cleanup.next.as_ref();
-    }
-    Ok(total)
-}
-
 fn add(
     total: &mut u64,
     amount: Option<u64>,

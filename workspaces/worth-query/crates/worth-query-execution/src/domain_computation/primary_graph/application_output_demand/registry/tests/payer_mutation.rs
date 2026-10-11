@@ -1,7 +1,6 @@
 //! Every pre-effect work refusal can be retried to the same registry value.
 use super::super::WorthQueryOutputCheckpoint;
 use super::*;
-mod completed_custody;
 
 fn admission(work: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
@@ -192,29 +191,43 @@ fn fixture(
 }
 
 #[test]
-fn selected_mutation_entries_refuse_every_budget_and_retry_by_value() {
+fn own_mutation_stops_retry_and_foreign_debt_stays_optional_by_value() {
     let DemandState::Output(output) = closed_retirement::ready() else {
         panic!("Ready fixture")
     };
     let Some(WorthQueryOutputCheckpoint::Ready(completion)) = output.checkpoint else {
         panic!("Ready fixture")
     };
+    let mut stops = [0; 3];
+    let mut optional = 0;
     for seed in 0..16 {
         for entry in 0..3 {
             let (completed, interest) = fixture(seed, &completion, entry == 0);
             let mut measured = admission(1_000_000);
             run(entry, &completed, &interest, &mut measured).unwrap();
+            completed
+                .drain_closed_cleanup_admitted(&mut admission(1_000_000))
+                .unwrap();
             let expected = value(&completed.state.lock().unwrap());
             assert!(measured.charged_work() > 0);
             for k in 0..measured.charged_work() {
                 let (retry, interest) = fixture(seed, &completion, entry == 0);
                 let before = value(&retry.state.lock().unwrap());
-                let denial = run(entry, &retry, &interest, &mut admission(k)).unwrap_err();
-                assert_eq!(denial, WorthQueryOutputDemandDenialKind::WorkBudgetExceeded);
-                if entry != 1 {
-                    assert_eq!(value(&retry.state.lock().unwrap()), before);
+                match run(entry, &retry, &interest, &mut admission(k)) {
+                    Err(denial) => {
+                        stops[entry as usize] += 1;
+                        assert_eq!(denial, WorthQueryOutputDemandDenialKind::WorkBudgetExceeded);
+                        if entry != 1 {
+                            assert_eq!(value(&retry.state.lock().unwrap()), before);
+                        }
+                        run(entry, &retry, &interest, &mut admission(1_000_000)).unwrap();
+                    }
+                    // A ceiling that covers the own edit may skip foreign cleanup.
+                    Ok(()) => optional += 1,
                 }
-                run(entry, &retry, &interest, &mut admission(1_000_000)).unwrap();
+                retry
+                    .drain_closed_cleanup_admitted(&mut admission(1_000_000))
+                    .unwrap();
                 assert_eq!(
                     value(&retry.state.lock().unwrap()),
                     expected,
@@ -223,6 +236,11 @@ fn selected_mutation_entries_refuse_every_budget_and_retry_by_value() {
             }
         }
     }
+    assert!(stops.into_iter().all(|count| count > 0));
+    assert!(
+        optional > 0,
+        "the fixture must reach an optional foreign visit"
+    );
 }
 
 fn run(

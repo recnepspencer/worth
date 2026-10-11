@@ -9,7 +9,6 @@ impl WorthQueryOutputDemandRegistry {
         owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        self.drain_closed_cleanup_admitted(admission)?;
         let mut entry_paid = false;
         loop {
             let retired = {
@@ -20,6 +19,7 @@ impl WorthQueryOutputDemandRegistry {
                 state.take_terminal_cleanup_step(admission, entry_paid)?
             };
             let Some(mut retired) = retired else {
+                self.drain_foreign_cleanup(admission);
                 return Ok(());
             };
             let refund = retired.refund_required_bytes;

@@ -12,7 +12,6 @@ use core::convert::Infallible;
 pub(in super::super) struct PricedMutation<'a> {
     state: &'a mut DemandRegistryState,
     charge: PricedMutationWalk,
-    noted_entries: u64,
 }
 
 struct PricedMutationWalk {
@@ -128,7 +127,6 @@ fn price_walks<'a, 'keys>(
     Ok(PricedMutation {
         state,
         charge: PricedMutationWalk { paths, rows },
-        noted_entries: allowance.entries,
     })
 }
 
@@ -138,15 +136,6 @@ impl PricedMutation<'_> {
         commit: &worth_runtime_world::facade::CompositeCommitIdentity,
     ) {
         infallible(self.state.prune_custody_entry(commit, &mut self.charge));
-    }
-
-    pub(in super::super) fn prune_completed_custody(&mut self) {
-        for _ in 0..self.noted_entries {
-            let Some(commit) = self.state.custody_cleanup.head.clone() else {
-                break;
-            };
-            infallible(self.state.prune_custody_entry(&commit, &mut self.charge));
-        }
     }
 
     pub(in super::super) fn retire_closed_rows(
@@ -167,7 +156,6 @@ impl PricedMutation<'_> {
         Vec<super::super::DemandRecord>,
         Vec<std::sync::Arc<WorthQueryOutputDemandKey>>,
     ) {
-        let key = queued.key();
         let note = self.state.take_closed_note(queued);
         note.prune(|state| {
             for key in &candidates {
@@ -183,8 +171,13 @@ impl PricedMutation<'_> {
                     }
                 }
             }
-            let retired = infallible(state.retire_closed_rows(candidates, &mut self.charge));
-            infallible(state.remove_required_member_if_released(&key, &mut self.charge));
+            // The cascade can end the last stale owner of another row in this
+            // occurrence. Its member is debt of this same paid visit too.
+            let retired =
+                infallible(state.retire_closed_rows(candidates.clone(), &mut self.charge));
+            for key in &candidates {
+                infallible(state.remove_required_member_if_released(key, &mut self.charge));
+            }
             retired
         })
     }

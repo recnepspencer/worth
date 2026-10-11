@@ -1,6 +1,7 @@
 //! Noted custody makes bounded, durable progress without starving its reader.
 use super::super::{BoundOutputSource, DemandAdmissionKind, SourceEpoch};
 use super::*;
+mod rotation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
@@ -151,7 +152,7 @@ fn registry_foreign_custody_pause_preserves_the_admission_own_budget() {
     let mut full = admission(u64::MAX);
     let _eager_interest = admit(&eager, &own, &mut full).unwrap();
     let (deferred, own) = fixture(&receipts, 1);
-    let ceiling = full.charged_work() + OCCURRENCE_SEEKS + ROW_INSPECTION;
+    let ceiling = full.charged_work();
     let _interest = admit(&deferred, &own, &mut admission(ceiling))
         .expect("a foreign maintenance pause cannot consume the own edit's budget");
     let state = deferred.state.lock().unwrap();
@@ -171,7 +172,8 @@ fn registry_own_custody_is_drained_before_its_admission_edit() {
     let own = key("custody-unrelated-0", 1, 100);
     // Own occurrence: two seeks, its row and its source-commit probe; then
     // the entry quote/execution. No work remains for the admission's edit.
-    let drain_work = OCCURRENCE_SEEKS + ROW_INSPECTION + ENTRY_VISIT + ENTRY_PRICE;
+    let discovery = OCCURRENCE_SEEKS + ROW_INSPECTION + ENTRY_VISIT;
+    let drain_work = discovery + OCCURRENCE_SEEKS + ROW_INSPECTION + ENTRY_VISIT + ENTRY_PRICE;
     let denial = match admit(&registry, &own, &mut admission(drain_work)) {
         Ok(_) => panic!("no budget remains for the admission's own edit"),
         Err(denial) => denial,
