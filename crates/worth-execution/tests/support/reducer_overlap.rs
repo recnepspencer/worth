@@ -1,5 +1,5 @@
 //! Rendezvous the first independent reducer calls at their existing kernel door.
-use std::sync::{Condvar, Mutex};
+use std::sync::{Condvar, Mutex, PoisonError};
 use std::time::Duration;
 
 pub(crate) struct ReducerOverlap {
@@ -18,7 +18,7 @@ impl ReducerOverlap {
     }
 
     pub(crate) fn rendezvous(&self) {
-        let mut arrivals = self.arrivals.lock().unwrap();
+        let mut arrivals = self.arrivals.lock().unwrap_or_else(PoisonError::into_inner);
         *arrivals += 1;
         if *arrivals >= self.required {
             self.ready.notify_all();
@@ -29,7 +29,7 @@ impl ReducerOverlap {
             .wait_timeout_while(arrivals, Duration::from_secs(5), |arrivals| {
                 *arrivals < self.required
             })
-            .unwrap();
+            .unwrap_or_else(PoisonError::into_inner);
         assert!(
             *arrivals >= self.required,
             "independent reducer calls never rendezvoused"

@@ -1,3 +1,6 @@
+#[path = "support/test_serialization.rs"]
+mod test_serialization;
+
 use std::{
     num::NonZeroUsize,
     sync::{
@@ -77,7 +80,7 @@ fn map_with_count(count: u64) -> ExecutionMap<u64, u64> {
 
 #[test]
 fn native_reducer_uses_two_workers_and_matches_one_worker_oracle() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     let input = map_with_count(64);
     let (serial_tree, serial_report, serial_metrics) = input
         .run_reduce(Some(&lease_with_workers(10_000, 1)), mapped, 0, sum, 8, 0)
@@ -108,7 +111,7 @@ fn native_reducer_uses_two_workers_and_matches_one_worker_oracle() {
 
 #[test]
 fn edge_root_exposes_deeper_branches_without_changing_dependency_span() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     // For identities 1..=10, the canonical priority minimum is identity 10.
     // Its only child contains branches, which the frontier can schedule.
     let input = map_with_count(10);
@@ -150,7 +153,7 @@ fn sum(left: &u64, right: &u64) -> u64 {
 
 #[test]
 fn work_ceiling_stops_inside_reduction_after_checked_map() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     let (_, full_report, _) = map().run_reduce(None, mapped, 0, sum, 8, 0).unwrap();
     let ceiling = full_report.charged_work() - 1;
     let stopped = map().run_reduce(Some(&lease(ceiling)), mapped, 0, sum, 8, 0);
@@ -169,7 +172,7 @@ fn work_ceiling_stops_inside_reduction_after_checked_map() {
 
 #[test]
 fn complete_reduce_combines_map_work_with_tree_dependency_span() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     let (serial_tree, serial_report, serial_metrics) =
         map().run_reduce(None, mapped, 0, sum, 8, 0).unwrap();
     let (tree, report, metrics) = map()
@@ -197,7 +200,7 @@ fn complete_reduce_combines_map_work_with_tree_dependency_span() {
 
 #[test]
 fn map_failure_keeps_its_canonical_boundary_through_parent_scope() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     let result = map().run_reduce(
         Some(&lease(9)),
         |value, context| {
@@ -235,7 +238,7 @@ fn map_failure_keeps_its_canonical_boundary_through_parent_scope() {
 
 #[test]
 fn no_lease_nested_reduction_charges_its_enclosing_map() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     let (_, inner_report, _) = map().run_reduce(None, mapped, 0, sum, 8, 0).unwrap();
     let outer = map_with_count(1).run(None, |_, context| {
         context.checkpoint(1)?;
@@ -279,7 +282,7 @@ impl CanonicalBits for PanickingClone {
 
 #[test]
 fn no_lease_reduction_contains_clone_panic() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     let caught = std::panic::catch_unwind(|| {
         map().run_reduce(
             None,
@@ -304,7 +307,7 @@ fn no_lease_reduction_contains_clone_panic() {
 
 #[test]
 fn reduction_hook_error_bytes_obey_map_result_capacity() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     let small = authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(

@@ -37,7 +37,7 @@ fn payload(
 
 #[test]
 fn payload_admission_precedes_growth_and_charges_process_and_ancestors() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = super::test_serialization::guard(&SERIAL);
     let authority = authority();
     let parent = authority.request_lease(request(128)).unwrap();
     let first = parent.child(request(96)).unwrap();
@@ -92,7 +92,7 @@ fn payload_admission_precedes_growth_and_charges_process_and_ancestors() {
 
 #[test]
 fn replacement_backings_coexist_and_custody_outlives_the_lease() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = super::test_serialization::guard(&SERIAL);
     let authority = authority();
     let allocations = Cell::new(0);
     let retained = {
@@ -128,7 +128,7 @@ fn replacement_backings_coexist_and_custody_outlives_the_lease() {
 
 #[test]
 fn same_byte_transfer_is_atomic_and_releases_only_the_old_lineage() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = super::test_serialization::guard(&SERIAL);
     let authority = authority();
     let source = authority.request_lease(request(64)).unwrap();
     let target = authority.request_lease(request(64)).unwrap();

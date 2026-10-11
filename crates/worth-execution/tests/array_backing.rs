@@ -1,4 +1,7 @@
 //! Physical typed payload custody; nested payload heaps remain uncharged here.
+#[path = "support/test_serialization.rs"]
+mod test_serialization;
+
 use std::{
     alloc::Layout,
     cell::Cell,
@@ -44,7 +47,7 @@ fn request(bytes: u64) -> LeaseRequest {
 
 #[test]
 fn typed_layout_moves_and_iterator_retain_one_charge_beyond_child_lease() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     #[repr(align(64))]
     struct Item {
         id: u8,
@@ -126,7 +129,7 @@ fn typed_layout_moves_and_iterator_retain_one_charge_beyond_child_lease() {
 
 #[test]
 fn element_destruction_keeps_charge_until_partial_and_consuming_backings_drop() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     struct Tracked<'scope, 'authority> {
         parent: &'scope ExecutionResourceLease<'authority>,
         drops: &'scope Cell<usize>,
@@ -186,7 +189,7 @@ fn element_destruction_keeps_charge_until_partial_and_consuming_backings_drop() 
 
 #[test]
 fn zst_logical_fill_and_zero_charge_do_not_use_allocator_capacity_as_count() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     static DROPS: AtomicUsize = AtomicUsize::new(0);
     #[repr(align(64))]
     struct Zero;
@@ -237,7 +240,7 @@ fn zst_logical_fill_and_zero_charge_do_not_use_allocator_capacity_as_count() {
 
 #[test]
 fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     let denied =
         ExecutionArrayBuilder::<u64>::allocate(usize::MAX, Policy::SystemAllocation).unwrap_err();
     assert_eq!(denied.kind(), Kind::Layout);
@@ -285,7 +288,7 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
 
 #[test]
 fn an_unbounded_process_still_refuses_counter_overflow_before_charging() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     let first = authority().request_lease(request(u64::MAX)).unwrap();
     let second = authority().request_lease(request(u64::MAX)).unwrap();
     let held = first.reserve_memory(u64::MAX - 1).unwrap();

@@ -108,14 +108,19 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
     }
     assert!(reader_iterations.load(Ordering::Acquire) > 0);
     drop(held_gate);
-    publication_completion
-        .recv_timeout(std::time::Duration::from_secs(1))
-        .expect("reader-race publication completes within one second");
-    let performed = match publisher.join().expect("publisher joins") {
+    let publisher_result = join_completed_worker(
+        publication_completion.recv_timeout(std::time::Duration::from_secs(1)),
+        publisher,
+        std::time::Duration::from_secs(1),
+        "reader-race publication completes within one second",
+    );
+    let performed = match publisher_result {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("reader-race candidate performs: {outcome:?}"),
     };
-    let (runtime, observations) = reader.join().expect("public reader joins");
+    let (runtime, observations) = reader
+        .join()
+        .unwrap_or_else(|worker_panic| std::panic::resume_unwind(worker_panic));
     let (new_descriptor, new_observation) = runtime
         .observe_branch(&identity)
         .expect("public observation sees the complete next root");
@@ -230,14 +235,19 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
     });
     race.wait();
     drop(held_gate);
-    publication_completion
-        .recv_timeout(std::time::Duration::from_secs(1))
-        .expect("fork-race publication completes within one second");
-    let performed = match publisher.join().expect("publisher joins") {
+    let publisher_result = join_completed_worker(
+        publication_completion.recv_timeout(std::time::Duration::from_secs(1)),
+        publisher,
+        std::time::Duration::from_secs(1),
+        "fork-race publication completes within one second",
+    );
+    let performed = match publisher_result {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("source advances to the complete new root: {outcome:?}"),
     };
-    let (runtime, successful_forks, _stale_count) = forker.join().expect("fork racer joins");
+    let (runtime, successful_forks, _stale_count) = forker
+        .join()
+        .unwrap_or_else(|worker_panic| std::panic::resume_unwind(worker_panic));
     let new_main = crate::tests::support::test_owner_main_basis(&runtime).expect("new main basis");
     assert_eq!(
         new_main.descriptor().root_identity(),

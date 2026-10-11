@@ -183,13 +183,13 @@ fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
     );
 
     park.open();
-    settlement_completion
-        .recv_timeout(PAUSED_SETTLEMENT_COURT_TIMEOUT)
-        .expect("branch A never finished settling after its pause opened");
-    let paused_result = paused_thread
-        .join()
-        .expect("paused settlement worker joins")
-        .expect("branch A settles after release");
+    let paused_result = join_completed_worker(
+        settlement_completion.recv_timeout(PAUSED_SETTLEMENT_COURT_TIMEOUT),
+        paused_thread,
+        PAUSED_SETTLEMENT_COURT_TIMEOUT,
+        "branch A never finished settling after its pause opened",
+    )
+    .expect("branch A settles after release");
     assert_eq!(paused_result.commit.commit_id, paused_commit_id);
     assert!(
         !settlement.retains_pending_settlement(paused_commit_id),

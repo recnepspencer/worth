@@ -1,4 +1,7 @@
 //! Actual sealed payload custody. Allocator/header/ledger metadata is uncharged.
+#[path = "support/test_serialization.rs"]
+mod test_serialization;
+
 use std::{
     num::NonZeroUsize,
     sync::{Arc, Mutex, OnceLock},
@@ -39,7 +42,7 @@ fn request(bytes: u64) -> LeaseRequest {
 
 #[test]
 fn fixed_backing_preserves_pointer_and_charge_through_shared_child_custody() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     let parent = authority().request_lease(request(8)).unwrap();
     let retained = {
         let child = parent.child(request(4)).unwrap();
@@ -118,7 +121,7 @@ fn external_and_system_backings_are_uncharged_and_equal_by_bytes() {
 
 #[test]
 fn stopped_builder_retains_checked_quote_and_releases_actual_backing_charge() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     let parent = authority().request_lease(request(8)).unwrap();
     let mut stop_request = request(8);
     let stop = CancellationSource::new();

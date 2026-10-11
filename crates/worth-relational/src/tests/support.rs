@@ -389,3 +389,6 @@ pub(super) fn assert_lineage_history_origin_invariants(
         } if resolved_start == start_lineage_id
     )));
 }
+
+mod worker_completion;
+pub(super) use worker_completion::join_completed_worker;

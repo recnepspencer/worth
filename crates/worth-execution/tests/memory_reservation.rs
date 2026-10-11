@@ -1,3 +1,6 @@
+#[path = "support/test_serialization.rs"]
+mod test_serialization;
+
 use std::{
     collections::BTreeMap,
     num::NonZeroUsize,
@@ -82,7 +85,7 @@ fn a_serial_budget_holds_the_policy_bytes_and_names_what_it_admits() {
 
 #[test]
 fn a_lease_reservation_is_bounded_by_its_lineage_and_released_on_drop() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     let parent = lease(1_000);
     let child = parent.child(request(300)).unwrap();
     let held = parent.reserve_memory(800).unwrap();
@@ -215,7 +218,7 @@ fn a_serial_run_with_a_policy_refuses_at_its_own_memory_boundary() {
 
 #[test]
 fn a_keyless_map_admits_what_the_declared_form_admits() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     let identities = [3, 1, 2].map(PartitionIdentity::new);
     let keyless: BTreeMap<_, _> = identities
         .iter()
@@ -315,7 +318,7 @@ fn leased_run(budget: u64, hold: u64, take: bool) -> Result<(), MemoryLimitDenia
 /// the hold, and a refusal counts the hold as the run's own.
 #[test]
 fn a_leased_run_takes_over_the_hold_on_its_inputs() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     let run = least_admitted(|budget| leased_run(budget, 0, false).is_ok());
     let hold = run / 2;
     assert!(hold > 0);
@@ -358,7 +361,7 @@ fn a_serial_run_takes_over_the_hold_on_its_inputs() {
 /// releases it.
 #[test]
 fn a_reduced_tree_stays_held_on_the_callers_reservation() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = test_serialization::guard(&SERIAL);
     let budget = 1 << 20;
     let parent = lease(budget);
     let child = parent.child(request(budget)).unwrap();

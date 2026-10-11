@@ -91,7 +91,9 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
         let entered = entry.recv_timeout(Duration::from_secs(5));
         if entered.is_err() {
             let _ = resume.send(());
-            conditional.join().unwrap();
+            conditional
+                .join()
+                .unwrap_or_else(|worker_panic| std::panic::resume_unwind(worker_panic));
             panic!("conditional work never reached the real Bridge predicate");
         }
         let (read, completed) = mpsc::channel();
@@ -115,9 +117,13 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
         let progress = completed.recv_timeout(Duration::from_secs(5));
         // Release before assertions so a broken concurrency boundary fails
         // without leaving a scoped worker blocked during unwinding.
-        resume.send(()).unwrap();
-        conditional.join().unwrap();
-        reader.join().unwrap();
+        let _ = resume.send(());
+        conditional
+            .join()
+            .unwrap_or_else(|worker_panic| std::panic::resume_unwind(worker_panic));
+        reader
+            .join()
+            .unwrap_or_else(|worker_panic| std::panic::resume_unwind(worker_panic));
         assert_eq!(progress.unwrap(), (true, true));
     });
 }

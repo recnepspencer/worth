@@ -1,3 +1,6 @@
+#[path = "support/test_serialization.rs"]
+mod test_serialization;
+
 use std::{
     num::NonZeroUsize,
     sync::{
@@ -80,7 +83,7 @@ fn mapped_bytes(
 
 #[test]
 fn frontier_concatenation_preserves_partition_identity_order_at_every_width() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     for workers in [4, 2, 1] {
         let (mut tree, _, _) = map(8)
             .run_reduce(
@@ -172,7 +175,7 @@ fn prove_frontier(count: u64, workers: usize, expected_overlap: usize) {
 
 #[test]
 fn four_worker_frontier_and_edge_root_deeper_branch_execute_concurrently() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     prove_frontier(128, 4, 3);
     // Identity 10 has the minimum canonical priority over 1..=10, so the
     // root has one child; the bounded frontier descends to its branches.
@@ -181,7 +184,7 @@ fn four_worker_frontier_and_edge_root_deeper_branch_execute_concurrently() {
 
 #[test]
 fn earlier_join_capacity_failure_precedes_later_task_panic_at_every_width() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     let input = map(7);
     let stopped = |workers| {
         input.run_reduce(
@@ -301,7 +304,7 @@ fn assert_ceiling_width_invariant(input: &ExecutionMap<u64, u64>, count: u64, ce
 
 #[test]
 fn work_ceiling_settles_identical_partial_tree_prefix_at_every_width() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     let input = map(7);
     for ceiling in 38..=80 {
         assert_ceiling_width_invariant(&input, 7, ceiling);
@@ -343,7 +346,7 @@ fn work_ceiling_settles_identical_partial_tree_prefix_at_every_width() {
 
 #[test]
 fn partial_span_is_width_invariant_across_shape_and_frontier_sizes() {
-    let _guard = TEST_LOCK.lock().unwrap();
+    let _guard = test_serialization::guard(&TEST_LOCK);
     for count in 1..=25 {
         let input = map(count);
         let (_, full_report, _) = input

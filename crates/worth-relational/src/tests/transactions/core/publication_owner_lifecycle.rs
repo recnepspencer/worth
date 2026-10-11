@@ -116,7 +116,7 @@ fn runtime_drop_waits_for_admitted_publication_to_leave_linearization() {
     drop(held_branch_gate);
     let outcome = publisher
         .join()
-        .expect("publisher joins after gate release");
+        .unwrap_or_else(|worker_panic| std::panic::resume_unwind(worker_panic));
     assert!(
         matches!(
             outcome,
@@ -124,8 +124,10 @@ fn runtime_drop_waits_for_admitted_publication_to_leave_linearization() {
         ),
         "already-admitted publication completes before owner shutdown: {outcome:?}"
     );
-    drop_finished_receiver
-        .recv_timeout(std::time::Duration::from_secs(1))
-        .expect("runtime drop completes after publication leaves admission");
-    runtime_drop.join().expect("runtime drop thread joins");
+    join_completed_worker(
+        drop_finished_receiver.recv_timeout(std::time::Duration::from_secs(1)),
+        runtime_drop,
+        std::time::Duration::from_secs(1),
+        "runtime drop completes after publication leaves admission",
+    );
 }
