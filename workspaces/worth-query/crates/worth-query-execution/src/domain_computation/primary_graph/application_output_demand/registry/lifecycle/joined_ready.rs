@@ -9,14 +9,14 @@
 //! lineage settlement the Ready posted leaves with it, so the execution
 //! decides Fresh and never reuses the output it evicted.
 
-use worth_relational::facade::mvcc::CompanionPreflightStop;
-
 use super::super::refreshed_rejoin::{charge_whole_map, WholeMapPasses};
 use super::super::{
     DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint,
     WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
 };
-use crate::domain_computation::primary_graph::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::{
+    InvalidationEditAdmission, WorthQueryOutputDemandDenial,
+};
 
 impl WorthQueryOutputDemandRegistry {
     /// Release the idle Ready of `interest`'s row when that interest alone
@@ -26,19 +26,16 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         interest: &WorthQueryOutputDemandInterest,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, CompanionPreflightStop> {
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state
-            .drain_completed_custody(admission)
-            .map_err(|_| work_stop(admission))?;
-        let mut prepaid = charge_whole_map(&state.records, admission, WholeMapPasses::One, 4)?;
+        state.drain_completed_custody(admission)?;
+        let mut prepaid = charge_whole_map(&state.records, admission, WholeMapPasses::One, 4)
+            .map_err(|_| super::super::refreshed_rejoin::WalkKind::JoinedReadyRelease.denial())?;
         let key = &interest.key;
-        if !state.records.get(key).is_some_and(only_joined)
-            || prepaid.stale_owner(key).map_err(|_| work_stop(admission))?
-        {
+        if !state.records.get(key).is_some_and(only_joined) || prepaid.stale_owner(key)? {
             return Ok(false);
         }
         let walks: Vec<_> = state.records[key]
@@ -57,8 +54,7 @@ impl WorthQueryOutputDemandRegistry {
             walks,
             &cascade,
             super::super::refreshed_rejoin::WalkKind::JoinedReadyRelease,
-        )
-        .map_err(|_| work_stop(admission))?
+        )?
         .complete(|priced| {
             let claims = priced.release_prerequisites(key);
             let state = priced.state_mut();
@@ -92,14 +88,4 @@ fn only_joined(record: &DemandRecord) -> bool {
         && record.performed_source.is_none()
         && record.successor_of.is_none()
         && record.held_successor.is_none()
-}
-
-fn work_stop(admission: &InvalidationEditAdmission) -> CompanionPreflightStop {
-    let maximum = admission
-        .charged_work()
-        .saturating_add(admission.remaining_work() as u64);
-    match maximum.checked_add(1) {
-        Some(required) => CompanionPreflightStop::WorkExhausted { required, maximum },
-        None => CompanionPreflightStop::WorkCounterOverflow,
-    }
 }

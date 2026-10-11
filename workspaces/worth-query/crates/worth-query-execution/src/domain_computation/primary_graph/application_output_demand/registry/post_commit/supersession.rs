@@ -42,21 +42,19 @@ impl WorthQueryOutputDemandRegistry {
         record.performed_source = None;
         let released = record.release_obligations();
         record.wake.notify();
+        // The supersession stop is installed above; no World receipt is carried here.
         if unpublished {
             // The row ends without an output of its own: the newest Ready it
             // replaced answers for the occurrence again.
-            infallible(
-                state.revive_replaced_ready(&interest.key, &mut PostCommitWalk::after_effect()),
-            );
+            let mut payer = PostCommitWalk::after_effect(&state.records[&interest.key].state);
+            infallible(state.revive_replaced_ready(&interest.key, &mut payer));
         }
-        let released_prerequisites = infallible(
-            state.release_record_prerequisites(&interest.key, &mut PostCommitWalk::after_effect()),
-        );
+        let mut payer = PostCommitWalk::after_effect(&state.records[&interest.key].state);
+        let released_prerequisites =
+            infallible(state.release_record_prerequisites(&interest.key, &mut payer));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        infallible(state.remove_required_member_if_released(
-            &interest.key,
-            &mut PostCommitWalk::after_effect(),
-        ));
+        let mut payer = PostCommitWalk::after_effect(&state.records[&interest.key].state);
+        infallible(state.remove_required_member_if_released(&interest.key, &mut payer));
         drop(state);
         drop(released_prerequisites);
         denial

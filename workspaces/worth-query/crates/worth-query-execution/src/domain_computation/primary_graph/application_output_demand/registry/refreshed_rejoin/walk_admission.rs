@@ -5,8 +5,6 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 #[derive(Clone, Copy)]
 pub(in super::super) enum WalkKind {
     Rejoin,
-    #[cfg(test)]
-    SettlementRetirement,
     Supersession,
     TerminalCleanup,
     CacheReclaim,
@@ -19,10 +17,6 @@ impl WalkKind {
     pub(in super::super) fn denial(self) -> WorthQueryOutputDemandDenial {
         let subject = match self {
             Self::Rejoin => "refreshed output rejoin exceeds request work",
-            #[cfg(test)]
-            Self::SettlementRetirement => {
-                "settlement retirement occurrence walk exceeds owner work"
-            }
             Self::Supersession => "supersession occurrence walk exceeds request work",
             Self::TerminalCleanup => "terminal cleanup occurrence walk exceeds request work",
             Self::CacheReclaim => "cache reclaim occurrence walk exceeds request work",

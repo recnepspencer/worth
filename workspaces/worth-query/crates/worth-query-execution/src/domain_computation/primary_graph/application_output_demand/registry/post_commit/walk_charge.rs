@@ -11,7 +11,8 @@ pub(super) struct PostCommitWalk {
     _completed: (),
 }
 impl PostCommitWalk {
-    pub(super) fn after_effect() -> Self {
+    /// The owner has installed this outcome before cleanup can begin.
+    pub(super) fn after_effect(_: &super::super::DemandState) -> Self {
         Self { _completed: () }
     }
     pub(super) fn after_publication(
@@ -31,7 +32,7 @@ impl PostCommitWalk {
 /// scans S rows of a source coordinate (potentially several producers), then
 /// O(sum R_upstream) contacts. These synchronous closure sweeps are explicit
 /// debt: admission-free readers must see the closed state immediately.
-/// A binding reader also resolves pending custody: C entries, two source-row
+/// A binding reader resolves only noted custody: C_noted entries, two source-row
 /// passes, and a stale-owner occurrence walk for each inspected source row.
 pub(super) struct PostCommitSweep {
     _completed: (),

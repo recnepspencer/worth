@@ -6,11 +6,15 @@ pub(in super::super) fn release_completed_prerequisites(
     state: &mut DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
 ) -> Vec<Arc<WorthQueryOutputDemandKey>> {
-    infallible(state.release_record_prerequisites(key, &mut PostCommitWalk::after_effect()))
+    // The scheduling/checkpoint outcome was committed to this row before this call.
+    let mut payer = PostCommitWalk::after_effect(&state.records[key].state);
+    infallible(state.release_record_prerequisites(key, &mut payer))
 }
 pub(in super::super) fn release_completed_member(
     state: &mut DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
 ) {
-    infallible(state.remove_required_member_if_released(key, &mut PostCommitWalk::after_effect()));
+    // The scheduling/checkpoint outcome was committed to this row before this call.
+    let mut payer = PostCommitWalk::after_effect(&state.records[key].state);
+    infallible(state.remove_required_member_if_released(key, &mut payer));
 }

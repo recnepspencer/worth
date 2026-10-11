@@ -102,9 +102,7 @@ pub(super) fn prepare<'a>(
     let levels = usize::BITS as usize - required_count.max(1).leading_zeros() as usize;
     navigate(
         admission,
-        required_count
-            .min(11)
-            .checked_mul(levels)
+        super::super::super::key_comparison::ordered_comparisons(levels, required_count)
             .and_then(|comparisons| {
                 replacement
                     .comparison_work()

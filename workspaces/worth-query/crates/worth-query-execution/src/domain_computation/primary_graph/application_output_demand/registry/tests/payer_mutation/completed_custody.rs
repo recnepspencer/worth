@@ -79,14 +79,21 @@ fn check(entry: u8) {
             // An additional seek/row charge cannot be free merely because
             // earlier registry edits completed inside the same lock.
             if seed == 0 {
-                // +17: two custody-entry visits, source quote (2+1),
-                // stale-owner quote and walk 2*(2+1), two source walks 2*(2+1).
-                let expected = match entry {
-                    0 => 36,
-                    1 => 46,
-                    2 => 44,
+                const ENTRY_VISIT: u64 = 1;
+                const OCCURRENCE_PATH: u64 = 2;
+                const INSPECTED_ROW: u64 = 1;
+                let walk = OCCURRENCE_PATH + INSPECTED_ROW;
+                let custody_quote = ENTRY_VISIT + walk + walk;
+                let custody_execution = ENTRY_VISIT + 2 * walk + walk;
+                let custody_price = custody_quote + custody_execution;
+                assert_eq!(custody_price, 17);
+                let mutation_price = match entry {
+                    0 => 19,
+                    1 => 29,
+                    2 => 27,
                     _ => panic!("unknown cleanup entry"),
                 };
+                let expected = mutation_price + custody_price;
                 assert_eq!(measured.charged_work(), expected);
             }
             for k in 0..measured.charged_work() {

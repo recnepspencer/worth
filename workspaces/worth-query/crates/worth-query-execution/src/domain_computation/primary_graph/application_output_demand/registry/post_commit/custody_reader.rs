@@ -26,23 +26,35 @@ mod tests {
         let receipts = walk_bounds::receipt_batch();
         let mut contacts = Vec::new();
         for count in [1, 2, 4] {
-            let mut state = DemandRegistryState::default();
-            walk_bounds::add_custody(&mut state, &receipts[..count], 1);
-            for row in state.records.values_mut() {
-                row.interests = 0;
-                row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::NoEffect,
-                    "completed reader row",
-                ));
+            for neighbors in [1, 64] {
+                let mut state = DemandRegistryState::default();
+                walk_bounds::add_custody(&mut state, &receipts[..count], 1);
+                for row in state.records.values_mut() {
+                    row.interests = 0;
+                    row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::NoEffect,
+                        "completed reader row",
+                    ));
+                }
+                for generation in 1..=neighbors {
+                    state.records.insert(
+                        super::super::super::tests::key("larger-neighbor", generation, 2),
+                        super::super::super::tests::record(
+                            receipts[0].product_branch().occurrence(),
+                            DemandState::Admitted,
+                            1,
+                        ),
+                    );
+                }
+                state.note_custody_changes(|_, _| true);
+                let before = super::super::walk_charge::sweep_contacts();
+                resolve_before_binding(&mut state, &receipts[0]);
+                contacts.push(super::super::walk_charge::sweep_contacts() - before);
+                assert!(state.source_custody.is_empty());
+                assert!(!state.pending_custody_prune());
             }
-            state.note_custody_changes(|_, _| true);
-            let before = super::super::walk_charge::sweep_contacts();
-            resolve_before_binding(&mut state, &receipts[0]);
-            contacts.push(super::super::walk_charge::sweep_contacts() - before);
-            assert!(state.source_custody.is_empty());
-            assert!(!state.pending_custody_prune());
         }
         // Each entry: custody entry + held row + stale-owner row + retiring row.
-        assert_eq!(contacts, [4, 8, 16]);
+        assert_eq!(contacts, [4, 4, 8, 8, 16, 16]);
     }
 }

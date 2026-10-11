@@ -3,8 +3,8 @@ mod cancelled_prerequisites;
 use super::super::refreshed_rejoin::infallible;
 use super::*;
 
-/// The private field seals construction to this release module. Its only
-/// production constructor is the interest Drop release entry below.
+/// The private field seals construction to this release owner and its
+/// cancellation Drop child. These entries run without a request payer.
 pub(in super::super) struct CleanupWalk {
     _release: (),
 }

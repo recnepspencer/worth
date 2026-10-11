@@ -81,6 +81,7 @@ mod tests {
             committed_recoverable_application();
         let scope = receipt.principal_scope().scope();
         let occurrence = receipt.product_branch().occurrence();
+        let receipts = super::super::super::tests::walk_bounds::receipt_batch();
         let mut contacts = Vec::new();
         for producers in [1, 3, 7] {
             let mut state = DemandRegistryState::default();
@@ -91,6 +92,7 @@ mod tests {
                     .records
                     .insert(key(&format!("source-owner-{producer}"), 1, 1), row);
             }
+            super::super::super::tests::walk_bounds::add_custody(&mut state, &receipts, 3);
             let before = super::super::walk_charge::sweep_contacts();
             retire_stale_records(
                 &mut state,
@@ -100,7 +102,11 @@ mod tests {
                 &key("unused", 2, 1).source,
             );
             contacts.push(super::super::walk_charge::sweep_contacts() - before);
-            assert!(state.records.values().all(|row| row.terminal()));
+            assert!(state
+                .records
+                .source_occurrence_rows(&key("unused", 2, 1).source)
+                .all(|(_, row)| row.terminal()));
+            assert_eq!(state.source_custody.len(), receipts.len());
         }
         // One source-coordinate row per producer; no prerequisite edges.
         assert_eq!(contacts, [1, 3, 7]);

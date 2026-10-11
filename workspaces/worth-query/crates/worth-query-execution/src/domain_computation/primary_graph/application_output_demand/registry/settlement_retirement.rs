@@ -23,18 +23,11 @@
 
 use std::sync::Arc;
 
-#[cfg(test)]
-use super::refreshed_rejoin::WalkKind;
 use super::{DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry};
 use crate::domain_computation::primary_graph::output_lineage::{
     invalidation::{InvalidationEditAdmission, SourceInvalidationOwner},
     RecordedSettlementIdentity,
 };
-#[cfg(test)]
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-
-#[cfg(test)]
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 type Identity = Arc<RecordedSettlementIdentity>;
 use super::post_commit::discovery;
@@ -160,16 +153,6 @@ impl WorthQueryOutputDemandRegistry {
 }
 
 impl DemandRegistryState {
-    /// A denied owner edit leaves its postings intact for the next retirement.
-    #[cfg(test)]
-    pub(super) fn prepare_superseded_settlements(
-        &self,
-        key: &WorthQueryOutputDemandKey,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<Vec<Identity>, WorthQueryOutputDemandDenial> {
-        discovery::under_request(self, key, admission)
-    }
-
     fn forget_retired_settlements(
         &mut self,
         retired: &[Identity],
@@ -219,29 +202,4 @@ impl DemandRegistryState {
                 .saturating_sub(index_bytes.saturating_add(posting_bytes));
         }
     }
-}
-
-#[cfg(test)]
-pub(super) fn admit_slots(
-    count: usize,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    let bytes = count
-        .checked_mul(std::mem::size_of::<Identity>())
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or_else(capacity_denial)?;
-    admission
-        .admit_read_scratch(bytes)
-        .map_err(|_| capacity_denial())?;
-    admission
-        .charge_external_work(count as u64)
-        .map_err(|_| WalkKind::SettlementRetirement.denial())
-}
-
-#[cfg(test)]
-fn capacity_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-        "superseded settlement preparation exceeds owner custody",
-    )
 }

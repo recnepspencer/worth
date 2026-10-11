@@ -16,10 +16,6 @@ fn every_request_walk_names_its_path_and_row_refusals_and_rejoin_keeps_its_text(
             "refreshed output rejoin exceeds request work",
         ),
         (
-            WalkKind::SettlementRetirement,
-            "settlement retirement occurrence walk exceeds owner work",
-        ),
-        (
             WalkKind::Supersession,
             "supersession occurrence walk exceeds request work",
         ),

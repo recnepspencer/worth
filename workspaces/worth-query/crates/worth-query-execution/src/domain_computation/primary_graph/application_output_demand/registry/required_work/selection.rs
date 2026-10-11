@@ -312,11 +312,11 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     let count = state.required_keys.len();
     let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
-    let comparisons = count.min(11).checked_mul(levels).ok_or_else(work_denial)?;
+    let comparisons =
+        super::super::key_comparison::ordered_comparisons(levels, count).ok_or_else(work_denial)?;
     let maximum_levels =
         usize::BITS as usize - state.required_budget_bytes.max(1).leading_zeros() as usize;
-    let work = 11usize
-        .checked_mul(maximum_levels)
+    let work = super::super::key_comparison::ordered_comparisons(maximum_levels, usize::MAX)
         .and_then(|comparisons| comparisons.checked_mul(key.comparison_work()?))
         .and_then(|work| work.checked_add(1))
         .ok_or_else(work_denial)?;

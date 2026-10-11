@@ -1,35 +1,11 @@
-//! One settlement selection body, with request or completed-publication payment.
+//! Settlement discovery after publication cannot refuse its occurrence walk.
 use super::super::refreshed_rejoin::{infallible, occurrence_rows, OccurrenceSearchCharge};
-#[cfg(test)]
-use super::super::refreshed_rejoin::{WalkAdmission, WalkKind};
-#[cfg(test)]
-use super::super::settlement_retirement::admit_slots;
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 type Identity = Arc<RecordedSettlementIdentity>;
 use super::walk_charge::PostCommitWalk;
-#[cfg(test)]
-use crate::domain_computation::primary_graph::InvalidationEditAdmission;
-#[cfg(test)]
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use core::convert::Infallible;
 use std::sync::Arc;
-
-trait DiscoveryCharge: OccurrenceSearchCharge {
-    fn slots(&mut self, count: usize) -> Result<(), Self::Refusal>;
-}
-#[cfg(test)]
-impl DiscoveryCharge for WalkAdmission<'_> {
-    fn slots(&mut self, count: usize) -> Result<(), Self::Refusal> {
-        admit_slots(count, self.admission_mut())
-    }
-}
-
-impl DiscoveryCharge for PostCommitWalk {
-    fn slots(&mut self, _: usize) -> Result<(), Infallible> {
-        Ok(())
-    }
-}
 
 pub(in super::super) fn after_publication(
     state: &DemandRegistryState,
@@ -43,21 +19,7 @@ pub(in super::super) fn after_publication(
     ))
 }
 
-#[cfg(test)]
-pub(in super::super) fn under_request(
-    state: &DemandRegistryState,
-    key: &WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<Vec<Identity>, WorthQueryOutputDemandDenial> {
-    state.charge_record_lookup(key, admission)?;
-    discover(
-        state,
-        key,
-        &mut WalkAdmission::new(admission, WalkKind::SettlementRetirement),
-    )
-}
-
-fn discover<C: DiscoveryCharge>(
+fn discover<C: OccurrenceSearchCharge<Refusal = Infallible>>(
     state: &DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
     charge: &mut C,
@@ -80,7 +42,6 @@ fn discover<C: DiscoveryCharge>(
         } else {
             0
         };
-        charge.slots(superseded)?;
         candidates.extend(
             record.settlements[..superseded]
                 .iter()

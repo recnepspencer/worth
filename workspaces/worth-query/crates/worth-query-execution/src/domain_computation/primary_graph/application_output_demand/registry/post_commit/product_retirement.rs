@@ -13,6 +13,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        // World already retired this incarnation; this entry carries no completion receipt.
         let mut sweep = PostCommitSweep::after_effect();
         state.note_custody_changes(|_, custody| {
             infallible(sweep.inspect_row());
@@ -112,7 +113,7 @@ mod tests {
             .map(|_| recoverable_commit_support::committed_recoverable_application())
             .collect();
         let mut contacts = Vec::new();
-        for (rows, custody_entries) in [(2, 0), (5, 1), (9, 4)] {
+        for (rows, custody_entries) in [(2, 1), (5, 1), (9, 4)] {
             let registry = WorthQueryOutputDemandRegistry::default();
             let mut state = registry.state.lock().unwrap();
             for generation in 1..=rows {
@@ -161,6 +162,6 @@ mod tests {
                 .all(|row| row.terminal()));
         }
         // Four complete record passes plus one contact per custody entry.
-        assert_eq!(contacts, [8, 21, 40]);
+        assert_eq!(contacts, [9, 21, 40]);
     }
 }

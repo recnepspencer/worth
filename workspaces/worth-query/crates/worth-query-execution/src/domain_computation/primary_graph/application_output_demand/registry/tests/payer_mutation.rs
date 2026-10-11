@@ -235,13 +235,7 @@ fn run(
         0 => registry
             .release_joined_ready(interest, admission)
             .map(|released| assert!(released))
-            .map_err(|stop| {
-                assert!(matches!(
-                    stop,
-                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
-                ));
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-            }),
+            .map_err(|denial| denial.kind()),
         1 => registry
             .reclaim_cached_rows(1, admission)
             .map_err(|denial| denial.kind()),

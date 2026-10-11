@@ -7,57 +7,6 @@ use crate::domain_computation::primary_graph::output_lineage::registry_fixture;
 use crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner;
 
 #[test]
-fn refused_request_discovery_never_releases_the_displaced_settlement() {
-    let (_lineage, displaced) = registry_fixture::recorded_settlement();
-    let registry = WorthQueryOutputDemandRegistry::default();
-    let selected = Arc::new(key("retirement-result", 2, 1));
-    let mut prelude = record_admission();
-    {
-        let mut state = registry.state.lock().unwrap();
-        state.records.insert(
-            selected.as_ref().clone(),
-            record(occurrence(), DemandState::Running, 1),
-        );
-        state.charge_record_lookup(&selected, &mut prelude).unwrap();
-    }
-    // The keyed prelude fits; the two occurrence seeks do not. Tiny scratch
-    // also prevents a mistakenly released identity from immediately retiring,
-    // making its real custody in the owner's release queue observable.
-    let resources = WorthQueryInvalidationResources::install(
-        WorthQueryInvalidationResourceInstallation::bounded(
-            prelude.charged_work() + 1,
-            1,
-            1 << 20,
-            1,
-        ),
-    )
-    .unwrap();
-    let owner = SourceInvalidationOwner::new(resources, 1);
-    assert!(!registry
-        .posts_settlement(&displaced, &mut record_admission())
-        .unwrap());
-    let retained = Arc::strong_count(&displaced);
-    let denial = registry
-        .state
-        .lock()
-        .unwrap()
-        .prepare_superseded_settlements(&selected, &mut owner.edit_admission())
-        .expect_err("discovery must return its typed work refusal");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-    );
-    assert_eq!(
-        Arc::strong_count(&displaced),
-        retained,
-        "a refused discovery must not put displaced into the released queue"
-    );
-    assert!(!registry
-        .posts_settlement(&displaced, &mut record_admission())
-        .unwrap());
-}
-
-#[test]
 fn registry_post_commit_discovery_keeps_one_holder_for_an_unposted_displaced() {
     let (_lineage, displaced) = registry_fixture::recorded_settlement();
     let registry = WorthQueryOutputDemandRegistry::default();
