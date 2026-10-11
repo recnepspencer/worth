@@ -134,6 +134,8 @@ fn a_current_proof_of_record_a_cannot_acknowledge_record_b_at_the_same_basis() {
             basis.clone(),
             member_a.certify_current_basis(basis.clone()),
         );
+        // Both records are certified at the same basis; only identity differs.
+        drop(member_b.certify_current_basis(basis.clone()));
         let _work_a = member_a.fixture_selected_work();
         let work = member_b.fixture_selected_work();
         let result = work.acknowledge_current_admitted(proof, &mut admission);
