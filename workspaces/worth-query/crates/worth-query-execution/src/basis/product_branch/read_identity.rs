@@ -23,10 +23,10 @@ impl std::fmt::Debug for WorthQueryProductBranchReadIdentity {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("WorthQueryProductBranchReadIdentity")
-            .field("branch", &self.position.branch)
-            .field("incarnation", &self.position.incarnation)
-            .field("generation", &self.position.generation)
-            .field("commit", &self.position.commit)
+            .field("branch", self.position.branch())
+            .field("incarnation", &self.position.incarnation())
+            .field("generation", &self.position.generation())
+            .field("commit", self.position.commit())
             .field("basis", &self.basis)
             .finish()
     }
@@ -39,8 +39,8 @@ impl WorthQueryProductBranchReadIdentity {
 
     pub(crate) fn matches_observation(&self, observation: &ProductBranchObservation) -> bool {
         self.same_branch_occurrence_observation(observation)
-            && self.position.generation == observation.reference_generation()
-            && &self.position.commit == observation.selected_commit()
+            && self.position.generation() == observation.reference_generation()
+            && self.position.commit() == observation.selected_commit()
             && &self.basis == observation.basis().identity()
     }
 
@@ -48,8 +48,8 @@ impl WorthQueryProductBranchReadIdentity {
         &self,
         observation: &ProductBranchObservation,
     ) -> bool {
-        &self.position.branch == observation.branch_identity()
-            && self.position.incarnation == observation.lifecycle_incarnation()
+        self.position.branch() == observation.branch_identity()
+            && self.position.incarnation() == observation.lifecycle_incarnation()
     }
 
     pub(crate) fn from_observation(observation: &ProductBranchObservation) -> Self {
@@ -62,26 +62,26 @@ impl WorthQueryProductBranchReadIdentity {
     }
 
     pub fn branch_identity(&self) -> &ProductBranchIdentity {
-        &self.position.branch
+        self.position.branch()
     }
     pub fn product_branch(&self) -> super::WorthQueryProductBranch {
-        super::WorthQueryProductBranch::from_occurrence(self.position.incarnation)
+        super::WorthQueryProductBranch::from_occurrence(self.position.incarnation())
     }
     pub fn lifecycle_incarnation(&self) -> ProductBranchIncarnation {
-        self.position.incarnation
+        self.position.incarnation()
     }
     pub fn reference_generation(&self) -> ProductBranchReferenceGeneration {
-        self.position.generation
+        self.position.generation()
     }
     pub fn selected_commit(&self) -> &CompositeCommitIdentity {
-        &self.position.commit
+        self.position.commit()
     }
     pub fn composite_basis_identity(&self) -> &CompositeBasisKey {
         &self.basis
     }
 
     pub(crate) fn same_branch_occurrence(&self, other: &Self) -> bool {
-        self.position.branch == other.position.branch
-            && self.position.incarnation == other.position.incarnation
+        self.position.branch() == other.position.branch()
+            && self.position.incarnation() == other.position.incarnation()
     }
 }

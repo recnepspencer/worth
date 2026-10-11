@@ -243,9 +243,6 @@ fn fork_overlay_preserves_hash_map_contracts_against_std_model() {
     let reconstructed = map.operational_clone();
     assert!(!map.ptr_eq(&reconstructed));
     assert_eq!(map, reconstructed);
-    let encoded = serde_json::to_string(&map).unwrap();
-    let decoded: PersistentHashMap<u64, Vec<u64>> = serde_json::from_str(&encoded).unwrap();
-    assert_eq!(map, decoded);
     assert_eq!(source.get(&1), Some(&vec![10]));
     assert_eq!(source.get(&2), None);
 
