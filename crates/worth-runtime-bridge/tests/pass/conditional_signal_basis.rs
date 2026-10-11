@@ -4,7 +4,6 @@ use worth_runtime_bridge::facade::{
 };
 
 fn admitted_operations(
-    execution: worth_execution::ExecutionRequest<'_, '_>,
     bridge: &BridgeSealedRuntimeAssembly,
     execution: worth_execution::ExecutionRequest<'_, '_>,
     signal: &BridgeConditionalSignalBasisBinding,
