@@ -125,12 +125,8 @@ pub(crate) fn open_resource(
     view: &WorthUiInstalledLiveQueryView,
     workspace: &mut runtime::WorthQueryWorkspace,
 ) -> WorthUiOperationLiveResource {
-    workspace
-        .with_execution_request_mut(|execution, workspace| {
-            view.open_operation(execution, operation_live_request(), workspace)
-                .unwrap_or_else(|stopped| panic!("live resource open stopped: {stopped:?}"))
-        })
-        .expect("workspace host call opens")
+    view.open_operation(operation_live_request(), workspace)
+        .unwrap_or_else(|stopped| panic!("live resource open stopped: {stopped:?}"))
 }
 
 pub(crate) fn assert_active_operation_live_resource(session: &WorthUiActiveApplicationSession) {

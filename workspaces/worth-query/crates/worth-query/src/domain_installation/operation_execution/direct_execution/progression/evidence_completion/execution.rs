@@ -75,25 +75,31 @@ where
     ) -> super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output> {
         let owner = workspace.advancement_owner();
         owner
-            .with_advancement(|phase| {
-                let execution = &phase;
-                let prepared =
-                    match WorthQueryPreparedDirectExecution::prepare(execution, self, workspace) {
-                        Ok(prepared) => prepared,
-                        Err(outcome) => return outcome,
-                    };
-                match prepared.invoke_graphs(execution) {
-                    Ok(completed) => completed.invoke_executor(execution, workspace),
-                    Err(outcome) => outcome,
-                }
-            })
+            .with_advancement(|phase| self.execute_in_advancement(&phase, workspace))
             .unwrap_or_else(|cause| {
-                TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::new(
-                    WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause),
-                    "request admission",
-                    Default::default(),
+                TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::from_advancement_denial(
+                    cause,
                 ))
             })
+    }
+
+    /// Executes inside the caller's installed phase, opening no host request.
+    /// The UI live view uses this borrowed entry for its single host call.
+    pub fn execute_in_advancement(
+        self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        workspace: &mut crate::runtime::WorthQueryWorkspace,
+    ) -> super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output> {
+        let prepared = match WorthQueryPreparedDirectExecution::prepare(phase, self, workspace) {
+            Ok(prepared) => prepared,
+            Err(outcome) => return outcome,
+        };
+        match prepared.invoke_graphs(phase) {
+            Ok(completed) => completed.invoke_executor(phase, workspace),
+            Err(outcome) => outcome,
+        }
     }
 }
 

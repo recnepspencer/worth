@@ -67,7 +67,7 @@ fn invalid_measurement_write(value: runtime::WorthQueryAuthoredAspectValue) -> S
                 .unwrap()
         });
     let error = workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .insert(execution, "WorthUiMeasurement", |measurement| {
                     measurement
@@ -90,7 +90,7 @@ fn workspace_with_identity_only(label: &str) -> runtime::WorthQueryWorkspace {
             installed_builder().workspace(execution, label).unwrap()
         });
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .insert(execution, "WorthUiMeasurement", |measurement| {
                     measurement.set_aspect(identity_touch(), "measurement-without-value")

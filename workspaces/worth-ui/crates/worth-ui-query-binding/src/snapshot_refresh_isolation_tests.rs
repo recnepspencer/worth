@@ -157,7 +157,7 @@ pub(crate) fn installed_workspace() -> worth_query::facade::runtime::WorthQueryW
             .workspace(execution, "snapshot-refresh-isolation")
             .unwrap()
         });
-    workspace.with_execution_request_mut(|execution, mut workspace| workspace
+    workspace.with_execution_request_mut(|execution, workspace| workspace
         .insert(execution, "WorthUiMeasurement", |measurement| {
             measurement
                 .set_aspect(

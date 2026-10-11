@@ -41,7 +41,7 @@ fn measurement_cost(label: &str, row_count: usize) -> MeasurementDerivationCost 
                 .unwrap()
         });
     for index in 0..row_count {
-        workspace.with_execution_request_mut(|execution, mut workspace| workspace
+        workspace.with_execution_request_mut(|execution, workspace| workspace
             .insert(execution, "WorthUiMeasurement", |measurement| {
                 measurement
                     .set_aspect(

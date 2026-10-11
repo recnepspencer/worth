@@ -18,6 +18,25 @@ impl WorthQueryWorkspace {
         self.runtime.installed_product.world.with_advancement(body)
     }
 
+    /// Lends the installed phase and mutable workspace for one public host call.
+    /// A nested advancement opening inside `body` returns `NestedOpening` before
+    /// invoking its callback, exactly like the immutable opener.
+    pub fn with_advancement_mut<R>(
+        &mut self,
+        body: impl for<'scope> FnOnce(
+            worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+                'scope,
+            >,
+            &mut Self,
+        ) -> R,
+    ) -> Result<
+        R,
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    > {
+        let world = self.runtime.installed_product.world.clone();
+        world.with_advancement(|phase| body(phase, self))
+    }
+
     /// Opens one installed host call and lends its request to read seams.
     pub fn with_execution_request<R>(
         &self,
@@ -64,3 +83,6 @@ impl WorthQueryWorkspace {
         self.runtime.installed_product.world.product_branches()
     }
 }
+
+#[cfg(test)]
+mod tests;

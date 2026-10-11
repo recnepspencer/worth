@@ -32,7 +32,7 @@ fn convergence_workspace() -> runtime::WorthQueryWorkspace {
                 .expect("canonical Query world installs")
         });
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .insert(execution, "WorthUiMeasurement", |measurement| {
                     measurement

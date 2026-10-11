@@ -265,7 +265,7 @@ pub(crate) fn insert_collection_status(
     status: &str,
 ) -> worth_query::facade::foundation::WorthQueryEntityIdentity {
     let receipt = workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .insert(execution, "WorthUiProjectionText", |entity| {
                     entity
@@ -315,7 +315,7 @@ pub(crate) fn update_status(
     status: &str,
 ) {
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .update(execution, entity, |record| {
                     record
@@ -343,7 +343,7 @@ pub(crate) fn update_identity(
     identity: &str,
 ) {
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .update(execution, entity, |record| {
                     record.set_aspect(

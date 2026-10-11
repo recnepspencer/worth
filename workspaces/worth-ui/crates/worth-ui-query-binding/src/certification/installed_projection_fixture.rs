@@ -62,7 +62,7 @@ impl WorthUiInstalledQueryTestFixture {
                 .expect("installed Worth UI Query workspace")
             });
         workspace
-            .with_execution_request_mut(|execution, mut workspace| {
+            .with_execution_request_mut(|execution, workspace| {
                 workspace
                     .insert(execution, "WorthUiMeasurement", |measurement| {
                         measurement

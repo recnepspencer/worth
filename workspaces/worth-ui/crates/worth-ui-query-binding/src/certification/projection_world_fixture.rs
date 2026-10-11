@@ -153,7 +153,7 @@ pub fn remove_projection_entity(
     entity: worth_query::facade::foundation::WorthQueryEntityIdentity,
 ) {
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .delete(execution, entity)
                 .expect("certification projection entity deletion")

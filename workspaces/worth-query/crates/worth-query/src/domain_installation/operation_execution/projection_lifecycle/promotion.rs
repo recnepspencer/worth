@@ -32,7 +32,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
             let current = retained
                 .take()
                 .expect("host call retains its projection before admission");
-            current.promote_in_advancement(
+            current.promote_with_request(
                 request_execution,
                 phase
                     .execution_request_for(&owner)
@@ -57,7 +57,31 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
         }
     }
 
-    fn promote_in_advancement(
+    /// Promotes within the caller's host phase without opening another request.
+    pub fn promote_in_advancement(
+        self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
+        let execution = match phase.execution_request_for(&workspace.advancement_owner()) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return WorthQueryProjectionPromotionOutcome::Denied(
+                    WorthQueryProjectionPromotionStop::new(
+                        self,
+                        WorthQueryProjectionPromotionDenialKind::ExecutionRequest(cause.into()),
+                        "projection advancement belongs to another installed runtime",
+                        Default::default(),
+                    ),
+                )
+            }
+        };
+        self.promote_with_request(&execution, execution, workspace)
+    }
+
+    fn promote_with_request(
         self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         execution: worth_execution::ExecutionRequest<'_, '_>,

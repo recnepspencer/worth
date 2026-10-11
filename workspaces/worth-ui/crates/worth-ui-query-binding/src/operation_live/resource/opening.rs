@@ -12,7 +12,7 @@ use super::{WorthUiOperationLiveResource, WorthUiOperationLiveSources};
 
 impl WorthUiOperationLiveResource {
     pub(crate) fn open(
-        request_execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         sources: WorthUiOperationLiveSources,
         breadth: collection::WorthQueryCollectionWindowBreadth,
         allocation: WorthUiCollectionAllocationPolicy,
@@ -23,11 +23,11 @@ impl WorthUiOperationLiveResource {
             .settled
             .prepare_collection_consumer(breadth)
             .map_err(|error| WorthUiOperationLiveOpenError::CollectionConsumer(Box::new(error)))?;
-        Self::open_with_consumer(request_execution, sources, consumer, allocation, workspace)
+        Self::open_with_consumer(phase, sources, consumer, allocation, workspace)
     }
 
     pub(crate) fn open_with_consumer(
-        request_execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         sources: WorthUiOperationLiveSources,
         consumer: collection::WorthQueryCollectionConsumerWindow,
         allocation: WorthUiCollectionAllocationPolicy,
@@ -52,7 +52,7 @@ impl WorthUiOperationLiveResource {
         .map_err(|error| WorthUiOperationLiveOpenError::Derivation(Box::new(error)))?;
         let promoted = match settled
             .into_lifecycle()
-            .promote(request_execution, workspace)
+            .promote_in_advancement(phase, workspace)
         {
             observation::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
             stopped => {

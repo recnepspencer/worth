@@ -39,7 +39,7 @@ fn refresh_translates_native_update_insert_remove_and_move_with_query_row_identi
     assert_changed_row_cost(&insert, 1);
 
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .delete(execution, between.clone())
                 .expect("delete inserted row")
@@ -119,7 +119,7 @@ fn refresh_preserves_live_continuation_changes_and_exposes_query_reset() {
     let mut live = open(&mut workspace, 1);
 
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .delete(execution, alpha)
                 .expect("delete continuation anchor")
@@ -221,7 +221,7 @@ fn intent_input_catalog_applies_exact_query_patch_family_without_rebuilding_rows
     );
 
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .delete(execution, between)
                 .expect("delete inserted row")

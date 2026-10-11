@@ -33,7 +33,6 @@ impl WorthUiInstalledLiveQueryView {
 
     pub fn open_operation(
         &self,
-        request_execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
         request: WorthUiOperationLiveOpenRequest,
         workspace: &mut runtime::WorthQueryWorkspace,
     ) -> Result<WorthUiOperationLiveResource, WorthUiOperationLiveOpenError> {
@@ -41,7 +40,11 @@ impl WorthUiInstalledLiveQueryView {
             self.installed_domain().clone(),
             self.definition().clone(),
         );
-        open_operation_live_resource(request_execution, reference, request, workspace)
+        workspace.with_advancement_mut(|phase, workspace| {
+            open_operation_live_resource(&phase, reference, request, workspace)
+        }).unwrap_or_else(|cause| Err(WorthUiOperationLiveOpenError::Execution(Box::new(
+            worth_query::facade::installed::operation::WorthQueryBoundExecutionDenial::from_advancement_denial(cause),
+        ))))
     }
 }
 

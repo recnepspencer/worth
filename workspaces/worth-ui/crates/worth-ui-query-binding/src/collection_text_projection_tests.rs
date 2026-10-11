@@ -151,7 +151,7 @@ fn insert_status(
     status: &str,
 ) {
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .insert(execution, "WorthUiProjectionText", |entity| {
                     entity

@@ -340,7 +340,7 @@ fn installed_workspace(label: &str) -> worth_query::facade::runtime::WorthQueryW
         crate::certification::request_custody::with_bootstrap_request(|execution| {
             installed_builder().workspace(execution, label).unwrap()
         });
-    workspace.with_execution_request_mut(|execution, mut workspace| workspace
+    workspace.with_execution_request_mut(|execution, workspace| workspace
         .insert(execution, "WorthUiMeasurement", |measurement| {
             measurement
                 .set_aspect(

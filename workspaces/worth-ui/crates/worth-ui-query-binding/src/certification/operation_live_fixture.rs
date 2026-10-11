@@ -147,17 +147,9 @@ impl WorthUiOperationLiveTestFixture {
     }
 
     pub fn open_resource(&mut self) -> WorthUiOperationLiveResource {
-        self.workspace
-            .with_execution_request_mut(|execution, mut workspace| {
-                self.view
-                    .open_operation(
-                        execution,
-                        operation_live_request(self.breadth),
-                        &mut workspace,
-                    )
-                    .expect("operation-native live resource opens")
-            })
-            .expect("workspace host call opens")
+        self.view
+            .open_operation(operation_live_request(self.breadth), &mut self.workspace)
+            .expect("operation-native live resource opens")
     }
 
     pub fn update_measurement(&mut self) {
@@ -178,7 +170,7 @@ impl WorthUiOperationLiveTestFixture {
             .expect("named fixture measurement exists")
             .clone();
         self.workspace
-            .with_execution_request_mut(|execution, mut workspace| {
+            .with_execution_request_mut(|execution, workspace| {
                 workspace
                     .update(execution, entity, |measurement| {
                         measurement.set_aspect(
@@ -206,7 +198,7 @@ impl WorthUiOperationLiveTestFixture {
             .remove(identity)
             .expect("removed fixture measurement exists");
         self.workspace
-            .with_execution_request_mut(|execution, mut workspace| {
+            .with_execution_request_mut(|execution, workspace| {
                 workspace
                     .delete(execution, entity)
                     .expect("operation-live fixture deletion")
@@ -220,7 +212,7 @@ impl WorthUiOperationLiveTestFixture {
             .remove(from)
             .expect("renamed fixture measurement exists");
         self.workspace
-            .with_execution_request_mut(|execution, mut workspace| {
+            .with_execution_request_mut(|execution, workspace| {
                 workspace
                     .update(execution, entity.clone(), |measurement| {
                         measurement.set_aspect(
@@ -301,7 +293,7 @@ fn insert_measurement(
     value: f32,
 ) -> WorthQueryEntityIdentity {
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .insert(execution, "WorthUiMeasurement", |measurement| {
                     measurement

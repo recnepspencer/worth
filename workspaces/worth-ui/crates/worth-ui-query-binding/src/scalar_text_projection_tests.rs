@@ -16,7 +16,7 @@ use crate::{
 fn installed_scalar_text_meaning_executes_and_consumes_native_status() {
     let mut workspace = projection_workspace(true);
     let write = workspace
-        .with_execution_request_mut(|execution, mut workspace| {
+        .with_execution_request_mut(|execution, workspace| {
             workspace
                 .insert(execution, "WorthUiProjectionText", |entity| {
                     entity
