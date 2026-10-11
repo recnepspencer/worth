@@ -78,8 +78,20 @@ fn configured_files_derive_the_reviewed_control_doors() {
         "pause_stable_join_for_test",
         "place_managed_computations_on_this_thread_for_test",
         "cancel_and_retry_async_request",
+        "consumed_output_custody_for_test",
     ] {
         assert!(doors.contains_key(name), "unsealed reviewed door {name}");
+    }
+    let source = "fn proof() { runtime.consumed_output_custody_for_test(); }";
+    let refused = references("crates/ordinary/src/lib.rs", source, &doors);
+    assert_eq!(refused.len(), 1);
+    assert!(refused[0]
+        .message()
+        .contains("consumed_output_custody_for_test"));
+    for (_, caller) in entries(CALLERS).filter(|(_, path)| {
+        path.ends_with("custody_stops/balance.rs") || path.ends_with("custody_stops/reclamation.rs")
+    }) {
+        assert!(references(caller, source, &doors).is_empty());
     }
 }
 
