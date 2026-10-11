@@ -11,29 +11,7 @@ impl WorthQueryOutputDemandRegistry {
         source_owner: &SourceInvalidationOwner,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<RequiredWorkClaim>, WorthQueryOutputDemandDenial> {
-        let basis = product.relational_basis_descriptor();
-        let branch_work = selected
-            .branch_id()
-            .0
-            .len()
-            .checked_add(4)
-            .ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(branch_work).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
-        if basis.runtime_instance_id() != selected.runtime_instance_id()
-            || basis.branch_id() != selected.branch_id()
-            || basis.root_identity() != selected.root_id()
-        {
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                "selected required-work Product differs from its native root",
-            ));
-        }
-        admission
-            .charge_external_work(2)
-            .map_err(|_| work_denial())?;
-        self.drain_terminal_cleanup_admitted(source_owner, admission)?;
+        self.maintain_selected_required_cleanup(product, selected, source_owner, admission)?;
         let queue = {
             let state = self
                 .state
@@ -99,6 +77,40 @@ impl WorthQueryOutputDemandRegistry {
             return Ok(Some(work));
         }
         Ok(None)
+    }
+    /// A wave claims each record once, but later publications can release
+    /// terminal custody. Maintain that custody on the same paid selected door
+    /// without popping another required record.
+    pub(in crate::domain_computation::primary_graph) fn maintain_selected_required_cleanup(
+        &self,
+        product: &crate::basis::WorthQueryProductObservationLease,
+        selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
+        source_owner: &SourceInvalidationOwner,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let basis = product.relational_basis_descriptor();
+        let branch_work = selected
+            .branch_id()
+            .0
+            .len()
+            .checked_add(4)
+            .ok_or_else(work_denial)?;
+        admission
+            .charge_external_work(u64::try_from(branch_work).map_err(|_| work_denial())?)
+            .map_err(|_| work_denial())?;
+        if basis.runtime_instance_id() != selected.runtime_instance_id()
+            || basis.branch_id() != selected.branch_id()
+            || basis.root_identity() != selected.root_id()
+        {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "selected required-work Product differs from its native root",
+            ));
+        }
+        admission
+            .charge_external_work(2)
+            .map_err(|_| work_denial())?;
+        self.drain_terminal_cleanup_admitted(source_owner, admission)
     }
     pub(in crate::domain_computation::primary_graph) fn select_required_claim(
         &self,

@@ -104,6 +104,16 @@ impl QueuedRequiredRoots {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<(usize, RequiredWorkClaim)>, WorthQueryOutputDemandDenial> {
         if self.drained {
+            runtime.output_demands.maintain_selected_required_cleanup(
+                wave.shared.selected().product().read_lease_ref(),
+                &wave.positioned,
+                &runtime
+                    .primary_provider
+                    .graph
+                    .source_owner
+                    .invalidation_owner,
+                admission,
+            )?;
             return Ok(None);
         }
         let Some(claim) = runtime.output_demands.next_required_claim_for_selected(
