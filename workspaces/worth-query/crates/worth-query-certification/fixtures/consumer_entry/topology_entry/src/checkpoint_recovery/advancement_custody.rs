@@ -91,4 +91,221 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
     }
 }
 
+#[test]
+fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
+    use worth_query_host::facade::{
+        application_entry::{
+            WorthQueryApplicationMutationOutcome as Outcome,
+            WorthQueryApplicationProgramMutationPreparation as Preparation,
+        },
+        primary_graph::{
+            WorthQueryApplicationCommitDenialKind as CommitKind,
+            WorthQueryApplicationUncommitted as Uncommitted,
+        },
+    };
+    let _guard = checkpoint_recovery_test_guard();
+    for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
+        let _placement = Restore(place(placement), bound(None));
+        for zero_memory in [false, true] {
+            let application = install(None);
+            let (scope, principal) = authenticate(&application);
+            let request = application.request(&principal, &scope);
+            drop(settle(&request, &application));
+            let observed = request
+                .query(PlanarRead {
+                    body_key: "anchor-a".into(),
+                })
+                .execute()
+                .unwrap();
+            let before = observed.receipt().inspect().basis().version();
+            let mut mutation = request
+                .mutate(crate::PlanarEdit(crate::PlanarMutation {
+                    scope_key: "anchor-a".into(),
+                    operation: worth_query_consumer_values::PlanarOperation::VerifyCurrentOutputs(
+                        vec![
+                            worth_query_consumer_values::PlanarCurrentOutputExpectation {
+                                producer_key: "anchor-a".into(),
+                                output_key: "anchor-a".into(),
+                            },
+                        ],
+                    ),
+                }))
+                .expect_source(observed.observed_sources()[0].clone())
+                .idempotency(&9_764_u64);
+            let Preparation::Prepared(prepared) = mutation
+                .prepare_in_program(
+                    &application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+            else {
+                panic!("the fresh mutation prepares its unpublished candidate");
+            };
+            let policy = super::support::CHECKPOINT_EXECUTION_POLICY.budget();
+            let restore = Restore(
+                place(placement),
+                bound(Some(worth_foundational::ExecutionBudget::new(
+                    NonZeroUsize::MIN,
+                    if zero_memory {
+                        0
+                    } else {
+                        policy.charged_memory_bytes()
+                    },
+                    if zero_memory {
+                        policy.work_ceiling()
+                    } else {
+                        0
+                    },
+                ))),
+            );
+            let reads_before = reads();
+            reports();
+            let Outcome::Commit(Uncommitted::Denied(denial)) = prepared.commit(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            ) else {
+                panic!("the commit's own request refuses before publishing");
+            };
+            let CommitKind::ExecutionResource {
+                denial: resource,
+                partition_identity,
+                policy_ancestor,
+            } = denial.kind()
+            else {
+                panic!("the commit retains its opening cause: {:?}", denial.kind());
+            };
+            if zero_memory && placement == Placement::Serial {
+                assert_eq!(resource, Resource::PolicyMemoryLimit);
+            } else if zero_memory {
+                let Resource::MemoryLimit {
+                    level,
+                    requested,
+                    admitted,
+                } = resource
+                else {
+                    panic!("the exact lease bytes are retained");
+                };
+                assert_eq!(level, Level::Policy);
+                assert_eq!(admitted, 0);
+                assert!(requested > 0);
+            } else {
+                assert_eq!(resource, Resource::WorkExhausted);
+            }
+            assert_eq!(partition_identity, None);
+            assert_eq!(policy_ancestor, None);
+            assert_eq!(reads(), reads_before);
+            assert_eq!(reports().len(), 1);
+            drop(restore);
+            let after = request
+                .query(PlanarRead {
+                    body_key: "anchor-a".into(),
+                })
+                .execute()
+                .unwrap();
+            assert_eq!(after.receipt().inspect().basis().version(), before);
+            let mut mutation = request
+                .mutate(crate::PlanarEdit(crate::PlanarMutation {
+                    scope_key: "anchor-a".into(),
+                    operation: worth_query_consumer_values::PlanarOperation::VerifyCurrentOutputs(
+                        vec![
+                            worth_query_consumer_values::PlanarCurrentOutputExpectation {
+                                producer_key: "anchor-a".into(),
+                                output_key: "anchor-a".into(),
+                            },
+                        ],
+                    ),
+                }))
+                .expect_source(observed.observed_sources()[0].clone())
+                .idempotency(&9_765_u64);
+            let Preparation::Prepared(prepared) = mutation
+                .prepare_in_program(
+                    &application,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+            else {
+                panic!("the fresh mutation prepares its unpublished candidate");
+            };
+            let before = reads();
+            let _ = prepared.commit(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
+            assert!(
+                reads() > before,
+                "admitted commit contacts its revalidation reader"
+            );
+        }
+    }
+}
+
+// Independent fixture oracle: one seed/kind/partition, two entities and one
+// relation. Their record bounds are 819, 601 and 257 bytes; the fragment's
+// 2021 retained bytes fit one chunk. Visit digests use ceil((4*b+1024)/4096),
+// final digests use ceil(b/4096). No request report supplies these units.
+mod principal_target_read_work;
+pub(super) use principal_target_read_work::PRINCIPAL_TARGET_READ_WORK;
+
+#[test]
+fn a_mutation_handler_and_commit_share_one_charged_request() {
+    use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
+    let _guard = checkpoint_recovery_test_guard();
+    let application = install(None);
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    drop(settle(&request, &application));
+    let observed = request
+        .query(PlanarRead {
+            body_key: "anchor-a".into(),
+        })
+        .execute()
+        .unwrap();
+    let before = observed.receipt().inspect().basis().version();
+    let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+    // Admit the mutation's complete work, including its read and native commit.
+    let restore = Restore(
+        place(Placement::Leased(NonZeroUsize::MIN)),
+        bound(Some(worth_foundational::ExecutionBudget::new(
+            NonZeroUsize::MIN,
+            policy.charged_memory_bytes(),
+            policy.work_ceiling(),
+        ))),
+    );
+    let contacts = crate::handler::handler_contacts();
+    reports();
+    let outcome = request
+        .mutate(crate::PlanarEdit(crate::PlanarMutation {
+            scope_key: "anchor-a".into(),
+            operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                worth_query_consumer_values::PlanarAdjustment {
+                    body_key: "anchor-a".into(),
+                    replacement_y: super::length(3),
+                },
+            ]),
+        }))
+        .expect_source(observed.observed_sources()[0].clone())
+        .idempotency(&9_766_u64)
+        .execute_in_program(
+            &application,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    assert_eq!(crate::handler::handler_contacts(), contacts + 1);
+    assert!(matches!(outcome, Outcome::Committed { .. }));
+    let opened = reports();
+    assert_eq!(opened.len(), 1);
+    let charged = opened[0].as_ref().unwrap().charged_work();
+    assert!(
+        charged > PRINCIPAL_TARGET_READ_WORK,
+        "the commit also charges the shared request"
+    );
+    assert!(charged <= policy.work_ceiling());
+    drop(restore);
+    let after = request
+        .query(PlanarRead {
+            body_key: "anchor-a".into(),
+        })
+        .execute()
+        .unwrap();
+    assert_ne!(after.receipt().inspect().basis().version(), before);
+}
+
 mod mutation_entries;

@@ -323,6 +323,3 @@ mod advancement_bootstrap;
 
 #[cfg(feature = "test-query-execution-observer")]
 mod advancement_discovered;
-
-#[cfg(feature = "test-query-execution-observer")]
-mod request_backed_commit;
