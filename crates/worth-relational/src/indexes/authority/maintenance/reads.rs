@@ -70,7 +70,7 @@ pub(super) fn adjacency(
             let units = exceeded.consumed_work_units();
             work.charge(units)?;
             work.counts.adjacency_work_units += units;
-            Err(Denial::WorkBudgetExceeded)
+            Err(work.bounded_scan_denial())
         }
     }
 }

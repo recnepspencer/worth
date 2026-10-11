@@ -1,0 +1,36 @@
+//! A search payment borrows its account; only its funded parent can mint it.
+use super::work::MaintenanceWork;
+use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
+
+pub(super) struct ComparisonPayment<'work, 'payer, 'run, 'lease> {
+    work: &'work mut MaintenanceWork<'payer, 'run, 'lease>,
+    prepaid: Option<usize>,
+}
+
+impl<'work, 'payer, 'run, 'lease> ComparisonPayment<'work, 'payer, 'run, 'lease> {
+    pub(super) fn for_search(
+        work: &'work mut MaintenanceWork<'payer, 'run, 'lease>,
+        rows: usize,
+    ) -> Result<Self, Denial> {
+        // This is the same parent lookup payment as the admitted lane used
+        // before receipts. Its conservative bound funds every comparison.
+        let units = super::preparation::lookup_work(rows, 1)?;
+        work.prepare(units as u64, 0)?;
+        let prepaid = work.has_preparation().then_some(units);
+        Ok(Self { work, prepaid })
+    }
+
+    pub(super) fn comparison(&mut self) -> Result<(), Denial> {
+        match &mut self.prepaid {
+            Some(credit) => {
+                if *credit == 0 || self.work.remaining() == 0 {
+                    return Err(Denial::WorkBudgetExceeded);
+                }
+                *credit -= 1;
+                self.work.counts.work_units += 1;
+                Ok(())
+            }
+            None => self.work.charge(1),
+        }
+    }
+}

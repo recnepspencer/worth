@@ -248,6 +248,13 @@ pub(super) const PRINCIPAL_TARGET_READ_WORK: u64 = {
     preparation + traversal + completion
 };
 
+// The installed layout has 26 primary indexes. Adjust changes the body and
+// its idempotency row: two patches, eight field/routing reads, eight routing
+// visits, three field edits and five row comparisons. Six retained paths
+// contain five nonempty nodes and one empty node. No request report sets this.
+pub(super) const PRIMARY_INDEX_COUNT: u64 = 26;
+const INLINE_INDEX_WORK: u64 = 2 * PRIMARY_INDEX_COUNT + 2 + 8 + 8 + 3 + 5 + (5 * 64 + 1);
+
 #[test]
 fn mutation_handler_and_inline_commit_remain_in_one_request() {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
@@ -265,13 +272,13 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
     let before = observed.receipt().inspect().basis().version();
     let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
     // This handler has no managed computation or Signal dispatch. Its one
-    // principal-target traversal pays the same read law as every backing.
+    // principal-target traversal and native index maintenance share one payer.
     let restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(worth_foundational::ExecutionBudget::new(
             NonZeroUsize::MIN,
             policy.charged_memory_bytes(),
-            PRINCIPAL_TARGET_READ_WORK,
+            PRINCIPAL_TARGET_READ_WORK + INLINE_INDEX_WORK,
         ))),
     );
     let contacts = crate::handler::handler_contacts();
@@ -295,11 +302,21 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
         .unwrap();
     assert_eq!(crate::handler::handler_contacts(), contacts + 1);
     assert!(matches!(outcome, Outcome::Committed { .. }));
+    let maintenance = outcome.receipt().unwrap().mutation_work().unwrap();
+    let maintenance = maintenance.index_maintenance_work();
+    assert_eq!(
+        (
+            maintenance.patch_records,
+            maintenance.generation_publications_reserved
+        ),
+        (2, PRIMARY_INDEX_COUNT as usize)
+    );
+    assert_eq!(maintenance.work_units as u64, INLINE_INDEX_WORK);
     let opened = reports();
     assert_eq!(opened.len(), 1);
     assert_eq!(
         opened[0].as_ref().unwrap().charged_work(),
-        PRINCIPAL_TARGET_READ_WORK
+        PRINCIPAL_TARGET_READ_WORK + INLINE_INDEX_WORK
     );
     drop(restore);
     let after = request

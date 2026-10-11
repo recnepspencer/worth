@@ -55,6 +55,7 @@ pub(super) fn index_preparation_stop(
         );
     }
     let kind = match denial.kind {
+        Kind::Execution(cause) => return relational_execution_stop(cause, None),
         Kind::WorkBudgetExceeded | Kind::ColdReconstructionRequired => {
             crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded
         }

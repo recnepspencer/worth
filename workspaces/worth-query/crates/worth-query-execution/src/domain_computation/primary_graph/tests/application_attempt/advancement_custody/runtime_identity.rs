@@ -3,6 +3,10 @@ use super::*;
 
 #[test]
 fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
+    // Two changed rows (account and idempotency), 21 selected/reserved indexes,
+    // eight before/after reads, twelve routing visits, three edits, one old-row
+    // comparison, and three nonempty plus three empty retained paths.
+    let index_work = 2 * 21 + 2 + 8 + 12 + 3 + 1 + (3 * 64 + 3);
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let a = installed_authorization_world(true);
@@ -92,15 +96,21 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
                 &phase, a_program, idempotency(178, 178),
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             );
-            assert!(matches!(admitted, WorthQueryApplicationCommitOutcome::Committed(_)));
+            let WorthQueryApplicationCommitOutcome::Committed(receipt) = &admitted else {
+                panic!("the same-installation candidate must commit: {admitted:?}");
+            };
+            let evidence = receipt.mutation_work().unwrap();
+            let work = evidence.index_maintenance_work();
+            assert_eq!((work.patch_records, work.generation_publications_reserved), (2, 21));
+            assert_eq!(work.work_units as u64, index_work);
             assert!(reads() > before, "A's same commit door reaches its reader");
         }).unwrap();
         let requests = reports();
         assert_eq!(requests.len(), 1, "B never opens or charges a request");
         assert_eq!(
             requests[0].as_ref().unwrap().charged_work(),
-            0,
-            "these inline reads and mutations charge no execution work in part one"
+            index_work,
+            "only A's admitted candidate spends its native index work"
         );
     }
 }

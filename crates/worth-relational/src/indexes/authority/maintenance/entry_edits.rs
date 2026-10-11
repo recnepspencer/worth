@@ -56,17 +56,27 @@ pub(super) fn grouped<K: Ord + Clone, R: Clone>(
         let mut rows = entries.get(&key).cloned().unwrap_or_default();
         let mut map_reserved = false;
         for operation in operations {
-            work.lookup(rows.len(), 1)?;
             let mut comparisons = 0;
-            let found = rows.binary_search_by(|candidate| {
-                comparisons += 1;
-                compare(candidate, &operation.row)
-            });
-            if work.has_preparation() {
-                work.settle_prepaid(comparisons)?;
-            } else {
-                work.charge(comparisons)?;
-            }
+            let found = {
+                let mut payment =
+                    super::comparison_payment::ComparisonPayment::for_search(work, rows.len())?;
+                let mut refused = None;
+                let found = rows.binary_search_by(|candidate| {
+                    if refused.is_some() {
+                        return Ordering::Equal;
+                    }
+                    if let Err(denial) = payment.comparison() {
+                        refused = Some(denial);
+                        return Ordering::Equal;
+                    }
+                    comparisons += 1;
+                    compare(candidate, &operation.row)
+                });
+                if let Some(denial) = refused {
+                    return Err(denial);
+                }
+                found
+            };
             work.counts.seek_comparisons += comparisons;
             let position = match (operation.insert, found) {
                 (true, Err(position)) | (false, Ok(position)) => position,

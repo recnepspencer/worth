@@ -44,6 +44,22 @@ impl PreparedCandidateIndexPublication {
     }
 }
 
+impl worth_execution::ChargedBytes for PreparedCandidateIndexPublication {
+    fn additional_charged_bytes(&self) -> u64 {
+        (self.branch_id.0.capacity() as u64)
+            .saturating_add(
+                (self.generations.capacity() * std::mem::size_of::<DerivedIndexGeneration>())
+                    as u64,
+            )
+            .saturating_add(
+                self.generations
+                    .iter()
+                    .map(DerivedIndexGeneration::owned_allocation_capacity_bytes)
+                    .sum::<u64>(),
+            )
+    }
+}
+
 impl IndexAuthority<'_> {
     /// Budget and derive exact native index deltas from a prepared candidate
     /// before World can perform its publication. No generation is made visible
@@ -56,10 +72,13 @@ impl IndexAuthority<'_> {
         budget: DerivedIndexMaintenanceBudget,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DerivedIndexMaintenanceWork, DerivedIndexMaintenanceDenial> {
-        let mut work = MaintenanceWork::new(budget);
-        let result =
-            self.prepare_candidate_indexes(candidate, index_ids, before, &mut work, execution);
-        result.map(|()| work.counts).map_err(|kind| work.deny(kind))
+        let (prepared, counts) = super::request_payment::run(execution, budget, |work| {
+            self.prepare_candidate_indexes(candidate, index_ids, before, work, execution)
+        })?;
+        candidate
+            .attach_prepared_indexes(prepared)
+            .map(|()| counts)
+            .map_err(|kind| DerivedIndexMaintenanceDenial { kind, work: counts })
     }
 
     fn prepare_candidate_indexes(
@@ -69,7 +88,7 @@ impl IndexAuthority<'_> {
         before: Option<&SnapshotHandle>,
         work: &mut MaintenanceWork,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), Denial> {
+    ) -> Result<PreparedCandidateIndexPublication, Denial> {
         if candidate.runtime_instance_id() != self.runtime.runtime_instance_id() {
             return Err(Denial::ForeignCandidate);
         }
@@ -128,7 +147,7 @@ impl IndexAuthority<'_> {
                 prepared_generation(&prepared.publication, generation_id, index_id, entries)
             })
             .collect();
-        candidate.attach_prepared_indexes(PreparedCandidateIndexPublication {
+        Ok(PreparedCandidateIndexPublication {
             root_id: prepared_root.id(),
             branch_id,
             commit_id: request.source_commit_id,

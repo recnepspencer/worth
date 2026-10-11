@@ -2,18 +2,9 @@ use super::work::MaintenanceWork;
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
 use std::mem::size_of;
 
-impl MaintenanceWork<'_> {
+impl MaintenanceWork<'_, '_, '_> {
     pub(super) fn lookup(&mut self, entries: usize, width: usize) -> Result<(), Denial> {
-        let levels = if entries == 0 {
-            0
-        } else {
-            entries.ilog2() as usize + 1
-        };
-        let work = levels
-            .checked_mul(11)
-            .and_then(|n| n.checked_mul(width))
-            .and_then(|n| n.checked_add(1))
-            .ok_or(Denial::WorkBudgetExceeded)?;
+        let work = lookup_work(entries, width)?;
         self.prepare(work as u64, 0)
     }
     pub(super) fn locator(
@@ -81,4 +72,17 @@ impl MaintenanceWork<'_> {
             .ok_or(Denial::WorkBudgetExceeded)?;
         self.prepare(visits as u64, node_bytes as u64)
     }
+}
+
+pub(super) fn lookup_work(entries: usize, width: usize) -> Result<usize, Denial> {
+    let levels = if entries == 0 {
+        0
+    } else {
+        entries.ilog2() as usize + 1
+    };
+    levels
+        .checked_mul(11)
+        .and_then(|n| n.checked_mul(width))
+        .and_then(|n| n.checked_add(1))
+        .ok_or(Denial::WorkBudgetExceeded)
 }

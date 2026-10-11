@@ -10,6 +10,32 @@ pub(super) struct PreparedRefresh {
     pub(super) reused: Vec<DerivedIndexGeneration>,
 }
 
+impl worth_execution::ChargedBytes for PreparedRefresh {
+    fn additional_charged_bytes(&self) -> u64 {
+        (self.publication.branch_id.0.capacity() as u64)
+            .saturating_add(
+                (self.entries.capacity()
+                    * std::mem::size_of::<(DerivedIndexId, DerivedIndexEntries)>())
+                    as u64,
+            )
+            .saturating_add(
+                self.entries
+                    .iter()
+                    .map(|(_, entries)| entries.owned_allocation_capacity_bytes())
+                    .sum::<u64>(),
+            )
+            .saturating_add(
+                (self.reused.capacity() * std::mem::size_of::<DerivedIndexGeneration>()) as u64,
+            )
+            .saturating_add(
+                self.reused
+                    .iter()
+                    .map(DerivedIndexGeneration::owned_allocation_capacity_bytes)
+                    .sum::<u64>(),
+            )
+    }
+}
+
 impl PreparedRefresh {
     pub(super) fn publish_admitted(
         self,

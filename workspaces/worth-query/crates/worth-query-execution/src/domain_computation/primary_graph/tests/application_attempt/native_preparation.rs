@@ -51,17 +51,22 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
             )
         })
         .expect("the fixture read owns its installed host call");
-    // Cancel the actual retained control at the preparation port. Native
-    // preparation itself detects it; no transaction error is manufactured.
+    // Cancel the actual retained control at the preparation port; the next
+    // request-paid index charge detects it before publication.
     world.faults.cancel_next_native_preparation(source);
     let outcome = world.application.compare_and_commit_application(
         program,
         idempotency(95, 95),
         ExecutionAllocationPolicy::SystemAllocation,
     );
-    assert!(
-        matches!(outcome, WorthQueryApplicationCommitOutcome::Cancelled),
-        "{outcome:?}"
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("the request-paid seam retains its typed interruption: {outcome:?}");
+    };
+    assert_eq!(
+        denial.execution_denial_cause(),
+        Some(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+        ))
     );
     world
         .application

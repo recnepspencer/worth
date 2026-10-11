@@ -15,8 +15,12 @@ mod preparation;
 mod publication;
 mod refresh_preparation;
 use publication::PreparedRefresh;
+#[cfg(test)]
+pub(crate) mod charge_rendezvous;
+mod comparison_payment;
 mod reads;
 mod record_metadata;
+mod request_payment;
 mod work;
 
 use super::{IndexAuthority, IndexGenerationPublicationBasis};
@@ -36,8 +40,7 @@ impl IndexAuthority<'_> {
         request: DerivedIndexBuildRequest,
         budget: DerivedIndexMaintenanceBudget,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
-        let mut work = MaintenanceWork::new(budget);
-        let result = (|| {
+        let (prepared, counts) = request_payment::run(execution, budget, |work| {
             work.charge(request.index_ids.len())?;
             let recorded = self
                 .runtime
@@ -67,14 +70,12 @@ impl IndexAuthority<'_> {
             {
                 return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
             }
-            self.prepare_refresh(execution, &request, None, &projection, &mut work)
-        })();
-        result
-            .map(|prepared| DerivedIndexMaintenanceOutcome {
-                generations: prepared.publish(self.runtime),
-                work: work.counts,
-            })
-            .map_err(|kind| work.deny(kind))
+            self.prepare_refresh(execution, &request, None, &projection, work)
+        })?;
+        Ok(DerivedIndexMaintenanceOutcome {
+            generations: prepared.publish(self.runtime),
+            work: counts,
+        })
     }
 
     /// Refresh one exact published basis. The optional before snapshot enables
@@ -89,14 +90,13 @@ impl IndexAuthority<'_> {
         budget: DerivedIndexMaintenanceBudget,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
-        let mut work = MaintenanceWork::new(budget);
-        let result = self.prepare_basis_refresh(&request, basis, before, &mut work, execution);
-        result
-            .map(|prepared| DerivedIndexMaintenanceOutcome {
-                generations: prepared.publish(self.runtime),
-                work: work.counts,
-            })
-            .map_err(|kind| work.deny(kind))
+        let (prepared, counts) = request_payment::run(execution, budget, |work| {
+            self.prepare_basis_refresh(&request, basis, before, work, execution)
+        })?;
+        Ok(DerivedIndexMaintenanceOutcome {
+            generations: prepared.publish(self.runtime),
+            work: counts,
+        })
     }
 
     fn prepare_basis_refresh(

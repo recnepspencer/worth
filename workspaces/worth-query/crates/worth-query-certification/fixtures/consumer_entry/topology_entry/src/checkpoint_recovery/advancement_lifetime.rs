@@ -52,6 +52,50 @@ fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
     let outcome = output
         .advance(&application, &request)
         .expect("the consumer shares its advancement request");
+    // Each producer reserves the installed 26 indexes before publication.
+    // Root changes body + idempotency; each child creates three bodies, three
+    // successor relations and idempotency. Terms are patches, reads, routing,
+    // adjacency, edits, comparisons, and retained nonempty/empty paths.
+    let indexes = 2 * super::advancement_custody::PRIMARY_INDEX_COUNT;
+    let root_index_work = indexes + 2 + 8 + 8 + 1 + 2;
+    let final_index_work = indexes + 7 + 22 + 21 + 6 + 13 + 9 + (14 * 64 + 8);
+    let alternate_index_work = indexes + 7 + 22 + 21 + 6 + 13 + 24 + (18 * 64 + 4);
+    let index_units = root_index_work + final_index_work + alternate_index_work;
+    let WorthQueryApplicationProgramOutputProgress::Settled(settled) = &outcome else {
+        panic!("the three producer publications settle");
+    };
+    let assert_work =
+        |receipt: &worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+         rows,
+         expected| {
+            let evidence = receipt.mutation_work().unwrap();
+            let work = evidence.index_maintenance_work();
+            assert_eq!(
+                (work.patch_records, work.generation_publications_reserved),
+                (
+                    rows,
+                    super::advancement_custody::PRIMARY_INDEX_COUNT as usize
+                )
+            );
+            assert_eq!(work.work_units as u64, expected);
+        };
+    assert_work(settled.root_receipt().unwrap(), 2, root_index_work);
+    for (_, output) in settled.outputs_for::<CheckpointSchema, PlanarOutputToFinalConnection>() {
+        assert_work(
+            output.application_commit_receipt().unwrap(),
+            7,
+            final_index_work,
+        );
+    }
+    for (_, output) in
+        settled.outputs_for::<CheckpointSchema, PlanarOutputToAlternateFinalConnection>()
+    {
+        assert_work(
+            output.application_commit_receipt().unwrap(),
+            7,
+            alternate_index_work,
+        );
+    }
     let reports = reports();
     assert_eq!(
         reports.len(),
@@ -84,18 +128,14 @@ fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
     let relational_units = 10 * super::advancement_custody::PRINCIPAL_TARGET_READ_WORK;
     assert_eq!(
         charged,
-        query_units + signal_units + relational_units,
-        "the parent includes Query, Signal and native read work exactly"
+        query_units + signal_units + relational_units + index_units,
+        "the parent includes Query, Signal, native read and index work exactly"
     );
-    let bridge_units = charged - query_units - signal_units - relational_units;
+    let bridge_units = charged - query_units - signal_units - relational_units - index_units;
     assert_eq!(
         bridge_units, 0,
         "Bridge adds no checkpoint work on this path"
     );
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationProgramOutputProgress::Settled(_)
-    ));
 }
 
 #[test]

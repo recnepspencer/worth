@@ -4,6 +4,8 @@ pub use access::{
     PreparedEntityFieldLookup,
 };
 mod authority;
+#[cfg(test)]
+pub(crate) use authority::at_next_charges;
 pub(crate) use authority::PreparedCandidateIndexPublication;
 pub mod data;
 mod projected_field_values;
