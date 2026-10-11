@@ -58,11 +58,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
         )
         .unwrap();
     let publication = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("required topology publishes together");
     let root = publication.created_entity(&root_ref).unwrap();
     let child = publication.created_entity(&child_ref).unwrap();
@@ -90,11 +86,7 @@ fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
         )
         .unwrap();
     let denied = deletion
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("ordinary deletion violates the root minimum");
     assert!(matches!(denied,
         crate::transactions::data::TransactionCommitError::Conflict { error, .. }

@@ -64,11 +64,7 @@ impl RealReferenceFixture {
             .expect("bounded empty batch stages through the production transaction path");
         services
             .preparation_port()
-            .prepare_branch_transaction(
-                execution,
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .expect("production Relational owner prepares the change")
     }
 

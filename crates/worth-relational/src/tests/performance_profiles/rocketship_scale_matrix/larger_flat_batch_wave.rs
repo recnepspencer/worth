@@ -94,12 +94,8 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_larger_flat_batch_wave(
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("rocketship large flat entity batch wave commit")
+                txn.commit(execution, &runtime)
+                    .expect("rocketship large flat entity batch wave commit")
             };
             let update_micros = update_started_at.elapsed().as_micros();
             let phase_timing = update.execution().phase_timing.clone();

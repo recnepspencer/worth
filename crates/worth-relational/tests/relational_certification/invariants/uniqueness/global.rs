@@ -248,11 +248,7 @@ fn commit_vessel(
         )
         .expect("owner-admitted transaction context");
     push_vessel(&mut transaction, client_key);
-    transaction.commit(
-        execution,
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    transaction.commit(execution, runtime)
 }
 
 fn commit_two_vessels(
@@ -274,11 +270,7 @@ fn commit_two_vessels(
         .expect("owner-admitted transaction context");
     push_vessel(&mut transaction, "same-transaction-vessel-a");
     push_vessel(&mut transaction, "same-transaction-vessel-b");
-    transaction.commit(
-        execution,
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    transaction.commit(execution, runtime)
 }
 
 fn push_vessel(

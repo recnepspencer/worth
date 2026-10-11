@@ -149,11 +149,7 @@ fn publication_handle_retention_is_bounded_by_policy() {
         )
         .unwrap();
     assert!(matches!(
-        transaction.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        ),
+        transaction.commit(execution, &runtime),
         Err(
             crate::transactions::data::TransactionCommitError::PublicationDeferred {
                 deferred:

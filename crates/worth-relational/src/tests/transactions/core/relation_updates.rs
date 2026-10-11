@@ -27,11 +27,7 @@ fn relation_endpoint_update_preserves_relation_identity_and_rewrites_endpoints()
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("relation update should commit");
     let read = runtime
         .read_truth()
@@ -86,11 +82,7 @@ fn relation_endpoint_update_rejects_duplicate_relation_identity() {
     )
     .expect("test staging stays within configured resource budgets");
     let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("duplicate relation identity should deny");
 
     match error {
@@ -140,11 +132,7 @@ fn relation_endpoint_update_accepts_same_batch_created_target() {
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("relation update to same-batch created target should commit");
     let read = runtime
         .read_truth()
@@ -207,11 +195,7 @@ fn relation_endpoint_update_to_same_batch_created_target_survives_old_target_ret
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("moved relation should survive retirement of its old endpoint");
     let read = runtime
         .read_truth()
@@ -285,11 +269,7 @@ fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_ret
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("moved relation should survive retirement of its old source");
     let read = runtime
         .read_truth()
@@ -355,11 +335,7 @@ fn relation_identity_can_be_replaced_in_one_transaction() {
     .expect("test staging stays within configured resource budgets");
 
     let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("retiring an identity permits its same-transaction replacement");
     let read = runtime
         .read_truth()

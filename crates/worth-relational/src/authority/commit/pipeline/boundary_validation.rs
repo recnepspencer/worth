@@ -29,11 +29,12 @@ impl BoundaryValidatedCommitExecution {
 }
 
 pub(super) fn validate_commit_boundary(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut prepared: PreparedCommitExecution,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<BoundaryValidatedCommitExecution, crate::transactions::data::TransactionCommitError> {
+    let lease = super::request_lease(execution);
     let (admitted, proposed_working_state, proposed_version_id, proposal_identity) =
         prepared.boundary_parts();
     let prevalidated = admitted.take_prevalidated_boundary();

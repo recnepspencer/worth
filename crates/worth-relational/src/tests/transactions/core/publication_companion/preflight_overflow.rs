@@ -57,11 +57,7 @@ fn preflight_counter_overflow_denies_without_moving_the_native_head() {
             )
             .expect("candidate stages");
         let candidate = runtime
-            .prepare_branch_transaction(
-                execution,
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .expect("candidate prepares");
         let outcome = runtime.publication_port().compare_and_publish(candidate);
         let expected = match meter {

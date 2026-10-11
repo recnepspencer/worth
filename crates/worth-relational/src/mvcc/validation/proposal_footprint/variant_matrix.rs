@@ -32,6 +32,7 @@ fn entity_field_patch_materializes_only_selected_fields_on_its_exact_record_type
         entity_summary_patch(changed, whole_summary_patch(&contract, "before", "open")),
     );
     let footprint = project(validate(
+        execution,
         &runtime,
         [entity_summary_patch(
             changed,
@@ -65,6 +66,7 @@ fn relation_field_patch_materializes_only_selected_fields_on_its_exact_record_ty
         relation_summary_patch(changed, whole_summary_patch(&contract, "before", "open")),
     );
     let footprint = project(validate(
+        execution,
         &runtime,
         [relation_summary_patch(
             changed,
@@ -99,7 +101,11 @@ fn relation_whole_aspect_footprint_keeps_record_type_and_aspect_distinct() {
         basis: PortableAspectContractBasis::from_contract(&contract),
         value: ContractValidationInput::Scalar(AspectValue::String("after".into())),
     }]);
-    let footprint = project(validate(&runtime, [relation_summary_patch(changed, patch)]));
+    let footprint = project(validate(
+        execution,
+        &runtime,
+        [relation_summary_patch(changed, patch)],
+    ));
 
     assert!(footprint.mutates_field(&RecordRef::Relation(changed), &locator("label", "any")));
     assert!(!footprint.mutates_field(&RecordRef::Relation(changed), &locator("other", "any")));
@@ -120,6 +126,7 @@ fn relation_delete_footprint_covers_only_the_exact_relation_record() {
     let changed = create_relation(execution, &runtime, source, first_target, "changed");
     let other = create_relation(execution, &runtime, source, second_target, "other");
     let footprint = project(validate(
+        execution,
         &runtime,
         [MutationIntent::Relation(RelationMutationIntent::Delete(
             DeleteRelationIntent {
@@ -233,10 +240,6 @@ fn commit_intent(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("fixture state commits");
 }

@@ -117,13 +117,7 @@ fn aspect_history_projection_filter_matches_field_level_patch_locus() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let created = create_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = create_txn.commit(execution, &runtime).unwrap();
     let entity = changed_entities(&created)[0];
     let mut update_txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     update_txn
@@ -143,13 +137,7 @@ fn aspect_history_projection_filter_matches_field_level_patch_locus() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    update_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    update_txn.commit(execution, &runtime).unwrap();
 
     let status_filter = ProjectionAspectFilter::new(
         ProjectionAspectFilterMode::All,

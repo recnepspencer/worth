@@ -120,10 +120,5 @@ pub(crate) fn repair_settlement_with_aspect_field_patches(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &world.runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap()
+    txn.commit(execution, &world.runtime).unwrap()
 }

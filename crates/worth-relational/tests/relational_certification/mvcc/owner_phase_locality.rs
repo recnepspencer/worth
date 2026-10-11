@@ -63,11 +63,7 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
     let storm_worker = std::thread::spawn(move || {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-        preparation.prepare_branch_transaction(
-            request_execution,
-            storm_transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        preparation.prepare_branch_transaction(request_execution, storm_transaction)
     });
     pause.await_arrival("candidate preparation");
 
@@ -135,11 +131,7 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
     let storm_candidate = world
         .runtime
         .preparation_port()
-        .prepare_branch_transaction(
-            request_execution,
-            storm_transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(request_execution, storm_transaction)
         .expect("the storm candidate prepares before the publication court opens");
     let publication = world.runtime.publication_port();
     let storm_worker = std::thread::spawn(move || publication.compare_and_publish(storm_candidate));
@@ -231,11 +223,7 @@ fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() 
     let storm_candidate = world
         .runtime
         .preparation_port()
-        .prepare_branch_transaction(
-            request_execution,
-            storm_transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(request_execution, storm_transaction)
         .expect("the storm candidate prepares before the settlement court opens");
     let performed = match world
         .runtime

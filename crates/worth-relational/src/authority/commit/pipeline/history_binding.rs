@@ -43,7 +43,9 @@ impl HistoryBoundCommitExecution {
     }
 }
 
+/// Required request borrow proves this work belongs to the caller, without retaining it.
 pub(super) fn bind_commit_history(
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut mutated: MutatedCommitExecution,
 ) -> Result<HistoryBoundCommitExecution, crate::transactions::data::TransactionCommitError> {

@@ -29,11 +29,7 @@ fn stale_native_contract_basis_denies_without_mutating_truth() {
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("stale basis must deny");
     assert!(matches!(
         error,

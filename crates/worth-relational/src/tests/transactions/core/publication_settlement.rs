@@ -21,7 +21,7 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .expect("direct parent prepares");
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
@@ -70,7 +70,7 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
         )
         .expect("test staging stays within configured resource budgets");
     let child_denial = runtime
-        .prepare_branch_transaction(execution, blocked_child, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, blocked_child)
         .expect_err("a child cannot hide its parent's unfinished settlement");
     assert!(format!("{child_denial:?}").contains("requires explicit owner settlement"));
     let settled_parent = runtime
@@ -152,7 +152,7 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .expect("fault candidate prepares");
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
@@ -287,7 +287,7 @@ fn deferred_carrier_repair_is_a_no_op_after_the_snapshot_was_already_released() 
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .expect("already-released candidate prepares");
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)

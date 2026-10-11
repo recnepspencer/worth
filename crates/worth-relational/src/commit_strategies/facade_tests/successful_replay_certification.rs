@@ -45,7 +45,7 @@ fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {
             )
             .expect("lowered strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated lowered strategy plan");
         authority
             .execute_validated_commit(request_execution, &runtime, validated)
@@ -133,7 +133,7 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
             )
             .expect("lowered strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated strategy plan");
         authority
             .execute_validated_commit(request_execution, &runtime, validated)
@@ -237,7 +237,7 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
             )
             .expect("lowered replacement strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated replacement strategy plan");
         authority
             .execute_validated_commit(request_execution, &runtime, validated)

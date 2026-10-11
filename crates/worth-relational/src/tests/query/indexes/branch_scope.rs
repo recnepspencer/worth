@@ -215,11 +215,7 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
         )
         .expect("test staging stays within configured resource budgets");
     let feature_relation = feature_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("feature relation");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(1),

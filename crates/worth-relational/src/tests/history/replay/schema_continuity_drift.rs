@@ -60,9 +60,7 @@ fn replay_contract_reports_schema_continuation_descriptor_drift_when_envelope_is
     };
     txn.push_batch(batch_create("b"), Allocation::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         outcome.commit.commit_id,
@@ -155,9 +153,7 @@ fn replay_contract_audit_mode_confirms_schema_continuation_descriptor_drift_at_d
     };
     txn.push_batch(batch_create("b"), Allocation::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         outcome.commit.commit_id,
@@ -250,9 +246,7 @@ fn replay_certification_audit_drift_is_explained_and_counted() {
     };
     txn.push_batch(batch_create("b"), Allocation::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         outcome.commit.commit_id,

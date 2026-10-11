@@ -48,13 +48,7 @@ fn historical_lineage_resolution_follows_replace_events() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
     let resolution =
         runtime
             .lineage_access()
@@ -148,11 +142,7 @@ fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
         )
         .expect("test staging stays within configured resource budgets");
     let durability_deferred = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("an unacknowledged performed movement is a typed error");
     assert!(matches!(
         durability_deferred,
@@ -235,13 +225,7 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let _ = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let _ = txn.commit(execution, &runtime).unwrap();
 
     let total_branch_events = runtime
         .lineage_access()
@@ -303,13 +287,7 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let replacement = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let replacement = txn.commit(execution, &runtime).unwrap();
     let history = runtime
         .lineage_access()
         .entity_aspect_history(

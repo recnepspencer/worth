@@ -15,55 +15,47 @@ use super::validated_proposal::{
 impl RelationalPreparationRuntime {
     pub fn validate_branch_transaction(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        self.validate_branch_transaction_source(transaction, None, None, None, allocation_policy)
-    }
-
-    pub fn validate_branch_transaction_with_lease(
-        &self,
-        transaction: crate::mvcc::BranchBoundRelationalTransaction,
-        lease: &worth_execution::ExecutionResourceLease<'_>,
-    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        self.with_commit_work_budget()
-            .validate_branch_transaction_source(
-                transaction,
-                None,
-                None,
-                Some(lease),
-                worth_execution::ExecutionAllocationPolicy::Execution(lease),
-            )
+        let runtime = if execution.is_leased() {
+            self.with_commit_work_budget()
+        } else {
+            self.clone()
+        };
+        runtime
+            .validate_branch_transaction_source(execution, transaction, None, None)
             .map_err(crate::execution::allocation_commit_error)
     }
 
     pub(crate) fn validate_lowered_strategy_proposal(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
         selected_branch_state: crate::branch::SelectedRelationalBranchState,
         merged_plan: crate::transactions::data::MergedCommitPlan,
         strategy: StrategyProposalDecoration,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.validate_branch_transaction_source(
+            execution,
             transaction,
             Some((selected_branch_state, merged_plan)),
             Some(strategy),
-            None,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 
     fn validate_branch_transaction_source(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut transaction: crate::mvcc::BranchBoundRelationalTransaction,
         lowered: Option<(
             crate::branch::SelectedRelationalBranchState,
             crate::transactions::data::MergedCommitPlan,
         )>,
         strategy: Option<StrategyProposalDecoration>,
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        let lease = crate::authority::commit::pipeline::request_lease(execution);
+        let allocation_policy = execution.allocation_policy();
         require_not_interrupted(
             &transaction.control,
             &transaction.basis.inner.retention_binding,
@@ -215,24 +207,16 @@ impl RelationalPreparationRuntime {
 impl RelationalRuntime {
     pub fn validate_branch_transaction(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.preparation_runtime_snapshot()
-            .validate_branch_transaction(transaction, allocation_policy)
-    }
-
-    pub fn validate_branch_transaction_with_lease(
-        &self,
-        transaction: crate::mvcc::BranchBoundRelationalTransaction,
-        lease: &worth_execution::ExecutionResourceLease<'_>,
-    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        self.preparation_runtime_snapshot()
-            .validate_branch_transaction_with_lease(transaction, lease)
+            .validate_branch_transaction(execution, transaction)
     }
 
     pub(crate) fn validate_lowered_strategy_proposal(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
         selected_branch_state: crate::branch::SelectedRelationalBranchState,
         merged_plan: crate::transactions::data::MergedCommitPlan,
@@ -240,6 +224,7 @@ impl RelationalRuntime {
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.preparation_runtime_snapshot()
             .validate_lowered_strategy_proposal(
+                execution,
                 transaction,
                 selected_branch_state,
                 merged_plan,

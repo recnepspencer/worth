@@ -277,11 +277,7 @@ fn create_entity(
     )
     .expect("execution fixture staging fits its transaction budget");
     let outcome = txn
-        .commit(
-            execution,
-            runtime,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("seed commit should succeed");
     let entity = outcome
         .changed_records
@@ -329,11 +325,7 @@ fn update_entity_name(
     )
     .expect("execution fixture staging fits its transaction budget");
     let outcome = txn
-        .commit(
-            execution,
-            runtime,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("intervening update should succeed");
     let commit_id = outcome.outcome().commit.commit_id;
     runtime

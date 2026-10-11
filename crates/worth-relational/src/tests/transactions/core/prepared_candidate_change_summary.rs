@@ -39,7 +39,7 @@ fn prepared_summary_reads_exact_whole_scalar_scope_without_publishing() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let summary = runtime
         .preparation_port()
@@ -110,7 +110,7 @@ fn unchanged_entity_update_has_empty_scope_and_preserves_native_field_revision()
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let summary = runtime
         .preparation_port()
@@ -194,7 +194,7 @@ fn prepared_summary_preserves_exact_struct_field_scope() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let summary = runtime
         .preparation_port()
@@ -244,7 +244,7 @@ fn prepared_summary_uses_before_and_after_relation_roots_for_rewire() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let summary = runtime
         .preparation_port()
@@ -295,7 +295,7 @@ fn prepared_relation_delete_has_only_before_live_endpoints() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let summary = runtime
         .preparation_port()
@@ -331,7 +331,7 @@ fn summary_budget_and_foreign_owner_deny_without_consuming_candidate() {
         .push_batch(batch_create("summary-denial"), Allocation::SystemAllocation)
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(execution, transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     assert_eq!(
         foreign

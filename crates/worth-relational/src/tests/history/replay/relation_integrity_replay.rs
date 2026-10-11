@@ -131,12 +131,7 @@ fn replay_contract_preserves_branch_local_relation_integrity_truth_after_rejecte
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
     let feature_head_before_reject = runtime
         .history()
@@ -161,13 +156,7 @@ fn replay_contract_preserves_branch_local_relation_integrity_truth_after_rejecte
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let rejected = rejected_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let rejected = rejected_txn.commit(execution, &runtime).unwrap_err();
 
     match rejected {
         TransactionCommitError::Conflict { error, .. } => {

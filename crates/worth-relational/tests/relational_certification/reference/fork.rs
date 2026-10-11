@@ -341,11 +341,7 @@ fn stale_fork_source_denial_does_not_install_a_target_reference() {
         )
         .unwrap();
     transaction
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &world.runtime)
         .expect("main truth advances");
     let catalog_after_advance = world.runtime.history().immutable_commit_count();
     let before = capture_reference_evidence(

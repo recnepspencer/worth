@@ -33,12 +33,7 @@ fn retention_plan_reports_active_root_obligations_without_per_record_snapshot_pi
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
     let deleted_relation_snapshot = runtime.visibility_authority().snapshot();
 
@@ -319,12 +314,7 @@ fn retention_plan_reports_explicit_replay_pins_for_deleted_relations_until_relea
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
 
     assert!(runtime

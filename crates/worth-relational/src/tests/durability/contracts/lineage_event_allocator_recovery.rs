@@ -79,11 +79,7 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
         )
         .expect("test staging stays within configured resource budgets");
     let durability_deferred = failed
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("performed movement without durable acknowledgement is typed");
     assert!(matches!(
         durability_deferred,
@@ -116,11 +112,7 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
         )
         .expect("test staging stays within configured resource budgets");
     let child_denial = child
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("an unsettled performed parent denies descendants");
     assert!(child_denial
         .detail()
@@ -181,11 +173,7 @@ fn multi_event_reservation_exhaustion_denies_before_public_effects() {
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("two-event reservation must deny at the allocator boundary");
 
     assert!(format!("{error:?}").contains("lineage event id allocator exhausted"));

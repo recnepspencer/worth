@@ -117,11 +117,7 @@ impl runtime::WorthQueryRuntimeWriteAuthorityAdapter for CommitThenDecline {
                 worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
             )
             .expect("the transaction binds to main")
-            .commit(
-                execution,
-                runtime,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .commit(execution, runtime)
             .expect("the empty certification transaction commits");
         runtime
             .snapshots()

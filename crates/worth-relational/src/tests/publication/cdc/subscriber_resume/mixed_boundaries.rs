@@ -35,13 +35,7 @@ fn subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome_and_tra
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    visible_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    visible_txn.commit(execution, &runtime).unwrap();
 
     install_schema_version(&mut runtime, SchemaVersionId(3));
     let mut upgrade_txn = {
@@ -63,13 +57,7 @@ fn subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome_and_tra
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    upgrade_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    upgrade_txn.commit(execution, &runtime).unwrap();
 
     let contract = SubscriberContractDeclaration {
         contract_id: "subscriber.contract.geometry.v3".to_string(),
@@ -142,13 +130,7 @@ fn resumed_subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    visible_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    visible_txn.commit(execution, &runtime).unwrap();
 
     install_schema_version(&mut runtime, SchemaVersionId(3));
     let mut upgrade_txn = {
@@ -170,13 +152,7 @@ fn resumed_subscriber_stream_mixed_boundaries_choose_strongest_supported_outcome
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    upgrade_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    upgrade_txn.commit(execution, &runtime).unwrap();
 
     let resumed = runtime
         .publication()

@@ -38,11 +38,7 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate preparation succeeds before the injected owner fault");
     assert_eq!(candidate.reservation_count(), 1);
     let prepared_symbols = runtime.services.symbols.clone();

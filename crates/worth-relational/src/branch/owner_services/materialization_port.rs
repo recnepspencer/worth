@@ -61,7 +61,7 @@ impl RelationalMaterializationPort {
             )
             .map_err(RelationalMaterializationError::TransactionStaging)?;
         let candidate = runtime
-            .prepare_branch_transaction(execution, transaction, AllocationPolicy::SystemAllocation)
+            .prepare_branch_transaction(execution, transaction)
             .map_err(RelationalMaterializationError::Commit)?;
         let transaction_id = candidate.transaction_id();
         Ok(PreparedRelationalMaterializationSuspension {
@@ -94,7 +94,7 @@ impl RelationalMaterializationPort {
             .admitted_runtime()
             .ok_or(RelationalMaterializationError::OwnerUnavailable)?;
         let commit = runtime
-            .publish_prepared_candidate(candidate)
+            .publish_prepared_candidate(execution, candidate)
             .map_err(RelationalMaterializationError::Commit)?;
         completion.complete(commit)
     }
@@ -142,7 +142,7 @@ impl RelationalMaterializationPort {
                 error: RelationalMaterializationError::OwnerUnavailable,
             });
         };
-        match runtime.publish_prepared_candidate(candidate) {
+        match runtime.publish_prepared_candidate(execution, candidate) {
             Ok(commit) => completion.complete(commit),
             Err(error) => Err(RelationalRematerializationFailure {
                 custody: completion.into_custody(),
@@ -186,7 +186,7 @@ impl RelationalMaterializationPort {
             )
             .map_err(RelationalMaterializationError::TransactionStaging)?;
         let validated = transaction
-            .validate(&runtime, AllocationPolicy::SystemAllocation)
+            .validate(execution, &runtime)
             .map_err(RelationalMaterializationError::Commit)?;
         let invariant_evidence = validated.invariant_evidence().clone();
         let candidate = runtime

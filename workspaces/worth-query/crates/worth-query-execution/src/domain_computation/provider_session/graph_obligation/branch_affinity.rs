@@ -109,11 +109,7 @@ mod tests {
             )
             .expect("test staging stays within configured resource budgets");
         let committed = transaction
-            .commit(
-                execution,
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .commit(execution, &runtime)
             .expect("branch-affinity fixture root commits");
         assert!(runtime
             .snapshots()

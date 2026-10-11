@@ -57,13 +57,7 @@ fn complexity_budget_relation_integrity_uniqueness_uses_adjacency_local_candidat
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(
@@ -101,13 +95,7 @@ fn complexity_budget_relation_integrity_symmetry_checks_only_touched_pairs() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(
@@ -138,13 +126,7 @@ fn complexity_budget_relation_integrity_endpoint_deletion_checks_only_deleted_en
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(
@@ -183,13 +165,7 @@ fn complexity_budget_relation_integrity_reuses_touched_scope_across_multiple_con
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let _error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let _error = txn.commit(execution, &runtime).unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.relation_integrity_contracts_evaluated, 3);

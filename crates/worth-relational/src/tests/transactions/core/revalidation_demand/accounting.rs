@@ -22,11 +22,7 @@ fn a_demand_reports_no_invalidation_and_keeps_flat_entity_topology() {
         )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the compliant record remains valid");
 
     assert_eq!(
@@ -74,11 +70,7 @@ fn demand_only_rejection_survives_the_narrow_effect_claim() {
         )
         .expect("staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("selection must still run the strictness rule");
 
     let TransactionCommitError::Conflict { error, .. } = error else {
@@ -117,11 +109,7 @@ fn demand_clone_cost(
         )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the compliant record remains valid");
     let cost = (
         outcome.complexity_delta().partitions_cloned,

@@ -79,7 +79,7 @@ use super::root_commitment::{
 ///     .push_batch(WorkerIntentBatch::new("sharing-observation-doc"), worth_execution::ExecutionAllocationPolicy::SystemAllocation)
 ///     .expect("an empty batch stages");
 /// let candidate = runtime
-///     .prepare_branch_transaction(execution, transaction, worth_execution::ExecutionAllocationPolicy::SystemAllocation,)
+///     .prepare_branch_transaction(execution, transaction)
 ///     .expect("preparation validates");
 /// let performed = match runtime.publication_port().compare_and_publish(candidate) {
 ///     RelationalPublicationOutcome::Performed(performed) => performed,

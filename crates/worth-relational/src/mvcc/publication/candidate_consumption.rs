@@ -16,10 +16,13 @@ impl RelationalRuntime {
 
     pub(crate) fn publish_prepared_candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: crate::mvcc::PreparedRelationalCommitCandidate,
     ) -> Result<CommitResult, TransactionCommitError> {
         self.ensure_candidate_owner(&candidate)?;
-        crate::authority::commit::pipeline::publish_prepared_authoritative_commit(self, candidate)
+        crate::authority::commit::pipeline::publish_prepared_authoritative_commit(
+            execution, self, candidate,
+        )
     }
 
     fn ensure_candidate_owner(

@@ -47,12 +47,7 @@ fn cdc_certification_schema_boundary_continuation_is_explained_and_counted() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     runtime.performance_access().reset_counters();
     let batch = runtime
@@ -122,13 +117,7 @@ fn diff_cdc_truth_parity_test() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    txn_v2
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    txn_v2.commit(execution, &runtime).unwrap();
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -162,13 +151,7 @@ fn diff_cdc_truth_parity_test() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    txn_v3
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    txn_v3.commit(execution, &runtime).unwrap();
 
     runtime.performance_access().reset_counters();
     let live_batch = runtime

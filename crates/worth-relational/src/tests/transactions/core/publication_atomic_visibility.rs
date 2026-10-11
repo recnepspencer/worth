@@ -25,11 +25,7 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("reader-race candidate prepares");
     let publication_cell = candidate.publication_cell_for_test();
     let publication_gate = Arc::clone(publication_cell.coordination());
@@ -171,11 +167,7 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("fork-race candidate prepares");
     let publication_cell = candidate.publication_cell_for_test();
     let publication_gate = Arc::clone(publication_cell.coordination());

@@ -94,7 +94,7 @@ fn missing_owner_binding_is_typed_and_cannot_fall_back_to_a_raw_id() {
         )
         .unwrap();
     let commit = transaction
-        .commit(execution, &owner, Allocation::SystemAllocation)
+        .commit(execution, &owner)
         .expect("the public no-op commit supplies a real empty correspondence");
     let error = SupplyChainSemanticHandles::bind(&program, &commit, commit.snapshot.clone())
         .expect_err("a real commit with no matching owner records cannot mint semantic handles");
@@ -122,7 +122,7 @@ fn foreign_snapshot_observation_is_typed_and_does_not_cross_runtime() {
             )
             .expect("owner-admitted transaction context");
         let commit = transaction
-            .commit(execution, &foreign_runtime, Allocation::SystemAllocation)
+            .commit(execution, &foreign_runtime)
             .expect("foreign runtime no-op commit");
         commit.snapshot.clone()
     };
@@ -168,7 +168,7 @@ fn relation_binding_rejects_a_snapshot_from_another_runtime() {
             )
             .expect("owner-admitted transaction context");
         let commit = transaction
-            .commit(execution, &foreign_runtime, Allocation::SystemAllocation)
+            .commit(execution, &foreign_runtime)
             .expect("foreign runtime no-op commit");
         commit.snapshot.clone()
     };

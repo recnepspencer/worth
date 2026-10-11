@@ -18,6 +18,7 @@ fn create_and_update_project_exact_entity_touch_loci() {
     let runtime = runtime_with_test_schema();
     let existing = create_entity(execution, &runtime, "existing");
     let projected = project(validate(
+        execution,
         &runtime,
         [
             MutationIntent::Create(CreateIntent::Entity(entity_spec("created"))),
@@ -53,6 +54,7 @@ fn delete_and_endpoint_rewrite_preserve_unlink_and_link_meaning() {
     let new_target = create_entity(execution, &runtime, "new-target");
     let relation = create_relation(execution, &runtime, source, old_target, "edge");
     let projected = project(validate(
+        execution,
         &runtime,
         [
             MutationIntent::Entity(EntityMutationIntent::Delete(DeleteEntityIntent {
@@ -83,6 +85,7 @@ fn delete_and_endpoint_rewrite_preserve_unlink_and_link_meaning() {
 }
 
 fn validate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     intents: impl IntoIterator<Item = MutationIntent>,
 ) -> crate::mvcc::ValidatedRelationalProposal {
@@ -98,10 +101,7 @@ fn validate(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .validate(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .validate(execution, runtime)
         .expect("owner validates touch projection fixture")
 }
 

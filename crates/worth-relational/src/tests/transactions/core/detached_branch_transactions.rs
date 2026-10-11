@@ -73,10 +73,10 @@ fn branch_transactions_are_detached_and_overlays_do_not_cross() {
 
     create_entity(execution, &runtime, "unrelated-main-work");
     let storm_commit = storm
-        .commit(execution, &runtime, AllocationPolicy::SystemAllocation)
+        .commit(execution, &runtime)
         .expect("storm commits independently");
     let maintenance_commit = maintenance
-        .commit(execution, &runtime, AllocationPolicy::SystemAllocation)
+        .commit(execution, &runtime)
         .expect("maintenance commits independently");
     assert_eq!(storm_commit.commit.branch_id, BranchId("storm".into()));
     assert_eq!(
@@ -104,7 +104,7 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
         )
         .expect("test staging stays within configured resource budgets");
     let proposal = candidate
-        .validate(&runtime, AllocationPolicy::SystemAllocation)
+        .validate(execution, &runtime)
         .expect("candidate validation succeeds before sibling work");
 
     let counters_before_sibling = runtime.performance_access().counters();
@@ -136,7 +136,7 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
         Some(exact_records.len())
     );
     let committed = runtime
-        .publish_prepared_candidate(candidate)
+        .publish_prepared_candidate(execution, candidate)
         .expect("prepared candidate publishes through its owner");
     assert_eq!(committed.changed_records, exact_records);
 
@@ -206,7 +206,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
     let reference_cost_before = runtime.phase4_reference_cost_counters();
     let complexity_before = runtime.performance_access().counters();
     let error = transaction
-        .commit(execution, &runtime, AllocationPolicy::SystemAllocation)
+        .commit(execution, &runtime)
         .expect_err("complete-reference movement stales the old basis");
     assert!(matches!(
         error,
@@ -274,7 +274,7 @@ fn stale_transaction_denies_before_interning_new_client_keys() {
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(execution, &runtime, AllocationPolicy::SystemAllocation)
+        .commit(execution, &runtime)
         .expect_err("stale currentness is checked before normalization");
 
     assert!(matches!(

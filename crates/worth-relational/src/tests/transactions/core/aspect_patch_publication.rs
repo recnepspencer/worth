@@ -26,13 +26,7 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let created = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = txn.commit(execution, &runtime).unwrap();
     let entity = changed_entities(&created)[0];
     let created_patch = &created.patch()[0];
     let created_aspect_summary = created.aspect_summary().unwrap();
@@ -70,12 +64,7 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
     let updated_patch = &updated.patch()[0];
     let updated_aspect_summary = updated.aspect_summary().unwrap();
@@ -125,12 +114,7 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
     assert_eq!(
         idempotent_declared_update.patch()[0].authoritative_changed_aspects(),

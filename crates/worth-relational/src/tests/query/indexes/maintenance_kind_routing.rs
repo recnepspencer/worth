@@ -47,9 +47,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
                 Allocation::SystemAllocation,
             )
             .unwrap();
-        let committed = transaction
-            .commit(execution, &runtime, Allocation::SystemAllocation)
-            .unwrap();
+        let committed = transaction.commit(execution, &runtime).unwrap();
         let id = changed_entities(&committed)[0];
         release_test_commit_snapshot(&runtime, &committed);
         id
@@ -146,9 +144,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
             Allocation::SystemAllocation,
         )
         .unwrap();
-    let rewired = transaction
-        .commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let rewired = transaction.commit(execution, &runtime).unwrap();
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -206,9 +202,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
             Allocation::SystemAllocation,
         )
         .unwrap();
-    let replaced = transaction
-        .commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let replaced = transaction.commit(execution, &runtime).unwrap();
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

@@ -39,11 +39,7 @@ fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
         .expect("the locality batch remains within its declared budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("the controlled transaction prepares canonically");
 
     let publication_port = services.publication_port();

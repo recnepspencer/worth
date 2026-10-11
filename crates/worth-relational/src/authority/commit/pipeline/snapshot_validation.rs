@@ -64,11 +64,12 @@ impl SnapshotValidatedCommitExecution {
 }
 
 pub(super) fn validate_snapshot_publication(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut history_bound: HistoryBoundCommitExecution,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<SnapshotValidatedCommitExecution, crate::transactions::data::TransactionCommitError> {
+    let lease = super::request_lease(execution);
     enforce_snapshot_invariant(runtime, &mut history_bound, lease, control)?;
     Ok(into_snapshot_validated_execution(history_bound))
 }

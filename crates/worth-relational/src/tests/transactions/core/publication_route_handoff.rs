@@ -29,11 +29,7 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("handoff candidate prepares");
     let publication_cell = candidate.publication_cell_for_test();
     let publication_gate = Arc::clone(publication_cell.coordination());

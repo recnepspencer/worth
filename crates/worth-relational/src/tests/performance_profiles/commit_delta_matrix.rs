@@ -19,12 +19,8 @@ fn perf_commit_delta_matrix() {
                 )
                 .expect("test staging stays within configured resource budgets");
             }
-            txn.commit(
-                execution,
-                runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .expect("single-partition create burst commit")
+            txn.commit(execution, runtime)
+                .expect("single-partition create burst commit")
         })
     });
     assert!(narrow_samples
@@ -87,12 +83,8 @@ fn perf_commit_delta_matrix() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    execution,
-                    runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("cross-partition relation burst commit")
+                txn.commit(execution, runtime)
+                    .expect("cross-partition relation burst commit")
             })
         });
     assert!(cross_partition_samples
@@ -120,12 +112,8 @@ fn perf_commit_delta_matrix() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    execution,
-                    runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("persisted single entity create")
+                txn.commit(execution, runtime)
+                    .expect("persisted single entity create")
             })
         });
     emit_metric_summaries(

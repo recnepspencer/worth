@@ -55,13 +55,7 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
     let patch_record = &outcome.patch()[0];
     let current_read = runtime
         .read_truth()
@@ -204,12 +198,5 @@ pub(super) fn create_entity_with_summary_fields(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(
-        &txn.commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap(),
-    )[0]
+    changed_entities(&txn.commit(execution, runtime).unwrap())[0]
 }

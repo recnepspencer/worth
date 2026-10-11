@@ -106,11 +106,7 @@ impl CargoRecords {
             )
             .expect("component owner: stage entity");
             let result = tx
-                .commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit(execution, &runtime)
                 .expect("component owner: install entity");
             let id = result
                 .changed_records
@@ -152,12 +148,8 @@ impl CargoRecords {
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("component owner: stage route link");
-            tx.commit(
-                execution,
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .expect("component owner: install route link");
+            tx.commit(execution, &runtime)
+                .expect("component owner: install route link");
         }
         Self { runtime, ids }
     }
@@ -264,11 +256,7 @@ impl CargoRecords {
         .expect("component owner: stage update");
         self.runtime
             .preparation_port()
-            .prepare_branch_transaction(
-                execution,
-                tx,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, tx)
             .expect("component owner: prepare update")
     }
 }

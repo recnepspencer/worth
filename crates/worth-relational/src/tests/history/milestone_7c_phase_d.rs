@@ -216,13 +216,7 @@ fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_as
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    main_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    main_txn.commit(execution, &runtime).unwrap();
 
     create_branch_from_main(&runtime, "feature");
     let mut feature_txn = {
@@ -264,13 +258,7 @@ fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_as
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    feature_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    feature_txn.commit(execution, &runtime).unwrap();
 
     let prepared = runtime
         .prepare_merge_execution(

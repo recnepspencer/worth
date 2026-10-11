@@ -78,11 +78,7 @@ pub(super) fn create_entity(
     )
     .expect("seeded effect fixture staging fits the configured transaction budget");
     let outcome = txn
-        .commit(
-            execution,
-            runtime,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("seed commit should succeed");
     let entity = outcome
         .changed_records

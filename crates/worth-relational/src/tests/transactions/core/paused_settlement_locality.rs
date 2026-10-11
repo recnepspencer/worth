@@ -141,11 +141,7 @@ fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
     let progressing_result = std::thread::scope(|scope| {
         let committer = scope.spawn(move || {
             let committed = committing
-                .commit_branch_transaction(
-                    execution,
-                    progressing,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit_branch_transaction(execution, progressing)
                 .expect("branch B commits end to end while branch A settlement is paused");
             finished
                 .send(())

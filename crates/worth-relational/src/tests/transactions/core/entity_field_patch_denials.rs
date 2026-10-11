@@ -31,13 +31,7 @@ fn update_entity_fields_rejects_undeclared_aspect_targets() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             match error.class {
@@ -133,13 +127,7 @@ fn update_entity_fields_rejects_explicit_aspect_field_path_mismatch() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => match error.class {
             crate::transactions::data::ConflictClass::RecordAspectPatchDenied {
@@ -182,13 +170,7 @@ fn update_entity_fields_validation_denial_carries_aspect_field_path() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => match error.class {
             crate::transactions::data::ConflictClass::RecordAspectPatchDenied {

@@ -224,14 +224,7 @@ where
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    changed_relations(
-        &txn.commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap(),
-    )
+    changed_relations(&txn.commit(execution, runtime).unwrap())
 }
 
 fn relation_role_patch(role: &str) -> AspectFieldPatch {

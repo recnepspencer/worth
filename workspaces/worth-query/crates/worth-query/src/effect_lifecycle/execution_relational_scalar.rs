@@ -57,7 +57,7 @@ pub(super) fn execute_lowered_mutation(
             )
         })?;
     let validated = commit_authority
-        .validate_lowered_plan(runtime, lowered)
+        .validate_lowered_plan(request_execution, runtime, lowered)
         .map_err(super::relational_execution_deferred::transaction_commit)?;
     let candidate = commit_authority
         .prepare_validated_commit(request_execution, runtime, validated)

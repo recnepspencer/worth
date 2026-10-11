@@ -95,11 +95,7 @@ pub(crate) fn correspondence_bridge(
         )
         .expect("test staging stays within configured resource budgets");
     let created = create
-        .commit(
-            execution,
-            &relational,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &relational)
         .expect("conditional entity should commit");
     let entity = created
         .changed_records
@@ -127,11 +123,7 @@ pub(crate) fn correspondence_bridge(
         )
         .expect("test staging stays within configured resource budgets");
     let updated = update
-        .commit(
-            execution,
-            &relational,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &relational)
         .expect("conditional identity field should commit");
     let branch_identity = relational
         .branch_identity(&updated.commit.branch_id)

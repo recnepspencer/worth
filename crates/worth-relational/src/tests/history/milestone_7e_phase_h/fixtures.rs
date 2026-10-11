@@ -208,12 +208,7 @@ pub(super) fn create_named_entity_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("seed entity");
+    txn.commit(execution, runtime).expect("seed entity");
 }
 
 pub(super) fn merge_request() -> MergeExecutionRequest {

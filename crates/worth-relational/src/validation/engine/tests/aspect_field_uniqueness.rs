@@ -75,11 +75,7 @@ fn unique_entity_aspect_field_rejects_entity_aspect_create() {
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-        transaction.commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        transaction.commit(execution, runtime)
     };
 
     create(&mut runtime, "first").expect("first entity-aspect create");
@@ -136,13 +132,7 @@ fn unique_entity_aspect_field_rejects_entity_aspect_patch() {
         )
         .expect("test staging stays within configured resource budgets");
 
-    let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = transaction.commit(execution, &runtime).unwrap_err();
     assert_unique_entity_field_conflict(error, "shared-title");
     assert_runtime_marker_unchanged(&runtime, before);
     assert_entity_summary(execution, &runtime, second_id, "second-title", "open");

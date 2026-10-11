@@ -165,10 +165,7 @@ fn merge_commit_rejects_stale_secondary_parent_binding_after_parent_moves() {
             .begin_branch_transaction_with_owner_inputs(transaction_validation_input)
             .expect("owner-admitted transaction context")
     }
-    .validate(
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    .validate(execution, &runtime)
     .expect("target candidate validates before the parent moves");
 
     create_entity_outcome_on_branch(
@@ -251,13 +248,7 @@ fn merge_commit_rejects_overlapping_authority_since_merge_base() {
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
     );
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     assert!(matches!(
         error,

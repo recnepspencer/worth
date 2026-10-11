@@ -51,13 +51,7 @@ fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let created = create
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = create.commit(execution, &runtime).unwrap();
     let entity = changed_entities(&created)[0];
     let title = locator("summary", "title");
     let status = locator("summary", "status");
@@ -97,13 +91,7 @@ fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let updated = update
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let updated = update.commit(execution, &runtime).unwrap();
     let after = read(&updated.snapshot);
     assert_eq!(before.0, after.0);
     assert_ne!(before.1, after.1);
@@ -146,13 +134,7 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let created = create
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = create.commit(execution, &runtime).unwrap();
     let entity = changed_entities(&created)[0];
     let status = locator("summary", "status");
     let title = locator("summary", "title");
@@ -187,13 +169,7 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    let present = set
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let present = set.commit(execution, &runtime).unwrap();
     assert_eq!(
         revision(&present.snapshot).presence(),
         RelationalFieldPresence::Present
@@ -218,13 +194,7 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let absent_again = clear
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let absent_again = clear.commit(execution, &runtime).unwrap();
     let final_revision = revision(&absent_again.snapshot);
     assert_eq!(final_revision.presence(), RelationalFieldPresence::Absent);
     assert_ne!(initial, final_revision);

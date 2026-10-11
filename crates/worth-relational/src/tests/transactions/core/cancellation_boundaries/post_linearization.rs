@@ -28,11 +28,7 @@ fn cancellation_after_linearization_returns_the_performed_commit() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let before = runtime
         .branch_reference_state(&BranchId("main".to_owned()))

@@ -199,13 +199,7 @@ fn bulk_mutation_commit_records_admission_counters() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert_eq!(outcome.complexity_delta().bulk_mutation_batch_count, 1);
     assert_eq!(

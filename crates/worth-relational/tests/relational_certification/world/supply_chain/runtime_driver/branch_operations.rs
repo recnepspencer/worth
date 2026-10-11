@@ -122,11 +122,7 @@ pub(crate) fn commit_supply_chain_delta(
         )
         .expect("Supply Chain mutation staging fits its configured transaction budget");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("Supply Chain mutation commits through production publication")
 }
 
@@ -153,10 +149,6 @@ fn commit_batch_with_intent(
         )
         .expect("Supply Chain mutation staging fits its configured transaction budget");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("Supply Chain mutation commits through production publication")
 }

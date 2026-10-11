@@ -43,14 +43,11 @@ fn leased_bulk_creation_matches_serial_canonical_patch() {
             )
             .expect("bulk transaction stages");
         match lease {
-            Some(lease) => {
-                runtime.commit_branch_transaction_with_lease(execution, transaction, lease)
-            }
-            None => runtime.commit_branch_transaction(
-                execution,
+            Some(lease) => runtime.commit_branch_transaction(
+                &worth_execution::ExecutionRequest::leased(lease),
                 transaction,
-                AllocationPolicy::SystemAllocation,
             ),
+            None => runtime.commit_branch_transaction(execution, transaction),
         }
         .expect("bulk commit succeeds")
     }

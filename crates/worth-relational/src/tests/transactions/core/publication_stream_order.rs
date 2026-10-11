@@ -18,11 +18,7 @@ fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
         )
         .expect("first publication stages");
     let first_candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            first_transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, first_transaction)
         .expect("first publication prepares");
     let crate::mvcc::RelationalPublicationOutcome::Performed(first) = runtime
         .publication_port()
@@ -305,11 +301,7 @@ fn prepare_publication(
         )
         .expect("test staging stays within configured resource budgets");
     runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("publication candidate prepares")
 }
 

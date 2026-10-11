@@ -47,11 +47,7 @@ fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authorit
         .expect("lifecycle observation batch stays in budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("controlled candidate prepares canonically");
 
     let (publication_tx, publication_rx) = sync_channel(1);

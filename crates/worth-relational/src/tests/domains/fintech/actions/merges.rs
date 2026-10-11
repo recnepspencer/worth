@@ -61,12 +61,7 @@ pub(crate) fn diverge_case_trade_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &world.runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap()
+    txn.commit(execution, &world.runtime).unwrap()
 }
 
 pub(crate) fn merge_branch_into_main(
@@ -79,10 +74,5 @@ pub(crate) fn merge_branch_into_main(
         BranchId("main".to_string()),
         vec![merge_parent_branch],
     );
-    txn.commit(
-        execution,
-        &world.runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap()
+    txn.commit(execution, &world.runtime).unwrap()
 }

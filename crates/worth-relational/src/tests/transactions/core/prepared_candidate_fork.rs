@@ -15,11 +15,7 @@ fn fork_resolves_a_port_performed_head_without_catalog_authority() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("port candidate prepares");
     let performed = match runtime.publication_port().compare_and_publish(candidate) {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,

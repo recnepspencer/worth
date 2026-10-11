@@ -82,12 +82,7 @@ pub(super) fn update_entity_status_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("update status");
+    txn.commit(execution, runtime).expect("update status");
 }
 
 pub(super) fn published_merge_authority(

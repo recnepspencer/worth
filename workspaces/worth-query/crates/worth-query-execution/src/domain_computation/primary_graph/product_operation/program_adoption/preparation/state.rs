@@ -195,11 +195,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             )
             .map_err(WorthQueryBranchAdoptionPreparationDenial::TransactionStaging)?;
         runtime
-            .prepare_branch_transaction(
-                execution,
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .map_err(map_relational_preparation_denial)
     })?;
     let successor_observation_requested = false;

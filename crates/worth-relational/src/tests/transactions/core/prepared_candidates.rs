@@ -30,11 +30,7 @@ fn preparation_is_truth_effect_free_and_discard_releases_reservations() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("all fallible preparation succeeds without publication");
 
     assert_eq!(runtime.history.branch_cells_snapshot(), branch_cells_before);
@@ -130,11 +126,7 @@ fn prepared_root_materializes_exactly_the_declared_write_partitions() {
         .expect("test staging stays within configured resource budgets");
     let declared_write_partition_count = transaction.footprint().write_partitions().len() as u64;
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate root construction succeeds");
     let (touched, reused) = candidate.materialization_counts();
 

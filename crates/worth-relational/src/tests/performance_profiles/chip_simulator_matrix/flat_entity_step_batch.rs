@@ -80,12 +80,8 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("chip flat entity step batch commit")
+                txn.commit(execution, &runtime)
+                    .expect("chip flat entity step batch commit")
             };
             let update_micros = update_started_at.elapsed().as_micros();
             let phase_timing = update.execution().phase_timing.clone();

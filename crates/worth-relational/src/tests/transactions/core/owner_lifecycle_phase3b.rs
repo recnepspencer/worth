@@ -324,11 +324,7 @@ fn perform_prepared(
     transaction: crate::mvcc::BranchBoundRelationalTransaction,
 ) -> crate::mvcc::PerformedRelationalCommit {
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares");
     match runtime.publication_port().compare_and_publish(candidate) {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,

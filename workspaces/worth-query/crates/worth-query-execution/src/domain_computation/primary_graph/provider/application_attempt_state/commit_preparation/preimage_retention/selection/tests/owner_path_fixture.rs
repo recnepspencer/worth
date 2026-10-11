@@ -135,10 +135,7 @@ fn validated_status_footprint(
             )
             .expect("test staging stays within configured resource budgets");
         transaction
-            .validate(
-                runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .validate(request_execution, runtime)
             .expect("owner validates mutation")
     });
     validated

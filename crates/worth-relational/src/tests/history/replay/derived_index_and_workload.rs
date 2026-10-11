@@ -97,12 +97,7 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
     runtime.durability_authority().checkpoint().unwrap();
 
@@ -236,13 +231,7 @@ fn hostile_commit_replay_equivalence_test() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let _transition_outcome = transition_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let _transition_outcome = transition_txn.commit(execution, &runtime).unwrap();
 
     let merge = merge_commit_from_branches(
         execution,

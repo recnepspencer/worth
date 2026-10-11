@@ -151,11 +151,7 @@ fn prepare_publication(
         )
         .expect("test staging stays within configured resource budgets");
     runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("publication candidate prepares")
 }
 

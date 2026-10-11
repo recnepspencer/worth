@@ -39,13 +39,7 @@ fn durable_recovery_and_schema_mismatch_test() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let transitioned = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let transitioned = txn.commit(execution, &runtime).unwrap();
 
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,

@@ -160,11 +160,7 @@ fn commit(
         )
         .unwrap();
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .unwrap()
         .snapshot
         .clone()

@@ -84,11 +84,7 @@ pub(crate) fn create_entity(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            execution,
-            runtime,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("seed commit should succeed");
     let entity = outcome
         .changed_records
@@ -136,11 +132,7 @@ pub(crate) fn update_entity_name(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            execution,
-            runtime,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("intervening update should succeed");
     let commit_id = outcome.outcome().commit.commit_id;
     runtime

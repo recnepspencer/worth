@@ -129,11 +129,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
                 )
                 .map_err(map_bootstrap_staging_denial)?;
             let candidate = runtime
-                .prepare_branch_transaction(
-                    execution,
-                    transaction,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .prepare_branch_transaction(execution, transaction)
                 .map_err(|error| {
                     denial(format!("checkpoint target validation refused: {error:?}"))
                 })?;

@@ -47,12 +47,7 @@ pub(crate) fn shock_market_on_branch(
         )
         .expect("test staging stays within configured resource budgets");
     }
-    txn.commit(
-        execution,
-        &world.runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap()
+    txn.commit(execution, &world.runtime).unwrap()
 }
 
 pub(crate) fn refresh_risk_views(
@@ -95,12 +90,7 @@ pub(crate) fn refresh_risk_views(
         )
         .expect("test staging stays within configured resource budgets");
     }
-    txn.commit(
-        execution,
-        &world.runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap()
+    txn.commit(execution, &world.runtime).unwrap()
 }
 
 pub(crate) fn stress_seeded_intraday_risk(
@@ -245,10 +235,5 @@ pub(crate) fn stress_seeded_intraday_risk(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &world.runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap()
+    txn.commit(execution, &world.runtime).unwrap()
 }

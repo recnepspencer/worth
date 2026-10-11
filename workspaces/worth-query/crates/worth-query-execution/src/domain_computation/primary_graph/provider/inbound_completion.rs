@@ -189,7 +189,7 @@ impl WorthQueryPrimaryGraphProvider {
                         | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationModeMismatch => Denial::StagingUnavailable,
                     })?;
                 let validated = transaction
-                    .validate(runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+                    .validate(execution, runtime)
                     .map_err(|error| preparation_denial::validation_denial(&error))?;
                 let mut candidate = runtime
                     .prepare_validated_proposal(execution, validated)

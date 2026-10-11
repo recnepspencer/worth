@@ -190,11 +190,7 @@ fn held_preparation_port_observes_atomic_initial_schema_replacement() {
         .expect("post-installation transaction stages");
 
     let candidate = preparation
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("held port validates against the atomically replaced schema world");
     preparation
         .discard_prepared_candidate(candidate)
@@ -227,13 +223,7 @@ fn initial_schema_authority_closes_after_first_commit() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    transaction.commit(execution, &runtime).unwrap();
 
     let denial = runtime.prepare_initial_schema_installation().unwrap_err();
     assert_eq!(

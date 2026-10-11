@@ -65,13 +65,7 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationCardinalityViolation);
