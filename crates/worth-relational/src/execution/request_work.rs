@@ -43,6 +43,7 @@ impl RequestWorkBudget {
                         remaining,
                     ),
                 ),
+                // None and a fresh token are safe: lease/limits.rs:58-62 retains the parent deadline and :99-108 checks parent cancellation.
                 deadline: None,
                 cancellation: CancellationToken::new(),
             })
