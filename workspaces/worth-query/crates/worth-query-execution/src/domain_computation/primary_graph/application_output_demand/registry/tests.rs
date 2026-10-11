@@ -24,6 +24,7 @@ mod awaited_claim;
 mod awaited_publication;
 mod caller_chain;
 mod closed_retirement;
+mod completed_custody_stages;
 mod consumer_custody;
 mod demand_key;
 mod local_work;

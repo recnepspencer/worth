@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
     source_custody::root_revision_order, BoundOutputSource, PreparedOutputRootKind, SourceCustody,
 };
 
-fn real_scope_and_occurrence() -> (
+pub(super) fn real_scope_and_occurrence() -> (
     crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     worth_runtime_world::facade::ProductBranchIncarnation,
 ) {
