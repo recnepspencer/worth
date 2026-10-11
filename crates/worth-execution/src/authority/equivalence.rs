@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, sync::Arc};
+use std::{collections::BTreeMap, fmt, sync::Arc};
 
 use worth_foundational::EquivalenceContractId;
 
@@ -52,7 +52,7 @@ impl EquivalencePredicate {
 
 #[derive(Debug, Default)]
 pub(super) struct EquivalenceRegistry {
-    predicates: HashMap<EquivalenceContractId, EquivalencePredicate>,
+    predicates: BTreeMap<EquivalenceContractId, EquivalencePredicate>,
 }
 
 impl EquivalenceRegistry {

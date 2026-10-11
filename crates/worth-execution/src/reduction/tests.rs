@@ -31,6 +31,59 @@ fn sum(left: &u64, right: &u64) -> u64 {
 }
 
 #[test]
+fn concatenation_preserves_partition_identity_order_after_build_and_update() {
+    let (mut tree, _) = from_plan(
+        plan(&[1, 2, 3, 4, 5, 6, 7, 8]),
+        (1..=8).map(|value| vec![value]).collect(),
+        Vec::<u64>::new(),
+        |left, right| left.iter().chain(right).copied().collect(),
+    )
+    .unwrap();
+    assert_eq!(
+        tree.result(),
+        &vec![1, 2, 3, 4, 5, 6, 7, 8],
+        "reduction must combine in partition identity order after build"
+    );
+    tree.update(id(4), vec![40]).unwrap();
+    assert_eq!(
+        tree.result(),
+        &vec![1, 2, 3, 40, 5, 6, 7, 8],
+        "reduction must combine in partition identity order after update"
+    );
+}
+
+#[test]
+fn reduction_shape_uses_identity_digest_for_a_cancelling_float_pair() {
+    // The fixed digest priorities of identities 1, 2, 3 put 3 at the root.
+    // That groups the cancelling pair before adding 1, whose exact result is 1.
+    let (tree, _) = from_plan(
+        plan(&[1, 2, 3]),
+        vec![1.0e16_f64, -1.0e16, 1.0],
+        0.0,
+        |left, right| left + right,
+    )
+    .unwrap();
+    assert_eq!(
+        tree.result().to_bits(),
+        1.0_f64.to_bits(),
+        "reduction shape must follow partition identity digest"
+    );
+}
+
+#[test]
+fn every_changed_reduction_leaf_reaches_the_root_aggregate() {
+    let (mut tree, _) = from_plan(plan(&[1, 2, 3]), vec![1_u64, 2, 3], 0, sum).unwrap();
+    assert_eq!(*tree.result(), 6);
+    tree.update(id(1), 10).unwrap();
+    assert_eq!(tree.leaf(id(1)), Some(&10));
+    assert_eq!(
+        *tree.result(),
+        15,
+        "every changed reduction leaf must reach the root aggregate"
+    );
+}
+
+#[test]
 fn a_leaf_reads_the_value_its_partition_holds() {
     let (mut tree, _) = from_plan(plan(&[3, 5, 9]), vec![30_u64, 50, 90], 0, sum).unwrap();
 

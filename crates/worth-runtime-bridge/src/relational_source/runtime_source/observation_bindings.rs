@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::facade::{RelationalBridgeSourceError, TruthSnapshotIdentity};
@@ -45,7 +45,7 @@ pub(super) struct RelationalBridgeObservationBindings {
 #[derive(Debug, Default)]
 struct RelationalBridgeObservationBindingIndex {
     by_snapshot: HashMap<SnapshotId, RelationalBridgeObservationBinding>,
-    by_commit: HashMap<CommitId, HashSet<SnapshotId>>,
+    by_commit: HashMap<CommitId, BTreeSet<SnapshotId>>,
 }
 
 #[derive(Debug)]

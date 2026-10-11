@@ -5,7 +5,7 @@ fn leased_bulk_creation_matches_serial_canonical_patch() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     fn commit_bulk(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,

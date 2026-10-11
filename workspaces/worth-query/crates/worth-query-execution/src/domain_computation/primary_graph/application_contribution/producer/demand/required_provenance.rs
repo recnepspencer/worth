@@ -84,7 +84,7 @@ impl RequiredSuccessorProvenance {
                 _ => capacity_denial(),
             })?;
         if expected != actual
-            || claim.selected().key().family_type() != installed.declaration.output_family_type
+            || claim.selected().key().family_identity() != installed.declaration.output_family
         {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,

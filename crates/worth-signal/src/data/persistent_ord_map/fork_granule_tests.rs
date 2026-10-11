@@ -36,14 +36,15 @@ fn repeated_fork_unrelated_insert_copies_no_inherited_key_or_value_payload() {
     const CHILD: &str = "WORTH_SIGNAL_ORD_MAP_GRANULE_CHILD";
     const TEST: &str = "data::persistent_ord_map::fork_granule_tests::repeated_fork_unrelated_insert_copies_no_inherited_key_or_value_payload";
     if env::var_os(CHILD).is_none() {
-        let output = Command::new(env::current_exe().expect("test executable resolves"))
-            .arg("--exact")
-            .arg(TEST)
-            .arg("--nocapture")
-            .arg("--test-threads=1")
-            .env(CHILD, "1")
-            .output()
-            .expect("isolated ordered-map granule probe starts");
+        let output = crate::process_deadline::output(
+            Command::new(env::current_exe().expect("test executable resolves"))
+                .arg("--exact")
+                .arg(TEST)
+                .arg("--nocapture")
+                .arg("--test-threads=1")
+                .env(CHILD, "1"),
+        )
+        .expect("isolated ordered-map granule probe starts");
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
         print!("{stdout}");

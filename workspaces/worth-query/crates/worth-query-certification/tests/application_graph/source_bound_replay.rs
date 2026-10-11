@@ -42,11 +42,12 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
             "{}::source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocation",
             module_path!().split_once("::").unwrap().1
         );
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &name, "--nocapture"])
-            .env(CHILD, "1")
-            .output()
-            .unwrap();
+        let output = crate::process_deadline::output(
+            std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", &name, "--nocapture"])
+                .env(CHILD, "1"),
+        )
+        .unwrap();
         assert!(
             output.status.success(),
             "{}\n{}",

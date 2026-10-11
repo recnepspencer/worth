@@ -1,6 +1,8 @@
+mod close_order;
 mod installation;
 #[cfg(test)]
 pub(crate) mod installation_unwind;
+mod installed_entries;
 mod reservation;
 pub(crate) use installation::ProductBranchInstallationWitness;
 
@@ -46,7 +48,7 @@ struct ProductBranchRegistryState {
     reserved_names: HashSet<String>,
     /// Keyed by the owner-plus-normalized-name identity, so the installed name
     /// index and the branch index are one map rather than two authorities.
-    entries: HashMap<ProductBranchIdentity, ProductBranchRegistryEntry>,
+    entries: installed_entries::InstalledProductBranches,
     /// Secondary occurrence index. The branch entry remains the sole head
     /// authority; this index only resolves a copyable owner-issued occurrence
     /// token to that entry.
@@ -87,7 +89,7 @@ impl ProductBranchRegistry {
                 maximum_branches: maximum_branches.get(),
                 reserved_branches: 0,
                 reserved_names: HashSet::new(),
-                entries: HashMap::new(),
+                entries: installed_entries::InstalledProductBranches::default(),
                 lifecycles: HashMap::new(),
                 root: None,
             })),
@@ -296,13 +298,7 @@ impl ProductBranchRegistry {
     /// created branches.
     pub(crate) fn release_non_root_branches(&self) -> usize {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let root = state.root.clone();
-        let branches: Vec<ProductBranchIdentity> = state
-            .entries
-            .keys()
-            .filter(|branch| root.as_ref() != Some(*branch))
-            .cloned()
-            .collect();
+        let branches = close_order::non_root_branches(state.entries.keys(), state.root.as_ref());
         let released: Vec<_> = branches
             .iter()
             .map(|branch| {
@@ -311,7 +307,9 @@ impl ProductBranchRegistry {
             })
             .collect();
         drop(state);
-        drop(released);
+        for entry in released {
+            drop(entry);
+        }
         branches.len()
     }
 }

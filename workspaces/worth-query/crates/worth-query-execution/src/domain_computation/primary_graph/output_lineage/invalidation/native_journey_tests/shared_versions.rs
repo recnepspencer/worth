@@ -2,6 +2,7 @@
 //! once, for as long as any retained version holds it, and a version adds
 //! only what its own edits copied. The oldest retained version shares no
 //! older one, so its reservation and the root's cover its whole index.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::*;
 
@@ -34,7 +35,7 @@ let selected = world.selected_product(
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<StatusOutput>(),
+        output_binding: OutputBindingIdentity::declared("StatusOutput"),
     };
         let row = RecordedSettlementIdentity::retain(&source, coordinate, 0);
         let graph = world.application.runtime.primary_graph().unwrap();

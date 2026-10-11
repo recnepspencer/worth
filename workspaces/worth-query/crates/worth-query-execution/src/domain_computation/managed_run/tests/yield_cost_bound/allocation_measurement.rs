@@ -1,3 +1,4 @@
+use super::expected_counters::expected_workflow_yield_counters;
 use super::*;
 
 #[cfg(feature = "allocation-probes")]

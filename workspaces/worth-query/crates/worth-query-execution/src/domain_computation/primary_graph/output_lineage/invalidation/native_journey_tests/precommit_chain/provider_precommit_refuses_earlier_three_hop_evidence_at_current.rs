@@ -1,21 +1,15 @@
-//! provider precommit refuses earlier three hop evidence at current submission.
 use super::*;
-#[path = "provider_precommit_refuses_earlier_three_hop_evidence_at_current/application_program.rs"]
-mod application_program;
-#[path = "provider_precommit_refuses_earlier_three_hop_evidence_at_current/field_locators.rs"]
-mod field_locators;
 
 #[test]
 fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world = installed_authorization_world(true);
-    let selected = world
-        .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
-        .expect("the fixture read owns its installed host call");
-    let entity = world
+    let (entity, product) = world
         .application
         .with_host_advancement(|phase| {
-            selected
+            let selected = world.selected_product(&phase.test_host_request());
+            let entity = selected
                 .resolve_entity(
                     &phase,
                     AccountStatus::reference(),
@@ -24,10 +18,11 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id();
+            let (_, product, _) = selected.into_parts();
+            (entity, product)
         })
-        .expect("the fixture read owns its installed host call");
-    let (_, product, _) = selected.into_parts();
+        .expect("initial source selection borrows its installed phase");
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
@@ -35,7 +30,18 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let (status, label) = field_locators::status_and_label(&world);
+    let status_ref = AccountStatus::reference();
+    let label_ref = AccountLabel::reference();
+    let status = graph
+        .layout()
+        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .unwrap()
+        .clone();
+    let label = graph
+        .layout()
+        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .unwrap()
+        .clone();
     let source = |output_binding| {
         SemanticSource {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
@@ -44,43 +50,28 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         output_binding,
     }
     };
-    let a =
-        RecordedSettlementIdentity::retain(&source(TypeId::of::<StatusOutput>()), coordinate, 0);
-    let b = RecordedSettlementIdentity::retain(
-        &source(TypeId::of::<DownstreamOutput>()),
+    let a = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("StatusOutput")),
         coordinate,
         0,
     );
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            publish_field(
-                &host_custody.borrowed_request_for_test(),
-                &world,
-                entity,
-                label.clone(),
-                "prime",
-            )
-        })
-        .expect("the fixture read owns its installed host call");
-    let (before_handle, before, a_facts) = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            handle.with_runtime(|runtime| {
-                let (selected, basis) = snapshot(runtime);
-                let facts: Arc<[_]> = Arc::from([field_fact(
-                    &host_custody.borrowed_request_for_test(),
-                    runtime,
-                    &selected,
-                    entity,
-                    status.clone(),
-                )]);
-                (selected, basis, facts)
-            })
-        })
-        .expect("the fixture read owns its installed host call");
+    let b = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("DownstreamOutput")),
+        coordinate,
+        0,
+    );
+    publish_field(request_execution, &world, entity, label.clone(), "prime");
+    let (before_handle, before, a_facts) = handle.with_runtime(request_execution, |runtime| {
+        let (selected, basis) = snapshot(runtime);
+        let facts: Arc<[_]> = Arc::from([field_fact(
+            request_execution,
+            runtime,
+            &selected,
+            entity,
+            status.clone(),
+        )]);
+        (selected, basis, facts)
+    });
     register(
         owner,
         Arc::clone(&a),
@@ -115,103 +106,72 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
 
     // World publication advances both the native and product selected roots.
     // The unrelated field leaves the actual consumed source fact current.
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            publish_field(
-                &host_custody.borrowed_request_for_test(),
-                &world,
-                entity,
-                label,
-                "unrelated-label",
-            )
-        })
-        .expect("the fixture read owns its installed host call");
-    let (unrelated_handle, unrelated) = handle.with_runtime(snapshot);
+    publish_field(request_execution, &world, entity, label, "unrelated-label");
+    let (unrelated_handle, unrelated) = handle.with_runtime(request_execution, snapshot);
     let mut work = owner.edit_admission();
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert_eq!(
-                handle.with_runtime(
-                    |runtime| ConsumedOutputEvidence::verify_many_with_admission(
-                        &host_custody.borrowed_request_for_test(),
-                        std::slice::from_ref(&b_evidence),
-                        owner,
-                        runtime,
-                        &unrelated_handle,
-                        &unrelated,
-                        &mut work,
-                    )
-                ),
-                Ok(ConsumedOutputVerification::Current),
+    assert_eq!(
+        handle.with_runtime(request_execution, |runtime| {
+            ConsumedOutputEvidence::verify_many_with_admission(
+                request_execution,
+                std::slice::from_ref(&b_evidence),
+                owner,
+                runtime,
+                &unrelated_handle,
+                &unrelated,
+                &mut work,
             )
-        })
-        .expect("the fixture read owns its installed host call");
+        }),
+        Ok(ConsumedOutputVerification::Current),
+    );
 
     // Two closures on one admitted meter must consume two real sets of Work
     // and scratch. A fresh allowance per closure would incorrectly pass the
     // second call under either one-short budget.
     let verify_unrelated = |admission: &mut InvalidationEditAdmission| {
-        world
-            .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
-                handle.with_runtime(|runtime| {
-                    ConsumedOutputEvidence::verify_many_with_admission(
-                        &host_custody.borrowed_request_for_test(),
-                        std::slice::from_ref(&b_evidence),
-                        owner,
-                        runtime,
-                        &unrelated_handle,
-                        &unrelated,
-                        admission,
-                    )
-                })
-            })
-            .expect("the fixture invocation owns its installed host call")
+        handle.with_runtime(request_execution, |runtime| {
+            ConsumedOutputEvidence::verify_many_with_admission(
+                request_execution,
+                std::slice::from_ref(&b_evidence),
+                owner,
+                runtime,
+                &unrelated_handle,
+                &unrelated,
+                admission,
+            )
+        })
     };
-    request_custody::assert_current_closures_share_custody(owner, verify_unrelated);
+    let mut shared = owner.edit_admission();
+    let first = verify_unrelated(&mut shared);
+    assert_eq!(first, Ok(ConsumedOutputVerification::Current));
+    let first_work = shared.charged_work();
+    let first_bytes = shared.charged_bytes();
+    let second = verify_unrelated(&mut shared);
+    assert_eq!(second, Ok(ConsumedOutputVerification::Current));
+    let total_work = shared.charged_work();
+    let total_bytes = shared.charged_bytes();
+    assert!(total_work > first_work && total_bytes > first_bytes);
+    request_custody::assert_carried_native_verification(owner, total_work, verify_unrelated);
+    request_custody::assert_closures_share_the_meter(total_work, total_bytes, verify_unrelated);
 
     // C has already consumed B. Changing A leaves B pending at the new
     // product-selected source, before C's provider commit can prepare effects.
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            publish_field(
-                &host_custody.borrowed_request_for_test(),
-                &world,
-                entity,
-                status,
-                "closed",
-            )
-        })
-        .expect("the fixture read owns its installed host call");
-    let (after_handle, after) = handle.with_runtime(snapshot);
+    publish_field(request_execution, &world, entity, status, "closed");
+    let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
     let mut work = owner.edit_admission();
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert_eq!(
-                handle.with_runtime(
-                    |runtime| ConsumedOutputEvidence::verify_many_with_admission(
-                        &host_custody.borrowed_request_for_test(),
-                        std::slice::from_ref(&b_evidence),
-                        owner,
-                        runtime,
-                        &after_handle,
-                        &after,
-                        &mut work,
-                    )
-                ),
-                Err(ConsumedOutputVerificationStop::PendingUpstream),
+    assert_eq!(
+        handle.with_runtime(request_execution, |runtime| {
+            ConsumedOutputEvidence::verify_many_with_admission(
+                request_execution,
+                std::slice::from_ref(&b_evidence),
+                owner,
+                runtime,
+                &after_handle,
+                &after,
+                &mut work,
             )
-        })
-        .expect("the fixture read owns its installed host call");
+        }),
+        Err(ConsumedOutputVerificationStop::PendingUpstream),
+    );
     assert!(
         work.charged_work() > 0,
         "the wrapper debits the work spent before denial"
@@ -241,27 +201,21 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         ))
     ));
     let mut work = owner.edit_admission();
-    world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            assert_eq!(
-                handle.with_runtime(
-                    |runtime| ConsumedOutputEvidence::verify_many_with_admission(
-                        &host_custody.borrowed_request_for_test(),
-                        std::slice::from_ref(&b_evidence),
-                        owner,
-                        runtime,
-                        &after_handle,
-                        &after,
-                        &mut work,
-                    )
-                ),
-                Ok(ConsumedOutputVerification::ChangedUpstream),
+    assert_eq!(
+        handle.with_runtime(request_execution, |runtime| {
+            ConsumedOutputEvidence::verify_many_with_admission(
+                request_execution,
+                std::slice::from_ref(&b_evidence),
+                owner,
+                runtime,
+                &after_handle,
+                &after,
+                &mut work,
             )
-        })
-        .expect("the fixture read owns its installed host call");
-    handle.with_runtime_mut(|runtime| {
+        }),
+        Ok(ConsumedOutputVerification::ChangedUpstream),
+    );
+    handle.with_runtime_mut(request_execution, |runtime| {
         for selected in [before_handle, unrelated_handle, after_handle] {
             runtime.snapshots().release_snapshot(&selected).unwrap();
         }
@@ -270,19 +224,93 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     // The real provider commit entry must consume the earlier B evidence
     // before preparing any effect. C is submitted at the current native and
     // Product basis, so a historical-basis CAS cannot explain its refusal.
-    let admitted_program = |replacement: &str| application_program::admit(&world, replacement);
+    let admitted_program = |replacement: &str| {
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let request = live_scope();
+                let external = world.authenticate("alice", Duration::from_secs(60), &request);
+                let selected = world.selected_product(&phase.test_host_request());
+                let principal = selected
+                    .resolve_authenticated_principal(
+                        &phase,
+                        &world.binding,
+                        &external,
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let account = selected
+                    .resolve_entity(
+                        &phase,
+                        AccountStatus::reference(),
+                        "closed".to_owned(),
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let operation = world
+                    .application
+                    .installed_schema()
+                    .installed_operation(TouchAccountOperation::reference())
+                    .unwrap();
+                let admission = selected
+                    .authorize_operation(
+                        &phase,
+                        &principal,
+                        &account,
+                        &operation,
+                        Default::default(),
+                        &request,
+                    )
+                    .unwrap();
+                let (_, projection, _) = world
+                    .invariant
+                    .project_admitted_operation(
+                        &phase,
+                        &admission,
+                        |reader, account| {
+                            reader
+                                .require_decision_field(account, AccountStatus::reference())
+                                .unwrap();
+                        },
+                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .into_parts();
+                let reads = world
+                    .application
+                    .begin_projected_application_read_attempt(
+                        &phase,
+                        admission,
+                        projection,
+                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap();
+                let mut effects = reads
+                    .complete_projected_dependencies(
+                        &phase,
+                        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .begin_effect_program();
+                let account = effects.existing_entity(&account).unwrap();
+                effects
+                    .write_field(&account, AccountStatus::reference(), replacement.to_owned())
+                    .unwrap();
+                effects.finish().unwrap()
+            })
+            .expect("program reads borrow one installed phase")
+    };
     let stale = admitted_program("must-not-publish").with_consumed_output_for_test(b_evidence);
     let product_before = world
         .application
-        .with_host_advancement(|phase| {
-            world
-                .selected_product(&(phase).test_host_request())
-                .product()
-                .observation()
-                .clone()
-        })
-        .expect("the fixture read owns its installed host call");
-    let (head_before_handle, head_before) = handle.with_runtime(snapshot);
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .expect("product selection borrows its installed phase")
+        .product()
+        .observation()
+        .clone();
+    let (head_before_handle, head_before) = handle.with_runtime(request_execution, snapshot);
     let denied = world.application.compare_and_commit_application(
         stale,
         WorthQueryApplicationIdempotencyBinding::new([211; 32], [212; 32]),
@@ -298,25 +326,22 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         denial.kind(),
         denial.stage(),
     );
-    let (head_after_handle, head_after) = handle.with_runtime(snapshot);
+    let (head_after_handle, head_after) = handle.with_runtime(request_execution, snapshot);
     assert_eq!(
         head_after, head_before,
         "the denied C commit cannot move native truth"
     );
-    world
-        .application
-        .with_host_advancement(|phase| {
-            assert_eq!(
-                world
-                    .selected_product(&(phase).test_host_request(),)
-                    .product()
-                    .observation(),
-                &product_before,
-                "the denied C commit cannot move Product truth"
-            )
-        })
-        .expect("the fixture read owns its installed host call");
-    handle.with_runtime_mut(|runtime| {
+    assert_eq!(
+        world
+            .application
+            .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+            .expect("product selection borrows its installed phase")
+            .product()
+            .observation(),
+        &product_before,
+        "the denied C commit cannot move Product truth"
+    );
+    handle.with_runtime_mut(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&head_before_handle)

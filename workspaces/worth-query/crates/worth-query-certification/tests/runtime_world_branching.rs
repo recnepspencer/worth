@@ -360,3 +360,6 @@ fn provider_replacement_requires_fresh_runtime_publication() {
 
     courtroom::provider_replacement_requires_fresh_runtime_publication(request_execution);
 }
+
+#[path = "support/process_deadline.rs"]
+mod process_deadline;

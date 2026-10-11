@@ -364,3 +364,5 @@ pub(super) fn assert_lineage_history_origin_invariants(
 mod truth_comparison;
 pub(super) use truth_comparison::assert_recovered_commit_truth_matches;
 pub(super) use truth_comparison::assert_stable_aspect_truth_bundle_eq;
+mod worker_completion;
+pub(super) use worker_completion::join_completed_worker;

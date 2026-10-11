@@ -120,6 +120,36 @@ fn scalar_equal_value_is_stable_but_return_to_original_value_revises() {
 }
 
 #[test]
+fn equal_scalar_patch_keeps_the_native_field_revision() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = runtime_with_test_schema();
+    let created = create_entity_outcome(execution, &runtime, "equal-revision");
+    let entity = changed_entities(&created)[0];
+    let name = locator("name", "name");
+    let before = runtime
+        .read_truth()
+        .project_snapshot(&created.snapshot, execution)
+        .unwrap()
+        .entity_field_revision(execution, entity, &name);
+    assert!(before.is_some(), "creation must issue the native revision");
+    let equal = update_entity(execution, &runtime, entity, "equal-revision");
+    assert_eq!(
+        runtime
+            .read_truth()
+            .project_snapshot(&equal.snapshot, execution)
+            .unwrap()
+            .entity_field_revision(execution, entity, &name),
+        before,
+        "equal canonical values must keep their native field revision"
+    );
+    for outcome in [&created, &equal] {
+        release_test_commit_snapshot(&runtime, outcome);
+    }
+}
+
+#[test]
 fn relation_equal_value_patch_preserves_native_field_revision() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

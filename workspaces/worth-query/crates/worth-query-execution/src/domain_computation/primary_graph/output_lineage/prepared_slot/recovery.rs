@@ -47,7 +47,7 @@ impl PreparedOutputLineageSlot {
             && self.source.runtime_authority == scope.runtime_authority()
             && &self.source.schema == scope.binding_identity()
             && self.source.scope == scope.scope()
-            && self.source.output_binding == output_binding
+            && self.output_binding_type == output_binding
             && self.coordinate.occurrence == planned.occurrence()
             && self.coordinate.generation == planned.generation().get()
             && self.partition == partition
@@ -95,6 +95,7 @@ impl PreparedOutputLineageSlot {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
     use crate::domain_computation::primary_graph::{
         application_contribution::{
             sealed_run_for_lineage_test, PriorAbsence, SealedComputationRetention,
@@ -120,7 +121,7 @@ mod tests {
             schema: world.application.installed_schema.binding_identity().clone(),
             scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
                 worth_relational::facade::identity::EntityId::new(worth_relational::facade::identity::PartitionId::main(), 1, 1)),
-            output_binding: TypeId::of::<()>(),
+            output_binding: OutputBindingIdentity::declared("()"),
         };
         let coordinate = ProductCoordinate {
             occurrence: product.observation().lifecycle_incarnation(),
@@ -153,6 +154,7 @@ mod tests {
                     .insert_vacancy(source.clone(), coordinate, None);
             PreparedOutputLineageSlot {
                 owner: Arc::clone(&owner),
+                output_binding_type: TypeId::of::<()>(),
                 source: source.clone(),
                 coordinate,
                 partition: None,

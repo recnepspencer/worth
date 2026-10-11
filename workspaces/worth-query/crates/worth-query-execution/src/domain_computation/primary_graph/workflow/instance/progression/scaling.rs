@@ -142,13 +142,14 @@ fn ten_thousand_back_settlements_keep_warm_navigation_state_bounded() {
 #[cfg(feature = "allocation-probes")]
 #[test]
 fn progress_snapshot_and_update_allocation_bounds() {
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .arg("isolated_progress_allocation_probe")
-        .arg("--test-threads=1")
-        .arg("--nocapture")
-        .env("WORTH_QUERY_PROGRESS_ALLOCATION_PROBE", "1")
-        .output()
-        .unwrap();
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .arg("isolated_progress_allocation_probe")
+            .arg("--test-threads=1")
+            .arg("--nocapture")
+            .env("WORTH_QUERY_PROGRESS_ALLOCATION_PROBE", "1"),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "{}\n{}",

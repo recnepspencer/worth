@@ -1,5 +1,6 @@
 //! A pending upstream cannot hide a conclusive change to a candidate's own output.
 use super::*;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryCheckpointOutputRole,
     invariant_projection::{
@@ -58,10 +59,13 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         output_binding,
     }
     };
-    let a =
-        RecordedSettlementIdentity::retain(&source(TypeId::of::<StatusOutput>()), coordinate, 0);
+    let a = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("StatusOutput")),
+        coordinate,
+        0,
+    );
     let b = RecordedSettlementIdentity::retain(
-        &source(TypeId::of::<DownstreamOutput>()),
+        &source(OutputBindingIdentity::declared("DownstreamOutput")),
         coordinate,
         0,
     );
@@ -78,8 +82,8 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         |_| Some(TypeId::of::<()>()),
     )
     .unwrap();
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(|runtime| {
-        write_field(runtime, entity, label.clone(), "prime");
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(&host_custody.borrowed_request_for_test(), |runtime| {
+        write_field(&host_custody.borrowed_request_for_test(), runtime, entity, label.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let a_facts: Arc<[_]> =
             Arc::from([field_fact(&host_custody.borrowed_request_for_test(), runtime, &before_handle, entity, status.clone())]);
@@ -141,7 +145,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         )
         .unwrap()
         .unwrap();
-        write_field(runtime, entity, status, "closed");
+        write_field(&host_custody.borrowed_request_for_test(), runtime, entity, status, "closed");
         let (pending_handle, pending) = snapshot(runtime);
         assert!(matches!(
             owner
@@ -179,7 +183,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
             Ok(ConsumedOutputVerification::ChangedUpstream),
             "the original output witness conclusively rejects the changed output"
         );
-        write_field(runtime, entity, label, "changed-own-field");
+        write_field(&host_custody.borrowed_request_for_test(), runtime, entity, label, "changed-own-field");
         let (changed_handle, changed) = snapshot(runtime);
         let mut work = owner.edit_admission();
         assert_eq!(

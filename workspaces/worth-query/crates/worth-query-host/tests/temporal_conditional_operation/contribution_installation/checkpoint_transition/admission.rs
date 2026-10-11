@@ -14,6 +14,12 @@ use worth_query_host::facade::runtime::{
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
+fn serial_guard() -> std::sync::MutexGuard<'static, ()> {
+    SERIAL
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
 fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
     LeaseRequest {
         policy: ExecutionRequestPolicy::new(
@@ -81,7 +87,7 @@ fn assert_target_record(
 
 #[test]
 fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_explicit_repair() {
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = serial_guard();
     let (source, predecessor) = source();
     let lease = primary_graph::test_execution_authority()
         .request_lease(request(0, CancellationToken::new()))
@@ -180,7 +186,7 @@ fn checkpoint_transition_cancelled_repair_preserves_deferred_phase_and_clears_st
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let _serial = SERIAL.lock().unwrap();
+    let _serial = serial_guard();
     let (source, predecessor) = source();
     let mut calls = 0;
     let denial = transition(

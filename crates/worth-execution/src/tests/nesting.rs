@@ -1,4 +1,41 @@
+use super::adversarial::map;
 use super::*;
+use crate::{MapKernelFailure, MapKernelStop, MapOutcome, MapStop};
+
+#[test]
+fn nested_map_cannot_spend_work_already_spent_by_its_parent() {
+    let _serial = TEST_LOCK.lock().unwrap();
+    let parent = authority().request_lease(request(1, 1_000, 2)).unwrap();
+    let child = parent.child(request(1, 500, 2)).unwrap();
+    let outer = map(&[1], 0);
+    let inner = map(&[2], 0);
+    let observed = Mutex::new(None);
+    let outcome = outer.run(Some(&parent), |_, context| {
+        context.checkpoint(1)?;
+        let nested = inner.run(Some(&child), |_, context| {
+            context.checkpoint(2)?;
+            Ok::<_, MapKernelFailure<()>>(2_u64)
+        });
+        *observed.lock().unwrap() = Some(nested);
+        Ok::<_, MapKernelFailure<()>>(1_u64)
+    });
+    assert!(
+        matches!(observed.into_inner().unwrap(), Some(MapOutcome::Stopped {
+            reason: MapStop::WorkExhausted { identity }, ..
+        }) if identity == PartitionIdentity::new(1)),
+        "a nested computation must stay within its caller's remaining lease work"
+    );
+    assert!(matches!(
+        outcome,
+        MapOutcome::Stopped {
+            reason: MapStop::Failure {
+                cause: MapKernelFailure::Stop(MapKernelStop::NestedStopped),
+                ..
+            },
+            ..
+        }
+    ));
+}
 
 #[test]
 fn inline_child_reuses_parent_slot_and_charges_parent_work() {

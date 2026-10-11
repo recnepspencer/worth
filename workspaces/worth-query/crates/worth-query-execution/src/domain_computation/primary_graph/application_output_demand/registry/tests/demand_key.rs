@@ -5,7 +5,45 @@ use crate::domain_computation::primary_graph::application_contribution::{
 };
 use std::{any::TypeId, cmp::Ordering};
 
-struct OtherFamily;
+pub(super) fn reverse_families() -> [(TypeId, &'static str); 2] {
+    struct A;
+    struct B;
+    let declarations = [
+        [
+            (TypeId::of::<A>(), "alpha-output"),
+            (TypeId::of::<B>(), "zulu-output"),
+        ],
+        [
+            (TypeId::of::<B>(), "alpha-output"),
+            (TypeId::of::<A>(), "zulu-output"),
+        ],
+    ];
+    declarations
+        .into_iter()
+        .find(|families| families[0].0 > families[1].0)
+        .unwrap()
+}
+
+#[test]
+fn family_key_order_follows_declared_identity() {
+    let families = reverse_families();
+    assert!(families[0].0 > families[1].0);
+    assert!(families[0].1 < families[1].1);
+    let source = support::key("same-producer", 7, 1);
+    let keys = families.map(|(type_id, identity)| {
+        (
+            type_id,
+            WorthQueryOutputDemandKey::new(
+                identity,
+                source.producer_identity().to_owned(),
+                source.applicability(),
+                source.source_epoch().clone(),
+            ),
+        )
+    });
+    assert_eq!(keys[0].0.cmp(&keys[1].0), Ordering::Greater);
+    assert_eq!(keys[0].1.cmp(&keys[1].1), Ordering::Less);
+}
 
 fn initial() -> WorthQueryOutputDemandKey {
     let mut key = support::key("initial", 7, 1);
@@ -67,7 +105,7 @@ fn incomparable_preserve_bindings_do_not_pick_a_successor_by_iteration_order() {
 fn family_scope_profile_and_source_movement_do_not_forge_a_successor() {
     let initial = initial();
     let mut foreign = initial.clone();
-    foreign.family = TypeId::of::<OtherFamily>();
+    foreign.family = crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared("other-output-family");
     assert!(!initial.same_occurrence(&foreign));
     assert!(!initial.same_semantic_source(&foreign));
     assert_eq!(initial.replacement_order(&foreign), None);

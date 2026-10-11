@@ -1,15 +1,15 @@
 //! A selected B output carries its actual A edge into C's precommit check.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 
-use std::any::TypeId;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;
 
 use im::OrdSet;
 
+use super::SemanticSource;
 use super::{field_fact, register, snapshot, AccountLabel, AccountStatus};
-use super::{DownstreamOutput, SemanticSource, StatusOutput};
 use crate::domain_computation::primary_graph::{
     invariant_projection::{
         ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,

@@ -191,14 +191,15 @@ mod tests {
         const TEST: &str =
             "data::persistent_ord_set::tests::ordinary_serialization_borrows_values_without_a_temporary_collection";
         if env::var_os(CHILD).is_none() {
-            let output = Command::new(env::current_exe().expect("test executable resolves"))
-                .arg("--exact")
-                .arg(TEST)
-                .arg("--nocapture")
-                .arg("--test-threads=1")
-                .env(CHILD, "1")
-                .output()
-                .expect("isolated set-serialization probe starts");
+            let output = crate::process_deadline::output(
+                Command::new(env::current_exe().expect("test executable resolves"))
+                    .arg("--exact")
+                    .arg(TEST)
+                    .arg("--nocapture")
+                    .arg("--test-threads=1")
+                    .env(CHILD, "1"),
+            )
+            .expect("isolated set-serialization probe starts");
             let stdout = String::from_utf8_lossy(&output.stdout);
             print!("{stdout}");
             eprint!("{}", String::from_utf8_lossy(&output.stderr));

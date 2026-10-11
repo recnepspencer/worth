@@ -1,3 +1,8 @@
+#![cfg_attr(
+    not(test),
+    deny(clippy::iter_over_hash_type, clippy::disallowed_methods)
+)]
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 //! Installed Query execution authority.
 //!
 //! Admission decides resource eligibility. This package consumes that proof,
@@ -19,3 +24,7 @@ mod test_request_policy;
 #[cfg(test)]
 #[path = "test_support/bridge_host_request.rs"]
 mod bridge_host_request;
+
+#[cfg(test)]
+#[path = "test_support/process_deadline.rs"]
+mod process_deadline;

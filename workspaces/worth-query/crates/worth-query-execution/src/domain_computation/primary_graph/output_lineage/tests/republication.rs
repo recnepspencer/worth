@@ -1,5 +1,6 @@
 //! A restored generated output continues the performed record it republishes.
 //! Performed opaque-reader and request-context rows continue without cutoff proofs.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use std::{
@@ -177,10 +178,15 @@ fn staged(
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity(1)),
-        output_binding: TypeId::of::<RestoredOutputBinding>(),
+        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
     };
+    let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(
+        TypeId::of::<RestoredOutputBinding>(),
+        "RestoredOutputBinding",
+    );
     test(Stage {
-        lineage: WorthQueryApplicationOutputLineage::default(),
+        lineage,
         source,
         observation,
         correspondence,
@@ -266,7 +272,7 @@ impl Stage<'_> {
         admission: &mut InvalidationEditAdmission,
     ) -> Option<Option<Continued>> {
         let republished = self.lineage.prepare_republication(
-            self.source.output_binding,
+            self.lineage.binding_type(&self.source.output_binding),
             self.source.runtime_authority,
             &self.source.schema,
             self.source.scope,
@@ -279,7 +285,7 @@ impl Stage<'_> {
             admission,
         )?;
         let record = self.lineage.record_republished_restoration(
-            self.source.output_binding,
+            self.lineage.binding_type(&self.source.output_binding),
             self.source.runtime_authority,
             self.source.schema.clone(),
             self.source.scope,

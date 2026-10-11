@@ -5,7 +5,7 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
         .build();
