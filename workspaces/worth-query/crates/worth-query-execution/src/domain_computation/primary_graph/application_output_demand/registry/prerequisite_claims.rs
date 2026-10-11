@@ -64,13 +64,7 @@ impl RequiredOutputDemandContext {
             .try_reserve_exact(count)
             .map_err(|_| capacity_denial())?;
         admission
-            .charge_external_work(
-                self.key()
-                    .producer
-                    .len()
-                    .checked_add(1)
-                    .ok_or_else(work_denial)? as u64,
-            )
+            .charge_external_work(self.key().comparison_work().ok_or_else(work_denial)? as u64)
             .map_err(|_| work_denial())?;
         let owner = WorthQueryOutputDemandRegistry::clone(self.registry());
         let mut state = owner
@@ -99,13 +93,11 @@ impl RequiredOutputDemandContext {
             admission,
             &mut predecessors,
         )?;
-        let maximum_key_work = predecessors
-            .iter()
-            .map(|key| key.producer.len())
-            .max()
-            .unwrap_or(0)
-            .checked_add(1)
-            .ok_or_else(work_denial)?;
+        let maximum_key_work = predecessors.iter().try_fold(0usize, |maximum, key| {
+            key.comparison_work()
+                .map(|work| maximum.max(work))
+                .ok_or_else(work_denial)
+        })?;
         let comparisons = count
             .checked_mul(usize::BITS as usize - count.max(1).leading_zeros() as usize + 1)
             .and_then(|visits| visits.checked_mul(maximum_key_work))
@@ -160,9 +152,7 @@ impl RequiredOutputDemandContext {
             .charge_external_work(prior_keys.len() as u64)
             .map_err(|_| work_denial())?;
         let prior_key_work = prior_keys.iter().try_fold(0usize, |maximum, key| {
-            key.producer
-                .len()
-                .checked_add(1)
+            key.comparison_work()
                 .map(|work| maximum.max(work))
                 .ok_or_else(work_denial)
         })?;
