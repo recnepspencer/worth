@@ -68,6 +68,19 @@ fn reduction_shape_uses_identity_digest_for_a_cancelling_float_pair() {
         1.0_f64.to_bits(),
         "reduction shape must follow partition identity digest"
     );
+    // Equal ranks and values, different identity digests: 3 is now rank zero.
+    let (tree, _) = from_plan(
+        plan(&[3, 4, 5]),
+        vec![1.0e16_f64, -1.0e16, 1.0],
+        0.0,
+        |left, right| left + right,
+    )
+    .unwrap();
+    assert_eq!(
+        tree.result().to_bits(),
+        0.0_f64.to_bits(),
+        "reduction shape must follow partition identity digest"
+    );
 }
 
 #[test]
