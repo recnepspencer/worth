@@ -1,5 +1,6 @@
 mod drain;
 mod key_comparison;
+mod prerequisite_release;
 use key_comparison::key_work;
 
 use std::sync::Arc;
@@ -24,6 +25,15 @@ impl DemandRegistryState {
         retained_key_bytes: usize,
     ) -> bool {
         let awaited = super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key.as_ref());
+        self.defer_terminal_cleanup_with_awaited(key, retained_key_bytes, awaited)
+    }
+
+    pub(super) fn defer_terminal_cleanup_with_awaited(
+        &mut self,
+        key: &Arc<WorthQueryOutputDemandKey>,
+        retained_key_bytes: usize,
+        awaited: bool,
+    ) -> bool {
         let Some(record) = self.records.get_mut(key.as_ref()) else {
             return false;
         };
@@ -168,60 +178,13 @@ impl DemandRegistryState {
                 .map_err(|_| work_denial())?;
         }
         let edges = record.prerequisites.len();
-        let identities = record.settlements.len();
-        // Static checkpoint destruction was prepaid at admission; detach it
-        // below without charging that per-identity work a second time.
-        let selected_slots = edges.checked_add(identities).ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(selected_slots as u64)
-            .map_err(|_| work_denial())?;
-        let maximum_key_work = record
-            .prerequisites
-            .iter()
-            .map(|key| key_work(key))
-            .try_fold(0u64, |maximum, bytes| bytes.map(|bytes| maximum.max(bytes)))?;
-        let navigation = super::prerequisite_work::prior_release_work(
-            self.records.len().max(self.required_keys.len()),
-            edges,
-            usize::try_from(maximum_key_work).map_err(|_| work_denial())?,
-        )?;
-        admission
-            .charge_external_work(
-                (navigation as u64)
-                    .checked_add(edges as u64)
-                    .ok_or_else(work_denial)?,
-            )
-            .map_err(|_| work_denial())?;
-        // Each upstream edge reaches a record decrement, two membership
-        // record probes, and a terminal-defer record probe. A released key
-        // may then rotate/merge three required-set nodes at each level.
-        let required_count = self.required_keys.len();
-        let required_levels = usize::BITS as usize - required_count.max(1).leading_zeros() as usize;
-        let required_node =
-            super::required_members::minimum_member_bytes().ok_or_else(work_denial)?;
-        for upstream in &record.prerequisites {
-            for _ in 0..4 {
-                self.charge_record_lookup(upstream, admission)?;
-            }
-            super::required_work::charge_required_key_lookup(self, upstream, admission)?;
-            let movement = required_levels
-                .checked_mul(3)
-                .and_then(|nodes| nodes.checked_mul(required_node))
-                .and_then(|work| work.checked_add(4))
-                .ok_or_else(work_denial)?;
-            admission
-                .charge_external_work(
-                    (u64::try_from(movement).map_err(|_| work_denial())?)
-                        .checked_add(1)
-                        .ok_or_else(work_denial)?,
-                )
-                .map_err(|_| work_denial())?;
-        }
+        self.admit_record_prerequisite_release(head.as_ref(), admission)?;
         self.settlement_keys.admit_selected_removal_work(
             record.settlements.iter().map(|(identity, _)| identity),
             admission,
         )?;
-        let member_backing = edges
+        let member_slots = edges.checked_mul(2).ok_or_else(work_denial)?;
+        let member_backing = member_slots
             .checked_mul(std::mem::size_of::<
                 super::required_members::DetachedRequiredMember,
             >())
@@ -240,9 +203,9 @@ impl DemandRegistryState {
         let mut retired_members = Vec::new();
         if edges != 0 {
             retired_members
-                .try_reserve_exact(edges)
+                .try_reserve_exact(member_slots)
                 .map_err(|_| empty_capacity_denial())?;
-            if retired_members.capacity() != edges {
+            if retired_members.capacity() != member_slots {
                 return Err(empty_capacity_denial());
             }
         }

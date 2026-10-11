@@ -6,7 +6,7 @@ type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 #[derive(Default)]
 pub(super) struct DemandRecords(Map, BTreeMap<
     crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate,
-    std::collections::BTreeSet<WorthQueryOutputDemandKey>>, super::publication_head::PublicationHeads);
+    std::collections::BTreeSet<WorthQueryOutputDemandKey>>, super::publication_head::PublicationHeads, #[cfg(test)] std::cell::Cell<u64>);
 #[cfg(feature = "test-query-execution-observer")]
 thread_local! { static WHOLE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
 fn observe_row() {
@@ -18,6 +18,11 @@ pub(super) fn whole_rows() -> u64 {
     WHOLE_ROWS.with(std::cell::Cell::get)
 }
 impl DemandRecords {
+    #[cfg(test)]
+    pub(super) fn occurrence_visits_for_test(&self) -> u64 {
+        self.3.get()
+    }
+
     pub(super) fn retain(
         &mut self,
         mut predicate: impl FnMut(&WorthQueryOutputDemandKey, &mut DemandRecord) -> bool,
@@ -120,7 +125,10 @@ impl DemandRecords {
             .0
             .range((Included(key), Unbounded))
             .take_while(move |(other, _)| other.same_occurrence(key));
-        before.chain(from)
+        let rows = before.chain(from);
+        #[cfg(test)]
+        let rows = rows.inspect(|_| self.3.set(self.3.get() + 1));
+        rows
     }
 }
 impl std::ops::Index<&WorthQueryOutputDemandKey> for DemandRecords {

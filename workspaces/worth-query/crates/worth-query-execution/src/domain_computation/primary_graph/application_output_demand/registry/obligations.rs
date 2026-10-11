@@ -61,18 +61,47 @@ impl DemandRegistryState {
         std::iter::once(upstream.clone()).chain(newest)
     }
 
-    fn defer_released_claim(&mut self, key: &WorthQueryOutputDemandKey) -> bool {
-        let Some(key) = self.required_keys.get(key).cloned() else {
-            return false;
-        };
-        let awaited = super::refreshed_rejoin::awaited_by_stale_owner(&self.records, &key);
-        let abandoned = self.records.get(key.as_ref()).is_some_and(|record| {
-            matches!(
-                record.idle_disposition(awaited),
-                super::IdleRowDisposition::Retired(super::RowRetirement::AbandonedPublication)
-            ) || record.successor_is_orphaned(awaited)
-        });
-        abandoned && self.defer_terminal_cleanup(&key, 0)
+    fn release_claim_members(
+        &mut self,
+        upstream: &Arc<WorthQueryOutputDemandKey>,
+        mut retired: Option<&mut Vec<super::required_members::DetachedRequiredMember>>,
+    ) -> usize {
+        let mut refund = 0usize;
+        for released in self.released_by_claim(upstream) {
+            // The awaiting fact is read once after the claim decrement and
+            // carried through both membership and cleanup decisions.
+            let awaited = super::refreshed_rejoin::awaited_by_stale_owner(&self.records, &released);
+            let funded_key = self.required_keys.get(&released).cloned();
+            let abandoned = self.records.get(&released).is_some_and(|record| {
+                matches!(
+                    record.idle_disposition(awaited),
+                    super::IdleRowDisposition::Retired(super::RowRetirement::AbandonedPublication)
+                ) || record.successor_is_orphaned(awaited)
+            });
+            if abandoned
+                && funded_key
+                    .as_ref()
+                    .is_some_and(|key| self.defer_terminal_cleanup_with_awaited(key, 0, awaited))
+            {
+                continue;
+            }
+            let member = self.remove_required_member_with_awaited(&released, awaited);
+            if let Some(retired) = retired.as_deref_mut() {
+                refund = refund
+                    .checked_add(member.refund_required_bytes)
+                    .expect("admitted required member charge fits");
+                retired.push(member);
+            } else {
+                self.required_reserved_bytes = self
+                    .required_reserved_bytes
+                    .saturating_sub(member.refund_required_bytes);
+                drop(member);
+            }
+            if &released == upstream.as_ref() {
+                self.defer_terminal_cleanup_with_awaited(upstream, 0, awaited);
+            }
+        }
+        refund
     }
 
     pub(super) fn release_record_prerequisites_detached(
@@ -133,25 +162,9 @@ impl DemandRegistryState {
                 .get_mut(upstream.as_ref())
                 .expect("framework prerequisite record remains retained");
             record.framework_required_count -= 1;
-            for released in self.released_by_claim(upstream) {
-                // Keep the already funded key until its paid cleanup has
-                // detached the row and any orphaned successor.
-                if self.defer_released_claim(&released) {
-                    continue;
-                }
-                if let Some(retired) = retired_members.as_deref_mut() {
-                    let member = self.remove_required_member_if_released_detached(&released);
-                    refund = refund
-                        .checked_add(member.refund_required_bytes)
-                        .expect("admitted required member charge fits");
-                    retired.push(member);
-                } else {
-                    self.remove_required_member_if_released(&released);
-                }
-            }
-        }
-        for upstream in &prior {
-            self.defer_terminal_cleanup(upstream, 0);
+            refund = refund
+                .checked_add(self.release_claim_members(upstream, retired_members.as_deref_mut()))
+                .expect("admitted required member charge fits");
         }
         (prior, settlements, checkpoint, refund)
     }
@@ -213,16 +226,7 @@ impl DemandRegistryState {
                     .get_mut(upstream.as_ref())
                     .expect("framework prerequisite record remains retained");
                 record.framework_required_count -= 1;
-                for released in self.released_by_claim(upstream) {
-                    if !self.defer_released_claim(&released) {
-                        self.remove_required_member_if_released(&released);
-                    }
-                }
-            }
-        }
-        for prior in &released {
-            for upstream in prior {
-                self.defer_terminal_cleanup(upstream, 0);
+                self.release_claim_members(upstream, None);
             }
         }
     }

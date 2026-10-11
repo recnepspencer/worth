@@ -269,14 +269,29 @@ pub(super) fn occurrence_rows_admitted<'a>(
     impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)>,
     WorthQueryOutputDemandDenial,
 > {
+    admit_occurrence_navigation(records, 1, admission)?;
+    Ok(occurrence_rows(records, key))
+}
+
+/// Logical occurrence seeks are fixed; their tree descents are physical navigation.
+pub(super) fn admit_occurrence_navigation(
+    records: &super::record_map::DemandRecords,
+    walks: u64,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<(), WorthQueryOutputDemandDenial> {
     let path = u64::from(usize::BITS - records.len().leading_zeros())
         .checked_mul(11)
         .and_then(|n| n.checked_add(1))
         .ok_or_else(work_denial)?;
     admission
-        .charge_ordered_operations(2, path.checked_mul(2).ok_or_else(work_denial)?)
+        .charge_ordered_operations(
+            walks.checked_mul(2).ok_or_else(work_denial)?,
+            path.checked_mul(walks)
+                .and_then(|n| n.checked_mul(2))
+                .ok_or_else(work_denial)?,
+        )
         .map_err(|_| work_denial())?;
-    Ok(occurrence_rows(records, key))
+    Ok(())
 }
 
 pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {

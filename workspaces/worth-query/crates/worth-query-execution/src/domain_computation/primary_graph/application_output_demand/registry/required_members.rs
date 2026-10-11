@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::{DemandRegistryState, WorthQueryOutputDemandKey};
+use super::{DemandRecord, DemandRegistryState, WorthQueryOutputDemandKey};
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
@@ -102,12 +102,23 @@ impl DemandRegistryState {
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> DetachedRequiredMember {
-        // Only a row is required or awaited: the member of one that left
-        // leaves with it.
-        if self.records.get(key).is_some_and(|record| {
-            record.is_required()
-                || super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key)
-        }) {
+        if self.records.get(key).is_some_and(DemandRecord::is_required) {
+            return DetachedRequiredMember::default();
+        }
+        let awaited = super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key);
+        self.remove_required_member_with_awaited(key, awaited)
+    }
+
+    pub(super) fn remove_required_member_with_awaited(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+        awaited: bool,
+    ) -> DetachedRequiredMember {
+        if self
+            .records
+            .get(key)
+            .is_some_and(|record| record.is_required() || awaited)
+        {
             return DetachedRequiredMember::default();
         }
         let mut retired_source = None;

@@ -83,6 +83,13 @@ pub(super) fn supersede_predecessors(
         )?;
         keys.push((key.clone(), awaited));
     }
+    // Every selected row may relinquish its own edges; quote their work
+    // before stopping any predecessor, while refusal still has no effect.
+    for (key, _) in &keys {
+        if key != successor {
+            state.admit_record_prerequisite_release(key, admission)?;
+        }
+    }
     // Fund the awaited facts before any predecessor changes state.
     for (key, _) in &keys {
         if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less) {

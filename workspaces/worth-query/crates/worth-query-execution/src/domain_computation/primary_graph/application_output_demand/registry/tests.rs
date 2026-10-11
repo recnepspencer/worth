@@ -36,6 +36,7 @@ mod ready_reuse;
 mod record_capacity;
 mod recovery_posture;
 mod refusal_row;
+mod release_walk;
 mod replacement_preparation;
 mod requested_source;
 mod required_lifecycle;
