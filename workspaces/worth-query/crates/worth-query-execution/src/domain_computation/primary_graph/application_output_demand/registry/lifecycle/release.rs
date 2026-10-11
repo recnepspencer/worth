@@ -97,6 +97,7 @@ impl WorthQueryOutputDemandRegistry {
                 &interest.key,
                 &mut charge,
             )) {
+                state.note_record_custody(&newest);
                 infallible(state.remove_required_member_if_released(&newest, &mut charge));
                 finished = finished.or_else(|| state.take_finished_successor(&newest, &mut charge));
             }
@@ -119,9 +120,10 @@ impl WorthQueryOutputDemandRegistry {
                 &mut charge,
             )))
             .collect();
+        // A subsequent admission-free Drop can remove the newest member.
+        // Transfer closed claims before those Drops run; see sweep-debt.md.
         let (retired, released_claims) =
             infallible(state.retire_closed_rows(candidates, &mut charge));
-        infallible(state.prune_completed_custody(&mut charge));
         drop(state);
         drop(retired);
         drop(released_claims);
@@ -144,6 +146,5 @@ impl WorthQueryOutputDemandRegistry {
             custody.token_count = custody.token_count.saturating_sub(1);
         }
         state.note_custody(source_commit);
-        infallible(state.prune_completed_custody(&mut CleanupWalk { _release: () }));
     }
 }

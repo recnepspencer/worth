@@ -78,6 +78,7 @@ impl DemandRegistryState {
         retired: &mut Vec<DemandRecord>,
         charge: &mut C,
     ) -> Result<Vec<Arc<WorthQueryOutputDemandKey>>, C::Refusal> {
+        self.note_record_custody(key);
         if self.records.get(key).is_some_and(superseded) {
             self.hand_settlements_to_newest(key, charge)?;
         }

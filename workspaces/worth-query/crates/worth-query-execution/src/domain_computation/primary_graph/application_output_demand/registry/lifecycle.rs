@@ -1,7 +1,7 @@
 mod cached_reclaim;
 pub(super) mod cleanup_price;
 mod closed_retirement;
-mod completed_custody;
+pub(super) mod completed_custody;
 mod joined_ready;
 mod performed_release;
 pub(super) mod release;

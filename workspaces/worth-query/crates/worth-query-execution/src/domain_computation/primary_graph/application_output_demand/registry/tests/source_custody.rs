@@ -1,4 +1,3 @@
-use super::super::refreshed_rejoin::infallible;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::cmp::Ordering;
 

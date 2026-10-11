@@ -4,6 +4,13 @@ use super::*;
 use core::convert::Infallible;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
+#[cfg(test)]
+thread_local! { static CONTACTS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
+#[cfg(test)]
+pub(in super::super) fn contacts() -> u64 {
+    CONTACTS.with(std::cell::Cell::get)
+}
+
 impl DemandRegistryState {
     pub(in super::super) fn prune_completed_custody<
         C: OccurrenceSearchCharge<Refusal = Infallible>,
@@ -22,6 +29,8 @@ impl DemandRegistryState {
         commit: &CompositeCommitIdentity,
         charge: &mut C,
     ) -> Result<(), Infallible> {
+        #[cfg(test)]
+        CONTACTS.with(|count| count.set(count.get() + 1));
         self.forget_custody_note(commit);
         infallible(charge.inspect_row());
         let custody = &self.source_custody[commit];

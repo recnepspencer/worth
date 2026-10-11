@@ -147,6 +147,7 @@ impl DemandRegistryState {
                 return Ok(DetachedRequiredMember::default());
             }
         }
+        self.note_record_custody(key);
         let mut retired_source = None;
         if let Some(record) = self.records.get_mut(key) {
             // A reusable cached Ready keeps its original admitted source, funded
