@@ -13,7 +13,7 @@ fn fork<const MODE: u8>(
     app: &Application<false, TOTALS_WORK, 1, MODE>,
     branch: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {
-    crate::checkpoint_recovery::support::host_call(&app, |phase| {
+    crate::checkpoint_recovery::support::host_call(app, |phase| {
         app.branches()
             .fork(branch)
             .components(|components| components.fork_relational().reuse_exact_signal_basis())
