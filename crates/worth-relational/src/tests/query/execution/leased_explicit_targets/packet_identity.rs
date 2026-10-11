@@ -3,19 +3,19 @@ use worth_execution::ChargedBytes;
 
 #[test]
 fn packet_keeps_its_identity_at_width_one() {
-    for stopped_ordinal in [1, 8] {
+    for stopped_ordinal in 0..9 {
         packet_stop(1, stopped_ordinal);
     }
 }
 #[test]
 fn packet_keeps_its_identity_at_width_two() {
-    for stopped_ordinal in [1, 8] {
+    for stopped_ordinal in 0..9 {
         packet_stop(2, stopped_ordinal);
     }
 }
 #[test]
 fn packet_keeps_its_identity_at_width_four() {
-    for stopped_ordinal in [1, 8] {
+    for stopped_ordinal in 0..9 {
         packet_stop(4, stopped_ordinal);
     }
 }
@@ -39,7 +39,7 @@ fn packet_stop(width: usize, stopped_ordinal: usize) {
             create_entity_in_partition(&runtime, &name, PartitionId(partition))
         })
         .collect();
-    let first = entities[0];
+    let fitting = entities[(stopped_ordinal + 1) % entities.len()];
     let oversized = entities[stopped_ordinal];
     let targets = entities.into_iter().map(RecordRef::Entity).collect();
     let snapshot = runtime.visibility_authority().snapshot();
@@ -50,11 +50,11 @@ fn packet_stop(width: usize, stopped_ordinal: usize) {
         .unwrap();
     assert_eq!(expected.complexity.packet_count, PACKETS as usize);
     assert_eq!(expected.result.entities.len(), PACKETS as usize);
-    let first_record = expected
+    let fitting_record = expected
         .result
         .entities
         .iter()
-        .find(|record| record.entity_id == first)
+        .find(|record| record.entity_id == fitting)
         .unwrap();
     let oversized_record = expected
         .result
@@ -62,16 +62,16 @@ fn packet_stop(width: usize, stopped_ordinal: usize) {
         .iter()
         .find(|record| record.entity_id == oversized)
         .unwrap();
-    let first_bytes = u64::try_from(std::mem::size_of::<crate::query::data::QueryWorkerFragment>())
-        .unwrap()
-        + u64::try_from(std::mem::size_of_val(first_record)).unwrap()
-        + first_record.additional_charged_bytes();
-    // Packet zero's fragment header + one inline record + owned names fits.
+    let fitting_bytes =
+        u64::try_from(std::mem::size_of::<crate::query::data::QueryWorkerFragment>()).unwrap()
+            + u64::try_from(std::mem::size_of_val(fitting_record)).unwrap()
+            + fitting_record.additional_charged_bytes();
+    // A different packet's fragment header + one inline record + owned names fits.
     // The stopped packet's 32000-byte name alone exceeds 3640, at either width.
     assert_eq!(CEILING, 3640);
     assert!(
-        first_bytes < CEILING,
-        "packet zero fits its own result ceiling"
+        fitting_bytes < CEILING,
+        "a non-stopped packet fits its own result ceiling"
     );
     assert!(oversized_record.additional_charged_bytes() >= 32_000);
     assert!(oversized_record.additional_charged_bytes() > CEILING);
@@ -93,15 +93,19 @@ fn packet_stop(width: usize, stopped_ordinal: usize) {
             "packet {stopped_ordinal} must exceed its result ceiling at width {width}: {stopped:?}"
         );
     };
+    assert!(
+        identity.value() <= PACKETS,
+        "a packet identity is bounded by the packet count: width {width}, stopped ordinal {stopped_ordinal}"
+    );
     assert_eq!(
         boundary,
         PartitionIdentity::new(u64::try_from(stopped_ordinal).unwrap() + 1),
-        "a stopped packet must keep its identity below the packet count: width {width}, stopped ordinal {stopped_ordinal}"
+        "a stopped packet keeps its own boundary: width {width}, stopped ordinal {stopped_ordinal}"
     );
     assert_eq!(
         identity,
         PartitionIdentity::new(u64::try_from(stopped_ordinal).unwrap() + 1),
-        "a stopped packet must keep its identity below the packet count: width {width}, stopped ordinal {stopped_ordinal}"
+        "a stopped packet keeps its own failure identity: width {width}, stopped ordinal {stopped_ordinal}"
     );
     runtime.snapshots().release_snapshot(&snapshot).unwrap();
 }
