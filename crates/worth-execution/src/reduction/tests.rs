@@ -31,6 +31,28 @@ fn sum(left: &u64, right: &u64) -> u64 {
 }
 
 #[test]
+fn concatenation_preserves_partition_identity_order_after_build_and_update() {
+    let (mut tree, _) = from_plan(
+        plan(&[1, 2, 3, 4, 5, 6, 7, 8]),
+        (1..=8).map(|value| vec![value]).collect(),
+        Vec::<u64>::new(),
+        |left, right| left.iter().chain(right).copied().collect(),
+    )
+    .unwrap();
+    assert_eq!(
+        tree.result(),
+        &vec![1, 2, 3, 4, 5, 6, 7, 8],
+        "reduction must combine in partition identity order after build"
+    );
+    tree.update(id(4), vec![40]).unwrap();
+    assert_eq!(
+        tree.result(),
+        &vec![1, 2, 3, 40, 5, 6, 7, 8],
+        "reduction must combine in partition identity order after update"
+    );
+}
+
+#[test]
 fn a_leaf_reads_the_value_its_partition_holds() {
     let (mut tree, _) = from_plan(plan(&[3, 5, 9]), vec![30_u64, 50, 90], 0, sum).unwrap();
 

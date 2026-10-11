@@ -24,8 +24,7 @@ pub(super) fn payload_capacity(touch: &RelationalDescriptiveTouch) -> Option<u64
         } => aspect
             .as_str()
             .len()
-            .checked_add(path.owned_allocation_capacity_bytes())?
-            .checked_mul(2)?,
+            .checked_add(path.owned_allocation_capacity_bytes())?,
         Touch::IndexMembership {
             aspect,
             path,
@@ -60,16 +59,11 @@ pub(super) fn visit<E>(
     use FactPostingKey as Key;
     use RelationalDescriptiveTouch as Touch;
     match touch {
-        Touch::EntityLifecycle { entity, kind } => {
+        Touch::EntityLifecycle { entity, .. } => {
             admit(0)?;
             emit(Key::EntityLifecycle(*entity))?;
-            admit(0)?;
-            emit(Key::EntityKind(*kind))?;
         }
-        Touch::RelationLifecycle { kind, .. } => {
-            admit(0)?;
-            emit(Key::RelationKind(*kind))?;
-        }
+        Touch::RelationLifecycle { .. } => {}
         Touch::AspectRevision { record, aspect } => {
             if let RecordRef::Entity(entity) = record {
                 admit(aspect.as_str().len())?;
@@ -81,7 +75,6 @@ pub(super) fn visit<E>(
         }
         Touch::FieldRevision {
             record,
-            kind,
             aspect,
             path,
             ..
@@ -91,12 +84,6 @@ pub(super) fn visit<E>(
                 admit(bytes)?;
                 emit(Key::FieldRevision {
                     entity: *entity,
-                    aspect: aspect.clone(),
-                    path: path.clone(),
-                })?;
-                admit(bytes)?;
-                emit(Key::PredicateField {
-                    kind: *kind,
                     aspect: aspect.clone(),
                     path: path.clone(),
                 })?;

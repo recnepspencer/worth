@@ -442,9 +442,10 @@ at its declared breadth and is counted and reported.
     in that aspect;
   - adjacency anchor, relation kind and direction;
   - index key, for selection, absence and set-completeness facts answered
-    through an index;
-  - entity kind and predicate field paths, for those facts answered without an
-    index.
+    through an index.
+
+  A predicate with no index posts no key of its own. It is a root-path
+  guard, witnessed per entity by field and adjacency facts.
 
   Before the output is marked current, insertion replays the touched records of
   commits after its read basis, so a commit that races the settlement is never
@@ -462,9 +463,10 @@ at its declared breadth and is counted and reported.
   - When an upstream republishes an equal value, the pending marks below it
     clear without any producer contact.
 - **Selection facts.** A created entity, or a changed index key, that matches a
-  stored selection, absence or set-completeness fact marks that fact. For a fact
-  answered without an index, a created entity of that kind, or a change to any
-  predicate field path on that kind, marks it.
+  stored selection, absence or set-completeness fact marks that fact. A
+  predicate with no index is a root-path guard: the field and adjacency
+  facts of each entity it read mark it, and a newly matching entity arrives
+  as an inserted edge.
 - **Lineage.** Deletes and slot reuse with a new generation mark every fact about
   the old entity. Marks are per branch lineage, so an output current on one
   branch is not thereby current on another. A merge commit's touched graph is its
@@ -2819,7 +2821,7 @@ Mutation probes must turn evidence red:
 - drop the old index key from an index-membership touched record;
 - honor a mark beyond the demand's snapshot;
 - stop upstream propagation after one level;
-- drop the predicate-field key from an un-indexed selection fact;
+- drop the field-revision key from a field fact;
 - stamp an equal value with a new revision;
 - key reuse on the source query's footprint instead of the input value;
 - re-check a clean settlement's facts on demand;
