@@ -116,13 +116,14 @@ pub fn admit_proof_only(_eligibility: Proof<AdmissionEligible, EntryAdmission>) 
 }
 
 fn cargo_check(manifest: &Path) -> (bool, String) {
-    let output = Command::new("cargo")
-        .arg("check")
-        .arg("--manifest-path")
-        .arg(manifest)
-        .arg("--message-format=short")
-        .output()
-        .expect("cargo check");
+    let output = worth_harness::tooling::process_deadline::output(
+        Command::new("cargo")
+            .arg("check")
+            .arg("--manifest-path")
+            .arg(manifest)
+            .arg("--message-format=short"),
+    )
+    .expect("cargo check");
     let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
     let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
     (output.status.success(), format!("{stdout}{stderr}"))

@@ -67,7 +67,7 @@ impl Repository {
         if update {
             command.arg("--update-snapshots");
         }
-        command.output().unwrap()
+        worth_harness::tooling::process_deadline::output(&mut command).unwrap()
     }
 
     fn update(&self) {
