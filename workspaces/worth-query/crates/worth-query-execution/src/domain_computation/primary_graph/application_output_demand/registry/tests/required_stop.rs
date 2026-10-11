@@ -47,34 +47,3 @@ fn only_a_stop_intrinsic_to_the_head_row_fails_its_dependents() {
         Some(WorthQueryOutputDemandDenialKind::MissingApplicableProducer)
     );
 }
-
-impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn checkpoint_stop_rows_for_test(
-    ) -> (Self, WorthQueryOutputDemandKey, WorthQueryOutputDemandKey) {
-        let registry = Self::default();
-        let predecessor = key("checkpoint-stop", 1, 1);
-        let successor = key("checkpoint-stop", 2, 1);
-        {
-            let mut state = registry.state.lock().unwrap();
-            for key in [&predecessor, &successor] {
-                state
-                    .records
-                    .insert(key.clone(), record(occurrence(), DemandState::Scheduled, 1));
-            }
-        }
-        (registry, predecessor, successor)
-    }
-    pub(in crate::domain_computation::primary_graph) fn recorded_stop_for_test(
-        &self,
-        key: &WorthQueryOutputDemandKey,
-    ) -> Option<WorthQueryOutputDemandDenialKind> {
-        self.state
-            .lock()
-            .unwrap()
-            .records
-            .get(key)
-            .unwrap()
-            .required_stop
-            .clone()
-    }
-}

@@ -38,7 +38,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use wave_checkpoint::PaidCheckpointAdvance;
-pub(super) use wave_checkpoint::WaveCheckpointTurn;
+pub(super) use wave_checkpoint::{PaidCheckpointReady, WaveCheckpointTurn};
 pub(super) use wave_preparation::PreparedContinuationWave;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,

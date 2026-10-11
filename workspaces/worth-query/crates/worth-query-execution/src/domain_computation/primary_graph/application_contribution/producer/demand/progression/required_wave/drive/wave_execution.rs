@@ -116,9 +116,9 @@ where
                             runtime
                                 .output_demands
                                 .clear_required_stop(successor.interest().key());
-                            moved |= committed_ready(&ready, admission)
+                            moved |= committed_ready(ready.ready(), admission)
                                 .map_err(|stop| MemberStop::member(index, stop))?;
-                            member.ready.rebind(ready);
+                            member.ready.rebind_checkpoint(ready);
                             member.resolved_successor = true;
                             member.caller_successor |= index == 0;
                             member.state = MemberState::Inspect;

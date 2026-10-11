@@ -10,8 +10,20 @@ pub(in super::super) struct WaveCheckpoint<'a, Schema: ApplicationSchema> {
     refusal: Refusal,
 }
 pub(in super::super) enum WaveCheckpointTurn<'a, Schema: ApplicationSchema> {
-    Current(SelectedReadyReadmission),
+    Current(PaidCheckpointReady),
     Awaiting(PaidCheckpointStage<'a, Schema>),
+}
+/// Only inspection on the paid turn can issue this checkpoint binding.
+pub(in super::super) struct PaidCheckpointReady {
+    ready: SelectedReadyReadmission,
+}
+impl PaidCheckpointReady {
+    pub(in super::super) fn ready(&self) -> &SelectedReadyReadmission {
+        &self.ready
+    }
+    pub(in super::super) fn into_readmission(self) -> SelectedReadyReadmission {
+        self.ready
+    }
 }
 pub(in super::super) struct PaidCheckpointStage<'a, Schema: ApplicationSchema> {
     progress: &'a mut RequiredFreshProgress<Schema>,
@@ -51,7 +63,9 @@ impl<'a, Schema: ApplicationSchema + 'static> WaveCheckpoint<'a, Schema> {
         match inspect_checkpoint(self.admission, self.refusal, |admission| {
             registry.interest_ready_readmission(self.progress.interest(), admission)
         })? {
-            CheckpointInspection::Current(ready) => Ok(WaveCheckpointTurn::Current(ready)),
+            CheckpointInspection::Current(ready) => {
+                Ok(WaveCheckpointTurn::Current(PaidCheckpointReady { ready }))
+            }
             CheckpointInspection::Awaiting(work) => {
                 Ok(WaveCheckpointTurn::Awaiting(PaidCheckpointStage {
                     progress: self.progress,
@@ -139,9 +153,7 @@ mod tests {
             maximum_preparation_bytes: 0,
         })
     }
-    fn refusal(_: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
-        work_denial()
-    }
+    use super::super::super::progression::admission_denial as refusal;
     #[test]
     fn two_checkpoint_stages_and_the_current_turn_pay_the_declared_turn_work() {
         let inspections = 3;
@@ -171,11 +183,13 @@ mod tests {
     fn a_turn_cannot_inspect_or_advance_before_its_work_is_admitted() {
         let mut empty = admission(0);
         let mut inspected = false;
-        assert!(inspect_checkpoint(&mut empty, refusal, |_| {
+        let stopped = inspect_checkpoint(&mut empty, refusal, |_| {
             inspected = true;
             Ok(Some(()))
         })
-        .is_err());
+        .err()
+        .expect("an unfunded inspection is refused");
+        assert_eq!(stopped.kind(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded);
         assert!(!inspected, "an unfunded turn performs no readiness lookup");
         let mut two = admission(2);
         let CheckpointInspection::Awaiting(paid) =
@@ -184,12 +198,13 @@ mod tests {
             panic!("the declared checkpoint is not Current");
         };
         let mut advanced = false;
-        assert!(paid
+        let stopped = paid
             .advance(|_| {
                 advanced = true;
                 Ok(true)
             })
-            .is_err());
+            .expect_err("an unfunded advance is refused");
+        assert_eq!(stopped.kind(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded);
         assert!(!advanced, "an unfunded stage performs no checkpoint work");
         assert_eq!(two.charged_work(), 2);
     }

@@ -243,7 +243,7 @@ where
                 .checkpoint(admission, super::super::progression::admission_denial)
                 .inspect(registry)?
             {
-                WaveCheckpointTurn::Current(ready) => return Ok(Some(ready)),
+                WaveCheckpointTurn::Current(ready) => return Ok(Some(ready.into_readmission())),
                 WaveCheckpointTurn::Awaiting(stage) => stage,
             };
             if !stage.advance(phase, runtime, request)? {

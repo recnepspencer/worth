@@ -104,7 +104,7 @@ impl RequiredFrontier {
                     MemberInput::Queued { ready: None, .. } => true,
                 };
                 if changed {
-                    member.ready.rebind(ready);
+                    member.ready.rebind_native(ready);
                     member.state = MemberState::Inspect;
                 }
                 member.caller |= caller;
@@ -255,3 +255,14 @@ impl<Ready> RequiredFrontier<Ready> {
 
 #[cfg(test)]
 mod tests;
+
+impl MemberInput<SelectedReadyReadmission> {
+    /// A checkpoint binding consumes the inspection owner's paid proof.
+    /// Native upstream rebinding remains private to the frontier.
+    pub(super) fn rebind_checkpoint(
+        &mut self,
+        paid: super::super::super::required_continuations::PaidCheckpointReady,
+    ) {
+        self.rebind_native(paid.into_readmission());
+    }
+}

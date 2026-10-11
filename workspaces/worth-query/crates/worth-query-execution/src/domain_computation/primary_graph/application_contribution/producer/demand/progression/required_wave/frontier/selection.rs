@@ -25,7 +25,7 @@ impl<Ready> MemberInput<Ready> {
             *self = Self::Selected(ready);
         }
     }
-    pub(in super::super) fn rebind(&mut self, next: Ready) {
+    pub(super) fn rebind_native(&mut self, next: Ready) {
         match self {
             Self::Selected(ready) => *ready = next,
             Self::Queued { ready, .. } => *ready = Some(next),
