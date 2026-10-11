@@ -54,7 +54,6 @@ impl RelationalPreparationPort {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-        crate::execution::check_commit_request(execution)?;
         let _operation = self.admit_operation()?;
         let configuration = self.binding.configuration_binding();
         let epoch = configuration.operation();
@@ -75,7 +74,6 @@ impl RelationalPreparationPort {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         proposal: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-        crate::execution::check_commit_request(execution)?;
         let _operation = self.admit_operation()?;
         let configuration = self.binding.configuration_binding();
         let epoch = configuration.operation();
@@ -109,7 +107,6 @@ impl RelationalPreparationPort {
         runtime: &RelationalPreparationRuntime,
         proposal: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-        crate::execution::check_commit_request(execution)?;
         let proposal = runtime.revalidate_proposal_for_publication(proposal)?;
         crate::authority::commit::pipeline::prepare_authoritative_commit(
             execution,

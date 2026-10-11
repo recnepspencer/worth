@@ -28,3 +28,6 @@ pub(crate) use publication_execution::PreparedCommitPublicationExecution;
 pub(crate) use request_resources::request_lease;
 pub(crate) use result_assembly::assemble_commit_result;
 pub(crate) use result_assembly::CommitResultSeal;
+
+mod request_checkpoints;
+pub(crate) use request_checkpoints::{consult_stage, CommitStage};

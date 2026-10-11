@@ -20,4 +20,4 @@ pub(crate) use read_only_packets::{
 };
 
 mod request_custody;
-pub(crate) use request_custody::{check_commit_request, check_request};
+pub(crate) use request_custody::check_request;

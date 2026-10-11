@@ -84,7 +84,7 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
         .schema_registry(support::demo_schema_registry())
         .build();
 
-    let attempt = |work_ceiling: u64, validation_only: bool| {
+    let attempt = |work_ceiling: u64, validation_only: bool, publish: bool| {
         let lease = authority()
             .request_lease(lease_request_with_work(
                 4 * 1024 * 1024,
@@ -118,6 +118,13 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
                     transaction,
                 )
                 .map(|_| ())
+        } else if publish {
+            runtime
+                .commit_branch_transaction(
+                    &worth_execution::ExecutionRequest::leased(&lease),
+                    transaction,
+                )
+                .map(|_| ())
         } else {
             runtime
                 .prepare_branch_transaction(
@@ -136,10 +143,10 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
     let minimum_work = |validation_only| {
         let mut denied = 0;
         let mut admitted = 1_000_000;
-        attempt(admitted, validation_only).expect("generous lease succeeds");
+        attempt(admitted, validation_only, false).expect("generous lease succeeds");
         while denied + 1 < admitted {
             let trial = denied + (admitted - denied) / 2;
-            match attempt(trial, validation_only) {
+            match attempt(trial, validation_only, false) {
                 Ok(()) => admitted = trial,
                 Err(TransactionCommitError::Execution { denial, .. })
                     if denial.kind == CommitExecutionDenialKind::Cause(Cause::WorkExhausted) =>
@@ -158,9 +165,9 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
         full_preparation_work > validation_work,
         "later packet maps must spend work beyond validation"
     );
-    attempt(validation_work, true).expect("validation fits its minimum work lease");
+    attempt(validation_work, true, false).expect("validation fits its minimum work lease");
     assert!(matches!(
-        attempt(validation_work, false),
+        attempt(validation_work, false, false),
         Err(TransactionCommitError::Execution {
             denial: worth_relational::facade::transactions::CommitExecutionDenial {
                 kind: CommitExecutionDenialKind::Cause(Cause::WorkExhausted),
@@ -169,6 +176,29 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
             ..
         })
     ));
+    let head_before = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap()
+        .0;
+    // The same one-entity validation ceiling cannot fund later packet work
+    // when the ordinary commit also attempts publication.
+    assert!(matches!(
+        attempt(validation_work, false, true),
+        Err(TransactionCommitError::Execution {
+            denial: worth_relational::facade::transactions::CommitExecutionDenial {
+                kind: CommitExecutionDenialKind::Cause(Cause::WorkExhausted),
+                ..
+            },
+            ..
+        })
+    ));
+    assert_eq!(
+        runtime
+            .observe_branch(&runtime.main_branch_identity())
+            .unwrap()
+            .0,
+        head_before
+    );
 }
 
 #[test]

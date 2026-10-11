@@ -77,6 +77,7 @@ pub(super) fn prepare_commit_execution(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut admitted: AdmittedCommitExecution,
 ) -> Result<PreparedCommitExecution, crate::transactions::data::TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Draft)?;
     let lease = super::request_lease(execution);
     let merge_parent_count = admitted
         .merge_history_plan()

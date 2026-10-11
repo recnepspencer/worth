@@ -94,10 +94,11 @@ impl PublishedCommitExecution {
 
 /// Required request borrow proves this work belongs to the caller, without retaining it.
 pub(super) fn prepare_commit_publication_execution(
-    _execution: &worth_execution::ExecutionRequest<'_, '_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     assembled: AssembledCommitExecution,
 ) -> Result<PreparedCommitPublicationExecution, crate::transactions::data::TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::PublicationPreparation)?;
     let (
         mut admitted,
         selected_branch_state,

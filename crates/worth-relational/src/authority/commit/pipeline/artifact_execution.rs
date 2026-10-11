@@ -71,6 +71,7 @@ pub(super) fn assemble_commit_artifacts(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     validated: SnapshotValidatedCommitExecution,
 ) -> Result<AssembledCommitExecution, crate::transactions::data::TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Artifact)?;
     let lease = super::request_lease(execution);
     let (
         mut admitted,

@@ -45,10 +45,11 @@ impl HistoryBoundCommitExecution {
 
 /// Required request borrow proves this work belongs to the caller, without retaining it.
 pub(super) fn bind_commit_history(
-    _execution: &worth_execution::ExecutionRequest<'_, '_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut mutated: MutatedCommitExecution,
 ) -> Result<HistoryBoundCommitExecution, crate::transactions::data::TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::History)?;
     let version_id = mutated.version_id();
     let admitted = mutated.validated_mut().prepared_mut().admitted_mut();
     let merge_diagnostics_plan = admitted.merge_execution_diagnostics_plan().cloned();

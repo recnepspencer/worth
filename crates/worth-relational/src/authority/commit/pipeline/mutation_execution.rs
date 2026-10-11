@@ -49,6 +49,7 @@ pub(super) fn mutate_commit_execution(
     mut validated: BoundaryValidatedCommitExecution,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<MutatedCommitExecution, crate::transactions::data::TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Mutation)?;
     let lease = super::request_lease(execution);
     let selected_branch_state = validated.prepared_mut().selected_branch_state().clone();
     let proposed_version_id = validated.prepared_mut().proposed_version_id();

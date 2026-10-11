@@ -15,7 +15,7 @@ pub(crate) fn prepare_authoritative_commit(
     context: AuthoritativeCommitContext,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
     let allocation_policy = execution.allocation_policy();
-    crate::execution::check_commit_request(execution)?;
+    super::consult_stage(execution, super::CommitStage::Admission)?;
     let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         &context.validation_input,
         allocation_policy,
@@ -65,6 +65,7 @@ pub(crate) fn prepare_authoritative_commit(
         retention_binding.record_interruption(interruption);
         return Err(TransactionCommitError::interrupted(interruption));
     }
+    super::consult_stage(execution, super::CommitStage::CandidateRegistration)?;
     let published_snapshot_slot =
         runtime
             .reserve_published_snapshot_slot()
@@ -153,10 +154,11 @@ pub(crate) fn prepare_authoritative_commit(
 
 /// The borrowed request proves custody through publication; it is never retained.
 pub(crate) fn publish_prepared_authoritative_commit(
-    _execution: &worth_execution::ExecutionRequest<'_, '_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     candidate: crate::mvcc::PreparedRelationalCommitCandidate,
 ) -> Result<CommitResult, TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Publication)?;
     runtime
         .history
         .record_publication_attempt(candidate.branch());

@@ -54,6 +54,10 @@ impl RelationalPreparationRuntime {
         )>,
         strategy: Option<StrategyProposalDecoration>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Validation,
+        )?;
         let lease = crate::authority::commit::pipeline::request_lease(execution);
         let allocation_policy = execution.allocation_policy();
         require_not_interrupted(

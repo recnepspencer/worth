@@ -69,6 +69,7 @@ pub(super) fn validate_snapshot_publication(
     mut history_bound: HistoryBoundCommitExecution,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<SnapshotValidatedCommitExecution, crate::transactions::data::TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Snapshot)?;
     let lease = super::request_lease(execution);
     enforce_snapshot_invariant(runtime, &mut history_bound, lease, control)?;
     Ok(into_snapshot_validated_execution(history_bound))
