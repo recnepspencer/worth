@@ -12,32 +12,17 @@ use super::{
 impl IndexAuthority<'_> {
     /// Build against the exact immutable root already carried by an admitted
     /// owner basis. This path performs no historical retention reacquisition.
+    /// The caller's request supplies allocation authority and its lease budget.
     pub fn build_for_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: DerivedIndexBuildRequest,
         basis: &AdmittedRelationalBranchBasis,
     ) -> DerivedIndexBuildOutcome {
-        self.build_for_basis_inner(execution, request, basis, None)
-    }
-
-    pub fn build_for_basis_with_lease(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: DerivedIndexBuildRequest,
-        basis: &AdmittedRelationalBranchBasis,
-        lease: &worth_execution::ExecutionResourceLease<'_>,
-    ) -> DerivedIndexBuildOutcome {
-        self.build_for_basis_inner(execution, request, basis, Some(lease))
-    }
-
-    fn build_for_basis_inner(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: DerivedIndexBuildRequest,
-        basis: &AdmittedRelationalBranchBasis,
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-    ) -> DerivedIndexBuildOutcome {
+        let lease = match execution.allocation_policy() {
+            worth_execution::ExecutionAllocationPolicy::Execution(lease) => Some(lease),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation => None,
+        };
         let mut generations = Vec::new();
         let mut failed_indexes = Vec::new();
         let observation = basis.observation();

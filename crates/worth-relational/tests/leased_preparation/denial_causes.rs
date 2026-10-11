@@ -21,14 +21,13 @@ fn assert_request_cause(
     let lease = authority()
         .request_lease(request)
         .expect("request policy is admitted");
-    let index_outcome = runtime.index_authority().build_for_commit_with_lease(
+    let index_outcome = runtime.index_authority().build_for_commit(
         &worth_execution::ExecutionRequest::leased(&lease),
         DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
         },
-        &lease,
     );
     let DerivedIndexExecutionDenialKind::Cause(index_cause) = index_outcome
         .execution_denial

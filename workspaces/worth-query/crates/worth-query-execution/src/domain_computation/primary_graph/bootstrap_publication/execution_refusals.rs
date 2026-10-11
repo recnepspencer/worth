@@ -157,9 +157,10 @@ fn refused_index_build(
     assert_eq!(baseline.generations.len(), 1);
     assert!(identity_indexes_built(baseline, 1).is_ok());
     let lease = authority().request_lease(request).unwrap();
-    runtime
-        .index_authority()
-        .build_for_commit_with_lease(execution, build_request, &lease)
+    runtime.index_authority().build_for_commit(
+        &worth_execution::ExecutionRequest::leased(&lease),
+        build_request,
+    )
 }
 #[test]
 fn result_refusal_is_typed_with_partition_identity() {

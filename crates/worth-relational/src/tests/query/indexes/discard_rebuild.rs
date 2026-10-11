@@ -221,11 +221,10 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
     let cancellation = worth_execution::CancellationSource::new();
     let stopped = lease.controlled_child(cancellation.token(), None);
     cancellation.cancel();
-    let refused = runtime.index_authority().build_for_basis_with_lease(
-        execution,
+    let refused = runtime.index_authority().build_for_basis(
+        &worth_execution::ExecutionRequest::leased(&stopped),
         fixture.request(&current),
         &current,
-        &stopped,
     );
     assert!(refused.generations.is_empty());
     assert_eq!(refused.failed_indexes, vec![fixture.index.index_id]);
@@ -238,11 +237,10 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
     );
     fixture.assert_cold(execution, &current_snapshot);
     assert_eq!(runtime.current_version_id(), before);
-    let rebuilt = runtime.index_authority().build_for_basis_with_lease(
-        execution,
+    let rebuilt = runtime.index_authority().build_for_basis(
+        &worth_execution::ExecutionRequest::leased(&lease),
         fixture.request(&current),
         &current,
-        &lease,
     );
     assert!(rebuilt.failed_indexes.is_empty());
     assert!(rebuilt.execution_denial.is_none());

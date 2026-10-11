@@ -71,10 +71,9 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
     let lease = authority()
         .request_lease(request_lease)
         .expect("tight lease is admitted");
-    let stopped = runtime.index_authority().build_for_commit_with_lease(
+    let stopped = runtime.index_authority().build_for_commit(
         &worth_execution::ExecutionRequest::leased(&lease),
         request.clone(),
-        &lease,
     );
     assert_eq!(
         stopped.execution_denial.map(|denial| denial.kind),

@@ -1,29 +1,16 @@
 use super::*;
 
 impl<'runtime> IndexAuthority<'runtime> {
+    /// Build using the allocation authority and lease budget of the caller's request.
     pub fn build_for_commit(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: DerivedIndexBuildRequest,
     ) -> DerivedIndexBuildOutcome {
-        self.build_for_commit_inner(execution, request, None)
-    }
-
-    pub fn build_for_commit_with_lease(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: DerivedIndexBuildRequest,
-        lease: &worth_execution::ExecutionResourceLease<'_>,
-    ) -> DerivedIndexBuildOutcome {
-        self.build_for_commit_inner(execution, request, Some(lease))
-    }
-
-    fn build_for_commit_inner(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: DerivedIndexBuildRequest,
-        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-    ) -> DerivedIndexBuildOutcome {
+        let lease = match execution.allocation_policy() {
+            worth_execution::ExecutionAllocationPolicy::Execution(lease) => Some(lease),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation => None,
+        };
         let mut generations = Vec::new();
         let mut failed_indexes = Vec::new();
         let Some((version_id, source_branch_id)) =

@@ -226,10 +226,9 @@ fn derived_index_contract_entity_field_equals_is_stable_with_leased_index_build(
             index_ids: vec![index.index_id],
         };
         let build = if leased {
-            runtime.index_authority().build_for_commit_with_lease(
+            runtime.index_authority().build_for_commit(
                 &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
                 request,
-                &test_execution_lease(),
             )
         } else {
             runtime

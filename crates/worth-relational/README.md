@@ -107,7 +107,7 @@ This explicit scope removes every branch, basis and publication status for that
 index under one catalog write lock. Definitions, authoritative roots, history and
 unique-field enforcement remain. Already-held generation readers can finish;
 fresh selection refuses cold access until an admitted build publishes again.
-Rebuild uses the ordinary `build_for_basis_with_lease` path and its exact native
+Rebuild uses the ordinary `build_for_basis` path and its exact native
 basis. An old ordered continuation does not silently rebind to a new generation.
 
 Discard is cache maintenance, not a durable tombstone or a promise of total heap

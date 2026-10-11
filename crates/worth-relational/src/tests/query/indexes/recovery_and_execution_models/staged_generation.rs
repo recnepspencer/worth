@@ -52,17 +52,14 @@ fn derived_index_contract_staged_parallel_generation_matches_serial_reference() 
             index_ids,
         },
     );
-    let staged = staged_runtime
-        .index_authority()
-        .build_for_commit_with_lease(
-            &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
-            DerivedIndexBuildRequest {
-                source_commit_id: staged_commit_id,
-                branch_id: BranchId("main".to_string()),
-                index_ids: staged_index_ids,
-            },
-            &test_execution_lease(),
-        );
+    let staged = staged_runtime.index_authority().build_for_commit(
+        &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
+        DerivedIndexBuildRequest {
+            source_commit_id: staged_commit_id,
+            branch_id: BranchId("main".to_string()),
+            index_ids: staged_index_ids,
+        },
+    );
 
     let staged_counters = staged_runtime.performance_access().counters();
 

@@ -26,6 +26,7 @@ mod recovery_and_execution_models;
 mod related_entity_ordered_lookup;
 mod related_entity_schema_recovery;
 mod relation_field_lookup;
+mod request_owned_build;
 mod request_paid_maintenance;
 
 use crate::facade::history::BranchId;

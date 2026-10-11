@@ -170,14 +170,13 @@ fn check_lease(
         .commit(execution, &runtime)
         .unwrap();
     let index = related_index(&runtime);
-    let index = runtime.index_authority().build_for_commit_with_lease(
-        execution,
+    let index = runtime.index_authority().build_for_commit(
+        &worth_execution::ExecutionRequest::leased(lease),
         DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
         },
-        lease,
     );
     assert!(index.generations.is_empty());
     let denial = index.execution_denial.expect("index preparation refused");
