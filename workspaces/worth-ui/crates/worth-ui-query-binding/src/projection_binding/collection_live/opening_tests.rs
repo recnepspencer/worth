@@ -14,6 +14,43 @@ use worth_query::facade::{consumer_kit, domain, read};
 
 #[test]
 fn nested_collection_opening_is_denied_without_handler_contact() {
+    let (mut workspace, binding, contacts) = collection_opening_fixture();
+    let budget = crate::UiCollectionProjectionBudget::new(1, 64, 1, 65_536).unwrap();
+    let outcome = workspace
+        .with_advancement_mut(|_, workspace| binding.open(budget, workspace))
+        .unwrap();
+    let super::UiCollectionProjectionOpenOutcome::Stopped(stop) = outcome else {
+        panic!("nested opening must stop");
+    };
+    assert_eq!(
+        stop.kind(),
+        super::UiCollectionProjectionOpenStopKind::ExecutionDenied
+    );
+    assert_eq!(contacts.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn admitted_collection_opening_succeeds_with_handler_contact() {
+    let (mut workspace, binding, contacts) = collection_opening_fixture();
+    assert_eq!(contacts.load(Ordering::SeqCst), 0);
+    let budget = crate::UiCollectionProjectionBudget::new(1, 64, 1, 65_536).unwrap();
+    let outcome = binding.open(budget, &mut workspace);
+    let super::UiCollectionProjectionOpenOutcome::Opened(receipt) = outcome else {
+        panic!("the admitted control must open: {outcome:?}");
+    };
+    assert!(contacts.load(Ordering::SeqCst) > 0);
+    let (live, _) = receipt.into_parts();
+    assert!(matches!(
+        live.close(&mut workspace),
+        super::UiLiveCollectionProjectionCloseOutcome::Closed(_)
+    ));
+}
+
+fn collection_opening_fixture() -> (
+    worth_query::facade::runtime::WorthQueryWorkspace,
+    crate::UiCollectionProjectionBinding,
+    Arc<AtomicUsize>,
+) {
     let contacts = Arc::new(AtomicUsize::new(0));
     let schema =
         consumer_kit::WorthQueryTestBackendSchema::single_collection("WorthUiProjectionText")
@@ -70,7 +107,7 @@ fn nested_collection_opening_is_denied_without_handler_contact() {
             domain::WorthQueryConsumerSupportPosture::Supported,
         );
     }
-    let mut workspace =
+    let workspace =
         crate::certification::request_custody::with_bootstrap_request(|execution| {
             builder
                 .workspace(execution, "nested-collection-opening")
@@ -93,18 +130,7 @@ fn nested_collection_opening_is_denied_without_handler_contact() {
     else {
         panic!("collection registration must admit before the hostile opening");
     };
-    let budget = crate::UiCollectionProjectionBudget::new(1, 64, 1, 65_536).unwrap();
-    let outcome = workspace
-        .with_advancement_mut(|_, workspace| binding.open(budget, workspace))
-        .unwrap();
-    let super::UiCollectionProjectionOpenOutcome::Stopped(stop) = outcome else {
-        panic!("nested opening must stop");
-    };
-    assert_eq!(
-        stop.kind(),
-        super::UiCollectionProjectionOpenStopKind::ExecutionDenied
-    );
-    assert_eq!(contacts.load(Ordering::SeqCst), 0);
+    (workspace, binding, contacts)
 }
 
 struct CountedExecutor(Arc<AtomicUsize>);
