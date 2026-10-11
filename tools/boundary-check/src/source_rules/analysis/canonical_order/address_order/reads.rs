@@ -24,18 +24,17 @@ impl<'ast> Visit<'ast> for Address<'_> {
                 .map(|s| s.ident.to_string())
                 .collect();
             self.found |= names.last().is_some_and(|n| {
-                self.helpers.contains(n)
+                (self.helpers.contains(n)
+                    && !(n == "from_ref"
+                        && names.iter().rev().nth(1).is_some_and(|p| p == "slice")))
                     || matches!(
                         n.as_str(),
-                        "as_ptr"
-                            | "as_mut_ptr"
-                            | "addr"
-                            | "from_ref"
-                            | "into_raw"
-                            | "expose_provenance"
+                        "as_ptr" | "as_mut_ptr" | "addr" | "into_raw" | "expose_provenance"
                     )
-            }) || (names.last().is_some_and(|n| n == "from")
-                && names.iter().any(|n| n == "NonNull"));
+            }) || (names.last().is_some_and(|n| n == "from_ref")
+                && names.iter().rev().nth(1).is_some_and(|n| n == "ptr"))
+                || (names.last().is_some_and(|n| n == "from")
+                    && names.iter().any(|n| n == "NonNull"));
         }
         visit::visit_expr_call(self, e);
     }
@@ -110,4 +109,47 @@ pub(super) fn ordering_derive(a: &syn::Attribute) -> bool {
 }
 pub(super) fn ordered_map_type(ty: &syn::Type) -> bool {
     matches!(ty, syn::Type::Path(p) if p.path.segments.last().is_some_and(|s| matches!(s.ident.to_string().as_str(), "BTreeMap" | "BTreeSet")))
+}
+
+pub(super) fn imported_functions(items: &[syn::Item]) -> BTreeSet<String> {
+    fn names(tree: &syn::UseTree, parent: &str, found: &mut BTreeSet<String>) {
+        match tree {
+            syn::UseTree::Path(p) => names(&p.tree, &p.ident.to_string(), found),
+            syn::UseTree::Name(n) if parent == "ptr" && n.ident == "from_ref" => {
+                found.insert(n.ident.to_string());
+            }
+            syn::UseTree::Rename(n) if parent == "ptr" && n.ident == "from_ref" => {
+                found.insert(n.rename.to_string());
+            }
+            syn::UseTree::Glob(_) if parent == "ptr" => {
+                found.insert("from_ref".into());
+            }
+            syn::UseTree::Group(g) => {
+                for t in &g.items {
+                    names(t, parent, found);
+                }
+            }
+            _ => {}
+        }
+    }
+    let mut result = BTreeSet::new();
+    for item in items {
+        if let syn::Item::Use(u) = item {
+            names(&u.tree, "", &mut result);
+        }
+    }
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn slice_from_ref_compares_contents_not_addresses() {
+        let e: syn::Expr =
+            syn::parse_str("std::slice::from_ref(x).cmp(std::slice::from_ref(y))").unwrap();
+        let empty = std::collections::BTreeSet::new();
+        assert!(!super::expression(&e, &empty, &empty));
+        let pointer_import = std::collections::BTreeSet::from(["from_ref".into()]);
+        assert!(!super::expression(&e, &pointer_import, &empty));
+    }
 }

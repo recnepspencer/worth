@@ -11,7 +11,7 @@ pub(super) fn is_finding(reason: &str) -> bool {
 pub(super) fn scan(files: &[(&str, &[syn::Item])]) -> Vec<Finding> {
     let mut found = Vec::new();
     for (source, items) in files {
-        let mut helpers = BTreeSet::new();
+        let mut helpers = reads::imported_functions(items);
         loop {
             let before = helpers.len();
             for item in *items {
