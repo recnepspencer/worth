@@ -270,7 +270,7 @@ pub(super) fn adjacency_with_kind(
         anchor,
         direction,
         limit,
-    )
+    )?
     .ok_or_else(|| denial(unavailable))?;
     let adjacent = relations.iter().map(|relation| relation.to).collect();
     facts.push(WorthQueryApplicationObservedFact::Adjacency {

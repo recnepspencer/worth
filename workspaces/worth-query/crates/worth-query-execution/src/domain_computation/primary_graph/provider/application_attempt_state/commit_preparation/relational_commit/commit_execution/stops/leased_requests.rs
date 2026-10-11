@@ -1,6 +1,7 @@
 //! Public leased preparation probes, isolated by process because execution
 //! admits exactly one physical authority for a process lifetime. Query's other
 //! unit-test owners have their own authority; this scope cannot replace it.
+mod native_read_stops;
 use crate::domain_computation::primary_graph::application_attempt::{
     provider_compare_denial::preparation_outcome::application_outcome,
     WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationCommitOutcome as Outcome,

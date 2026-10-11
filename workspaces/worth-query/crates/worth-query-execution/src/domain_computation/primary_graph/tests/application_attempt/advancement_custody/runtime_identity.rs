@@ -66,7 +66,7 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             ).unwrap_err();
             assert_eq!(
                 denial.kind(),
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::ForeignPhase),
+                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase)),
             );
             assert_eq!(reads(), before, "foreign query cannot reach B's reader");
             a_product.require_current_output_settlements(

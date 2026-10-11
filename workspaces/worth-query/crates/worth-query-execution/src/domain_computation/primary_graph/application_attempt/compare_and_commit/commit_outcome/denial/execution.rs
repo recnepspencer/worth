@@ -60,7 +60,10 @@ impl Denial {
             },
             Some(Cause::ProviderSession(failure)) => {
                 use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
-                let kind = crate::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(failure).unwrap_or(failure.kind());
+                let kind = match crate::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(failure) {
+                    Ok(kind) => kind.unwrap_or(failure.kind()),
+                    Err(stop) => return Some(Err(stop)),
+                };
                 match kind {
                     kind @ (Session::ExecutionResource { .. }
                     | Session::ExecutionNestedPatternStopped { .. }
@@ -70,10 +73,22 @@ impl Denial {
                     _ => allocation_control(failure.allocation_denial()),
                 }
             }
-            Some(Cause::SourceRebase(_))
-            | Some(Cause::DecisionReadSet(_))
-            | Some(Cause::RequestAuthority(_))
-            | None => None,
+            Some(Cause::DecisionReadSet(failure)) => {
+                use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as ReadSet;
+                use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+                use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
+                match failure.kind() {
+                    ReadSet::ExecutionRequest(kind) => Some(Ok(kind)),
+                    ReadSet::RequestInterrupted(Interruption::Cancelled) => {
+                        Some(Err(Control::Cancelled))
+                    }
+                    ReadSet::RequestInterrupted(Interruption::DeadlineExceeded) => {
+                        Some(Err(Control::TimedOut))
+                    }
+                    _ => allocation_control(failure.allocation_denial()),
+                }
+            }
+            Some(Cause::SourceRebase(_)) | Some(Cause::RequestAuthority(_)) | None => None,
         }
     }
 

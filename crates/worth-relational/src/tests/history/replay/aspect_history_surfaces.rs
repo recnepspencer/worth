@@ -30,15 +30,18 @@ fn replay_contract_preserves_aspect_bearing_patch_and_history_surfaces() {
         .relation_aspect_history_with_trace(&BranchId("main".to_string()), relation, None)
         .aspect_history_digest();
 
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: relation_outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: relation_outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert!(replay

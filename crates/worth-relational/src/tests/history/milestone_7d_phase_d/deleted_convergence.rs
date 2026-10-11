@@ -46,16 +46,19 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
         .expect("live merge envelope");
     let live_truth = capture_aspect_truth_bundle(execution, &runtime, &[entity], &[], &[]);
 
-    let replay = runtime.replay_authority().replay_commit(
-        crate::facade::replay::RelationalReplayRequest {
-            commit_id: merge.commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: crate::facade::replay::ReplayExecutionMode::SerialDeterministic,
-            verification_mode:
-                crate::facade::replay::ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            crate::facade::replay::RelationalReplayRequest {
+                commit_id: merge.commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: crate::facade::replay::ReplayExecutionMode::SerialDeterministic,
+                verification_mode:
+                    crate::facade::replay::ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         replay.failure.is_none(),
         "replay certification failure: {replay:?}"

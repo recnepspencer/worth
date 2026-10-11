@@ -30,6 +30,26 @@ pub struct RelationalInterruptionEvent {
 }
 
 impl RelationalInterruptionEvent {
+    /// Observes the caller's cancellation or deadline at a named boundary.
+    /// This consults borrowed request control only; it creates no request and
+    /// performs no storage work. Readers still charge their own native work.
+    pub fn observe_request(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        boundary: RelationalInterruptionBoundary,
+    ) -> Option<Self> {
+        use crate::execution::RelationalExecutionDenialCause as Cause;
+        let cause = crate::execution::denial::kernel_stop(execution.check_live().err()?);
+        let interruption = match cause {
+            Cause::Cancelled => RelationalOperationInterruption::Cancelled,
+            Cause::DeadlineElapsed => RelationalOperationInterruption::TimedOut,
+            _ => return None,
+        };
+        Some(Self {
+            interruption,
+            boundary,
+        })
+    }
+
     pub const fn interruption(self) -> RelationalOperationInterruption {
         self.interruption
     }
@@ -341,3 +361,7 @@ impl From<RelationalCancellationToken> for RelationalOperationControl {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "operation_control/request_observation_tests.rs"]
+mod request_observation_tests;

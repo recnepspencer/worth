@@ -49,15 +49,18 @@ pub(super) fn run_replacement_strategy_certification(
     assert!(replacement_envelope.lineage_decision_log().iter().any(
         |decision| decision.kind == crate::lineage::data::LineageDecisionKind::ReplaceAccepted
     ));
-    let replacement_replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: replacement_commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let replacement_replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: replacement_commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         replacement_replay.failure.is_none(),
         "replacement replay failed: {replacement_replay:?}"
@@ -94,15 +97,18 @@ pub(super) fn run_replacement_strategy_certification(
         .replay()
         .canonical_commit_envelope(replacement_commit.commit.commit_id)
         .expect("recovered replacement envelope");
-    let recovered_replacement_replay = recovered.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: replacement_commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let recovered_replacement_replay = recovered
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: replacement_commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         recovered_replacement_replay.failure.is_none(),
         "recovered replacement replay failed: {recovered_replacement_replay:?}"

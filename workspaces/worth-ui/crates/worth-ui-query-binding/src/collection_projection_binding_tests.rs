@@ -15,11 +15,8 @@ fn registered_collection_emits_affine_native_text_fact_and_closes_lease() {
     let alpha = insert_collection_status(&mut workspace, "pulse.alpha", "Alpha");
     let bravo = insert_collection_status(&mut workspace, "pulse.bravo", "Bravo");
     let binding = admitted_binding(&workspace, "identity.id", "status", false, true);
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = workspace
-        .with_advancement_mut(|phase, workspace| {
-            binding.open(&phase, collection_budget(8, 1), workspace)
-        })
-        .expect("workspace host call opens")
+    let UiCollectionProjectionOpenOutcome::Opened(opened) =
+        binding.open(collection_budget(8, 1), &mut workspace)
     else {
         panic!("the exact collection registration must open");
     };
@@ -65,11 +62,8 @@ fn continuation_and_requirement_stops_are_explicit_facts() {
     insert_collection_status(&mut workspace, "pulse.alpha", "Alpha");
     insert_collection_status(&mut workspace, "pulse.bravo", "Bravo");
     let binding = admitted_binding(&workspace, "identity.id", "status", false, true);
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = workspace
-        .with_advancement_mut(|phase, workspace| {
-            binding.open(&phase, collection_budget(1, 1), workspace)
-        })
-        .expect("workspace host call opens")
+    let UiCollectionProjectionOpenOutcome::Opened(opened) =
+        binding.open(collection_budget(1, 1), &mut workspace)
     else {
         panic!("continuation-capable binding must open");
     };
@@ -88,11 +82,8 @@ fn continuation_and_requirement_stops_are_explicit_facts() {
     ));
 
     let binding = admitted_binding(&workspace, "identity.id", "status", false, false);
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = workspace
-        .with_advancement_mut(|phase, workspace| {
-            binding.open(&phase, collection_budget(1, 1), workspace)
-        })
-        .expect("workspace host call opens")
+    let UiCollectionProjectionOpenOutcome::Opened(opened) =
+        binding.open(collection_budget(1, 1), &mut workspace)
     else {
         panic!("continuation policy is represented by fact posture");
     };

@@ -1,3 +1,4 @@
+use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
 use super::{
     adjacency, indexed_entity_selection, workflow_definition_predecessor, workflow_history_basis,
     workflow_instance_capacity, WorthQueryApplicationObservedFact,
@@ -9,14 +10,12 @@ impl WorthQueryApplicationObservedFact {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> bool {
-        match self {
-            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => runtime
-                .read_truth().project_snapshot(snapshot)
-                .and_then(|view| view.entity_retirement( *entity_id))
-                .is_some_and(|record| record.kind_id() == *kind
-                    && record.created_at_version() == *created_at
-                    && record.deleted_at_version() == *deleted_at),
+    ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+        execution
+            .check_live()
+            .map_err(|stop| SelfDenial::request_read_stopped(stop, "decision fact comparison"))?;
+        let equal = match self {
+            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(runtime, snapshot, *entity_id, *kind, *created_at, *deleted_at),
             Self::SourceEntity { entity_id } => runtime
                 .read_truth()
                 .project_snapshot(snapshot)
@@ -111,7 +110,7 @@ impl WorthQueryApplicationObservedFact {
                 *from,
                 *to,
             )
-            .is_ok_and(|current| current == *matching_relations),
+            ? == *matching_relations,
             Self::Adjacency {
                 relation_kind,
                 anchor,
@@ -128,7 +127,7 @@ impl WorthQueryApplicationObservedFact {
                 *direction,
                 *maximum_work_units,
                 relations,
-            ),
+            )?,
             Self::IndexedEntitySelection {
                 index_id,
                 definition,
@@ -148,7 +147,7 @@ impl WorthQueryApplicationObservedFact {
                 value,
                 *candidate_limit,
                 candidates,
-            ),
+            )?,
             Self::WorkflowDefinitionPredecessor {
                 relation_kind,
                 lineage,
@@ -162,7 +161,7 @@ impl WorthQueryApplicationObservedFact {
                 *lineage,
                 *expected_definition,
                 *maximum_work_units,
-            ),
+            )?,
             Self::WorkflowDefinitionCurrent {
                 relation_kind,
                 lineage,
@@ -176,7 +175,7 @@ impl WorthQueryApplicationObservedFact {
                 Some(*lineage),
                 Some(*expected_definition),
                 *maximum_work_units,
-            ),
+            )?,
             Self::WorkflowInstanceCapacity {
                 relation_kind,
                 lineage,
@@ -190,7 +189,7 @@ impl WorthQueryApplicationObservedFact {
                 *lineage,
                 *maximum_instances,
                 instances,
-            ),
+            )?,
             Self::WorkflowHistoryBasis {
                 maximum_transitions,
                 transition_count,
@@ -204,6 +203,10 @@ impl WorthQueryApplicationObservedFact {
                 *maximum_transitions,
                 *transition_count,
             ),
-        }
+        };
+        execution
+            .check_live()
+            .map_err(|stop| SelfDenial::request_read_stopped(stop, "decision fact comparison"))?;
+        Ok(equal)
     }
 }

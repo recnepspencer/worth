@@ -276,6 +276,15 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn into_native_query_read_stop(
+        self,
+    ) -> Option<Box<worth_relational::facade::runtime::QueryReadExecutionStop>> {
+        match self.cause {
+            AttemptDenialCause::NativeQueryRead(stop) => Some(stop),
+            _ => None,
+        }
+    }
+
     /// The language denial behind `WorkflowConditionExpressionDenied`.
     pub const fn expression(
         &self,
@@ -326,49 +335,4 @@ mod allocation_error_source_tests;
 #[cfg(test)]
 mod native_query_cause;
 
-impl WorthQueryApplicationAttemptDenial {
-    pub(super) fn query_read_denial(
-        stop: worth_relational::facade::runtime::QueryReadExecutionStop,
-        subject: &str,
-    ) -> Self {
-        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
-        use WorthQueryApplicationAttemptDenialKind as Kind;
-        let kind =
-            match super::super::provider::relational_execution_denial::query_read_execution_kind(
-                &stop,
-            ) {
-                Ok(Some(kind)) => Kind::ExecutionRequest(kind),
-                Ok(None) => Kind::MissingAuthoritativeFact,
-                Err(Control::Cancelled) => Kind::Cancelled,
-                Err(Control::TimedOut) => Kind::DeadlineExceeded,
-            };
-        Self {
-            kind,
-            subject: subject.to_owned(),
-            cause: AttemptDenialCause::NativeQueryRead(Box::new(stop)),
-        }
-    }
-}
-
-impl WorthQueryApplicationAttemptDenial {
-    pub(in crate::domain_computation::primary_graph) fn relational_read_denial(
-        cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
-        subject: &str,
-    ) -> Self {
-        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
-        use WorthQueryApplicationAttemptDenialKind as Kind;
-        let kind =
-            match super::super::provider::relational_execution_denial::relational_execution_kind(
-                cause, None,
-            ) {
-                Ok(kind) => Kind::ExecutionRequest(kind),
-                Err(Control::Cancelled) => Kind::Cancelled,
-                Err(Control::TimedOut) => Kind::DeadlineExceeded,
-            };
-        Self {
-            kind,
-            subject: subject.to_owned(),
-            cause: AttemptDenialCause::None,
-        }
-    }
-}
+mod request_read;

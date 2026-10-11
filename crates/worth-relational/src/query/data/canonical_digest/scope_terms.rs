@@ -1,8 +1,10 @@
+#[cfg(test)]
 use crate::indexes::data::DerivedIndexGenerationId;
+#[cfg(test)]
+use crate::query::data::{IndexParityMode, IndexQueryRejectionClass, QueryAccessPath};
 use crate::query::data::{
-    IndexParityMode, IndexQueryRejectionClass, QueryAccessContract, QueryAccessPath,
-    QueryExecutionShape, QueryLocalityClass, QueryOrderingContract, QueryPlanContextId,
-    QueryPlanEvidenceBasis, QueryScope, ReductionDiscipline,
+    QueryAccessContract, QueryExecutionShape, QueryLocalityClass, QueryOrderingContract,
+    QueryPlanContextId, QueryPlanEvidenceBasis, QueryScope, ReductionDiscipline,
 };
 use crate::transactions::data::RecordRef;
 use crate::visibility::materialization::read_records::{
@@ -120,6 +122,7 @@ pub(super) fn encode_query_locality_class(bytes: &mut Vec<u8>, locality: &QueryL
     }
 }
 
+#[cfg(test)]
 pub(super) fn encode_query_access_path(bytes: &mut Vec<u8>, access_path: &QueryAccessPath) {
     match access_path {
         QueryAccessPath::AuthoritativeStorage => bytes.push(0),
@@ -303,6 +306,7 @@ pub(super) fn encode_query_access_contract(
     });
 }
 
+#[cfg(test)]
 pub(super) fn encode_index_parity_mode(bytes: &mut Vec<u8>, parity_mode: IndexParityMode) {
     bytes.push(match parity_mode {
         IndexParityMode::ProductionAdmissibility => 0,
@@ -311,6 +315,7 @@ pub(super) fn encode_index_parity_mode(bytes: &mut Vec<u8>, parity_mode: IndexPa
     });
 }
 
+#[cfg(test)]
 fn encode_index_query_rejection_class(bytes: &mut Vec<u8>, rejection: &IndexQueryRejectionClass) {
     bytes.push(match rejection {
         IndexQueryRejectionClass::MissingGeneration => 0,
@@ -322,6 +327,7 @@ fn encode_index_query_rejection_class(bytes: &mut Vec<u8>, rejection: &IndexQuer
     });
 }
 
+#[cfg(test)]
 fn encode_derived_index_generation_id(bytes: &mut Vec<u8>, id: DerivedIndexGenerationId) {
     encode_u64(bytes, id.0);
 }

@@ -254,16 +254,31 @@ pub(super) fn finalize_restored_runtime(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     original_durability_mode: DurabilityMode,
-) -> Result<(), crate::durability::data::DurabilityError> {
+) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
     restored.set_durability_mode(original_durability_mode);
     restored
         .index_authority()
         .rebuild_unique_entity_aspect_field_indexes(execution)
         .map_err(|denial| {
-            crate::durability::data::DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::ReplayFailure,
-                format!("recovered unique-index basis admission failed: {denial:?}"),
-            )
+            use crate::branch::RelationalBranchBasisDenial as Denial;
+            use crate::durability::data::RelationalRecoveryStop as Stop;
+            use crate::execution::RelationalExecutionDenialCause as Cause;
+            match denial {
+                crate::indexes::data::DerivedIndexMaintenanceDenialKind::Execution(cause) => {
+                    Stop::Request(cause)
+                }
+                crate::indexes::data::DerivedIndexMaintenanceDenialKind::Basis(
+                    Denial::Cancelled,
+                ) => Stop::Request(Cause::Cancelled),
+                crate::indexes::data::DerivedIndexMaintenanceDenialKind::Basis(
+                    Denial::TimedOut,
+                ) => Stop::Request(Cause::DeadlineElapsed),
+                denial => DurabilityError::new(
+                    crate::durability::data::RecoveryFailureClass::ReplayFailure,
+                    format!("recovered unique-index basis admission failed: {denial:?}"),
+                )
+                .into(),
+            }
         })?;
     restored.history.rebuild_branch_head_version_index();
     restored.visibility.cache.clear();

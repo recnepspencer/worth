@@ -317,18 +317,11 @@ fn admit_direct_request<'request>(
     phase: &'request worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     workspace: &crate::runtime::WorthQueryWorkspace,
 ) -> Result<worth_execution::ExecutionRequest<'request, 'request>, WorthQueryBoundExecutionDenial> {
-    use worth_query_execution::facade::application_contribution::{
-        WorthQueryAdvancementDenial, WorthQueryManagedComputationResourceDenial,
-    };
     phase
         .execution_request_for(&workspace.advancement_owner())
-        .map_err(|_| {
+        .map_err(|cause| {
             WorthQueryBoundExecutionDenial::new(
-                WorthQueryBoundExecutionDenialKind::ExecutionRequest(
-                    WorthQueryAdvancementDenial::Resource(
-                        WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase,
-                    ),
-                ),
+                WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause.into()),
                 "direct advancement belongs to another installed runtime",
                 Default::default(),
             )

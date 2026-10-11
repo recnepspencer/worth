@@ -140,29 +140,42 @@ impl WorthQueryExecutionInstallationAuthority {
                 "Relational installed an invariant inventory outside the application catalog",
             ));
         }
-        let (recovered_relational_authority, recovered_checkpoint_restore_work) =
-            if let Some(checkpoint) = checkpoint {
-                let (outcome, authority) = relational_runtime
+        let (recovered_relational_authority, recovered_checkpoint_restore_work) = if let Some(
+            checkpoint,
+        ) = checkpoint
+        {
+            let (outcome, authority) = relational_runtime
                     .durability_recovery()
                     .restore_native_checkpoint_with_authority(&execution, &checkpoint.native)
-                    .map_err(|error| {
-                        primary_graph_denial(
-                        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                        format!("native checkpoint recovery denied: {error:?}"),
-                    )
+                    .map_err(|stop| {
+                        use worth_relational::facade::durability::RelationalRecoveryStop;
+                        match stop {
+                            RelationalRecoveryStop::Durability(error) => primary_graph_denial(
+                                WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                                format!("native checkpoint recovery denied: {error:?}"),
+                            ),
+                            RelationalRecoveryStop::Request(cause) => {
+                                let translated = super::super::provider::relational_execution_denial::relational_execution_kind(cause, None);
+                                let kind = match translated {
+                                    Ok(kind) => WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied { kind },
+                                    Err(kind) => WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped { kind },
+                                };
+                                primary_graph_denial(kind, format!("native checkpoint recovery request stopped: {cause:?}"))
+                            }
+                        }
                     })?;
-                invariant_installation_receipt = relational_runtime
-                    .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
-                    .map_err(|error| {
-                        primary_graph_denial(
+            invariant_installation_receipt = relational_runtime
+                .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
+                .map_err(|error| {
+                    primary_graph_denial(
                         WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
                         format!("recovered schema authority denied: {error}"),
                     )
-                    })?;
-                (Some(authority), outcome.checkpoint_restore_work)
-            } else {
-                (None, None)
-            };
+                })?;
+            (Some(authority), outcome.checkpoint_restore_work)
+        } else {
+            (None, None)
+        };
         let graph = checkpoint::primary_graph_for_installation(
             runtime.authority_identity(),
             installed_schema.binding_identity(),

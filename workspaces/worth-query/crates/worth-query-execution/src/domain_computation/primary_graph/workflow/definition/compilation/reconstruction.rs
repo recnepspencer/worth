@@ -216,7 +216,7 @@ fn adjacency(
         anchor,
         direction,
         limit,
-    )
+    )?
     .ok_or_else(|| denial("workflow definition relation is unavailable"))?;
     let adjacent = relations
         .iter()

@@ -61,24 +61,30 @@ pub(crate) fn certify_replay_recovery(
             ),
         )
         .expect("final controller sequence merge planning");
-    let main_replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: main_commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
-    let feature_replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: feature_commit.commit.commit_id,
-            branch_id: feature_branch.clone(),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let main_replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: main_commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
+    let feature_replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: feature_commit.commit.commit_id,
+                branch_id: feature_branch.clone(),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         main_replay.failure.is_none(),
         "main replay failed: {main_replay:?}"
@@ -197,24 +203,30 @@ pub(crate) fn certify_replay_recovery(
             ),
         )
         .expect("recovered merge planning");
-    let recovered_main_replay = recovered.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: main_commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
-    let recovered_feature_replay = recovered.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: feature_commit.commit.commit_id,
-            branch_id: feature_branch.clone(),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let recovered_main_replay = recovered
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: main_commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
+    let recovered_feature_replay = recovered
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: feature_commit.commit.commit_id,
+                branch_id: feature_branch.clone(),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         recovered_main_replay.failure.is_none(),
         "recovered main replay failed: {recovered_main_replay:?}"

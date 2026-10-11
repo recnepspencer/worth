@@ -33,9 +33,11 @@ impl GenerationScope {
     pub(super) fn latest(&self) -> Option<DerivedIndexGenerationId> {
         self.ids.last().copied()
     }
+    #[cfg(test)]
     pub(super) fn has_published(&self) -> bool {
         self.has_status(true)
     }
+    #[cfg(test)]
     pub(super) fn has_status(&self, published: bool) -> bool {
         !self.status(published).versions.is_empty()
     }
@@ -64,9 +66,7 @@ impl GenerationScope {
         crate::indexes::data::SelectedIndexGenerationAdmissionStop<Stop>,
     > {
         use super::admitted_selection::navigation_work;
-        let version_work = navigation_work(self.published.versions.len(), 1).ok_or(
-            crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow,
-        )?;
+        let version_work = navigation_work(self.published.versions.len(), 1)?;
         prepare(
             crate::indexes::data::SelectedIndexReadWork::OrderedNavigation(version_work),
             0,
@@ -75,9 +75,7 @@ impl GenerationScope {
         let Some(selected) = self.published.versions.get(&version) else {
             return Ok(None);
         };
-        let schema_work = navigation_work(selected.schemas.len(), 1).ok_or(
-            crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow,
-        )?;
+        let schema_work = navigation_work(selected.schemas.len(), 1)?;
         prepare(
             crate::indexes::data::SelectedIndexReadWork::OrderedNavigation(schema_work),
             0,
@@ -86,9 +84,7 @@ impl GenerationScope {
         let Some(ids) = selected.schemas.get(&schema) else {
             return Ok(None);
         };
-        let id_work = navigation_work(ids.len(), 1).ok_or(
-            crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow,
-        )?;
+        let id_work = navigation_work(ids.len(), 1)?;
         prepare(
             crate::indexes::data::SelectedIndexReadWork::OrderedNavigation(id_work),
             0,

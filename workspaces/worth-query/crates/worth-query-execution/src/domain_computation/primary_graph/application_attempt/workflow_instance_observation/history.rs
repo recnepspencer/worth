@@ -112,11 +112,24 @@ pub(super) fn observe(
         inventory_limit.saturating_mul(2),
     )
     .map_err(|failure| match failure {
-        AdjacencyObservationDenial::Execution(cause) => crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_denial(cause, "workflow observation"),
+        AdjacencyObservationDenial::Execution(cause) => crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "workflow observation"),
         AdjacencyObservationDenial::SnapshotUnavailable => {
             denial("workflow instance transition inventory is unavailable")
         }
         AdjacencyObservationDenial::WorkBudgetExceeded => budget::inventory_exhausted(),
+        AdjacencyObservationDenial::Interrupted(event) => {
+            super::super::WorthQueryApplicationAttemptDenial::new(
+                match event.interruption() {
+                    worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
+                        super::super::WorthQueryApplicationAttemptDenialKind::Cancelled
+                    }
+                    worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => {
+                        super::super::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
+                    }
+                },
+                "workflow transition inventory",
+            )
+        }
     })?;
     let transition_count = transitions.len();
     charge.reserve_inventory(transition_count)?;
@@ -140,7 +153,7 @@ pub(super) fn observe(
             transition.to,
             WorthQueryApplicationAdjacencyDirection::Outgoing,
             2,
-        )
+        )?
         .ok_or_else(|| denial("workflow assessment evidence relation is unavailable"))?;
         for evidence in evidence {
             charge.reserve_record(

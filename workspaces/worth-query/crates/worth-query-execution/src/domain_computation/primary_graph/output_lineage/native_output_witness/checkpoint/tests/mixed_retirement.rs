@@ -172,7 +172,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
             deleted_at: metadata.deleted_at,
             read_locator: "original-decision-read".into(),
         }];
-        assert!(facts[0].remains_equal_in(runtime,&host_custody.borrowed_request_for_test(),  &committed));
+        assert!(facts[0].remains_equal_in(runtime,&host_custody.borrowed_request_for_test(),  &committed).unwrap());
         assert!(
             SealedNativeOutputWitness::from_checkpoint_facts(
                 &correspondence,
@@ -190,7 +190,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 .covers_content_fact(&external_dead, &mut owner.edit_admission())
                 .unwrap()
         );
-        assert!(!external_dead.remains_equal_in(runtime,&host_custody.borrowed_request_for_test(),  &committed));
+        assert!(!external_dead.remains_equal_in(runtime,&host_custody.borrowed_request_for_test(),  &committed).unwrap());
         assert!(
             !witness
                 .checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),

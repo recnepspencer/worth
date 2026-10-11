@@ -66,16 +66,10 @@ pub(super) fn launch_query_world() -> (
     else {
         panic!("AP-07 Query binding admits")
     };
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = query
-        .with_advancement_mut(|phase, workspace| {
-            binding.open(
-                &phase,
-                UiCollectionProjectionBudget::new(1, 1, 0, 512).unwrap(),
-                workspace,
-            )
-        })
-        .expect("fixture workspace host call opens")
-    else {
+    let UiCollectionProjectionOpenOutcome::Opened(opened) = binding.open(
+        UiCollectionProjectionBudget::new(1, 1, 0, 512).unwrap(),
+        &mut query,
+    ) else {
         panic!("AP-07 collection opens")
     };
     let (_, fact) = opened.into_parts();

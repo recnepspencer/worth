@@ -250,15 +250,20 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                     .latest_commit()
                     .ok_or_else(|| "latest commit unavailable for replay capture".to_string())?
                     .commit_id;
-                let replay = session.world.runtime.replay_authority().replay_commit(
-                    RelationalReplayRequest {
-                        commit_id,
-                        branch_id: branch,
-                        execution_mode: ReplayExecutionMode::SerialDeterministic,
-                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                    },
-                    execution,
-                );
+                let replay = session
+                    .world
+                    .runtime
+                    .replay_authority()
+                    .replay_commit(
+                        RelationalReplayRequest {
+                            commit_id,
+                            branch_id: branch,
+                            execution_mode: ReplayExecutionMode::SerialDeterministic,
+                            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                        },
+                        execution,
+                    )
+                    .unwrap();
                 session.named_replays.insert((*alias).to_string(), replay);
                 Ok(WorkflowStepOutcome::applied())
             }

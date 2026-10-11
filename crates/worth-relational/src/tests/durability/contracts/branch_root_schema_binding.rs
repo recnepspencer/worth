@@ -135,6 +135,7 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("swapped root schema carrier cannot be readmitted");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(
         error.class,
         RecoveryFailureClass::CorruptCheckpoint,
@@ -186,6 +187,7 @@ fn assert_schema_recovery_denial(
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("corrupt root schema carrier cannot be readmitted");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, expected_class, "unexpected denial: {error:?}");
     assert!(

@@ -1,6 +1,8 @@
 pub(crate) mod adjacency_work_ledger;
 mod aspect_catalog;
+#[cfg(test)]
 mod aspect_version_read;
+#[cfg(test)]
 mod aspect_versions;
 mod context;
 mod diagnostics;

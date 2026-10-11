@@ -164,3 +164,6 @@ pub use crate::domain_computation::execution_runtime::product_world::installed_s
 
 #[cfg(all(test, feature = "test-query-execution-observer"))]
 pub(crate) use tests::fixture::AdvancementHost;
+
+#[cfg(any(test, feature = "test-query-execution-observer"))]
+pub use observations::principal_target_reads_on_this_thread_for_test;

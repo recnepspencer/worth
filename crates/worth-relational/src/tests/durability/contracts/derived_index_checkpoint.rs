@@ -207,6 +207,7 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     let mut old_format = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -221,6 +222,7 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
         .durability_recovery()
         .recover(execution, old_format)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
 }
 
@@ -259,6 +261,7 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("branch affinity"));
 }

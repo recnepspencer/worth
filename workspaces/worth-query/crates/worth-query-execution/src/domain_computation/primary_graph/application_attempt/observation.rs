@@ -11,6 +11,10 @@ use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDeni
 
 mod predecode_admission;
 #[cfg(test)]
+mod read_rendezvous;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use read_rendezvous::ReadRendezvous;
+#[cfg(test)]
 std::thread_local! {
     static NATIVE_FIELD_CONTACTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
@@ -47,13 +51,15 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
         .entity_record_with_projection_scope(execution, entity_id, scope, |record| {
             (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live).then(
                 || {
-                    record
+                    let value = record
                         .aspect_field_value(locator.aspect().aspect_key(), &field)
-                        .cloned()
-                        .map_or(
-                            WorthQueryApplicationFieldObservation::Absent,
-                            WorthQueryApplicationFieldObservation::Present,
-                        )
+                        .cloned();
+                    #[cfg(test)]
+                    read_rendezvous::reached();
+                    value.map_or(
+                        WorthQueryApplicationFieldObservation::Absent,
+                        WorthQueryApplicationFieldObservation::Present,
+                    )
                 },
             )
         })

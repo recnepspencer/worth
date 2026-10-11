@@ -74,6 +74,7 @@ pub struct QueryExecutionOutcome {
     pub complexity: QueryComplexitySummary,
 }
 
+#[cfg(test)]
 pub fn reduce_query_fragments(
     execution_shape: QueryExecutionShape,
     ordering: QueryOrderingContract,
@@ -121,6 +122,7 @@ pub fn reduce_query_fragments(
     }
 }
 
+#[cfg(test)]
 fn reduce_traversal_fragments(
     fragments: Vec<QueryWorkerFragment>,
 ) -> (Vec<EntityReadRecord>, Vec<RelationReadRecord>) {
@@ -167,6 +169,7 @@ fn reduce_traversal_fragments(
     )
 }
 
+#[cfg(test)]
 fn reduce_traversal_entities(
     mut keyed_entities: Vec<(TraversalEntityVisitKey, EntityReadRecord)>,
     unkeyed_entities: Vec<EntityReadRecord>,
@@ -192,6 +195,7 @@ fn reduce_traversal_entities(
         .collect()
 }
 
+#[cfg(test)]
 fn reduce_traversal_relations(
     mut keyed_relations: Vec<(TraversalRelationVisitKey, RelationReadRecord)>,
     unkeyed_relations: Vec<RelationReadRecord>,

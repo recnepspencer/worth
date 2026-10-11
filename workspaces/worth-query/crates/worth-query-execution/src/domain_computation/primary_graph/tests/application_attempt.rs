@@ -351,3 +351,9 @@ pub(in crate::domain_computation::primary_graph) fn resolved_account(
         )
         .unwrap()
 }
+
+#[path = "application_attempt/read_rendezvous.rs"]
+mod read_rendezvous;
+
+#[path = "application_attempt/request_read_stops.rs"]
+mod request_read_stops;

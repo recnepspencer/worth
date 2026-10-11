@@ -11,8 +11,8 @@ pub(super) fn remains_equal(
     direction: WorthQueryApplicationAdjacencyDirection,
     maximum_work_units: usize,
     expected: &[WorthQueryApplicationObservedRelation],
-) -> bool {
-    observe_adjacency(
+) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+    Ok(observe_adjacency(
         runtime,
         execution,
         snapshot,
@@ -20,8 +20,8 @@ pub(super) fn remains_equal(
         anchor,
         direction,
         maximum_work_units,
-    )
-    .is_some_and(|current| current == expected)
+    )?
+    .is_some_and(|current| current == expected))
 }
 
 pub(in crate::domain_computation::primary_graph) fn observe_adjacency(
@@ -32,8 +32,17 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency(
     anchor: EntityId,
     direction: WorthQueryApplicationAdjacencyDirection,
     maximum_work_units: usize,
-) -> Option<Vec<WorthQueryApplicationObservedRelation>> {
-    observe_adjacency_checked(
+) -> Result<
+    Option<Vec<WorthQueryApplicationObservedRelation>>,
+    super::super::WorthQueryApplicationAttemptDenial,
+> {
+    execution.check_live().map_err(|stop| {
+        super::super::WorthQueryApplicationAttemptDenial::request_read_stopped(
+            stop,
+            "adjacency observation",
+        )
+    })?;
+    let observed = observe_adjacency_checked(
         runtime,
         execution,
         snapshot,
@@ -41,14 +50,46 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency(
         anchor,
         direction,
         maximum_work_units,
-    )
-    .ok()
+    );
+    execution.check_live().map_err(|stop| {
+        super::super::WorthQueryApplicationAttemptDenial::request_read_stopped(
+            stop,
+            "adjacency observation",
+        )
+    })?;
+    match observed {
+        Ok(relations) => Ok(Some(relations)),
+        Err(AdjacencyObservationDenial::Execution(cause)) => Err(
+            super::super::WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                cause,
+                "adjacency observation",
+            ),
+        ),
+        Err(AdjacencyObservationDenial::Interrupted(event)) => {
+            Err(super::super::WorthQueryApplicationAttemptDenial::new(
+                match event.interruption() {
+                    worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
+                        super::super::WorthQueryApplicationAttemptDenialKind::Cancelled
+                    }
+                    worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => {
+                        super::super::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
+                    }
+                },
+                "adjacency observation",
+            ))
+        }
+        Err(
+            AdjacencyObservationDenial::SnapshotUnavailable
+            | AdjacencyObservationDenial::WorkBudgetExceeded,
+        ) => Ok(None),
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum AdjacencyObservationDenial {
     SnapshotUnavailable,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    Interrupted(worth_relational::facade::mvcc::RelationalInterruptionEvent),
     WorkBudgetExceeded,
 }
 
@@ -82,6 +123,14 @@ pub(super) fn observe_adjacency_with_work(
     direction: WorthQueryApplicationAdjacencyDirection,
     maximum_work_units: usize,
 ) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
+    if let Some(event) =
+        worth_relational::facade::mvcc::RelationalInterruptionEvent::observe_request(
+            execution,
+            worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
+        )
+    {
+        return Err(AdjacencyObservationDenial::Interrupted(event));
+    }
     let view = runtime
         .read_truth()
         .project_snapshot(snapshot)

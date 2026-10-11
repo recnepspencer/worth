@@ -71,15 +71,18 @@ fn replay_contract_reports_schema_continuation_descriptor_drift_when_envelope_is
         }
     ));
 
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(
@@ -164,15 +167,18 @@ fn replay_contract_audit_mode_confirms_schema_continuation_descriptor_drift_at_d
         }
     ));
 
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(
@@ -258,15 +264,18 @@ fn replay_certification_audit_drift_is_explained_and_counted() {
     ));
 
     runtime.performance_access().reset_counters();
-    let replay = runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id: outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    );
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     let diagnostics = runtime.publication().diagnostics();

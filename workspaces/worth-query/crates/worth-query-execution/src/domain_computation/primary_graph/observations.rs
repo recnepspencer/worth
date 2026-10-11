@@ -1,3 +1,7 @@
+#[cfg(any(test, feature = "test-query-execution-observer"))]
+mod principal_target_read_observation;
+#[cfg(any(test, feature = "test-query-execution-observer"))]
+pub use principal_target_read_observation::principal_target_reads_on_this_thread_for_test;
 use std::sync::Arc;
 
 use worth_foundational::facade::AspectValue;
@@ -121,6 +125,8 @@ pub(super) fn resolve_principal_target(
         .read_truth()
         .plan_query_packet(snapshot, packet)
         .ok_or_else(|| stale_proof_denial(binding))?;
+    #[cfg(any(test, feature = "test-query-execution-observer"))]
+    principal_target_read_observation::record();
     let outcome = runtime
         .read_truth()
         .execute_query_plan(plan, execution)

@@ -10,6 +10,7 @@ use super::{RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding};
 /// is still outstanding.
 #[derive(Debug)]
 pub(in crate::runtime) struct RelationalRuntimeCloseAuthority {
+    #[cfg(test)]
     runtime_instance_id: u64,
     lifecycle: RelationalRuntimeOwnerBinding,
     publication: RelationalRuntimePublicationBinding,
@@ -17,12 +18,13 @@ pub(in crate::runtime) struct RelationalRuntimeCloseAuthority {
 
 impl RelationalRuntimeCloseAuthority {
     pub(super) fn new(
-        runtime_instance_id: u64,
+        _runtime_instance_id: u64,
         lifecycle: RelationalRuntimeOwnerBinding,
         publication: RelationalRuntimePublicationBinding,
     ) -> Self {
         Self {
-            runtime_instance_id,
+            #[cfg(test)]
+            runtime_instance_id: _runtime_instance_id,
             lifecycle,
             publication,
         }
@@ -37,7 +39,7 @@ impl RelationalRuntimeCloseAuthority {
     /// thread then blocks until every already-admitted operation has returned;
     /// those operations complete normally and produce their real results.
     /// Remaining publication settlement is resolved with typed owner-loss
-    /// accounting, and this runtime's query scratch hints are purged.
+    /// accounting. Unit tests also purge this runtime's index-query scratch hints.
     ///
     /// The one caller is [`RelationalRuntime`]'s own `Drop`, which the language
     /// runs before any of that handle's fields, so the state, the configuration
@@ -53,6 +55,7 @@ impl RelationalRuntimeCloseAuthority {
     pub(super) fn close(&self) {
         self.lifecycle.close();
         self.publication.close();
+        #[cfg(test)]
         crate::indexes::purge_index_query_scratch_hints(self.runtime_instance_id);
     }
 }

@@ -217,15 +217,18 @@ fn replay_merge_ready_commit(
     runtime: &RelationalRuntime,
     commit_id: crate::facade::history::CommitId,
 ) -> crate::replay::data::RelationalReplayOutcome {
-    runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        },
-        execution,
-    )
+    runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap()
 }
 
 fn publication_diagnostics_evidence(runtime: &RelationalRuntime) -> PublicationDiagnosticsEvidence {

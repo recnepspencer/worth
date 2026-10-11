@@ -25,6 +25,7 @@ fn checkpoint_recovery_rejects_missing_exact_branch_root_artifact() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("global partition images cannot substitute for a branch root");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("missing branch-root image"));
@@ -53,6 +54,7 @@ fn checkpoint_recovery_rejects_root_artifact_without_commit_envelope() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("a root image cannot select an unrelated or missing envelope");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("names missing commit envelope"));
@@ -78,6 +80,7 @@ fn checkpoint_recovery_rejects_duplicate_commit_envelopes_before_root_readmissio
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(
@@ -196,6 +199,7 @@ fn checkpoint_recovery_rejects_duplicate_global_partition_images() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("duplicate partition image"));
@@ -221,6 +225,7 @@ fn checkpoint_recovery_rejects_duplicate_branch_root_partition_images() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("duplicate partition image"));
@@ -262,6 +267,7 @@ fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("foreign branch stream"));
@@ -314,6 +320,7 @@ fn tail_recovery_rejects_foreign_branch_target_substitution() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("foreign branch stream"));

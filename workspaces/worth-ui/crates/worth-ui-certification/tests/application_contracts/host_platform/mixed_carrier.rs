@@ -215,22 +215,16 @@ fn open_collection(
             panic!("binding stopped: {stop:?}")
         }
     };
-    match workspace
-        .with_advancement_mut(|phase, workspace| {
-            binding.open(
-                &phase,
-                UiCollectionProjectionBudget::new(
-                    profile.collection_rows as u32,
-                    profile.text_count,
-                    0,
-                    profile.text_bytes * 2,
-                )
-                .unwrap(),
-                workspace,
-            )
-        })
-        .expect("workspace host call opens")
-    {
+    match binding.open(
+        UiCollectionProjectionBudget::new(
+            profile.collection_rows as u32,
+            profile.text_count,
+            0,
+            profile.text_bytes * 2,
+        )
+        .unwrap(),
+        workspace,
+    ) {
         UiCollectionProjectionOpenOutcome::Opened(opened) => opened,
         UiCollectionProjectionOpenOutcome::Stopped(stop) => panic!("open stopped: {stop:?}"),
     }

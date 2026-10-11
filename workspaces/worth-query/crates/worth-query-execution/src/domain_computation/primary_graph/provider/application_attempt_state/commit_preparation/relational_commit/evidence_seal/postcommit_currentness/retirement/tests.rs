@@ -155,6 +155,7 @@ fn reads(
                     WorthQueryApplicationAdjacencyDirection::Outgoing,
                     16,
                 )
+                .unwrap()
                 .unwrap(),
             )
         });

@@ -68,8 +68,8 @@ fn ordinary_window_opens_512_of_2049_rows_and_maintains_tail_identity() {
         "receipt-order--tail",
     );
     let refresh = match workspace
-        .with_execution_request_mut(|execution, mut workspace| {
-            live.refresh(execution, &mut workspace)
+        .with_execution_request_mut(|execution, workspace| {
+            live.refresh(execution, workspace)
                 .expect("QP04 Query refresh")
         })
         .expect("workspace host call opens")
@@ -141,10 +141,7 @@ fn open_projection(
     };
     let budget = UiCollectionProjectionBudget::new(max_rows, 131_072, 1, 8_388_608)
         .expect("QP04 collection budget");
-    let UiCollectionProjectionOpenOutcome::Opened(opened) = workspace
-        .with_advancement_mut(|phase, workspace| binding.open(&phase, budget, workspace))
-        .expect("workspace host call opens")
-    else {
+    let UiCollectionProjectionOpenOutcome::Opened(opened) = binding.open(budget, workspace) else {
         panic!("QP04 collection projection must open");
     };
     opened.into_parts()

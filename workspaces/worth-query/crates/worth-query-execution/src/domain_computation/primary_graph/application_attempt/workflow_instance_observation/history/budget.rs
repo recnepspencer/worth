@@ -88,7 +88,7 @@ impl HistoryReconstructionCharge {
                 },
             )
             .map_err(|cause| {
-                WorthQueryApplicationAttemptDenial::relational_read_denial(
+                WorthQueryApplicationAttemptDenial::relational_read_stopped(
                     cause,
                     "authoritative observation",
                 )

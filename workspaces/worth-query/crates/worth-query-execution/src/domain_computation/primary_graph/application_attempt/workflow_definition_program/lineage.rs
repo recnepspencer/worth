@@ -85,7 +85,7 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
         lineage,
         WorthQueryApplicationAdjacencyDirection::Outgoing,
         CURRENT_DEFINITION_WORK_LIMIT,
-    )
+    )?
     .ok_or_else(|| lineage_denial(definition.identity().as_str()))?;
     // A retired lineage has no current relation. The predecessor fact decides
     // whether that absence is the author's expectation or a stale revision.
@@ -106,11 +106,10 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
         entity_id: current.to,
         kind: layout.definition.entity_kind,
     });
-    if current_definition
-        .as_ref()
-        .is_some_and(|fact| !fact.remains_equal_in(runtime, execution, snapshot))
-    {
-        return Err(lineage_denial(definition.identity().as_str()));
+    if let Some(fact) = &current_definition {
+        if !fact.remains_equal_in(runtime, execution, snapshot)? {
+            return Err(lineage_denial(definition.identity().as_str()));
+        }
     }
     facts.push(WorthQueryApplicationObservedFact::Adjacency {
         relation_kind: layout.current_definition_relation,

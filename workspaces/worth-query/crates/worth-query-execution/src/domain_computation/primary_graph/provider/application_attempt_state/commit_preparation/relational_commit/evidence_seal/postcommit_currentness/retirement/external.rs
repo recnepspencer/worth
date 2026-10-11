@@ -49,7 +49,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                     anchor,
                     WorthQueryApplicationAdjacencyDirection::Outgoing,
                     16,
-                )
+                ).unwrap()
                 .unwrap()
             });
             let removed = relations

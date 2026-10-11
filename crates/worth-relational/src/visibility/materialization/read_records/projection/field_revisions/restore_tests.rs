@@ -303,6 +303,7 @@ fn checkpoint_restore_rejects_incomplete_field_revision_column() {
         .durability_recovery()
         .recover(execution, recovery)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("field revision length"), "{error:?}");
     release_test_commit_snapshot(&runtime, &created);

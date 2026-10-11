@@ -7,6 +7,8 @@ use worth_query::facade::{
 mod certification;
 mod close;
 mod open;
+#[cfg(test)]
+mod opening_tests;
 mod refresh;
 
 type QueryLease = observation::WorthQuerySharedLiveProjectionLease<
@@ -117,11 +119,15 @@ pub struct UiLiveCollectionProjection {
 impl crate::UiCollectionProjectionBinding {
     pub fn open(
         self,
-        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         budget: crate::UiCollectionProjectionBudget,
         workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
     ) -> UiCollectionProjectionOpenOutcome {
-        open::open_collection_projection(phase, self, budget, workspace)
+        let refusal = stopped(&self, UiCollectionProjectionOpenStopKind::ExecutionDenied);
+        workspace
+            .with_advancement_mut(|phase, workspace| {
+                open::open_collection_projection(&phase, self, budget, workspace)
+            })
+            .unwrap_or(refusal)
     }
 }
 

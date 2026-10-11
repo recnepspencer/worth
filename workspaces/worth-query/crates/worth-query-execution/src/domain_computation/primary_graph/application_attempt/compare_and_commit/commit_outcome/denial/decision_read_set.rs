@@ -29,6 +29,7 @@ impl WorthQueryApplicationCommitDenial {
         stage: Stage,
     ) -> Self {
         let kind = match failure.kind() {
+            Kind::ExecutionRequest(kind) => super::execution::execution_kind(Ok(kind)),
             Kind::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
             } => CommitKind::ActiveSnapshotCapacityExhausted {

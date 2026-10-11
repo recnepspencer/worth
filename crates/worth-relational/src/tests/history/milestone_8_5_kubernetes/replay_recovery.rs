@@ -6,15 +6,18 @@ pub(super) fn replay_commit(
     commit_id: crate::history::data::CommitId,
     branch_id: BranchId,
 ) -> crate::facade::replay::RelationalReplayOutcome {
-    runtime.replay_authority().replay_commit(
-        RelationalReplayRequest {
-            commit_id,
-            branch_id,
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        },
-        execution,
-    )
+    runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id,
+                branch_id,
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap()
 }
 
 pub(super) fn assert_strategy_replay_clean(

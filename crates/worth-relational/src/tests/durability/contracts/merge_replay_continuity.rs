@@ -258,6 +258,7 @@ fn durability_contract_reports_parent_order_parity_drift_when_durable_segment_is
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert_eq!(
@@ -326,6 +327,7 @@ fn durability_contract_does_not_reconstruct_missing_merge_authority_from_diagnos
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert_eq!(error.history_drift_class, None);

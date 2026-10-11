@@ -14,3 +14,6 @@ pub use crate::domain_computation::primary_graph::{
 };
 pub use worth_foundational::facade::AspectValue;
 pub use worth_relational::facade::identity::{EntityId, RelationId};
+
+/// Relational owns the cooperative budget supplied to installed application rules.
+pub use worth_relational::facade::runtime::CustomInvariantLeaseBudget;

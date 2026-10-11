@@ -106,6 +106,7 @@ fn durability_contract_recovery_fails_closed_without_exact_branch_cells() {
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("recovery must not synthesize branch cells from legacy heads");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error
         .detail
@@ -152,6 +153,7 @@ fn durability_contract_recovery_rejects_branch_cell_target_without_catalog_artif
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("recovery must reject a branch target with no immutable artifact");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("references missing commit artifact"));
     assert_eq!(recovered.history().immutable_commit_count(), 0);
@@ -192,6 +194,7 @@ fn durability_contract_recovery_rejects_tail_checkpoint_drift_before_mutation() 
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("recovery must reject a mismatching existing branch checkpoint");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error
         .detail

@@ -2,7 +2,7 @@ use std::{
     num::NonZeroUsize,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Barrier,
+        mpsc, Mutex,
     },
     time::{Duration, Instant},
 };
@@ -54,24 +54,38 @@ fn remaining_work_child_observes_parent_cancellation_during_work() {
     let cancellation = CancellationSource::new();
     let lease = parent(cancellation.token(), None);
     let budget = RequestWorkBudget::new();
-    let rendezvous = Barrier::new(2);
+    let (reached, receive) = mpsc::channel();
+    let (resume, resumed) = mpsc::channel();
+    let resumed = Mutex::new(resumed);
     let read = AtomicUsize::new(0);
 
     let result = std::thread::scope(|scope| {
-        scope.spawn(|| {
-            rendezvous.wait();
+        let controller = scope.spawn(move || {
+            receive
+                .recv()
+                .map_err(|_| "kernel finished without reaching the cancellation rendezvous")?;
             cancellation.cancel();
-            rendezvous.wait();
+            resume
+                .send(())
+                .map_err(|_| "kernel stopped before the cancellation release")
         });
-        execute_read_only_packets_with_budget(
+        let read = &read;
+        // The kernel owns the sender, so an early stop disconnects the rendezvous.
+        let result = execute_read_only_packets_with_budget(
             packet(),
             Some(&lease),
             Some(&budget),
-            |rows, context| {
+            move |rows, context| {
                 context.checkpoint(1)?;
                 read.fetch_add(1, Ordering::Relaxed);
-                rendezvous.wait();
-                rendezvous.wait();
+                reached
+                    .send(())
+                    .expect("cancellation controller is present");
+                resumed
+                    .lock()
+                    .expect("cancellation receiver is not poisoned")
+                    .recv()
+                    .expect("cancellation controller released the kernel");
                 for _ in 1..*rows {
                     context.checkpoint(1)?;
                     read.fetch_add(1, Ordering::Relaxed);
@@ -79,7 +93,12 @@ fn remaining_work_child_observes_parent_cancellation_during_work() {
                 Ok(*rows)
             },
             |_| 0,
-        )
+        );
+        controller
+            .join()
+            .expect("cancellation controller panicked")
+            .expect("cancellation rendezvous was not completed");
+        result
     });
 
     assert_eq!(read.load(Ordering::Relaxed), 1);

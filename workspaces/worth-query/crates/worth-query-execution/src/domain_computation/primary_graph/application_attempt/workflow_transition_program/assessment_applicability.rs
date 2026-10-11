@@ -96,7 +96,7 @@ pub(super) fn observe(
                         },
                     )
                     .map_err(|cause| {
-                        WorthQueryApplicationAttemptDenial::relational_read_denial(
+                        WorthQueryApplicationAttemptDenial::relational_read_stopped(
                             cause,
                             "authoritative observation",
                         )
@@ -117,7 +117,7 @@ pub(super) fn observe(
                 )
                 .map_err(|unavailable| match unavailable {
                     AdjacencyStructuralRevisionDenial::Execution(cause) => {
-                        WorthQueryApplicationAttemptDenial::relational_read_denial(
+                        WorthQueryApplicationAttemptDenial::relational_read_stopped(
                             cause,
                             "assessment applicability",
                         )
