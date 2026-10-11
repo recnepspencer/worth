@@ -329,9 +329,13 @@ where
         .collect::<std::collections::HashSet<_>>();
     if let Some(support) = runtime.installed_program_support() {
         answered.extend(
-            support
-                .rostered_mutation_bindings()
-                .map(TypeId::into_external),
+            runtime
+                .installed_schema()
+                .installed_mutation_binding_inventory()
+                .filter(|binding| {
+                    support.acts_through_mutation_binding(binding.binding_type().into())
+                })
+                .map(|binding| binding.binding_type()),
         );
     }
     worth_query_installation::facade::require_complete_program_binding_membership(
