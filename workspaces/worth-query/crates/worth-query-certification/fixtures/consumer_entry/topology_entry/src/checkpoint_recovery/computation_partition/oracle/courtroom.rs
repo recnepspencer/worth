@@ -13,7 +13,7 @@ mod bits;
 mod branches;
 pub(super) mod cancellation;
 mod equal_output;
-needs_os_threads! { mod interleaving; }
+worth_execution::needs_os_threads! { mod interleaving; }
 mod lifecycle;
 mod request_work;
 mod tree;

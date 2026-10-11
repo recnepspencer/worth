@@ -45,7 +45,11 @@ fn run() {
             WorthQueryManagedComputationResourceDenial as Resource,
         },
         application_entry::WorthQueryApplicationOutputDemandDenial as OutputDenial,
-        primary_graph::signal_request_charges_on_this_thread_for_test as signal_charges,
+        primary_graph::{
+            signal_request_charges_on_this_thread_for_test as signal_charges,
+            signal_request_refusals_on_this_thread_for_test as signal_refusals,
+            SignalCheckpointDenial,
+        },
     };
     let ceiling = budget_measurement::ceiling();
     bound(None);
@@ -72,6 +76,7 @@ fn run() {
     reports();
     passes();
     signal_charges();
+    signal_refusals();
     room().clear();
     kernel_charges();
     let outcome = interest.settle(&request);
@@ -99,6 +104,11 @@ fn run() {
         panic!("the caller must carry its execution stop");
     };
     assert_eq!(
+        signal_refusals(),
+        vec![SignalCheckpointDenial::WorkCeiling],
+        "delivery refuses at its Signal-owned checkpoint"
+    );
+    assert_eq!(
         denial.kind(),
         WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::Resource(
             Resource::WorkExhausted
@@ -106,6 +116,15 @@ fn run() {
         "charged={charged}; attempts={attempts:?}; diagnostics={diagnostics}"
     );
     assert_eq!(attempts.len(), 3, "charged first pass, refresh, then retry");
+    assert_eq!(
+        room().len(),
+        REQUIRED_PRODUCER_PASSES as usize,
+        "both producers completed before Signal delivery refused"
+    );
+    assert!(
+        room().iter().all(|run| run.outcome.is_ok()),
+        "the refusal is outside every producer's completed computation"
+    );
     let kernel_work = kernel_charges();
     assert_eq!(
         kernel_work[0],

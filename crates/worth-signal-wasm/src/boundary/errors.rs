@@ -92,6 +92,13 @@ impl From<SignalError> for WorthSignalJsError {
                 message,
                 context,
             },
+            // The caller omitted the bounded-input declaration for its checked graph.
+            SignalError::MissingBoundedInputsAtEpochAdmission { .. }
+            | SignalError::MissingBoundedInputsAtEvaluation { .. } => Self {
+                code: "invalidInput".to_owned(),
+                message: value.to_string(),
+                context: None,
+            },
             SignalError::CycleDetected { .. } => Self {
                 code: "cycleDetected".to_owned(),
                 message: value.to_string(),
@@ -132,3 +139,6 @@ impl From<WorthSignalJsError> for JsValue {
             .unwrap_or_else(|_| JsValue::from_str("worth-signal wasm error"))
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -337,9 +337,10 @@ fn marked_facts_permit_reuse<'fact>(
         Ok(current) => Ok(current),
         Err(
             InputCutoffVerificationStop::WorkExhausted
-            | InputCutoffVerificationStop::Admission(CompanionPreflightStop::WorkExhausted {
-                ..
-            }),
+            | InputCutoffVerificationStop::Admission(
+                CompanionPreflightStop::WorkExhausted { .. }
+                | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. },
+            ),
         ) => Ok(false),
         Err(stop) => Err(stop),
     }

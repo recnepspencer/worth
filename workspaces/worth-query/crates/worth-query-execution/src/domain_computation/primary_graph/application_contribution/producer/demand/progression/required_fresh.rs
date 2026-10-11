@@ -1,6 +1,6 @@
 //! Admit one real required successor from the existing Fresh disclosure.
 //!
-//! The disclosure stays intact for Schedule→Execute. A paid shallow source
+//! The disclosure stays intact for Schedule -> Execute. A paid shallow source
 //! copy moves to the registry's retained readmission owner. This child is
 //! registered only with the selected execution continuation.
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
@@ -211,6 +211,7 @@ fn observed_clone_denial(
         WorthQueryObservedSourceCloneStop::AccountingOverflow => work_denial(),
         WorthQueryObservedSourceCloneStop::Admission(
             CompanionPreflightStop::WorkExhausted { .. }
+            | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
             | CompanionPreflightStop::WorkCounterOverflow,
         ) => work_denial(),
         WorthQueryObservedSourceCloneStop::Admission(_) => denial(

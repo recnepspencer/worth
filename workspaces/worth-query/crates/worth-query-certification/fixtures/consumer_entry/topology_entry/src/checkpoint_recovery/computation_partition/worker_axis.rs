@@ -21,7 +21,7 @@ use super::execution::{association_sensitive_entries, entry, heavy_regions, seve
 use super::facts::{self, RegionEntry};
 use super::owner::{with_region_totals, RegionOutcome};
 
-needs_os_threads! {
+worth_execution::needs_os_threads! {
 use worth_query_host::facade::primary_graph::test_execution_workers_for_test;
 
 /// The perturbation seeds of the certified placements.
@@ -199,12 +199,12 @@ fn across_the_axis(
     serial.expect("the axis has a serial placement")
 }
 
-needs_os_threads! {
+worth_execution::needs_os_threads! {
 #[test]
 fn the_floating_point_sum_keeps_its_bits_and_its_work_at_every_worker_count() { assert_floating_point(axis()); }
 }
 
-needs_os_threads! {
+worth_execution::needs_os_threads! {
 #[cfg(panic = "unwind")]
 #[test]
 fn the_least_failing_partition_is_the_same_at_every_worker_count() {
@@ -213,7 +213,7 @@ fn the_least_failing_partition_is_the_same_at_every_worker_count() {
 }
 }
 
-needs_os_threads! {
+worth_execution::needs_os_threads! {
 #[test]
 fn the_work_boundary_is_the_same_at_every_worker_count() { assert_work_boundary(axis()); }
 }

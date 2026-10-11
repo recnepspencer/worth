@@ -42,9 +42,33 @@ pub(crate) const fn companion_stop_is_transient(stop: &CompanionPreflightStop) -
         CompanionPreflightStop::Interrupted(_)
         | CompanionPreflightStop::ForeignCell
         | CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow
         | CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow
         | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_work_refusal_does_not_clear_on_an_unchanged_retry() {
+        for stop in [
+            CompanionPreflightStop::WorkExhausted {
+                required: 1,
+                maximum: 0,
+            },
+            CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: 0 },
+            CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: u64::MAX },
+            CompanionPreflightStop::WorkCounterOverflow,
+        ] {
+            assert!(
+                !companion_stop_is_transient(&stop),
+                "a work refusal recurs on an unchanged effect: {stop:?}"
+            );
+        }
     }
 }

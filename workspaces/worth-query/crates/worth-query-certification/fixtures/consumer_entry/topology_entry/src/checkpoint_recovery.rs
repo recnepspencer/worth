@@ -30,7 +30,7 @@ mod demand_contact;
 mod demand_policy;
 mod generated_restoration;
 mod input_cutoff;
-needs_os_threads! {
+worth_execution::needs_os_threads! {
     mod late_cancellation;
 }
 pub(crate) mod mixed_retirement;

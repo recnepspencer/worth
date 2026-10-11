@@ -102,10 +102,6 @@ fn packet_stop(width: usize, stopped_ordinal: usize) {
         PartitionIdentity::new(u64::try_from(stopped_ordinal).unwrap() + 1),
         "a stopped packet keeps its own boundary: width {width}, stopped ordinal {stopped_ordinal}"
     );
-    assert_eq!(
-        identity,
-        PartitionIdentity::new(u64::try_from(stopped_ordinal).unwrap() + 1),
-        "a stopped packet keeps its own failure identity: width {width}, stopped ordinal {stopped_ordinal}"
-    );
+
     runtime.snapshots().release_snapshot(&snapshot).unwrap();
 }

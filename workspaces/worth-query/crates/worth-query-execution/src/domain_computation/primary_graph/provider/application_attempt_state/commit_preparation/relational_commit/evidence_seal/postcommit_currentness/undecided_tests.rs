@@ -35,14 +35,13 @@ fn an_indexed_selection_the_width_cannot_pay_for_is_not_kept() {
     // The observation reads only what it reserved. One unit pays the lookup
     // and no candidate, so even an empty selection is not observed: a
     // lookup that may read nothing cannot tell empty from cut short.
-    for (indexed_width, required) in [(0, 1), (1, 2)] {
+    for indexed_width in [0, 1] {
         for producer_output in [false, true] {
             assert_eq!(
                 rebase_within_width(&world, selection.clone(), producer_output, indexed_width),
                 RebasedSourceFacts::VerificationRequired {
                     reason: RebaseVerificationReason::AdmissionDenied(
-                        CompanionPreflightStop::WorkExhausted {
-                            required,
+                        CompanionPreflightStop::WorkExhaustedWithoutRequirement {
                             maximum: u64::try_from(indexed_width).unwrap(),
                         }
                     ),

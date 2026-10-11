@@ -340,6 +340,7 @@ fn admission_denial(
     use worth_relational::facade::mvcc::CompanionPreflightStop;
     match stop {
         CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => work_denial(),
         _ => capacity_denial(),
     }

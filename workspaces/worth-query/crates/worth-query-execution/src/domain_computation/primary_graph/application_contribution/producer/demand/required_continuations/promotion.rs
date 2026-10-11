@@ -172,7 +172,7 @@ where
     admission
         .admit_read_scratch(u64::try_from(backing).map_err(|_| empty_capacity())?)
         .map_err(|stop| match stop {
-            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
+            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
             | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
                 empty_work()
             }

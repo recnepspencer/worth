@@ -53,7 +53,7 @@ fn serial_handoff<E: ChargedBytes + Send>(
 ) -> BatchOutcome<u64, E> {
     let serial = TEST_LOCK.lock().unwrap();
     let lease = authority().request_lease(request(2, 2_000, 10)).unwrap();
-    if cfg!(target_arch = "wasm32") {
+    if !crate::backend::HAS_OS_THREADS {
         assert_eq!(
             lease.resolved_posture(),
             ExecutionPosture::Serial,
