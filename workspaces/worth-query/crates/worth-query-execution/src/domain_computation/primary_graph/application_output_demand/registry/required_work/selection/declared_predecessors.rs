@@ -135,17 +135,11 @@ impl WorthQueryOutputDemandRegistry {
             else {
                 continue;
             };
-            state.charge_record_lookup(&head, admission)?;
-            let published = state.records.get(&head).is_some_and(|row|
-                matches!(&row.state, super::super::super::DemandState::Output(output)
-                    if matches!(output.checkpoint, Some(super::super::super::WorthQueryOutputCheckpoint::Published { .. }))));
             drop(state);
-            if published {
-                if let Some(held) = self.take_held_successor(&head, admission)? {
-                    return Ok(Some(
-                        super::super::super::RequiredUpstreamSuccessor::issued(held),
-                    ));
-                }
+            if let Some(held) = self.take_published_held_successor(&head, admission)? {
+                return Ok(Some(
+                    super::super::super::RequiredUpstreamSuccessor::issued(held),
+                ));
             }
         }
         Ok(None)

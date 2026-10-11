@@ -189,7 +189,7 @@ fn a_registry_successor_is_moved_to_exactly_one_taker() {
                 .unwrap())
             .is_none());
         let moved = registry
-            .take_held_successor(&row_key, &mut record_admission())
+            .take_published_held_successor(&row_key, &mut record_admission())
             .unwrap()
             .unwrap();
         assert_eq!(
@@ -198,7 +198,7 @@ fn a_registry_successor_is_moved_to_exactly_one_taker() {
         );
         assert!(
             registry
-                .take_held_successor(&row_key, &mut record_admission())
+                .take_published_held_successor(&row_key, &mut record_admission())
                 .unwrap()
                 .is_none(),
             "a second advance receives no successor after the custody move"

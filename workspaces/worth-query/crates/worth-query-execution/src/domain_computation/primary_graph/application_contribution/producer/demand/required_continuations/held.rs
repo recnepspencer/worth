@@ -149,7 +149,10 @@ where
             Err(stop) => Err(stop),
         };
     }
-    let Some(held) = runtime.output_demands.take_held_successor(key, admission)? else {
+    let Some(held) = runtime
+        .output_demands
+        .take_published_held_successor(key, admission)?
+    else {
         return Ok(HeldUpstream::Unfinished);
     };
     resume_registry_successor(

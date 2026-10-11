@@ -1,7 +1,7 @@
 //! Frozen thaw granted only by a native consumed-upstream edge and registry custody.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_output_demand::{HeldRequiredSuccessor, OutputRowStage, PendingUpstream},
+    application_output_demand::{HeldRequiredSuccessor, PendingUpstream},
     invariant_projection::SelectedPendingConsumedOutput,
 };
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
@@ -41,18 +41,9 @@ impl<Schema: ApplicationSchema + 'static> RegistryDelivery<Schema> {
             PendingUpstream::Held(key) => key,
             PendingUpstream::Unavailable(_) => return Ok(RequiredDelivery::Unavailable),
         };
-        let Some(held) = registry.take_held_successor(&key, admission)? else {
+        let Some(held) = registry.take_published_held_successor(&key, admission)? else {
             return Ok(RequiredDelivery::Unavailable);
         };
-        let progress = held
-            .downcast_ref::<held::HeldFrameSuccessor<Schema>>()
-            .expect("the registry holds this runtime's successor");
-        let stage = registry.row_stage_admitted(progress.progress.interest(), admission);
-        if !matches!(stage, Ok(OutputRowStage::Published)) {
-            // A refused lookup cannot lose the actual held successor.
-            drop(registry.hold_required_successor(held, held::held_key::<Schema>));
-            return stage.map(|_| RequiredDelivery::Unavailable);
-        }
         Ok(RequiredDelivery::Delivery(Self {
             held,
             schema: std::marker::PhantomData,

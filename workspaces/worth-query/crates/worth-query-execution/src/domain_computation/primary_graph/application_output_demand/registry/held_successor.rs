@@ -52,8 +52,9 @@ impl WorthQueryOutputDemandRegistry {
         }
     }
 
-    /// Take the successor held on `key`'s row so a dependent can resume it.
-    pub(in crate::domain_computation::primary_graph) fn take_held_successor(
+    /// Inspect the live Published stage and move its held successor under
+    /// one lock. Claimed, Stopped, Ready and pre-publication rows yield none.
+    pub(in crate::domain_computation::primary_graph) fn take_published_held_successor(
         &self,
         key: &WorthQueryOutputDemandKey,
         admission: &mut InvalidationEditAdmission,
@@ -66,7 +67,15 @@ impl WorthQueryOutputDemandRegistry {
         Ok(state
             .records
             .get_mut(key)
-            .and_then(|record| record.held_successor.take()))
+            .and_then(|record| {
+                // Published is the registry's delivery/readiness stage. A
+                // concurrent claim or stop cannot be taken from an older read.
+                let published = matches!(&record.state, DemandState::Output(output)
+                    if matches!(output.advancement(), super::WorthQueryOutputAdvancement::Idle)
+                    && matches!(output.checkpoint, Some(super::WorthQueryOutputCheckpoint::Published { .. }
+                        | super::WorthQueryOutputCheckpoint::Delivered { .. })));
+                published.then(|| record.held_successor.take()).flatten()
+            }))
     }
 }
 
