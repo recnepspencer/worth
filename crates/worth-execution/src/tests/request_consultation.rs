@@ -140,3 +140,57 @@ fn consultation_reads_inherited_cancellation_before_a_backing_deadline() {
         });
     assert_eq!(outcome.report.charged_work(), 0);
 }
+
+#[test]
+fn consultation_preserves_a_nested_owners_latched_stop() {
+    let _serial = TEST_LOCK.lock().unwrap();
+    for (backend, workers) in [
+        (BackendKind::Serial, 1),
+        (BackendKind::Native, 1),
+        (BackendKind::Native, 2),
+        (BackendKind::Native, 4),
+    ] {
+        let cancellation = CancellationSource::new();
+        let mut policy = request(workers, 2_000, 100);
+        policy.cancellation = cancellation.token();
+        let parent = authority().request_lease(policy).unwrap();
+        let child = parent.child(request(1, 1_000, 100)).unwrap();
+        let outer = run_checked_batch(Some(&parent), &batch(&[1], 0), backend, &|_, context| {
+            context.checkpoint(1)?;
+            let nested =
+                run_checked_batch(Some(&child), &batch(&[1], 0), backend, &|_, context| {
+                    context.checkpoint(2)?;
+                    cancellation.cancel();
+                    // The request becomes interrupted inside the nested owner.
+                    // Consultation must lend that owner's real latch, not a fresh one.
+                    for _ in 0..2 {
+                        assert_eq!(
+                            ExecutionRequest::leased(&child).consult(),
+                            Err(WorkCeilingDenial::Stopped(KernelStop::Cancelled))
+                        );
+                    }
+                    Ok::<_, KernelFailure<()>>(1_u64)
+                });
+            assert_eq!(
+                nested.stop,
+                Some(BatchStop::Failure {
+                    identity: PartitionIdentity::new(1),
+                    cause: KernelFailure::Stop(KernelStop::NestedStopped),
+                }),
+                "the nested owner's swallowed interruption is reported once"
+            );
+            Ok::<_, KernelFailure<()>>(1_u64)
+        });
+        assert!(outer.values.is_empty());
+        assert_eq!(
+            outer.stop,
+            Some(BatchStop::Failure {
+                identity: PartitionIdentity::new(1),
+                cause: KernelFailure::Stop(KernelStop::NestedStopped),
+            }),
+            "consultation does not lose the invoking owner's latch"
+        );
+        assert_eq!(outer.report.charged_work(), 1 + 2);
+        assert_eq!(outer.report.charged_span(), 1 + 2);
+    }
+}
