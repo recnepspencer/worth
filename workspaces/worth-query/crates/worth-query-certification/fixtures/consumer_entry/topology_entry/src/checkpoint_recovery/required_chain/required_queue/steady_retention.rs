@@ -2,6 +2,26 @@
 
 use super::*;
 
+/// Retained invalidation bytes and required custody, compared across cycles
+/// once every retained position has rotated: from then on each cycle retains
+/// exactly what the one before it did.
+macro_rules! assert_steady {
+    ($steady:expr, $cycle:expr, $retained_positions:expr, $application:expr, $invalidation:expr) => {
+        if $cycle >= 2 * $retained_positions as u64 {
+            let retained = (
+                $invalidation.retained_capacity_bytes(),
+                $application.required_custody_bytes_for_test(),
+            );
+            assert_eq!(
+                *$steady.get_or_insert(retained),
+                retained,
+                "cycle {}: retained invalidation bytes and required custody are steady",
+                $cycle
+            );
+        }
+    };
+}
+
 /// One advance settles the unrelated demand, whose output no cycle touches.
 /// Demanded every cycle, it never leaves the retained window: the advance
 /// runs the source queries the dirty chain needs and none for its own
@@ -21,6 +41,26 @@ macro_rules! unrelated_settles_unverified {
         );
     }};
 }
+
+#[test]
+fn an_unrelated_caller_advances_for_many_cycles_under_tight_custody() {
+    let _guard = checkpoint_recovery_test_guard();
+    let row = primary_graph::required_ready_custody_bytes_for_test();
+    let band = support::capacity_region::search(
+        "steady custody bytes",
+        1,
+        4 * 32 * row,
+        support::capacity_region::Goal::Hit,
+        |bytes| pressure::run(bytes, true),
+    );
+    band.require_hit("steady custody bytes");
+    // The ample allowance admits the queued refreshes and the reopened consumer.
+    assert_eq!(
+        pressure::run(4 * 32 * row, false),
+        support::capacity_region::Attempt::Hit
+    );
+}
+mod pressure;
 
 /// Query-owned state one cycle leaves retained: invalidation index bytes,
 /// required custody, output-lineage history, and the completed evidence

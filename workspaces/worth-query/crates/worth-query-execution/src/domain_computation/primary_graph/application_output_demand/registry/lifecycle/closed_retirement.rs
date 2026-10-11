@@ -144,10 +144,22 @@ impl DemandRegistryState {
         upstream: &WorthQueryOutputDemandKey,
         charge: &mut C,
     ) -> Result<Option<WorthQueryOutputDemandKey>, C::Refusal> {
+        Ok(self
+            .transfer_closed_claim(dependent, upstream, charge)?
+            .then(|| upstream.clone()))
+    }
+
+    /// Retarget an existing edge without allocating a cascade worklist key.
+    pub(super) fn transfer_closed_claim<C: OccurrenceSearchCharge<Refusal = Infallible>>(
+        &mut self,
+        dependent: &WorthQueryOutputDemandKey,
+        upstream: &WorthQueryOutputDemandKey,
+        charge: &mut C,
+    ) -> Result<bool, C::Refusal> {
         if !self.records.get(upstream).is_some_and(closed_superseded)
             || !newest_ready(&self.records, upstream, charge)?
         {
-            return Ok(None);
+            return Ok(false);
         }
         // The superseded row's claims keep its newest row a required member;
         // the moved claim shares that member's key.
@@ -181,12 +193,12 @@ impl DemandRegistryState {
                 .get_mut(upstream)
                 .expect("the claimed row is retained")
                 .framework_required_count -= 1;
-            Some(upstream.clone())
+            Some(())
         })();
         if followed.is_some() {
             self.remove_required_member_if_released(upstream, charge)?;
         }
-        Ok(followed)
+        Ok(followed.is_some())
     }
 }
 

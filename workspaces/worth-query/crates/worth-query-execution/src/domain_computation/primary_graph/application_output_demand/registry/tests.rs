@@ -30,6 +30,7 @@ mod custody_note;
 mod custody_reader;
 mod demand_key;
 mod drop_cascade;
+mod drop_claim_release;
 mod drop_cleanup;
 mod eager_debt;
 mod local_work;

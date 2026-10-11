@@ -1,5 +1,6 @@
 //! Closing the last interest must complete without a request.
 mod cancelled_prerequisites;
+mod closed_claims;
 use super::super::refreshed_rejoin::infallible;
 use super::*;
 
@@ -99,6 +100,7 @@ impl WorthQueryOutputDemandRegistry {
         {
             infallible(state.remove_required_member_if_released(&interest.key, &mut charge));
         }
+        let released_custody = state.release_closed_claim_custody(&interest.key, &mut charge);
         // A held successor ends with its row's work or with the last owner
         // awaiting that row; it drops after the lock.
         let mut finished = state.take_finished_successor(&interest.key, &mut charge);
@@ -126,6 +128,7 @@ impl WorthQueryOutputDemandRegistry {
         drop(released_prerequisites);
         drop(finished);
         drop(unawaited);
+        drop(released_custody);
     }
 }
 
