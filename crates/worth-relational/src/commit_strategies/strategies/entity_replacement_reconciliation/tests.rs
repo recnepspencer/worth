@@ -261,10 +261,16 @@ fn entity_replacement_reconciliation_strategy_rejects_undeclared_fields() {
 
     match error {
         crate::commit_strategies::StrategyExecutionError::ExecutorFailed { failure, .. } => {
-            assert_eq!(failure.class, StrategyExecutorFailureClass::DomainRejection);
-            assert!(failure
-                .detail
-                .contains("not a lowered foundational scalar entity aspect"));
+            let crate::commit_strategies::data::StrategyExecutorFailure::Domain {
+                class,
+                detail,
+                ..
+            } = failure
+            else {
+                panic!("unexpected request stop: {failure:?}")
+            };
+            assert_eq!(class, StrategyExecutorFailureClass::DomainRejection);
+            assert!(detail.contains("not a lowered foundational scalar entity aspect"));
         }
         other => panic!("expected executor failure, got {other:?}"),
     }

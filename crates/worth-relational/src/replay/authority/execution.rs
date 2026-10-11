@@ -59,6 +59,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         request: RelationalReplayRequest,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let admission = match self.admit_replay_target(&request) {
             Ok(admission) => admission,
             Err(outcome) => return Ok(outcome),
@@ -360,3 +361,6 @@ impl<'runtime> ReplayAuthority<'runtime> {
         )
     }
 }
+
+#[cfg(test)]
+mod entry_stop_tests;

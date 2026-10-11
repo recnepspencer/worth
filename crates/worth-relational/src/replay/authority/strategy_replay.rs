@@ -225,6 +225,14 @@ fn execute_strategy_replay(
                 | crate::commit_strategies::StrategyExecutionError::UnboundStrategyExecutor {
                     ..
                 } => ReplayMismatchClass::StrategyExecutorUnavailable,
+                crate::commit_strategies::StrategyExecutionError::ExecutorFailed {
+                    failure: crate::commit_strategies::data::StrategyExecutorFailure::Request(cause),
+                    ..
+                } => return Err(RelationalRecoveryStop::Request(cause)),
+                crate::commit_strategies::StrategyExecutionError::ExecutorFailed {
+                    failure: crate::commit_strategies::data::StrategyExecutorFailure::Domain { .. },
+                    ..
+                } => ReplayMismatchClass::StrategyExecutionFailure,
                 crate::commit_strategies::StrategyExecutionError::DescriptorDigestMismatch {
                     ..
                 }
@@ -232,7 +240,6 @@ fn execute_strategy_replay(
                     ..
                 }
                 | crate::commit_strategies::StrategyExecutionError::UnknownSnapshot { .. }
-                | crate::commit_strategies::StrategyExecutionError::ExecutorFailed { .. }
                 | crate::commit_strategies::StrategyExecutionError::ExecutorPanicked { .. } => {
                     ReplayMismatchClass::StrategyExecutionFailure
                 }
