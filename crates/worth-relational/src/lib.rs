@@ -64,5 +64,4 @@ pub mod facade;
 mod tests;
 
 #[cfg(test)]
-#[path = "test_support/process_deadline.rs"]
-mod process_deadline;
+use worth_harness::facade::process_deadline;

@@ -156,3 +156,6 @@ fn capture(
     });
     bytes
 }
+
+#[cfg(test)]
+mod tests;
