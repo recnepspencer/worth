@@ -50,7 +50,10 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 
 impl PrepaidOccurrenceWalk<'_> {
     fn take_pass(&mut self) -> Result<PaidPass<'_>, WorthQueryOutputDemandDenial> {
-        self.remaining = self.remaining.checked_sub(1).ok_or_else(work_denial)?;
+        self.remaining = self
+            .remaining
+            .checked_sub(1)
+            .ok_or_else(|| super::WalkKind::PrepaidPass.denial())?;
         Ok(PaidPass {
             records: self.records,
         })

@@ -32,6 +32,10 @@ fn retirement_paid_paths_refuse_the_first_row_before_any_key_comparison() {
         denial.kind(),
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
     );
+    assert_eq!(
+        denial.subject(),
+        "settlement retirement occurrence walk exceeds owner work"
+    );
     assert_eq!(short.charged_work(), lookup + 2);
     assert_eq!(row_key_comparisons(), before);
     state
@@ -57,6 +61,10 @@ fn supersession_paid_paths_refuse_the_first_row_before_any_key_comparison() {
     assert_eq!(
         denial.kind(),
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+    );
+    assert_eq!(
+        denial.subject(),
+        "supersession occurrence walk exceeds request work"
     );
     assert_eq!(short.charged_work(), 2);
     assert_eq!(row_key_comparisons(), before);

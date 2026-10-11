@@ -67,8 +67,15 @@ impl DemandRegistryState {
         if row.is_required() {
             return Ok(false);
         }
-        super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key, admission)
-            .map(|awaited| !awaited)
+        super::refreshed_rejoin::awaited_by_stale_owner(
+            &self.records,
+            key,
+            &mut super::refreshed_rejoin::WalkAdmission::new(
+                admission,
+                super::refreshed_rejoin::WalkKind::RequiredMember,
+            ),
+        )
+        .map(|awaited| !awaited)
     }
 
     pub(super) fn prepare_required_member(

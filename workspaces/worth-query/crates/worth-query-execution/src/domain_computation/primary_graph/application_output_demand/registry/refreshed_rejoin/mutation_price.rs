@@ -1,6 +1,6 @@
 //! Price selected occurrence walks before a registry mutation starts.
 use super::super::{DemandRegistryState, WorthQueryOutputDemandKey};
-use super::{infallible, occurrence_rows, work_denial, OccurrenceSearchCharge};
+use super::{infallible, occurrence_rows, OccurrenceSearchCharge, WalkAdmission, WalkKind};
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use core::convert::Infallible;
@@ -27,6 +27,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     state: &'a mut DemandRegistryState,
     admission: &mut InvalidationEditAdmission,
     walks: &[(WorthQueryOutputDemandKey, u64)],
+    kind: WalkKind,
 ) -> Result<PricedMutation<'a>, WorthQueryOutputDemandDenial> {
     let mut paths = 0u64;
     let mut rows = 0u64;
@@ -34,30 +35,33 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     for (key, count) in walks {
         let mut occurrence_count = 0u64;
         // The quote itself is a paid walk, including its row inspections.
-        let navigation_before = admission.charged_navigation();
-        let selected = occurrence_rows(&state.records, key, admission)?;
-        let path_navigation = admission.charged_navigation() - navigation_before;
+        let mut charge = WalkAdmission::new(admission, kind);
+        let navigation_before = charge.admission_mut().charged_navigation();
+        let selected = occurrence_rows(&state.records, key, &mut charge)?;
+        let path_navigation = charge.admission_mut().charged_navigation() - navigation_before;
         for _ in selected {
-            admission.inspect_row()?;
-            occurrence_count = occurrence_count.checked_add(1).ok_or_else(work_denial)?;
+            charge.inspect_row()?;
+            occurrence_count = occurrence_count
+                .checked_add(1)
+                .ok_or_else(|| kind.denial())?;
         }
         let inspected = occurrence_count
             .checked_mul(*count)
-            .ok_or_else(work_denial)?;
+            .ok_or_else(|| kind.denial())?;
         navigation = path_navigation
             .checked_mul(*count)
             .and_then(|price| navigation.checked_add(price))
-            .ok_or_else(work_denial)?;
-        paths = paths.checked_add(*count).ok_or_else(work_denial)?;
-        rows = rows.checked_add(inspected).ok_or_else(work_denial)?;
+            .ok_or_else(|| kind.denial())?;
+        paths = paths.checked_add(*count).ok_or_else(|| kind.denial())?;
+        rows = rows.checked_add(inspected).ok_or_else(|| kind.denial())?;
     }
     let work = paths
         .checked_mul(2)
         .and_then(|price| price.checked_add(rows))
-        .ok_or_else(work_denial)?;
+        .ok_or_else(|| kind.denial())?;
     admission
         .charge_ordered_operations(work, navigation)
-        .map_err(|_| work_denial())?;
+        .map_err(|_| kind.denial())?;
     Ok(PricedMutation {
         state,
         charge: PricedMutationWalk { paths, rows },

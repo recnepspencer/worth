@@ -151,7 +151,10 @@ impl DemandRegistryState {
                 )
                 .collect();
             let retired_row = super::super::refreshed_rejoin::price_mutation(
-                self, admission, &walks,
+                self,
+                admission,
+                &walks,
+                super::super::refreshed_rejoin::WalkKind::CacheReclaim,
             )?
             .complete(|priced| {
                 for dependent in dependents {

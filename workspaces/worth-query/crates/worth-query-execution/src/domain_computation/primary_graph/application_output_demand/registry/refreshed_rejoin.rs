@@ -20,8 +20,10 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod mutation_price;
+mod walk_admission;
 mod walk_charge;
 pub(super) use mutation_price::price_mutation;
+pub(super) use walk_admission::{WalkAdmission, WalkKind};
 pub(super) use walk_charge::{
     charge_whole_map, infallible, post_effect_payer, OccurrenceSearchCharge, WholeMapPasses,
 };
@@ -259,8 +261,5 @@ pub(super) fn occurrence_rows<'a, C: OccurrenceSearchCharge>(
 }
 
 pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "refreshed output rejoin exceeds request work",
-    )
+    WalkKind::Rejoin.denial()
 }

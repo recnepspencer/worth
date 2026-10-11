@@ -78,11 +78,17 @@ pub(super) fn supersede_predecessors(
     // Admit the occurrence walk before changing any predecessor. Keyed mutation
     // and removal then use only this closed set, never unrelated registry rows.
     let mut keys = Vec::new();
-    for (key, _) in super::refreshed_rejoin::occurrence_rows(&state.records, successor, admission)?
+    let mut charge = super::refreshed_rejoin::WalkAdmission::new(
+        admission,
+        super::refreshed_rejoin::WalkKind::Supersession,
+    );
+    for (key, _) in
+        super::refreshed_rejoin::occurrence_rows(&state.records, successor, &mut charge)?
     {
-        admission
+        charge
+            .admission_mut()
             .charge_external_work(6)
-            .map_err(|_| super::refreshed_rejoin::work_denial())?;
+            .map_err(|_| super::refreshed_rejoin::WalkKind::Supersession.denial())?;
         if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)
         {
             return Err(superseded_denial(&successor.producer));
@@ -99,7 +105,7 @@ pub(super) fn supersede_predecessors(
                 .map(|upstream| (upstream.as_ref().clone(), 3))
         })
         .collect();
-    super::refreshed_rejoin::price_mutation(state, admission, &walks)?.complete(|priced| {
+    super::refreshed_rejoin::price_mutation(state, admission, &walks, super::refreshed_rejoin::WalkKind::Supersession)?.complete(|priced| {
     for key in &keys {
         let state = priced.state_mut();
         if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less) {
@@ -151,9 +157,14 @@ pub(super) fn reject_older_successor(
     use super::refreshed_rejoin::OccurrenceSearchCharge;
     // Another producer may still compute from this source until currentness
     // rejects its work; only a newer revision of this producer blocks it.
-    for (key, _) in super::refreshed_rejoin::occurrence_rows(&state.records, successor, admission)?
+    let mut charge = super::refreshed_rejoin::WalkAdmission::new(
+        admission,
+        super::refreshed_rejoin::WalkKind::Supersession,
+    );
+    for (key, _) in
+        super::refreshed_rejoin::occurrence_rows(&state.records, successor, &mut charge)?
     {
-        admission.inspect_row()?;
+        charge.inspect_row()?;
         let other_row = {
             #[cfg(test)]
             super::demand_key::observe_row_comparison();

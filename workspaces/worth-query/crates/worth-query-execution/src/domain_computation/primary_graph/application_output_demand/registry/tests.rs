@@ -49,6 +49,7 @@ mod selected_execution_release;
 mod semantic_epoch;
 mod settlement_work;
 pub(super) mod source_custody;
+mod walk_denial;
 mod walk_refusal;
 
 mod support;

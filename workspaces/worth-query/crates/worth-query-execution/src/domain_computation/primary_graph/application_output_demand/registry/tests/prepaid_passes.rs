@@ -28,6 +28,7 @@ fn whole_map_receipt_spends_one_or_two_passes_before_refusing_without_contact() 
             denial.kind(),
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
         );
+        assert_eq!(denial.subject(), "prepaid occurrence walk has no paid pass");
         assert_eq!(super::super::record_map::occurrence_rows_visited(), before);
         // Two records, charged once or twice; consuming a pass adds no work.
         assert_eq!(admission.charged_work(), expected_work);

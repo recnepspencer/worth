@@ -241,7 +241,12 @@ impl DemandRegistryState {
             .map(|upstream| (upstream.as_ref().clone(), 3))
             .chain(std::iter::once((head.as_ref().clone(), 1)))
             .collect();
-        let priced = price_mutation(self, admission, &walks)?;
+        let priced = price_mutation(
+            self,
+            admission,
+            &walks,
+            super::refreshed_rejoin::WalkKind::TerminalCleanup,
+        )?;
         Ok(priced.complete(|priced| {
             let state = priced.state_mut();
             let head = state.pending_cleanup_head.take().unwrap();

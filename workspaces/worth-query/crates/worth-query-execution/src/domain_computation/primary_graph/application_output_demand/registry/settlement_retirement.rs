@@ -24,7 +24,7 @@
 
 use std::sync::Arc;
 
-use super::refreshed_rejoin::{occurrence_rows, work_denial, OccurrenceSearchCharge};
+use super::refreshed_rejoin::{occurrence_rows, OccurrenceSearchCharge, WalkAdmission, WalkKind};
 use super::{DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry};
 use crate::domain_computation::primary_graph::output_lineage::{
     invalidation::{InvalidationEditAdmission, SourceInvalidationOwner},
@@ -168,8 +168,9 @@ impl DemandRegistryState {
             return Ok(Vec::new());
         }
         let mut candidates = Vec::new();
-        for (other, record) in occurrence_rows(&self.records, key, admission)? {
-            admission.inspect_row()?;
+        let mut charge = WalkAdmission::new(admission, WalkKind::SettlementRetirement);
+        for (other, record) in occurrence_rows(&self.records, key, &mut charge)? {
+            charge.inspect_row()?;
             let same_row = {
                 #[cfg(test)]
                 super::demand_key::observe_row_comparison();
@@ -182,7 +183,7 @@ impl DemandRegistryState {
             } else {
                 0
             };
-            admit_slots(superseded, admission)?;
+            admit_slots(superseded, charge.admission_mut())?;
             candidates.extend(
                 record.settlements[..superseded]
                     .iter()
@@ -256,7 +257,7 @@ fn admit_slots(
         .map_err(|_| capacity_denial())?;
     admission
         .charge_external_work(count as u64)
-        .map_err(|_| work_denial())
+        .map_err(|_| WalkKind::SettlementRetirement.denial())
 }
 
 fn capacity_denial() -> WorthQueryOutputDemandDenial {
