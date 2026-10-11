@@ -91,6 +91,7 @@ impl WorthQueryRelationalSourceOwner {
 
     /// Returns exact snapshot custody to its issuing owner. This is release,
     /// not a source read: even a refused advancement must settle retained facts.
+    /// Mutex poison cannot prevent physical custody release after caller unwind.
     #[doc(hidden)]
     pub fn release_query_snapshot(
         &self,
@@ -99,7 +100,7 @@ impl WorthQueryRelationalSourceOwner {
         let mut runtime = self
             .runtime
             .lock()
-            .expect("Relational source owner is available");
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         crate::relational_snapshot_release::release_query_snapshot(&mut runtime, snapshot);
     }
 
@@ -113,7 +114,7 @@ impl WorthQueryRelationalSourceOwner {
         let runtime = self
             .runtime
             .lock()
-            .expect("Relational source owner is available");
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         runtime.release_component_basis(retention)
     }
 
