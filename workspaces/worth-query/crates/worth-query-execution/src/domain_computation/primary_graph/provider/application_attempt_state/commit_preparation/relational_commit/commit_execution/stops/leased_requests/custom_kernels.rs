@@ -117,7 +117,10 @@ fn commit_probe(probe: Probe) -> Outcome {
             .0,
         before
     );
-    let outcome = application_outcome(stop);
+    let Stop::PreEffectDenied(failure) = stop else {
+        panic!("custom cause must reach pre-effect refusal");
+    };
+    let outcome = provider_compare_denied(Compare::ProviderSession(failure));
     let Outcome::Denied(denial) = &outcome else {
         panic!("custom preparation refusal folded");
     };

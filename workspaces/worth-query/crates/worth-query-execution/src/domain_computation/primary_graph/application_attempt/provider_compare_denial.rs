@@ -123,8 +123,6 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
 }
 
 #[cfg(test)]
-pub(in crate::domain_computation::primary_graph) mod preparation_outcome;
-#[cfg(test)]
 mod tests;
 
 pub(in crate::domain_computation::primary_graph) fn provider_session_kind_denied(
@@ -157,13 +155,4 @@ pub(in crate::domain_computation::primary_graph) fn control_stopped_outcome(
             Progression::TimedOut
         }
     }
-}
-
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) fn provider_session_control_denied(
-    kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-    stage: Stage,
-    detail: impl Into<std::sync::Arc<str>>,
-) -> Denial {
-    Denial::provider_execution_denied(stage, Err(kind), detail)
 }
