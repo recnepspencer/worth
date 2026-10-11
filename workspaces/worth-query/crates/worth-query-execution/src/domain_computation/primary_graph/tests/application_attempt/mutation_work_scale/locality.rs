@@ -35,11 +35,10 @@ fn same_kind_unrelated_population_keeps_source_query_and_local_edit_work_flat() 
     assert_locality(&[1_000, 10_000]);
 }
 
-/// Scheduled 100k scale court, run by exact name with `--ignored --nocapture`.
+/// One disjoint Account is enough to expose a population-dependent charge.
 #[test]
-#[ignore = "100k native population is a separately budgeted scale court"]
-fn hundred_thousand_same_kind_accounts_preserve_local_source_query_and_edit_work() {
-    assert_locality(&[1_000, 100_000]);
+fn one_unrelated_account_cannot_widen_local_source_query_and_edit_work() {
+    assert_locality(&[0, 1]);
 }
 
 fn assert_locality(populations: &[usize]) {

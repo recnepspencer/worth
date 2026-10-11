@@ -122,7 +122,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "100k restored partitions are a scheduled scale court; run with --ignored"]
     fn restored_selection_excludes_100k_unrelated_partitions() {
         unrelated_restored_selection(100_000);
     }

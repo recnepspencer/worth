@@ -232,7 +232,6 @@ fn retained_output_selection_has_fixed_work_with_1k_and_10k_unrelated_partitions
 }
 
 #[test]
-#[ignore = "100k output partitions are a scheduled scale court; run with --ignored"]
 fn retained_output_selection_has_fixed_work_with_100k_unrelated_partitions() {
     unrelated_partition_selection(100_000);
 }
