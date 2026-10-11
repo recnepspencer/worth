@@ -28,8 +28,9 @@ pub(crate) fn run(
     root: PathBuf,
     config_path: PathBuf,
     snapshot_mode: SnapshotMode,
+    width: usize,
 ) -> Result<(), Vec<Diagnostic>> {
-    let sources = crate::source_documents::Session::new();
+    let sources = crate::source_documents::Session::new(width);
     let root = fs::canonicalize(root).map_err(|error| {
         vec![Diagnostic::new(
             crate::diagnostics::DiagnosticCode::Bc5002SubworkspaceContractViolation,

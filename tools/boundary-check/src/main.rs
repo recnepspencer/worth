@@ -20,6 +20,7 @@ mod snapshots;
 mod source_documents;
 mod source_rules;
 mod source_syntax;
+mod source_workers;
 mod subworkspace_rules;
 
 use crate::diagnostics::{render_human, render_json};
@@ -32,6 +33,7 @@ struct Arguments {
     format: OutputFormat,
     snapshot_mode: SnapshotMode,
     profile_path: Option<PathBuf>,
+    width: usize,
 }
 
 enum OutputFormat {
@@ -46,6 +48,7 @@ fn main() {
         format,
         snapshot_mode,
         profile_path,
+        width,
     } = match parse_args() {
         Ok(args) => args,
         Err(error) => {
@@ -55,7 +58,7 @@ fn main() {
     };
 
     let profile = scan_profile::Session::new(profile_path);
-    let result = scan::run(root, config_path, snapshot_mode);
+    let result = scan::run(root, config_path, snapshot_mode, width);
     drop(profile);
     match result {
         Ok(()) => println!("boundary-check: Road 1 Cargo topology is valid"),
@@ -76,6 +79,7 @@ fn parse_args() -> Result<Arguments, String> {
     let mut format = OutputFormat::Human;
     let mut snapshot_mode = SnapshotMode::Check;
     let mut profile = None;
+    let mut width = std::thread::available_parallelism().map_or(1, usize::from);
     let mut args = env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -92,6 +96,16 @@ fn parse_args() -> Result<Arguments, String> {
             "--profile" => {
                 profile = Some(PathBuf::from(args.next().ok_or("missing --profile value")?))
             }
+            "--width" => {
+                width = args
+                    .next()
+                    .ok_or("missing --width value")?
+                    .parse()
+                    .map_err(|_| "--width must be a positive integer")?;
+                if width == 0 {
+                    return Err("--width must be a positive integer".into());
+                }
+            }
             "--update-snapshots" => snapshot_mode = SnapshotMode::Update,
             other => return Err(format!("unknown argument: {other}")),
         }
@@ -102,5 +116,6 @@ fn parse_args() -> Result<Arguments, String> {
         format,
         snapshot_mode,
         profile_path: profile,
+        width,
     })
 }

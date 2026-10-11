@@ -5,6 +5,9 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
+mod acquisition;
+pub(crate) use acquisition::prefetch;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Counts {
     pub(crate) reads: usize,
@@ -12,6 +15,7 @@ pub(crate) struct Counts {
 }
 #[derive(Default)]
 struct Documents {
+    width: usize,
     aliases: BTreeMap<PathBuf, PathBuf>,
     bytes: BTreeMap<PathBuf, Result<Rc<[u8]>, ReadFailure>>,
     syntax: BTreeMap<PathBuf, syn::Result<Rc<syn::File>>>,
@@ -55,8 +59,11 @@ pub(crate) struct Session {
     previous: Option<Rc<RefCell<Documents>>>,
 }
 impl Session {
-    pub(crate) fn new() -> Self {
-        let documents = Rc::new(RefCell::new(Documents::default()));
+    pub(crate) fn new(width: usize) -> Self {
+        let documents = Rc::new(RefCell::new(Documents {
+            width: width.max(1),
+            ..Documents::default()
+        }));
         let previous = CURRENT.with(|slot| slot.replace(Some(Rc::clone(&documents))));
         Self {
             documents,
@@ -74,6 +81,9 @@ impl Drop for Session {
 }
 fn current() -> Option<Rc<RefCell<Documents>>> {
     CURRENT.with(|slot| slot.borrow().as_ref().map(Rc::clone))
+}
+pub(crate) fn width() -> usize {
+    current().map_or(1, |documents| documents.borrow().width)
 }
 fn bytes(path: &Path) -> io::Result<Rc<[u8]>> {
     let Some(documents) = current() else {

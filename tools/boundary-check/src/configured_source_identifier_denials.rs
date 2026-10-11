@@ -1,85 +1,80 @@
-use std::{collections::BTreeSet, fs, path::Path};
-
-use syn::visit::Visit;
-
 use crate::config::SourceIdentifierDenialConfig;
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+    sync::Arc,
+};
+use syn::visit::Visit;
+mod inputs;
+#[cfg(test)]
+mod width_tests;
+
+enum Work<'a> {
+    Diagnostic(Diagnostic),
+    Inspect {
+        path: String,
+        names: Arc<BTreeSet<String>>,
+        rule: &'a SourceIdentifierDenialConfig,
+    },
+}
 
 pub(crate) fn validate_source_identifier_denials(
     workspace: &Path,
     rules: &[SourceIdentifierDenialConfig],
 ) -> Vec<Diagnostic> {
-    let mut diagnostics = Vec::new();
-    for rule in rules {
-        visit_rust_sources(
-            workspace,
-            &workspace.join(&rule.root),
-            rule,
-            &mut diagnostics,
-        );
-    }
-    diagnostics
+    let inputs = inputs::collect(workspace, rules);
+    crate::source_documents::prefetch(inputs.iter().filter_map(|input| match input {
+        inputs::Input::File { path, .. } => Some(path.clone()),
+        _ => None,
+    }));
+    let mut facts = BTreeMap::new();
+    let work: Vec<_> = inputs
+        .into_iter()
+        .map(|input| match input {
+            inputs::Input::Diagnostic(diagnostic) => Work::Diagnostic(diagnostic),
+            inputs::Input::File { path, rule } => {
+                let names = facts
+                    .entry(path.clone())
+                    .or_insert_with(|| names_from_file(workspace, &path));
+                match names {
+                    Ok(names) => Work::Inspect {
+                        path: path
+                            .strip_prefix(workspace)
+                            .unwrap_or(&path)
+                            .display()
+                            .to_string(),
+                        names: Arc::clone(names),
+                        rule,
+                    },
+                    Err(diagnostic) => Work::Diagnostic(diagnostic.clone()),
+                }
+            }
+        })
+        .collect();
+    crate::source_workers::map(&work, crate::source_documents::width(), |work| match work {
+        Work::Diagnostic(diagnostic) => vec![diagnostic.clone()],
+        Work::Inspect { path, names, rule } => diagnostics_for_names(path, names, rule),
+    })
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
-fn visit_rust_sources(
-    workspace: &Path,
-    path: &Path,
-    rule: &SourceIdentifierDenialConfig,
-    diagnostics: &mut Vec<Diagnostic>,
-) {
-    if rule
-        .exclude_paths
-        .iter()
-        .map(|excluded| workspace.join(excluded))
-        .any(|excluded| path == excluded || path.starts_with(excluded))
-    {
-        return;
-    }
-    let entries = match fs::read_dir(path) {
-        Ok(entries) => entries,
-        Err(error) => {
-            diagnostics.push(unreadable_source_diagnostic(workspace, path, &error));
-            return;
-        }
-    };
-    for entry in entries {
-        let entry = match entry {
-            Ok(entry) => entry,
-            Err(error) => {
-                diagnostics.push(unreadable_source_diagnostic(workspace, path, &error));
-                continue;
-            }
-        };
-        let path = entry.path();
-        if rule
-            .exclude_paths
-            .iter()
-            .map(|excluded| workspace.join(excluded))
-            .any(|excluded| path == excluded || path.starts_with(excluded))
-        {
-            continue;
-        }
-        if path.is_dir() {
-            visit_rust_sources(workspace, &path, rule, diagnostics);
-        } else if path.extension().is_some_and(|extension| extension == "rs") {
-            let source = match crate::source_documents::read_to_string(&path) {
-                Ok(source) => source,
-                Err(error) => {
-                    diagnostics.push(unreadable_source_diagnostic(workspace, &path, &error));
-                    continue;
-                }
-            };
-            diagnostics.extend(diagnostics_for_syntax(
-                &path
-                    .strip_prefix(workspace)
-                    .unwrap_or(&path)
-                    .display()
-                    .to_string(),
-                crate::source_syntax::parse_named(&path, &source),
-                rule,
-            ));
-        }
-    }
+fn names_from_file(workspace: &Path, path: &Path) -> Result<Arc<BTreeSet<String>>, Diagnostic> {
+    let source = crate::source_documents::read_to_string(path)
+        .map_err(|error| unreadable_source_diagnostic(workspace, path, &error))?;
+    let file = crate::source_syntax::parse_named(path, &source).map_err(|_| {
+        Diagnostic::new(
+            DiagnosticCode::Bc2001BandDependencyViolation,
+            path.strip_prefix(workspace)
+                .unwrap_or(path)
+                .display()
+                .to_string(),
+            "source could not be parsed for forbidden authority identifiers",
+        )
+    })?;
+    Ok(Arc::new(identifiers(&file)))
 }
 
 fn unreadable_source_diagnostic(
@@ -103,30 +98,32 @@ fn diagnostics_for_source(
     source: &str,
     rule: &SourceIdentifierDenialConfig,
 ) -> Vec<Diagnostic> {
-    diagnostics_for_syntax(path, crate::source_syntax::parse_file(source), rule)
-}
-
-fn diagnostics_for_syntax(
-    path: &str,
-    syntax: syn::Result<syn::File>,
-    rule: &SourceIdentifierDenialConfig,
-) -> Vec<Diagnostic> {
-    let Ok(file) = syntax else {
-        return vec![Diagnostic::new(
+    match crate::source_syntax::parse_file(source) {
+        Ok(file) => diagnostics_for_names(path, &identifiers(&file), rule),
+        Err(_) => vec![Diagnostic::new(
             DiagnosticCode::Bc2001BandDependencyViolation,
             path,
             "source could not be parsed for forbidden authority identifiers",
-        )];
-    };
-    let mut visitor = ForbiddenIdentifierVisitor {
-        forbidden: &rule.forbidden_identifiers,
-        forbidden_fragments: &rule.forbidden_identifier_fragments,
-        found: BTreeSet::new(),
-    };
-    visitor.visit_file(&file);
-    visitor
-        .found
-        .into_iter()
+        )],
+    }
+}
+
+fn diagnostics_for_names(
+    path: &str,
+    names: &BTreeSet<String>,
+    rule: &SourceIdentifierDenialConfig,
+) -> Vec<Diagnostic> {
+    names
+        .iter()
+        .filter(|name| {
+            rule.forbidden_identifiers
+                .iter()
+                .any(|denied| denied == *name)
+                || rule
+                    .forbidden_identifier_fragments
+                    .iter()
+                    .any(|denied| name.contains(denied))
+        })
         .map(|identifier| {
             Diagnostic::new(
                 DiagnosticCode::Bc2001BandDependencyViolation,
@@ -140,37 +137,27 @@ fn diagnostics_for_syntax(
         .collect()
 }
 
-struct ForbiddenIdentifierVisitor<'a> {
-    forbidden: &'a [String],
-    forbidden_fragments: &'a [String],
-    found: BTreeSet<String>,
+fn identifiers(file: &syn::File) -> BTreeSet<String> {
+    let mut visitor = Identifiers(BTreeSet::new());
+    visitor.visit_file(file);
+    visitor.0
 }
-
-impl Visit<'_> for ForbiddenIdentifierVisitor<'_> {
+struct Identifiers(BTreeSet<String>);
+impl Visit<'_> for Identifiers {
     fn visit_ident(&mut self, identifier: &proc_macro2::Ident) {
-        let identifier = identifier.to_string();
-        if self.forbidden.iter().any(|denied| denied == &identifier)
-            || self
-                .forbidden_fragments
-                .iter()
-                .any(|denied| identifier.contains(denied))
-        {
-            self.found.insert(identifier);
-        }
+        self.0.insert(identifier.to_string());
     }
-
     fn visit_macro(&mut self, node: &syn::Macro) {
         syn::visit::visit_macro(self, node);
-        self.visit_token_stream(node.tokens.clone());
+        self.tokens(node.tokens.clone());
     }
 }
-
-impl ForbiddenIdentifierVisitor<'_> {
-    fn visit_token_stream(&mut self, tokens: proc_macro2::TokenStream) {
+impl Identifiers {
+    fn tokens(&mut self, tokens: proc_macro2::TokenStream) {
         for token in tokens {
             match token {
                 proc_macro2::TokenTree::Ident(identifier) => self.visit_ident(&identifier),
-                proc_macro2::TokenTree::Group(group) => self.visit_token_stream(group.stream()),
+                proc_macro2::TokenTree::Group(group) => self.tokens(group.stream()),
                 proc_macro2::TokenTree::Punct(_) | proc_macro2::TokenTree::Literal(_) => {}
             }
         }
