@@ -142,7 +142,7 @@ pub(in crate::domain_computation::primary_graph::tests) fn restored_world(
     })
 }
 
-pub(in crate::domain_computation::primary_graph) fn installed_authorization_world(
+pub(in crate::domain_computation) fn installed_authorization_world(
     include_owner_relation: bool,
 ) -> AuthorizationWorld {
     install_authorization_world(AuthorizationWorldSpec {

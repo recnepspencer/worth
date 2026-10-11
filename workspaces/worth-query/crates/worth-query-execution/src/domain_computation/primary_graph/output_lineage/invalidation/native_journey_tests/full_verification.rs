@@ -1,4 +1,5 @@
 //! Real Native probes and immutable pre-verification capture; no synthetic stamp.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::super::{FullVerificationDecision, FullVerificationStop};
 use super::*;
@@ -25,7 +26,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<LabelOutput>(),
+        output_binding: OutputBindingIdentity::declared("LabelOutput"),
     };
     let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let graph = world.application.runtime.primary_graph().unwrap();

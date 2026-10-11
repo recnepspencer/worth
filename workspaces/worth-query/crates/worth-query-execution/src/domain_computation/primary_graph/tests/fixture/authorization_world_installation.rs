@@ -49,6 +49,21 @@ pub(in crate::domain_computation) struct AuthorizationWorld {
 }
 
 impl AuthorizationWorld {
+    pub(in crate::domain_computation::primary_graph) fn declare_output_contract<
+        Contract: 'static,
+    >(
+        &self,
+        identity: &str,
+    ) {
+        self.application
+            .primary_provider
+            .graph
+            .output_lineage
+            .lock()
+            .unwrap()
+            .fixture_binding(std::any::TypeId::of::<Contract>(), identity);
+    }
+
     pub(in crate::domain_computation) fn selected_product(
         &self,
     ) -> crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<

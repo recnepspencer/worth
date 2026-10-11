@@ -46,9 +46,11 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         .partition_index
         .insert_vacancy(source.clone(), coordinate, None);
     let computation_fork_scan_bound = lineage.prepay_computation_fork_scan_for_test();
+    let output_binding_type = lineage.binding_type(&source.output_binding);
     let owner = Arc::new(Mutex::new(lineage));
     let mut prepared = PreparedOutputLineageSlot {
         owner: Arc::clone(&owner),
+        output_binding_type,
         source,
         coordinate,
         partition: None,

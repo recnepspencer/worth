@@ -29,6 +29,10 @@ fn restoration_rejects_conflicting_identity_for_the_same_partition() {
     );
     let correspondence = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        "RestoredOutputBinding",
+    );
 
     for source_identity in [[0x31; 32], [0x32; 32]] {
         lineage.record_restoration(

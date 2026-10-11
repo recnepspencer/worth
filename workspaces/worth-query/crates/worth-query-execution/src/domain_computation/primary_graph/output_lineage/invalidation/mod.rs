@@ -1,6 +1,8 @@
 //! Derived consumed-fact postings and source-position-specific output marks.
 
 mod admission;
+#[cfg(test)]
+mod canonical_binding_order;
 mod commit_touches;
 mod consumed_capacity;
 #[cfg(feature = "test-query-execution-observer")]

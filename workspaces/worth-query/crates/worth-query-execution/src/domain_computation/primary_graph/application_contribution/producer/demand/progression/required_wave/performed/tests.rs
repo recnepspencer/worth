@@ -15,7 +15,6 @@ use crate::domain_computation::{
     execution_runtime::WorthQueryInvalidationResourceDenial,
     primary_graph::tests::fixture::AuthorizationWorld,
 };
-use std::any::TypeId;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
 #[test]
@@ -57,7 +56,7 @@ fn assert_refused_registration_remains_performed(
     );
     let mut performed = PerformedMembers::start();
     let key = WorthQueryOutputDemandKey::new(
-        TypeId::of::<()>(),
+        "unit-output-family",
         "test producer".to_owned(),
         WorthQueryProducerApplicability::new("test", WorthQueryProducerLifecyclePosture::Initial),
         source.clone(),
@@ -179,7 +178,7 @@ fn a_ready_and_its_successor_share_one_performed_member() {
             let source = source_with_identity([3; 32]);
             let key = |producer: &str, lifecycle| {
                 WorthQueryOutputDemandKey::new(
-                    TypeId::of::<()>(),
+                    "unit-output-family",
                     producer.to_owned(),
                     WorthQueryProducerApplicability::new("test", lifecycle),
                     source.clone(),

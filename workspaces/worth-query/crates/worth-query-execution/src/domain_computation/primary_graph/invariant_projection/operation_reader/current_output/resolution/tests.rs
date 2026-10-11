@@ -52,7 +52,7 @@ fn index_loss_cannot_certify_own_write_output_at_the_retained_postcommit_observa
             .lock()
             .unwrap()
             .install_output_families(std::collections::BTreeMap::from([(
-                "test.retained-account-capacity".to_owned(),
+                "test.retained-account-capacity".to_owned().into(),
                 vec![(
                     receipt.output_correspondence().binding_type().unwrap(),
                     "retained-account".to_owned(),

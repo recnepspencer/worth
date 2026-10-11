@@ -106,9 +106,7 @@ pub(super) fn prepare(
             .checked_mul(levels)
             .and_then(|comparisons| {
                 replacement
-                    .producer
-                    .len()
-                    .checked_add(7)
+                    .comparison_work()
                     .and_then(|width| comparisons.checked_mul(width))
             })
             .and_then(|work| work.checked_mul(3))
@@ -121,7 +119,7 @@ pub(super) fn prepare(
     let member_bytes = required_members::member_bytes(replacement)
         .ok_or_else(admission::performed_obligation_capacity_denial)?;
     scratch(admission, member_bytes)?;
-    charge(admission, replacement.producer.len().checked_add(7))?;
+    charge(admission, replacement.comparison_work())?;
     let required_member = state.prepare_required_member(replacement)?;
     // Two mutable record lookups, initialized slot moves, and the final semantic
     // extraction are prepaid before mem::take can change either owner.

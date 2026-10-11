@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::{
     ConsumedOutputEvidence, ConsumedOutputVerification,
 };
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use worth_relational::facade::history::BranchId;
 
@@ -40,7 +41,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
         let basis = runtime.admit_branch_basis(&runtime.branch_identity(&fork).unwrap()).unwrap();
         let old_handle = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
         let old = Arc::new(runtime.read_truth().positioned_snapshot(&old_handle).unwrap());
-        let source = SemanticSource { runtime_authority: world.application.runtime.authority_identity().as_u64(), schema: world.application.installed_schema.binding_identity(), scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity), output_binding: TypeId::of::<StatusOutput>() };
+        let source = SemanticSource { runtime_authority: world.application.runtime.authority_identity().as_u64(), schema: world.application.installed_schema.binding_identity(), scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity), output_binding: OutputBindingIdentity::declared("StatusOutput") };
         let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
         let facts = crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([field_fact(runtime, &old_handle, entity, status)])).for_comparison().unwrap();
         // Real Native source/output facts, read and fully compared before the fork's first write.

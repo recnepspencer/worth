@@ -55,9 +55,8 @@ impl WorthQueryOutputDemandRegistry {
                 "a newer source publication owns this preparation scope",
             ));
         }
-        // Prepare every fallible collection growth before retiring any prior
-        // custody or inserting this source. Recovery can return its original
-        // reservation and carrier intact on a capacity refusal.
+        // Admit the abandoned-source scratch before retiring any prior custody.
+        // The ordered custody index itself has no capacity reservation.
         let mut abandoned = Vec::new();
         if matches!(root_kind, PreparedOutputRootKind::Discovered(_)) {
             for (prior, _) in state
@@ -90,10 +89,6 @@ impl WorthQueryOutputDemandRegistry {
                 abandoned.push(prior.clone());
             }
         }
-        state
-            .source_custody
-            .try_reserve(1)
-            .map_err(|_| source_capacity_denial())?;
         for (prior, candidate) in &mut state.source_custody {
             if direct_root
                 && prior.ordinal() < commit.ordinal()

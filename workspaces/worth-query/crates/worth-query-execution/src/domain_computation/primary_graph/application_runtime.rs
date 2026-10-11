@@ -171,9 +171,9 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) next_application_mutation_partition: AtomicU32,
     pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
     pub(super) recovered_outputs: super::application_output_demand::WorthQueryRecoveredOutputs,
-    pub(super) program_required_bindings: std::collections::BTreeSet<std::any::TypeId>,
-    pub(super) program_required_operations: std::collections::BTreeSet<std::any::TypeId>,
-    pub(super) workflow_guarded_operations: std::collections::BTreeSet<std::any::TypeId>,
+    pub(super) program_required_bindings: std::collections::HashSet<std::any::TypeId>,
+    pub(super) program_required_operations: std::collections::HashSet<std::any::TypeId>,
+    pub(super) workflow_guarded_operations: std::collections::HashSet<std::any::TypeId>,
     pub(super) program_support:
         Option<super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>>,
     pub(super) installed_conditionals:

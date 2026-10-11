@@ -117,6 +117,7 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                 WorthQueryProducerInputReuseContract,
             },
             application_query::WorthQueryObservedSourceSelection,
+            output_binding_identity::OutputBindingIdentity,
             output_lineage::{
                 invalidation::{SettlementRegistration, SourceSettlementCurrentness},
                 recorded_output::{RecordedOutput, RecordedOutputMutable},
@@ -178,7 +179,7 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<()>(),
+        output_binding: OutputBindingIdentity::declared("ProbeOutput"),
     };
     let identity = RecordedSettlementIdentity::retain(
         &source,

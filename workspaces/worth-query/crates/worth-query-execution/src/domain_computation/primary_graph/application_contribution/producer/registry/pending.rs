@@ -4,7 +4,7 @@ use super::*;
 pub(in crate::domain_computation::primary_graph) struct PendingProducerRegistry<Schema> {
     declared: BTreeMap<String, DeclaredProducerBinding>,
     /// The operations whose partitioned computation a producer's runs retain.
-    retaining: std::collections::BTreeSet<std::any::TypeId>,
+    retaining: std::collections::HashSet<std::any::TypeId>,
     providers: BTreeMap<
         String,
         (
@@ -24,7 +24,7 @@ where
     ) -> Self {
         Self {
             declared,
-            retaining: std::collections::BTreeSet::new(),
+            retaining: std::collections::HashSet::new(),
             providers: BTreeMap::new(),
             marker: PhantomData,
         }

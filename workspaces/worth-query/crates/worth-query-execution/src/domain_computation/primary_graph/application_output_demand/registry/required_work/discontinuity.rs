@@ -92,7 +92,7 @@ impl DemandRegistryState {
             .map(|(key, _)| key);
         let required_len = self.required_keys.len();
         let selected = if let Some(last) = last {
-            let comparison = last.producer.len().checked_add(7).ok_or_else(work_denial)?;
+            let comparison = last.comparison_work().ok_or_else(work_denial)?;
             charge_tree(admission, required_len, comparison, 1)?;
             self.required_keys
                 .range((Excluded(Arc::clone(last)), Unbounded))

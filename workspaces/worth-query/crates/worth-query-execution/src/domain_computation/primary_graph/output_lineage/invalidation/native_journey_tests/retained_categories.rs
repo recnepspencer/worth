@@ -1,6 +1,7 @@
 //! Actual indexed registration, prior images, capacity refusal and retry.
 use super::super::derived::SettlementRegistrationStop;
 use super::*;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[test]
@@ -32,7 +33,7 @@ fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_be
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<StatusOutput>(),
+        output_binding: OutputBindingIdentity::declared("StatusOutput"),
     };
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();

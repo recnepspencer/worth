@@ -82,7 +82,9 @@ impl WorthQueryApplicationOutputLineage {
                 runtime_authority,
                 schema: schema.clone(),
                 scope,
-                output_binding: *output_binding,
+                output_binding: self
+                    .binding_identity(*output_binding)
+                    .expect("output family binding is installed"),
             };
             if !self.by_source.contains_key(&source) {
                 continue;

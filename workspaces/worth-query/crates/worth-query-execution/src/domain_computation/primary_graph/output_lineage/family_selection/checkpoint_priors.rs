@@ -31,7 +31,8 @@ fn copy_text(value: &str) -> Result<String, Denial> {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct OutputFamilyRole {
-    pub(in crate::domain_computation::primary_graph) family: String,
+    pub(in crate::domain_computation::primary_graph) family:
+        super::super::super::output_family_identity::OutputFamilyIdentity,
     pub(in crate::domain_computation::primary_graph) role: String,
 }
 
@@ -82,7 +83,7 @@ impl WorthQueryApplicationOutputLineage {
                             .map_err(|_| Denial::arithmetic("installed binding row width"))?,
                     )
                     .map_err(|stop| Denial::admission("installed binding scratch", stop))?;
-                installed.insert(*binding, (family, role));
+                installed.insert(*binding, (family.as_str(), role.as_str()));
             }
         }
 
@@ -94,7 +95,10 @@ impl WorthQueryApplicationOutputLineage {
             if source.runtime_authority != runtime_authority || &source.schema != schema {
                 continue;
             }
-            let Some((family, role)) = installed.get(&source.output_binding).copied() else {
+            let Some((family, role)) = installed
+                .get(&self.binding_type(&source.output_binding))
+                .copied()
+            else {
                 continue;
             };
             let group = (family, role, source.scope);
@@ -170,7 +174,7 @@ impl WorthQueryApplicationOutputLineage {
                     heads.insert(
                         partition,
                         role,
-                        source.output_binding,
+                        self.binding_type(&source.output_binding),
                         ancestry_depth,
                         publication,
                     );
@@ -258,7 +262,7 @@ impl WorthQueryApplicationOutputLineage {
                     .map_err(|error| Denial::allocation("selected head rows", error))?;
                 selected.push(NativePriorCheckpointOutput {
                     family_role: OutputFamilyRole {
-                        family,
+                        family: family.into(),
                         role: role_name,
                     },
                     scope,
