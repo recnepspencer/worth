@@ -1,5 +1,6 @@
 //! Query and its runtime owners order declared identity, never Rust build identity.
 mod address_order;
+mod debug_inventory;
 mod expression_identity;
 mod inventory;
 #[cfg(test)]
