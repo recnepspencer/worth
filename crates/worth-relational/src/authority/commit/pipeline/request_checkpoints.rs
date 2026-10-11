@@ -46,3 +46,6 @@ pub(crate) fn consult_stage(
 pub(super) mod observation;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod stage_counts;
