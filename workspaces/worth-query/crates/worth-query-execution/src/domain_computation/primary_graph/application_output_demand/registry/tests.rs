@@ -20,6 +20,7 @@ fn record_admission() -> InvalidationEditAdmission {
     })
 }
 
+mod awaited_claim;
 mod awaited_publication;
 mod caller_chain;
 mod closed_retirement;

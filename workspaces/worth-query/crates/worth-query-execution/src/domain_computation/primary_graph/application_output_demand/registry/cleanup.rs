@@ -30,7 +30,14 @@ impl DemandRegistryState {
         match record.idle_disposition(awaited) {
             IdleRowDisposition::InFlight
             | IdleRowDisposition::KeptAnswer
-            | IdleRowDisposition::HeldForStaleOwner => return false,
+            | IdleRowDisposition::HeldForStaleOwner
+                if !record.successor_is_orphaned(awaited) =>
+            {
+                return false
+            }
+            IdleRowDisposition::InFlight
+            | IdleRowDisposition::KeptAnswer
+            | IdleRowDisposition::HeldForStaleOwner => {}
             IdleRowDisposition::Retired(reason) if reason.releases_finished_work() => {}
             IdleRowDisposition::Retired(_) => return false,
         }
@@ -40,7 +47,12 @@ impl DemandRegistryState {
             || (record.prerequisites.capacity() == 0
                 && record.checkpoint_prerequisites.is_none()
                 && record.settlements.capacity() == 0
-                && record.performed_obligations.capacity() == 0)
+                && record.performed_obligations.capacity() == 0
+                && !matches!(
+                    record.idle_disposition(awaited),
+                    IdleRowDisposition::Retired(super::RowRetirement::AbandonedPublication)
+                )
+                && !record.successor_is_orphaned(awaited))
         {
             return false;
         }
@@ -112,7 +124,8 @@ impl DemandRegistryState {
                 reason.releases_finished_work()
                     && record.framework_required_count == 0
                     && record.prepared_prerequisite_claims == 0
-                    && record.performed_obligations.capacity() != 0
+                    && (record.performed_obligations.capacity() != 0
+                        || matches!(reason, super::RowRetirement::AbandonedPublication))
             }
         };
         if release_obligations {
@@ -254,11 +267,16 @@ impl DemandRegistryState {
             .map_err(|_| empty_work_denial())?;
         let member = record.work_membership.as_ref().map(Arc::clone);
 
+        let orphaned_successor = record.successor_is_orphaned(awaited);
         let head = self.pending_cleanup_head.take().unwrap();
         let record = self.records.get_mut(head.as_ref()).unwrap();
         self.pending_cleanup_head = record.pending_cleanup_next.take();
         record.pending_cleanup_queued = false;
         let retained_key_bytes = std::mem::take(&mut record.pending_cleanup_key_bytes);
+        // Its interest releases the row after the registry guard is gone.
+        let successor = orphaned_successor
+            .then(|| record.held_successor.take())
+            .flatten();
         let release = match record.idle_disposition(awaited) {
             IdleRowDisposition::InFlight
             | IdleRowDisposition::KeptAnswer
@@ -310,6 +328,7 @@ impl DemandRegistryState {
             None
         };
         Ok(Some(RetiredTerminalCleanup {
+            _successor: successor,
             _released: released,
             _settlements: settlements,
             _checkpoint: checkpoint,
@@ -342,6 +361,8 @@ struct RetiredTerminalCleanup {
     _member: Option<Arc<super::required_work::RequiredWorkMembership>>,
     refund_required_bytes: usize,
     refund_obligation_bytes: usize,
+    // Destroy queued key custody before this interest can refund its row.
+    _successor: Option<super::held_successor::HeldRequiredSuccessor>,
 }
 
 fn work_denial() -> WorthQueryOutputDemandDenial {

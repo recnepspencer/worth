@@ -82,7 +82,7 @@ impl DemandRegistryState {
         record.held_successor.as_ref()?;
         // Only demands own a row: a prerequisite claim of a cached dependent
         // row keeps the row, not the successor.
-        let orphaned = record.interests <= 1 && !awaited_by_stale_owner(&self.records, key);
+        let orphaned = record.successor_is_orphaned(awaited_by_stale_owner(&self.records, key));
         if needs_successor(record) && !orphaned {
             return None;
         }
@@ -95,4 +95,10 @@ fn needs_successor(record: &DemandRecord) -> bool {
     !record.has_cached_ready()
         && !superseded(record)
         && !matches!(record.state, DemandState::Failed(_))
+}
+
+impl DemandRecord {
+    pub(super) fn successor_is_orphaned(&self, awaited: bool) -> bool {
+        self.held_successor.is_some() && self.interests <= 1 && !awaited
+    }
 }

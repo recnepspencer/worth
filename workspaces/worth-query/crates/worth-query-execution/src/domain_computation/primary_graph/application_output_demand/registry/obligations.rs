@@ -61,6 +61,20 @@ impl DemandRegistryState {
         std::iter::once(upstream.clone()).chain(newest)
     }
 
+    fn defer_released_claim(&mut self, key: &WorthQueryOutputDemandKey) -> bool {
+        let Some(key) = self.required_keys.get(key).cloned() else {
+            return false;
+        };
+        let awaited = super::refreshed_rejoin::awaited_by_stale_owner(&self.records, &key);
+        let abandoned = self.records.get(key.as_ref()).is_some_and(|record| {
+            matches!(
+                record.idle_disposition(awaited),
+                super::IdleRowDisposition::Retired(super::RowRetirement::AbandonedPublication)
+            ) || record.successor_is_orphaned(awaited)
+        });
+        abandoned && self.defer_terminal_cleanup(&key, 0)
+    }
+
     pub(super) fn release_record_prerequisites_detached(
         &mut self,
         key: &WorthQueryOutputDemandKey,
@@ -120,6 +134,11 @@ impl DemandRegistryState {
                 .expect("framework prerequisite record remains retained");
             record.framework_required_count -= 1;
             for released in self.released_by_claim(upstream) {
+                // Keep the already funded key until its paid cleanup has
+                // detached the row and any orphaned successor.
+                if self.defer_released_claim(&released) {
+                    continue;
+                }
                 if let Some(retired) = retired_members.as_deref_mut() {
                     let member = self.remove_required_member_if_released_detached(&released);
                     refund = refund
@@ -195,7 +214,9 @@ impl DemandRegistryState {
                     .expect("framework prerequisite record remains retained");
                 record.framework_required_count -= 1;
                 for released in self.released_by_claim(upstream) {
-                    self.remove_required_member_if_released(&released);
+                    if !self.defer_released_claim(&released) {
+                        self.remove_required_member_if_released(&released);
+                    }
                 }
             }
         }
