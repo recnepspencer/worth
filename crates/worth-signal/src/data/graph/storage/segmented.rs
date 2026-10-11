@@ -217,7 +217,7 @@ where
 pub type DependencyEdgeStore = SegmentedStore<DependencyEdge, DependencySetId>;
 pub type SubscriberEdgeStore = SegmentedStore<NodeId, SubscriberSetId>;
 
-#[cfg(test)]
+#[cfg(all(test, target_pointer_width = "64"))]
 pub(crate) fn checked_segment_component_for_test(
     value: usize,
 ) -> Result<u32, crate::data::error::SignalError> {

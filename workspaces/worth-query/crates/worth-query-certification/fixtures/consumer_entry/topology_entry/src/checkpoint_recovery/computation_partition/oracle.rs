@@ -42,6 +42,8 @@ mod republication;
 mod restoration;
 mod seeded_absence;
 mod tree_count;
+// This courtroom injects a reducer panic; it requires unwinding.
+#[cfg(panic = "unwind")]
 mod tree_stop;
 mod tree_work;
 use installation::{

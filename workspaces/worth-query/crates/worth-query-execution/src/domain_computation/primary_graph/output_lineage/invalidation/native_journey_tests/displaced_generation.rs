@@ -95,7 +95,7 @@ fn a_release_the_owner_could_not_admit_retires_at_the_next_release() {
         // An admission with no work left stops the release before any edit.
         let mut exhausted = owner.edit_admission();
         exhausted
-            .charge_external_work(u64::try_from(exhausted.remaining_work()).unwrap())
+            .charge_external_work(exhausted.remaining_work_amount())
             .unwrap();
         assert!(owner
             .retire_released([Arc::clone(&row)], &mut exhausted)

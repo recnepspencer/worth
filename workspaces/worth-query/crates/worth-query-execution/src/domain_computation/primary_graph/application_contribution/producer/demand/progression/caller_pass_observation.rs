@@ -54,7 +54,7 @@ pub(super) fn exhaust_after_commit(
     }
     if control.caller_pass.take_exhaustion() {
         admission
-            .charge_external_work(admission.remaining_work() as u64)
+            .exhaust_work_for_test()
             .expect("the constructed exhaustion consumes exactly the remaining allowance");
     }
 }

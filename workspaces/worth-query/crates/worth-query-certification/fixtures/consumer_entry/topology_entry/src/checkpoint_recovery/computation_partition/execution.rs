@@ -177,6 +177,8 @@ fn reordering_the_input_changes_neither_the_total_nor_the_charged_work() {
 #[test]
 fn partitions_whose_declared_bytes_pass_the_request_memory_are_denied_and_the_next_demand_is_answered(
 ) {
+    // The owner declares usize bytes; its denial reports that value as u64.
+    const DECLARED_BYTES: u64 = usize::MAX as u64;
     // The computation declares the largest byte count there is, and a gather
     // holds its declared bytes before it runs. No request's memory admits
     // that: the first gather is refused by the request's policy, with one
@@ -192,7 +194,7 @@ fn partitions_whose_declared_bytes_pass_the_request_memory_are_denied_and_the_ne
                     outcome,
                     Err(WorthQueryPartitionedComputationDenial::Resource(
                         WorthQueryManagedComputationResourceDenial::MemoryLimit {
-                            requested: u64::MAX,
+                            requested: DECLARED_BYTES,
                             level: WorthQueryMemoryLimitLevel::Policy,
                             ..
                         }
@@ -228,6 +230,7 @@ pub(super) fn several_refusals() -> (Vec<RegionEntry>, RegionOutcome) {
     (entries, least)
 }
 
+#[cfg(panic = "unwind")]
 #[test]
 fn refusals_in_several_regions_report_the_least_partition_identity() {
     let (entries, least) = several_refusals();
@@ -241,6 +244,7 @@ fn refusals_in_several_regions_report_the_least_partition_identity() {
     });
 }
 
+#[cfg(panic = "unwind")]
 #[test]
 fn kernel_panic_is_a_typed_stop_and_the_next_demand_runs() {
     let clean = [entry(1, 1, 2.0), entry(2, 2, 3.0)];

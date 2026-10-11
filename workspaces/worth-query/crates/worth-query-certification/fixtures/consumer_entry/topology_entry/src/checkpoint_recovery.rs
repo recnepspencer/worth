@@ -30,8 +30,9 @@ mod demand_contact;
 mod demand_policy;
 mod generated_restoration;
 mod input_cutoff;
-#[cfg(not(target_arch = "wasm32"))]
-mod late_cancellation;
+needs_os_threads! {
+    mod late_cancellation;
+}
 pub(crate) mod mixed_retirement;
 mod parallel_history;
 mod producer_domain_denial;

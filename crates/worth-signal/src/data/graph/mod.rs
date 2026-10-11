@@ -25,7 +25,7 @@ pub use runtime::{
     SignalGraph, SignalGraphLifecycleProbe, SignalGraphReconstitution,
     SignalGraphReconstitutionReport,
 };
-#[cfg(test)]
+#[cfg(all(test, target_pointer_width = "64"))]
 pub(crate) use storage::checked_segment_component_for_test;
 pub(crate) use storage::{
     DependencyEdgeStore, DependencySetId, SubscriberEdgeStore, SubscriberSetId,
