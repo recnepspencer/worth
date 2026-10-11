@@ -205,3 +205,5 @@ fn direct_rebinding_opens_before_its_reader() {
         },
     );
 }
+
+mod foreign_phase_tests;
