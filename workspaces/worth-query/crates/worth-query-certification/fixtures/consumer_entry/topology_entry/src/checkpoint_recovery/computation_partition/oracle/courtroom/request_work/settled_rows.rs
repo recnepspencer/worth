@@ -1,4 +1,11 @@
 use super::*;
+// The first occupancy step in registry/record_capacity.rs::ordered_levels.
+const FIRST_LEDGER_LEVEL_ROWS: usize = 11;
+const TRIANGLE_ROWS: usize = 3;
+const QUIET_CALLER_ROWS: usize = 3;
+// The quiet lane is the smaller population. Crossing it also crosses pending.
+const DISJOINT_ROWS: usize = FIRST_LEDGER_LEVEL_ROWS - TRIANGLE_ROWS - QUIET_CALLER_ROWS;
+
 type ScaleProgram = OracleProgram<false, TOTALS_WORK, 1, 4>;
 #[test]
 fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
@@ -28,7 +35,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
         // interests are held in both measurements; only the additional,
         // disjoint triangles differ in their number of open settled rows.
         let mut triangle_rows = Vec::new();
-        for corner in 0..3 {
+        for corner in 0..TRIANGLE_ROWS {
             let mut row = unrelated_request
                 .demand(PlanarOutputDemand::new(format!("unrelated-{corner}")))
                 .start_in_program::<ScaleProgram, OracleRoot>(&app)
@@ -40,7 +47,10 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
             triangle_rows.push(row);
         }
         let mut queue_caller = unrelated_request
-            .demand(PlanarOutputDemand::new("unrelated-6"))
+            .demand(PlanarOutputDemand::new(format!(
+                "unrelated-{}",
+                (TRIANGLE_ROWS + DISJOINT_ROWS).next_multiple_of(TRIANGLE_ROWS)
+            )))
             .start_in_program::<ScaleProgram, OracleRoot>(&app)
             .unwrap();
         assert!(matches!(
@@ -54,12 +64,15 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
         let mut pending_visited = Vec::new();
         let mut held = Vec::new();
         let mut populations = Vec::new();
-        for unrelated in [0, 1] {
+        for unrelated in [0, DISJOINT_ROWS] {
             let opened = unrelated - held.len();
             let setup_contacts = app.producer_contacts_on_this_thread_for_test();
             for number in held.len()..unrelated {
                 let mut row = unrelated_request
-                    .demand(PlanarOutputDemand::new(format!("unrelated-{}", number + 3)))
+                    .demand(PlanarOutputDemand::new(format!(
+                        "unrelated-{}",
+                        number + TRIANGLE_ROWS
+                    )))
                     .start_in_program::<ScaleProgram, OracleRoot>(&app)
                     .unwrap();
                 assert!(matches!(
@@ -69,6 +82,9 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                 held.push(row);
             }
             assert_eq!(held.len(), unrelated);
+            if unrelated != 0 {
+                assert!(held.len() >= 2, "a disjoint triangle holds multiple rows");
+            }
             // These are newly admitted rows, not cached interests: each first
             // demand republishes its pre-existing byte-equal Native value once.
             assert_eq!(
@@ -97,8 +113,8 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                 0,
                 "all newly admitted interests are current before the edit schedule"
             );
-            // Native values exist in both measurements; zero versus one
-            // actual registry rows now differ, not merely open interests.
+            // Native values exist in both measurements; the disjoint population
+            // adds actual registry rows, with multiple rows on one triangle.
 
             // Both measurements have a full retained lineage window. Cold
             // history has fewer retirement candidates, independently of open rows.
@@ -155,7 +171,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                     pending_costs.push(work[0]);
                     // Three held triangle priors coexist with their three
                     // refreshed rows; SCOPE root/leaf and queue caller add three.
-                    let expected_rows = 2 * triangle_rows.len() + 3 + unrelated;
+                    let expected_rows = 2 * triangle_rows.len() + QUIET_CALLER_ROWS + unrelated;
                     assert_eq!(
                         app.registry_row_count_for_test(),
                         expected_rows,
@@ -199,8 +215,8 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                     );
                 }
             }
-            // Measure this lane while its actual population is still zero or
-            // one, before creating the next lane's rows. All setup is drained.
+            // Measure this lane before creating the next lane's disjoint rows.
+            // All setup is drained.
             for row in &mut held {
                 assert!(matches!(
                     row.advance(&unrelated_request).unwrap(),
@@ -218,7 +234,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
             assert_eq!(app.queued_required_work_for_test(), 0);
             // Rejoining each triangle releases its superseded prior. The
             // three current triangle rows and the three callers remain cached.
-            let expected_rows = triangle_rows.len() + 3 + unrelated;
+            let expected_rows = triangle_rows.len() + QUIET_CALLER_ROWS + unrelated;
             assert_eq!(
                 app.registry_row_count_for_test(),
                 expected_rows,
@@ -249,12 +265,16 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
         }
         assert_eq!(
             populations[1] - populations[0],
-            1,
-            "the pending-work requests differ by one actual registry row"
+            DISJOINT_ROWS,
+            "the pending-work requests differ by the threshold-derived disjoint rows"
         );
+        for measured in [&populations, &quiet_populations] {
+            assert!(measured[0] < FIRST_LEDGER_LEVEL_ROWS);
+            assert!(measured[1] >= FIRST_LEDGER_LEVEL_ROWS);
+        }
         assert_eq!(
             pending_costs[0], pending_costs[1],
-            "the same pending work costs the same with zero or one disjoint settled open rows"
+            "the same pending work costs the same across the ledger's first level"
         );
         assert_eq!(
             pending_visited,
@@ -263,7 +283,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
         );
         assert_eq!(
             quiet_populations[1] - quiet_populations[0],
-            1,
+            DISJOINT_ROWS,
             "quiet lanes differ by actual registry rows"
         );
         assert_eq!(
