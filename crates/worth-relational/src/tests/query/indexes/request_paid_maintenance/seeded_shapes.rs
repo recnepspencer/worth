@@ -2,12 +2,20 @@ use super::*;
 
 #[test]
 fn sixteen_seeded_shapes_preserve_generations_and_answers_and_charge_native_units() {
+    prove_shapes((0..16).map(|seed| (seed, 1 + (seed * 5) % 7)));
+}
+
+#[test]
+fn two_two_hundred_row_shapes_preserve_answers_on_every_maintenance_path() {
+    prove_shapes([(0, 200), (1, 200)]);
+}
+
+fn prove_shapes(shapes: impl IntoIterator<Item = (usize, usize)>) {
     let mut failures = Vec::new();
-    for seed in 0..16usize {
+    for (seed, rows) in shapes {
         let host = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host);
         let fields = 1 + seed % 3;
-        let rows = 1 + (seed * 5) % 7;
         let mut schema = AspectSchemaFixture::with_default_declared_aspects(
             CascadeDeletePolicy::CascadeDeleteRelations,
         );
@@ -100,7 +108,7 @@ fn sixteen_seeded_shapes_preserve_generations_and_answers_and_charge_native_unit
         let (paid, report) = execution
             .run(ExecutionWorkCeiling::new(100_000), |_| {
                 runtime.index_authority().refresh_for_basis(
-                    request,
+                    request.clone(),
                     &basis,
                     None,
                     cold_budget(),
@@ -112,10 +120,15 @@ fn sixteen_seeded_shapes_preserve_generations_and_answers_and_charge_native_unit
         let cold = (0..fields).filter(|field| (seed >> field) & 1 == 0).count();
         // Unique buckets reserve one initial map path, 64 units per later
         // map path and one row path per insertion, independently per field.
+        // For these sizes the independent path bound has one level for
+        // 0..=64 keys and two for 65..=199; the first empty map costs one.
+        // Every unique bucket also reserves one empty row path.
+        assert!(rows <= 200);
+        let map_paths = 1 + 64 * (rows - 1).min(64) + 128 * rows.saturating_sub(65);
         let expected = if cold == 0 {
             fields
         } else {
-            fields + (rows + 1) + 2 * rows + cold * rows + cold * (65 * rows - 63)
+            fields + (rows + 1) + 2 * rows + cold * rows + cold * (map_paths + rows)
         };
         assert_eq!(paid.work.work_units, expected, "seed {seed}");
 
@@ -209,7 +222,115 @@ fn sixteen_seeded_shapes_preserve_generations_and_answers_and_charge_native_unit
         if report.charged_work() != paid.work.work_units as u64 {
             failures.push(seed);
         }
+        prove_commit_paths(
+            execution,
+            &runtime,
+            &created,
+            &request,
+            seed,
+            expected,
+            &before.generations,
+        );
         release_test_commit_snapshot(&runtime, &created);
     }
     assert!(failures.is_empty(), "unpaid seeds: {failures:?}");
+}
+
+fn prove_commit_paths(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    created: &crate::facade::transactions::CommitResult,
+    request: &DerivedIndexBuildRequest,
+    seed: usize,
+    expected: usize,
+    baseline: &[crate::indexes::data::DerivedIndexGeneration],
+) {
+    for (field, index) in request.index_ids.iter().enumerate() {
+        if (seed >> field) & 1 == 0 {
+            runtime
+                .index_authority()
+                .discard_generations(crate::indexes::data::DerivedIndexDiscardRequest::all_bases(
+                    *index,
+                ))
+                .unwrap();
+        }
+    }
+    let transaction = test_owner_begin_transaction_for_main(runtime);
+    let mut candidate = runtime
+        .prepare_branch_transaction(execution, transaction)
+        .unwrap();
+    let (prepared, report) = execution
+        .run(ExecutionWorkCeiling::new(100_000), |_| {
+            runtime.index_authority().prepare_for_candidate(
+                &mut candidate,
+                &request.index_ids,
+                Some(&created.snapshot),
+                cold_budget(),
+                execution,
+            )
+        })
+        .unwrap();
+    let prepared = prepared.unwrap();
+    assert_eq!(
+        prepared.work_units,
+        expected + request.index_ids.len(),
+        "candidate seed {seed}"
+    );
+    assert_eq!(report.charged_work(), prepared.work_units as u64);
+    assert_eq!(
+        prepared.generation_publications_reserved,
+        request.index_ids.len()
+    );
+    assert_eq!(prepared.patch_records, 0);
+    assert!(request.index_ids.iter().all(|index| runtime
+        .index_access()
+        .latest_generation(*index, &request.branch_id)
+        .is_none_or(|generation| generation.source_commit_id == created.commit.commit_id)));
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
+        runtime.publication_port().compare_and_publish(candidate)
+    else {
+        panic!("prepared differential candidate publishes")
+    };
+    let committed = runtime.settle_performed_publication(performed).unwrap();
+    for (index, old) in request.index_ids.iter().zip(baseline) {
+        let new = runtime
+            .index_access()
+            .latest_generation(*index, &request.branch_id)
+            .unwrap();
+        assert_eq!(new.entries, old.entries, "candidate seed {seed}");
+        assert_eq!(new.source_commit_id, committed.commit.commit_id);
+    }
+    release_test_commit_snapshot(runtime, &committed);
+    // Also exercise the retained-commit reader while the source snapshot owns
+    // that old root. Discard only the same seed's cold indexes.
+    for (field, index) in request.index_ids.iter().enumerate() {
+        if (seed >> field) & 1 == 0 {
+            runtime
+                .index_authority()
+                .discard_generations(crate::indexes::data::DerivedIndexDiscardRequest::all_bases(
+                    *index,
+                ))
+                .unwrap();
+        }
+    }
+    let (reconstructed, report) = execution
+        .run(ExecutionWorkCeiling::new(100_000), |_| {
+            runtime.index_authority().reconstruct_for_commit(
+                execution,
+                request.clone(),
+                cold_budget(),
+            )
+        })
+        .unwrap();
+    let reconstructed = reconstructed.unwrap();
+    assert_eq!(
+        reconstructed.work.work_units, expected,
+        "retained seed {seed}"
+    );
+    assert_eq!(report.charged_work(), reconstructed.work.work_units as u64);
+    for (new, old) in reconstructed.generations.iter().zip(baseline) {
+        assert_eq!(new.entries, old.entries, "retained seed {seed}");
+        assert_eq!(new.applicability, old.applicability);
+        assert_eq!(new.source_commit_id, old.source_commit_id);
+    }
 }

@@ -155,12 +155,11 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
     let retry_kind = retry
         .map(|_| None)
         .unwrap_or_else(|denied| Some(denied.kind));
-    runtime
-        .index_authority()
-        .discard_generations(crate::indexes::data::DerivedIndexDiscardRequest::all_bases(
-            index,
-        ))
-        .unwrap();
+    assert_eq!(retry_kind, Some(Denial::Execution(Cause::WorkExhausted)));
+    assert!(runtime
+        .index_access()
+        .latest_generation(index, &BranchId("main".into()))
+        .is_none());
     let mut charges = 0;
     let rendezvous = crate::indexes::at_next_charges(move || {
         charges += 1;

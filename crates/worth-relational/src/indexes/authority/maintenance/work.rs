@@ -105,6 +105,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
 
     /// Framework preparation extends the caller's authority. Native counters
     /// remain the existing algorithm's receipt; they do not include these copies.
+    /// The admitted caller pays preparation work; request callers pay native work in `charge`.
     pub(super) fn prepare(&mut self, work: u64, bytes: u64) -> Result<(), Denial> {
         match &mut self.payer {
             MaintenancePayer::Admission(prepare) => {
