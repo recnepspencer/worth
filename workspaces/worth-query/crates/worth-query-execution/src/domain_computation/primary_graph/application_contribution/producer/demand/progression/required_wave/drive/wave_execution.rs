@@ -106,6 +106,8 @@ where
                 }
                 // Each slot commits, publishes and advances its actual checkpoint
                 // before the consuming cursor can yield the next slot.
+                // Unlike held::resume, this loop owns installation of a fresh slot;
+                // both loops obtain their checkpoint turns from the paid owner.
                 loop {
                     let successor = storage.last_mut();
                     let stage = match successor

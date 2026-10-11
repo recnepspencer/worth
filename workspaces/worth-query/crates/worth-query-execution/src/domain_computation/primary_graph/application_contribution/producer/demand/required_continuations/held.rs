@@ -207,7 +207,8 @@ where
     Schema: ApplicationSchema + 'static,
 {
     /// Run the successor's row again and drive its checkpoint to Ready. A
-    /// row already Ready is not run again.
+    /// row already Ready is not run again. Unlike wave_execution's fresh-slot
+    /// loop, this resumes existing continuation custody; both use paid turns.
     fn resume(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,

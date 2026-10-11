@@ -1,5 +1,6 @@
 //! The real wave records a failed checkpoint on its newly issued successor.
 use super::*;
+use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial as DemandDenial;
 
 #[test]
 fn a_queued_checkpoint_failure_records_the_successor_not_its_predecessor() {
@@ -7,7 +8,7 @@ fn a_queued_checkpoint_failure_records_the_successor_not_its_predecessor() {
     let application = chain_application();
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (a, b, c, mut d) = chain_with_unrelated!(application, request);
+    let (a, b, mut c, mut d) = chain_with_unrelated!(application, request);
     let selected = request
         .query(PlanarRead {
             body_key: "anchor-a".into(),
@@ -48,6 +49,11 @@ fn a_queued_checkpoint_failure_records_the_successor_not_its_predecessor() {
         successors[0].1,
         Some(WorthQueryOutputDemandDenialKind::SchedulingRejected),
         "the successor owns the real checked readiness-counter refusal by value"
+    );
+    assert!(
+        matches!(c.advance(&request), Err(DemandDenial::Demand(stop))
+        if stop.kind() == WorthQueryOutputDemandDenialKind::SchedulingRejected),
+        "the consumer's real advance exposes the upstream checkpoint refusal"
     );
     drop((a, b, c, d));
 }
