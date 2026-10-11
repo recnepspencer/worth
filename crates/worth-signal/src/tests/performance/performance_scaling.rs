@@ -86,6 +86,7 @@ fn transaction_chain_1000_source_seed_stages_only_the_source() {
 }
 
 #[test]
+#[ignore = "asserts wall-clock time; run on a quiet machine"]
 fn push_perf_10k_nodes() {
     let (mut graph, chain) = with_perf_topology_asserts_disabled(|| build_chain_graph(10_000));
     evaluate_chain_bulk(&mut graph, &chain);
