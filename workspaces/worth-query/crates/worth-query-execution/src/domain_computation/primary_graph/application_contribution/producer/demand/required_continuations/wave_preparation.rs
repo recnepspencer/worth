@@ -21,6 +21,15 @@ impl<Schema: ApplicationSchema + 'static> RequiredContinuations<Schema> {
 }
 
 impl<Schema: ApplicationSchema + 'static> PreparedContinuationWave<'_, Schema> {
+    pub(in super::super) fn awaited_delivery(
+        &mut self,
+        registry: &WorthQueryOutputDemandRegistry,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Option<awaited_delivery::AwaitedDelivery<'_, Schema>>, WorthQueryOutputDemandDenial>
+    {
+        self.custody.awaited_delivery(registry, admission)
+    }
+
     pub(in super::super) fn entries(&self) -> &[RequiredFreshProgress<Schema>] {
         &self.custody.entries
     }

@@ -19,6 +19,7 @@ pub(super) struct State {
     pub completed: Vec<usize>,
     pub watchdog: bool,
 }
+type OwnerCompletion = Arc<dyn Fn(usize) + Send + Sync>;
 pub(super) struct Schedule {
     pub roots: Vec<String>,
     pub costs: Vec<usize>,
@@ -26,6 +27,7 @@ pub(super) struct Schedule {
     pub overlap: bool,
     pub catches_denial: bool,
     pub state: Mutex<State>,
+    pub owner_completion: Mutex<Option<OwnerCompletion>>,
     ready: Condvar,
 }
 impl Schedule {
@@ -46,6 +48,7 @@ impl Schedule {
             failure,
             overlap,
             catches_denial: false,
+            owner_completion: Mutex::new(None),
             state: Mutex::new(State {
                 entered: vec![false; count],
                 runs: vec![0; count],
@@ -119,7 +122,12 @@ impl WorthQueryManagedComputationOwner<CheckpointSchema, PlanarOutputFeature, Co
     type Output = CostValue;
     type Stopped = ();
     fn prepare(&self, input: &String) -> Result<Prepared, ()> {
-        let schedule = ARMED.lock().unwrap().clone();
+        // A schedule witnesses only its declared roots, never an unrelated member.
+        let schedule = ARMED
+            .lock()
+            .unwrap()
+            .clone()
+            .filter(|schedule| schedule.roots.iter().any(|key| key == input));
         let rank = schedule
             .as_ref()
             .and_then(|s| s.roots.iter().position(|key| key == input))
@@ -177,6 +185,10 @@ impl WorthQueryManagedComputationOwner<CheckpointSchema, PlanarOutputFeature, Co
             schedule.state.lock().unwrap().completed.push(prepared.rank);
             if schedule.failure == Some((prepared.rank, Failure::Complete)) {
                 return Err(());
+            }
+            let probe = schedule.owner_completion.lock().unwrap().clone();
+            if let Some(probe) = probe {
+                probe(prepared.rank);
             }
         }
         Ok(CostValue { units: computed })

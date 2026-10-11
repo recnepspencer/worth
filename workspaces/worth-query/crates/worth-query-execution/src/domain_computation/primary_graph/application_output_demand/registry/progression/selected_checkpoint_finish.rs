@@ -165,7 +165,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 if output.checkpoint.is_some() {
                     return Err(SelectedCheckpointFinishStop::Returned(stopped, checkpoint));
                 }
-                output.checkpoint = Some(checkpoint);
+                output.install_checkpoint(checkpoint);
                 output.advancement = WorthQueryOutputAdvancement::Stopped {
                     denial: retained_denial(&stopped),
                     interrupted_claim: None,
@@ -176,7 +176,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 Err(SelectedCheckpointFinishStop::Restored(stopped))
             }
             WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {
-                output.checkpoint = Some(checkpoint);
+                output.install_checkpoint(checkpoint);
                 // The shared required row stops only for a stop intrinsic to
                 // it; any other stays with the advance that met it, and the
                 // row's checkpoint waits for a later claim.

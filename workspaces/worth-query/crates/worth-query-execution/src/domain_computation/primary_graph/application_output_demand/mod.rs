@@ -1,5 +1,8 @@
 pub(in crate::domain_computation::primary_graph) use registry::ConsumerCustody;
 pub(in crate::domain_computation::primary_graph) use registry::RunningSelectedExecution;
+pub(in crate::domain_computation::primary_graph) use registry::{
+    LivePublicationHead, PublicationHeadSelection,
+};
 mod currentness;
 mod readiness_delivery;
 mod recovered_outputs;

@@ -60,7 +60,7 @@ use input_reuse::{prepared_key, require_selected_program};
 pub(super) use installed::TypedInstalledProducer;
 use outcome::PreparedProducerExecutionOutcome;
 pub(super) use outcome::{ProducerCommitReceipt, ProducerExecutionOutcome};
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_cue::RequiredCueProgress;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_cue::{RequiredCueProgress, FrozenCurrentInspection, FrozenInspection};
 pub(super) use outcome::commit_receipt;
 use outcome::completed_handler;
 use source_readmission::readmit_source;

@@ -6,7 +6,7 @@ type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 #[derive(Default)]
 pub(super) struct DemandRecords(Map, BTreeMap<
     crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate,
-    std::collections::BTreeSet<WorthQueryOutputDemandKey>>);
+    std::collections::BTreeSet<WorthQueryOutputDemandKey>>, super::publication_head::PublicationHeads);
 #[cfg(feature = "test-query-execution-observer")]
 thread_local! { static WHOLE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
 fn observe_row() {
@@ -26,6 +26,7 @@ impl DemandRecords {
             observe_row();
             let keep = predicate(key, row);
             if !keep {
+                self.2.remove(row.product_occurrence);
                 let coordinate = key.source.occurrence_coordinate();
                 let keys = self.1.get_mut(&coordinate).expect("indexed row exists");
                 keys.remove(key);
@@ -71,8 +72,15 @@ impl DemandRecords {
     pub(super) fn insert(
         &mut self,
         key: WorthQueryOutputDemandKey,
-        row: DemandRecord,
+        mut row: DemandRecord,
     ) -> Option<DemandRecord> {
+        if let Some(previous) = self.0.get(&key) {
+            self.2.remove(previous.product_occurrence);
+        }
+        let counter = self.2.insert(row.product_occurrence);
+        if let super::DemandState::Output(output) = &mut row.state {
+            output.bind_publication_head(counter);
+        }
         self.1
             .entry(key.source.occurrence_coordinate())
             .or_default()
@@ -81,6 +89,7 @@ impl DemandRecords {
     }
     pub(super) fn remove(&mut self, key: &WorthQueryOutputDemandKey) -> Option<DemandRecord> {
         let row = self.0.remove(key)?;
+        self.2.remove(row.product_occurrence);
         let coordinate = key.source.occurrence_coordinate();
         let keys = self.1.get_mut(&coordinate).expect("indexed row exists");
         keys.remove(key);
@@ -142,7 +151,10 @@ impl DemandRecords {
             + 14 * std::mem::size_of::<usize>();
         let inner = 12 * std::mem::size_of::<WorthQueryOutputDemandKey>()
             + 14 * std::mem::size_of::<usize>();
-        outer.checked_add(inner)?.checked_add(key.producer.len())
+        outer
+            .checked_add(inner)?
+            .checked_add(super::publication_head::PublicationHeads::node_bytes())?
+            .checked_add(key.producer.len())
     }
 }
 impl From<Map> for DemandRecords {
@@ -155,21 +167,35 @@ impl From<Map> for DemandRecords {
     }
 }
 #[cfg(feature = "test-query-execution-observer")]
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
-    #[doc(hidden)]
-    pub fn registry_row_count_for_test(&self) -> usize {
-        self.output_demands
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .records
-            .len()
+mod observation {
+    use super::*;
+    impl DemandRecords {
+        pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn publication_count_for_test(
+            &self,
+        ) -> usize {
+            self.2
+                 .0
+                .values()
+                .map(|head| head.undelivered.load(std::sync::atomic::Ordering::Acquire))
+                .sum()
+        }
     }
-    #[doc(hidden)]
-    pub fn whole_registry_rows_visited_for_test(&self) -> u64 {
-        whole_rows()
+    impl<Schema>
+        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+    {
+        #[doc(hidden)]
+        pub fn registry_row_count_for_test(&self) -> usize {
+            self.output_demands
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .records
+                .len()
+        }
+        #[doc(hidden)]
+        pub fn whole_registry_rows_visited_for_test(&self) -> u64 {
+            whole_rows()
+        }
     }
 }
 
@@ -204,5 +230,34 @@ impl<'a> IntoIterator for &'a mut DemandRecords {
     >;
     fn into_iter(self) -> Self::IntoIter {
         ObservedRows(self.0.iter_mut())
+    }
+}
+
+impl DemandRecords {
+    pub(super) fn admit_publication_head_insertion(
+        &self,
+        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+        self.2.admit_insertion(admission)
+    }
+    pub(super) fn publication_counter(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+    ) -> Result<
+        std::sync::Arc<std::sync::atomic::AtomicUsize>,
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+    > {
+        self.2.counter(occurrence, admission)
+    }
+    pub(super) fn publication_selection(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+    ) -> Result<
+        super::PublicationHeadSelection,
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+    > {
+        self.2.selection(occurrence, admission)
     }
 }

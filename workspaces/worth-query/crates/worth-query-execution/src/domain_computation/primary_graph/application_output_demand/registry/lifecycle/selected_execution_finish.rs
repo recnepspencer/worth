@@ -19,6 +19,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedSelectedExecutio
     registry: &'a WorthQueryOutputDemandRegistry,
     key: Arc<super::super::WorthQueryOutputDemandKey>,
     member: Arc<RequiredWorkMembership>,
+    publication_head: Arc<std::sync::atomic::AtomicUsize>,
 }
 
 /// Holds only this invocation's Running claim. Abandoning a prepared suffix
@@ -118,10 +119,14 @@ impl WorthQueryOutputDemandRegistry {
             .as_ref()
             .cloned()
             .ok_or_else(empty_work_denial)?;
+        let publication_head = state
+            .records
+            .publication_counter(record.product_occurrence, admission)?;
         Ok(PreparedSelectedExecutionFinish {
             registry: self,
             key: Arc::clone(member.key_arc()),
             member,
+            publication_head,
         })
     }
 }
@@ -178,8 +183,9 @@ impl PreparedSelectedExecutionFinish<'_> {
             };
             return Err((denial, checkpoint));
         }
-        let (output, retired_observation) =
+        let (mut output, retired_observation) =
             WorthQueryOutputProgress::new_with_detached_observation(checkpoint);
+        output.bind_publication_head(self.publication_head);
         record.state = DemandState::Output(output);
         let retired_source = record.performed_source.take();
         record.successor_of = None;

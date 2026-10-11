@@ -191,7 +191,7 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         }
         crate::producer::reset_provider_contacts();
     }
-    let refreshed = if held_child {
+    let refreshed = if superseded_child {
         match join.advance(&request) {
             Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
             Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded)
@@ -241,12 +241,10 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
             take_decisions("diamond-join"),
             if superseded_child {
                 vec![vec![8, 51]]
-            } else if held_child {
-                vec![vec![6, 51], vec![6, 51]]
             } else {
                 vec![vec![6, 51]]
             },
-            "the completed decision retries after readiness changes its publication basis"
+            "the held dependency is delivered before the consumer decides once per changed basis"
         );
         if cancel_decision {
             assert_eq!(

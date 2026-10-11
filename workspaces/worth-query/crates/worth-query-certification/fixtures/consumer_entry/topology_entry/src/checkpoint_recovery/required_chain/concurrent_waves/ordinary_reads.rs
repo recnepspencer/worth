@@ -20,20 +20,23 @@ struct History {
     commits: Vec<String>,
     values: [u64; 2],
 }
-fn run(workers: usize) -> History {
+fn run(workers: usize, defer: bool) -> History {
+    drop(observations());
     let _restore = Restore(place(
         NonZeroUsize::new(workers).map_or(Placement::Serial, Placement::Leased),
     ));
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application = support::install_program_with_seed::<ordinary_read_application::Program>(
+    let application = std::sync::Arc::new(support::install_program_with_seed::<
+        ordinary_read_application::Program,
+    >(
         None,
         profile,
         4096,
         128 * 1024 * 1024,
         profile.limits().source_currentness_work() as u64,
         diamond::seed,
-    );
+    ));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     macro_rules! start {
@@ -115,10 +118,68 @@ fn run(workers: usize) -> History {
             .unwrap();
     }
     let schedule = Schedule::new(roots.clone(), None, false);
+    if defer {
+        let fault_owner = std::sync::Arc::clone(&application);
+        *schedule.owner_completion.lock().unwrap() = Some(std::sync::Arc::new(move |rank| {
+            if rank == 0 {
+                fault_owner.delay_next_output_readiness_delivery_for_test();
+            }
+        }));
+    }
     arm(Some(schedule.clone()));
     observations();
-    for _ in 0..8 {
-        caller.advance(&request).unwrap();
+    for advance in 0..8 {
+        let result = caller.advance(&request).unwrap();
+        if defer && advance == 0 {
+            assert!(
+                matches!(
+                    result,
+                    WorthQueryApplicationOutputDemandProgress::Settled(_)
+                ),
+                "a queued deferral preserves the already accepted caller"
+            );
+            assert_eq!(
+                schedule.state.lock().unwrap().completed,
+                [0, 1],
+                "the deferral and the later stale completion both happened"
+            );
+            assert_eq!(
+                schedule.state.lock().unwrap().runs,
+                [1, 1],
+                "a stale credit cannot reselect or compute M after A deferred"
+            );
+            let m = *names
+                .iter()
+                .find(|(_, key)| key.as_str() == roots[1])
+                .unwrap()
+                .0;
+            assert!(
+                !application
+                    .queued_required_rows_for_root_for_test(m)
+                    .is_empty(),
+                "M's own issued row remains queued after the frozen advance"
+            );
+            let owner = if roots[0] == "diamond-left" {
+                &mut left
+            } else {
+                &mut right
+            };
+            assert!(
+                matches!(
+                    owner.advance(&request).unwrap(),
+                    WorthQueryApplicationOutputDemandProgress::Settled(_)
+                ),
+                "only the deferring owner delivers and lets stale M recheck"
+            );
+            assert_eq!(
+                application.undelivered_publication_counts_for_test(),
+                (0, 0)
+            );
+            assert_eq!(
+                application.entered_required_selection_is_frozen_for_test(),
+                Some(false)
+            );
+        }
     }
     arm(None);
     assert_eq!(
@@ -161,7 +222,7 @@ fn an_ordinary_read_is_rechecked_after_an_earlier_member_writes_it() {
     if let Ok(workers) = std::env::var("WORTH_ORDINARY_READ_WIDTH") {
         println!(
             "WORTH_ORDINARY_READ_HISTORY:{:?}",
-            run(workers.parse().unwrap())
+            run(workers.parse().unwrap(), false)
         );
         return;
     }
@@ -182,4 +243,10 @@ fn an_ordinary_read_is_rechecked_after_an_earlier_member_writes_it() {
             .to_owned();
         assert_eq!(actual, *serial.get_or_insert_with(|| actual.clone()));
     }
+}
+
+#[test]
+fn a_stale_credit_cannot_reselect_after_a_queued_deferral() {
+    let _guard = checkpoint_recovery_test_guard();
+    run(0, true);
 }

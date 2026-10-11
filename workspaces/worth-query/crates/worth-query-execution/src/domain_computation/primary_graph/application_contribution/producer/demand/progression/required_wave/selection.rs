@@ -1,5 +1,88 @@
 use super::*;
 
+/// A caller's Ready or an exactly requested upstream Ready anchors the wave.
+/// `shared` and `positioned` retain its admitted Product/native proof basis.
+pub(super) struct RequiredWaveSelection<'runtime, Schema> {
+    pub(super) shared: SharedSelectedProductOperation<'runtime, Schema>,
+    pub(super) positioned: PositionedRelationalSnapshot,
+    pub(super) anchor_ready: SelectedReadyReadmission,
+    pub(super) branch: WorthQueryProductBranch,
+    pub(super) target: RequiredWaveTarget,
+    state: SelectionState,
+}
+
+/// Delivery follows the actual successor custody; no unrelated entry thaws.
+enum SelectionState {
+    Live(crate::domain_computation::primary_graph::application_output_demand::LivePublicationHead),
+    Frozen,
+}
+/// Only the selection owner can grant the live input to reselection.
+struct LiveSelection<'runtime, Schema>(RequiredWaveSelection<'runtime, Schema>);
+
+impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runtime, Schema> {
+    pub(super) fn freeze(&mut self) {
+        self.state = SelectionState::Frozen;
+    }
+    pub(super) fn is_frozen(&self) -> bool {
+        matches!(self.state, SelectionState::Frozen)
+    }
+    pub(super) fn reselect(
+        self,
+        runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Self, WorthQueryOutputDemandDenial> {
+        match self.state {
+            SelectionState::Frozen => Ok(self),
+            SelectionState::Live(_) => {
+                reselect_required_wave(runtime, LiveSelection(self), admission)
+            }
+        }
+    }
+    /// Only actual custody delivery can thaw; unrelated entries stay frozen.
+    pub(super) fn after_awaited_delivery(
+        self,
+        runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        _delivery: super::super::super::required_continuations::DeliveredAwaited,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Self, WorthQueryOutputDemandDenial> {
+        let head = runtime.output_demands.publication_head_selection(
+            self.shared
+                .selected()
+                .product()
+                .observation()
+                .lifecycle_incarnation(),
+            admission,
+        )?;
+        match head {
+            crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection::Frozen => Ok(self),
+            crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection::Live(_) =>
+                select_required_wave_from_ready(runtime, self.anchor_ready, self.branch, self.target, admission),
+        }
+    }
+    pub(super) fn from_basis(
+        shared: SharedSelectedProductOperation<'runtime, Schema>,
+        positioned: PositionedRelationalSnapshot,
+        anchor_ready: SelectedReadyReadmission,
+        branch: WorthQueryProductBranch,
+        target: RequiredWaveTarget,
+        head: crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection,
+    ) -> Self {
+        use crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection;
+        let state = match head {
+            PublicationHeadSelection::Live(witness) => SelectionState::Live(witness),
+            PublicationHeadSelection::Frozen => SelectionState::Frozen,
+        };
+        Self {
+            shared,
+            positioned,
+            anchor_ready,
+            branch,
+            target,
+            state,
+        }
+    }
+}
+
 pub(super) fn select_required_wave<'runtime, Schema>(
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     interest: &WorthQueryOutputDemandInterest,
@@ -25,11 +108,10 @@ where
     .map(Some)
 }
 
-/// A performed checkpoint moves the Native head. The caller retains the
-/// authentic original Ready pin while the next frame selects a fresh Product.
-pub(super) fn reselect_required_wave<'runtime, Schema>(
+/// Only a live advance can select the basis following a completed publication.
+fn reselect_required_wave<'runtime, Schema>(
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    previous: RequiredWaveSelection<'_, Schema>,
+    previous: LiveSelection<'_, Schema>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<RequiredWaveSelection<'runtime, Schema>, WorthQueryOutputDemandDenial>
 where
@@ -41,7 +123,8 @@ where
         anchor_ready,
         branch,
         target,
-    } = previous;
+        state: _,
+    } = previous.0;
     drop((shared, positioned));
     select_required_wave_from_ready(runtime, anchor_ready, branch, target, admission)
 }
@@ -57,13 +140,22 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let (shared, positioned) = select_required_basis(runtime, branch, admission)?;
-    Ok(RequiredWaveSelection {
+    let head = runtime.output_demands.publication_head_selection(
+        shared
+            .selected()
+            .product()
+            .observation()
+            .lifecycle_incarnation(),
+        admission,
+    )?;
+    Ok(RequiredWaveSelection::from_basis(
         shared,
         positioned,
         anchor_ready,
         branch,
         target,
-    })
+        head,
+    ))
 }
 
 /// The same owner-issued Product/native basis for both kinds of wave anchor.

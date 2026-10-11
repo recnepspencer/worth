@@ -34,7 +34,10 @@ fn an_initial_consumer_alone_resumes_its_requested_held_middle() {
     });
     assert!(
         settled.is_some(),
-        "the initial consumer resumes its requested middle without another caller"
+        "the initial consumer resumes its requested middle without another caller; frozen entry={:?}, counters={:?}, published={:?}",
+        application.entered_required_selection_is_frozen_for_test(),
+        application.undelivered_publication_counts_for_test(),
+        application.published_required_rows_for_test()
     );
     assert_eq!(
         take_all_decisions()

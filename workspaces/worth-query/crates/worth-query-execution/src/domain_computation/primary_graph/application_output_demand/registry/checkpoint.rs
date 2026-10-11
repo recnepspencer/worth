@@ -55,6 +55,7 @@ pub(super) enum WorthQueryOutputAdvancement {
 }
 
 pub(super) struct WorthQueryOutputProgress {
+    pub(super) undelivered: Option<super::publication_head::UndeliveredPublication>,
     /// Exact owner-issued commit retained while the sole full checkpoint is
     /// temporarily claimed for delivery. This fixed identity replaces a deep
     /// descriptive receipt clone after producer effects.
@@ -94,6 +95,7 @@ impl WorthQueryOutputProgress {
         (
             Self {
                 published_commit,
+                undelivered: None,
                 checkpoint: Some(checkpoint),
                 advancement: WorthQueryOutputAdvancement::Idle,
                 next_claim: 0,
@@ -105,6 +107,7 @@ impl WorthQueryOutputProgress {
     pub(super) fn restored(completion: ReadyCompletion) -> Self {
         Self {
             published_commit: None,
+            undelivered: None,
             checkpoint: Some(WorthQueryOutputCheckpoint::Ready(completion)),
             advancement: WorthQueryOutputAdvancement::Idle,
             next_claim: 0,
@@ -120,10 +123,40 @@ impl WorthQueryOutputProgress {
                 WorthQueryOutputAdvancement::Claimed(claim) => Some(claim),
                 _ => None,
             };
+            // A stopped row cannot deliver its checkpoint; it no longer freezes the head.
+            self.undelivered.take();
             self.advancement = WorthQueryOutputAdvancement::Stopped {
                 denial,
                 interrupted_claim,
             };
         }
+    }
+}
+
+impl WorthQueryOutputProgress {
+    pub(super) fn bind_publication_head(
+        &mut self,
+        counter: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    ) {
+        if matches!(
+            &self.checkpoint,
+            Some(WorthQueryOutputCheckpoint::Published { .. })
+        ) {
+            assert!(self.undelivered.is_none());
+            self.undelivered = Some(super::publication_head::UndeliveredPublication::new(
+                counter,
+            ));
+        }
+    }
+    /// The row owns the hold while delivery claims its checkpoint. Only a
+    /// delivered/ready finish releases it; a restored Published keeps it.
+    pub(super) fn install_checkpoint(&mut self, checkpoint: WorthQueryOutputCheckpoint) {
+        match &checkpoint {
+            WorthQueryOutputCheckpoint::Published { .. } => {}
+            WorthQueryOutputCheckpoint::Delivered { .. } | WorthQueryOutputCheckpoint::Ready(_) => {
+                self.undelivered.take();
+            }
+        }
+        self.checkpoint = Some(checkpoint);
     }
 }

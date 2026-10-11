@@ -12,8 +12,13 @@ pub(super) struct PreparedRequiredWave<'owner, Schema: ApplicationSchema> {
     )>,
 }
 
+pub(super) enum CollectedRequiredWave<'owner, 'custody, Schema: ApplicationSchema> {
+    Frozen(super::frozen_collection::FrozenRequiredWave<'custody, Schema>),
+    Live(PreparedRequiredWave<'owner, Schema>),
+}
+
 #[allow(clippy::too_many_arguments)]
-pub(super) fn collect<'owner, 'custody, Schema, Family>(
+pub(super) fn collect<'owner, 'custody, 'collection, Schema, Family>(
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
     runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -22,7 +27,7 @@ pub(super) fn collect<'owner, 'custody, Schema, Family>(
     frontier: &mut RequiredFrontier,
     queue: &mut QueuedRequiredRoots,
     resolved: &mut ResolvedOnWave,
-    caller_storage: &mut PreparedContinuationWave<'custody, Schema>,
+    caller_storage: &'collection mut PreparedContinuationWave<'custody, Schema>,
     queue_storage: &mut PreparedContinuationWave<'custody, Schema>,
     caller_installed: &InstalledProducerProvider<Schema>,
     caller_contacts: usize,
@@ -30,11 +35,27 @@ pub(super) fn collect<'owner, 'custody, Schema, Family>(
     authority: &WorthQueryProducerCommitAuthority,
     performed: &'owner std::cell::RefCell<super::super::performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
-) -> Result<PreparedRequiredWave<'owner, Schema>, WorthQueryOutputDemandDenial>
+) -> Result<CollectedRequiredWave<'owner, 'collection, Schema>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
+    if wave.is_frozen() {
+        return super::frozen_collection::collect(
+            runtime,
+            principal,
+            request,
+            wave,
+            frontier,
+            caller_storage,
+            caller_installed,
+            caller_contacts,
+            authority,
+            performed,
+            admission,
+        )
+        .map(CollectedRequiredWave::Frozen);
+    }
     let mut plans = Vec::new();
     'collect: loop {
         let mut index = 0;
@@ -171,9 +192,9 @@ where
                     runtime.output_demands.clear_required_stop(member.key());
                     if index == 0 {
                         frontier.members[index].state = MemberState::Current(Some(proof));
-                        return Ok(PreparedRequiredWave {
+                        return Ok(CollectedRequiredWave::Live(PreparedRequiredWave {
                             members: Vec::new(),
-                        });
+                        }));
                     }
                     let refresh = member.resolved_successor;
                     if !caller && queued.is_some() && !required_by_member {
@@ -364,5 +385,7 @@ where
     if refused {
         return Err(work_denial());
     }
-    Ok(PreparedRequiredWave { members: plans })
+    Ok(CollectedRequiredWave::Live(PreparedRequiredWave {
+        members: plans,
+    }))
 }

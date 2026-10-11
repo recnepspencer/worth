@@ -102,3 +102,17 @@ impl DemandRecord {
         self.held_successor.is_some() && self.interests <= 1 && !awaited
     }
 }
+
+/// A moved registry frame reached through the requesting member's actual
+/// retained prerequisite claim. A declaration or row key cannot issue it.
+pub(in crate::domain_computation::primary_graph) struct RequiredUpstreamSuccessor {
+    held: HeldRequiredSuccessor,
+}
+impl RequiredUpstreamSuccessor {
+    pub(super) fn issued(held: HeldRequiredSuccessor) -> Self {
+        Self { held }
+    }
+    pub(in crate::domain_computation::primary_graph) fn into_held(self) -> HeldRequiredSuccessor {
+        self.held
+    }
+}

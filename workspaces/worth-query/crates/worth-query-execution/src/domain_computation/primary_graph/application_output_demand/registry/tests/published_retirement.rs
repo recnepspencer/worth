@@ -171,3 +171,38 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
         assert_eq!(balances(&registry), closed_baseline);
     });
 }
+
+#[test]
+fn a_registry_successor_is_moved_to_exactly_one_taker() {
+    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let _occurrence = occurrence();
+    crate::domain_computation::primary_graph::with_test_advancement(|_| {
+        let registry = WorthQueryOutputDemandRegistry::default();
+        let row_key = key("single-successor", 1, 2);
+        let first = admit(&registry, &row_key);
+        let second = admit(&registry, &row_key);
+        publish(&registry, &first, receipt);
+        let successor: super::super::HeldRequiredSuccessor = Box::new(row_key.clone());
+        assert!(registry
+            .hold_required_successor(successor, |held| held
+                .downcast_ref::<WorthQueryOutputDemandKey>()
+                .unwrap())
+            .is_none());
+        let moved = registry
+            .take_held_successor(&row_key, &mut record_admission())
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            moved.downcast_ref::<WorthQueryOutputDemandKey>(),
+            Some(&row_key)
+        );
+        assert!(
+            registry
+                .take_held_successor(&row_key, &mut record_admission())
+                .unwrap()
+                .is_none(),
+            "a second advance receives no successor after the custody move"
+        );
+        drop((moved, first, second));
+    });
+}

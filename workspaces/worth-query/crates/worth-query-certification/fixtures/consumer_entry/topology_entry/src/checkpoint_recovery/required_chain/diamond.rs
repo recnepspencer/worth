@@ -135,6 +135,7 @@ mod initial_dependency;
 #[test]
 fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     let _guard = checkpoint_recovery_test_guard();
+    take_decisions("diamond-join");
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
     let application = support::install_program_with_seed::<program::ChainProgram>(

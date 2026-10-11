@@ -17,13 +17,25 @@ fn drained_cleanup(one_short: bool) {
         let (shared, positioned) =
             super::super::selection::select_required_basis(runtime, branch, &mut selection)
                 .unwrap();
-        let wave = RequiredWaveSelection {
+        let head = runtime
+            .output_demands
+            .publication_head_selection(
+                shared
+                    .selected()
+                    .product()
+                    .observation()
+                    .lifecycle_incarnation(),
+                &mut selection,
+            )
+            .unwrap();
+        let wave = RequiredWaveSelection::from_basis(
             shared,
             positioned,
-            anchor_ready: ready,
+            ready,
             branch,
-            target: RequiredWaveTarget::Caller,
-        };
+            RequiredWaveTarget::Caller,
+            head,
+        );
         crate::domain_computation::primary_graph::with_test_advancement(|_| {
             let registry = &runtime.output_demands;
             let baseline = registry.fixture_released_publication_cleanup(receipt);

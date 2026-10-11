@@ -140,8 +140,13 @@ mod admission;
 mod checkpoint;
 mod cleanup;
 mod disposition;
+mod publication_head;
 use disposition::{IdleRowDisposition, RowRetirement};
+pub(in crate::domain_computation::primary_graph) use publication_head::{
+    LivePublicationHead, PublicationHeadSelection,
+};
 mod held_successor;
+pub(in crate::domain_computation::primary_graph) use held_successor::RequiredUpstreamSuccessor;
 mod lifecycle;
 mod notifications;
 mod obligations;
@@ -291,6 +296,7 @@ struct PerformedOutputObligation {
 }
 
 struct DemandRegistryState {
+    last_selection_frozen: Option<bool>,
     records: record_map::DemandRecords,
     // May remain after the last row is removed until the map itself drops.
     _empty_root_capacity: Option<record_capacity::RecordCapacity>,
@@ -315,6 +321,7 @@ impl Default for DemandRegistryState {
     fn default() -> Self {
         Self {
             records: record_map::DemandRecords::new(),
+            last_selection_frozen: None,
             _empty_root_capacity: None,
             record_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_record_retained_bytes(),
             record_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),

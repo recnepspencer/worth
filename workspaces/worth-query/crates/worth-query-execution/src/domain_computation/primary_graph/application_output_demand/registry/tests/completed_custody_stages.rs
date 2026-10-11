@@ -48,6 +48,7 @@ fn completed_stage(claimed_with_ready: bool) {
         progress
     } else {
         WorthQueryOutputProgress {
+            undelivered: None,
             published_commit: None,
             checkpoint: None,
             advancement: WorthQueryOutputAdvancement::Stopped {

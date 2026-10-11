@@ -249,4 +249,18 @@ impl<Schema>
         keys.sort();
         keys
     }
+    #[doc(hidden)]
+    pub fn entered_required_selection_is_frozen_for_test(&self) -> Option<bool> {
+        self.output_demands
+            .state
+            .lock()
+            .unwrap()
+            .last_selection_frozen
+    }
+    #[doc(hidden)]
+    pub fn undelivered_publication_counts_for_test(&self) -> (usize, usize) {
+        let state = self.output_demands.state.lock().unwrap();
+        (state.records.publication_count_for_test(), state.records.values().filter(|record|
+            matches!(&record.state, super::super::DemandState::Output(output) if !matches!(output.advancement, super::super::WorthQueryOutputAdvancement::Stopped { .. }) && matches!(output.checkpoint, Some(super::super::WorthQueryOutputCheckpoint::Published { .. })))).count())
+    }
 }

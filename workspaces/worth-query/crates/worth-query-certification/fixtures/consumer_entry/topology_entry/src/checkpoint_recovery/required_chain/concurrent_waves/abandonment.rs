@@ -4,7 +4,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
 };
 
-fn case(cancel: bool) {
+fn case(cancel: bool, check_entry: bool) {
     let application = support::install_program_with_seed::<application::Program>(
         None,
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard(),
@@ -53,6 +53,26 @@ fn case(cancel: bool) {
     assert!(application
         .queued_required_rows_for_root_for_test(root)
         .contains(&issued));
+    if check_entry {
+        assert_eq!(
+            application.undelivered_publication_counts_for_test(),
+            (1, 1)
+        );
+        let entered = other.advance(&request).unwrap();
+        assert_eq!(
+            application.entered_required_selection_is_frozen_for_test(),
+            Some(true),
+            "the Ready caller enters with the registry-issued Frozen selection; result is Settled={}",
+            matches!(entered, WorthQueryApplicationOutputDemandProgress::Settled(_))
+        );
+        assert!(
+            matches!(
+                entered,
+                WorthQueryApplicationOutputDemandProgress::Settled(_)
+            ),
+            "freezing unrelated rows preserves this already Ready caller's result"
+        );
+    }
     if cancel {
         let cancellation = authentication::WorthQueryCancellationSource::new();
         let stopped_scope =
@@ -96,11 +116,17 @@ fn case(cancel: bool) {
 #[test]
 fn dropping_the_deferred_owner_does_not_orphan_a_published_checkpoint() {
     let _guard = checkpoint_recovery_test_guard();
-    case(false);
+    case(false, false);
 }
 
 #[test]
 fn cancelling_the_deferred_owner_does_not_orphan_a_published_checkpoint() {
     let _guard = checkpoint_recovery_test_guard();
-    case(true);
+    case(true, false);
+}
+
+#[test]
+fn a_different_ready_caller_enters_frozen_without_losing_its_result() {
+    let _guard = checkpoint_recovery_test_guard();
+    case(false, true);
 }

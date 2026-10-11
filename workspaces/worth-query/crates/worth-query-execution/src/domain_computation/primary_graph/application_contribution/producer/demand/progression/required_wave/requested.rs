@@ -68,13 +68,22 @@ where
             return Ok(None);
         }
     };
-    let wave = RequiredWaveSelection {
+    let head = runtime.output_demands.publication_head_selection(
+        shared
+            .selected()
+            .product()
+            .observation()
+            .lifecycle_incarnation(),
+        admission,
+    )?;
+    let wave = RequiredWaveSelection::from_basis(
         shared,
         positioned,
         anchor_ready,
         branch,
-        target: RequiredWaveTarget::Requested,
-    };
+        RequiredWaveTarget::Requested,
+        head,
+    );
     let mut queue = QueuedRequiredRoots::new();
     let mut frame_custody = RequiredContinuations::default();
     // This target can certify only the requested chain. It never discharges or

@@ -113,3 +113,41 @@ impl WorthQueryOutputDemandRegistry {
         Ok(DeclaredRequiredPredecessors { keys })
     }
 }
+
+impl WorthQueryOutputDemandRegistry {
+    /// The member still owns this exact consumed-output obligation, even when
+    /// changed own facts need a fresh decision. Only an already Published
+    /// registry frame can be delivered; no new work or claim is created here.
+    pub(in crate::domain_computation::primary_graph) fn take_required_published_successor(
+        &self,
+        selected: &SelectedReadyReadmission,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Option<super::super::super::RequiredUpstreamSuccessor>, WorthQueryOutputDemandDenial>
+    {
+        let prerequisites = self.declared_required_predecessors(selected.key(), admission)?;
+        for key in prerequisites.keys {
+            let state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let Some(head) =
+                super::super::super::required_stop::lineage_head(&state.records, &key, admission)?
+            else {
+                continue;
+            };
+            state.charge_record_lookup(&head, admission)?;
+            let published = state.records.get(&head).is_some_and(|row|
+                matches!(&row.state, super::super::super::DemandState::Output(output)
+                    if matches!(output.checkpoint, Some(super::super::super::WorthQueryOutputCheckpoint::Published { .. }))));
+            drop(state);
+            if published {
+                if let Some(held) = self.take_held_successor(&head, admission)? {
+                    return Ok(Some(
+                        super::super::super::RequiredUpstreamSuccessor::issued(held),
+                    ));
+                }
+            }
+        }
+        Ok(None)
+    }
+}

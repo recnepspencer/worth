@@ -15,6 +15,7 @@ pub(super) mod canonical_apply;
 mod member_refusal;
 mod member_stop;
 use member_refusal::{RefusalCustody, RefusalRow, RefusingMember};
+mod frozen_collection;
 mod readiness_collection;
 mod requested_refusal;
 mod wave_execution;
@@ -37,6 +38,9 @@ where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
+    runtime
+        .output_demands
+        .record_selection_state(wave.is_frozen());
     let mut frontier = RequiredFrontier::new();
     frontier.insert(wave.anchor_ready.retain(admission)?, true, None, admission)?;
     let mut resolved = ResolvedOnWave::default();
@@ -45,7 +49,7 @@ where
         // unrelated queue claims join. Actual pending consumed edges collect
         // their issued prerequisites together during readiness collection.
         let caller_was_current = queue.draining();
-        if wave.target == RequiredWaveTarget::Caller && caller_was_current {
+        if wave.target == RequiredWaveTarget::Caller && caller_was_current && !wave.is_frozen() {
             while let Some((queued, claim)) = queue.next_claim(runtime, &wave, admission)? {
                 frontier.insert_claim(claim, queued, admission)?;
             }
@@ -65,6 +69,16 @@ where
             performed,
             admission,
         )?;
+        if let Some(delivery) = result.delivery {
+            wave = wave.after_awaited_delivery(runtime, delivery, admission)?;
+            frontier.members[0].state = MemberState::Inspect;
+            if !wave.is_frozen() {
+                continue;
+            }
+        }
+        if result.deferred {
+            wave.freeze();
+        }
         if wave.target == RequiredWaveTarget::Requested
             && matches!(frontier.members[0].state, MemberState::Current(_))
         {
@@ -92,7 +106,7 @@ where
         }
         if result.moved {
             queue.wave_moved();
-            wave = reselect_required_wave(runtime, wave, admission)?;
+            wave = wave.reselect(runtime, admission)?;
             resolved.clear();
             for member in &mut frontier.members {
                 member.dependency_schedule = DependencySchedule::OwnSelection;
@@ -177,17 +191,20 @@ where
                 }
             }
         }
-        if result.prepared
-            || frontier.awaken()
-            || (!caller_was_current
-                && wave.target == RequiredWaveTarget::Caller
-                && queue.draining())
+        if !wave.is_frozen()
+            && (result.prepared
+                || frontier.awaken()
+                || (!caller_was_current
+                    && wave.target == RequiredWaveTarget::Caller
+                    && queue.draining()))
         {
             continue;
         }
         // A held successor is resumed only after every prepared member has
         // left the selected basis. It retains the actual issued demand.
-        let held =
+        let held = if wave.is_frozen() {
+            None
+        } else {
             frontier
                 .members
                 .iter()
@@ -195,7 +212,8 @@ where
                 .find_map(|(i, member)| match &member.state {
                     MemberState::Held(key) => Some((i, key.clone())),
                     _ => None,
-                });
+                })
+        };
         let resumed = held.is_some();
         if let Some((index, head)) = held {
             let custody =
@@ -225,7 +243,7 @@ where
                 Ok(HeldUpstream::Ready(ready)) => {
                     runtime.output_demands.clear_required_stop(&head);
                     if super::selection::committed_ready(&ready, admission)? {
-                        wave = reselect_required_wave(runtime, wave, admission)?;
+                        wave = wave.reselect(runtime, admission)?;
                         resolved.clear();
                         queue.wave_moved();
                     }
@@ -273,7 +291,9 @@ where
             // unfinished closure held while independent queue records proceed.
             queue.defer_caller();
             resolved.clear();
-            continue;
+            if !wave.is_frozen() {
+                continue;
+            }
         }
         if let Some(outcome) =
             canonical_apply::finish(runtime, demand, &wave, &mut frontier, queue, admission)?

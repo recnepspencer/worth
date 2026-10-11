@@ -132,10 +132,10 @@ fn a_never_settled_stop_leaves_an_undelivered_refresh_to_its_settled_holder() {
     }
 }
 
-/// The caller waits on a publication from an earlier advance. Its own
-/// advance publishes nothing on that chain before draining unrelated work.
+/// The caller delivers its held upstream, then defers its own publication.
+/// Unrelated work waits until that caller next delivers its own successor.
 #[test]
-fn a_pending_caller_with_a_held_upstream_drains_independent_work() {
+fn a_pending_caller_delivers_before_draining_independent_work() {
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None, ring_world::seed::<2>, Retained::AMPLE);
     let (scope, principal) = authenticate(&application);
@@ -169,8 +169,14 @@ fn a_pending_caller_with_a_held_upstream_drains_independent_work() {
     );
     assert_eq!(
         court.length(&second.key("a")),
+        2,
+        "a deferred publication freezes the unrelated queued root"
+    );
+    settled!(court, b, "deliver the caller's deferred publication");
+    assert_eq!(
+        court.length(&second.key("a")),
         8,
-        "the Pending caller drains and publishes the independent queued root"
+        "delivery thaws the head before the unrelated root is driven"
     );
     let root = court
         .request

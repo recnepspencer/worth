@@ -8,6 +8,8 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 
 pub(super) struct WaveProgress {
     pub moved: bool,
+    pub delivery: Option<super::super::super::super::required_continuations::DeliveredAwaited>,
+    pub deferred: bool,
     pub prepared: bool,
     pub stopped: Option<MemberStop>,
     pub queued_stops: Vec<MemberStop>,
@@ -53,9 +55,91 @@ where
         performed,
         admission,
     )?;
+    let prepared = match prepared {
+        readiness_collection::CollectedRequiredWave::Frozen(frozen) => {
+            use super::frozen_collection::FrozenRequiredWave;
+            let mut delivered = None;
+            match frozen {
+                FrozenRequiredWave::Inspected(inspected) => {
+                    if let Some(inspected) = inspected {
+                        use super::frozen_collection::FrozenTruth;
+                        frontier.members[0].state = match inspected {
+                            FrozenTruth::Current(proof) => MemberState::Current(Some(proof)),
+                            FrozenTruth::NotCurrent => MemberState::Pending,
+                        };
+                    }
+                }
+                FrozenRequiredWave::Delivery(
+                    super::frozen_collection::SuccessorCustody::Caller(mut delivery),
+                ) => {
+                    let contacts = (wave.target == RequiredWaveTarget::Caller)
+                        .then_some(&mut demand.producer_contacts_in_this_demand);
+                    match delivery.deliver(
+                        phase,
+                        runtime,
+                        principal,
+                        request,
+                        wave.branch,
+                        contacts,
+                        admission,
+                        performed,
+                    ) {
+                        Ok(receipt) => delivered = receipt,
+                        Err(stop) => {
+                            RefusingMember {
+                                registry: &runtime.output_demands,
+                                member: &mut frontier.members[0],
+                                row: RefusalRow::HeldHead(delivery.key()),
+                                custody: RefusalCustody::<Schema>::Caller,
+                            }
+                            .end(
+                                stop,
+                                member_stop::StopRecording::member(),
+                                queue,
+                                admission,
+                            )?;
+                        }
+                    }
+                    if delivered.is_none() {
+                        frontier.members[0].state = MemberState::Pending;
+                    }
+                }
+                FrozenRequiredWave::Delivery(
+                    super::frozen_collection::SuccessorCustody::Registry(delivery),
+                ) => {
+                    drop(caller_storage);
+                    drop(queue_storage);
+                    delivered = delivery.deliver(
+                        phase,
+                        runtime,
+                        principal,
+                        request,
+                        wave.branch,
+                        &mut demand.required_continuations,
+                        admission,
+                        performed,
+                    )?;
+                    if delivered.is_none() {
+                        frontier.members[0].state = MemberState::Pending;
+                    }
+                }
+            }
+            return Ok(WaveProgress {
+                moved: false,
+                delivery: delivered,
+                deferred: false,
+                prepared: false,
+                stopped: None,
+                queued_stops: Vec::new(),
+            });
+        }
+        readiness_collection::CollectedRequiredWave::Live(prepared) => prepared,
+    };
     if prepared.members.is_empty() {
         return Ok(WaveProgress {
             moved: false,
+            delivery: None,
+            deferred: false,
             prepared: false,
             stopped: None,
             queued_stops: Vec::new(),
@@ -78,6 +162,7 @@ where
             .admit_prepared_wave(&wave.positioned, keys, plans, admission)?;
     let cursor = CanonicalApplyCursor::compute_admitted(admitted, execution);
     let mut moved = false;
+    let mut deferred = false;
     let mut queued_stops = Vec::new();
     let result = cursor.apply(
         admission,
@@ -140,8 +225,9 @@ where
                         Ok(true) => continue,
                         Ok(false) => {
                             member.state = MemberState::Pending;
-                            // A deferred delivery leaves the selection on its old head.
-                            // Only a committed Ready can move the selected basis.
+                            // Already prepared slots still apply in canonical order.
+                            // No later publication or credit may refresh this advance.
+                            deferred = true;
                             break;
                         }
                         Err(stop) => {
@@ -226,6 +312,8 @@ where
     let stopped = result.err();
     Ok(WaveProgress {
         moved,
+        delivery: None,
+        deferred,
         prepared: true,
         stopped,
         queued_stops,

@@ -156,3 +156,85 @@ where
 
 #[cfg(test)]
 mod acknowledgement_basis;
+/// Frozen permits own-row truth and the native required-upstream resume.
+/// Thaw follows the successor's custody: its caller's continuation, or a
+/// registry frame moved to the advance that requires it. No global sweep runs.
+/// A caller needing work is Pending and is retried by its driving owner.
+pub(in super::super) fn certify_frozen_ready<Schema: ApplicationSchema + 'static>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request: &WorthQueryRequestScope,
+    wave: &RequiredWaveSelection<'_, Schema>,
+    caller: FrozenCaller<'_, Schema>,
+    performed: &std::cell::RefCell<PerformedMembers>,
+    admission: &mut InvalidationEditAdmission,
+) -> Result<FrozenCallerInspection<Schema>, WorthQueryOutputDemandDenial> {
+    let FrozenCaller {
+        selected,
+        installed,
+        contacts,
+    } = caller;
+    preclaim_required_settlement_arguments(admission)?;
+    let candidate = runtime
+        .primary_provider
+        .graph
+        .output_lineage
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .resolve_required_settlement(
+            runtime.runtime.authority_identity().as_u64(),
+            &runtime.installed_schema.binding_identity(),
+            selected.completion(),
+            admission,
+        )
+        .map_err(required_settlement_denial)?;
+    admission
+        .charge_external_work(1)
+        .map_err(admission_denial)?;
+    performed
+        .borrow_mut()
+        .capture(selected.key(), &candidate, admission)?;
+    let candidate = candidate.ok().flatten();
+    let result = installed.executor.inspect_frozen_ready(
+        crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenInspection {
+            runtime, principal, request, shared: &wave.shared, positioned: &wave.positioned,
+            selected, candidate: candidate.as_ref(), contacts,
+        }, admission)
+        .map_err(|stop| match stop {
+            ProducerExecutionStop::RequestAdmissionDenied(rejection) => rejection.into_denial(),
+            ProducerExecutionStop::ExecutionStopped(denial) => denial,
+            ProducerExecutionStop::LiveOutputNotReused { producer, reason } =>
+                ProducerExecutionStop::live_output_not_reused(producer, reason),
+        })?;
+    Ok(match result {
+        crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::Current(value) =>
+            FrozenCallerInspection::Current(performed.borrow().current(value, CurrentBasis::of(wave.shared.selected().product().observation()))),
+        crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::PendingExact(pending) => {
+            match super::super::super::super::required_continuations::RegistryDelivery::from_pending(
+                &pending, &wave.positioned, &runtime.output_demands, admission)? {
+                super::super::super::super::required_continuations::RequiredDelivery::Delivery(delivery) => FrozenCallerInspection::RegistryDelivery(delivery),
+                super::super::super::super::required_continuations::RequiredDelivery::Ready(ready) => FrozenCallerInspection::Upstream(ready),
+                super::super::super::super::required_continuations::RequiredDelivery::Unavailable => FrozenCallerInspection::NotCurrent,
+            }
+        }
+        crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::NotCurrent => {
+            match super::super::super::super::required_continuations::RegistryDelivery::from_required_claim(
+                selected, &runtime.output_demands, admission)? {
+                Some(delivery) => FrozenCallerInspection::RegistryDelivery(delivery),
+                None => FrozenCallerInspection::NotCurrent,
+            }
+        },
+    })
+}
+pub(in super::super) enum FrozenCallerInspection<Schema: ApplicationSchema> {
+    Upstream(SelectedReadyReadmission),
+    RegistryDelivery(super::super::super::super::required_continuations::RegistryDelivery<Schema>),
+    Current(CurrentProof<Arc<WorthQueryOutputDemandSettlement>>),
+    NotCurrent,
+}
+
+pub(in super::super) struct FrozenCaller<'a, Schema: ApplicationSchema> {
+    pub selected: &'a SelectedReadyReadmission,
+    pub installed: &'a InstalledProducerProvider<Schema>,
+    pub contacts: usize,
+}

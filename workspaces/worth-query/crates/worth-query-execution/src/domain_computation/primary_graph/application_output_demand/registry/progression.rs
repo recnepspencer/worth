@@ -263,7 +263,7 @@ impl WorthQueryOutputDemandRegistry {
             WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {}
             WorthQueryOutputAdvancement::Stopped { denial: stopped, interrupted_claim: Some(active) } if *active == claim => {
                 let stopped = stopped.clone();
-                output.checkpoint.get_or_insert(checkpoint);
+                if output.checkpoint.is_none() { output.install_checkpoint(checkpoint); }
                 output.advancement = WorthQueryOutputAdvancement::Stopped {
                     denial: stopped.clone(),
                     interrupted_claim: None,
@@ -282,7 +282,7 @@ impl WorthQueryOutputDemandRegistry {
                 "output advancement claim no longer matches its registry record",
             )),
         }
-        output.checkpoint = Some(checkpoint);
+        output.install_checkpoint(checkpoint);
         output.advancement = match denial {
             Some(denial) if denial.recovery_posture()
                 != crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable => {

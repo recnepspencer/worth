@@ -19,8 +19,12 @@ use super::{
     FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryProducerOutputFamily,
 };
+mod awaited_delivery;
 mod contacts;
 mod held;
+mod registry_delivery;
+pub(super) use awaited_delivery::{AwaitedDelivery, DeliveredAwaited};
+pub(super) use registry_delivery::{RegistryDelivery, RequiredDelivery};
 mod prepared;
 mod progress;
 mod promotion;

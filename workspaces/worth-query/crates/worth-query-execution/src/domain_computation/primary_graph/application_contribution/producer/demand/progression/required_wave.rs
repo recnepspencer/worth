@@ -30,16 +30,6 @@ use super::super::super::{
 use super::super::RequiredFreshProgress;
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 
-/// A caller's Ready or an exactly requested upstream Ready anchors the wave.
-/// `shared` and `positioned` retain its admitted Product/native proof basis.
-pub(super) struct RequiredWaveSelection<'runtime, Schema> {
-    pub(super) shared: SharedSelectedProductOperation<'runtime, Schema>,
-    pub(super) positioned: PositionedRelationalSnapshot,
-    pub(super) anchor_ready: SelectedReadyReadmission,
-    pub(super) branch: WorthQueryProductBranch,
-    pub(super) target: RequiredWaveTarget,
-}
-
 pub(in crate::domain_computation::primary_graph) use performed::{CurrentBasis, CurrentProof};
 mod caller;
 mod requested;
@@ -56,7 +46,7 @@ use resolved::ResolvedOnWave;
 pub(in crate::domain_computation::primary_graph) use resolved::{
     MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
 };
-use selection::{reselect_required_wave, select_required_wave};
+use selection::{select_required_wave, RequiredWaveSelection};
 
 pub(super) use caller::advance_required_before_caller;
 

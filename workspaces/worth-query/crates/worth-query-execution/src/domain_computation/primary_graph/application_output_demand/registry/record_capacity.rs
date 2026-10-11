@@ -82,6 +82,7 @@ impl DemandRegistryState {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedRecord, WorthQueryOutputDemandDenial> {
         self.charge_record_lookup(key, admission)?;
+        self.records.admit_publication_head_insertion(admission)?;
         let node_bytes = ordered_node_bytes()?;
         let index_bytes = super::record_map::DemandRecords::source_index_bytes(key)
             .ok_or_else(capacity_denial)?;

@@ -12,3 +12,10 @@ mod ordinary_reads;
 mod three_members;
 
 mod abandonment;
+mod deferral_freeze;
+
+mod frozen_truth;
+
+mod abandonment_thaw;
+
+mod two_owners;
