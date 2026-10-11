@@ -21,7 +21,7 @@ fn producer_completes_but_delivery_cannot_reset_its_remaining_budget() {
     }
 }
 
-needs_os_threads! {
+worth_execution::needs_os_threads! {
 #[test]
 fn a_wider_lease_funds_delivery_from_the_same_request() {
     let _guard = checkpoint_recovery_test_guard();

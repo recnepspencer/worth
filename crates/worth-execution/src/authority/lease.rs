@@ -162,7 +162,7 @@ impl ExecutionAuthority {
             return Err(ConstructionDenial::AlreadyConstructed);
         }
         let equivalences = EquivalenceRegistry::new(predicates)?;
-        let pool = if cfg!(target_arch = "wasm32") {
+        let pool = if !crate::backend::HAS_OS_THREADS {
             None
         } else {
             Some(

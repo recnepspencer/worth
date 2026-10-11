@@ -32,7 +32,7 @@ mod demand_contact;
 mod demand_policy;
 mod generated_restoration;
 mod input_cutoff;
-needs_os_threads! {
+worth_execution::needs_os_threads! {
     #[cfg(feature = "test-world-operation-control")]
     mod late_cancellation;
 }
