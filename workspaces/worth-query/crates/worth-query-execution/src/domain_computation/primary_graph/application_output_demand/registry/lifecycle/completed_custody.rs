@@ -42,17 +42,18 @@ impl DemandRegistryState {
                 self.records
                     .source_occurrence_rows(&source.identity)
                     .any(|(key, record)| {
+                        let awaited = refreshed_rejoin::awaited_by_stale_owner(&self.records, key);
+                        let unfinished = match record.idle_disposition(awaited) {
+                            IdleRowDisposition::InFlight
+                            | IdleRowDisposition::HeldForStaleOwner => true,
+                            IdleRowDisposition::KeptAnswer => false,
+                            IdleRowDisposition::Retired(reason) => !reason.releases_finished_work(),
+                        };
                         record.source_commits.contains(commit)
                             && (record.interests != 0
-                                || refreshed_rejoin::awaited_by_stale_owner(&self.records, key)
+                                || awaited
                                 || !record.performed_obligations.is_empty()
-                                || !matches!(
-                                    record.state,
-                                    DemandState::Output(WorthQueryOutputProgress {
-                                        checkpoint: Some(WorthQueryOutputCheckpoint::Ready(_)),
-                                        ..
-                                    }) | DemandState::Failed(_)
-                                ))
+                                || unfinished)
                     })
             });
             if !held {

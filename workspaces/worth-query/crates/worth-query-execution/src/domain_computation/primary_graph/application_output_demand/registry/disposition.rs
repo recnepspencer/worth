@@ -4,6 +4,7 @@ use super::{DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOu
 pub(super) enum IdleRowDisposition {
     InFlight,
     KeptAnswer,
+    HeldForStaleOwner,
     Retired(RowRetirement),
 }
 
@@ -16,9 +17,10 @@ pub(super) enum RowRetirement {
 
 impl DemandRecord {
     /// Checkpoints still owned by an interest await that owner's entry. Once
-    /// its last interest closes, an undelivered checkpoint answers nobody.
-    /// Holds from claims, cleanup and performed sources are checked separately.
-    pub(super) fn idle_disposition(&self) -> IdleRowDisposition {
+    /// its last interest and last awaiting stale owner close, an undelivered
+    /// checkpoint answers nobody. The caller supplies the occurrence owner's
+    /// awaited fact; claims, cleanup and performed-source holds are separate.
+    pub(super) fn idle_disposition(&self, awaited_by_stale_owner: bool) -> IdleRowDisposition {
         use IdleRowDisposition::{InFlight, KeptAnswer, Retired};
         match &self.state {
             DemandState::Scheduling | DemandState::Running => InFlight,
@@ -39,7 +41,9 @@ impl DemandRecord {
                         WorthQueryOutputCheckpoint::Published { .. }
                         | WorthQueryOutputCheckpoint::Delivered { .. },
                     ) => {
-                        if self.interests == 0 {
+                        if awaited_by_stale_owner {
+                            IdleRowDisposition::HeldForStaleOwner
+                        } else if self.interests == 0 {
                             Retired(RowRetirement::AbandonedPublication)
                         } else {
                             InFlight

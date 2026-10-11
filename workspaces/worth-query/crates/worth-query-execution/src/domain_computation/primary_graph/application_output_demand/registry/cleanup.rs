@@ -20,11 +20,14 @@ impl DemandRegistryState {
         key: &Arc<WorthQueryOutputDemandKey>,
         retained_key_bytes: usize,
     ) -> bool {
+        let awaited = super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key.as_ref());
         let Some(record) = self.records.get_mut(key.as_ref()) else {
             return false;
         };
-        match record.idle_disposition() {
-            IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => return false,
+        match record.idle_disposition(awaited) {
+            IdleRowDisposition::InFlight
+            | IdleRowDisposition::KeptAnswer
+            | IdleRowDisposition::HeldForStaleOwner => return false,
             IdleRowDisposition::Retired(reason) if reason.releases_finished_work() => {}
             IdleRowDisposition::Retired(_) => return false,
         }
@@ -89,12 +92,19 @@ impl DemandRegistryState {
             self.charge_record_lookup(head.as_ref(), admission)?;
         }
         self.charge_record_removal_movement(admission)?;
+        let awaited = super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+            &self.records,
+            head.as_ref(),
+            admission,
+        )?;
         let record = self
             .records
             .get(head.as_ref())
             .expect("queued row stays retained");
-        let release_obligations = match record.idle_disposition() {
-            IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => false,
+        let release_obligations = match record.idle_disposition(awaited) {
+            IdleRowDisposition::InFlight
+            | IdleRowDisposition::KeptAnswer
+            | IdleRowDisposition::HeldForStaleOwner => false,
             IdleRowDisposition::Retired(reason) => {
                 reason.releases_finished_work()
                     && record.framework_required_count == 0
@@ -246,8 +256,10 @@ impl DemandRegistryState {
         self.pending_cleanup_head = record.pending_cleanup_next.take();
         record.pending_cleanup_queued = false;
         let retained_key_bytes = std::mem::take(&mut record.pending_cleanup_key_bytes);
-        let release = match record.idle_disposition() {
-            IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => false,
+        let release = match record.idle_disposition(awaited) {
+            IdleRowDisposition::InFlight
+            | IdleRowDisposition::KeptAnswer
+            | IdleRowDisposition::HeldForStaleOwner => false,
             IdleRowDisposition::Retired(reason) => {
                 reason.releases_finished_work()
                     && record.framework_required_count == 0
@@ -277,8 +289,10 @@ impl DemandRegistryState {
             .and_then(|bytes| bytes.checked_add(own_member.refund_required_bytes))
             .expect("admitted terminal cleanup charge fits");
         let removed = if self.records.get(head.as_ref()).is_some_and(|record| {
-            match record.idle_disposition() {
-                IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => false,
+            match record.idle_disposition(awaited) {
+                IdleRowDisposition::InFlight
+                | IdleRowDisposition::KeptAnswer
+                | IdleRowDisposition::HeldForStaleOwner => false,
                 IdleRowDisposition::Retired(reason) => {
                     reason.releases_finished_work()
                         && record.interests == 0

@@ -5,7 +5,7 @@ use super::super::{
 };
 use super::*;
 
-fn admit(
+pub(super) fn admit(
     registry: &WorthQueryOutputDemandRegistry,
     key: &WorthQueryOutputDemandKey,
 ) -> WorthQueryOutputDemandInterest {
@@ -15,7 +15,7 @@ fn admit(
         &mut record_admission()).unwrap()
 }
 
-fn publish(
+pub(super) fn publish(
     registry: &WorthQueryOutputDemandRegistry,
     interest: &WorthQueryOutputDemandInterest,
     receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -48,7 +48,7 @@ fn publish(
         .unwrap_or_else(|_| panic!("the real prepared finish publishes"));
 }
 
-fn balances(registry: &WorthQueryOutputDemandRegistry) -> (usize, usize, usize) {
+pub(super) fn balances(registry: &WorthQueryOutputDemandRegistry) -> (usize, usize, usize) {
     let state = registry.state.lock().unwrap();
     (
         state.required_reserved_bytes,

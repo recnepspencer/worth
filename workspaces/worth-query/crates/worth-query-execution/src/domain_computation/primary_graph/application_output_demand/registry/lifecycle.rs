@@ -199,6 +199,8 @@ impl WorthQueryOutputDemandRegistry {
             .get(&interest.key)
             .is_some_and(DemandRecord::has_cached_ready)
             && refreshed_rejoin::replaced_under_refresh(&state.records, &interest.key);
+        // This cleanup walk visits this occurrence's rows only, never the map.
+        let awaited = refreshed_rejoin::awaited_by_stale_owner(&state.records, &interest.key);
         let mut retirement = None;
         let remove = state.records.get_mut(&interest.key).is_some_and(|record| {
             record.interests = record.interests.saturating_sub(1);
@@ -209,8 +211,10 @@ impl WorthQueryOutputDemandRegistry {
             // Source supersession and occurrence retirement remove it; closing
             // the handle releases only the caller's interest.
             let ready = record.has_cached_ready();
-            retirement = match record.idle_disposition() {
-                IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => None,
+            retirement = match record.idle_disposition(awaited) {
+                IdleRowDisposition::InFlight
+                | IdleRowDisposition::KeptAnswer
+                | IdleRowDisposition::HeldForStaleOwner => None,
                 IdleRowDisposition::Retired(reason) => Some(reason),
             };
             let stopped = retirement.is_some_and(RowRetirement::releases_finished_work);
@@ -254,14 +258,16 @@ impl WorthQueryOutputDemandRegistry {
             .and_then(DemandRecord::take_unawaited_reopened);
         // A closing stale owner may have been the last one awaiting the
         // newest row of its occurrence.
-        if matches!(retirement, Some(RowRetirement::Finished)) {
-            if let Some(newest) =
-                refreshed_rejoin::newest_of_occurrence(&state.records, &interest.key)
-            {
-                state.remove_required_member_if_released(&newest);
-                finished = finished.or_else(|| state.take_finished_successor(&newest));
+        let newest_closed = if matches!(retirement, Some(RowRetirement::Finished)) {
+            let newest = refreshed_rejoin::newest_of_occurrence(&state.records, &interest.key);
+            if let Some(newest) = &newest {
+                state.remove_required_member_if_released(newest);
+                finished = finished.or_else(|| state.take_finished_successor(newest));
             }
-        }
+            newest
+        } else {
+            None
+        };
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
@@ -269,9 +275,9 @@ impl WorthQueryOutputDemandRegistry {
         // and each row it replaced, keeps only what it can still answer for.
         let (retired, released_claims) = match retirement {
             Some(RowRetirement::AbandonedPublication) => {
-                // Only this row and its own claims close in Drop. Unheld
-                // upstreams were queued by release_record_prerequisites;
-                // their retirement is paid by the next admission.
+                // Only this row and its own claims close in Drop. Upstreams
+                // with terminal custody are queued by prerequisite release;
+                // that queued retirement is paid by the next admission.
                 (Vec::new(), Vec::new())
             }
             Some(RowRetirement::Unstarted | RowRetirement::Finished) | None => {
@@ -282,6 +288,7 @@ impl WorthQueryOutputDemandRegistry {
                             .flatten()
                             .map(|upstream| upstream.as_ref().clone()),
                     )
+                    .chain(newest_closed)
                     .chain(refreshed_rejoin::replaced_by_published(
                         &state.records,
                         &interest.key,

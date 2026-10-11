@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use super::super::refreshed_rejoin::{awaited_by_stale_owner, newest_of_occurrence, superseded};
 use super::super::{
-    DemandRecord, DemandRegistryState, IdleRowDisposition, WorthQueryOutputDemandKey,
+    DemandRecord, DemandRegistryState, IdleRowDisposition, RowRetirement, WorthQueryOutputDemandKey,
 };
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
@@ -57,16 +57,28 @@ impl DemandRegistryState {
             let Some(record) = self.records.get(&key) else {
                 continue;
             };
-            match record.idle_disposition() {
-                IdleRowDisposition::InFlight | IdleRowDisposition::KeptAnswer => continue,
-                IdleRowDisposition::Retired(reason) if reason.releases_finished_work() => {}
+            let retirement = match record
+                .idle_disposition(awaited_by_stale_owner(&self.records, &key))
+            {
+                IdleRowDisposition::InFlight
+                | IdleRowDisposition::KeptAnswer
+                | IdleRowDisposition::HeldForStaleOwner => continue,
+                IdleRowDisposition::Retired(reason) if reason.releases_finished_work() => reason,
                 IdleRowDisposition::Retired(_) => continue,
-            }
+            };
             if held(&self.records, &key, record) {
                 continue;
             }
             let released = self.retire_row(&key, &mut retired);
-            candidates.extend(released.iter().map(|upstream| upstream.as_ref().clone()));
+            match retirement {
+                // Abandonment closes this row and its own edges only. Terminal
+                // upstream custody was queued by prerequisite release; the
+                // next admission pays to drain it.
+                RowRetirement::AbandonedPublication => {}
+                RowRetirement::Unstarted | RowRetirement::Finished => {
+                    candidates.extend(released.iter().map(|upstream| upstream.as_ref().clone()));
+                }
+            }
             claims.extend(released);
         }
         (retired, claims)

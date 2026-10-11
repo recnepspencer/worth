@@ -76,9 +76,15 @@ pub(super) fn supersede_predecessors(
         {
             return Err(superseded_denial(&successor.producer));
         }
-        keys.push(key.clone());
+        let awaited = super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+            &state.records,
+            key,
+            admission,
+        )?;
+        keys.push((key.clone(), awaited));
     }
-    for key in &keys {
+    // Fund the awaited facts before any predecessor changes state.
+    for (key, _) in &keys {
         if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Less) {
             let record = state.records.get_mut(key).expect("occurrence key exists");
             let denial = superseded_denial(&key.producer);
@@ -91,16 +97,20 @@ pub(super) fn supersede_predecessors(
             state.release_record_prerequisites(key);
         }
     }
-    for key in keys {
+    for (key, awaited) in keys {
         let record = state.records.get(&key).expect("occurrence key exists");
+        let unfinished = match record.idle_disposition(awaited) {
+            super::IdleRowDisposition::InFlight
+            | super::IdleRowDisposition::KeptAnswer
+            | super::IdleRowDisposition::HeldForStaleOwner => true,
+            super::IdleRowDisposition::Retired(reason) => !reason.releases_finished_work(),
+        };
         let keep = &key == successor
             || record.interests != 0
             || record.framework_required_count != 0
             || record.prepared_prerequisite_claims != 0
             || record.pending_cleanup_queued
-            || !matches!(record.state, DemandState::Failed(_))
-                && !matches!(&record.state, DemandState::Output(output)
-                    if matches!(output.advancement, super::WorthQueryOutputAdvancement::Stopped { .. }));
+            || unfinished;
         if !keep {
             let record = state.records.remove(&key).expect("selected row exists");
             state.obligation_reserved_bytes = state

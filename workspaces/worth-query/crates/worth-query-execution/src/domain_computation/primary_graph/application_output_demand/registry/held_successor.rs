@@ -42,8 +42,12 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        match state.records.get_mut(key_of(&successor)) {
-            Some(record) if needs_successor(record) => record.held_successor.replace(successor),
+        let key = key_of(&successor);
+        let awaited = awaited_by_stale_owner(&state.records, key);
+        match state.records.get_mut(key) {
+            Some(record) if needs_successor(record) && (record.interests > 1 || awaited) => {
+                record.held_successor.replace(successor)
+            }
             _ => Some(successor),
         }
     }
