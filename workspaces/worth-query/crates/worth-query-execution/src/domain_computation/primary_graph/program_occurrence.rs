@@ -111,15 +111,15 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         })
     }
 
-    /// The mutation bindings every rostered program between them acts through.
-    pub(in crate::domain_computation::primary_graph) fn rostered_mutation_bindings(
+    /// Whether some rostered program acts through this mutation binding.
+    pub(in crate::domain_computation::primary_graph) fn acts_through_mutation_binding(
         &self,
-    ) -> impl Iterator<Item = TypeId> + '_ {
+        binding: TypeId,
+    ) -> bool {
         self.roster
             .entries()
             .iter()
-            .flat_map(|entry| entry.mutation_bindings().iter().copied())
-            .map(TypeId::from)
+            .any(|entry| entry.acts_through_mutation_binding(binding.into_external()))
     }
 
     /// Resolves the rostered program one stored activation rendering names.
