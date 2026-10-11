@@ -18,3 +18,6 @@ pub(crate) use access::purge_index_query_scratch_hints;
 
 #[cfg(test)]
 pub(crate) use authority::last_allocation_bytes;
+
+#[cfg(test)]
+pub(crate) use authority::two_row_patch_bytes;

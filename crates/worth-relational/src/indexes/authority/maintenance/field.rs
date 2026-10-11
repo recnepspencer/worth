@@ -83,21 +83,33 @@ pub(super) fn refresh(
     for field in pending {
         work.prepare(1, 0)?;
         match field {
-            PendingField::Entity { entries, edits, .. } => {
+            PendingField::Entity {
+                entries,
+                edits,
+                patch,
+                ..
+            } => {
                 grouped(
                     entries,
                     std::mem::take(edits),
                     Ord::cmp,
                     |key| key.canonical_value_bytes().len() + 1,
+                    !*patch,
                     work,
                 )?;
             }
-            PendingField::Relation { entries, edits, .. } => {
+            PendingField::Relation {
+                entries,
+                edits,
+                patch,
+                ..
+            } => {
                 grouped(
                     entries,
                     std::mem::take(edits),
                     Ord::cmp,
                     |key| key.canonical_value_bytes().len() + 1,
+                    !*patch,
                     work,
                 )?;
             }

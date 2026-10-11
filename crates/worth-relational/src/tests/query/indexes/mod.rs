@@ -66,3 +66,7 @@ fn sampled_plan_key_for(
 // CONTRACT: derived_index
 // LANES: success, access_contract, determinism
 mod patch_allocation;
+
+mod bulk_commit_allocation;
+
+mod cold_memory_boundary;

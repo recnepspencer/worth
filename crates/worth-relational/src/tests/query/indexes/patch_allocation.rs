@@ -58,11 +58,16 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         },
     );
     assert!(built.failed_indexes.is_empty(), "{built:?}");
-    // Two 2-level map copies plus two singleton row edits, key encoding,
-    // pending queues, locators and publication buffers reserve 112,204 bytes.
-    // Former 112,204 less inline row nodes (17,152), absent key Arcs (80),
-    // and copied-path pricing for mutable scratch trees (2,984).
+    // Two height-2 paths and their key/queue/publication backing, derived
+    // independently from named layouts in allocation_price_proof.rs.
     const PATCH_BYTES: u64 = 91_988;
+    assert_eq!(
+        crate::indexes::two_row_patch_bytes(
+            &aspect_field_locator(aspect_key("name"), field_key("name")),
+            &string_aspect_value(&"x".repeat(WIDTH)),
+        ),
+        PATCH_BYTES
+    );
     // The singleton scan also holds 320 framework bytes on this lease.
     const FRAMEWORK_BYTES: u64 = 320;
     for memory in [PATCH_BYTES + FRAMEWORK_BYTES - 1, MEMORY] {

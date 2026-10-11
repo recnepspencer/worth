@@ -142,3 +142,11 @@ impl IndexAuthority<'_> {
         self.prepare_refresh(execution, request, before.as_ref(), &after, work)
     }
 }
+
+#[cfg(test)]
+mod persistent_allocation_tests;
+
+#[cfg(test)]
+mod allocation_price_proof;
+#[cfg(test)]
+pub(crate) use allocation_price_proof::two_row_patch_bytes;

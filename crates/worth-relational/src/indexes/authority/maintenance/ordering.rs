@@ -107,6 +107,12 @@ fn child_values(
         return Ok(None);
     };
     work.charge(contract.ordering.len())?;
+    work.array::<worth_foundational::facade::AspectValue>(contract.ordering.len())?;
+    for field in contract.ordering {
+        if let Some(value) = entity_query_locus_value(&record, field.locator()) {
+            work.prepare(0, value.owned_allocation_capacity_bytes() as u64)?;
+        }
+    }
     Ok(contract
         .ordering
         .iter()

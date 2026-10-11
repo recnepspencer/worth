@@ -6,13 +6,30 @@ use std::{collections::BTreeMap, mem::size_of, sync::Arc};
 #[derive(Default)]
 pub(super) struct MapAllocation {
     nodes: usize,
+    prepaid: bool,
 }
 impl MapAllocation {
+    pub(super) fn prepaid() -> Self {
+        Self {
+            nodes: 0,
+            prepaid: true,
+        }
+    }
+    pub(super) fn prepare_key<K>(&self, work: &mut MaintenanceWork) -> Result<(), Denial> {
+        work.prepare(
+            0,
+            if self.prepaid {
+                0
+            } else {
+                (size_of::<K>() + 2 * size_of::<usize>()) as u64
+            },
+        )
+    }
+
     pub(super) fn prepare<K: Ord + Clone, R: Clone>(
         &mut self,
         keys: usize,
         width: usize,
-        retains_key: bool,
         work: &mut MaintenanceWork,
     ) -> Result<(), Denial> {
         let (path, node) = persistent_map_path_bytes::<K, R>(keys)?;
@@ -30,16 +47,13 @@ impl MapAllocation {
             .ok_or(Denial::WorkBudgetExceeded)?
             .min(live)
             .max(self.nodes);
-        let bytes = (next - self.nodes)
-            .checked_mul(node)
-            .and_then(|n| {
-                n.checked_add(if retains_key {
-                    size_of::<K>() + 2 * size_of::<usize>()
-                } else {
-                    0
-                })
-            })
-            .ok_or(Denial::WorkBudgetExceeded)?;
+        let bytes = if self.prepaid {
+            0
+        } else {
+            (next - self.nodes)
+                .checked_mul(node)
+                .ok_or(Denial::WorkBudgetExceeded)?
+        };
         work.lookup(keys, width)?;
         work.prepare((path * 64) as u64, bytes as u64)?;
         self.nodes = next;
@@ -50,8 +64,15 @@ impl MapAllocation {
 #[derive(Default)]
 pub(super) struct RowAllocation {
     nodes: usize,
+    prepaid: bool,
 }
 impl RowAllocation {
+    pub(super) fn prepaid() -> Self {
+        Self {
+            nodes: 0,
+            prepaid: true,
+        }
+    }
     pub(super) fn prepare<R>(
         &mut self,
         rows: &DerivedIndexRows<R>,
@@ -90,7 +111,10 @@ impl RowAllocation {
                 })
             })
             .ok_or(Denial::WorkBudgetExceeded)?;
-        work.prepare((path * 64) as u64, bytes as u64)?;
+        work.prepare(
+            (path * 64) as u64,
+            if self.prepaid { 0 } else { bytes as u64 },
+        )?;
         self.nodes = next;
         Ok(())
     }
@@ -145,6 +169,8 @@ fn persistent_map_path_bytes<K: Ord + Clone, R: Clone>(
         .ok_or(Denial::WorkBudgetExceeded)?;
     Ok((3 * path_height(keys) + 2, node))
 }
+// im uses 64-slot chunks. A non-root B-tree level is at least half full,
+// so ceil(n/32) removes one worst-case level until the 64-slot root fits.
 fn path_height(mut size: usize) -> usize {
     let mut levels = 1;
     while size > 64 {
@@ -152,4 +178,41 @@ fn path_height(mut size: usize) -> usize {
         levels += 1;
     }
     levels
+}
+
+// Fresh maps have no shared path to copy. Reserve their complete output once,
+// before the first edit; the already-funded empty root supplies one node.
+pub(super) fn prepare_cold_grouped<K: Ord + Clone, R: Clone>(
+    edits: &BTreeMap<K, Vec<super::entry_edits::PendingEdit<R>>>,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
+    work.prepare(edits.len() as u64, 0)?;
+    let keys = edits.len();
+    let (path, node) = persistent_map_path_bytes::<K, R>(keys)?;
+    let nodes = keys.div_ceil(31) + 2 + path;
+    let mut bytes = (nodes - 1)
+        .checked_mul(node)
+        .ok_or(Denial::WorkBudgetExceeded)?;
+    for operations in edits.values() {
+        let rows = operations.len();
+        let inline = sized_chunks::InlineArray::<Arc<R>, im::vector::Rrb<Arc<R>>>::CAPACITY;
+        let row_nodes = if rows <= inline {
+            0
+        } else {
+            let height = path_height(rows);
+            2 * rows.div_ceil(32) + 4 * height + 4 + 5 * height + 8
+        };
+        let addition = row_nodes
+            .checked_mul(size_of::<usize>() * 332)
+            .and_then(|n| {
+                rows.checked_mul(size_of::<R>() + 2 * size_of::<usize>())
+                    .and_then(|payload| n.checked_add(payload))
+            })
+            .and_then(|n| n.checked_add(size_of::<K>() + 2 * size_of::<usize>()))
+            .ok_or(Denial::WorkBudgetExceeded)?;
+        bytes = bytes
+            .checked_add(addition)
+            .ok_or(Denial::WorkBudgetExceeded)?;
+    }
+    work.prepare(0, bytes as u64)
 }

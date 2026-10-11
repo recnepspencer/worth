@@ -6,8 +6,8 @@ use crate::indexes::data::{
     DerivedIndexMaintenanceDenialKind as Denial, DerivedIndexMaintenanceWork,
 };
 use worth_execution::{
-    ChargedBytes, ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure, MapStop,
-    ScanOutcome, WorkCeilingDenial,
+    ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure, MapStop, ScanOutcome,
+    WorkCeilingDenial,
 };
 use worth_foundational::PartitionIdentity;
 
@@ -17,11 +17,6 @@ use worth_foundational::PartitionIdentity;
 pub(super) struct MaintenancePreparation<T> {
     pub(super) value: T,
     _memory: ExecutionMemoryReservation,
-}
-impl<T> ChargedBytes for MaintenancePreparation<T> {
-    fn additional_charged_bytes(&self) -> u64 {
-        self._memory.bytes()
-    }
 }
 
 pub(super) fn run<T>(

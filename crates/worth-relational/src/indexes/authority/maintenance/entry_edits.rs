@@ -29,15 +29,16 @@ pub(super) fn edit<K: Ord + Copy, R: Clone>(
         (true, Err(position)) | (false, Ok(position)) => position,
         _ => return Err(Denial::PriorEntryMismatch),
     };
-    allocation
-        .map
-        .prepare::<K, R>(entries.len(), 1, insert || rows.len() > 1, work)?;
+    allocation.map.prepare::<K, R>(entries.len(), 1, work)?;
     allocation.row(key, &rows, insert, work)?;
     reserve_paths(entries.len(), &rows, work)?;
     if insert {
         rows.insert(position, row);
     } else {
         rows.remove(position);
+    }
+    if !rows.is_empty() {
+        allocation.map.prepare_key::<K>(work)?;
     }
     entries.replace(key, rows);
     work.note_entry_edits(1);
@@ -49,16 +50,26 @@ pub(super) fn grouped<K: Ord + Clone, R: Clone>(
     edits: BTreeMap<K, Vec<PendingEdit<R>>>,
     compare: impl Fn(&R, &R) -> Ordering,
     key_width: impl Fn(&K) -> usize,
+    cold: bool,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
-    let mut allocation = MapAllocation::default();
+    let mut allocation = if cold {
+        super::persistent_allocation::prepare_cold_grouped(&edits, work)?;
+        MapAllocation::prepaid()
+    } else {
+        MapAllocation::default()
+    };
     for (key, operations) in edits {
         work.prepare(1, 0)?;
         let width = key_width(&key);
         work.lookup(entries.len(), width)?;
         let mut rows = entries.get(&key).cloned().unwrap_or_default();
         let mut map_reserved = false;
-        let mut row_allocation = RowAllocation::default();
+        let mut row_allocation = if cold {
+            RowAllocation::prepaid()
+        } else {
+            RowAllocation::default()
+        };
         for operation in operations {
             let found = paid_position(&rows, &operation.row, &compare, work)?;
             let position = match (operation.insert, found) {
@@ -66,12 +77,7 @@ pub(super) fn grouped<K: Ord + Clone, R: Clone>(
                 _ => return Err(Denial::PriorEntryMismatch),
             };
             if !map_reserved {
-                allocation.prepare::<K, R>(
-                    entries.len(),
-                    width,
-                    operation.insert || rows.len() > 1,
-                    work,
-                )?;
+                allocation.prepare::<K, R>(entries.len(), width, work)?;
                 reserve_map_path(entries.len(), work)?;
                 map_reserved = true;
             }
@@ -85,6 +91,9 @@ pub(super) fn grouped<K: Ord + Clone, R: Clone>(
             work.note_entry_edits(1);
         }
         if map_reserved {
+            if !rows.is_empty() {
+                allocation.prepare_key::<K>(work)?;
+            }
             entries.replace(key, rows);
         }
     }
@@ -274,7 +283,15 @@ mod tests {
             )
             .unwrap();
         }
-        grouped(&mut entries, edits, Ord::cmp, |_| 1, &mut grouped_work).unwrap();
+        grouped(
+            &mut entries,
+            edits,
+            Ord::cmp,
+            |_| 1,
+            false,
+            &mut grouped_work,
+        )
+        .unwrap();
         assert_eq!(entries, sequential);
         assert_eq!(
             retained

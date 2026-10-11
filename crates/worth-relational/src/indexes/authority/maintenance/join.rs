@@ -136,6 +136,7 @@ fn rows_for_shared(
     for (left_id, left_relation) in left {
         for (right_id, right_relation) in &right {
             work.derive_row()?;
+            work.ordered::<RelationJoinKey, RelationJoinEntry>(rows.len(), 1, 0)?;
             rows.insert(
                 RelationJoinKey::new(left_id, *right_id),
                 RelationJoinEntry::new(shared, left_relation, *right_relation),
@@ -180,6 +181,7 @@ fn insert_leg(
         return Ok(());
     }
     work.charge(1)?;
+    work.ordered::<EntityId, RelationId>(selected.len(), 1, 0)?;
     selected
         .entry(external)
         .and_modify(|id| *id = (*id).min(relation.relation_id))
