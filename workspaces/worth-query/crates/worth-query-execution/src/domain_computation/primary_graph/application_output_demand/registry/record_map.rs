@@ -6,7 +6,7 @@ type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 #[derive(Default)]
 pub(super) struct DemandRecords(Map, BTreeMap<
     crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate,
-    std::collections::BTreeSet<WorthQueryOutputDemandKey>>, super::publication_head::PublicationHeads, #[cfg(test)] std::cell::Cell<u64>);
+    std::collections::BTreeSet<WorthQueryOutputDemandKey>>, super::publication_head::PublicationHeads, #[cfg(test)] std::cell::Cell<u64>, #[cfg(test)] std::cell::Cell<u64>);
 #[cfg(feature = "test-query-execution-observer")]
 thread_local! { static WHOLE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
 fn observe_row() {
@@ -21,6 +21,15 @@ impl DemandRecords {
     #[cfg(test)]
     pub(super) fn occurrence_visits_for_test(&self) -> u64 {
         self.3.get()
+    }
+
+    #[cfg(test)]
+    pub(super) fn note_cleanup_entry(&self) {
+        self.4.set(self.4.get() + 1);
+    }
+    #[cfg(test)]
+    pub(super) fn cleanup_entries_for_test(&self) -> u64 {
+        self.4.get()
     }
 
     pub(super) fn retain(

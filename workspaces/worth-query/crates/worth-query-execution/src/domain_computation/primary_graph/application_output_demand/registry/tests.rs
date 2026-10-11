@@ -349,3 +349,5 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
         super::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
     ));
 }
+
+mod cleanup_resumption;

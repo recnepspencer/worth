@@ -352,7 +352,7 @@ pub use advancement::{
 };
 
 #[cfg(test)]
-pub(crate) use advancement::with_test_advancement;
+pub(crate) use advancement::{drain_test_advancement_observations, with_test_advancement};
 
 pub use advancement::with_bootstrap_advancement;
 

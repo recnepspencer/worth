@@ -2,7 +2,8 @@ use super::*;
 
 impl WorthQueryOutputDemandRegistry {
     /// Released settlements leave the invalidation owner too, with every
-    /// upstream row only they still held.
+    /// upstream row only they still held. The loop is paid and resumable;
+    /// its work ceiling bounds it, not an entry quota.
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn drain_terminal_cleanup_admitted(
         &self,
         owner: &SourceInvalidationOwner,
@@ -28,6 +29,8 @@ impl WorthQueryOutputDemandRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
+            #[cfg(test)]
+            state.records.note_cleanup_entry();
             state.required_reserved_bytes = state.required_reserved_bytes.saturating_sub(refund);
             state.obligation_reserved_bytes = state
                 .obligation_reserved_bytes

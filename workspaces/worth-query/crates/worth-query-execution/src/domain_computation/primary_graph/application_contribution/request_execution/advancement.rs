@@ -335,3 +335,8 @@ mod tests;
 
 #[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) use observation::record_caller_pass;
+
+#[cfg(test)]
+pub(crate) fn drain_test_advancement_observations() {
+    drop(observation::advancement_observations_on_this_thread_for_test());
+}
