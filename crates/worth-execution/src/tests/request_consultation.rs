@@ -141,56 +141,110 @@ fn consultation_reads_inherited_cancellation_before_a_backing_deadline() {
     assert_eq!(outcome.report.charged_work(), 0);
 }
 
-#[test]
-fn consultation_preserves_a_nested_owners_latched_stop() {
-    let _serial = TEST_LOCK.lock().unwrap();
-    for (backend, workers) in [
-        (BackendKind::Serial, 1),
-        (BackendKind::Native, 1),
-        (BackendKind::Native, 2),
-        (BackendKind::Native, 4),
-    ] {
-        let cancellation = CancellationSource::new();
-        let mut policy = request(workers, 2_000, 100);
-        policy.cancellation = cancellation.token();
-        let parent = authority().request_lease(policy).unwrap();
-        let child = parent.child(request(1, 1_000, 100)).unwrap();
-        let outer = run_checked_batch(Some(&parent), &batch(&[1], 0), backend, &|_, context| {
-            context.checkpoint(1)?;
-            let nested =
-                run_checked_batch(Some(&child), &batch(&[1], 0), backend, &|_, context| {
-                    context.checkpoint(2)?;
+fn nested_latch_case(backend: BackendKind, workers: usize) {
+    let _serial = TEST_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let cancellation = CancellationSource::new();
+    let mut policy = request(workers, 2_000, 100);
+    policy.cancellation = cancellation.token();
+    let parent = authority().request_lease(policy).unwrap();
+    let child = parent
+        .child(request(
+            workers,
+            parent.policy().budget().charged_memory_bytes(),
+            100,
+        ))
+        .unwrap();
+    let inputs = (1..=workers as u64).collect::<Vec<_>>();
+    let rendezvous = (std::sync::Mutex::new(0_usize), std::sync::Condvar::new());
+    let timed_out = std::sync::atomic::AtomicBool::new(false);
+    let outer = run_checked_batch(Some(&parent), &batch(&[1], 0), backend, &|_, context| {
+        context.checkpoint(1)?;
+        let nested = run_checked_batch(
+            Some(&child),
+            &batch(&inputs, 0),
+            backend,
+            &|item, context| {
+                context.checkpoint(2)?;
+                let (arrived, wake) = &rendezvous;
+                let mut count = arrived.lock().unwrap();
+                *count += 1;
+                wake.notify_all();
+                if workers > 1 {
+                    // Failure watchdog only: a passing rendezvous never waits for its deadline.
+                    let (next, wait) = wake
+                        .wait_timeout_while(count, Duration::from_secs(60), |count| {
+                            *count < workers
+                        })
+                        .unwrap();
+                    count = next;
+                    if wait.timed_out() && *count < workers {
+                        timed_out.store(true, std::sync::atomic::Ordering::Relaxed);
+                    }
+                }
+                drop(count);
+                if *item == 1 {
                     cancellation.cancel();
-                    // The request becomes interrupted inside the nested owner.
-                    // Consultation must lend that owner's real latch, not a fresh one.
+                    // Only this nested owner swallows the request interruption.
                     for _ in 0..2 {
                         assert_eq!(
                             ExecutionRequest::leased(&child).consult(),
                             Err(WorkCeilingDenial::Stopped(KernelStop::Cancelled))
                         );
                     }
-                    Ok::<_, KernelFailure<()>>(1_u64)
-                });
-            assert_eq!(
-                nested.stop,
-                Some(BatchStop::Failure {
-                    identity: PartitionIdentity::new(1),
-                    cause: KernelFailure::Stop(KernelStop::NestedStopped),
-                }),
-                "the nested owner's swallowed interruption is reported once"
-            );
-            Ok::<_, KernelFailure<()>>(1_u64)
-        });
-        assert!(outer.values.is_empty());
+                }
+                Ok::<_, KernelFailure<()>>(1_u64)
+            },
+        );
+        assert!(
+            !timed_out.load(std::sync::atomic::Ordering::Relaxed),
+            "all {workers} admitted kernels must reach the rendezvous"
+        );
+        assert_eq!(*rendezvous.0.lock().unwrap(), workers);
         assert_eq!(
-            outer.stop,
+            nested.report.resolved_posture(),
+            if workers > 1 {
+                ExecutionPosture::Automatic
+            } else {
+                ExecutionPosture::Serial
+            }
+        );
+        assert_eq!(
+            nested.stop,
             Some(BatchStop::Failure {
                 identity: PartitionIdentity::new(1),
                 cause: KernelFailure::Stop(KernelStop::NestedStopped),
             }),
-            "consultation does not lose the invoking owner's latch"
+            "the nested owner's swallowed interruption is reported once"
         );
-        assert_eq!(outer.report.charged_work(), 1 + 2);
-        assert_eq!(outer.report.charged_span(), 1 + 2);
-    }
+        Ok::<_, KernelFailure<()>>(1_u64)
+    });
+    assert!(outer.values.is_empty());
+    assert_eq!(
+        outer.stop,
+        Some(BatchStop::Failure {
+            identity: PartitionIdentity::new(1),
+            cause: KernelFailure::Stop(KernelStop::NestedStopped),
+        }),
+        "consultation does not lose the invoking owner's latch"
+    );
+    assert_eq!(outer.report.charged_work(), 1 + 2);
+    assert_eq!(outer.report.charged_span(), 1 + 2);
+}
+#[test]
+fn consultation_preserves_a_nested_owners_latched_stop() {
+    nested_latch_case(BackendKind::Serial, 1);
+}
+#[test]
+fn consultation_preserves_a_nested_owners_latched_stop_at_one_worker() {
+    nested_latch_case(BackendKind::Native, 1);
+}
+#[test]
+fn consultation_preserves_a_nested_owners_latched_stop_at_two_workers() {
+    nested_latch_case(BackendKind::Native, 2);
+}
+#[test]
+fn consultation_preserves_a_nested_owners_latched_stop_at_four_workers() {
+    nested_latch_case(BackendKind::Native, 4);
 }
