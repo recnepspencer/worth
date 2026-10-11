@@ -16,19 +16,19 @@ fn real_scope_and_occurrence() -> (
         );
     world.application.with_host_advancement(|phase| {
         let custody = phase.test_host_request();
-    let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
-    let account =
-        crate::domain_computation::primary_graph::tests::application_attempt::resolved_account(
-            &custody,
-            &world, "open", &request,
-        );
-    let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(account.entity_id());
-    let product = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .expect("the fixture product occurrence is live");
-    (scope, product.observation().lifecycle_incarnation())
+        let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
+        let account =
+            crate::domain_computation::primary_graph::tests::application_attempt::resolved_account(
+                &custody,
+                &world, "open", &request,
+            );
+        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(account.entity_id());
+        let product = world
+            .application
+            .product_runtime()
+            .admit_product_branch(world.application.product_runtime().default_branch())
+            .expect("the fixture product occurrence is live");
+        (scope, product.observation().lifecycle_incarnation())
     }).expect("the fixture source read owns its host call")
 }
 
