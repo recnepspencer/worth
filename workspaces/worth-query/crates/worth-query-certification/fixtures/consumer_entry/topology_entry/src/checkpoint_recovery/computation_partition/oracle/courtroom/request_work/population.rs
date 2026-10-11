@@ -5,10 +5,10 @@ type ScaleApplication =
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, ScaleProgram>;
 fn profile() -> worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile {
     worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard()
-        .with_registry_obligation_retained_bytes(std::num::NonZeroUsize::new(1 << 40).unwrap())
-        .with_lineage_retained_bytes(std::num::NonZeroUsize::new(1 << 40).unwrap())
-        .with_registry_record_retained_bytes(std::num::NonZeroUsize::new(1 << 40).unwrap())
-        .with_registry_required_retained_bytes(std::num::NonZeroUsize::new(1 << 40).unwrap())
+        .with_registry_obligation_retained_bytes(std::num::NonZeroUsize::new(usize::MAX).unwrap())
+        .with_lineage_retained_bytes(std::num::NonZeroUsize::new(usize::MAX).unwrap())
+        .with_registry_record_retained_bytes(std::num::NonZeroUsize::new(usize::MAX).unwrap())
+        .with_registry_required_retained_bytes(std::num::NonZeroUsize::new(usize::MAX).unwrap())
 }
 pub(super) fn install_population() -> ScaleApplication {
     author_population()
