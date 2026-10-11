@@ -22,7 +22,7 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
         worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
     let request =
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
-            std::time::Instant::now() + std::time::Duration::from_secs(60),
+            Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
             cancellation.token(),
         );
     let principal = authenticated_principal(&world, &request);

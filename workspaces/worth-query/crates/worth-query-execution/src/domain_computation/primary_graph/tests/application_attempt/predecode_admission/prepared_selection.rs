@@ -65,8 +65,10 @@ fn prepared_decision_selection_preserves_scalar_results_and_rejects_foreign_proj
 fn prepared_decision_selection_observes_cancellation_after_preparation() {
     let world = installed_authorization_world(true);
     let source = WorthQueryCancellationSource::new();
-    let request =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token());
+    let request = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        source.token(),
+    );
     let observed = Cell::new(false);
     let result = projection::try_with_reader(&world, &request, |reader| {
         let prepared = reader

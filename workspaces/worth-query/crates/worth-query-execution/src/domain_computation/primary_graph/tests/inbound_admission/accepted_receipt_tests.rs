@@ -227,7 +227,7 @@ fn old_executed_phase_drop_cannot_release_a_new_publication_claim() {
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let cancelled = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let receipt = old_phase.progress_for_test(&cancelled).unwrap();

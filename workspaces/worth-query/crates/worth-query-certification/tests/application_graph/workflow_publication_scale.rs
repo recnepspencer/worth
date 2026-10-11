@@ -93,7 +93,7 @@ fn public_ten_thousand_node_definition_publishes() {
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     let scope =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
-            std::time::Instant::now() + std::time::Duration::from_secs(300),
+            Some(std::time::Instant::now() + std::time::Duration::from_secs(300)),
             cancellation.token(),
         );
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -190,7 +190,7 @@ fn cold_compilation_of_large_definition_uses_bounded_start_facts() {
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     let scope =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
-            std::time::Instant::now() + std::time::Duration::from_secs(300),
+            Some(std::time::Instant::now() + std::time::Duration::from_secs(300)),
             cancellation.token(),
         );
     let principal = authenticate_operator(runtime.installed_schema(), &scope);

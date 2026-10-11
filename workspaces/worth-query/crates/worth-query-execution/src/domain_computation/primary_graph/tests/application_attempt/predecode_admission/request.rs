@@ -14,8 +14,10 @@ use worth_query_admission::facade::authenticated_principal::{
 fn cancelled_before_admission_never_enters_the_raw_callback() {
     let world = installed_authorization_world(true);
     let source = WorthQueryCancellationSource::new();
-    let request =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token());
+    let request = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        source.token(),
+    );
     let called = Cell::new(false);
     let result = projection::with_reader(&world, &request, |reader| {
         let scope = reader.scope().clone();
@@ -39,8 +41,10 @@ fn cancelled_before_admission_never_enters_the_raw_callback() {
 fn cancellation_during_preflight_is_observable_without_reborrowing_reader() {
     let world = installed_authorization_world(true);
     let source = WorthQueryCancellationSource::new();
-    let request =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token());
+    let request = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        source.token(),
+    );
     let observed = Cell::new(None);
     let result = projection::with_reader(&world, &request, |reader| {
         let scope = reader.scope().clone();
@@ -71,7 +75,7 @@ fn deadline_during_preflight_preserves_its_distinct_request_reason() {
     let world = installed_authorization_world(true);
     let source = WorthQueryCancellationSource::new();
     let deadline = Instant::now() + Duration::from_secs(1);
-    let request = WorthQueryRequestScope::new(deadline, source.token());
+    let request = WorthQueryRequestScope::new(Some(deadline), source.token());
     let observed = Cell::new(None);
     let result = projection::with_reader(&world, &request, |reader| {
         let scope = reader.scope().clone();

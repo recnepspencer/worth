@@ -47,14 +47,16 @@ pub(super) fn observe_case(
     let query_cancel =
         worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
     let scope = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
-        std::time::Instant::now()
-            + Duration::from_secs(
-                if matches!(case.query_interruption, Some(ScopeInterruption::Deadline)) {
-                    5
-                } else {
-                    60
-                },
-            ),
+        Some(
+            std::time::Instant::now()
+                + Duration::from_secs(
+                    if matches!(case.query_interruption, Some(ScopeInterruption::Deadline)) {
+                        5
+                    } else {
+                        60
+                    },
+                ),
+        ),
         query_cancel.token(),
     );
     let caller_cancel = worth_execution::CancellationSource::new();

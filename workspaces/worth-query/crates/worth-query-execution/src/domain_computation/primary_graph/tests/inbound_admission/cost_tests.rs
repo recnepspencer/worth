@@ -34,7 +34,7 @@ fn post_preparation_cancellation_releases_inbound_dispatch_reservation() {
     let world = installed_world();
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let pause = world

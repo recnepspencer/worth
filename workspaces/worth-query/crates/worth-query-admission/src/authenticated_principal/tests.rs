@@ -157,8 +157,10 @@ fn mismatched_expired_cancelled_and_timed_out_candidates_fail_closed() {
 
     let cancelled = WorthQueryCancellationSource::new();
     cancelled.cancel();
-    let cancelled_scope =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), cancelled.token());
+    let cancelled_scope = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        cancelled.token(),
+    );
     assert_eq!(
         block_on(adapter.authenticate(TestCredential::Valid, &cancelled_scope))
             .unwrap_err()
@@ -167,8 +169,10 @@ fn mismatched_expired_cancelled_and_timed_out_candidates_fail_closed() {
     );
 
     let source = WorthQueryCancellationSource::new();
-    let expired_scope =
-        WorthQueryRequestScope::new(Instant::now() - Duration::from_secs(1), source.token());
+    let expired_scope = WorthQueryRequestScope::new(
+        Some(Instant::now() - Duration::from_secs(1)),
+        source.token(),
+    );
     assert_eq!(
         block_on(adapter.authenticate(TestCredential::Valid, &expired_scope))
             .unwrap_err()
@@ -270,7 +274,10 @@ fn installed_schema(
 
 fn live_scope() -> WorthQueryRequestScope {
     let source = WorthQueryCancellationSource::new();
-    WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token())
+    WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        source.token(),
+    )
 }
 
 fn block_on<F: Future>(future: F) -> F::Output {

@@ -99,7 +99,7 @@ fn principal_seeds(
 
 pub fn request_scope(duration: Duration) -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
-    WorthQueryRequestScope::new(Instant::now() + duration, cancellation.token())
+    WorthQueryRequestScope::new(Some(Instant::now() + duration), cancellation.token())
 }
 
 fn configuration(

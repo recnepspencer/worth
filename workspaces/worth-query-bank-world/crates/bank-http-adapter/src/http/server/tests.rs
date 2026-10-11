@@ -276,7 +276,7 @@ async fn assert_live_fixture_admits(application: &CausalHttpApplication, account
 
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        std::time::Instant::now() + Duration::from_secs(5),
+        Some(std::time::Instant::now() + Duration::from_secs(5)),
         cancellation.token(),
     );
     let principal = application.authenticate(&scope).await;

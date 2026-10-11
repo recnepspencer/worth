@@ -153,7 +153,7 @@ impl BankUserSession {
         };
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Instant::now() + self.maximum_deadline,
+            Some(Instant::now() + self.maximum_deadline),
             cancellation.token(),
         );
         match self
@@ -178,7 +178,7 @@ impl BankUserSession {
         };
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Instant::now() + self.maximum_deadline,
+            Some(Instant::now() + self.maximum_deadline),
             cancellation.token(),
         );
         if self

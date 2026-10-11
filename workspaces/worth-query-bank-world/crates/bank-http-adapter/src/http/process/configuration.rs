@@ -57,7 +57,7 @@ impl BankHttpProcessConfiguration {
             .map_err(|_| BankHttpProcessConfigurationError::World)?;
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(300),
+            Some(Instant::now() + Duration::from_secs(300)),
             cancellation.token(),
         );
         let identity = install_identity(oidc, world, self.cold_certification, &scope).await?;

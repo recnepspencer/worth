@@ -63,7 +63,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
     let cancelled_external = enabled.authenticate("alice", Duration::from_secs(60), &live_scope());
     cancellation.cancel();
     let cancelled_scope = WorthQueryRequestScope::new(
-        std::time::Instant::now() + Duration::from_secs(60),
+        Some(std::time::Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     assert_eq!(

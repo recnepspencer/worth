@@ -105,7 +105,7 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
         place(placement);
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         let (entered, ready) = sync_channel(1);
@@ -200,7 +200,7 @@ fn cancellation_during_signal_evaluation_remains_cancellation_in_the_advancement
         place(placement);
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         let (entered, ready) = sync_channel(1);

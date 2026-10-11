@@ -32,7 +32,7 @@ fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
         }
         let cancellation = WorthQueryCancellationSource::new();
         let request = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         let external = receiver.authenticate("alice", Duration::from_secs(60), &request);

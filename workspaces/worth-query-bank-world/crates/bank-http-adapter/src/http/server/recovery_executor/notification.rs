@@ -25,7 +25,7 @@ where
     A: BankHttpApplicationAuthenticator,
 {
     let request_id = request.request_id;
-    let scope = WorthQueryRequestScope::new(request.deadline, cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token());
     let principal = match application.authenticate(request.credential, &scope).await {
         Ok(principal) => principal,
         Err(denial) => return notification_denied(Some(request_id), denial),

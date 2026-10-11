@@ -64,7 +64,7 @@ async fn valid_signature_on_unsupported_version_denies_before_owner_custody() {
 
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(5),
+        Some(Instant::now() + Duration::from_secs(5)),
         cancellation.token(),
     );
     let route = server.rail_completion.as_ref().unwrap();

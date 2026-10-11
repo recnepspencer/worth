@@ -62,8 +62,10 @@ mod tests {
     #[test]
     fn live_request_control_preserves_cancellation_and_exact_deadline() {
         let source = WorthQueryCancellationSource::new();
-        let request =
-            WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(30), source.token());
+        let request = WorthQueryRequestScope::new(
+            Some(Instant::now() + Duration::from_secs(30)),
+            source.token(),
+        );
         let control = ValidationRequestControl::new(&request);
         assert_eq!(control.relational().interruption(), None);
         source.cancel();
@@ -72,7 +74,7 @@ mod tests {
             Some(RelationalOperationInterruption::Cancelled)
         );
         let deadline = WorthQueryRequestScope::new(
-            Instant::now(),
+            Some(Instant::now()),
             WorthQueryCancellationSource::new().token(),
         );
         let timed = ValidationRequestControl::new(&deadline);

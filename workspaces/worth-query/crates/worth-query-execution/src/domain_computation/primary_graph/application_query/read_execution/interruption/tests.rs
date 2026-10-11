@@ -54,7 +54,7 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
     );
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
@@ -143,7 +143,7 @@ fn direct_query_admission_cannot_bypass_host_work_policy() {
     );
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
@@ -207,7 +207,7 @@ fn direct_query_admission_cannot_bypass_host_work_policy() {
 #[test]
 fn deadline_is_checked_at_kernel_safe_points() {
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(Instant::now(), cancellation.token());
+    let request = WorthQueryRequestScope::new(Some(Instant::now()), cancellation.token());
     let denial = super::checkpoint(&request, "root/relation[0]").unwrap_err();
     assert_eq!(
         denial.kind(),

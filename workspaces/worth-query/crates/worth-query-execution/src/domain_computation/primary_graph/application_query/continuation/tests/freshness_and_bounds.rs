@@ -81,7 +81,7 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let cancelled_request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let cancelled = cancelled_context.readmit_denial(
@@ -105,7 +105,8 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
     let deadline_continuation = deadline_context.issue();
     let deadline_acquisitions = deadline_context.basis_acquisitions();
     let deadline_source = WorthQueryCancellationSource::new();
-    let deadline_request = WorthQueryRequestScope::new(Instant::now(), deadline_source.token());
+    let deadline_request =
+        WorthQueryRequestScope::new(Some(Instant::now()), deadline_source.token());
     let deadline = deadline_context.readmit_denial(
         deadline_continuation,
         "account-1",

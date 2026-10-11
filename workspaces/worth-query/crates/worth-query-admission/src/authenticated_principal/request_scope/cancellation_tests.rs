@@ -66,3 +66,26 @@ fn a_request_without_a_deadline_still_honors_cancellation() {
         Some(WorthQueryRequestInterruption::Cancelled)
     );
 }
+
+#[test]
+fn absent_and_elapsed_deadlines_have_distinct_remaining_values() {
+    let source = WorthQueryCancellationSource::new();
+    let now = Instant::now();
+    let unbounded = WorthQueryRequestScope::new(None, source.token());
+    let elapsed = WorthQueryRequestScope::new(Some(now - Duration::from_secs(1)), source.token());
+    let bounded = WorthQueryRequestScope::new(Some(now + Duration::from_secs(60)), source.token());
+    assert_eq!(
+        unbounded.remaining(),
+        WorthQueryRequestTimeRemaining::Unbounded
+    );
+    assert_eq!(elapsed.remaining(), WorthQueryRequestTimeRemaining::Elapsed);
+    assert_eq!(
+        bounded.remaining_at(now),
+        WorthQueryRequestTimeRemaining::Remaining(Duration::from_secs(60))
+    );
+    assert_eq!(
+        WorthQueryRequestScope::new(Some(now), source.token()).remaining_at(now),
+        WorthQueryRequestTimeRemaining::Elapsed
+    );
+    assert_ne!(unbounded.remaining(), elapsed.remaining());
+}

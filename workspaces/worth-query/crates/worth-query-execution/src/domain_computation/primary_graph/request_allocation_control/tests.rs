@@ -5,8 +5,10 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryCancellati
 #[test]
 fn live_query_cancellation_registration_stops_execution_token_until_scope_drop() {
     let source = WorthQueryCancellationSource::new();
-    let request =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token());
+    let request = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        source.token(),
+    );
     let registration = CancellationRegistration::new(&request);
     assert!(!registration.cancellation.is_cancelled());
     source.cancel();
@@ -31,7 +33,7 @@ fn live_query_cancellation_registration_stops_execution_token_until_scope_drop()
 fn explicit_system_allocation_remains_uncharged_under_query_stop() {
     let source = WorthQueryCancellationSource::new();
     source.cancel();
-    let request = WorthQueryRequestScope::new(Instant::now(), source.token());
+    let request = WorthQueryRequestScope::new(Some(Instant::now()), source.token());
     let control =
         RequestAllocationControl::new(&request, ExecutionAllocationPolicy::SystemAllocation);
     assert!(matches!(

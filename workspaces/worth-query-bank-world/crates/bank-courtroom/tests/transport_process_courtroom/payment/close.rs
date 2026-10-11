@@ -19,7 +19,7 @@ async fn close_before_payment_callback_preserves_unresolved_dispatch() {
     } = PaymentCourt::start("payment-close-before-callback").await;
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let authority = ApprovePayment {

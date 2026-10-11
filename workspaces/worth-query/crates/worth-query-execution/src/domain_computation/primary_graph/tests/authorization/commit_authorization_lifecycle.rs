@@ -18,7 +18,7 @@ fn commit_authorization_rechecks_cancellation_when_governed() {
         .script([time(100), time(100), time(100)]);
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let principal = authenticated_principal(&world, &request);

@@ -24,8 +24,10 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
     assert_eq!(installed.contracts().execution_strategy().unwrap().envelope()
         .optional_scale_ceiling(worth_query_declaration::facade::domain_computation::WorthQuerySemanticScaleAxis::WorkItems), None);
     let source = WorthQueryCancellationSource::new();
-    let request =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(30), source.token());
+    let request = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(30)),
+        source.token(),
+    );
     let principal = authenticated_principal(&world, &request);
     let account = resolved_account(&world, "open", &request);
     let rejected = admitted_program(&world, &principal, &account, &request, "after-staging");

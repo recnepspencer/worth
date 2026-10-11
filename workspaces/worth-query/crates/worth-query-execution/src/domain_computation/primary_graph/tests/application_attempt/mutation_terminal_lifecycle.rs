@@ -65,7 +65,7 @@ fn cancelled_terminal() {
     let baseline = baselines(&world);
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let principal = authenticated_principal(&world, &request);

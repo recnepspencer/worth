@@ -34,7 +34,7 @@ fn cancelled_request_cannot_reuse_otherwise_current_authority() {
         .unwrap();
     let cancellation = WorthQueryCancellationSource::new();
     let cancelled_request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     cancellation.cancel();
@@ -128,7 +128,7 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
 
     let cancellation = WorthQueryCancellationSource::new();
     let cancellable_request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &cancellable_request);

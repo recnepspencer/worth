@@ -136,7 +136,7 @@ fn qualify(occurrences: u16, key: u64) {
     let runtime = application.runtime();
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(300),
+        Some(Instant::now() + Duration::from_secs(300)),
         cancellation.token(),
     );
     let principal = authenticate_operator(runtime.installed_schema(), &scope);

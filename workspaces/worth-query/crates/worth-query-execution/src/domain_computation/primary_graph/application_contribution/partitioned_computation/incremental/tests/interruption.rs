@@ -35,8 +35,10 @@ fn cancelled_in_reducer(
     prior: Option<ComputationPrior>,
 ) -> (Attempt, usize) {
     let source = WorthQueryCancellationSource::new();
-    let request =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token());
+    let request = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        source.token(),
+    );
     COMBINES.set(0);
     ARMED.set(Some(source));
     let attempt = attempt_in(world, installed, prior, &request);

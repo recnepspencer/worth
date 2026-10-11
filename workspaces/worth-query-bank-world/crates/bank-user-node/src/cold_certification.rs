@@ -25,7 +25,7 @@ pub async fn install(
         .map_err(BankUserNodeInstallError::OidcConfiguration)?;
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + configuration.maximum_deadline,
+        Some(Instant::now() + configuration.maximum_deadline),
         cancellation.token(),
     );
     let oidc = cold_certification::discover_adapter(oidc_configuration, &scope)

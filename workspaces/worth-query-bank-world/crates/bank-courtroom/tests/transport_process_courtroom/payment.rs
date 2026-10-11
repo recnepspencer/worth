@@ -76,7 +76,7 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
 
     let request_cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         request_cancellation.token(),
     );
     let authority = ApprovePayment {

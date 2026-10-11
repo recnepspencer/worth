@@ -30,7 +30,7 @@ fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup(
         .owned_revision();
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(30),
+        Some(Instant::now() + Duration::from_secs(30)),
         cancellation.token(),
     );
     let principal = authenticate_operator(host.installed_schema(), &scope);

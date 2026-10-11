@@ -272,7 +272,7 @@ fn cancelled_initiation_cannot_mint_a_continuation() {
         .as_principal(&owner)
         .controls(BankMutationControls::new(
             WorthQueryRequestScope::new(
-                Instant::now() + Duration::from_secs(60),
+                Some(Instant::now() + Duration::from_secs(60)),
                 cancellation.token(),
             ),
             BankIdempotencyKey::new("cancelled-initiation").unwrap(),

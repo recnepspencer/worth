@@ -170,7 +170,7 @@ fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_su
 
     let cancellation = WorthQueryCancellationSource::new();
     let recovery_scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(30),
+        Some(Instant::now() + Duration::from_secs(30)),
         cancellation.token(),
     );
     let recovery_principal = authenticate_operator(host.installed_schema(), &recovery_scope);

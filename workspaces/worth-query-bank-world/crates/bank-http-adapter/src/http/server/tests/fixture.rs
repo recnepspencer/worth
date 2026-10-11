@@ -105,7 +105,7 @@ impl CausalHttpApplication {
     pub(super) async fn death_notice_status(&self, estate: EstateCaseId) -> DeathNoticeStatus {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(5),
+            Some(Instant::now() + Duration::from_secs(5)),
             cancellation.token(),
         );
         let principal = self.authenticate(&scope).await;

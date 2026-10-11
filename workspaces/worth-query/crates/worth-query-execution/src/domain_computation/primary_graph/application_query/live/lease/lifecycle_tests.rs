@@ -69,7 +69,7 @@ mod tests {
             // Instant deadline comparison is `now >= deadline`, so the
             // current instant makes the next delivery sample DeadlineExceeded
             // without sleeping or racing open.
-            WorthQueryRequestScope::new(Instant::now(), live_cancellation.token())
+            WorthQueryRequestScope::new(Some(Instant::now()), live_cancellation.token())
         }
 
         fn principal(
@@ -206,7 +206,7 @@ mod tests {
     fn cancellation_and_deadline_terminalize_all_live_resources() {
         let cancellation = WorthQueryCancellationSource::new();
         let request = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         let context = LiveContext::new(request);
