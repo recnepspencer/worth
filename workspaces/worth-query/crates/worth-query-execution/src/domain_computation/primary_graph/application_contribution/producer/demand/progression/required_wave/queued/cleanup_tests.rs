@@ -78,28 +78,16 @@ fn drained_cleanup(one_short: bool) {
                     "no custody is destroyed on the refused step"
                 );
             }
-            loop {
-                let before = registry.fixture_cleanup_head();
-                match queue.next_claim(runtime, &wave, &mut admission(1_000_000)) {
-                    Ok(None) => break,
-                    Ok(Some(_)) => panic!("an already drained queue selects no further record"),
-                    Err(stop) => {
-                        assert_eq!(
-                            stop.kind(),
-                            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-                        );
-                        assert_ne!(
-                            registry.fixture_cleanup_head(),
-                            before,
-                            "a paying retry advances the cleanup before the next refusal"
-                        );
-                    }
-                }
-            }
+            // This refund proof funds the entire finite drain in one admission.
+            // The one-short case and every-unit drain table pin refusal charges.
+            assert!(queue
+                .next_claim(runtime, &wave, &mut admission(u64::MAX))
+                .unwrap()
+                .is_none());
             assert_eq!(
                 registry.fixture_reserved_balances(),
                 baseline,
-                "paying drained-door admissions restore all three totals"
+                "one paying drained-door admission restores all three totals"
             );
             assert_eq!(registry.fixture_cleanup_head(), None);
         });

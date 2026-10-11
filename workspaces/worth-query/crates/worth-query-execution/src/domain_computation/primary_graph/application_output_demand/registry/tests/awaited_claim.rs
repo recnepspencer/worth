@@ -65,23 +65,16 @@ fn last_claim_closes(held_successor: bool) {
         ));
         drop(dependent);
         // Release leaves costly cleanup for the next paying admission.
-        loop {
-            let before = registry.state.lock().unwrap().records.len();
-            match registry.drain_terminal_cleanup_admitted(&source_owner(), &mut record_admission())
-            {
-                Ok(()) => break,
-                Err(stop) => {
-                    assert_eq!(
-                        stop.kind(),
-                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-                    );
-                    assert!(
-                        registry.state.lock().unwrap().records.len() < before,
-                        "a fresh paying admission must retire at least one queued row"
-                    );
-                }
-            }
-        }
+        // The lifetime proof funds the whole finite cleanup, once. Partial
+        // admission and exact charges belong to the every-unit drain table.
+        let mut complete = InvalidationEditAdmission::new(CompanionPreflightBudget {
+            maximum_work_visits: u64::MAX,
+            maximum_preparation_bytes: 8 * 1024 * 1024,
+        });
+        registry
+            .drain_terminal_cleanup_admitted(&source_owner(), &mut complete)
+            .unwrap();
+
         {
             let state = registry.state.lock().unwrap();
             assert!(
