@@ -88,9 +88,7 @@ where
                 performed,
                 admission,
             )? {
-                canonical_apply::CallerAcceptance::Accepted(outcome) => {
-                    queue.finish_caller(outcome)
-                }
+                canonical_apply::CallerAcceptance::Accepted(proof) => queue.finish_caller(proof),
                 canonical_apply::CallerAcceptance::Reinspect => continue,
                 canonical_apply::CallerAcceptance::Deferred => {}
             }
@@ -272,7 +270,7 @@ where
         if wave.target == RequiredWaveTarget::Caller && !queue.draining() {
             // Pending decides the caller just as Current does. It leaves its
             // unfinished closure held while independent queue records proceed.
-            queue.finish_caller(WorthQueryOutputDemandAdvance::Pending);
+            queue.defer_caller();
             resolved.clear();
             continue;
         }

@@ -17,8 +17,13 @@ pub(super) struct QueuedRequiredRoots {
     roots: Vec<Option<SelectedRequiredWork>>,
     held: Vec<SelectedRequiredWork>,
     /// A certified caller outcome cannot be replaced by a queued root's failure.
-    caller: Option<WorthQueryOutputDemandAdvance>,
-    caller_current: bool,
+    caller: Option<CallerOutcome>,
+}
+
+enum CallerOutcome {
+    Current(performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>),
+    Decided(Arc<WorthQueryOutputDemandSettlement>),
+    Pending,
 }
 
 impl QueuedRequiredRoots {
@@ -28,7 +33,6 @@ impl QueuedRequiredRoots {
             roots: Vec::new(),
             held: Vec::new(),
             caller: None,
-            caller_current: false,
         }
     }
 
@@ -38,19 +42,37 @@ impl QueuedRequiredRoots {
     }
 
     /// The caller is decided; queue failures retain their own scheduling custody.
-    pub(super) fn finish_caller(&mut self, outcome: WorthQueryOutputDemandAdvance) {
-        self.caller_current = matches!(&outcome, WorthQueryOutputDemandAdvance::Settled(_));
-        self.caller = Some(outcome);
+    pub(super) fn finish_caller(
+        &mut self,
+        proof: performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
+    ) {
+        self.caller = Some(CallerOutcome::Current(proof));
+    }
+
+    pub(super) fn defer_caller(&mut self) {
+        self.caller = Some(CallerOutcome::Pending);
     }
 
     pub(super) fn wave_moved(&mut self) {
-        self.caller_current = false;
+        self.caller = self.caller.take().map(|outcome| match outcome {
+            CallerOutcome::Current(proof) => CallerOutcome::Decided(proof.into_value()),
+            CallerOutcome::Decided(settlement) => CallerOutcome::Decided(settlement),
+            CallerOutcome::Pending => CallerOutcome::Pending,
+        });
         // The selected queue is visited once per advance, even as its basis moves.
     }
 
     /// The caller's outcome once queue work ends, in any way.
     pub(super) fn take_caller(&mut self) -> Option<WorthQueryOutputDemandAdvance> {
-        self.caller.take()
+        self.caller.take().map(|outcome| match outcome {
+            CallerOutcome::Current(proof) => {
+                WorthQueryOutputDemandAdvance::Settled(proof.into_value())
+            }
+            CallerOutcome::Decided(settlement) => {
+                WorthQueryOutputDemandAdvance::Settled(settlement)
+            }
+            CallerOutcome::Pending => WorthQueryOutputDemandAdvance::Pending,
+        })
     }
 
     /// Once the caller's outcome is decided, nothing a queued root meets can
@@ -157,8 +179,8 @@ impl QueuedRequiredRoots {
         // The caller already certified its own occurrence. A moved basis
         // cannot use that old certification to discharge a newer cause.
         if ready.same_record(&wave.anchor_ready, admission)? {
-            if self.caller_current {
-                drop(work.acknowledge_current_admitted(admission));
+            if let Some(CallerOutcome::Current(proof)) = &self.caller {
+                acknowledge_caller_claim(work, proof, admission);
             } else {
                 self.hold(work, admission)?;
             }
@@ -274,6 +296,14 @@ impl QueuedRequiredRoots {
     }
 }
 
+fn acknowledge_caller_claim(
+    work: SelectedRequiredWork,
+    _proof: &performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
+    admission: &mut InvalidationEditAdmission,
+) {
+    drop(work.acknowledge_current_admitted(admission));
+}
+
 fn is_budget(denial: &WorthQueryOutputDemandDenial) -> bool {
     matches!(
         denial.kind(),
@@ -314,7 +344,7 @@ mod tests {
     #[test]
     fn a_queue_stop_after_the_caller_finished_returns_the_caller_outcome() {
         let mut queue = QueuedRequiredRoots::new();
-        queue.finish_caller(WorthQueryOutputDemandAdvance::Pending);
+        queue.defer_caller();
         assert!(matches!(
             queue.conclude(Err(unrelated_stop())),
             Ok(Some(WorthQueryOutputDemandAdvance::Pending))

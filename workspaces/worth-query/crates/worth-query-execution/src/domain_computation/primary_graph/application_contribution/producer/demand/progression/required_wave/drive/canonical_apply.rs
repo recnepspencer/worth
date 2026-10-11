@@ -31,10 +31,8 @@ where
     }
     if !queue.draining() {
         match accept_current_caller(runtime, demand, wave, frontier, performed, admission)? {
-            CallerAcceptance::Accepted(outcome) => queue.finish_caller(outcome),
-            CallerAcceptance::Deferred => {
-                queue.finish_caller(WorthQueryOutputDemandAdvance::Pending)
-            }
+            CallerAcceptance::Accepted(proof) => queue.finish_caller(proof),
+            CallerAcceptance::Deferred => queue.defer_caller(),
             CallerAcceptance::Reinspect => return Ok(None),
         }
     }
@@ -74,7 +72,7 @@ where
             return Ok(refusal);
         }
     };
-    if let Some(settlement) = super::super::caller::finish_current_caller(
+    if let Some(proof) = super::super::caller::finish_current_caller(
         runtime,
         demand,
         super::super::caller::CurrentCaller {
@@ -87,9 +85,8 @@ where
         proof,
         admission,
     )? {
-        let outcome = WorthQueryOutputDemandAdvance::Settled(settlement);
         frontier.members[0].state = MemberState::AcceptedCaller;
-        Ok(CallerAcceptance::Accepted(outcome))
+        Ok(CallerAcceptance::Accepted(proof))
     } else {
         caller.state = MemberState::Pending;
         Ok(CallerAcceptance::Deferred)
@@ -98,7 +95,7 @@ where
 
 /// Distinguish a refused proof from a genuinely deferred caller promotion.
 pub(in super::super) enum CallerAcceptance {
-    Accepted(WorthQueryOutputDemandAdvance),
+    Accepted(performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>),
     Deferred,
     Reinspect,
 }

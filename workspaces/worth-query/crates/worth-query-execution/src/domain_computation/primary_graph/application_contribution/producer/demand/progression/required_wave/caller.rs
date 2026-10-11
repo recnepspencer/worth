@@ -187,7 +187,10 @@ pub(super) fn finish_current_caller<Schema, Family>(
     caller: CurrentCaller<'_>,
     proof: performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
     admission: &mut InvalidationEditAdmission,
-) -> Result<Option<Arc<WorthQueryOutputDemandSettlement>>, WorthQueryOutputDemandDenial>
+) -> Result<
+    Option<performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>>,
+    WorthQueryOutputDemandDenial,
+>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
@@ -236,5 +239,5 @@ where
         .output_demands
         .finish_settlement_admitted(interest, selected, admission)?;
     drop(demand.required_continuations.take_all());
-    Ok(Some(proof.into_value()))
+    Ok(Some(proof))
 }
