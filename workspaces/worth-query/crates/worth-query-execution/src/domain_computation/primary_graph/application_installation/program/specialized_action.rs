@@ -1,5 +1,6 @@
 mod capability_advancement;
 mod elevation_advancement;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
@@ -42,12 +43,12 @@ where
         {
             return Err(WorthQueryApplicationCommitDenial::workflow_authority_required());
         }
-        let operation = std::any::TypeId::of::<Operation>();
+        let operation = TypeId::of::<Operation>();
         let required_output_source = self.program.actions().iter().any(|action| {
-            action.operation_type() == operation
-                && action
-                    .mutation_binding_type()
-                    .is_some_and(|binding| self.output_source_bindings.contains(&binding))
+            TypeId::from(action.operation_type()) == operation
+                && action.mutation_binding_type().is_some_and(|binding| {
+                    self.output_source_bindings.contains(&TypeId::from(binding))
+                })
         });
         if !self.program.contains_operation_type::<Operation>()
             || required_output_source

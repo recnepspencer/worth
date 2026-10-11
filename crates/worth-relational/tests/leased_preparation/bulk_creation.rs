@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn leased_bulk_creation_matches_serial_canonical_patch() {
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     fn commit_bulk(
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     ) -> worth_relational::facade::transactions::CommitResult {

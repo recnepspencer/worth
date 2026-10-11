@@ -1,7 +1,7 @@
 //! The existing schema installation supplies binding names without registration.
 use super::super::output_binding_identity::OutputBindingIdentity;
 use super::WorthQueryApplicationOutputLineage;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn install_binding_identities<'a>(

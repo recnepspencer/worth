@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchema;

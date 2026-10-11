@@ -170,12 +170,13 @@ mod tests {
     #[cfg(feature = "allocation-probes")]
     #[test]
     fn detached_clone_allocation_is_flat_in_prior_symbol_population() {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .arg("isolated_detached_clone_allocation_probe")
-            .arg("--test-threads=1")
-            .env("WORTH_SYMBOL_CLONE_ALLOCATION_PROBE", "1")
-            .output()
-            .expect("isolated symbol allocation probe starts");
+        let output = crate::process_deadline::output(
+            std::process::Command::new(std::env::current_exe().unwrap())
+                .arg("isolated_detached_clone_allocation_probe")
+                .arg("--test-threads=1")
+                .env("WORTH_SYMBOL_CLONE_ALLOCATION_PROBE", "1"),
+        )
+        .expect("isolated symbol allocation probe starts");
         assert!(
             output.status.success(),
             "{}\n{}",

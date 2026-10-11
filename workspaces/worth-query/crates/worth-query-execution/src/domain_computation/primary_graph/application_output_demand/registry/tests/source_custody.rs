@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::cmp::Ordering;
 
 use super::*;
@@ -50,7 +51,7 @@ fn newer_root_retires_only_its_matching_source() {
     assert_eq!(root_revision_order(&older, &sibling), None);
     let mut custody = SourceCustody {
         occurrence,
-        root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
+        root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
         source: None,
         discovery: None,
         bound_sources: Some(vec![older.clone(), sibling.clone()]),
@@ -94,7 +95,7 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
         commit.clone(),
         SourceCustody {
             occurrence,
-            root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
+            root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
             source: None,
             discovery: None,
             bound_sources: Some(vec![first.clone(), second.clone()]),
@@ -149,7 +150,7 @@ fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
         commit.clone(),
         SourceCustody {
             occurrence: receipt.product_branch().occurrence(),
-            root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
+            root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
             source: None,
             discovery: None,
             bound_sources: Some(vec![first.clone(), second.clone()]),

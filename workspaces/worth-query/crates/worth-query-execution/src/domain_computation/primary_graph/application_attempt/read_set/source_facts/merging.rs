@@ -81,11 +81,12 @@ fn moving_dependent_source_map_keeps_its_backing_without_an_intermediate_vector(
         .split_once("::")
         .unwrap()
         .1;
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", filter, "--test-threads=1", "--nocapture"])
-        .env("WORTH_QUERY_SOURCE_MAP_TRANSFER_PROBE", "1")
-        .output()
-        .unwrap();
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", filter, "--test-threads=1", "--nocapture"])
+            .env("WORTH_QUERY_SOURCE_MAP_TRANSFER_PROBE", "1"),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "source-map allocation probe failed:\n{}\n{}",

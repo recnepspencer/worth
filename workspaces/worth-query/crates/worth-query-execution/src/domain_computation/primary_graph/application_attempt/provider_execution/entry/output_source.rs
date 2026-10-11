@@ -1,4 +1,5 @@
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_required_output_source<
@@ -92,7 +93,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if self
             .installed_conditionals
             .contains_operation::<Operation>()
-            || !presented.acts_through_operation(std::any::TypeId::of::<Operation>())
+            || !presented.acts_through_operation(TypeId::of::<Operation>())
         {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),

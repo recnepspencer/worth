@@ -1,6 +1,7 @@
 //! Native publication order across a family's distinct mutation bindings.
 use super::super::{partition_index::FamilyPublicationHead, RecordedOutput};
-use std::{any::TypeId, cmp::Reverse, collections::BTreeMap};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::{cmp::Reverse, collections::BTreeMap};
 use worth_relational::facade::identity::EntityId;
 
 type Member<'a> = (Option<[u8; 32]>, &'a str, EntityId);

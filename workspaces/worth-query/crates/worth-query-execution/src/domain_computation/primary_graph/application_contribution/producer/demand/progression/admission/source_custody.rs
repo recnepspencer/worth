@@ -1,4 +1,5 @@
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 pub(crate) fn validate_prepared_source_carrier<Query>(
     runtime_authority: u64,
@@ -91,7 +92,7 @@ where
     >(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        root_type: std::any::TypeId,
+        root_type: TypeId,
     ) -> Result<
         (
             Discovery,

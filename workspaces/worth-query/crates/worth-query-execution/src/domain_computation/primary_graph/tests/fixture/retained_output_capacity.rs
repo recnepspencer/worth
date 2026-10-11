@@ -10,7 +10,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryCurrentOutputDenialKind,
     WorthQueryOperationProjectionDenial,
 };
-use std::{any::TypeId, collections::BTreeMap};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::collections::BTreeMap;
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
 // This operation isolates the retained-capacity boundary. Its work budget is

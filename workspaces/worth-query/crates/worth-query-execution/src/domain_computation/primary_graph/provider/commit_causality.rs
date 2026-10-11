@@ -7,7 +7,9 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         product: &crate::basis::WorthQueryProductBranchLease,
     ) -> crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveSubscription {
-        self.live_delivery.open(product.observation())
+        self.live_delivery
+            .open(product.observation())
+            .expect("the test observer has subscription capacity")
     }
 
     #[cfg(test)]

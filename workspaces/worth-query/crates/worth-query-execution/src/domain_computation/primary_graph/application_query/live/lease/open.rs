@@ -17,7 +17,8 @@ use super::super::{
     outcome::{WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind},
 };
 use super::validation::{
-    open_admission_denial, open_denial, validate_live_binding, validate_live_resource_controls,
+    open_admission_denial, open_denial, subscription_capacity_denial, validate_live_binding,
+    validate_live_resource_controls,
 };
 use super::WorthQueryApplicationLiveLease;
 use crate::domain_computation::primary_graph::{
@@ -328,7 +329,8 @@ where
             &self.primary_provider.live_delivery,
             retained_product.observation(),
             buffer_capacity,
-        );
+        )
+        .map_err(|_| subscription_capacity_denial(request.query.name()))?;
         Ok(WorthQueryApplicationLiveLease {
             runtime: self,
             query: request.query,

@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
 use super::call_identity::WorthQueryGraphCallAuthorityIdentity;
@@ -174,8 +174,9 @@ impl WorthQueryBoundGraphExecutionReceipt {
         self.projection.is_some()
     }
 
-    pub fn commit_authority_identity(&self) -> Option<(u64, TypeId)> {
+    pub fn commit_authority_identity(&self) -> Option<(u64, std::any::TypeId)> {
         self.commit_authority_identity
+            .map(|(owner, identity)| (owner, identity.into_external()))
     }
 
     pub fn commit_graph_roles(&self) -> &[String] {

@@ -5,6 +5,7 @@ mod denial;
 mod lifecycle;
 mod observation;
 mod read_identity;
+mod read_position;
 mod selection;
 
 pub(crate) use creation::WorthQuerySourceProgramResolver;
@@ -24,3 +25,5 @@ pub use lifecycle::WorthQueryProductBranches;
 pub use observation::{WorthQueryProductBranchLease, WorthQueryProductObservationLease};
 pub use read_identity::WorthQueryProductBranchReadIdentity;
 pub use selection::WorthQueryProductBranch;
+
+pub(crate) use read_position::WorthQueryProductBranchReadPosition;

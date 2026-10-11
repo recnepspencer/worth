@@ -1,4 +1,6 @@
 //! Construction phases for one published application runtime.
+
+use crate::equality_type_id::EqualityTypeId as TypeId;
 mod assembly;
 mod input;
 use super::{
@@ -326,7 +328,7 @@ where
         .install_binding_identities(
             installed_schema
                 .installed_mutation_binding_inventory()
-                .map(|binding| (binding.binding_type(), binding.identity())),
+                .map(|binding| (TypeId::from(binding.binding_type()), binding.identity())),
         );
     let primary_graph_authority =
         super::graph_participation::install(&authority, truth_partition_role, provider_anchor)?;

@@ -6,6 +6,7 @@
 //! Query, and the committed correspondence refuses it.
 
 use super::{authenticated_principal, installed_authorization_world, live_scope, resolved_account};
+use crate::equality_type_id::EqualityTypeId as TypeId;
 #[path = "optional_output_role/handler_work.rs"]
 mod handler_work;
 #[path = "optional_output_role/indexed_selection.rs"]
@@ -97,8 +98,8 @@ fn an_optional_role_read_as_exactly_one_is_refused() {
         cardinality: ApplicationMutationOutputRoleCardinality::ExactlyOne,
         entity_name:
             <Account as ApplicationEntityMarkerIdentity<IdentityExecutionSchema>>::IDENTIFIER,
-        entity_type: std::any::TypeId::of::<Account>(),
-        contract_type: std::any::TypeId::of::<OptionalOutputs>(),
+        entity_type: TypeId::of::<Account>(),
+        contract_type: TypeId::of::<OptionalOutputs>(),
     };
     for plan in [
         OptionalOutputPlan::RequiredOnly,

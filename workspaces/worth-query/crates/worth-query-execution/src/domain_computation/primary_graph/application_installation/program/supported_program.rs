@@ -5,7 +5,8 @@
 //! here so a caller can name a rostered program by its authoring Rust type
 //! without the host keeping a mutable table of who may act.
 
-use std::any::{Any, TypeId};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::any::Any;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationProgramRevision,
@@ -48,6 +49,7 @@ impl WorthQuerySupportedProgramRecord {
                 .actions()
                 .iter()
                 .filter_map(|action| action.mutation_binding_type())
+                .map(TypeId::from)
                 .collect(),
             output_source_bindings: output_source_bindings.into(),
             root_graph_types: root_graph_types.into(),

@@ -18,10 +18,8 @@ pub(in crate::domain_computation::primary_graph) use verification::{
     cutoff_declines, InputCutoffDecision, InputCutoffVerificationStop, VerifiedInputCutoff,
 };
 
-use std::{
-    any::TypeId,
-    sync::{Arc, OnceLock},
-};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::sync::{Arc, OnceLock};
 
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_runtime_world::facade::{ProductBranchIncarnation, ProductBranchObservation};

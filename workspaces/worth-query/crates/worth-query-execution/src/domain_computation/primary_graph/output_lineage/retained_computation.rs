@@ -7,7 +7,7 @@
 //! the successor reserves its distinct state in full. Refusal evicts only
 //! the incoming state.
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::{Arc, OnceLock};
 
 use worth_relational::facade::mvcc::CompanionPreflightStop;
