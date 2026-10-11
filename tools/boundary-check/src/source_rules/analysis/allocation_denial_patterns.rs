@@ -1,5 +1,6 @@
 //! Allocation request/physical classification belongs to Execution alone.
 mod alias_declarations;
+mod macro_paths;
 mod raw_kind_types;
 mod source;
 #[cfg(test)]
