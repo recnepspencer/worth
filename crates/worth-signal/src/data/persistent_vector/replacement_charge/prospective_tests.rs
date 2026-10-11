@@ -53,11 +53,12 @@ fn preparation_and_capacity_denial_allocate_no_replacement_storage() {
     const CHILD: &str = "WORTH_SIGNAL_REPLACEMENT_ADMISSION_ALLOCATION_CHILD";
     const TEST: &str = "data::persistent_vector::replacement_charge::prospective_tests::preparation_and_capacity_denial_allocate_no_replacement_storage";
     if std::env::var_os(CHILD).is_none() {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", TEST, "--nocapture", "--test-threads=1"])
-            .env(CHILD, "1")
-            .output()
-            .unwrap();
+        let output = crate::process_deadline::output(
+            std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", TEST, "--nocapture", "--test-threads=1"])
+                .env(CHILD, "1"),
+        )
+        .unwrap();
         assert!(
             output.status.success(),
             "{}\n{}",

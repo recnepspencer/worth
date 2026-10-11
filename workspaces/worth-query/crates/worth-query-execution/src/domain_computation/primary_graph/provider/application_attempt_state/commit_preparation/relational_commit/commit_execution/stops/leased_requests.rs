@@ -44,11 +44,12 @@ pub(super) fn in_isolated_process(test_name: &str, run: impl FnOnce()) {
         run();
         return;
     }
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", test_name, "--nocapture"])
-        .env(PROBE, test_name)
-        .output()
-        .expect("isolated authority probe starts");
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", test_name, "--nocapture"])
+            .env(PROBE, test_name),
+    )
+    .expect("isolated authority probe starts");
     assert!(
         output.status.success(),
         "isolated probe failed:\n{}\n{}",

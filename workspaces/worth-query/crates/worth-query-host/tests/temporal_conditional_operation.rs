@@ -1,3 +1,7 @@
+#[cfg(feature = "test-query-execution-observer")]
+#[path = "support/process_deadline.rs"]
+mod process_deadline;
+
 #[path = "temporal_conditional_operation/adapters.rs"]
 mod adapters;
 #[path = "temporal_conditional_operation/contract.rs"]

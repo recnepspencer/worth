@@ -17,11 +17,12 @@ fn independent_im_allocations_fit_retained_and_copied_node_bounds() {
         .split_once("::")
         .unwrap()
         .1;
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", filter, "--test-threads=1", "--nocapture"])
-        .env(PROBE_ENV, "1")
-        .output()
-        .unwrap();
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", filter, "--test-threads=1", "--nocapture"])
+            .env(PROBE_ENV, "1"),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "allocation probe failed:\n{}\n{}",

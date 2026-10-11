@@ -1681,3 +1681,11 @@ crate_root = "workspaces/worth-query/crates/worth-query-replay"
 signal_doors_only = true
 carried_signal_only = true
 guidance = "Query carries its request to Signal checked doors; unchecked doors belong to Signal hosts."
+
+[[threading_sites]]
+source = "crates/worth-harness/src/tooling/process_deadline.rs"
+item = "capture"
+kind = "thread-spawn"
+count = 1
+category = "stream-reader"
+reason = "Test child stdout and stderr are drained independently while execution and cleanup remain bounded."
