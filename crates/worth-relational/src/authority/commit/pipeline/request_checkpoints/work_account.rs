@@ -1,7 +1,7 @@
 use crate::transactions::data::{
     CommitExecutionDenialKind, CommitResult, TransactionCommitError, WorkerIntentBatch,
 };
-use worth_execution::{CancellationToken, ExecutionRequest, LeaseRequest};
+use worth_execution::{CancellationSource, ExecutionRequest, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
@@ -12,8 +12,16 @@ enum Entry {
     Batch,
     Split,
     Strategy,
+    Authoritative,
+    AuthoritativeCancelled,
 }
-const ENTRIES: [Entry; 4] = [Entry::Ordinary, Entry::Batch, Entry::Split, Entry::Strategy];
+const ENTRIES: [Entry; 5] = [
+    Entry::Ordinary,
+    Entry::Batch,
+    Entry::Split,
+    Entry::Strategy,
+    Entry::Authoritative,
+];
 
 fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommitError>, u64) {
     // All entries receive the same lowered mutation: one entity, two fields,
@@ -22,6 +30,7 @@ fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommit
     let (runtime, lowered) = crate::commit_strategies::facade::lowered_commit_fixture();
     let identity = runtime.main_branch_identity();
     let before = runtime.observe_branch(&identity).unwrap().0;
+    let cancellation = CancellationSource::new();
     let lease = crate::tests::support::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
@@ -30,7 +39,7 @@ fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommit
                 ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 * 1024 * 1024, ceiling),
             ),
             deadline: None,
-            cancellation: CancellationToken::new(),
+            cancellation: cancellation.token(),
         })
         .unwrap();
     let execution = ExecutionRequest::leased(&lease);
@@ -41,7 +50,11 @@ fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommit
             let candidate = authority.prepare_validated_commit(&execution, &runtime, proposal)?;
             runtime.publish_prepared_candidate(&execution, candidate)
         }
-        Entry::Ordinary | Entry::Batch | Entry::Split => {
+        Entry::Ordinary
+        | Entry::Batch
+        | Entry::Split
+        | Entry::Authoritative
+        | Entry::AuthoritativeCancelled => {
             let (mut transaction, _, _, _) = lowered.into_validation_parts();
             if matches!(entry, Entry::Batch) {
                 for label in ["empty-left", "empty-right"] {
@@ -50,8 +63,21 @@ fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommit
                         .unwrap();
                 }
             }
-            if matches!(entry, Entry::Split) {
+            if matches!(
+                entry,
+                Entry::Split | Entry::Authoritative | Entry::AuthoritativeCancelled
+            ) {
                 let proposal = runtime.validate_branch_transaction(&execution, transaction)?;
+                if matches!(entry, Entry::Authoritative | Entry::AuthoritativeCancelled) {
+                    if matches!(entry, Entry::AuthoritativeCancelled) {
+                        cancellation.cancel();
+                    }
+                    return crate::authority::commit::pipeline::execute_authoritative_commit(
+                        &execution,
+                        &runtime,
+                        crate::authority::commit::pipeline::AuthoritativeCommitContext::from_validated_proposal(proposal),
+                    );
+                }
                 let candidate = runtime.prepare_validated_proposal(&execution, proposal)?;
                 runtime.publish_prepared_candidate(&execution, candidate)
             } else {
@@ -85,8 +111,8 @@ fn one_work_account_bounds_the_same_proposal_on_every_entry() {
         charged
     });
     assert_eq!(
-        completed, [116; 4],
-        "one entity with two fields: ordinary, batch, split, strategy each charge 116"
+        completed, [116; 5],
+        "one entity with two fields: every commit entry charges 116"
     );
     let refused = ENTRIES.map(|entry| {
         let (outcome, _) = commit(entry, 115);
@@ -94,7 +120,21 @@ fn one_work_account_bounds_the_same_proposal_on_every_entry() {
             if denial.kind == CommitExecutionDenialKind::Cause(crate::execution::RelationalExecutionDenialCause::WorkExhausted))
     });
     assert_eq!(
-        refused, [true; 4],
-        "ordinary, batch, split, strategy all spend one ceiling"
+        refused, [true; 5],
+        "ordinary, batch, split, strategy and authoritative all spend one ceiling"
+    );
+}
+
+#[test]
+fn a_cancelled_authoritative_commit_keeps_its_typed_stop_and_head() {
+    let (outcome, _) = commit(Entry::AuthoritativeCancelled, 116);
+    let TransactionCommitError::Execution { denial, .. } = outcome.unwrap_err() else {
+        panic!("an authoritative commit retains the request stop");
+    };
+    assert_eq!(
+        denial.kind,
+        CommitExecutionDenialKind::Cause(
+            crate::execution::RelationalExecutionDenialCause::Cancelled
+        ),
     );
 }

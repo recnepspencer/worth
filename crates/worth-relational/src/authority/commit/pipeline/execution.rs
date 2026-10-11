@@ -244,6 +244,13 @@ pub(crate) fn execute_authoritative_commit(
     context: AuthoritativeCommitContext,
 ) -> Result<CommitResult, TransactionCommitError> {
     let preparation = runtime.preparation_runtime_snapshot();
+    // A detached validated proposal retains its account; merge and replay
+    // start theirs here. Every charged dispatch then spends the same ceiling.
+    let preparation = if execution.is_leased() {
+        preparation.with_commit_work_budget(context.commit_work_budget.clone())
+    } else {
+        preparation
+    };
     let candidate = prepare_authoritative_commit(execution, &preparation, context)?;
     publish_prepared_authoritative_commit(execution, runtime, candidate)
 }
