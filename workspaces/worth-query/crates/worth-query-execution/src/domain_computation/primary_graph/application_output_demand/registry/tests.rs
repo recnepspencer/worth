@@ -34,6 +34,7 @@ mod published_retirement;
 mod ready_reuse;
 mod record_capacity;
 mod recovery_posture;
+mod refusal_row;
 mod replacement_preparation;
 mod requested_source;
 mod required_lifecycle;

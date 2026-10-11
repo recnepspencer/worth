@@ -32,23 +32,15 @@ impl<Schema: ApplicationSchema + 'static> RefusingMember<'_, Schema> {
         queue: &mut QueuedRequiredRoots,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<RefusalEnd, WorthQueryOutputDemandDenial> {
-        if matches!(
-            stop.kind(),
-            WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
-        ) {
-            return Err(stop);
-        }
+        let stop = member_stop(stop)?;
         let row = match self.row {
             RefusalRow::Member => self.member.key(),
             RefusalRow::HeldHead(head) => head,
         };
         recording.record_if_needed(self.registry, row, &stop);
         match self.custody {
-            RefusalCustody::Caller => {}
+            RefusalCustody::Caller => return Err(stop),
             RefusalCustody::Queue(custody) => custody.end_refused(&stop),
-        }
-        if self.member.caller {
-            return Err(stop);
         }
         self.member.state = MemberState::Pending;
         if matches!(
@@ -62,5 +54,45 @@ impl<Schema: ApplicationSchema + 'static> RefusingMember<'_, Schema> {
             queue.hold_root(queued, Some(stop), admission)?;
         }
         Ok(RefusalEnd::Held)
+    }
+}
+
+#[cfg(test)]
+mod tests;
+
+/// Request failures end either custody before a row-owned stop is recorded.
+pub(super) fn member_stop(
+    stop: WorthQueryOutputDemandDenial,
+) -> Result<WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenial> {
+    if matches!(
+        stop.kind(),
+        WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
+    ) {
+        Err(stop)
+    } else {
+        Ok(stop)
+    }
+}
+impl RefusalEnd {
+    /// The same budget ending releases and holds the canonical cursor for both routes.
+    pub(super) fn finish<Schema, Family>(
+        self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        wave: &RequiredWaveSelection<'_, Schema>,
+        frontier: &mut RequiredFrontier,
+        queue: &mut QueuedRequiredRoots,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Option<Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>>
+    where
+        Schema: ApplicationSchema + 'static,
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        match self {
+            Self::Held => None,
+            Self::QueueBudget => Some(canonical_apply::finish(
+                runtime, demand, wave, frontier, queue, admission,
+            )),
+        }
     }
 }

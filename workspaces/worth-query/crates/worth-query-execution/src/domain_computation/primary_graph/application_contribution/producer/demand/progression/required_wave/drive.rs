@@ -14,7 +14,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 pub(super) mod canonical_apply;
 mod member_refusal;
 mod member_stop;
-use member_refusal::{RefusalCustody, RefusalEnd, RefusalRow, RefusingMember};
+use member_refusal::{RefusalCustody, RefusalRow, RefusingMember};
 mod readiness_collection;
 mod requested_refusal;
 mod wave_execution;
@@ -99,13 +99,8 @@ where
             }
         }
         for failure in result.queued_stops.into_iter().chain(result.stopped) {
-            let (index, mut stop, recording) = failure.into_parts();
-            if matches!(
-                stop.kind(),
-                WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
-            ) {
-                return Err(stop);
-            }
+            let (index, stop, recording) = failure.into_parts();
+            let mut stop = member_refusal::member_stop(stop)?;
             let member = &frontier.members[index];
             let custody = if member.caller {
                 &mut demand.required_continuations
@@ -154,15 +149,10 @@ where
                         custody,
                     }
                     .end(stop, recording, queue, admission)?;
-                    if matches!(ended, RefusalEnd::QueueBudget) {
-                        return canonical_apply::finish(
-                            runtime,
-                            demand,
-                            &wave,
-                            &mut frontier,
-                            queue,
-                            admission,
-                        );
+                    if let Some(outcome) =
+                        ended.finish(runtime, demand, &wave, &mut frontier, queue, admission)
+                    {
+                        return outcome;
                     }
                 }
             }
@@ -267,15 +257,10 @@ where
                         queue,
                         admission,
                     )?;
-                    if matches!(ended, RefusalEnd::QueueBudget) {
-                        return canonical_apply::finish(
-                            runtime,
-                            demand,
-                            &wave,
-                            &mut frontier,
-                            queue,
-                            admission,
-                        );
+                    if let Some(outcome) =
+                        ended.finish(runtime, demand, &wave, &mut frontier, queue, admission)
+                    {
+                        return outcome;
                     }
                 }
             }
