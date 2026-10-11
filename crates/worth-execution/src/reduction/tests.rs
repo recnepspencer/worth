@@ -101,6 +101,17 @@ fn every_changed_reduction_leaf_reaches_the_root_aggregate() {
         33,
         "every changed reduction leaf must reach the root aggregate"
     );
+    // Root 3 and its right child 5 each have both children. Updating 4
+    // crosses Greater at 3 and Less at 5, with an off-path child at both.
+    let (mut tree, _) =
+        from_plan(plan(&[1, 2, 3, 4, 5, 6, 7, 8]), (1..=8).collect(), 0, sum).unwrap();
+    assert_eq!(*tree.result(), 36); // 1 + ... + 8
+    tree.update(id(4), 40).unwrap();
+    assert_eq!(
+        *tree.result(),
+        72, // 36 - 4 + 40
+        "every changed reduction leaf must reach the root aggregate through two-child ancestors"
+    );
 }
 
 #[test]
