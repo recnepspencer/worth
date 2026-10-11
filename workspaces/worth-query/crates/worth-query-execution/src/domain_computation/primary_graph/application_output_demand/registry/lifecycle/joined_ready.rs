@@ -49,7 +49,7 @@ impl WorthQueryOutputDemandRegistry {
             .iter()
             .map(|key| key.as_ref().clone())
             .collect();
-        let (ready, readmission, claims, retired) = super::cleanup_price::price_cleanup(
+        let (ready, readmission, claims, retired) = super::cleanup_price::price_cascade_mutation(
             &mut state,
             admission,
             walks,
@@ -66,7 +66,6 @@ impl WorthQueryOutputDemandRegistry {
             record.wake.notify();
             let upstream = claims.iter().map(|claim| claim.as_ref().clone()).collect();
             let retired = priced.retire_closed_rows(upstream);
-            priced.prune_completed_custody();
             Ok((ready, readmission, claims, retired))
         });
         drop(state);

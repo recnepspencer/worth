@@ -162,6 +162,15 @@ fn registry_drop_cascade_foreign_debt_is_afford_or_skip_after_own_admission() {
     let first = admit(&baseline, &mut own);
     drop(deferred_owner);
     drop(deferred_newest);
+    {
+        let mut state = registry.state.lock().unwrap();
+        // Only the requested member may be added to the already retained debt.
+        let retained = state
+            .required_custody_retained_bytes
+            .load(std::sync::atomic::Ordering::Acquire);
+        let member = super::super::super::required_members::member_bytes(&requested).unwrap();
+        state.required_budget_bytes = state.required_reserved_bytes + retained + member;
+    }
     let mut exact = InvalidationEditAdmission::new(CompanionPreflightBudget {
         // A pending foreign note adds the own-occurrence probe: two seeks, no rows.
         maximum_work_visits: own.charged_work() + 2,
@@ -178,4 +187,57 @@ fn registry_drop_cascade_foreign_debt_is_afford_or_skip_after_own_admission() {
     drop(newest_owner);
     eager(&baseline);
     assert_eq!(value(&registry), value(&baseline));
+}
+
+#[test]
+fn registry_cached_claim_is_not_lost_when_its_upstream_is_superseded_later() {
+    let registry = WorthQueryOutputDemandRegistry::default();
+    let old = key_with_identity("late-upstream", 1, 1, 10);
+    let newest = key_with_identity("late-upstream", 2, 1, 11);
+    let dependent = key("late-dependent", 1, 2);
+    let wake = {
+        let mut state = registry.state.lock().unwrap();
+        let mut old_row = record(occurrence(), closed_retirement::ready(), 0);
+        old_row.framework_required_count = 1;
+        state.records.insert(old.clone(), old_row);
+        let mut row = record(occurrence(), closed_retirement::ready(), 1);
+        row.prerequisites.push(Arc::new(old.clone()));
+        state.required_reserved_bytes +=
+            row.prerequisites.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+        let wake = Arc::clone(&row.wake);
+        state.records.insert(dependent.clone(), row);
+        for key in [&old, &dependent] {
+            let member = state.prepare_required_member(key).unwrap();
+            state.install_required_member(member);
+            retain_owned_key(&mut state, key);
+        }
+        wake
+    };
+    drop(interest(&registry, dependent.clone(), wake));
+    registry
+        .drain_closed_cleanup_admitted(&mut record_admission())
+        .unwrap();
+    assert_eq!(registry.state.lock().unwrap().closed_cleanup.len, 0);
+    let wake = {
+        let mut state = registry.state.lock().unwrap();
+        let row = record(occurrence(), DemandState::Admitted, 1);
+        let wake = Arc::clone(&row.wake);
+        state.records.insert(newest.clone(), row);
+        let member = state.prepare_required_member(&newest).unwrap();
+        state.install_required_member(member);
+        retain_owned_key(&mut state, &newest);
+        supersede_predecessors(&mut state, &newest, &mut record_admission()).unwrap();
+        state.records.get_mut(&newest).unwrap().state = closed_retirement::ready();
+        wake
+    };
+    drop(interest(&registry, newest.clone(), wake));
+    assert_eq!(registry.state.lock().unwrap().closed_cleanup.len, 1);
+    registry
+        .drain_closed_cleanup_admitted(&mut record_admission())
+        .unwrap();
+    let state = registry.state.lock().unwrap();
+    assert!(!state.records.contains_key(&old));
+    assert_eq!(state.records[&dependent].prerequisites[0].as_ref(), &newest);
+    assert_eq!(state.records[&newest].framework_required_count, 1);
+    assert_eq!(state.closed_cleanup.len, 0);
 }

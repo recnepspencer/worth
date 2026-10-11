@@ -71,6 +71,15 @@ pub(super) fn supersede_predecessors(
                 || record.prepared_prerequisite_claims != 0
                 || record.pending_cleanup_queued
                 || !record.terminal();
+            // A cached claimant can have closed before this row was superseded.
+            // Its earlier note has completed, so this newly terminal debt owns one.
+            if record.interests == 0
+                && record.terminal()
+                && (record.framework_required_count != 0
+                    || record.prepared_prerequisite_claims != 0)
+            {
+                state.note_closed_row(&key);
+            }
             if !keep {
                 let record = state.remove_record(&key).expect("selected row exists");
                 state.obligation_reserved_bytes = state

@@ -201,7 +201,14 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
                 .get_mut(&newest)
                 .unwrap()
                 .framework_required_count = 1;
+            // Begin with a published predecessor: this step must actually
+            // install Superseded, rather than revisit an already stopped row.
+            let predecessor = key_with_identity("upstream", seed + 1, 1, 10);
+            retain_owned_key(&mut state, &predecessor);
+            state.records.get_mut(&predecessor).unwrap().state = copy_ready(&ready);
+            assert!(!superseded(&state.records[&predecessor]));
             supersede_predecessors(&mut state, &newest, &mut record_admission()).unwrap();
+            assert!(superseded(&state.records[&predecessor]));
         }
         assert_noted(&registry, "supersede", seed);
         drop(owner);

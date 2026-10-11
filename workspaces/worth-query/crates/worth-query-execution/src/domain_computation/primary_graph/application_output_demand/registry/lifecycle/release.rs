@@ -31,12 +31,14 @@ impl WorthQueryOutputDemandRegistry {
         }
         if state.records.get(&interest.key).is_some_and(|row| {
             row.interests == 0
-                && (row.terminal() || row.has_cached_ready())
-                && (!row.prerequisites.is_empty()
-                    || (row.framework_required_count != 0 && refreshed_rejoin::superseded(row))
-                    || row.prepared_prerequisite_claims != 0
-                    || !row.settlements.is_empty()
-                    || !row.performed_obligations.is_empty())
+                && ((row.has_cached_ready() && !row.prerequisites.is_empty())
+                    || (row.terminal()
+                        && (!row.prerequisites.is_empty()
+                            || (row.framework_required_count != 0
+                                && refreshed_rejoin::superseded(row))
+                            || row.prepared_prerequisite_claims != 0
+                            || !row.settlements.is_empty()
+                            || !row.performed_obligations.is_empty())))
         }) {
             state.note_closed_row(&interest.key);
         }
@@ -97,7 +99,9 @@ impl WorthQueryOutputDemandRegistry {
                 }
             }
         }
-        if !queued
+        // Cached Ready membership is occurrence-local cleanup even while its
+        // claim transfer remains noted. Terminal resources stay with their debt.
+        if (!queued || !terminal)
             && !state
                 .records
                 .get(&interest.key)

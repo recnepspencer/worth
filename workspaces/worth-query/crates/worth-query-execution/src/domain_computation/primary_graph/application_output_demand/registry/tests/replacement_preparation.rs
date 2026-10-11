@@ -72,7 +72,7 @@ fn replacement_member_walk_refuses_every_budget_and_retries_by_value() {
     let mut measured = record_admission();
     run(&completed, &old, &next, &mut measured).unwrap();
     // Same map size and transfer; only the extra occurrence row differs.
-    // Its quote and its prepaid execution each inspect it once.
+    // Its quote and prepaid execution allowance each price it once.
     assert_eq!(measured.charged_work(), foreign_work.charged_work() + 2);
     let expected = replacement_value(&completed.state.lock().unwrap());
     for k in 0..measured.charged_work() {
@@ -279,4 +279,48 @@ fn replacement_aggregate_peak_denial_preserves_old_obligations() {
     assert_eq!(state.records[&old.key].performed_obligations.len(), 3);
     assert!(state.records[&next.key].performed_obligations.is_empty());
     assert!(state.required_keys.is_empty());
+}
+
+#[test]
+fn registry_supersession_reuses_its_prepaid_member_walk() {
+    let (_, _, _, commit) = fixture();
+    let (registry, old, _next, _) = fixture_with_commit(commit);
+    let old_key = old.key.clone();
+    {
+        let mut state = registry.state.lock().unwrap();
+        state.records.get_mut(&old_key).unwrap().state = closed_retirement::ready();
+        let member = state.prepare_required_member(&old_key).unwrap();
+        state.install_required_member(member);
+    }
+    // A real release leaves the cached row required by its performed output.
+    drop(old);
+    let before = super::super::record_map::occurrence_rows_visited();
+    let (claims, member) = {
+        let mut state = registry.state.lock().unwrap();
+        assert_eq!(state.records[&old_key].interests, 0);
+        assert!(state.required_keys.contains(&old_key));
+        super::super::refreshed_rejoin::price_member_release(
+            &mut state,
+            &mut record_admission(),
+            &old_key,
+        )
+        .unwrap()
+        .complete(|priced| {
+            let (_, claims) = priced
+                .state_mut()
+                .finish_superseded_row(&old_key, "replacement");
+            Ok((claims, priced.release_member(&old_key)))
+        })
+    };
+    let refund = member.refund_required_bytes;
+    drop(claims);
+    drop(member);
+    let mut state = registry.state.lock().unwrap();
+    state.required_reserved_bytes -= refund;
+    assert!(!state.required_keys.contains(&old_key));
+    // Two occurrence rows: one quote and one prepaid member search, 2 + 2.
+    assert_eq!(
+        super::super::record_map::occurrence_rows_visited() - before,
+        4
+    );
 }

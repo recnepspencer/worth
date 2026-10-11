@@ -32,6 +32,18 @@ pub(in super::super) fn price_cleanup<'a>(
     price_mutation_with_source_allowance(state, admission, &walks, kind, allowance)
 }
 
+/// Quote a cascade whose caller leaves held custody for a later drain.
+pub(in super::super) fn price_cascade_mutation<'a>(
+    state: &'a mut DemandRegistryState,
+    admission: &mut InvalidationEditAdmission,
+    mut walks: Walks,
+    roots: &[WorthQueryOutputDemandKey],
+    kind: WalkKind,
+) -> Result<PricedMutation<'a>, WorthQueryOutputDemandDenial> {
+    walks.extend(cascade_walks(state, roots, admission, kind)?);
+    super::super::refreshed_rejoin::price_mutation(state, admission, &walks, kind)
+}
+
 pub(in super::super) fn price_closed_cascade<'a>(
     state: &'a mut DemandRegistryState,
     admission: &mut InvalidationEditAdmission,

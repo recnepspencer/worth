@@ -62,25 +62,33 @@ impl WorthQueryOutputDemandRegistry {
                 // Their credits remain reserved until their physical Drop.
                 state.obligation_reserved_bytes += prepared.bytes;
                 state.install_required_member(prepared.required_member);
+                let (_, claims) = state.finish_superseded_row(&replaced.key, subject);
                 let member = prepared.mutation.release_member(&replaced.key);
-                let refund = member.refund_required_bytes;
-                drop(member);
-                let state = prepared.mutation.state_mut();
-                state.required_reserved_bytes =
-                    state.required_reserved_bytes.saturating_sub(refund);
-                Some((
+                (
                     old_slots,
                     next_slots,
                     prepared.added_commits,
                     old_bytes + next_bytes,
-                ))
+                    claims,
+                    member,
+                )
             } else {
-                None
+                let mut priced = super::supersession::price_member(
+                    &mut state,
+                    &replaced.key,
+                    request_admission,
+                )?;
+                let (_, claims) = priced
+                    .state_mut()
+                    .finish_superseded_row(&replaced.key, subject);
+                let member = priced.release_member(&replaced.key);
+                (Vec::new(), Vec::new(), Vec::new(), 0, claims, member)
             };
             drop(state);
-            let retired_bytes = retired.as_ref().map_or(0, |retired| retired.3);
+            let retired_bytes = retired.3;
+            let member_refund = retired.5.refund_required_bytes;
             drop(retired);
-            if retired_bytes != 0 {
+            if retired_bytes != 0 || member_refund != 0 {
                 // This scalar owner cleanup is prepaid before transfer. A new
                 // admission cannot borrow the credit before the backing dies.
                 let mut state = self
@@ -91,8 +99,11 @@ impl WorthQueryOutputDemandRegistry {
                     .obligation_reserved_bytes
                     .checked_sub(retired_bytes)
                     .expect("retired transfer credits remain reserved");
+                state.required_reserved_bytes = state
+                    .required_reserved_bytes
+                    .checked_sub(member_refund)
+                    .expect("retired member credit stays reserved");
             }
-            self.finish_superseded(replaced, subject);
         }
         Ok(())
     }

@@ -93,6 +93,17 @@ impl DemandRegistryState {
         self.closed_cleanup.len -= 1;
     }
 
+    pub(in super::super) fn next_closed_note(
+        &self,
+        key: &WorthQueryOutputDemandKey,
+    ) -> Option<Arc<WorthQueryOutputDemandKey>> {
+        self.records[key]
+            .closed_cleanup
+            .next
+            .as_ref()
+            .map(Arc::clone)
+    }
+
     /// Removing a row prunes the debt owned by that row, including its links.
     pub(in super::super) fn remove_record(
         &mut self,

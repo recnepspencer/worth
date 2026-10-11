@@ -4,31 +4,30 @@ use super::super::supersession::superseded_denial;
 use super::walk_charge::PostCommitWalk;
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
-impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn finish_superseded(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
+impl DemandRegistryState {
+    pub(in super::super) fn finish_superseded_row(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
         subject: &str,
-    ) -> WorthQueryOutputDemandDenial {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+    ) -> (
+        WorthQueryOutputDemandDenial,
+        Vec<Arc<WorthQueryOutputDemandKey>>,
+    ) {
+        let record = self
             .records
-            .get_mut(&interest.key)
+            .get_mut(key)
             .expect("superseded demand retains its owner record");
         match &record.state {
             DemandState::Failed(existing)
                 if existing.kind() == WorthQueryOutputDemandDenialKind::Closed =>
             {
-                return existing.clone();
+                return (existing.clone(), Vec::new());
             }
             DemandState::Output(output) => {
                 if let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
                     &output.advancement
                 {
-                    return denial.clone();
+                    return (denial.clone(), Vec::new());
                 }
             }
             _ => {}
@@ -46,17 +45,12 @@ impl WorthQueryOutputDemandRegistry {
         if unpublished {
             // The row ends without an output of its own: the newest Ready it
             // replaced answers for the occurrence again.
-            let mut payer = PostCommitWalk::after_effect(&state.records[&interest.key].state);
-            infallible(state.revive_replaced_ready(&interest.key, &mut payer));
+            let mut payer = PostCommitWalk::after_effect();
+            infallible(self.revive_replaced_ready(key, &mut payer));
         }
-        let mut payer = PostCommitWalk::after_effect(&state.records[&interest.key].state);
-        let released_prerequisites =
-            infallible(state.release_record_prerequisites(&interest.key, &mut payer));
-        state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        let mut payer = PostCommitWalk::after_effect(&state.records[&interest.key].state);
-        infallible(state.remove_required_member_if_released(&interest.key, &mut payer));
-        drop(state);
-        drop(released_prerequisites);
-        denial
+        let mut payer = PostCommitWalk::after_effect();
+        let released_prerequisites = infallible(self.release_record_prerequisites(key, &mut payer));
+        self.obligation_reserved_bytes = self.obligation_reserved_bytes.saturating_sub(released);
+        (denial, released_prerequisites)
     }
 }

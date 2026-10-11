@@ -57,7 +57,7 @@ impl WorthQueryOutputDemandRegistry {
             |_, record| record.product_occurrence == occurrence,
             &mut sweep,
         ));
-        let mut released_bytes = 0;
+        let mut released_bytes = state.prune_queued_product_rows(occurrence, &mut sweep);
         let DemandRegistryState {
             records,
             required_keys,
@@ -69,11 +69,7 @@ impl WorthQueryOutputDemandRegistry {
             if record.product_occurrence != occurrence {
                 return true;
             }
-            if record.interests == 0
-                && record.framework_required_count == 0
-                && record.prepared_prerequisite_claims == 0
-                && !record.pending_cleanup_queued
-            {
+            if unheld_retired_row(record) {
                 released_bytes += record.obligation_reserved_bytes();
                 if let Some(member) = required_keys.take(key) {
                     *required_reserved_bytes = required_reserved_bytes.saturating_sub(
@@ -102,11 +98,100 @@ impl WorthQueryOutputDemandRegistry {
     }
 }
 
+fn unheld_retired_row(record: &DemandRecord) -> bool {
+    record.interests == 0
+        && record.framework_required_count == 0
+        && record.prepared_prerequisite_claims == 0
+        && !record.pending_cleanup_queued
+}
+
+impl DemandRegistryState {
+    /// Physical pruning consumes a queued row's links before the bulk retain.
+    /// This visits only the noted order, with no cloned-key map or worklist.
+    fn prune_queued_product_rows(
+        &mut self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        sweep: &mut PostCommitSweep,
+    ) -> usize {
+        let mut released = 0;
+        let mut cursor = self.closed_cleanup.head.as_ref().map(Arc::clone);
+        while let Some(key) = cursor {
+            infallible(sweep.inspect_row());
+            cursor = self.next_closed_note(&key);
+            let row = &self.records[&key];
+            if row.product_occurrence != occurrence || !unheld_retired_row(row) {
+                continue;
+            }
+            let row = self.remove_record(&key).expect("selected row exists");
+            released += row.obligation_reserved_bytes();
+            if let Some(member) = self.required_keys.take(key.as_ref()) {
+                self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(
+                    super::required_members::member_bytes(member.as_ref())
+                        .expect("admitted key charge fits"),
+                );
+            }
+        }
+        released
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::super::super::tests::{key, record};
+    use super::super::super::tests::{key, record, record_admission};
     use super::*;
     use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
+    #[test]
+    fn registry_product_retirement_prunes_rows_and_their_notes_together() {
+        let receipt = recoverable_commit_support::committed_recoverable_application();
+        let registry = WorthQueryOutputDemandRegistry::default();
+        let held = key("retired-note", 1, 2);
+        let wake = {
+            let mut state = registry.state.lock().unwrap();
+            for slot in 1..=3 {
+                let key = key("retired-note", 1, slot);
+                state.records.insert(
+                    key.clone(),
+                    record(
+                        receipt.product_branch().occurrence(),
+                        DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                            WorthQueryOutputDemandDenialKind::NoEffect,
+                            "terminal debt",
+                        )),
+                        usize::from(slot == 2),
+                    ),
+                );
+                let member = state.prepare_required_member(&key).unwrap();
+                state.install_required_member(member);
+                state.note_closed_row(&key);
+            }
+            Arc::clone(&state.records[&held].wake)
+        };
+        let before = super::super::walk_charge::sweep_contacts();
+        registry.release_product_occurrence(receipt.product_branch().occurrence());
+        // Three three-row passes, three notes, then one retained-row contact.
+        assert_eq!(super::super::walk_charge::sweep_contacts() - before, 13);
+        {
+            let state = registry.state.lock().unwrap();
+            assert_eq!(state.records.len(), 1);
+            assert_eq!(state.closed_cleanup.len, 1);
+            assert_eq!(state.closed_cleanup.head.as_deref(), Some(&held));
+            assert!(state.next_closed_note(&held).is_none());
+        }
+        drop(WorthQueryOutputDemandInterest {
+            key: held,
+            requires_output: false,
+            notifications: WorthQueryOutputDemandNotifications { wake },
+            owner: registry.clone(),
+        });
+        registry
+            .drain_closed_cleanup_admitted(&mut record_admission())
+            .unwrap();
+        let state = registry.state.lock().unwrap();
+        assert!(state.records.is_empty());
+        assert_eq!(state.closed_cleanup.len, 0);
+        assert!(state.closed_cleanup.head.is_none());
+    }
+
     #[test]
     fn registry_product_retirement_sweep_names_its_registry_bound() {
         let receipts: Vec<_> = (0..5)

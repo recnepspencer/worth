@@ -12,7 +12,7 @@ pub(super) struct PostCommitWalk {
 }
 impl PostCommitWalk {
     /// The owner has installed this outcome before cleanup can begin.
-    pub(super) fn after_effect(_: &super::super::DemandState) -> Self {
+    pub(super) fn after_effect() -> Self {
         Self { _completed: () }
     }
     pub(super) fn after_publication(

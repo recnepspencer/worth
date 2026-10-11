@@ -3,6 +3,7 @@ mod replacement;
 mod selected_begin;
 mod selected_checkpoint_finish;
 mod selected_finish;
+mod supersession;
 pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::{
     PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
 };

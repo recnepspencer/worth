@@ -159,6 +159,7 @@ fn registry_drop_cascade_names_its_whole_map_claimant_bound() {
             super::super::record_map::occurrence_rows_visited() - occurrence,
         ));
     }
-    // Drop links its cue without a claimant pass or an upstream walk.
-    assert_eq!(contacts, [(0, 1), (0, 1)]);
+    // One replaced-row scan and one member scan of the dependent's own row;
+    // linking its cue makes no claimant pass or upstream walk.
+    assert_eq!(contacts, [(0, 2), (0, 2)]);
 }
