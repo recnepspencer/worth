@@ -114,6 +114,23 @@ fn live_retry(source: &RelationalRuntime, bytes: &[u8], target: &mut RelationalR
                     .collect::<Vec<_>>()
             ))
     );
+    assert_eq!(
+        target.history().latest_commit(),
+        source.history().latest_commit()
+    );
+    let snapshot = crate::tests::support::snapshot_for_owner_branch(
+        target,
+        &crate::history::data::BranchId("main".into()),
+    );
+    assert_eq!(
+        target
+            .read_truth()
+            .read_snapshot(&snapshot, &ExecutionRequest::serial(&host))
+            .unwrap()
+            .entities()
+            .len(),
+        3
+    );
 }
 
 // Debug includes the owned runtime's rows, schema, indexes, history, diagnostics,
@@ -197,15 +214,23 @@ fn recovery_entry_stops_change_no_record_or_diagnostic() {
         );
         let stages = Arc::new(AtomicUsize::new(0));
         let observed = stages.clone();
+        let mut plan = plan_from_bytes(&source, &bytes);
+        plan.authority_continuity.verification_outcome =
+            crate::durability::data::RecoveryVerificationOutcome::Rejected {
+                layer: crate::replay::data::ReplayVerificationLayer::DigestParity,
+                detail: "entry-stop control rejects recovery admission".into(),
+            };
+        // Rejected marks diagnostic posture; parity drift makes admission refuse.
+        plan.authority_continuity.schema_parity =
+            crate::durability::data::RecoveryAuthorityParity::Drift;
         let result = stage_observation::with_observer(
             Box::new(move |_| {
                 observed.fetch_add(1, Ordering::SeqCst);
             }),
             || {
-                target.durability_recovery().recover(
-                    &ExecutionRequest::serial(&host),
-                    plan_from_bytes(&source, &bytes),
-                )
+                target
+                    .durability_recovery()
+                    .recover(&ExecutionRequest::serial(&host), plan)
             },
         );
         assert_eq!(result.unwrap_err(), RelationalRecoveryStop::Request(cause));
@@ -220,6 +245,33 @@ fn recovery_entry_stops_change_no_record_or_diagnostic() {
             "{cause:?}: entry stop changed target or diagnostics"
         );
     }
+}
+
+#[test]
+fn cancelled_checkpoint_restore_consults_before_decoding_corrupt_bytes() {
+    let mut target = runtime_with_test_schema();
+    let before = observable_state(&target);
+    let cancellation = CancellationSource::new();
+    cancellation.cancel();
+    let host = SerialRequest::from_memory(
+        SerialMemoryBudget::new(64 * 1024 * 1024),
+        cancellation.token(),
+        None,
+    );
+    let corrupt =
+        crate::durability::data::RelationalNativeCheckpoint::from_untrusted_bytes(vec![0xff]);
+    assert_eq!(
+        target
+            .durability_recovery()
+            .restore_native_checkpoint(&ExecutionRequest::serial(&host), &corrupt,)
+            .unwrap_err(),
+        RelationalRecoveryStop::Request(Cause::Cancelled),
+    );
+    assert_eq!(
+        observable_state(&target),
+        before,
+        "entry stop changed target or diagnostics"
+    );
 }
 
 #[test]
