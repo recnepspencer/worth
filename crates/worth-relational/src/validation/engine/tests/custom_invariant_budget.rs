@@ -13,7 +13,7 @@ fn unrelated_custom_rule_returns_owner_proven_non_applicability() {
     };
     runtime.performance_access().reset_counters();
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -67,7 +67,7 @@ fn complete_kind_footprint_proves_non_applicability_before_rule_budget() {
             })
             .collect(),
     };
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -113,7 +113,7 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
             })
             .collect(),
     };
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -183,7 +183,7 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
             },
         ))],
     };
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,

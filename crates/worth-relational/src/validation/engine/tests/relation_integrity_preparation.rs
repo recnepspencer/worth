@@ -33,7 +33,7 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
     }
     // Full candidate retention must still reach the real minimum-cardinality
     // rule, rather than a preparation count refusal or a silently empty scope.
-    let result = InvariantEngine::new(&runtime).execute(request);
+    let result = InvariantEngine::new(&runtime).execute_fixture(request);
     assert!(result.results().iter().any(|result| matches!(
         &result.verdict,
         crate::validation::data::InvariantVerdict::Violation(violation)

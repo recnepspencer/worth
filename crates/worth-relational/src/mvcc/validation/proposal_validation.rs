@@ -140,7 +140,7 @@ impl RelationalPreparationRuntime {
                 proposed_version,
                 &prepared.merged_plan,
                 Some(&proposal_identity),
-                lease,
+                execution,
                 &scope_control,
             )?;
         let (mutation_sensitive, publication) = validate_proposed_state(
@@ -149,7 +149,7 @@ impl RelationalPreparationRuntime {
             &proposed_working_state,
             proposed_version,
             Some(&proposal_identity),
-            lease,
+            execution,
             &scope_control,
         )?;
         let summary = CommitValidation::summarize(&[
