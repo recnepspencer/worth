@@ -34,7 +34,7 @@ pub(super) fn validate(root: &Path) -> Vec<Diagnostic> {
     }
 }
 fn diagnostic(subject: impl Into<String>, message: impl Into<String>) -> Diagnostic {
-    Diagnostic::new(DiagnosticCode::Bc7011CommitRequestConsult, subject, message)
+    Diagnostic::new(DiagnosticCode::Bc7014CommitRequestConsult, subject, message)
 }
 fn covered(source: &str) -> bool {
     ROOTS.iter().any(|root| source.starts_with(root))

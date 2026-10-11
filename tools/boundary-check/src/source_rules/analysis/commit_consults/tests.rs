@@ -21,7 +21,7 @@ const VALID: &str = "fn consult_stage_control(request: &ExecutionRequest) { requ
 fn assert_count(found: Vec<crate::diagnostics::Diagnostic>, count: usize) {
     assert_eq!(found.len(), count, "{found:?}");
     for diagnostic in found {
-        assert_eq!(diagnostic.code().as_str(), "BC7011_COMMIT_REQUEST_CONSULT");
+        assert_eq!(diagnostic.code().as_str(), "BC7014_COMMIT_REQUEST_CONSULT");
     }
 }
 
