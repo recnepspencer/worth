@@ -293,11 +293,11 @@ fn a_mutation_handler_and_commit_share_one_charged_request() {
     let opened = reports();
     assert_eq!(opened.len(), 1);
     let charged = opened[0].as_ref().unwrap().charged_work();
-    assert!(
-        charged > PRINCIPAL_TARGET_READ_WORK,
-        "the commit also charges the shared request"
+    assert_eq!(
+        charged,
+        PRINCIPAL_TARGET_READ_WORK + super::native_commit_work::MUTATION_COMMIT_WORK,
+        "the shared request pays the independently quoted read and native commit"
     );
-    assert!(charged <= policy.work_ceiling());
     drop(restore);
     let after = request
         .query(PlanarRead {

@@ -6,12 +6,21 @@ use super::super::{
 };
 use super::*;
 use std::process::Command;
+use worth_query_host::facade::primary_graph::{
+    principal_target_reads_on_this_thread_for_test as reads,
+    signal_request_charges_on_this_thread_for_test as signal_charges,
+};
+
+#[path = "width_differential/commit_work.rs"]
+mod commit_work;
+#[path = "width_differential/principal_target_read_work.rs"]
+mod principal_target_read_work;
 
 const WIDTH: &str = "WORTH_QUERY_CUSTODY_DIFFERENTIAL_WIDTH";
 const DIGEST: &str = "CUSTODY_DIGEST ";
 
 #[test]
-fn wake_and_reconsideration_keep_bits_work_and_delivery_order_across_widths() {
+fn wake_and_reconsideration_keep_bits_and_order_with_exact_width_work() {
     let host_request = crate::test_request_policy::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -26,7 +35,7 @@ fn wake_and_reconsideration_keep_bits_work_and_delivery_order_across_widths() {
         return;
     }
     let test = format!(
-        "{}::wake_and_reconsideration_keep_bits_work_and_delivery_order_across_widths",
+        "{}::wake_and_reconsideration_keep_bits_and_order_with_exact_width_work",
         module_path!().split_once("::").unwrap().1
     );
     let mut reference = None;
@@ -67,12 +76,21 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
             world.clock_control.push(1, 4);
         }
         reports();
+        signal_charges();
+        let before_reads = reads();
         let mut first = observe(&resource_request, &world);
         let first_work = reports()
             .into_iter()
             .map(|report| report.unwrap().charged_work())
             .collect::<Vec<_>>();
         assert!(!first_work.is_empty());
+        let first_reads = reads() - before_reads;
+        let first_signal: u64 = signal_charges().into_iter().sum();
+        assert_eq!(
+            first_work.iter().sum::<u64>(),
+            first_signal + first_reads * principal_target_read_work::PRINCIPAL_TARGET_READ_WORK,
+            "the first observation performs no native commit"
+        );
         assert_eq!(first.committed_operation_count(), 0);
         if reconsider {
             assert_eq!(first.retained_suppressed_wake_count(), 1);
@@ -98,12 +116,23 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
             world.clock_control.push(2, 5);
         }
         reports();
+        signal_charges();
+        let before_reads = reads();
         let mut last = observe(&resource_request, &world);
         let last_work = reports()
             .into_iter()
             .map(|report| report.unwrap().charged_work())
             .collect::<Vec<_>>();
         assert!(!last_work.is_empty());
+        let last_reads = reads() - before_reads;
+        let last_signal: u64 = signal_charges().into_iter().sum();
+        assert_eq!(
+            last_work.iter().sum::<u64>(),
+            last_signal
+                + last_reads * principal_target_read_work::PRINCIPAL_TARGET_READ_WORK
+                + commit_work::quote(placement),
+            "every width pays its actual checked kernels and strategy facts"
+        );
         assert_eq!(last.committed_operation_count(), 1);
         assert_eq!(last.retained_due_wake_count(), 0);
         if reconsider {
@@ -175,8 +204,8 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
                 first_counts,
                 last_counts,
                 provenance,
-                first_work,
-                last_work,
+                (first_signal, first_reads),
+                (last_signal, last_reads),
                 order
             )
         );
