@@ -1,6 +1,5 @@
 //! Drop keeps the old claim until an admission pays for its transfer.
 use super::*;
-mod differential;
 
 #[test]
 fn registry_drop_cascade_transfers_before_newest_owner_can_close() {
