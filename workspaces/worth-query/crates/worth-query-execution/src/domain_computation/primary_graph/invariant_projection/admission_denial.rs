@@ -29,7 +29,7 @@ pub enum WorthQueryInvariantProjectionDenialKind {
 pub struct WorthQueryInvariantProjectionDenial {
     kind: WorthQueryInvariantProjectionDenialKind,
     projection_work: Option<super::WorthQueryInvariantProjectionWork>,
-    retention_denial: Option<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>,
+    retention_denial: Option<Box<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>>,
 }
 
 impl WorthQueryInvariantProjectionDenial {
@@ -43,7 +43,7 @@ impl WorthQueryInvariantProjectionDenial {
     }
 
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
-        match &self.retention_denial {
+        match self.retention_denial.as_deref() {
             Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)) => Some(denial),
             _ => None,
         }
@@ -52,7 +52,7 @@ impl WorthQueryInvariantProjectionDenial {
         &self,
     ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
     {
-        match &self.retention_denial { Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)) => Some(*stop), _ => None }
+        match self.retention_denial.as_deref() { Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)) => Some(*stop), _ => None }
     }
     pub(super) fn source_retention_denied(
         denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
@@ -61,14 +61,14 @@ impl WorthQueryInvariantProjectionDenial {
         Self {
             kind: WorthQueryInvariantProjectionDenialKind::SourceRetentionDenied,
             projection_work: Some(work),
-            retention_denial: Some(denial),
+            retention_denial: Some(Box::new(denial)),
         }
     }
     pub(super) fn with_retention_denial(
         mut self,
         denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
     ) -> Self {
-        self.retention_denial = Some(denial);
+        self.retention_denial = Some(Box::new(denial));
         self
     }
     pub(super) const fn basis_unavailable() -> Self {
