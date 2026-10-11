@@ -241,12 +241,8 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
 // relation. Their record bounds are 819, 601 and 257 bytes; the fragment's
 // 2021 retained bytes fit one chunk. Visit digests use ceil((4*b+1024)/4096),
 // final digests use ceil(b/4096). No request report supplies these units.
-pub(super) const PRINCIPAL_TARGET_READ_WORK: u64 = {
-    let preparation = 1 + 1 + 1 + 1 + 2;
-    let traversal = 1 + 2 + 1;
-    let completion = 1 + 1 + (2 + 1 + 1) + 3 + 2 * 3 + 3;
-    preparation + traversal + completion
-};
+mod principal_target_read_work;
+pub(super) use principal_target_read_work::PRINCIPAL_TARGET_READ_WORK;
 
 #[test]
 fn mutation_handler_and_inline_commit_remain_in_one_request() {

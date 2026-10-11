@@ -107,9 +107,12 @@ pub(super) fn read_versions(
                 ))
             });
             match outcome {
-                ScanOutcome::Complete { mut prefixes, .. } => {
-                    Ok(prefixes.pop().expect("one aspect-version read").versions)
-                }
+                ScanOutcome::Complete { mut prefixes, .. } => match prefixes.pop() {
+                    Some(prefix) => Ok(prefix.versions),
+                    None => Err(QueryReadExecutionStop::PreparationAdmission(
+                        worth_execution::ScanDenial::CoverageMismatch,
+                    )),
+                },
                 ScanOutcome::Stopped { reason, report, .. } => {
                     Err(QueryReadExecutionStop::PreparationStopped { reason, report })
                 }

@@ -23,8 +23,7 @@ impl GenerationCatalog {
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
         let scope_work = payload_comparison_bound(key_visits)
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-        let scope_path = navigation_work(self.scopes.len(), 1)
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+        let scope_path = navigation_work(self.scopes.len(), 1)?;
         prepare(
             SelectedIndexReadWork::Operation(branch_bytes as u64),
             branch_bytes as u64,
@@ -40,8 +39,7 @@ impl GenerationCatalog {
         let Some(id) = id else {
             return Ok(None);
         };
-        let work = navigation_work(self.entries.len(), 1)
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+        let work = navigation_work(self.entries.len(), 1)?;
         prepare(SelectedIndexReadWork::OrderedNavigation(work), 0)
             .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         Ok(self.generation(id))
@@ -64,22 +62,20 @@ impl GenerationCatalog {
             width
                 .checked_add(2)
                 .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?,
-        )
-        .and_then(|work| work.checked_add(width as u64))
+        )?
+        .checked_add(width as u64)
         .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
         prepare(scope_work, width as u64)
             .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         let Some(scope) = self.scope(index, branch) else {
             return Ok(None);
         };
-        let visits = navigation_work(scope.published_commit_count(), 2)
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+        let visits = navigation_work(scope.published_commit_count(), 2)?;
         prepare(visits, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         let Some(id) = scope.published_for_commit(commit, version) else {
             return Ok(None);
         };
-        let visits = navigation_work(self.entries.len(), 1)
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+        let visits = navigation_work(self.entries.len(), 1)?;
         prepare(visits, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         Ok(self.generation(id))
     }
@@ -103,8 +99,7 @@ impl GenerationCatalog {
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
         let copy_bytes = u64::try_from(branch_len)
             .map_err(|_| SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-        let scope_path = navigation_work(self.scopes.len(), 1)
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+        let scope_path = navigation_work(self.scopes.len(), 1)?;
         prepare(SelectedIndexReadWork::Operation(copy_bytes), copy_bytes)
             .and_then(|()| prepare(SelectedIndexReadWork::OrderedNavigation(scope_path), 0))
             .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
@@ -113,6 +108,7 @@ impl GenerationCatalog {
         let Some(scope) = self.scope(index, branch) else {
             return Ok(false);
         };
+        let published_path = navigation_work(scope.published_commit_count(), 1)?;
         prepare(
             SelectedIndexReadWork::Operation(
                 payload_comparison_bound(2)
@@ -120,14 +116,7 @@ impl GenerationCatalog {
             ),
             0,
         )
-        .and_then(|()| {
-            prepare(
-                SelectedIndexReadWork::OrderedNavigation(
-                    navigation_work(scope.published_commit_count(), 1).unwrap(),
-                ),
-                0,
-            )
-        })
+        .and_then(|()| prepare(SelectedIndexReadWork::OrderedNavigation(published_path), 0))
         .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         Ok(scope.published_for_commit(commit, version).is_some())
     }
@@ -135,15 +124,16 @@ impl GenerationCatalog {
 
 /// A std B-tree node has at most eleven keys. A binary-tree height bound is
 /// conservative for its minimum fanout and depends only on live owner count.
-pub(in crate::runtime::state::subsystems::indexing) fn navigation_work(
+pub(in crate::runtime::state::subsystems::indexing) fn navigation_work<Stop>(
     entries: usize,
     key_visits: usize,
-) -> Option<u64> {
-    let levels = usize::BITS.checked_sub(entries.leading_zeros())?;
+) -> Result<u64, SelectedIndexGenerationAdmissionStop<Stop>> {
+    let levels = usize::BITS - entries.leading_zeros();
     u64::from(levels)
-        .checked_mul(11)?
-        .checked_mul(u64::try_from(key_visits).ok()?)?
-        .checked_add(1)
+        .checked_mul(11)
+        .and_then(|work| work.checked_mul(u64::try_from(key_visits).ok()?))
+        .and_then(|work| work.checked_add(1))
+        .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)
 }
 
 // The key's payload maximum is prepaid independently of unrelated catalog
@@ -152,4 +142,24 @@ pub(in crate::runtime::state::subsystems::indexing) fn navigation_work(
 fn payload_comparison_bound(key_visits: usize) -> Option<u64> {
     SelectedIndexReadWork::MAXIMUM_ORDERED_DESCENT_WORK
         .checked_mul(u64::try_from(key_visits.checked_sub(1)?).ok()?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn navigation_quote_preserves_the_typed_overflow_edge() {
+        // Compute the edge independently with wider arithmetic, without a fake catalog.
+        let descent = u128::from(usize::BITS) * 11;
+        let safe = usize::try_from((u128::from(u64::MAX) - 1) / descent).unwrap();
+        assert_eq!(
+            navigation_work::<()>(usize::MAX, safe).unwrap(),
+            u64::try_from(descent * safe as u128 + 1).unwrap()
+        );
+        assert!(matches!(
+            navigation_work::<()>(usize::MAX, safe + 1),
+            Err(SelectedIndexGenerationAdmissionStop::AccountingOverflow)
+        ));
+    }
 }

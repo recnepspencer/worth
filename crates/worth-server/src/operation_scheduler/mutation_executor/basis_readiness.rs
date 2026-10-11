@@ -1,4 +1,5 @@
-//! Growing basis reads use the snapshot door and preserve readiness refusals.
+//! Keyed snapshot identity lookups preserve phase-opening and readiness refusals.
+//! The source metadata lookup does not consult or charge the execution request.
 use super::super::WorthServerOperationExecutionSlot;
 use crate::{
     WorthServerProductOperationSurfaceDenial, WorthServerProductOperationSurfaceDenialCode,
@@ -35,7 +36,8 @@ pub(super) fn current_basis_digest(
     slot: &WorthServerOperationExecutionSlot,
 ) -> Result<String, WorthServerProductOperationSurfaceDenial> {
     let workspace = slot.handoff().workspace();
-    // The snapshot door lends its request to the growing performed-journal read.
+    // Opening admits the phase request; snapshot identity validates its custody.
+    // The source performs keyed metadata lookups without consulting that request.
     let snapshot = workspace
         .with_advancement(|phase| workspace.snapshot_identity(&phase))
         .map_err(snapshot_readiness_denial)?

@@ -125,9 +125,11 @@ async fn run() -> Result<(), String> {
             &support::request_scope(),
         )
     })
-    .expect("Bank issues the declared death notice");
+    .map_err(|cause| format!("Bank death notice refused: {cause:?}"))?;
     let BankMutationCommitOutcome::Committed(receipt) = receipt else {
-        panic!("the notification must commit a fresh outbox: {receipt:?}");
+        return Err(format!(
+            "the notification did not commit a fresh outbox: {receipt:?}"
+        ));
     };
     let outbox = runtime
         .with_application_advancement(&support::request_scope(), |phase| {

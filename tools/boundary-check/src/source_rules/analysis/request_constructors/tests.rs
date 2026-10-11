@@ -51,7 +51,7 @@ fn rejects_mint(name: &str) {
         found
             .iter()
             .any(|denial| denial.subject().contains("src/lib.rs")
-                && denial.message().contains("SerialRequest")),
+                && denial.code() == crate::diagnostics::DiagnosticCode::Bc7008RequestConstruction),
         "{name} admitted a Query-path mint: {found:?}"
     );
 }
@@ -218,7 +218,7 @@ fn relational_constructor_fence_refuses_mints_and_accepts_the_borrowed_twin() {
         "macro_rules! mint { () => { <ExecutionRequest<'_, '_>>::leased(backing) } }",
     ] {
         let found = check_graphs(&[graph(source, None)], &rule);
-        assert!(found.iter().any(|stop| stop.message().contains("serial") || stop.message().contains("leased")), "admitted {source}: {found:?}");
+        assert!(found.iter().any(|stop| stop.code() == crate::diagnostics::DiagnosticCode::Bc7008RequestConstruction), "admitted {source}: {found:?}");
     }
     assert!(check_graphs(
         &[graph(
