@@ -292,4 +292,22 @@ mod tests {
             );
         }
     }
+    #[test]
+    fn checkpoint_recovery_durability_arm_keeps_the_existing_denial_by_value() {
+        use worth_relational::facade::durability::{
+            DurabilityError, RecoveryFailureClass, RelationalRecoveryStop,
+        };
+        let error = DurabilityError::new(
+            RecoveryFailureClass::CorruptCheckpoint,
+            "invalid checkpoint evidence",
+        );
+        let expected = primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+            format!("native checkpoint recovery denied: {error:?}"),
+        );
+        assert_eq!(
+            map_checkpoint_recovery_stop(RelationalRecoveryStop::Durability(error)),
+            expected
+        );
+    }
 }

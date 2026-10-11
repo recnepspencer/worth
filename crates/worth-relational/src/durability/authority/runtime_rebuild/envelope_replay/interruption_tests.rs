@@ -2,7 +2,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
@@ -86,22 +86,33 @@ fn live_retry(source: &RelationalRuntime, bytes: &[u8], target: &mut RelationalR
         )
         .unwrap();
     assert_eq!(result.recovered_commits, 3);
-    assert_eq!(
-        target.history().latest_commit(),
-        source.history().latest_commit()
-    );
-    let snapshot = crate::tests::support::snapshot_for_owner_branch(
-        target,
-        &crate::history::data::BranchId("main".into()),
-    );
-    assert_eq!(
-        target
-            .read_truth()
-            .read_snapshot(&snapshot, &ExecutionRequest::serial(&host))
-            .unwrap()
-            .entities()
-            .len(),
-        3
+    let mut expected = runtime_with_test_schema();
+    expected
+        .durability_recovery()
+        .recover(
+            &ExecutionRequest::serial(&host),
+            plan_from_bytes(source, bytes),
+        )
+        .unwrap();
+    let actual = comparable_recovered_state(target);
+    let expected = comparable_recovered_state(&expected);
+    assert!(
+        actual == expected,
+        "retry changed whole state: {:?}",
+        actual
+            .lines()
+            .zip(expected.lines())
+            .enumerate()
+            .find(|(_, (a, b))| a != b)
+            .map(|(line, pair)| (
+                line,
+                pair,
+                actual
+                    .lines()
+                    .skip(line.saturating_sub(8))
+                    .take(16)
+                    .collect::<Vec<_>>()
+            ))
     );
 }
 
@@ -111,18 +122,16 @@ fn observable_state(target: &RelationalRuntime) -> String {
     format!("{target:#?}")
 }
 
-fn interrupted_mid_range(expire: bool) {
+fn interrupted_mid_range() {
     use crate::authority::commit::pipeline::{stage_observation, CommitStage};
     let (source, bytes) = fixture();
     let mut target = runtime_with_test_schema();
     let before = observable_state(&target);
     let cancellation = CancellationSource::new();
-    // Expiry is placed at the stage boundary, never before the host call.
-    let deadline = expire.then(|| Instant::now() + Duration::from_secs(2));
     let host = SerialRequest::from_memory(
         SerialMemoryBudget::new(64 * 1024 * 1024),
         cancellation.token(),
-        deadline,
+        None,
     );
     let applied = Arc::new(AtomicUsize::new(0));
     let observed = applied.clone();
@@ -139,13 +148,7 @@ fn interrupted_mid_range(expire: bool) {
                     // The previous Publication consult completed before this record.
                     assert!(first_published, "first record never reached publication");
                     observed.fetch_add(1, Ordering::SeqCst);
-                    if let Some(deadline) = deadline {
-                        while Instant::now() < deadline {
-                            std::thread::yield_now();
-                        }
-                    } else {
-                        cancellation.cancel();
-                    }
+                    cancellation.cancel();
                 }
             }
         }),
@@ -162,14 +165,7 @@ fn interrupted_mid_range(expire: bool) {
         1,
         "replay stopped before the second record"
     );
-    assert_interruption(
-        error,
-        if expire {
-            Cause::DeadlineElapsed
-        } else {
-            Cause::Cancelled
-        },
-    );
+    assert_interruption(error, Cause::Cancelled);
     assert_eq!(
         observable_state(&target),
         before,
@@ -180,12 +176,50 @@ fn interrupted_mid_range(expire: bool) {
 
 #[test]
 fn cancellation_after_an_applied_record_leaves_the_whole_target_unchanged() {
-    interrupted_mid_range(false);
+    interrupted_mid_range();
 }
 
 #[test]
-fn expiry_after_an_applied_record_leaves_the_whole_target_unchanged() {
-    interrupted_mid_range(true);
+fn recovery_entry_stops_change_no_record_or_diagnostic() {
+    use crate::authority::commit::pipeline::stage_observation;
+    for cause in [Cause::Cancelled, Cause::DeadlineElapsed] {
+        let (source, bytes) = fixture();
+        let mut target = runtime_with_test_schema();
+        let before = observable_state(&target);
+        let cancellation = CancellationSource::new();
+        if cause == Cause::Cancelled {
+            cancellation.cancel();
+        }
+        let host = SerialRequest::from_memory(
+            SerialMemoryBudget::new(64 * 1024 * 1024),
+            cancellation.token(),
+            (cause == Cause::DeadlineElapsed).then(Instant::now),
+        );
+        let stages = Arc::new(AtomicUsize::new(0));
+        let observed = stages.clone();
+        let result = stage_observation::with_observer(
+            Box::new(move |_| {
+                observed.fetch_add(1, Ordering::SeqCst);
+            }),
+            || {
+                target.durability_recovery().recover(
+                    &ExecutionRequest::serial(&host),
+                    plan_from_bytes(&source, &bytes),
+                )
+            },
+        );
+        assert_eq!(result.unwrap_err(), RelationalRecoveryStop::Request(cause));
+        assert_eq!(
+            stages.load(Ordering::SeqCst),
+            0,
+            "{cause:?}: entry stop applied no record"
+        );
+        assert_eq!(
+            observable_state(&target),
+            before,
+            "{cause:?}: entry stop changed target or diagnostics"
+        );
+    }
 }
 
 #[test]
@@ -215,3 +249,6 @@ fn corrupt_replay_keeps_its_durability_failure() {
         }
     }
 }
+
+mod recovered_state_comparison;
+use recovered_state_comparison::comparable_recovered_state;

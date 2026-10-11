@@ -54,4 +54,22 @@ mod tests {
             assert_eq!(stop, RelationalRecoveryStop::Request(cause));
         }
     }
+    #[test]
+    fn replay_conflict_keeps_its_durability_failure_by_value() {
+        let conflict = crate::transactions::data::CommitConflict::new(
+            crate::transactions::data::ConflictClass::InvalidMergeParent {
+                detail: "corrupt merge".into(),
+            },
+        );
+        assert_eq!(
+            replay_commit_stop(
+                TransactionCommitError::conflict(conflict),
+                "corrupt envelope".into()
+            ),
+            RelationalRecoveryStop::Durability(DurabilityError::new(
+                RecoveryFailureClass::ReplayFailure,
+                "corrupt envelope"
+            ))
+        );
+    }
 }
