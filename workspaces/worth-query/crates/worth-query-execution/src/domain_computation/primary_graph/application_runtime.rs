@@ -334,18 +334,6 @@ where
             .workflow_instance_progress_counters()
     }
 
-    /// Read-only physical candidate-input observation for product integration
-    /// tests; it does not expose a Relational runtime or graph read authority.
-    #[doc(hidden)]
-    pub fn custom_invariant_candidate_input_counters(
-        &self,
-    ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
-        self.primary_provider
-            .graph
-            .source_owner
-            .custom_invariant_candidate_input_counters()
-    }
-
     pub(in crate::domain_computation) fn graph_work_resource_support(
         &self,
     ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
@@ -398,3 +386,5 @@ pub(in crate::domain_computation::primary_graph) use inbound_publication::{
     authenticated_completion_candidate, transport_completion_candidate,
     InstalledTransportPublicationOutcome,
 };
+
+mod candidate_input_observation;
