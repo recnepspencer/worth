@@ -49,6 +49,18 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 }
 
 impl PrepaidOccurrenceWalk<'_> {
+    /// Consume one paid pass for a read-only mutation plan on this map.
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn visit_rows(
+        mut self,
+        mut visit: impl FnMut(&WorthQueryOutputDemandKey, &super::super::DemandRecord),
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let pass = self.take_pass()?;
+        for (key, row) in pass.records {
+            visit(key, row);
+        }
+        Ok(())
+    }
+
     fn take_pass(&mut self) -> Result<PaidPass<'_>, WorthQueryOutputDemandDenial> {
         self.remaining = self
             .remaining

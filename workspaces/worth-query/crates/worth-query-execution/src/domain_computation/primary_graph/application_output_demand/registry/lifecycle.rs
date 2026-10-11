@@ -2,6 +2,7 @@ post_effect_payer!(CompletedSourceWalk);
 use super::refreshed_rejoin::infallible;
 use super::refreshed_rejoin::post_effect_payer;
 mod cached_reclaim;
+mod cleanup_price;
 mod closed_retirement;
 mod completed_custody;
 mod joined_ready;

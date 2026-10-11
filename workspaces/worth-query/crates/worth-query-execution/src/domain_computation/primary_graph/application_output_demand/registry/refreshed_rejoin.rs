@@ -23,6 +23,9 @@ mod mutation_price;
 mod walk_admission;
 mod walk_charge;
 pub(super) use mutation_price::price_mutation;
+pub(super) use mutation_price::{
+    price_mutation_with_source_allowance, PricedMutation, SourceWalkAllowance,
+};
 pub(super) use walk_admission::{WalkAdmission, WalkKind};
 pub(super) use walk_charge::{
     charge_whole_map, infallible, post_effect_payer, OccurrenceSearchCharge, WholeMapPasses,
@@ -258,6 +261,16 @@ pub(super) fn occurrence_rows<'a, C: OccurrenceSearchCharge>(
 ) -> Result<impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)>, C::Refusal> {
     charge.occurrence_path(records.len())?;
     Ok(records.occurrence_rows(key))
+}
+
+/// The source-coordinate index also descends before inspecting any row.
+pub(super) fn source_rows<'a, C: OccurrenceSearchCharge>(
+    records: &'a super::record_map::DemandRecords,
+    source: &'a super::SourceEpoch,
+    charge: &mut C,
+) -> Result<impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)>, C::Refusal> {
+    charge.occurrence_path(records.len())?;
+    Ok(records.source_occurrence_rows(source))
 }
 
 pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {

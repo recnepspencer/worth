@@ -9,10 +9,6 @@
 //! lineage settlement the Ready posted leaves with it, so the execution
 //! decides Fresh and never reuses the output it evicted.
 
-post_effect_payer!(CompletedJoinedReleaseWalk);
-
-use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::post_effect_payer;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::super::refreshed_rejoin::{charge_whole_map, WholeMapPasses};
@@ -38,9 +34,7 @@ impl WorthQueryOutputDemandRegistry {
         let mut prepaid = charge_whole_map(&state.records, admission, WholeMapPasses::One, 4)?;
         let key = &interest.key;
         if !state.records.get(key).is_some_and(only_joined)
-            || prepaid
-                .stale_owner(key)
-                .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?
+            || prepaid.stale_owner(key).map_err(|_| work_stop(admission))?
         {
             return Ok(false);
         }
@@ -49,13 +43,19 @@ impl WorthQueryOutputDemandRegistry {
             .iter()
             .map(|upstream| (upstream.as_ref().clone(), 3))
             .collect();
-        let (ready, readmission, claims, retired) = super::super::refreshed_rejoin::price_mutation(
+        let cascade: Vec<_> = state.records[key]
+            .prerequisites
+            .iter()
+            .map(|key| key.as_ref().clone())
+            .collect();
+        let (ready, readmission, claims, retired) = super::cleanup_price::price_cleanup(
             &mut state,
             admission,
-            &walks,
+            walks,
+            &cascade,
             super::super::refreshed_rejoin::WalkKind::JoinedReadyRelease,
         )
-        .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?
+        .map_err(|_| work_stop(admission))?
         .complete(|priced| {
             let claims = priced.release_prerequisites(key);
             let state = priced.state_mut();
@@ -65,12 +65,8 @@ impl WorthQueryOutputDemandRegistry {
             record.required_stop = None;
             record.wake.notify();
             let upstream = claims.iter().map(|claim| claim.as_ref().clone()).collect();
-            let retired = infallible(
-                state.retire_closed_rows(upstream, &mut CompletedJoinedReleaseWalk::after_effect()),
-            );
-            infallible(
-                state.prune_completed_custody(&mut CompletedJoinedReleaseWalk::after_effect()),
-            );
+            let retired = priced.retire_closed_rows(upstream);
+            priced.prune_completed_custody();
             Ok((ready, readmission, claims, retired))
         });
         drop(state);
@@ -93,4 +89,14 @@ fn only_joined(record: &DemandRecord) -> bool {
         && record.performed_source.is_none()
         && record.successor_of.is_none()
         && record.held_successor.is_none()
+}
+
+fn work_stop(admission: &InvalidationEditAdmission) -> CompanionPreflightStop {
+    let maximum = admission
+        .charged_work()
+        .saturating_add(admission.remaining_work() as u64);
+    match maximum.checked_add(1) {
+        Some(required) => CompanionPreflightStop::WorkExhausted { required, maximum },
+        None => CompanionPreflightStop::WorkCounterOverflow,
+    }
 }

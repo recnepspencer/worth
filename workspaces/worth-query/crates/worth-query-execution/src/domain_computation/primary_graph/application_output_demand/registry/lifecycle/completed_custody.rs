@@ -1,22 +1,21 @@
 //! Completed source cleanup visits only its declared source occurrences.
 use super::super::refreshed_rejoin::OccurrenceSearchCharge;
+use super::super::refreshed_rejoin::{infallible, source_rows};
 use super::*;
+use core::convert::Infallible;
 #[cfg(test)]
 mod walk_bounds;
 
 impl DemandRegistryState {
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prune_completed_custody<
-        C: OccurrenceSearchCharge,
+        C: OccurrenceSearchCharge<Refusal = Infallible>,
     >(
         &mut self,
         charge: &mut C,
     ) -> Result<(), C::Refusal> {
         let mut retired_keys = Vec::new();
-        let mut refusal = None;
+
         self.source_custody.retain(|commit, custody| {
-            if refusal.is_some() {
-                return true;
-            }
             if custody.token_count != 0 {
                 return true;
             }
@@ -24,9 +23,12 @@ impl DemandRegistryState {
                 if let Some(bound) = &custody.bound_sources {
                     for source in bound {
                         retired_keys.extend(
-                            self.records
-                                .source_occurrence_rows(&source.identity)
-                                .map(|(key, _)| key.clone()),
+                            infallible(source_rows(&self.records, &source.identity, charge)).map(
+                                |(key, _)| {
+                                    infallible(charge.inspect_row());
+                                    key.clone()
+                                },
+                            ),
                         );
                     }
                 }
@@ -49,22 +51,16 @@ impl DemandRegistryState {
                 return true;
             }
             let held = bound.iter().any(|source| {
-                self.records
-                    .source_occurrence_rows(&source.identity)
-                    .any(|(key, record)| {
+                infallible(source_rows(&self.records, &source.identity, charge)).any(
+                    |(key, record)| {
+                        infallible(charge.inspect_row());
                         record.source_commits.contains(commit)
                             && (record.interests != 0
-                                || match refreshed_rejoin::awaited_by_stale_owner(
+                                || infallible(refreshed_rejoin::awaited_by_stale_owner(
                                     &self.records,
                                     key,
                                     charge,
-                                ) {
-                                    Ok(held) => held,
-                                    Err(stop) => {
-                                        refusal = Some(stop);
-                                        true
-                                    }
-                                }
+                                ))
                                 || !record.performed_obligations.is_empty()
                                 || !matches!(
                                     record.state,
@@ -73,22 +69,23 @@ impl DemandRegistryState {
                                         ..
                                     }) | DemandState::Failed(_)
                                 ))
-                    })
+                    },
+                )
             });
             if !held {
                 for source in bound {
                     retired_keys.extend(
-                        self.records
-                            .source_occurrence_rows(&source.identity)
-                            .map(|(key, _)| key.clone()),
+                        infallible(source_rows(&self.records, &source.identity, charge)).map(
+                            |(key, _)| {
+                                infallible(charge.inspect_row());
+                                key.clone()
+                            },
+                        ),
                     );
                 }
             }
             held
         });
-        if let Some(stop) = refusal {
-            return Err(stop);
-        }
         for key in retired_keys {
             if let Some(record) = self.records.get_mut(&key) {
                 record

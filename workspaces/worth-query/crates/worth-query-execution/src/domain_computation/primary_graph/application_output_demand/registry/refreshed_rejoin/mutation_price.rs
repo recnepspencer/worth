@@ -21,6 +21,14 @@ struct PricedMutationWalk {
     rows: u64,
 }
 
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct SourceWalkAllowance
+{
+    pub paths: u64,
+    pub rows: u64,
+    pub entries: u64,
+    pub navigation: u64,
+}
+
 pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn price_mutation<
     'a,
 >(
@@ -29,9 +37,32 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     walks: &[(WorthQueryOutputDemandKey, u64)],
     kind: WalkKind,
 ) -> Result<PricedMutation<'a>, WorthQueryOutputDemandDenial> {
-    let mut paths = 0u64;
-    let mut rows = 0u64;
-    let mut navigation = 0u64;
+    price_mutation_with_source_allowance(
+        state,
+        admission,
+        walks,
+        kind,
+        SourceWalkAllowance {
+            paths: 0,
+            rows: 0,
+            entries: 0,
+            navigation: 0,
+        },
+    )
+}
+
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn price_mutation_with_source_allowance<
+    'a,
+>(
+    state: &'a mut DemandRegistryState,
+    admission: &mut InvalidationEditAdmission,
+    walks: &[(WorthQueryOutputDemandKey, u64)],
+    kind: WalkKind,
+    allowance: SourceWalkAllowance,
+) -> Result<PricedMutation<'a>, WorthQueryOutputDemandDenial> {
+    let mut paths = allowance.paths;
+    let mut rows = allowance.rows;
+    let mut navigation = allowance.navigation;
     for (key, count) in walks {
         let mut occurrence_count = 0u64;
         // The quote itself is a paid walk, including its row inspections.
@@ -58,6 +89,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     let work = paths
         .checked_mul(2)
         .and_then(|price| price.checked_add(rows))
+        .and_then(|price| price.checked_add(allowance.entries))
         .ok_or_else(|| kind.denial())?;
     admission
         .charge_ordered_operations(work, navigation)
@@ -69,6 +101,22 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 }
 
 impl PricedMutation<'_> {
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prune_completed_custody(
+        &mut self,
+    ) {
+        infallible(self.state.prune_completed_custody(&mut self.charge));
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn retire_closed_rows(
+        &mut self,
+        candidates: Vec<WorthQueryOutputDemandKey>,
+    ) -> (
+        Vec<super::super::DemandRecord>,
+        Vec<std::sync::Arc<WorthQueryOutputDemandKey>>,
+    ) {
+        infallible(self.state.retire_closed_rows(candidates, &mut self.charge))
+    }
+
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn complete<
         T,
     >(

@@ -11,10 +11,6 @@
 //! or with none left releases a performed source nobody holds, and asks
 //! again: a refusal it still reports is one no unheld observation caused.
 
-post_effect_payer!(CompletedCacheReclaimWalk);
-
-use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::post_effect_payer;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
@@ -46,13 +42,7 @@ impl WorthQueryOutputDemandRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let reclaimed = state.reclaim_cached_rows(bytes, &mut retired, &mut claims, admission);
-            if !retired.is_empty() {
-                infallible(
-                    state.prune_completed_custody(&mut CompletedCacheReclaimWalk::after_effect()),
-                );
-            }
-            reclaimed
+            state.reclaim_cached_rows(bytes, &mut retired, &mut claims, admission)
         };
         drop(retired);
         drop(claims);
@@ -76,11 +66,6 @@ impl WorthQueryOutputDemandRegistry {
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             let reclaimed =
                 state.retire_next_cached_row(&mut None, &mut retired, &mut claims, admission);
-            if !retired.is_empty() {
-                infallible(
-                    state.prune_completed_custody(&mut CompletedCacheReclaimWalk::after_effect()),
-                );
-            }
             match reclaimed {
                 Ok(false) => state
                     .release_unheld_performed_source(admission)
@@ -150,10 +135,11 @@ impl DemandRegistryState {
                         .map(|upstream| (upstream.as_ref().clone(), 3)),
                 )
                 .collect();
-            let retired_row = super::super::refreshed_rejoin::price_mutation(
+            let retired_row = super::cleanup_price::price_cleanup(
                 self,
                 admission,
-                &walks,
+                walks,
+                &[],
                 super::super::refreshed_rejoin::WalkKind::CacheReclaim,
             )?
             .complete(|priced| {
@@ -170,6 +156,7 @@ impl DemandRegistryState {
                     return Ok(false);
                 }
                 claims.extend(priced.retire_row(&key, retired));
+                priced.prune_completed_custody();
                 Ok(true)
             });
             if retired_row {

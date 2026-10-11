@@ -1,6 +1,7 @@
 //! Every pre-effect work refusal can be retried to the same registry value.
 use super::super::WorthQueryOutputCheckpoint;
 use super::*;
+mod completed_custody;
 
 fn admission(work: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
@@ -20,6 +21,7 @@ struct RowValue {
     prerequisite_slots: usize,
     settlement_slots: usize,
     queued: bool,
+    source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -29,10 +31,19 @@ struct RegistryValue {
     required: usize,
     obligations: usize,
     custody: usize,
+    custodians: Vec<CustodyValue>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct CustodyValue {
+    commit: worth_runtime_world::facade::CompositeCommitIdentity,
+    bound: Option<Vec<super::super::BoundOutputSource>>,
+    consumed: Vec<super::super::SourceEpoch>,
+    completed: bool,
+    tokens: usize,
 }
 
 fn value(state: &DemandRegistryState) -> RegistryValue {
-    assert!(state.source_custody.is_empty());
     RegistryValue {
         rows: state
             .records
@@ -45,10 +56,11 @@ fn value(state: &DemandRegistryState) -> RegistryValue {
                 assert!(row.held_successor.is_none());
                 let state = match &row.state {
                     DemandState::Admitted => 0,
-                    DemandState::Failed(denial) => {
-                        assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
-                        1
-                    }
+                    DemandState::Failed(denial) => match denial.kind() {
+                        WorthQueryOutputDemandDenialKind::Superseded => 1,
+                        WorthQueryOutputDemandDenialKind::NoEffect => 4,
+                        _ => panic!("unexpected failure in the mutation oracle"),
+                    },
                     DemandState::Output(output) => {
                         assert!(matches!(
                             output.checkpoint,
@@ -84,6 +96,7 @@ fn value(state: &DemandRegistryState) -> RegistryValue {
                     prerequisite_slots: row.prerequisites.capacity(),
                     settlement_slots: row.settlements.capacity(),
                     queued: row.pending_cleanup_queued,
+                    source_commits: row.source_commits.clone(),
                 }
             })
             .collect(),
@@ -97,6 +110,23 @@ fn value(state: &DemandRegistryState) -> RegistryValue {
         custody: state
             .required_custody_retained_bytes
             .load(std::sync::atomic::Ordering::Acquire),
+        custodians: state
+            .source_custody
+            .iter()
+            .map(|(commit, custody)| {
+                assert!(custody.source.is_none());
+                assert!(custody.discovery.is_none());
+                assert!(custody.retired.is_none());
+                assert!(custody.retired_sources.is_empty());
+                CustodyValue {
+                    commit: commit.clone(),
+                    bound: custody.bound_sources.clone(),
+                    consumed: custody.consumed_sources.clone(),
+                    completed: custody.completed,
+                    tokens: custody.token_count,
+                }
+            })
+            .collect(),
     }
 }
 
@@ -202,14 +232,22 @@ fn run(
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenialKind> {
     match entry {
-        0 => registry.release_joined_ready(interest, admission).map(|released| assert!(released))
+        0 => registry
+            .release_joined_ready(interest, admission)
+            .map(|released| assert!(released))
             .map_err(|stop| {
-                assert!(matches!(stop, worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
-                    | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow));
+                assert!(matches!(
+                    stop,
+                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
+                ));
                 WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
             }),
-        1 => registry.reclaim_cached_rows(1, admission).map_err(|denial| denial.kind()),
-        2 => registry.reclaim_unheld_observation(admission).map(|released| assert!(released))
+        1 => registry
+            .reclaim_cached_rows(1, admission)
+            .map_err(|denial| denial.kind()),
+        2 => registry
+            .reclaim_unheld_observation(admission)
+            .map(|released| assert!(released))
             .map_err(|denial| denial.kind()),
         _ => panic!("unknown entry"),
     }

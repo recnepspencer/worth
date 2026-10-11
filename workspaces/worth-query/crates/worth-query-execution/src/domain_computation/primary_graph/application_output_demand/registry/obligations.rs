@@ -1,4 +1,5 @@
 use super::refreshed_rejoin::OccurrenceSearchCharge;
+use core::convert::Infallible;
 use std::sync::Arc;
 
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
@@ -44,7 +45,7 @@ impl DemandRecord {
 impl DemandRegistryState {
     /// Release one terminal output's framework claims while the registry lock
     /// is held. Return the old Arc pointers for destruction after that lock.
-    pub(super) fn release_record_prerequisites<C: OccurrenceSearchCharge>(
+    pub(super) fn release_record_prerequisites<C: OccurrenceSearchCharge<Refusal = Infallible>>(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         charge: &mut C,
@@ -72,7 +73,9 @@ impl DemandRegistryState {
         Ok(std::iter::once(upstream.clone()).chain(newest))
     }
 
-    pub(super) fn release_record_prerequisites_detached<C: OccurrenceSearchCharge>(
+    pub(super) fn release_record_prerequisites_detached<
+        C: OccurrenceSearchCharge<Refusal = Infallible>,
+    >(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         retired_members: &mut Vec<super::required_members::DetachedRequiredMember>,
@@ -81,7 +84,7 @@ impl DemandRegistryState {
         self.release_record_prerequisites_inner(key, Some(retired_members), charge)
     }
 
-    fn release_record_prerequisites_inner<C: OccurrenceSearchCharge>(
+    fn release_record_prerequisites_inner<C: OccurrenceSearchCharge<Refusal = Infallible>>(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         mut retired_members: Option<&mut Vec<super::required_members::DetachedRequiredMember>>,
@@ -144,7 +147,9 @@ impl DemandRegistryState {
     /// A branch-wide retirement already visits its records. Move the retired
     /// prerequisite vectors out in that walk, then release their upstream
     /// claims in a second pass so no record is mutably aliased with another.
-    pub(super) fn release_matching_prerequisites<C: OccurrenceSearchCharge>(
+    pub(super) fn release_matching_prerequisites<
+        C: OccurrenceSearchCharge<Refusal = Infallible>,
+    >(
         &mut self,
         retired: impl Fn(&WorthQueryOutputDemandKey, &DemandRecord) -> bool,
         charge: &mut C,
