@@ -92,10 +92,13 @@ impl RelationalPreparationOwnerBinding {
 }
 
 impl RelationalPreparationRuntime {
-    pub(crate) fn with_commit_work_budget(&self) -> Self {
+    pub(crate) fn with_commit_work_budget(
+        &self,
+        prior: Option<crate::execution::RequestWorkBudget>,
+    ) -> Self {
         let mut runtime = self.clone();
         if runtime.commit_work_budget.is_none() {
-            runtime.commit_work_budget = Some(crate::execution::RequestWorkBudget::new());
+            runtime.commit_work_budget = Some(prior.unwrap_or_default());
         }
         runtime
     }

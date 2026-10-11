@@ -49,6 +49,8 @@ impl RelationalMutationInvariantEvidence {
 /// Construction is private to `RelationalTransaction::validate`. Committing it
 /// rechecks the exact branch-qualified validation basis before publication.
 pub struct ValidatedRelationalProposal {
+    // Owned accounting data, never a retained request or execution authority.
+    pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) mutation_authority: crate::branch::RelationalBranchMutationAuthority,
     pub(crate) transaction_id: crate::transactions::data::TransactionId,
     pub(crate) validation_input: crate::mvcc::RelationalTransactionValidationInput,

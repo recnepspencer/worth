@@ -63,3 +63,6 @@ mod tests;
 mod split_publication;
 #[cfg(test)]
 mod stage_counts;
+
+#[cfg(test)]
+mod work_account;

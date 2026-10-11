@@ -21,3 +21,6 @@ pub(crate) use read_only_packets::{
 
 mod request_custody;
 pub(crate) use request_custody::check_request;
+
+#[cfg(test)]
+pub(crate) use request_work::observation as work_observation;

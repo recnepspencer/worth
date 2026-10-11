@@ -63,7 +63,7 @@ impl RelationalPreparationPort {
         let epoch = configuration.operation();
         let runtime = self.binding.runtime_snapshot_from(&epoch);
         let runtime = if execution.is_leased() {
-            runtime.with_commit_work_budget()
+            runtime.with_commit_work_budget(None)
         } else {
             runtime
         };
@@ -91,7 +91,7 @@ impl RelationalPreparationPort {
         let epoch = configuration.operation();
         let runtime = self.binding.runtime_snapshot_from(&epoch);
         let runtime = if execution.is_leased() {
-            runtime.with_commit_work_budget()
+            runtime.with_commit_work_budget(proposal.commit_work_budget.clone())
         } else {
             runtime
         };

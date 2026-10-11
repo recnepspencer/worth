@@ -31,7 +31,7 @@ impl RelationalPreparationRuntime {
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         let runtime = if execution.is_leased() {
-            self.with_commit_work_budget()
+            self.with_commit_work_budget(None)
         } else {
             self.clone()
         };
@@ -52,7 +52,12 @@ impl RelationalPreparationRuntime {
             execution,
             crate::authority::commit::pipeline::CommitStage::Validation,
         )?;
-        self.validate_branch_transaction_source(
+        let runtime = if execution.is_leased() {
+            self.with_commit_work_budget(None)
+        } else {
+            self.clone()
+        };
+        runtime.validate_branch_transaction_source(
             execution,
             transaction,
             Some((selected_branch_state, merged_plan)),
@@ -192,6 +197,7 @@ impl RelationalPreparationRuntime {
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         )?;
         Ok(ValidatedRelationalProposal {
+            commit_work_budget: self.commit_work_budget.clone(),
             mutation_authority: transaction.mutation_authority,
             transaction_id,
             validation_input,
