@@ -58,7 +58,7 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
 
     fn write(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         self.attempted_writes.fetch_add(1, Ordering::Relaxed);
@@ -71,7 +71,7 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
 
     fn write_batch(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         commands: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
         self.attempted_writes
@@ -91,7 +91,7 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
 
     fn execute_intent(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError> {
         panic!("phase three mutation runtime does not execute generic intents")
@@ -99,7 +99,7 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
 
     fn live_entities_for_target(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         Vec::new()
@@ -121,7 +121,7 @@ impl WorthQueryRuntimeBackend for StatefulCountingMutationRuntimeBackend {
 
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
             worth_runtime_bridge::facade::TruthSnapshotIdentity::from_relational_snapshot(

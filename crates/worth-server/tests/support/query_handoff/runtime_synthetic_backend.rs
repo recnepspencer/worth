@@ -140,7 +140,7 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
 
     fn write(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         self.record_attempted_write(1);
@@ -149,7 +149,7 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
 
     fn write_batch(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         commands: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
         self.record_attempted_write(commands.len());
@@ -162,7 +162,7 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
 
     fn execute_intent(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError> {
         panic!("unused in query handoff phase tests")
@@ -170,7 +170,7 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
 
     fn live_entities_for_target(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         assert!(
@@ -217,7 +217,7 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
 
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
             worth_runtime_bridge::facade::TruthSnapshotIdentity::from_relational_snapshot(
