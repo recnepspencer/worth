@@ -45,7 +45,13 @@ fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
         .values()
         .map(|module| (module.relative_source.as_str(), module.items.as_slice()))
         .collect();
-    findings(&files)
+    let address_files: Vec<_> = graph
+        .modules
+        .iter()
+        .filter(|(path, _)| !super::authority_import_explicitness::module_is_test_only(graph, path))
+        .map(|(_, module)| (module.relative_source.as_str(), module.items.as_slice()))
+        .collect();
+    collect_findings(&files, &address_files)
         .into_iter()
         .filter(|finding| {
             CRATES.contains(&governed.package.as_str()) || address_order::is_finding(finding.reason)
@@ -66,8 +72,16 @@ fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
         .collect()
 }
 
-fn findings(files: &[(&str, &[syn::Item])]) -> Vec<inventory::Finding> {
+fn collect_findings(
+    files: &[(&str, &[syn::Item])],
+    address_files: &[(&str, &[syn::Item])],
+) -> Vec<inventory::Finding> {
     let mut found = inventory::scan(files);
-    found.extend(address_order::scan(files));
+    found.extend(address_order::scan(address_files));
     found
+}
+
+#[cfg(test)]
+fn findings(files: &[(&str, &[syn::Item])]) -> Vec<inventory::Finding> {
+    collect_findings(files, files)
 }

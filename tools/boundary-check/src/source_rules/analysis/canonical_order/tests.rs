@@ -211,3 +211,45 @@ fn every_lower_owner_refuses_address_order() {
         assert_eq!(super::enforce(&governed, &graph).len(), 3, "{package}");
     }
 }
+
+#[test]
+fn address_setup_in_test_only_modules_does_not_relax_production_order() {
+    use super::super::crate_modules::ModuleNode;
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");
+    let governed =
+        super::super::workspace_crates::discover_workspace_crates(&root, "workspaces/worth-query")
+            .unwrap()
+            .remove(0);
+    let mut graph = super::super::crate_modules::parse_crate_modules(&governed).unwrap();
+    graph.modules.insert(
+        vec!["address_fixture".into()],
+        ModuleNode {
+            relative_source: "src/address_fixture.rs".into(),
+            public_from_parent: false,
+            attributes: Vec::new(),
+            items: crate::source_syntax::parse_file(include_str!(
+                "../../../../tests/fixtures/canonical_order_rules/address_order.rs"
+            ))
+            .unwrap()
+            .items,
+        },
+    );
+    for (declaration, expected) in [
+        ("#[cfg(test)] mod address_fixture;", 0),
+        ("mod address_fixture;", 3),
+        ("#[cfg(any(test, unix))] mod address_fixture;", 3),
+        (
+            "#[cfg(test)] mod address_fixture; #[cfg(not(test))] mod address_fixture;",
+            3,
+        ),
+    ] {
+        graph.modules.get_mut(&Vec::new()).unwrap().items =
+            crate::source_syntax::parse_file(declaration).unwrap().items;
+        assert_eq!(
+            super::enforce(&governed, &graph).len(),
+            expected,
+            "{declaration}"
+        );
+    }
+}
