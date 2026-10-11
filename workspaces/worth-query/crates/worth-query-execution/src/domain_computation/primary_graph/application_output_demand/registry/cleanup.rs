@@ -1,4 +1,7 @@
 mod drain;
+mod key_comparison;
+use key_comparison::key_work;
+
 use std::sync::Arc;
 
 use super::{
@@ -339,13 +342,6 @@ struct RetiredTerminalCleanup {
     _member: Option<Arc<super::required_work::RequiredWorkMembership>>,
     refund_required_bytes: usize,
     refund_obligation_bytes: usize,
-}
-
-fn key_work(key: &WorthQueryOutputDemandKey) -> Result<u64, WorthQueryOutputDemandDenial> {
-    1_usize
-        .checked_add(key.producer.len())
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or_else(work_denial)
 }
 
 fn work_denial() -> WorthQueryOutputDemandDenial {

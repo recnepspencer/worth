@@ -2,11 +2,12 @@ use super::{
     BoundOutputSource, DemandRegistryState, DemandState, SourceCustody,
     WorthQueryOutputDemandRegistry, WorthQueryPerformedOutputDemandSource,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum PreparedOutputRootKind {
-    Required(std::any::TypeId),
-    Discovered(std::any::TypeId),
+    Required(TypeId),
+    Discovered(TypeId),
 }
 
 #[derive(Default)]
@@ -62,7 +63,7 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn retained_prepared_source_observation(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        root_type: std::any::TypeId,
+        root_type: TypeId,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         let mut state = self
             .state

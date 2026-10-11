@@ -42,16 +42,16 @@ impl<Payload> WorthQueryLiveCauseQueue<Payload> {
         source: &WorthQueryLiveDeliverySource,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         capacity: usize,
-    ) -> Self {
-        let subscription = source.open(observation);
+    ) -> Result<Self, super::source::WorthQueryLiveSubscriptionCapacityExhausted> {
+        let subscription = source.open(observation)?;
         let cursor = subscription.cursor();
-        Self {
+        Ok(Self {
             subscription,
             cursor,
             active_batch: None,
             pending: VecDeque::with_capacity(capacity),
             _payload: PhantomData,
-        }
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn buffered_cause_count(&self) -> usize {

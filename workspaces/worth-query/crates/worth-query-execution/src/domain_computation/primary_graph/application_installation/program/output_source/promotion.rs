@@ -1,6 +1,6 @@
 //! Checked promotion of the original program-source carrier.
 
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;

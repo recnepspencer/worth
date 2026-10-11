@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -53,7 +54,7 @@ pub struct WorthQuerySelectedApplicationProducer {
     pub(super) exact_retained_output: bool,
     pub(super) retained_resources: Option<super::WorthQueryProducerDemandResources>,
     pub(super) retained_idempotency_key: Option<[u8; 32]>,
-    pub(super) retained_output_binding: Option<std::any::TypeId>,
+    pub(super) retained_output_binding: Option<TypeId>,
     // An exact selection whose producer declares no Preserve posture reuses
     // the live output it was selected for and never executes over it.
     pub(super) reuses_live_output_only: bool,
@@ -228,7 +229,7 @@ where
             remaining_work,
             |entry| {
                 entry.declaration.output_family == Family::IDENTITY
-                    && entry.declaration.output_family_type == std::any::TypeId::of::<Family>()
+                    && entry.declaration.output_family_type == TypeId::of::<Family>()
                     && entry.declaration.applicability.contains(&applicability)
             },
             WorthQueryOutputDemandDenialKind::MissingApplicableProducer,

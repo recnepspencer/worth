@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;

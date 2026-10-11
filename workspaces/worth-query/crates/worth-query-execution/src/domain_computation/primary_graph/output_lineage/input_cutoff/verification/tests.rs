@@ -129,10 +129,8 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
             DecisionContextUse,
         },
     };
-    use std::{
-        any::TypeId,
-        sync::{Arc, Mutex, OnceLock},
-    };
+    use crate::equality_type_id::EqualityTypeId as TypeId;
+    use std::sync::{Arc, Mutex, OnceLock};
 
     let world = installed_authorization_world(true);
     let selected_product = world.selected_product();

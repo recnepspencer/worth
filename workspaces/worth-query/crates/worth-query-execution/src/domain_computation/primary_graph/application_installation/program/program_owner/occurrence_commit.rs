@@ -6,7 +6,7 @@
 //! on an occurrence that never activated it.
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
@@ -45,7 +45,9 @@ where
     Owner: WorthQueryProgramOwner<Schema> + ?Sized,
 {
     let binding = TypeId::of::<Binding>();
-    if !owner.owns_action(binding) || owner.owns_output_source(binding) {
+    if !owner.owns_action(binding.into_external())
+        || owner.owns_output_source(binding.into_external())
+    {
         return WorthQueryApplicationCommitOutcome::Denied(program_required());
     }
     if !program.matches_workflow_authority_binding::<Binding>(&idempotency) {

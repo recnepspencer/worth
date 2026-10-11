@@ -9,10 +9,19 @@ pub(super) fn decode_denial(error: FactDecodeDenial) -> WorthQueryOutputDemandDe
     match error {
         FactDecodeDenial::Format(message) => denial(Kind::IncompleteDependencyCoverage, message),
         FactDecodeDenial::Retention(StoreDenial::Allocation(allocation)) => {
-            let kind = match allocation.kind() {
-                worth_execution::ExecutionAllocationDenialKind::Cancelled => Kind::Cancelled,
-                worth_execution::ExecutionAllocationDenialKind::DeadlineElapsed => Kind::TimedOut,
-                _ => Kind::RetentionBudgetExceeded,
+            use worth_execution::{
+                ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
+                WorkCeilingDenial as Request,
+            };
+            let kind = match allocation.classify() {
+                Class::Request(Request::Stopped(Stop::Cancelled)) => Kind::Cancelled,
+                Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => Kind::TimedOut,
+                Class::Request(Request::Admission(_))
+                | Class::Request(Request::Stopped(
+                    Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+                ))
+                | Class::Request(Request::Panicked)
+                | Class::Physical(_) => Kind::RetentionBudgetExceeded,
             };
             denial(kind, "checkpoint producer facts")
         }

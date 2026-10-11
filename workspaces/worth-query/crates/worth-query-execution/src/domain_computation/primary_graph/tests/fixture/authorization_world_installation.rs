@@ -2,6 +2,7 @@
 
 #[path = "authorization_world_installation/publication.rs"]
 mod publication;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use publication::publish_authorization_world;
 #[path = "authorization_world_installation/preparation.rs"]
 mod preparation;
@@ -61,7 +62,7 @@ impl AuthorizationWorld {
             .output_lineage
             .lock()
             .unwrap()
-            .fixture_binding(std::any::TypeId::of::<Contract>(), identity);
+            .fixture_binding(TypeId::of::<Contract>(), identity);
     }
 
     pub(in crate::domain_computation) fn selected_product(

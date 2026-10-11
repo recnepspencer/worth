@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
         .build();

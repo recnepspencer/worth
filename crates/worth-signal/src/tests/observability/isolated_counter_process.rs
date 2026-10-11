@@ -3,12 +3,13 @@ pub(super) fn run_in_isolated_counter_process(test_name: &str, child_env: &str) 
         return false;
     }
 
-    let output = std::process::Command::new(
-        std::env::current_exe().expect("current test binary should be discoverable"),
+    let output = crate::process_deadline::output(
+        std::process::Command::new(
+            std::env::current_exe().expect("current test binary should be discoverable"),
+        )
+        .args(["--exact", test_name, "--nocapture"])
+        .env(child_env, "1"),
     )
-    .args(["--exact", test_name, "--nocapture"])
-    .env(child_env, "1")
-    .output()
     .expect("isolated counter test child should start");
     assert!(
         output.status.success(),

@@ -3,12 +3,13 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::{
     WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,
 };
-use std::{any::TypeId, cmp::Ordering};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::cmp::Ordering;
 
-pub(super) fn reverse_families() -> [(TypeId, &'static str); 2] {
+pub(super) fn family_declarations() -> [[(TypeId, &'static str); 2]; 2] {
     struct A;
     struct B;
-    let declarations = [
+    [
         [
             (TypeId::of::<A>(), "alpha-output"),
             (TypeId::of::<B>(), "zulu-output"),
@@ -17,32 +18,29 @@ pub(super) fn reverse_families() -> [(TypeId, &'static str); 2] {
             (TypeId::of::<B>(), "alpha-output"),
             (TypeId::of::<A>(), "zulu-output"),
         ],
-    ];
-    declarations
-        .into_iter()
-        .find(|families| families[0].0 > families[1].0)
-        .unwrap()
+    ]
 }
 
 #[test]
 fn family_key_order_follows_declared_identity() {
-    let families = reverse_families();
-    assert!(families[0].0 > families[1].0);
-    assert!(families[0].1 < families[1].1);
-    let source = support::key("same-producer", 7, 1);
-    let keys = families.map(|(type_id, identity)| {
-        (
-            type_id,
-            WorthQueryOutputDemandKey::new(
-                identity,
-                source.producer_identity().to_owned(),
-                source.applicability(),
-                source.source_epoch().clone(),
-            ),
-        )
-    });
-    assert_eq!(keys[0].0.cmp(&keys[1].0), Ordering::Greater);
-    assert_eq!(keys[0].1.cmp(&keys[1].1), Ordering::Less);
+    for families in family_declarations() {
+        assert_ne!(families[0].0, families[1].0);
+        assert!(families[0].1 < families[1].1);
+        let source = support::key("same-producer", 7, 1);
+        let keys = families.map(|(type_id, identity)| {
+            (
+                type_id,
+                WorthQueryOutputDemandKey::new(
+                    identity,
+                    source.producer_identity().to_owned(),
+                    source.applicability(),
+                    source.source_epoch().clone(),
+                ),
+            )
+        });
+        assert_ne!(keys[0].0, keys[1].0);
+        assert_eq!(keys[0].1.cmp(&keys[1].1), Ordering::Less);
+    }
 }
 
 fn initial() -> WorthQueryOutputDemandKey {

@@ -79,3 +79,6 @@ mod source_bound_replay;
 
 #[path = "application_graph/native_staging_allocation.rs"]
 mod native_staging_allocation;
+
+#[path = "support/process_deadline.rs"]
+mod process_deadline;

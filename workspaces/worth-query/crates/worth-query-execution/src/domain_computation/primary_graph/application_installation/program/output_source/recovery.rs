@@ -1,6 +1,7 @@
 //! Original program-source preparation and one-use performed delivery.
 
-use std::any::{Any, TypeId};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::any::Any;
 use std::sync::Arc;
 
 use worth_foundational::facade::AspectValue;

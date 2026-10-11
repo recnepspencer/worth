@@ -3,7 +3,7 @@ use super::super::super::registry::InstalledProducerProvider;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture;
 use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredRefreshClaim;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 /// The query proof keeps its value, source, request affinity and selected
 /// observation. Only its executor guard moves after the typed family selector

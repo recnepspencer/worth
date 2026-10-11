@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, WorthQueryApplicationOutputCardinality,
     WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
@@ -219,7 +220,7 @@ where
         Option<std::sync::Arc<WorthQueryApplicationOutputCorrespondence>>,
         WorthQueryPriorOutputDenial,
     > {
-        let binding_type = std::any::TypeId::of::<Binding>();
+        let binding_type = TypeId::of::<Binding>();
         if let Some(correspondence) = self.reader.prior_output_bindings.get(&binding_type) {
             return Ok(Some(std::sync::Arc::clone(correspondence)));
         }

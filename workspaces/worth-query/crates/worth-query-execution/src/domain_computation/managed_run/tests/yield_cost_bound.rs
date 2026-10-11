@@ -148,11 +148,12 @@ fn yield_transition_work_is_invariant_to_unrelated_live_authority_width() {
 #[test]
 #[cfg(feature = "allocation-probes")]
 fn yield_transition_allocation_count_is_width_invariant() {
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .arg("isolated_yield_transition_allocation_slope_probe")
-        .env("WORTH_QUERY_YIELD_ALLOCATION_PROBE", "1")
-        .output()
-        .unwrap();
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .arg("isolated_yield_transition_allocation_slope_probe")
+            .env("WORTH_QUERY_YIELD_ALLOCATION_PROBE", "1"),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "yield allocation probe failed:\n{}\n{}",
@@ -176,11 +177,12 @@ fn isolated_yield_transition_allocation_slope_probe() {
 #[test]
 #[cfg(feature = "allocation-probes")]
 fn workflow_yield_transition_allocation_is_unrelated_authority_invariant() {
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .arg("isolated_workflow_yield_transition_allocation_slope_probe")
-        .env("WORTH_QUERY_WORKFLOW_YIELD_ALLOCATION_PROBE", "1")
-        .output()
-        .unwrap();
+    let output = crate::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .arg("isolated_workflow_yield_transition_allocation_slope_probe")
+            .env("WORTH_QUERY_WORKFLOW_YIELD_ALLOCATION_PROBE", "1"),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "workflow yield allocation probe failed:\n{}\n{}",

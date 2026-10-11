@@ -1,4 +1,5 @@
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 pub(in crate::domain_computation::primary_graph) enum AcceptedCheckpointFactSource {
     Committed(crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt),
@@ -14,7 +15,7 @@ impl WorthQueryOutputDemandRegistry {
     ) -> Vec<(
         WorthQueryAcceptedOutputCheckpointIdentity,
         Option<AcceptedCheckpointFactSource>,
-        Option<std::any::TypeId>,
+        Option<TypeId>,
     )> {
         let state = self
             .state

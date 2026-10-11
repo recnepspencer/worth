@@ -13,6 +13,8 @@ use crate::facade::runtime::QueryReadExecutionStop;
 
 const MEMORY: u64 = 1 << 26;
 
+mod packet_identity;
+
 fn lease(
     width: usize,
     memory: u64,

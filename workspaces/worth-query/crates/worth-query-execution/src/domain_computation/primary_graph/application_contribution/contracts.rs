@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 
@@ -56,8 +57,8 @@ where
                     .iter()
                     .map(|identity| (*identity).to_owned())
                     .collect(),
-                binding_type: std::any::TypeId::of::<Binding>(),
-                installed_type: std::any::TypeId::of::<Binding::Installed>(),
+                binding_type: TypeId::of::<Binding>(),
+                installed_type: TypeId::of::<Binding::Installed>(),
             },
         );
         Ok(self)

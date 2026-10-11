@@ -7,6 +7,8 @@ use worth_foundational::ExecutionRequestPolicy;
 
 use super::lease::LeaseMemory;
 use super::{ExecutionResourceLease, LeaseDenial};
+mod ledger_issue_order;
+use ledger_issue_order::LedgerIssueOrder;
 
 /// A memory limit refused `requested` bytes. `level` names the limit, the
 /// innermost one that refused, and `admitted` is the room that level left.
@@ -53,6 +55,7 @@ pub struct SerialMemoryBudget {
 
 #[derive(Debug)]
 struct SerialLedger {
+    issue_order: LedgerIssueOrder,
     ceiling: u64,
     charged: Mutex<u64>,
 }
@@ -112,6 +115,7 @@ impl SerialMemoryBudget {
     pub fn new(charged_memory_bytes: u64) -> Self {
         Self {
             ledgers: Arc::from([Arc::new(SerialLedger {
+                issue_order: LedgerIssueOrder::issue(),
                 ceiling: charged_memory_bytes,
                 charged: Mutex::new(0),
             })]),
@@ -153,10 +157,9 @@ impl SerialMemoryBudget {
     }
 
     fn resize(&self, from: u64, to: u64) -> Result<(), MemoryLimitDenial> {
-        // Requests can share budgets across threads. Address order keeps overlapping
+        // Requests can share budgets across threads. Issue order keeps overlapping
         // lineages deadlock-free; refusal order remains innermost policy first.
-        let mut order: Vec<_> = self.ledgers.iter().enumerate().collect();
-        order.sort_unstable_by_key(|(_, ledger)| Arc::as_ptr(ledger));
+        let order = self.lock_order();
         let mut charges: Vec<_> = order
             .iter()
             .map(|(index, ledger)| {
@@ -190,7 +193,16 @@ impl SerialMemoryBudget {
         }
         Ok(())
     }
+
+    fn lock_order(&self) -> Vec<(usize, &Arc<SerialLedger>)> {
+        let mut order: Vec<_> = self.ledgers.iter().enumerate().collect();
+        order.sort_unstable_by(|(_, a), (_, b)| a.issue_order.cmp(&b.issue_order));
+        order
+    }
 }
+
+#[cfg(test)]
+mod lock_order_tests;
 
 impl ExecutionMemoryReservation {
     pub fn reserve_in_scope(

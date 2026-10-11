@@ -1,4 +1,5 @@
 pub(in crate::domain_computation::primary_graph) use lifecycle::RunningSelectedExecution;
+mod key_comparison;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Condvar, Mutex};
 

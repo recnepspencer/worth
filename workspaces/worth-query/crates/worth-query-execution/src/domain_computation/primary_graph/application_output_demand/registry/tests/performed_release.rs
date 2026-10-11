@@ -3,6 +3,7 @@
 use super::super::{PreparedOutputRootKind, SourceCustody, WorthQueryPerformedOutputDemandSource};
 use super::*;
 use crate::domain_computation::primary_graph::tests::{fixture, recoverable_commit_support};
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn unheld_performed_sources_release_the_oldest_with_commit_order_work() {
@@ -43,7 +44,7 @@ fn unheld_performed_sources_release_the_oldest_with_commit_order_work() {
             source.change.product_commit().clone(),
             SourceCustody {
                 occurrence,
-                root_kind: PreparedOutputRootKind::Required(std::any::TypeId::of::<()>()),
+                root_kind: PreparedOutputRootKind::Required(TypeId::of::<()>()),
                 source: Some(source),
                 discovery: None,
                 bound_sources: None,

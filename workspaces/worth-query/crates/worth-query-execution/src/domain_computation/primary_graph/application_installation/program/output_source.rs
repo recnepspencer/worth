@@ -1,6 +1,7 @@
 use super::WorthQueryProgramApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use crate::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
@@ -75,7 +76,7 @@ where
         }
         self.runtime.recover_discovered_output_source::<
             <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery,
-        >(receipt, std::any::TypeId::of::<Root>())
+        >(receipt, TypeId::of::<Root>())
     }
 
     /// Commits one output source under `presented`, the program its caller
@@ -129,7 +130,7 @@ where
         let pending = WorthQueryUnpublishedProgramOutputSource {
             runtime_authority: self.runtime.runtime.authority_identity().as_u64(),
             program: selected_program,
-            binding: std::any::TypeId::of::<Source>(),
+            binding: TypeId::of::<Source>(),
             idempotency,
             branch,
             payload,

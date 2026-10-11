@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationConditionalNode,
@@ -45,10 +46,8 @@ where
             &scope.required_producers,
             Producer::IDENTITY,
             self.output_producers.contains_producer::<Producer>(),
-            std::any::TypeId::of::<ApplicationOperation>(),
-            std::any::TypeId::of::<
-                <Producer::Operation as ApplicationMutationBinding<Schema>>::Operation,
-            >(),
+            TypeId::of::<ApplicationOperation>(),
+            TypeId::of::<<Producer::Operation as ApplicationMutationBinding<Schema>>::Operation>(),
         )?;
         if delivery_dependency_ordinal >= node.declaration().dependencies().len() {
             return Err(denial(format!(
@@ -82,8 +81,8 @@ fn validate_output_readiness_authority(
     required_producers: &[String],
     producer_identity: &'static str,
     installed_producer_matches: bool,
-    application_operation: std::any::TypeId,
-    producer_application_operation: std::any::TypeId,
+    application_operation: TypeId,
+    producer_application_operation: TypeId,
 ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
     if required_producers != [producer_identity] {
         return Err(denial(format!(
@@ -105,7 +104,7 @@ fn validate_output_readiness_authority(
 
 #[cfg(test)]
 mod tests {
-    use std::any::TypeId;
+    use crate::equality_type_id::EqualityTypeId as TypeId;
 
     use super::validate_output_readiness_authority;
 
