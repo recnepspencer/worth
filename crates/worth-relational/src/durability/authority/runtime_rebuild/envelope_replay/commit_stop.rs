@@ -28,3 +28,30 @@ pub(crate) fn replay_commit_stop(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn replay_interrupted_commit_preserves_each_control_cause_by_value() {
+        use crate::mvcc::{
+            RelationalInterruptionBoundary, RelationalOperationControl,
+            RelationalOperationInterruption as Interrupt,
+        };
+        for (interruption, cause) in [
+            (Interrupt::Cancelled, Cause::Cancelled),
+            (Interrupt::TimedOut, Cause::DeadlineElapsed),
+        ] {
+            let boundary = RelationalInterruptionBoundary::ProposalValidation;
+            let event = RelationalOperationControl::uninterrupted()
+                .with_injected_interruption(boundary, interruption, 1)
+                .observe(boundary)
+                .unwrap();
+            let stop = replay_commit_stop(
+                TransactionCommitError::interrupted(event),
+                "not corrupt evidence".into(),
+            );
+            assert_eq!(stop, RelationalRecoveryStop::Request(cause));
+        }
+    }
+}

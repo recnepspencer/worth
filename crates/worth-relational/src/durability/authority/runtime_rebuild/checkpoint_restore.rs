@@ -259,37 +259,7 @@ pub(super) fn finalize_restored_runtime(
     restored
         .index_authority()
         .rebuild_unique_entity_aspect_field_indexes(execution)
-        .map_err(|denial| {
-            use crate::branch::RelationalBranchBasisDenial as Denial;
-            use crate::durability::data::RelationalRecoveryStop as Stop;
-            use crate::execution::RelationalExecutionDenialCause as Cause;
-            match denial {
-                Denial::Cancelled => Stop::Request(Cause::Cancelled),
-                Denial::TimedOut => Stop::Request(Cause::DeadlineElapsed),
-                Denial::MalformedDescriptor
-                | Denial::UnsupportedDescriptorVersion { .. }
-                | Denial::ForeignRuntime { .. }
-                | Denial::UnknownBranch(_)
-                | Denial::ArchivedBranch(_)
-                | Denial::DeletingBranch(_)
-                | Denial::StaleReferenceGeneration
-                | Denial::WrongBranchLocalTruthVersion
-                | Denial::EmptyCommittedTargetMismatch
-                | Denial::WrongImmutableTarget
-                | Denial::MixedAxis(_)
-                | Denial::MaterializationUnavailable
-                | Denial::UnavailableRetainedTarget
-                | Denial::RetentionCapacityExhausted
-                | Denial::RetentionIdentityExhausted
-                | Denial::SnapshotIdentityExhausted
-                | Denial::OwnerUnavailable
-                | Denial::OwnerFailure => DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::ReplayFailure,
-                    format!("recovered unique-index basis admission failed: {denial:?}"),
-                )
-                .into(),
-            }
-        })?;
+        .map_err(restored_index_stop)?;
     restored.history.rebuild_branch_head_version_index();
     restored.visibility.cache.clear();
     restored
@@ -297,3 +267,40 @@ pub(super) fn finalize_restored_runtime(
         .rebuild_branch_head_visibility_residency();
     Ok(())
 }
+
+fn restored_index_stop(
+    denial: crate::branch::RelationalBranchBasisDenial,
+) -> crate::durability::data::RelationalRecoveryStop {
+    use crate::branch::RelationalBranchBasisDenial as Denial;
+    use crate::durability::data::RelationalRecoveryStop as Stop;
+    use crate::execution::RelationalExecutionDenialCause as Cause;
+    match denial {
+        Denial::Cancelled => Stop::Request(Cause::Cancelled),
+        Denial::TimedOut => Stop::Request(Cause::DeadlineElapsed),
+        Denial::MalformedDescriptor
+        | Denial::UnsupportedDescriptorVersion { .. }
+        | Denial::ForeignRuntime { .. }
+        | Denial::UnknownBranch(_)
+        | Denial::ArchivedBranch(_)
+        | Denial::DeletingBranch(_)
+        | Denial::StaleReferenceGeneration
+        | Denial::WrongBranchLocalTruthVersion
+        | Denial::EmptyCommittedTargetMismatch
+        | Denial::WrongImmutableTarget
+        | Denial::MixedAxis(_)
+        | Denial::MaterializationUnavailable
+        | Denial::UnavailableRetainedTarget
+        | Denial::RetentionCapacityExhausted
+        | Denial::RetentionIdentityExhausted
+        | Denial::SnapshotIdentityExhausted
+        | Denial::OwnerUnavailable
+        | Denial::OwnerFailure => DurabilityError::new(
+            crate::durability::data::RecoveryFailureClass::ReplayFailure,
+            format!("recovered unique-index basis admission failed: {denial:?}"),
+        )
+        .into(),
+    }
+}
+
+#[cfg(test)]
+mod stop_tests;
