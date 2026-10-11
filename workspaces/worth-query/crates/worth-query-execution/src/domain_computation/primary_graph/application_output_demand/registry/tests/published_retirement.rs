@@ -107,16 +107,50 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
     let _occurrence = occurrence();
     crate::domain_computation::primary_graph::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
+        let closed_baseline = balances(&registry);
+        let upstream_key = key("remaining-interest-upstream", 1, 1);
+        let upstream = admit(&registry, &upstream_key);
         let output_key = key("two-interests", 1, 1);
         let first = admit(&registry, &output_key);
         let second = admit(&registry, &output_key);
+        // The admitted rows already fund their index; the extra custody is
+        // one prerequisite claim and one ready backing declared below.
+        let baseline = balances(&registry);
         publish(&registry, &first, receipt);
+        let claims = vec![Arc::new(upstream_key.clone())];
+        let claim_bytes = claims.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+        {
+            let mut state = registry.state.lock().unwrap();
+            state.required_reserved_bytes += claim_bytes;
+            state.records.get_mut(&output_key).unwrap().prerequisites = claims.clone();
+            state
+                .records
+                .get_mut(&upstream_key)
+                .unwrap()
+                .framework_required_count += 1;
+        }
         let before = balances(&registry);
+        assert_eq!(
+            before,
+            (
+                baseline.0 + claim_bytes,
+                baseline.1,
+                baseline.2 + PreparedReadyBacking::retained_bytes()
+            ),
+            "one prerequisite reservation and one funded Ready backing are held"
+        );
         drop(first);
         assert_eq!(balances(&registry), before);
         {
             let state = registry.state.lock().unwrap();
             assert_eq!(state.records[&output_key].interests, 1);
+            assert_eq!(
+                state.records[&output_key].prerequisites, claims,
+                "the remaining interest still owns the exact prerequisite claim"
+            );
+            assert_eq!(state.records[&upstream_key].framework_required_count, 1);
+            assert_eq!(state.required_reserved_bytes, before.0);
+
             assert!(
                 matches!(&state.records[&output_key].state, DemandState::Output(output)
                 if matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. })))
@@ -129,6 +163,11 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
             .unwrap()
             .records
             .contains_key(&output_key));
-        assert_eq!(balances(&registry), (0, 0, 0));
+        assert_eq!(
+            registry.state.lock().unwrap().records[&upstream_key].framework_required_count,
+            0
+        );
+        drop(upstream);
+        assert_eq!(balances(&registry), closed_baseline);
     });
 }
