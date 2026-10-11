@@ -5,6 +5,7 @@ use super::super::production_scope::{
 };
 use proc_macro2::{Span, TokenStream, TokenTree};
 use std::collections::BTreeSet;
+use syn::spanned::Spanned;
 use syn::visit::{self, Visit};
 use syn::{ImplItem, Item, TraitItem, Type, UseTree};
 
@@ -36,6 +37,14 @@ impl RawAccess {
     fn refuse(&mut self, span: Span) {
         self.found
             .insert((self.scope.join("::"), span.start().line));
+    }
+
+    fn qualified_access(&mut self, qself: Option<&syn::QSelf>, path: &syn::Path) {
+        if let Some(qself) = qself {
+            if path.segments.len() > qself.position && raw_self_type(&qself.ty) {
+                self.refuse(qself.ty.span());
+            }
+        }
     }
 
     fn macro_access(&mut self, tokens: TokenStream) {
@@ -92,6 +101,14 @@ impl<'ast> Visit<'ast> for RawAccess {
         }
         visit::visit_path(self, path);
     }
+    fn visit_expr_path(&mut self, path: &'ast syn::ExprPath) {
+        self.qualified_access(path.qself.as_ref(), &path.path);
+        visit::visit_expr_path(self, path);
+    }
+    fn visit_type_path(&mut self, path: &'ast syn::TypePath) {
+        self.qualified_access(path.qself.as_ref(), &path.path);
+        visit::visit_type_path(self, path);
+    }
     fn visit_use_tree(&mut self, tree: &'ast UseTree) {
         match tree {
             UseTree::Path(path) if path.ident == RAW => self.refuse(path.ident.span()),
@@ -104,13 +121,13 @@ impl<'ast> Visit<'ast> for RawAccess {
         visit::visit_use_tree(self, tree);
     }
     fn visit_item_type(&mut self, item: &'ast syn::ItemType) {
-        if names_raw_type(&item.ty) {
+        if raw_self_type(&item.ty) {
             self.refuse(item.ident.span());
         }
         visit::visit_item_type(self, item);
     }
     fn visit_impl_item_type(&mut self, item: &'ast syn::ImplItemType) {
-        if names_raw_type(&item.ty) {
+        if raw_self_type(&item.ty) {
             self.refuse(item.ident.span());
         }
         visit::visit_impl_item_type(self, item);
@@ -119,7 +136,7 @@ impl<'ast> Visit<'ast> for RawAccess {
         if item
             .default
             .as_ref()
-            .is_some_and(|(_, ty)| names_raw_type(ty))
+            .is_some_and(|(_, ty)| raw_self_type(ty))
         {
             self.refuse(item.ident.span());
         }
@@ -127,7 +144,6 @@ impl<'ast> Visit<'ast> for RawAccess {
     }
     fn visit_item_impl(&mut self, item: &'ast syn::ItemImpl) {
         if item.trait_.is_some() && raw_self_type(&item.self_ty) {
-            use syn::spanned::Spanned;
             self.refuse(item.self_ty.span());
         }
         visit::visit_item_impl(self, item);
@@ -135,22 +151,6 @@ impl<'ast> Visit<'ast> for RawAccess {
     fn visit_macro(&mut self, mac: &'ast syn::Macro) {
         self.macro_access(mac.tokens.clone());
     }
-}
-
-fn names_raw_type(ty: &Type) -> bool {
-    struct RawName(bool);
-    impl<'ast> Visit<'ast> for RawName {
-        fn visit_path(&mut self, path: &'ast syn::Path) {
-            self.0 |= path
-                .segments
-                .last()
-                .is_some_and(|segment| segment.ident == RAW);
-            visit::visit_path(self, path);
-        }
-    }
-    let mut name = RawName(false);
-    name.visit_type(ty);
-    name.0
 }
 
 fn raw_self_type(ty: &Type) -> bool {

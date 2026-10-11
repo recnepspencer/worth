@@ -122,3 +122,40 @@ fn only_the_execution_owner_can_match_raw_patterns() {
     let graph = graph("fn f(k: ExecutionAllocationDenialKind) { match k { ExecutionAllocationDenialKind::Cancelled => (), _ => () } }");
     assert!(check_graphs("crates/worth-execution", &[graph]).is_empty());
 }
+
+#[test]
+fn qualified_self_pattern_is_refused() {
+    assert!(refused("fn f(k: ExecutionAllocationDenialKind) { match k { <ExecutionAllocationDenialKind>::Cancelled => (), _ => () } }"));
+}
+
+#[test]
+fn qualified_self_expression_is_refused() {
+    assert!(refused(
+        "fn f() { let raw = <ExecutionAllocationDenialKind>::Cancelled; }"
+    ));
+}
+
+#[test]
+fn qualified_self_trait_projection_is_refused() {
+    assert!(refused(
+        "impl T for <ExecutionAllocationDenialKind as Id>::Out {}"
+    ));
+}
+
+#[test]
+fn generic_argument_names_only_the_type() {
+    assert!(!refused(
+        "struct Holder { kinds: Vec<ExecutionAllocationDenialKind> }"
+    ));
+}
+
+#[test]
+fn alias_of_a_container_does_not_alias_the_raw_kind() {
+    for source in [
+        "type K = Vec<ExecutionAllocationDenialKind>;",
+        "trait T { type K = Vec<ExecutionAllocationDenialKind>; }",
+        "impl T for Other { type K = Vec<ExecutionAllocationDenialKind>; }",
+    ] {
+        assert!(!refused(source), "rejected {source}");
+    }
+}
