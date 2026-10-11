@@ -161,8 +161,17 @@ impl InvalidationEditAdmission {
         self.with_totals(|totals| totals.index_bytes)
     }
 
+    /// A count bound, saturating at the machine word. Never a work amount:
+    /// use it to bound how many entries a request can afford.
     pub(in crate::domain_computation::primary_graph) fn remaining_work(&self) -> usize {
         usize::try_from(self.budget.maximum_work_visits - self.charged_work()).unwrap_or(usize::MAX)
+    }
+
+    #[cfg(any(test, feature = "test-query-execution-observer"))]
+    pub(in crate::domain_computation::primary_graph) fn exhaust_work_for_test(
+        &mut self,
+    ) -> Result<(), CompanionPreflightStop> {
+        self.work(self.budget.maximum_work_visits - self.charged_work())
     }
 
     pub(in crate::domain_computation::primary_graph) fn carry_for_publication(

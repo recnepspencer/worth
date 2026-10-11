@@ -3,6 +3,24 @@ use crate::domain_computation::execution_runtime::source_invalidation::{
     WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
 };
 
+#[test]
+fn exhaustion_charges_the_exact_u64_remainder_at_every_pointer_width() {
+    let maximum = u64::MAX;
+    let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
+        maximum_work_visits: maximum,
+        maximum_preparation_bytes: 4096,
+    });
+    admission.charge_external_work(17).unwrap();
+    admission.exhaust_work_for_test().unwrap();
+    assert_eq!(
+        admission.charged_work(),
+        maximum,
+        "exhaustion charges the work amount in u64, never a machine-word count bound"
+    );
+    admission.exhaust_work_for_test().unwrap();
+    assert_eq!(admission.charged_work(), maximum);
+}
+
 fn owner() -> SourceInvalidationOwner {
     let resources = WorthQueryInvalidationResources::install(
         WorthQueryInvalidationResourceInstallation::bounded(20, 4096, 4096, 1),
