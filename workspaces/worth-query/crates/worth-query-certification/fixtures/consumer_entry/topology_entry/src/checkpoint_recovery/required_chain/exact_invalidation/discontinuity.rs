@@ -291,6 +291,7 @@ fn a_forked_branch_verifies_what_its_parent_settled() {
             .fork(application.current_world())
             .components(|components| components.fork_relational().reuse_exact_signal_basis())
             .create(phase)
+            .map_err(Box::new)
     })
     .unwrap();
     let branch_request = application.request(&principal, &scope).on_branch(branch);

@@ -18,6 +18,7 @@ fn fork<const MODE: u8>(
             .fork(branch)
             .components(|components| components.fork_relational().reuse_exact_signal_basis())
             .create(phase)
+            .map_err(Box::new)
     })
     .unwrap()
 }
@@ -82,11 +83,12 @@ pub(super) fn close_ancestor<const MODE: u8>(
         WorthQueryApplicationProductBranchCloseDenial as Close,
         WorthQueryProductBranchOwnerCleanupDenial as Product,
     };
-    let Err(Close::OwnerCleanupPending(pending)) =
-        crate::checkpoint_recovery::support::host_call(app, |phase| {
-            app.on_branch(branch).close(phase)
-        })
-    else {
+    let Err(denial) = crate::checkpoint_recovery::support::host_call(app, |phase| {
+        app.on_branch(branch).close(phase).map_err(Box::new)
+    }) else {
+        panic!("the ancestor's live descendant retains Native history");
+    };
+    let Close::OwnerCleanupPending(pending) = *denial else {
         panic!("the ancestor closes with its live descendant retaining Native history");
     };
     assert!(matches!(

@@ -9,6 +9,7 @@ fn fork<const MODE: u8>(app: &Application<false, TOTALS_WORK, 1, MODE>, parent: 
             .fork(parent)
             .components(|components| components.fork_relational().reuse_exact_signal_basis())
             .create(phase)
+            .map_err(Box::new)
     })
     .unwrap()
 }
