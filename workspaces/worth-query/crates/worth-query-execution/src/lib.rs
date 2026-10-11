@@ -21,3 +21,7 @@ pub mod publication_boundary;
 #[cfg(test)]
 #[path = "test_support/bridge_host_request.rs"]
 mod bridge_host_request;
+
+#[cfg(test)]
+#[path = "test_support/process_deadline.rs"]
+mod process_deadline;

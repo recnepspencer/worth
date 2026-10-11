@@ -47,14 +47,19 @@ pub(crate) fn allocation_commit_error(
     use crate::transactions::data::{
         CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
     };
-    use worth_execution::ExecutionAllocationDenialKind as Kind;
+    use worth_execution::{
+        ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
+        WorkCeilingDenial as Request,
+    };
 
     match error {
         TransactionCommitError::Conflict { error, commit_log } => {
-            let cause = match error.allocation_denial().map(|denial| denial.kind()) {
-                Some(Kind::Lease(denial)) => lease_denial(denial),
-                Some(Kind::Cancelled) => Cause::Cancelled,
-                Some(Kind::DeadlineElapsed) => Cause::DeadlineElapsed,
+            let cause = match error.allocation_denial().map(|denial| denial.classify()) {
+                Some(Class::Request(Request::Admission(denial))) => lease_denial(denial),
+                Some(Class::Request(Request::Stopped(Stop::Cancelled))) => Cause::Cancelled,
+                Some(Class::Request(Request::Stopped(Stop::DeadlineElapsed))) => {
+                    Cause::DeadlineElapsed
+                }
                 _ => return TransactionCommitError::Conflict { error, commit_log },
             };
             TransactionCommitError::Execution {

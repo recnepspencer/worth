@@ -6,13 +6,12 @@ use crate::world::CourtroomWorld;
 const FRESH_REPETITIONS: usize = 3;
 
 pub(crate) fn run_scheduled_public_read_timings() {
-    let rustc = std::process::Command::new("rustc")
-        .arg("--version")
-        .output()
-        .ok()
-        .filter(|output| output.status.success())
-        .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_owned())
-        .unwrap_or_else(|| "unavailable".to_owned());
+    let rustc =
+        crate::process_deadline::output(std::process::Command::new("rustc").arg("--version"))
+            .ok()
+            .filter(|output| output.status.success())
+            .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_owned())
+            .unwrap_or_else(|| "unavailable".to_owned());
     eprintln!(
         "timing_environment os={} arch={} pointer_width={} parallelism={} rustc={rustc}",
         std::env::consts::OS,

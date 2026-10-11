@@ -228,14 +228,20 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         outcome
     });
     start.wait();
-    first_completion
-        .recv_timeout(std::time::Duration::from_secs(1))
-        .expect("first same-reference publisher completes within one second");
-    second_completion
-        .recv_timeout(std::time::Duration::from_secs(1))
-        .expect("second same-reference publisher completes within one second");
-    let first_outcome = first_thread.join().expect("first publisher joins");
-    let second_outcome = second_thread.join().expect("second publisher joins");
+    let first_thread_result = join_completed_worker(
+        first_completion.recv_timeout(std::time::Duration::from_secs(1)),
+        first_thread,
+        std::time::Duration::from_secs(1),
+        "first same-reference publisher completes within one second",
+    );
+    let second_thread_result = join_completed_worker(
+        second_completion.recv_timeout(std::time::Duration::from_secs(1)),
+        second_thread,
+        std::time::Duration::from_secs(1),
+        "second same-reference publisher completes within one second",
+    );
+    let first_outcome = first_thread_result;
+    let second_outcome = second_thread_result;
     let (performed, stale) = match (first_outcome, second_outcome) {
         (
             crate::mvcc::RelationalPublicationOutcome::Performed(performed),

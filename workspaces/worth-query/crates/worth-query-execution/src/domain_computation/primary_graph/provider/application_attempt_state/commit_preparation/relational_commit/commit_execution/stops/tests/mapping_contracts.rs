@@ -3,11 +3,15 @@
 //! and malformed builder extrema are guarded at Relational's owning boundary.
 use super::super::*;
 use crate::domain_computation::primary_graph::application_attempt::{
-    provider_compare_denial::preparation_outcome::application_outcome,
-    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryApplicationCommitOutcome as Outcome,
+    provider_compare_denial::provider_compare_denied,
+    WorthQueryApplicationCommitDenialKind as Kind, WorthQueryProviderProgressionOutcome as Outcome,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
+};
+use crate::domain_computation::{
+    WorthQueryProviderCompareAndCommitDenial as Compare,
+    WorthQueryProviderSessionCommitStop as Stop,
 };
 use worth_relational::facade::{
     errors::{ErrorContext, ErrorOperation, RelationalSubsystem},
@@ -26,7 +30,10 @@ fn assert_kind(cause: Cause, expected: Kind) {
         context: ErrorContext::new(RelationalSubsystem::Transaction, ErrorOperation::Commit),
         commit_log: CommitLog::new(),
     });
-    let Outcome::Denied(denial) = application_outcome(stop) else {
+    let Stop::PreEffectDenied(failure) = stop else {
+        panic!("cause must reach pre-effect refusal");
+    };
+    let Outcome::Denied(denial) = provider_compare_denied(Compare::ProviderSession(failure)) else {
         panic!("lost typed application denial")
     };
     assert_eq!(denial.kind(), expected);

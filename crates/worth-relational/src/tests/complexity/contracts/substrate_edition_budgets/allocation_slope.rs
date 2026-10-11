@@ -74,13 +74,14 @@ fn isolated_bounded_adjacency_partition_allocation_slope_probe() {
 /// Re-execute this test binary filtered to one probe, so the measured region
 /// contains only that probe's own allocations.
 fn run_isolated_probe(probe_name: &str) {
-    let output = std::process::Command::new(
-        std::env::current_exe().expect("the test binary knows its own path"),
+    let output = crate::process_deadline::output(
+        std::process::Command::new(
+            std::env::current_exe().expect("the test binary knows its own path"),
+        )
+        .arg(probe_name)
+        .arg("--test-threads=1")
+        .env(PROBE_GATE, "1"),
     )
-    .arg(probe_name)
-    .arg("--test-threads=1")
-    .env(PROBE_GATE, "1")
-    .output()
     .expect("the isolated probe process should start");
     let report = String::from_utf8_lossy(&output.stdout);
     assert!(

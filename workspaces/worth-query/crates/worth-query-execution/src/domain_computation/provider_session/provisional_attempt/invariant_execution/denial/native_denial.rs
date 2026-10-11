@@ -3,7 +3,11 @@ use super::{
     WorthQueryInvariantExecutionDenialKind as Kind,
     WorthQueryInvariantExecutionFailurePosture as Posture,
 };
-use worth_execution::{ExecutionAllocationDenial, ExecutionAllocationDenialKind, LeaseDenial};
+use worth_execution::{
+    ExecutionAllocationDenial, ExecutionAllocationDenialClass as Class,
+    ExecutionPhysicalAllocationDenialKind as Physical, LeaseDenial, MapKernelStop as Stop,
+    WorkCeilingDenial as Request,
+};
 use worth_relational::facade::mvcc::{
     RelationalOperationInterruption, RelationalTransactionStagingDenial,
 };
@@ -24,20 +28,23 @@ impl NativeDenial {
         let Some(cause) = self.allocation() else {
             return (Kind::ProviderRejected, Posture::Denied);
         };
-        match cause.kind() {
-            ExecutionAllocationDenialKind::Cancelled => (
+        match cause.classify() {
+            Class::Request(Request::Stopped(Stop::Cancelled)) => (
                 Kind::RequestInterrupted(RelationalOperationInterruption::Cancelled),
                 Posture::Denied,
             ),
-            ExecutionAllocationDenialKind::DeadlineElapsed => (
+            Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => (
                 Kind::RequestInterrupted(RelationalOperationInterruption::TimedOut),
                 Posture::Denied,
             ),
-            ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(_))
-            | ExecutionAllocationDenialKind::Allocator => {
-                (Kind::AllocationDenied, Posture::Exhausted)
-            }
-            _ => (Kind::AllocationDenied, Posture::Denied),
+            Class::Request(Request::Admission(LeaseDenial::MemoryExhausted(_)))
+            | Class::Physical(Physical::Allocator) => (Kind::AllocationDenied, Posture::Exhausted),
+            Class::Request(Request::Admission(_))
+            | Class::Request(Request::Stopped(
+                Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+            ))
+            | Class::Request(Request::Panicked)
+            | Class::Physical(_) => (Kind::AllocationDenied, Posture::Denied),
         }
     }
 }
