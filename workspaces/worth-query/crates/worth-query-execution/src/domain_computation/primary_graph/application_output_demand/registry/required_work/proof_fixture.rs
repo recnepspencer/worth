@@ -1,5 +1,13 @@
 //! Real membership observation for the acknowledgement writer's basis witness.
 use super::*;
+impl SelectedRequiredWork {
+    /// Queue-state fixture only: this does not prove a graph row Current.
+    pub(in crate::domain_computation::primary_graph) fn acknowledge_fixture(
+        self,
+    ) -> Option<ReplacedRequiredWorkHint> {
+        self.consume_selected_cause()
+    }
+}
 impl RequiredWorkMembership {
     pub(in crate::domain_computation::primary_graph) fn fixture_selected_work(
         &self,

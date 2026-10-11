@@ -211,18 +211,7 @@ where
                         )?;
                     }
                     if let Some(queued) = queued {
-                        if !queue.acknowledge_root(
-                            queued,
-                            proof,
-                            &performed::CurrentBasis::of(
-                                wave.shared.selected().product().observation(),
-                            ),
-                            admission,
-                        )? {
-                            frontier.members[index].state = MemberState::Inspect;
-                            index += 1;
-                            continue;
-                        }
+                        queue.acknowledge_root(queued, proof, admission)?;
                         frontier.members[index].ready.finish_claim();
                         frontier.members[index].queued = None;
                     }

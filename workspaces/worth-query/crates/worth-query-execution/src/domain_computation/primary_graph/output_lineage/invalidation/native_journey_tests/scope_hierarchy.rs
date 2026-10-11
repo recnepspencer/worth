@@ -99,7 +99,7 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
             for _ in 0..2 {
                 let initial = registries[n].next_required_work(owner, &mut owner.edit_admission()).unwrap().unwrap();
                 assert!(matches!(initial.kind(), SelectedRequiredWorkKind::Local { .. } | SelectedRequiredWorkKind::UnresolvedInitial));
-                initial.acknowledge();
+                initial.acknowledge_fixture();
             }
             assert!(registries[n].next_required_work(owner, &mut owner.edit_admission()).unwrap().is_none());
         }
@@ -115,7 +115,7 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
             if n < DEPTH {
                 let candidate = candidate.expect("each ancestor has one Native pending cue");
                 assert!(matches!(candidate.kind(), SelectedRequiredWorkKind::Native { .. }));
-                candidate.acknowledge();
+                candidate.acknowledge_fixture();
             } else {
                 assert!(candidate.is_none(), "sibling scope {n} contributes zero candidates, hence zero Ready selections");
                 assert!(matches!(currentness(owner, &after, &outputs[n]), SourceSettlementCurrentness::Clean));

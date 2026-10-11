@@ -7,6 +7,7 @@ pub(in crate::domain_computation::primary_graph) use wave_admission::{
 mod branch_selection;
 mod claim;
 pub(in crate::domain_computation::primary_graph) use claim::RequiredWorkClaim;
+mod current_record;
 mod discontinuity;
 mod interest_readmission;
 mod native_hints;
@@ -16,7 +17,6 @@ mod refresh_claim;
 mod requested_claim;
 mod selection;
 mod subsumed;
-pub(in crate::domain_computation::primary_graph) use subsumed::CurrentAcknowledgement;
 mod successor_join;
 
 pub(in crate::domain_computation::primary_graph) use pending_readmission::PendingUpstream;
@@ -75,6 +75,8 @@ struct MembershipState {
     native_hints: Option<Box<NativeHint>>,
     local_settlement: Option<Arc<RecordedSettlementIdentity>>,
     next: Option<Arc<RequiredWorkMembership>>,
+    current_basis:
+        Option<crate::domain_computation::primary_graph::application_contribution::CurrentBasis>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct SelectedRequiredWork {
@@ -269,23 +271,28 @@ impl SelectedRequiredWork {
         &self.kind
     }
 
-    pub(in crate::domain_computation::primary_graph) fn acknowledge(
-        mut self,
-    ) -> Option<ReplacedRequiredWorkHint> {
+    fn consume_selected_cause(mut self) -> Option<ReplacedRequiredWorkHint> {
         let cleared = self.membership.acknowledge(self.version, &self.kind);
         self.armed = cleared.as_ref().is_none_or(|(_, more)| *more);
         cleared.map(|(removed, _)| removed)
     }
 
-    /// Fund the exact selected-token transition before it can detach its
-    /// native/local cause. The bound includes the member state rewrite,
-    /// returned carrier, and its possible queue reattachment on Drop.
-    pub(in crate::domain_computation::primary_graph) fn acknowledge_admitted(
+    /// An aborted native publication never moved the image. This door only
+    /// discards that void cause; it cannot acknowledge Current from a bool.
+    pub(in crate::domain_computation::primary_graph) fn discard_aborted_native(
         self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
+        if !matches!(&self.kind, SelectedRequiredWorkKind::Native { observer, .. }
+            if observer.state() == worth_relational::facade::mvcc::CompanionPublicationCompletion::Aborted)
+        {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "only an aborted native publication is void",
+            ));
+        }
         charge_acknowledgement(admission)?;
-        Ok(self.acknowledge())
+        Ok(self.consume_selected_cause())
     }
 }
 

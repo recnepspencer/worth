@@ -17,8 +17,17 @@ impl<T> CertifiedDecision<T> {
     }
 }
 impl PerformedMembers {
-    fn current<T>(&self, value: T, basis: CurrentBasis) -> CurrentProof<T> {
-        CurrentProof { value, basis }
+    fn current<T>(
+        &self,
+        value: T,
+        basis: CurrentBasis,
+        record: Arc<crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership>,
+    ) -> CurrentProof<T> {
+        CurrentProof {
+            value,
+            basis,
+            record,
+        }
     }
 
     #[cfg(test)]
@@ -34,10 +43,16 @@ impl PerformedMembers {
 pub(in crate::domain_computation::primary_graph) struct CurrentProof<T> {
     value: T,
     basis: CurrentBasis,
+    record: Arc<
+        crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership,
+    >,
 }
 impl<T> CurrentProof<T> {
-    pub(in crate::domain_computation::primary_graph) fn basis(&self) -> &CurrentBasis {
-        &self.basis
+    pub(in crate::domain_computation::primary_graph) fn certifies_record(
+        &self,
+        record: &Arc<crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership>,
+    ) -> bool {
+        Arc::ptr_eq(&self.record, record) && record.certified_at(&self.basis)
     }
     pub(in super::super) fn value(&self) -> &T {
         &self.value
@@ -135,6 +150,9 @@ where
             Ok(RequiredWaveStep::Current(performed.borrow().current(
                 settlement,
                 CurrentBasis::of(wave.shared.selected().product().observation()),
+                selected.certify_current_record(CurrentBasis::of(
+                    wave.shared.selected().product().observation(),
+                )),
             )))
         }
         RequiredCueProgress::PendingExact(pending) => {
@@ -208,7 +226,7 @@ pub(in super::super) fn certify_frozen_ready<Schema: ApplicationSchema + 'static
         })?;
     Ok(match result {
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::Current(value) =>
-            FrozenCallerInspection::Current(performed.borrow().current(value, CurrentBasis::of(wave.shared.selected().product().observation()))),
+            FrozenCallerInspection::Current(performed.borrow().current(value, CurrentBasis::of(wave.shared.selected().product().observation()), selected.certify_current_record(CurrentBasis::of(wave.shared.selected().product().observation())))),
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::PendingExact(pending) => {
             match super::super::super::super::required_continuations::RegistryDelivery::from_pending(
                 &pending, &wave.positioned, &runtime.output_demands, admission)? {

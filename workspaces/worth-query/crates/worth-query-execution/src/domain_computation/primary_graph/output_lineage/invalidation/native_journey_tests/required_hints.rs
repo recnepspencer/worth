@@ -309,7 +309,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                 selected_main.kind(),
                 SelectedRequiredWorkKind::Native { branch, .. } if branch.branch_id() == &main
             ));
-            assert!(selected_main.acknowledge().is_some());
+            assert!(selected_main.acknowledge_fixture().is_some());
             port.remove_required(&registration).unwrap();
         });
         assert_eq!(
@@ -336,7 +336,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                 SelectedRequiredWorkKind::Native { branch, .. }
                     if branch.branch_id() == &BranchId("hint-fork".to_owned())
             ));
-            assert!(first.acknowledge().is_some());
+            assert!(first.acknowledge_fixture().is_some());
             assert_eq!(
                 resources.retained_capacity_bytes(),
                 RequiredWorkMembership::native_branch_retained_bytes("hint-fork".len()).unwrap()
@@ -353,7 +353,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
             initial.kind(),
             SelectedRequiredWorkKind::UnresolvedInitial
         ));
-        assert!(initial.acknowledge().is_some());
+        assert!(initial.acknowledge_fixture().is_some());
         assert!(registry
             .next_required_work(owner, &mut owner.edit_admission())
             .unwrap()

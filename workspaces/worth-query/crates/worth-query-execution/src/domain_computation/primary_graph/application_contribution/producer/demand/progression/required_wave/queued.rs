@@ -194,12 +194,9 @@ impl QueuedRequiredRoots {
             match self.caller.take() {
                 Some(CallerOutcome::Current(proof)) => {
                     self.caller = Some(CallerOutcome::Decided(Arc::clone(proof.value())));
-                    let basis =
-                        performed::CurrentBasis::of(wave.shared.selected().product().observation());
-                    match acknowledgement::acknowledge_caller_claim(work, proof, &basis, admission)? {
-                        crate::domain_computation::primary_graph::application_output_demand::CurrentAcknowledgement::Acknowledged(hint) => drop(hint),
-                        crate::domain_computation::primary_graph::application_output_demand::CurrentAcknowledgement::DifferentBasis(work) => self.hold(work, admission)?,
-                    }
+                    drop(acknowledgement::acknowledge_caller_claim(
+                        work, proof, admission,
+                    )?);
                 }
                 other => {
                     self.caller = other;
@@ -244,7 +241,7 @@ impl QueuedRequiredRoots {
             match observer.state() {
                 // The publication never changed the image: its cause is void.
                 CompanionPublicationCompletion::Aborted => {
-                    drop(work.acknowledge_admitted(admission)?);
+                    drop(work.discard_aborted_native(admission)?);
                     return Ok(None);
                 }
                 CompanionPublicationCompletion::Prepared => {

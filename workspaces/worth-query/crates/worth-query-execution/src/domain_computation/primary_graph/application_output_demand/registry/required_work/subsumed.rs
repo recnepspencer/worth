@@ -5,13 +5,7 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::mvcc::CompanionPublicationCompletion;
 
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::{
-    CurrentBasis, CurrentProof,
-};
-pub(in crate::domain_computation::primary_graph) enum CurrentAcknowledgement {
-    Acknowledged(Option<ReplacedRequiredWorkHint>),
-    DifferentBasis(SelectedRequiredWork),
-}
+use crate::domain_computation::primary_graph::application_contribution::CurrentProof;
 
 impl SelectedRequiredWork {
     /// Stamp the member's same-branch hints whose publication has already
@@ -56,11 +50,13 @@ impl SelectedRequiredWork {
     pub(in crate::domain_computation::primary_graph) fn acknowledge_current_admitted<T>(
         self,
         proof: CurrentProof<T>,
-        basis: &CurrentBasis,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<CurrentAcknowledgement, WorthQueryOutputDemandDenial> {
-        if proof.basis() != basis {
-            return Ok(CurrentAcknowledgement::DifferentBasis(self));
+    ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
+        if !proof.certifies_record(&self.membership) {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "Current proof does not certify this retained record and basis",
+            ));
         }
         charge_acknowledgement(admission)?;
         admission
@@ -91,7 +87,7 @@ impl SelectedRequiredWork {
         };
         let result = self.acknowledge_subsumed(admission);
         drop(extra);
-        result.map(CurrentAcknowledgement::Acknowledged)
+        result
     }
 
     fn acknowledge_subsumed(
@@ -99,7 +95,7 @@ impl SelectedRequiredWork {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
         let SelectedRequiredWorkKind::Native { branch, .. } = &self.kind else {
-            return Ok(self.acknowledge());
+            return Ok(self.consume_selected_cause());
         };
         let branch = Arc::clone(branch);
         let cleared =

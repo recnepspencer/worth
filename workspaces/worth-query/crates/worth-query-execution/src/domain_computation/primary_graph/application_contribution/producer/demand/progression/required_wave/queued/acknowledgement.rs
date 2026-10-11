@@ -6,26 +6,22 @@ impl QueuedRequiredRoots {
         &mut self,
         index: usize,
         proof: performed::CurrentProof<std::sync::Arc<super::WorthQueryOutputDemandSettlement>>,
-        basis: &performed::CurrentBasis,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
         let Some(work) = self.roots[index].take() else {
-            return Ok(true);
+            return Ok(());
         };
-        match work.acknowledge_current_admitted(proof, basis, admission)? {
-            crate::domain_computation::primary_graph::application_output_demand::CurrentAcknowledgement::Acknowledged(hint) => { drop(hint); Ok(true) },
-            crate::domain_computation::primary_graph::application_output_demand::CurrentAcknowledgement::DifferentBasis(work) => { self.roots[index] = Some(work); Ok(false) },
-        }
+        drop(work.acknowledge_current_admitted(proof, admission)?);
+        Ok(())
     }
 }
 pub(super) fn acknowledge_caller_claim(
     work: SelectedRequiredWork,
     proof: performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
-    basis: &performed::CurrentBasis,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<
-    crate::domain_computation::primary_graph::application_output_demand::CurrentAcknowledgement,
+    Option<crate::domain_computation::primary_graph::application_output_demand::ReplacedRequiredWorkHint>,
     WorthQueryOutputDemandDenial,
-> {
-    work.acknowledge_current_admitted(proof, basis, admission)
+>{
+    work.acknowledge_current_admitted(proof, admission)
 }
