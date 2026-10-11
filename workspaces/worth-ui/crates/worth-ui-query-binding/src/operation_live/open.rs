@@ -125,6 +125,7 @@ pub(crate) fn open_operation_live_resource(
     )
 }
 
+#[cfg(any(test, feature = "certification-construction"))]
 pub(crate) fn settle_once(
     reference: &WorthUiInstalledQueryBindingReference,
     requirements: WorthUiQueryConsumerRequirements,
