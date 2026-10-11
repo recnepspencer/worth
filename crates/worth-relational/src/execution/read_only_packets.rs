@@ -240,7 +240,7 @@ where
         ));
     }
     if lease.is_none() {
-        return Ok(packets
+        return packets
             .iter()
             .map(|packet| {
                 let mut context = PacketKernelContext {
@@ -250,10 +250,17 @@ where
                     scratch_bytes: 0,
                     result_bytes: 0,
                 };
-                kernel(&packet.value, &mut context)
-                    .unwrap_or_else(|_| panic!("unleased packet kernel has no execution ceiling"))
+                kernel(&packet.value, &mut context).map_err(|cause| {
+                    PacketExecutionStop::Execution {
+                        boundary: Some(packet.identity),
+                        reason: MapStop::Failure {
+                            identity: packet.identity,
+                            cause,
+                        },
+                    }
+                })
             })
-            .collect());
+            .collect();
     }
     let partitions: BTreeMap<_, _> = packets
         .into_iter()

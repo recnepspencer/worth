@@ -10,6 +10,48 @@ use worth_foundational::{
 };
 
 #[test]
+fn unleased_read_failure_returns_its_canonical_partition_and_stops_the_suffix() {
+    let visited = AtomicUsize::new(0);
+    for cause in [
+        crate::execution::RelationalExecutionDenialCause::Cancelled,
+        crate::execution::RelationalExecutionDenialCause::DeadlineElapsed,
+        crate::execution::RelationalExecutionDenialCause::WorkExhausted,
+    ] {
+        visited.store(0, Ordering::Relaxed);
+        let result = execute_read_only_packets(
+            (0..3)
+                .map(|ordinal| ReadOnlyPacket {
+                    identity: PartitionIdentity::new(ordinal),
+                    value: ordinal,
+                    input_bytes: 0,
+                    kernel_scratch_bytes: 0,
+                    max_result_bytes: 0,
+                })
+                .collect(),
+            None,
+            |ordinal, _| {
+                visited.fetch_add(1, Ordering::Relaxed);
+                if *ordinal == 1 {
+                    Err(MapKernelFailure::Domain(PacketBudgetDenial::ReadRequest(
+                        cause,
+                    )))
+                } else {
+                    Ok(*ordinal)
+                }
+            },
+            |_| 0,
+        );
+        let denial: crate::indexes::data::DerivedIndexExecutionDenial = result.unwrap_err().into();
+        assert_eq!(denial.partition_identity, Some(1));
+        assert_eq!(
+            denial.kind,
+            crate::indexes::data::DerivedIndexExecutionDenialKind::Cause(cause)
+        );
+        assert_eq!(visited.load(Ordering::Relaxed), 2);
+    }
+}
+
+#[test]
 fn one_large_packet_observes_cancellation_mid_kernel_without_result() {
     let cancellation = CancellationSource::new();
     let lease = crate::tests::support::test_execution_authority()
