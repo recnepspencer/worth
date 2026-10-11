@@ -85,23 +85,26 @@ impl WorthUiPresentationRuntimeAdmission {
         let effects_indeterminate_issuer = request_admission.effects_indeterminate_issuer();
         let view = match workspace
             .with_execution_request_mut(|execution, workspace| {
-                workspace.declare_bridge_async_live_view_with_typed_identity(
-                    execution,
-                    presentation_view_name(&declaration),
-                    presentation_live_request(),
-                    presentation_schema_view(),
-                    declaration.request_identity().request_identity(),
-                    request_admission.request(),
-                )
+                workspace
+                    .declare_bridge_async_live_view_with_typed_identity(
+                        execution,
+                        presentation_view_name(&declaration),
+                        presentation_live_request(),
+                        presentation_schema_view(),
+                        declaration.request_identity().request_identity(),
+                        request_admission.request(),
+                    )
+                    .map_err(Box::new)
             })
-            .expect("workspace host call opens")
+            .map_err(Box::new)
+            .and_then(|result| result)
         {
             Ok(view) => view,
             Err(denial) => {
                 return Err(cleanup_after_admission_failure(
                     workspace,
                     Some(request_admission),
-                    WorthUiPresentationRuntimeAdmissionDenial::QueryLive(Box::new(denial)),
+                    WorthUiPresentationRuntimeAdmissionDenial::QueryLive(denial),
                 ));
             }
         };
