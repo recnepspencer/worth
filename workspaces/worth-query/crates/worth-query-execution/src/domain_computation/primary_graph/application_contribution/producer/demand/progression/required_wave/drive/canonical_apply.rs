@@ -7,7 +7,6 @@ pub(super) fn finish<Schema, Family>(
     wave: &RequiredWaveSelection<'_, Schema>,
     frontier: &mut RequiredFrontier,
     queue: &mut QueuedRequiredRoots,
-    performed: &std::cell::RefCell<performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -21,19 +20,12 @@ where
         let settlement = decision
             .take()
             .expect("the requested target owns its decision");
-        return Ok(match settlement.into_current(&performed.borrow()) {
-            Some(proof) => Some(return_requested(proof)),
-            None => {
-                frontier.members[0].state = MemberState::Inspect;
-                None
-            }
-        });
+        return Ok(Some(return_requested(settlement)));
     }
     if !queue.draining() {
-        match accept_current_caller(runtime, demand, wave, frontier, performed, admission)? {
+        match accept_current_caller(runtime, demand, wave, frontier, admission)? {
             CallerAcceptance::Accepted(proof) => queue.finish_caller(proof),
             CallerAcceptance::Deferred => queue.defer_caller(),
-            CallerAcceptance::Reinspect => return Ok(None),
         }
     }
     for member in &frontier.members {
@@ -51,7 +43,6 @@ pub(super) fn accept_current_caller<Schema, Family>(
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     wave: &RequiredWaveSelection<'_, Schema>,
     frontier: &mut RequiredFrontier,
-    performed: &std::cell::RefCell<performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<CallerAcceptance, WorthQueryOutputDemandDenial>
 where
@@ -62,16 +53,7 @@ where
     let MemberState::Current(decision) = &mut caller.state else {
         return Ok(CallerAcceptance::Deferred);
     };
-    let decision = decision
-        .take()
-        .expect("the caller owns its Current decision");
-    let proof = match consume_caller_decision(decision, &performed.borrow()) {
-        Ok(proof) => proof,
-        Err(refusal) => {
-            caller.state = MemberState::Inspect;
-            return Ok(refusal);
-        }
-    };
+    let proof = decision.take().expect("the caller owns its Current proof");
     if let Some(proof) = super::super::caller::finish_current_caller(
         runtime,
         demand,
@@ -93,20 +75,10 @@ where
     }
 }
 
-/// Distinguish a refused proof from a genuinely deferred caller promotion.
+/// Native Current proof consumption is immediate; only promotion may defer.
 pub(in super::super) enum CallerAcceptance {
     Accepted(performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>),
     Deferred,
-    Reinspect,
-}
-
-pub(in super::super) fn consume_caller_decision<T>(
-    decision: performed::CertifiedDecision<T>,
-    owner: &performed::PerformedMembers,
-) -> Result<performed::CurrentProof<T>, CallerAcceptance> {
-    decision
-        .into_current(owner)
-        .ok_or(CallerAcceptance::Reinspect)
 }
 
 fn return_requested(

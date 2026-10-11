@@ -3,10 +3,12 @@ use super::super::*;
 use super::PerformedMembers;
 
 /// No accessor exposes a stale decision. Reinspection obtains a new value.
+#[cfg(test)]
 pub(in super::super) struct CertifiedDecision<T> {
     commit_generation: u64,
     value: T,
 }
+#[cfg(test)]
 impl<T> CertifiedDecision<T> {
     pub(in super::super) fn into_current(
         self,
@@ -17,6 +19,11 @@ impl<T> CertifiedDecision<T> {
     }
 }
 impl PerformedMembers {
+    fn current<T>(&self, value: T) -> CurrentProof<T> {
+        CurrentProof { value }
+    }
+
+    #[cfg(test)]
     fn certify<T>(&self, value: T) -> CertifiedDecision<T> {
         CertifiedDecision {
             commit_generation: self.commit_generation,
@@ -123,7 +130,7 @@ where
         })?;
     match result {
         RequiredCueProgress::Current(settlement) => Ok(RequiredWaveStep::Current(
-            performed.borrow().certify(settlement),
+            performed.borrow().current(settlement),
         )),
         RequiredCueProgress::PendingExact(pending) => {
             let upstream = runtime.output_demands.pending_exact_ready_readmission(

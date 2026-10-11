@@ -42,7 +42,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 
 mod captured_input;
 mod certification;
-pub(super) use certification::{certify_required_ready, CertifiedDecision, CurrentProof};
+pub(super) use certification::{certify_required_ready, CurrentProof};
 mod member_keys;
 use captured_input::CapturedDecisionInput;
 mod ordinary;

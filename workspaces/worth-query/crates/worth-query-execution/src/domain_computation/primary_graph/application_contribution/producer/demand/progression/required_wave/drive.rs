@@ -68,15 +68,9 @@ where
         if wave.target == RequiredWaveTarget::Requested
             && matches!(frontier.members[0].state, MemberState::Current(_))
         {
-            if let Some(outcome) = canonical_apply::finish(
-                runtime,
-                demand,
-                &wave,
-                &mut frontier,
-                queue,
-                performed,
-                admission,
-            )? {
+            if let Some(outcome) =
+                canonical_apply::finish(runtime, demand, &wave, &mut frontier, queue, admission)?
+            {
                 return Ok(Some(outcome));
             }
             continue;
@@ -87,11 +81,9 @@ where
                 demand,
                 &wave,
                 &mut frontier,
-                performed,
                 admission,
             )? {
                 canonical_apply::CallerAcceptance::Accepted(proof) => queue.finish_caller(proof),
-                canonical_apply::CallerAcceptance::Reinspect => continue,
                 canonical_apply::CallerAcceptance::Deferred => {}
             }
         }
@@ -169,7 +161,6 @@ where
                             &wave,
                             &mut frontier,
                             queue,
-                            performed,
                             admission,
                         );
                     }
@@ -283,7 +274,6 @@ where
                             &wave,
                             &mut frontier,
                             queue,
-                            performed,
                             admission,
                         );
                     }
@@ -300,15 +290,9 @@ where
             resolved.clear();
             continue;
         }
-        if let Some(outcome) = canonical_apply::finish(
-            runtime,
-            demand,
-            &wave,
-            &mut frontier,
-            queue,
-            performed,
-            admission,
-        )? {
+        if let Some(outcome) =
+            canonical_apply::finish(runtime, demand, &wave, &mut frontier, queue, admission)?
+        {
             return Ok(Some(outcome));
         }
     }

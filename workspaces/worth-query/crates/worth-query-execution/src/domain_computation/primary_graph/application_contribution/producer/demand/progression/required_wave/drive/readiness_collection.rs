@@ -46,6 +46,8 @@ where
             // A root decides the caller or requested return before publication.
             // If its upstream woke it while siblings prepared, run that wave
             // first; certify the root on the next pass with no plans held.
+            // The declared-predecessor gate subsumes this defense in every
+            // topology tested; the guard also forbids future prepared-root certification.
             if index == 0 && !plans.is_empty() {
                 break 'collect;
             }
@@ -157,7 +159,7 @@ where
                 })
                 .map_err(admission_denial)?;
             match result {
-                Ok(RequiredWaveStep::Current(decision)) => {
+                Ok(RequiredWaveStep::Current(proof)) => {
                     let storage = if caller {
                         &mut *caller_storage
                     } else {
@@ -166,15 +168,11 @@ where
                     storage.release_unused();
                     runtime.output_demands.clear_required_stop(member.key());
                     if index == 0 {
-                        frontier.members[index].state = MemberState::Current(Some(decision));
+                        frontier.members[index].state = MemberState::Current(Some(proof));
                         return Ok(PreparedRequiredWave {
                             members: Vec::new(),
                         });
                     }
-                    let Some(proof) = decision.into_current(&performed.borrow()) else {
-                        frontier.members[index].state = MemberState::Inspect;
-                        continue;
-                    };
                     let refresh = member.resolved_successor;
                     if !caller && queued.is_some() && !required_by_member {
                         // A reached Current row is not a newly resolved read.

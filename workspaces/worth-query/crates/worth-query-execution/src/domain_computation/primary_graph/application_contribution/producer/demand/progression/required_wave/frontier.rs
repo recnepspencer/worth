@@ -14,7 +14,7 @@ pub(super) enum MemberState {
     Prepared,
     // Only the caller keeps its return report. Upstream reports live in the
     // basis-bound resolved set and must die when that basis moves.
-    Current(Option<performed::CertifiedDecision<Arc<WorthQueryOutputDemandSettlement>>>),
+    Current(Option<performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>>),
     /// Its outcome belongs to this advance; a queue closure cannot reopen it.
     AcceptedCaller,
     Pending,

@@ -69,7 +69,7 @@ pub(super) enum RequiredWaveTarget {
 /// A cue is only scheduling custody. A Current result comes from the exact
 /// accepted row, its installed producer, and the selected Product/native proof.
 enum RequiredWaveStep<'owner, Schema: ApplicationSchema> {
-    Current(performed::CertifiedDecision<Arc<WorthQueryOutputDemandSettlement>>),
+    Current(performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>),
     Upstream(SelectedReadyReadmission),
     /// The upstream row is still refreshing.
     Held(WorthQueryOutputDemandKey),
