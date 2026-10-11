@@ -65,6 +65,8 @@ pub enum WorthQueryProviderSessionDenialKind {
     TokenNotMintedForPlan,
     EmptyPhysicalSessionIdentity,
     SessionIdentityExhausted,
+    /// A checked child stopped while the protocol retained failure custody.
+    ExecutionControlStopped(crate::domain_computation::WorthQueryProviderSessionControlStopKind),
 }
 
 /// A provider session's exact failure, protocol stage and recovery posture.

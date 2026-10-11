@@ -12,7 +12,8 @@ use crate::domain_computation::primary_graph::{
 pub(super) fn admission_is_row(kind: WorthQueryApplicationQueryAdmissionDenialKind) -> bool {
     use WorthQueryApplicationQueryAdmissionDenialKind as Kind;
     match kind {
-        Kind::ForeignPrincipal
+        Kind::ExecutionRequest(_)
+        | Kind::ForeignPrincipal
         | Kind::ForeignScope
         | Kind::StalePrincipal
         | Kind::StaleScope

@@ -74,6 +74,8 @@ pub(in crate::http::server) fn pending_execution_denial(
 ) -> BankHttpDenial {
     use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
     match kind {
+        Kind::ExecutionControlStopped(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled) => BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry),
+        Kind::ExecutionControlStopped(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut) => BankHttpDenial::new(BankHttpDenialKind::DeadlineExceeded, BankHttpNextAction::Retry),
         Kind::ExecutionResource { denial, .. } => {
             super::commit_denial::execution_resource(denial).1
         }

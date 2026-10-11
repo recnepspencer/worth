@@ -242,7 +242,8 @@ fn pending_publication_denial(
         | Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ExecutionWorkerPanicked { .. }
         | Kind::ExecutionIdentitiesNotCanonical { .. }
-        | Kind::ExecutionUncheckedCustomKernel { .. }) => {
+        | Kind::ExecutionUncheckedCustomKernel { .. }
+        | Kind::ExecutionControlStopped(_)) => {
             WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(kind)
         }
         Kind::AllocationDenied
@@ -271,6 +272,8 @@ fn idempotency_index_currency_denial(
     denial: crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
     match denial {
+        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(stop.unwrap_or_else(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionControlStopped)),
+
         crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
             crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,
         ) => WorthQueryProviderIdempotencyResolutionDenial::RetentionCapacityExhausted,

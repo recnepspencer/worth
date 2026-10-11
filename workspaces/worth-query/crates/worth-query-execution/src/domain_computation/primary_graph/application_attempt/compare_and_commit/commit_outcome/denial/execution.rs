@@ -51,6 +51,7 @@ impl Denial {
         use super::denial_cause::DenialCause as Cause;
         use crate::domain_computation::WorthQueryInvariantExecutionDenialKind as Invariant;
         match self.cause.as_deref() {
+            Some(Cause::Execution(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionControlStopped(stop)))) => Some(Err(*stop)),
             Some(Cause::Execution(cause)) => Some(*cause),
             Some(Cause::InvariantExecution(failure)) => match failure.kind() {
                 Invariant::ExecutionDenied(kind) => Some(Ok(kind)),

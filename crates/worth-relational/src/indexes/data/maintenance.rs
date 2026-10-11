@@ -41,7 +41,6 @@ pub struct DerivedIndexMaintenanceWork {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DerivedIndexMaintenanceDenialKind {
-    Execution(crate::execution::RelationalExecutionDenialCause),
     Basis(crate::branch::RelationalBranchBasisDenial),
     SnapshotUnavailable,
     CommitMismatch,
@@ -56,6 +55,7 @@ pub enum DerivedIndexMaintenanceDenialKind {
     CandidateUnavailable,
     CandidateIndexesAlreadyPrepared,
     GenerationIdentityExhausted,
+    Execution(crate::execution::RelationalExecutionDenialCause),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

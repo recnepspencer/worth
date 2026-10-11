@@ -92,7 +92,8 @@ fn settlement_publication_denial(
         | Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ExecutionWorkerPanicked { .. }
         | Kind::ExecutionIdentitiesNotCanonical { .. }
-        | Kind::ExecutionUncheckedCustomKernel { .. }) => {
+        | Kind::ExecutionUncheckedCustomKernel { .. }
+        | Kind::ExecutionControlStopped(_)) => {
             WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(kind)
         }
         Kind::AllocationDenied

@@ -15,6 +15,12 @@ pub(crate) use selected_field::{
 
 #[derive(Debug)]
 pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
+    Execution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     Basis(super::exact_basis_access::WorthQueryExactBasisSnapshotDenial),
     IndexUnavailable(&'static str),
 }
@@ -96,13 +102,31 @@ fn require_complete_build(
     >,
     expected: usize,
 ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
+    use worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind as Native;
     let build = build.map_err(|denial| match denial.kind {
+        Native::Execution(cause) => WorthQueryPrimaryIndexCurrencyDenial::Execution(
+            super::provider::relational_execution_denial::relational_execution_kind(cause, None),
+        ),
         worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Basis(basis) => {
             WorthQueryPrimaryIndexCurrencyDenial::Basis(index_basis_denial(basis))
         }
-        _ => WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(
-            "primary graph index reconstruction exceeded its budget or lacked exact authority",
-        ),
+        Native::SnapshotUnavailable
+        | Native::CommitMismatch
+        | Native::BeforeRootMismatch
+        | Native::IndexUnavailable(_)
+        | Native::GenerationKindMismatch(_)
+        | Native::PriorEntryMismatch
+        | Native::ColdReconstructionRequired
+        | Native::WorkBudgetExceeded
+        | Native::ForeignCandidate
+        | Native::CandidateLifetimeExpired { .. }
+        | Native::CandidateUnavailable
+        | Native::CandidateIndexesAlreadyPrepared
+        | Native::GenerationIdentityExhausted => {
+            WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(
+                "primary graph index reconstruction exceeded its budget or lacked exact authority",
+            )
+        }
     })?;
     if build.generations.len() == expected {
         Ok(())

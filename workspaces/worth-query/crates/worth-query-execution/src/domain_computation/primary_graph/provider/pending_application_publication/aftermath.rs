@@ -43,6 +43,10 @@ pub(super) fn seal(
             Some(pending.outcome_identity),
         )
         .map_err(|denial| match denial {
+            WorthQueryAftermathCausalityReadDenial::ExecutionDenied(kind) => WorthQueryProviderSessionFailure::new(kind,
+                crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+                "index currency execution stopped during aftermath sealing", Default::default())
+                .with_recovery_posture(crate::domain_computation::WorthQueryProviderSessionRecoveryPosture::RecoveryRequired),
             WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted { .. } => {
                 snapshot_capacity_failure("aftermath causality could not be read at publication")
             }

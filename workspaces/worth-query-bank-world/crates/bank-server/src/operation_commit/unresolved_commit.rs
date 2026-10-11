@@ -26,6 +26,7 @@ pub enum BankProviderFailureKind {
     ExecutionWorkerPanicked { partition_identity: Option<u64> },
     ExecutionUncheckedCustomKernel { partition_identity: Option<u64> },
     ExecutionIdentitiesNotCanonical { partition_identity: Option<u64> },
+    ExecutionControlStopped(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind),
     ForeignOperationAttempt,
     ForeignExecutionBasis,
     ForeignGraphAuthority,
@@ -147,6 +148,9 @@ const fn provider_failure_kind(
         }
         Query::ExecutionIdentitiesNotCanonical { partition_identity } => {
             BankProviderFailureKind::ExecutionIdentitiesNotCanonical { partition_identity }
+        }
+        Query::ExecutionControlStopped(stop) => {
+            BankProviderFailureKind::ExecutionControlStopped(stop)
         }
         Query::ForeignOperationAttempt => BankProviderFailureKind::ForeignOperationAttempt,
         Query::ForeignExecutionBasis => BankProviderFailureKind::ForeignExecutionBasis,

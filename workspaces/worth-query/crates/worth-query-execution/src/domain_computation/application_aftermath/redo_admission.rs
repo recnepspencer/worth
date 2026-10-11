@@ -80,6 +80,7 @@ where
                     None,
                 )
                 .map_err(|denial| match denial {
+                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ExecutionDenied(kind) => WorthQueryRedoDenial::new(super::WorthQueryRedoDenialKind::ExecutionRequest(kind)),
                     crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted {
                         maximum_active_snapshots,
                     } => WorthQueryRedoDenial::active_snapshot_capacity_exhausted(

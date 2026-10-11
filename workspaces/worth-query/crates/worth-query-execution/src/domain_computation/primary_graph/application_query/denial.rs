@@ -97,6 +97,8 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     GraphWorkAdmissionUnavailable,
     /// The runtime cannot execute the query's shape.
     ExecutionShapeUnsupported,
+    /// The request stopped index currency before query admission.
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
 }
 
 /// Refusal to admit an application query read.

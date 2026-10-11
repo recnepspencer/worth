@@ -161,6 +161,19 @@ pub(super) fn principal_index_currency_denial(
     binding: &str,
 ) -> WorthQueryPrincipalResolutionDenial {
     let kind = match denial {
+        super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => {
+            let kind = match stop {
+                Ok(kind) => WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(kind),
+                Err(
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                ) => WorthQueryPrincipalResolutionDenialKind::Cancelled,
+                Err(
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                ) => WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded,
+            };
+            return resolution_denial(kind, binding);
+        }
+
         super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
             super::WorthQueryExactBasisSnapshotDenial::BranchMaterializationSuspended,
         ) => WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended,

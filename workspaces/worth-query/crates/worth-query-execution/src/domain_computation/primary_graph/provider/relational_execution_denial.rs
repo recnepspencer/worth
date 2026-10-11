@@ -111,6 +111,12 @@ pub(in crate::domain_computation::primary_graph) fn native_preparation_kind(
     Option<crate::domain_computation::WorthQueryProviderSessionDenialKind>,
     crate::domain_computation::WorthQueryProviderSessionControlStopKind,
 > {
+    if let crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionControlStopped(
+        control,
+    ) = failure.kind()
+    {
+        return Err(control);
+    }
     use worth_relational::facade::transactions::{
         CommitExecutionDenialKind, TransactionCommitError,
     };

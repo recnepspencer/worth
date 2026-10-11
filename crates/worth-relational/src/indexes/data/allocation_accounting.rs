@@ -20,7 +20,7 @@ impl DerivedIndexArtifacts {
 }
 
 impl DerivedIndexGeneration {
-    pub(super) fn owned_allocation_capacity_bytes(&self) -> u64 {
+    fn owned_allocation_capacity_bytes(&self) -> u64 {
         (self.source_branch_id.0.capacity() as u64)
             .saturating_add(self.applicability.branch_id.0.capacity() as u64)
             .saturating_add(self.entries.owned_allocation_capacity_bytes())
