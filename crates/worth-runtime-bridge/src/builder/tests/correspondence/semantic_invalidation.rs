@@ -133,7 +133,11 @@ fn sealed_hierarchical_scopes_survive_field_correspondence_lowering() {
             .next()
             .unwrap()
             .as_slice();
-        assert_eq!(regions, &[scope]);
+        assert_eq!(
+            regions,
+            &[scope],
+            "Bridge delivery must preserve every ScopePath segment"
+        );
         assert_eq!(regions[0].path(), &path);
         assert_eq!(regions[0].path().depth(), depth);
         assert_eq!(

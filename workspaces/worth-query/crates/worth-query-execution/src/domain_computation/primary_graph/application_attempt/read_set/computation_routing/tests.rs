@@ -37,6 +37,19 @@ fn partitions(identities: &[u64]) -> Vec<PartitionIdentity> {
         .collect()
 }
 
+#[test]
+fn every_consuming_partition_survives_in_the_facts_reverse_index() {
+    let mut attribution = ComputationFactAttribution::default();
+    attribution.record(key(1), partition(9));
+    attribution.record(key(1), partition(7));
+    let sealed = readers(attribution, 1);
+    assert_eq!(
+        sealed[0].1.partitions(),
+        partitions(&[7, 9]),
+        "a consumed fact's reverse index must retain every consuming partition"
+    );
+}
+
 /// Seals the facts over the keys `1..=count`, each observed as an entity of
 /// its own kind, and returns what each computation fact kept: its readers, in
 /// key order, after checking it kept the content seal observed.
