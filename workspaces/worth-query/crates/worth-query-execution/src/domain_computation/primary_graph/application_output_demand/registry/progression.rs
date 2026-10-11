@@ -1,3 +1,5 @@
+use super::refreshed_rejoin::infallible;
+use super::refreshed_rejoin::unpaid_under_request;
 mod ordinary_begin;
 mod replacement;
 mod selected_begin;
@@ -182,10 +184,15 @@ impl WorthQueryOutputDemandRegistry {
         };
         let terminal = matches!(record.state, DemandState::Failed(_));
         record.wake.notify();
-        let released_prerequisites =
-            terminal.then(|| state.release_record_prerequisites(&interest.key));
+        let released_prerequisites = terminal.then(|| {
+            infallible(
+                state.release_record_prerequisites(&interest.key, &mut unpaid_under_request()),
+            )
+        });
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        state.remove_required_member_if_released(&interest.key);
+        infallible(
+            state.remove_required_member_if_released(&interest.key, &mut unpaid_under_request()),
+        );
         drop(state);
         drop(released_prerequisites);
     }
@@ -225,10 +232,15 @@ impl WorthQueryOutputDemandRegistry {
             record.release_obligations()
         };
         record.wake.notify();
-        let released_prerequisites =
-            (!rescheduled).then(|| state.release_record_prerequisites(&interest.key));
+        let released_prerequisites = (!rescheduled).then(|| {
+            infallible(
+                state.release_record_prerequisites(&interest.key, &mut unpaid_under_request()),
+            )
+        });
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        state.remove_required_member_if_released(&interest.key);
+        infallible(
+            state.remove_required_member_if_released(&interest.key, &mut unpaid_under_request()),
+        );
         drop(state);
         drop(released_prerequisites);
     }
@@ -271,8 +283,8 @@ impl WorthQueryOutputDemandRegistry {
                 let released = record.release_obligations();
                 state.obligation_reserved_bytes =
                     state.obligation_reserved_bytes.saturating_sub(released);
-                let released_prerequisites = state.release_record_prerequisites(&interest.key);
-                state.remove_required_member_if_released(&interest.key);
+                let released_prerequisites = infallible(state.release_record_prerequisites(&interest.key, &mut unpaid_under_request()));
+                infallible(state.remove_required_member_if_released(&interest.key, &mut unpaid_under_request()));
                 drop(state);
                 drop(released_prerequisites);
                 return Err(stopped);
@@ -303,10 +315,15 @@ impl WorthQueryOutputDemandRegistry {
             0
         };
         record.wake.notify();
-        let released_prerequisites =
-            terminal.then(|| state.release_record_prerequisites(&interest.key));
+        let released_prerequisites = terminal.then(|| {
+            infallible(
+                state.release_record_prerequisites(&interest.key, &mut unpaid_under_request()),
+            )
+        });
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        state.remove_required_member_if_released(&interest.key);
+        infallible(
+            state.remove_required_member_if_released(&interest.key, &mut unpaid_under_request()),
+        );
         drop(state);
         drop(released_prerequisites);
         Ok(())

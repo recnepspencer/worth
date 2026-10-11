@@ -1,3 +1,5 @@
+use super::super::refreshed_rejoin::infallible;
+use super::super::refreshed_rejoin::unpaid_under_request;
 use super::super::*;
 
 mod preparation;
@@ -55,7 +57,10 @@ impl WorthQueryOutputDemandRegistry {
                 // Their credits remain reserved until their physical Drop.
                 state.obligation_reserved_bytes += prepared.bytes;
                 state.install_required_member(prepared.required_member);
-                state.remove_required_member_if_released(&replaced.key);
+                infallible(state.remove_required_member_if_released(
+                    &replaced.key,
+                    &mut unpaid_under_request(),
+                ));
                 Some((
                     old_slots,
                     next_slots,

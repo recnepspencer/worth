@@ -12,6 +12,7 @@
 //! for a demand that named a newer source alike: the owners and dependents of
 //! the replaced Ready refresh it from the current source instead of stopping.
 
+use super::refreshed_rejoin::OccurrenceSearchCharge;
 use super::{
     DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint,
     WorthQueryOutputProgress,
@@ -140,12 +141,13 @@ impl super::DemandRegistryState {
     /// answers, revived here or earlier. Rows of one source order by their
     /// refresh, so a refreshed alias is newer than the row it refreshed.
     /// Terminal cleanup selects the replaced Ready before reviving it.
-    pub(super) fn revive_replaced_ready(&mut self, key: &super::WorthQueryOutputDemandKey) -> bool {
-        let replaced = match replaced_ready_key(&self.records, key, &mut ()) {
-            Ok(replaced) => replaced,
-            Err(never) => match never {},
-        };
-        self.revive_ready_at(replaced)
+    pub(super) fn revive_replaced_ready<C: OccurrenceSearchCharge>(
+        &mut self,
+        key: &super::WorthQueryOutputDemandKey,
+        charge: &mut C,
+    ) -> Result<bool, C::Refusal> {
+        let replaced = replaced_ready_key(&self.records, key, charge)?;
+        Ok(self.revive_ready_at(replaced))
     }
 
     fn revive_ready_at(&mut self, replaced: Option<super::WorthQueryOutputDemandKey>) -> bool {
@@ -180,7 +182,7 @@ fn replaced_ready_key<C: super::refreshed_rejoin::OccurrenceSearchCharge>(
 ) -> Result<Option<super::WorthQueryOutputDemandKey>, C::Refusal> {
     use super::refreshed_rejoin::refresh_order;
     let mut replaced: Option<&super::WorthQueryOutputDemandKey> = None;
-    for (other, record) in super::refreshed_rejoin::search_occurrence_rows(records, key, charge)? {
+    for (other, record) in super::refreshed_rejoin::occurrence_rows(records, key, charge)? {
         charge.inspect_row()?;
         match refresh_order(other, key) {
             Some(std::cmp::Ordering::Greater) => return Ok(None),

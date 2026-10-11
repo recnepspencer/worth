@@ -1,4 +1,6 @@
 //! Prepared claims transfer into the exact published downstream row.
+use super::super::refreshed_rejoin::infallible;
+use super::super::refreshed_rejoin::unpaid_under_request;
 use super::*;
 
 impl PreparedPrerequisiteClaims {
@@ -90,7 +92,9 @@ impl PreparedPrerequisiteClaims {
                 .get_mut(upstream.as_ref())
                 .expect("settled prerequisite retained");
             prior.framework_required_count -= 1;
-            state.remove_required_member_if_released(upstream);
+            infallible(
+                state.remove_required_member_if_released(upstream, &mut unpaid_under_request()),
+            );
         }
         for upstream in &old {
             state.defer_terminal_cleanup(upstream, 0);

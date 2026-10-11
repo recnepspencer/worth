@@ -59,11 +59,9 @@ impl WorthQueryOutputDemandRegistry {
             None
         } else {
             let mut found = None;
-            for (key, record) in super::refreshed_rejoin::search_occurrence_rows(
-                &state.records,
-                &requested_key,
-                admission,
-            )? {
+            for (key, record) in
+                super::refreshed_rejoin::occurrence_rows(&state.records, &requested_key, admission)?
+            {
                 admission
                     .charge_external_work(1)
                     .map_err(|_| super::refreshed_rejoin::work_denial())?;
@@ -348,7 +346,7 @@ pub(super) fn newest_semantic_key(
 ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
     let mut newest = None;
     for (key, record) in
-        super::refreshed_rejoin::search_occurrence_rows(&state.records, requested, admission)?
+        super::refreshed_rejoin::occurrence_rows(&state.records, requested, admission)?
     {
         admission
             .charge_external_work(1)

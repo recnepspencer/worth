@@ -1,3 +1,6 @@
+mod drain;
+use super::refreshed_rejoin::infallible;
+use super::refreshed_rejoin::unpaid_under_request;
 use std::sync::Arc;
 
 use super::{
@@ -238,8 +241,13 @@ impl DemandRegistryState {
         let release = record.terminal()
             && record.framework_required_count == 0
             && record.prepared_prerequisite_claims == 0;
+        let mut charge = unpaid_under_request();
         let (released, settlements, checkpoint, release_refund) = if release {
-            self.release_record_prerequisites_detached(head.as_ref(), &mut retired_members)
+            infallible(self.release_record_prerequisites_detached(
+                head.as_ref(),
+                &mut retired_members,
+                &mut charge,
+            ))
         } else {
             (Vec::new(), Vec::new(), None, 0)
         };
@@ -247,7 +255,9 @@ impl DemandRegistryState {
             let record = self.records.get_mut(head.as_ref()).unwrap();
             let refund = record.obligation_reserved_bytes();
             let obligations = std::mem::take(&mut record.performed_obligations);
-            let member = self.remove_required_member_if_released_detached(head.as_ref());
+            let member = infallible(
+                self.remove_required_member_if_released_detached(head.as_ref(), &mut charge),
+            );
             (obligations, refund, member)
         } else {
             (
@@ -304,66 +314,6 @@ struct RetiredTerminalCleanup {
     _member: Option<Arc<super::required_work::RequiredWorkMembership>>,
     refund_required_bytes: usize,
     refund_obligation_bytes: usize,
-}
-
-impl WorthQueryOutputDemandRegistry {
-    /// Released settlements leave the invalidation owner too, with every
-    /// upstream row only they still held.
-    pub(super) fn drain_terminal_cleanup_admitted(
-        &self,
-        owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let mut entry_paid = false;
-        loop {
-            let retired = {
-                let mut state = self
-                    .state
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                state.take_terminal_cleanup_step(admission, entry_paid)?
-            };
-            let Some(mut retired) = retired else {
-                return Ok(());
-            };
-            let refund = retired.refund_required_bytes;
-            let obligation_refund = retired.refund_obligation_bytes;
-            let released = std::mem::take(&mut retired._settlements);
-            drop(retired);
-            let mut state = self
-                .state
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            state.required_reserved_bytes = state.required_reserved_bytes.saturating_sub(refund);
-            state.obligation_reserved_bytes = state
-                .obligation_reserved_bytes
-                .saturating_sub(obligation_refund);
-            entry_paid = true;
-            drop(state);
-            self.retire_released_settlements(released, owner);
-        }
-    }
-}
-
-#[cfg(test)]
-impl DemandRegistryState {
-    pub(super) fn drain_terminal_cleanup(
-        &mut self,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let mut entry_paid = false;
-        while let Some(retired) = self.take_terminal_cleanup_step(admission, entry_paid)? {
-            let refund = retired.refund_required_bytes;
-            let obligation_refund = retired.refund_obligation_bytes;
-            drop(retired);
-            self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(refund);
-            self.obligation_reserved_bytes = self
-                .obligation_reserved_bytes
-                .saturating_sub(obligation_refund);
-            entry_paid = true;
-        }
-        Ok(())
-    }
 }
 
 impl DemandRecord {

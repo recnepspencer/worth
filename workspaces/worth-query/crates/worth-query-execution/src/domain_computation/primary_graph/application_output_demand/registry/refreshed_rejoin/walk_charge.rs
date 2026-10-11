@@ -1,8 +1,8 @@
 //! Request work may refuse a search; terminal cleanup cannot.
 use super::super::record_map::DemandRecords;
 use super::{
-    newest_matching_row, refresh_order, search_stale_owner, work_denial, InvalidationEditAdmission,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandKey,
+    awaited_by_stale_owner, newest_matching_row, refresh_order, work_denial,
+    InvalidationEditAdmission, WorthQueryOutputDemandDenial, WorthQueryOutputDemandKey,
 };
 use core::convert::Infallible;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
@@ -54,7 +54,7 @@ impl PrepaidOccurrenceWalk<'_> {
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> bool {
-        match search_stale_owner(self.records, key, self) {
+        match awaited_by_stale_owner(self.records, key, self) {
             Ok(awaited) => awaited,
             Err(never) => match never {},
         }
@@ -98,7 +98,7 @@ impl OccurrenceSearchCharge for InvalidationEditAdmission {
     }
 }
 
-impl OccurrenceSearchCharge for () {
+impl OccurrenceSearchCharge for super::super::lifecycle::release::CleanupWalk {
     type Refusal = Infallible;
 
     fn occurrence_path(&mut self, _: usize) -> Result<(), Self::Refusal> {
@@ -119,5 +119,31 @@ impl OccurrenceSearchCharge for PrepaidOccurrenceWalk<'_> {
 
     fn inspect_row(&mut self) -> Result<(), Self::Refusal> {
         Ok(())
+    }
+}
+
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn unpaid_under_request(
+) -> impl OccurrenceSearchCharge<Refusal = Infallible> {
+    struct UnpaidUnderRequest;
+    impl OccurrenceSearchCharge for UnpaidUnderRequest {
+        type Refusal = Infallible;
+        fn occurrence_path(&mut self, _: usize) -> Result<(), Infallible> {
+            Ok(())
+        }
+        fn inspect_row(&mut self) -> Result<(), Infallible> {
+            Ok(())
+        }
+    }
+    UnpaidUnderRequest
+}
+
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn infallible<
+    T,
+>(
+    result: Result<T, Infallible>,
+) -> T {
+    match result {
+        Ok(value) => value,
+        Err(never) => match never {},
     }
 }

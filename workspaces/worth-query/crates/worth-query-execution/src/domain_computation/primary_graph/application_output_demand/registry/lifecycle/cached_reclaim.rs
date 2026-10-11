@@ -11,6 +11,8 @@
 //! or with none left releases a performed source nobody holds, and asks
 //! again: a refusal it still reports is one no unheld observation caused.
 
+use super::super::refreshed_rejoin::infallible;
+use super::super::refreshed_rejoin::unpaid_under_request;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
@@ -44,7 +46,7 @@ impl WorthQueryOutputDemandRegistry {
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             let reclaimed = state.reclaim_cached_rows(bytes, &mut retired, &mut claims, admission);
             if !retired.is_empty() {
-                state.prune_completed_custody();
+                infallible(state.prune_completed_custody(&mut unpaid_under_request()));
             }
             reclaimed
         };
@@ -71,7 +73,7 @@ impl WorthQueryOutputDemandRegistry {
             let reclaimed =
                 state.retire_next_cached_row(&mut None, &mut retired, &mut claims, admission);
             if !retired.is_empty() {
-                state.prune_completed_custody();
+                infallible(state.prune_completed_custody(&mut unpaid_under_request()));
             }
             match reclaimed {
                 Ok(false) => state
@@ -134,7 +136,7 @@ impl DemandRegistryState {
                 return Ok(false);
             };
             for dependent in claimants_where(&self.records, &key, |_| true) {
-                self.follow_newest(&dependent, &key);
+                infallible(self.follow_newest(&dependent, &key, &mut unpaid_under_request()));
             }
             // A claim that did not move still resolves through this row.
             if self
@@ -145,7 +147,11 @@ impl DemandRegistryState {
                 *still_claimed = Some(key);
                 continue;
             }
-            claims.extend(self.retire_row(&key, retired));
+            claims.extend(infallible(self.retire_row(
+                &key,
+                retired,
+                &mut unpaid_under_request(),
+            )));
             return Ok(true);
         }
     }

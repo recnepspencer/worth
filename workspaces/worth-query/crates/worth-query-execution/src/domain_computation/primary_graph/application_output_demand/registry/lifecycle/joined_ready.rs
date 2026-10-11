@@ -9,6 +9,8 @@
 //! lineage settlement the Ready posted leaves with it, so the execution
 //! decides Fresh and never reuses the output it evicted.
 
+use super::super::refreshed_rejoin::infallible;
+use super::super::refreshed_rejoin::unpaid_under_request;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::super::refreshed_rejoin::{charge_whole_map, WholeMapPasses};
@@ -36,15 +38,16 @@ impl WorthQueryOutputDemandRegistry {
         if !state.records.get(key).is_some_and(only_joined) || prepaid.stale_owner(key) {
             return Ok(false);
         }
-        let claims = state.release_record_prerequisites(key);
+        let claims =
+            infallible(state.release_record_prerequisites(key, &mut unpaid_under_request()));
         let record = state.records.get_mut(key).expect("the row was checked");
         let ready = std::mem::replace(&mut record.state, DemandState::Admitted);
         let readmission = record.readmission_source.take();
         record.required_stop = None;
         record.wake.notify();
         let upstream = claims.iter().map(|claim| claim.as_ref().clone()).collect();
-        let retired = state.retire_closed_rows(upstream);
-        state.prune_completed_custody();
+        let retired = infallible(state.retire_closed_rows(upstream, &mut unpaid_under_request()));
+        infallible(state.prune_completed_custody(&mut unpaid_under_request()));
         drop(state);
         drop((ready, readmission, claims, retired));
         Ok(true)

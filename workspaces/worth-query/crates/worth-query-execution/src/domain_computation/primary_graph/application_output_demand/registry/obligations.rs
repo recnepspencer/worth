@@ -1,3 +1,4 @@
+use super::refreshed_rejoin::OccurrenceSearchCharge;
 use std::sync::Arc;
 
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
@@ -6,6 +7,13 @@ use super::{
     DemandRecord, DemandRegistryState, DemandState, PerformedOutputObligation,
     WorthQueryOutputCheckpoint, WorthQueryOutputDemandKey,
 };
+
+type ReleasedPrerequisiteResources = (
+    Vec<Arc<WorthQueryOutputDemandKey>>,
+    Vec<(Arc<RecordedSettlementIdentity>, usize)>,
+    Option<super::prerequisite_claims::CheckpointPrerequisiteClaims>,
+    usize,
+);
 
 impl DemandRecord {
     pub(super) fn obligation_reserved_bytes(&self) -> usize {
@@ -36,62 +44,57 @@ impl DemandRecord {
 impl DemandRegistryState {
     /// Release one terminal output's framework claims while the registry lock
     /// is held. Return the old Arc pointers for destruction after that lock.
-    pub(super) fn release_record_prerequisites(
+    pub(super) fn release_record_prerequisites<C: OccurrenceSearchCharge>(
         &mut self,
         key: &WorthQueryOutputDemandKey,
-    ) -> Vec<Arc<WorthQueryOutputDemandKey>> {
+        charge: &mut C,
+    ) -> Result<Vec<Arc<WorthQueryOutputDemandKey>>, C::Refusal> {
         let (prior, settlements, checkpoint, refund) =
-            self.release_record_prerequisites_inner(key, None);
+            self.release_record_prerequisites_inner(key, None, charge)?;
         drop(settlements);
         // Static claim final destruction was prepaid at its admission. It
         // contains only settlement addresses and an atomic refund ticket.
         drop(checkpoint);
         self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(refund);
-        prior
+        Ok(prior)
     }
 
     /// The rows a released dependent claim on `upstream` may have been the
     /// last to require: the row itself, and the newest row of its occurrence
     /// when a refresh superseded it.
-    fn released_by_claim(
+    fn released_by_claim<C: OccurrenceSearchCharge>(
         &self,
         upstream: &WorthQueryOutputDemandKey,
-    ) -> impl Iterator<Item = WorthQueryOutputDemandKey> {
-        let newest = super::refreshed_rejoin::newest_of_occurrence(&self.records, upstream);
-        std::iter::once(upstream.clone()).chain(newest)
+        charge: &mut C,
+    ) -> Result<impl Iterator<Item = WorthQueryOutputDemandKey>, C::Refusal> {
+        let newest =
+            super::refreshed_rejoin::newest_of_occurrence(&self.records, upstream, charge)?;
+        Ok(std::iter::once(upstream.clone()).chain(newest))
     }
 
-    pub(super) fn release_record_prerequisites_detached(
+    pub(super) fn release_record_prerequisites_detached<C: OccurrenceSearchCharge>(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         retired_members: &mut Vec<super::required_members::DetachedRequiredMember>,
-    ) -> (
-        Vec<Arc<WorthQueryOutputDemandKey>>,
-        Vec<(Arc<RecordedSettlementIdentity>, usize)>,
-        Option<super::prerequisite_claims::CheckpointPrerequisiteClaims>,
-        usize,
-    ) {
-        self.release_record_prerequisites_inner(key, Some(retired_members))
+        charge: &mut C,
+    ) -> Result<ReleasedPrerequisiteResources, C::Refusal> {
+        self.release_record_prerequisites_inner(key, Some(retired_members), charge)
     }
 
-    fn release_record_prerequisites_inner(
+    fn release_record_prerequisites_inner<C: OccurrenceSearchCharge>(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         mut retired_members: Option<&mut Vec<super::required_members::DetachedRequiredMember>>,
-    ) -> (
-        Vec<Arc<WorthQueryOutputDemandKey>>,
-        Vec<(Arc<RecordedSettlementIdentity>, usize)>,
-        Option<super::prerequisite_claims::CheckpointPrerequisiteClaims>,
-        usize,
-    ) {
+        charge: &mut C,
+    ) -> Result<ReleasedPrerequisiteResources, C::Refusal> {
         let Some(record) = self.records.get_mut(key) else {
-            return (Vec::new(), Vec::new(), None, 0);
+            return Ok((Vec::new(), Vec::new(), None, 0));
         };
         if record.prepared_prerequisite_claims != 0
             || record.framework_required_count != 0
             || record.pending_cleanup_queued
         {
-            return (Vec::new(), Vec::new(), None, 0);
+            return Ok((Vec::new(), Vec::new(), None, 0));
         }
         let prior = std::mem::take(&mut record.prerequisites);
         let checkpoint = record.checkpoint_prerequisites.take();
@@ -119,31 +122,33 @@ impl DemandRegistryState {
                 .get_mut(upstream.as_ref())
                 .expect("framework prerequisite record remains retained");
             record.framework_required_count -= 1;
-            for released in self.released_by_claim(upstream) {
+            for released in self.released_by_claim(upstream, charge)? {
                 if let Some(retired) = retired_members.as_deref_mut() {
-                    let member = self.remove_required_member_if_released_detached(&released);
+                    let member =
+                        self.remove_required_member_if_released_detached(&released, charge)?;
                     refund = refund
                         .checked_add(member.refund_required_bytes)
                         .expect("admitted required member charge fits");
                     retired.push(member);
                 } else {
-                    self.remove_required_member_if_released(&released);
+                    self.remove_required_member_if_released(&released, charge)?;
                 }
             }
         }
         for upstream in &prior {
             self.defer_terminal_cleanup(upstream, 0);
         }
-        (prior, settlements, checkpoint, refund)
+        Ok((prior, settlements, checkpoint, refund))
     }
 
     /// A branch-wide retirement already visits its records. Move the retired
     /// prerequisite vectors out in that walk, then release their upstream
     /// claims in a second pass so no record is mutably aliased with another.
-    pub(super) fn release_matching_prerequisites(
+    pub(super) fn release_matching_prerequisites<C: OccurrenceSearchCharge>(
         &mut self,
         retired: impl Fn(&WorthQueryOutputDemandKey, &DemandRecord) -> bool,
-    ) {
+        charge: &mut C,
+    ) -> Result<(), C::Refusal> {
         let count = self
             .records
             .iter()
@@ -194,8 +199,8 @@ impl DemandRegistryState {
                     .get_mut(upstream.as_ref())
                     .expect("framework prerequisite record remains retained");
                 record.framework_required_count -= 1;
-                for released in self.released_by_claim(upstream) {
-                    self.remove_required_member_if_released(&released);
+                for released in self.released_by_claim(upstream, charge)? {
+                    self.remove_required_member_if_released(&released, charge)?;
                 }
             }
         }
@@ -204,6 +209,7 @@ impl DemandRegistryState {
                 self.defer_terminal_cleanup(upstream, 0);
             }
         }
+        Ok(())
     }
 }
 

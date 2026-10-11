@@ -1,9 +1,12 @@
+use super::refreshed_rejoin::infallible;
+use super::refreshed_rejoin::unpaid_under_request;
 mod cached_reclaim;
 mod closed_retirement;
 mod completed_custody;
 mod joined_ready;
 mod occurrence_retirement;
 mod performed_release;
+pub(super) mod release;
 mod selected_execution_finish;
 
 use super::*;
@@ -69,7 +72,7 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(custody) = state.source_custody.get_mut(source_commit) {
             custody.token_count = custody.token_count.saturating_sub(1);
         }
-        state.prune_completed_custody();
+        infallible(state.prune_completed_custody(&mut unpaid_under_request()));
     }
 
     pub(in crate::domain_computation::primary_graph) fn complete_prepared_source(
@@ -94,7 +97,7 @@ impl WorthQueryOutputDemandRegistry {
                 custody.discovery = None;
             }
         }
-        state.prune_completed_custody();
+        infallible(state.prune_completed_custody(&mut unpaid_under_request()));
     }
 
     pub(in crate::domain_computation::primary_graph) fn begin_source_preparation(
@@ -182,119 +185,6 @@ impl WorthQueryOutputDemandRegistry {
             .get_mut(&interest.key)
             .expect("executing demand retains its owner record");
         selected_execution_finish::relinquish_record(record);
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn release(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-    ) {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut released_bytes = 0;
-        let replaced = refreshed_rejoin::replaced_under_refresh(&state.records, &interest.key);
-        let remove = state.records.get_mut(&interest.key).is_some_and(|record| {
-            record.interests = record.interests.saturating_sub(1);
-            if interest.requires_output {
-                record.required_interests = record.required_interests.saturating_sub(1);
-            }
-            // Keep a ready ordinary output for an equivalent later demand.
-            // Source supersession and occurrence retirement remove it; closing
-            // the handle releases only the caller's interest.
-            let ready = record.has_cached_ready();
-            let stopped = matches!(record.state, DemandState::Failed(_))
-                || matches!(&record.state, DemandState::Output(output)
-                    if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. }));
-            if stopped && record.interests == 0 && !record.pending_cleanup_queued {
-                released_bytes += record.release_obligations();
-            }
-            record.interests == 0
-                && record.framework_required_count == 0
-                && record.prepared_prerequisite_claims == 0
-                && !record.pending_cleanup_queued
-                && ((!record.is_required() && !ready) || stopped)
-                && !(ready && replaced)
-                && record.performed_obligations.is_empty()
-                && record.performed_source.is_none()
-                && match &record.state {
-                    DemandState::Scheduling | DemandState::Running => false,
-                    DemandState::Output(output) => {
-                        matches!(
-                            output.advancement,
-                            WorthQueryOutputAdvancement::Stopped { .. }
-                        ) || matches!(
-                            output.checkpoint,
-                            Some(WorthQueryOutputCheckpoint::Ready(_))
-                        )
-                    }
-                    _ => true,
-                }
-        });
-        let terminal = state.records.get(&interest.key).is_some_and(|record| {
-            matches!(record.state, DemandState::Failed(_))
-                || matches!(&record.state, DemandState::Output(output)
-                    if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. }))
-        });
-        let released_prerequisites =
-            terminal.then(|| state.release_record_prerequisites(&interest.key));
-        if remove {
-            if let Some(record) = state.records.remove(&interest.key) {
-                released_bytes += record.obligation_reserved_bytes();
-                if record.unpublished_new_key() {
-                    state.revive_replaced_ready(&interest.key);
-                }
-            }
-        }
-        if !state
-            .records
-            .get(&interest.key)
-            .is_some_and(|record| record.pending_cleanup_queued)
-        {
-            state.remove_required_member_if_released(&interest.key);
-        }
-        // A held successor ends with its row's work or with the last owner
-        // awaiting that row; it drops after the lock.
-        let mut finished = state.take_finished_successor(&interest.key);
-        let unawaited = state
-            .records
-            .get_mut(&interest.key)
-            .and_then(DemandRecord::take_unawaited_reopened);
-        // A closing stale owner may have been the last one awaiting the
-        // newest row of its occurrence.
-        if terminal {
-            if let Some(newest) =
-                refreshed_rejoin::newest_of_occurrence(&state.records, &interest.key)
-            {
-                state.remove_required_member_if_released(&newest);
-                finished = finished.or_else(|| state.take_finished_successor(&newest));
-            }
-        }
-        state.obligation_reserved_bytes = state
-            .obligation_reserved_bytes
-            .saturating_sub(released_bytes);
-        // The closing row, each upstream its released claims leave unheld,
-        // and each row it replaced, keeps only what it can still answer for.
-        let candidates = std::iter::once(interest.key.clone())
-            .chain(
-                released_prerequisites
-                    .iter()
-                    .flatten()
-                    .map(|upstream| upstream.as_ref().clone()),
-            )
-            .chain(refreshed_rejoin::replaced_by_published(
-                &state.records,
-                &interest.key,
-            ))
-            .collect();
-        let (retired, released_claims) = state.retire_closed_rows(candidates);
-        state.prune_completed_custody();
-        drop(state);
-        drop(retired);
-        drop(released_claims);
-        drop(released_prerequisites);
-        drop(finished);
-        drop(unawaited);
     }
 }
 

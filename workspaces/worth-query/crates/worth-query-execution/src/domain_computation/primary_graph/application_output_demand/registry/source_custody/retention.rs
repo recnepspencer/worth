@@ -1,3 +1,5 @@
+use super::super::refreshed_rejoin::infallible;
+use super::super::refreshed_rejoin::unpaid_under_request;
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
@@ -115,7 +117,7 @@ impl WorthQueryOutputDemandRegistry {
                     ));
                 }
             }
-            state.prune_completed_custody();
+            infallible(state.prune_completed_custody(&mut unpaid_under_request()));
         }
         let recovery = discovery.map(|discovery| super::super::DiscoveredSourceRecovery {
             receipt: source.receipt.clone(),

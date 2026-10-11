@@ -1,3 +1,5 @@
+use super::refreshed_rejoin::infallible;
+use super::refreshed_rejoin::unpaid_under_request;
 use super::{
     DemandRegistryState, DemandState, WorthQueryOutputDemandInterest, WorthQueryOutputDemandKey,
     WorthQueryOutputDemandRegistry,
@@ -47,11 +49,15 @@ impl WorthQueryOutputDemandRegistry {
         if unpublished {
             // The row ends without an output of its own: the newest Ready it
             // replaced answers for the occurrence again.
-            state.revive_replaced_ready(&interest.key);
+            infallible(state.revive_replaced_ready(&interest.key, &mut unpaid_under_request()));
         }
-        let released_prerequisites = state.release_record_prerequisites(&interest.key);
+        let released_prerequisites = infallible(
+            state.release_record_prerequisites(&interest.key, &mut unpaid_under_request()),
+        );
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        state.remove_required_member_if_released(&interest.key);
+        infallible(
+            state.remove_required_member_if_released(&interest.key, &mut unpaid_under_request()),
+        );
         drop(state);
         drop(released_prerequisites);
         denial
@@ -66,8 +72,7 @@ pub(super) fn supersede_predecessors(
     // Admit the occurrence walk before changing any predecessor. Keyed mutation
     // and removal then use only this closed set, never unrelated registry rows.
     let mut keys = Vec::new();
-    for (key, _) in
-        super::refreshed_rejoin::search_occurrence_rows(&state.records, successor, admission)?
+    for (key, _) in super::refreshed_rejoin::occurrence_rows(&state.records, successor, admission)?
     {
         admission
             .charge_external_work(6)
@@ -88,7 +93,7 @@ pub(super) fn supersede_predecessors(
             }
             record.performed_source = None;
             record.wake.notify();
-            state.release_record_prerequisites(key);
+            infallible(state.release_record_prerequisites(key, &mut unpaid_under_request()));
         }
     }
     for key in keys {
@@ -125,8 +130,7 @@ pub(super) fn reject_older_successor(
     use super::refreshed_rejoin::OccurrenceSearchCharge;
     // Another producer may still compute from this source until currentness
     // rejects its work; only a newer revision of this producer blocks it.
-    for (key, _) in
-        super::refreshed_rejoin::search_occurrence_rows(&state.records, successor, admission)?
+    for (key, _) in super::refreshed_rejoin::occurrence_rows(&state.records, successor, admission)?
     {
         admission.inspect_row()?;
         if key != successor && key.replacement_order(successor) == Some(std::cmp::Ordering::Greater)

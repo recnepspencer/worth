@@ -24,7 +24,7 @@
 
 use std::sync::Arc;
 
-use super::refreshed_rejoin::{search_occurrence_rows, work_denial, OccurrenceSearchCharge};
+use super::refreshed_rejoin::{occurrence_rows, work_denial, OccurrenceSearchCharge};
 use super::{DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry};
 use crate::domain_computation::primary_graph::output_lineage::{
     invalidation::{InvalidationEditAdmission, SourceInvalidationOwner},
@@ -170,7 +170,7 @@ impl DemandRegistryState {
             return Ok(Vec::new());
         }
         let mut candidates = Vec::new();
-        for (other, record) in search_occurrence_rows(&self.records, key, admission)? {
+        for (other, record) in occurrence_rows(&self.records, key, admission)? {
             admission.inspect_row()?;
             let superseded = if other == key {
                 record.settlements.len().saturating_sub(1)

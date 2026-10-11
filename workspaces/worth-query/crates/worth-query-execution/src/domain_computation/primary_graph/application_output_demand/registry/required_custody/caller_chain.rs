@@ -15,7 +15,7 @@
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::super::refreshed_rejoin::{
-    charge_whole_map, search_occurrence_rows, superseded, WholeMapPasses,
+    charge_whole_map, occurrence_rows, superseded, WholeMapPasses,
 };
 use super::super::{
     DemandRecord, DemandRegistryState, DemandState, WorthQueryOutputAdvancement,
@@ -68,11 +68,10 @@ impl DemandRegistryState {
         let mut next = 0;
         while let Some(occurrence) = chain.get(next).cloned() {
             next += 1;
-            let occurrence_rows =
-                match search_occurrence_rows(&self.records, &occurrence, &mut prepaid) {
-                    Ok(rows) => rows,
-                    Err(never) => match never {},
-                };
+            let occurrence_rows = match occurrence_rows(&self.records, &occurrence, &mut prepaid) {
+                Ok(rows) => rows,
+                Err(never) => match never {},
+            };
             for (_, record) in occurrence_rows {
                 for claimed in &record.prerequisites {
                     if !chain.iter().any(|known| known.same_occurrence(claimed)) {

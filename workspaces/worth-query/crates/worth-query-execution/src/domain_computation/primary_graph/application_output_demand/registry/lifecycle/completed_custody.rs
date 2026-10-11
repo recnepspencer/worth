@@ -1,12 +1,20 @@
 //! Completed source cleanup visits only its declared source occurrences.
+use super::super::refreshed_rejoin::OccurrenceSearchCharge;
 use super::*;
 
 impl DemandRegistryState {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prune_completed_custody(
+    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prune_completed_custody<
+        C: OccurrenceSearchCharge,
+    >(
         &mut self,
-    ) {
+        charge: &mut C,
+    ) -> Result<(), C::Refusal> {
         let mut retired_keys = Vec::new();
+        let mut refusal = None;
         self.source_custody.retain(|commit, custody| {
+            if refusal.is_some() {
+                return true;
+            }
             if custody.token_count != 0 {
                 return true;
             }
@@ -44,7 +52,17 @@ impl DemandRegistryState {
                     .any(|(key, record)| {
                         record.source_commits.contains(commit)
                             && (record.interests != 0
-                                || refreshed_rejoin::awaited_by_stale_owner(&self.records, key)
+                                || match refreshed_rejoin::awaited_by_stale_owner(
+                                    &self.records,
+                                    key,
+                                    charge,
+                                ) {
+                                    Ok(held) => held,
+                                    Err(stop) => {
+                                        refusal = Some(stop);
+                                        true
+                                    }
+                                }
                                 || !record.performed_obligations.is_empty()
                                 || !matches!(
                                     record.state,
@@ -66,6 +84,9 @@ impl DemandRegistryState {
             }
             held
         });
+        if let Some(stop) = refusal {
+            return Err(stop);
+        }
         for key in retired_keys {
             if let Some(record) = self.records.get_mut(&key) {
                 record
@@ -73,5 +94,6 @@ impl DemandRegistryState {
                     .retain(|commit| self.source_custody.contains_key(commit));
             }
         }
+        Ok(())
     }
 }

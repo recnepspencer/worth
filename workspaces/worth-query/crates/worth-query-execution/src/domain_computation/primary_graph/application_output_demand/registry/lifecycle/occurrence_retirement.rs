@@ -1,3 +1,5 @@
+use super::super::refreshed_rejoin::infallible;
+use super::super::refreshed_rejoin::unpaid_under_request;
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
@@ -43,7 +45,10 @@ impl WorthQueryOutputDemandRegistry {
             record.readmission_source.take();
             record.wake.notify();
         }
-        state.release_matching_prerequisites(|_, record| record.product_occurrence == occurrence);
+        infallible(state.release_matching_prerequisites(
+            |_, record| record.product_occurrence == occurrence,
+            &mut unpaid_under_request(),
+        ));
         let mut released_bytes = 0;
         let DemandRegistryState {
             records,
@@ -83,7 +88,7 @@ impl WorthQueryOutputDemandRegistry {
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);
-        state.prune_completed_custody();
+        infallible(state.prune_completed_custody(&mut unpaid_under_request()));
         drop(state);
         drop(retired_cursors);
     }

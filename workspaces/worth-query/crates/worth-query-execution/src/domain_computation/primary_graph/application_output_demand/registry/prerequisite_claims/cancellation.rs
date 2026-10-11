@@ -1,3 +1,5 @@
+use super::super::refreshed_rejoin::infallible;
+use super::super::refreshed_rejoin::unpaid_under_request;
 use super::{PreparedPrerequisiteClaims, WorthQueryOutputDemandRegistry};
 
 impl Drop for PreparedPrerequisiteClaims {
@@ -21,7 +23,9 @@ impl Drop for PreparedPrerequisiteClaims {
         for upstream in &self.predecessors {
             if let Some(record) = state.records.get_mut(upstream.as_ref()) {
                 record.framework_required_count -= 1;
-                state.remove_required_member_if_released(upstream);
+                infallible(
+                    state.remove_required_member_if_released(upstream, &mut unpaid_under_request()),
+                );
             }
         }
         for upstream in &self.predecessors {

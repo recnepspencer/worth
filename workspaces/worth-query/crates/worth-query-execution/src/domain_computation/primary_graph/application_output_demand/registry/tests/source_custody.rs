@@ -1,3 +1,5 @@
+use super::super::refreshed_rejoin::infallible;
+use super::super::refreshed_rejoin::unpaid_under_request;
 use std::cmp::Ordering;
 
 use super::*;
@@ -105,14 +107,14 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
             completed: true,
         },
     );
-    state.prune_completed_custody();
+    infallible(state.prune_completed_custody(&mut unpaid_under_request()));
     assert_eq!(state.source_custody.len(), 1);
     state.source_custody.get_mut(&commit).unwrap().token_count = 0;
     let demand_key = key("producer", 5, 1);
     let mut active = record(occurrence, DemandState::Admitted, 1);
     active.source_commits.push(commit.clone());
     state.records.insert(demand_key.clone(), active);
-    state.prune_completed_custody();
+    infallible(state.prune_completed_custody(&mut unpaid_under_request()));
     assert_eq!(state.source_custody.len(), 1);
     let record = state.records.get_mut(&demand_key).unwrap();
     record.interests = 0;
@@ -120,7 +122,7 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
         WorthQueryOutputDemandDenialKind::NoEffect,
         "terminal source",
     ));
-    state.prune_completed_custody();
+    infallible(state.prune_completed_custody(&mut unpaid_under_request()));
     assert!(state.source_custody.is_empty());
 }
 
@@ -163,9 +165,9 @@ fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
             completed: false,
         },
     );
-    state.prune_completed_custody();
+    infallible(state.prune_completed_custody(&mut unpaid_under_request()));
     assert_eq!(state.source_custody.len(), 1);
     state.source_custody.get_mut(&commit).unwrap().token_count = 0;
-    state.prune_completed_custody();
+    infallible(state.prune_completed_custody(&mut unpaid_under_request()));
     assert!(state.source_custody.is_empty());
 }

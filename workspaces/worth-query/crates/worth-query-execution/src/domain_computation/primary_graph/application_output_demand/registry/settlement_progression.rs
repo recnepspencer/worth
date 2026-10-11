@@ -1,3 +1,5 @@
+use super::refreshed_rejoin::infallible;
+use super::refreshed_rejoin::unpaid_under_request;
 use std::sync::Arc;
 
 use super::{
@@ -159,7 +161,9 @@ impl WorthQueryOutputDemandRegistry {
         }
         let released = record.release_obligations();
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        state.remove_required_member_if_released(&interest.key);
+        infallible(
+            state.remove_required_member_if_released(&interest.key, &mut unpaid_under_request()),
+        );
         Ok(())
     }
 }

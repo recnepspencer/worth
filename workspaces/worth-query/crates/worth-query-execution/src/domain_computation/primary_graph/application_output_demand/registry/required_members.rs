@@ -1,3 +1,4 @@
+use super::refreshed_rejoin::OccurrenceSearchCharge;
 use std::sync::Arc;
 
 use super::{DemandRegistryState, WorthQueryOutputDemandKey};
@@ -89,26 +90,33 @@ impl DemandRegistryState {
         }
     }
 
-    pub(super) fn remove_required_member_if_released(&mut self, key: &WorthQueryOutputDemandKey) {
-        let retired = self.remove_required_member_if_released_detached(key);
+    pub(super) fn remove_required_member_if_released<C: OccurrenceSearchCharge>(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+        charge: &mut C,
+    ) -> Result<(), C::Refusal> {
+        let retired = self.remove_required_member_if_released_detached(key, charge)?;
         let refund = retired.refund_required_bytes;
         drop(retired);
         self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(refund);
+        Ok(())
     }
 
     /// Selected terminal cleanup carries the real readmission source out of
     /// the registry guard before its final Arc can be destroyed.
-    pub(super) fn remove_required_member_if_released_detached(
+    pub(super) fn remove_required_member_if_released_detached<C: OccurrenceSearchCharge>(
         &mut self,
         key: &WorthQueryOutputDemandKey,
-    ) -> DetachedRequiredMember {
+        charge: &mut C,
+    ) -> Result<DetachedRequiredMember, C::Refusal> {
         // Only a row is required or awaited: the member of one that left
         // leaves with it.
-        if self.records.get(key).is_some_and(|record| {
-            record.is_required()
-                || super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key)
-        }) {
-            return DetachedRequiredMember::default();
+        if let Some(record) = self.records.get(key) {
+            if record.is_required()
+                || super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key, charge)?
+            {
+                return Ok(DetachedRequiredMember::default());
+            }
         }
         let mut retired_source = None;
         if let Some(record) = self.records.get_mut(key) {
@@ -129,10 +137,10 @@ impl DemandRegistryState {
             .as_ref()
             .map(|member| member_bytes(member.as_ref()).expect("admitted key charge fits"))
             .unwrap_or(0);
-        DetachedRequiredMember {
+        Ok(DetachedRequiredMember {
             _source: retired_source,
             _key: removed_key,
             refund_required_bytes,
-        }
+        })
     }
 }

@@ -1,5 +1,6 @@
 //! Charging cannot change occurrence selection, ordering, or stale ownership.
 use super::super::record_map::DemandRecords;
+use super::super::refreshed_rejoin::infallible;
 use super::super::refreshed_rejoin::*;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::{
@@ -14,9 +15,14 @@ fn seeded_charged_and_uncharged_occurrence_searches_agree() {
     for run in 0..16 {
         let records = occurrence_run(&mut seed);
         for requested in records.iter().map(|(key, _)| key) {
-            let plain: Vec<_> = occurrence_rows(&records, requested).collect();
+            let plain: Vec<_> = infallible(occurrence_rows(
+                &records,
+                requested,
+                &mut unpaid_under_request(),
+            ))
+            .collect();
             let mut admission = record_admission();
-            let charged: Vec<_> = search_occurrence_rows(&records, requested, &mut admission)
+            let charged: Vec<_> = occurrence_rows(&records, requested, &mut admission)
                 .unwrap()
                 .collect();
             assert_eq!(
@@ -42,14 +48,23 @@ fn seeded_charged_and_uncharged_occurrence_searches_agree() {
                 candidates.splice(0..0, [repeated, repeated]);
             }
             assert_eq!(
-                newest_lawful_successor(candidates.iter().copied(), requested),
+                infallible(newest_lawful_successor(
+                    candidates.iter().copied(),
+                    requested,
+                    &mut unpaid_under_request()
+                )),
                 tally_fold(&candidates, requested, &mut visits),
                 "generated key walk, run {run}, {requested:?}"
             );
 
             let mut admission = record_admission();
             assert_eq!(
-                newest_lawful_successor(plain.iter().map(|(key, _)| *key), requested).cloned(),
+                infallible(newest_lawful_successor(
+                    plain.iter().map(|(key, _)| *key),
+                    requested,
+                    &mut unpaid_under_request()
+                ))
+                .cloned(),
                 newest_matching_row(&records, requested, &mut admission, |key, _| {
                     refresh_order(key, requested) == Some(Ordering::Greater)
                 })
@@ -58,12 +73,20 @@ fn seeded_charged_and_uncharged_occurrence_searches_agree() {
             );
             let mut admission = record_admission();
             assert_eq!(
-                awaited_by_stale_owner(&records, requested),
-                search_stale_owner(&records, requested, &mut admission).unwrap(),
+                infallible(awaited_by_stale_owner(
+                    &records,
+                    requested,
+                    &mut unpaid_under_request()
+                )),
+                awaited_by_stale_owner(&records, requested, &mut admission).unwrap(),
                 "stale owner, run {run}, {requested:?}"
             );
             assert_eq!(
-                awaited_by_stale_owner(&records, requested),
+                infallible(awaited_by_stale_owner(
+                    &records,
+                    requested,
+                    &mut unpaid_under_request()
+                )),
                 tally_stale_owner(&plain, requested, &mut visits)
             );
         }
@@ -90,7 +113,7 @@ fn charged_occurrence_search_pins_path_and_row_work() {
     }
     let mut admission = record_admission();
     assert_eq!(
-        search_occurrence_rows(&records, &keys[0], &mut admission)
+        occurrence_rows(&records, &keys[0], &mut admission)
             .unwrap()
             .count(),
         3
@@ -112,7 +135,7 @@ fn charged_occurrence_search_pins_path_and_row_work() {
     assert_eq!(admission.charged_navigation(), 68);
 
     let mut admission = record_admission();
-    assert!(!search_stale_owner(&records, &keys[2], &mut admission).unwrap());
+    assert!(!awaited_by_stale_owner(&records, &keys[2], &mut admission).unwrap());
     assert_eq!(admission.charged_work(), 5);
     assert_eq!(admission.charged_navigation(), 68);
 
@@ -160,7 +183,7 @@ fn charged_stale_owner_exit_pays_through_the_published_newer_row_only() {
         maximum_work_visits: 5,
         maximum_preparation_bytes: 8 * 1024 * 1024,
     });
-    assert!(!search_stale_owner(&records, &key("exit", 2, 2), &mut admission).unwrap());
+    assert!(!awaited_by_stale_owner(&records, &key("exit", 2, 2), &mut admission).unwrap());
     // Two seeks + older row + self + published newer row = 5. Generation 4 is not inspected.
     assert_eq!(admission.charged_work(), 5);
     // Five records have bit length 3: two paths of (3 * 11 + 1) = 68.

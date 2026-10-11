@@ -5,6 +5,7 @@
 //! handle that can finish the row. It stays on its own row until the row is
 //! Ready, a newer row of its occurrence supersedes it, or nothing awaits it.
 
+use super::refreshed_rejoin::{infallible, OccurrenceSearchCharge};
 use std::any::Any;
 
 use super::refreshed_rejoin::{awaited_by_stale_owner, superseded};
@@ -70,15 +71,19 @@ impl DemandRegistryState {
     /// The held successor of `key`'s row once the row is finished, or once
     /// nothing but that successor awaits it. The caller drops it after
     /// releasing the lock.
-    pub(super) fn take_finished_successor(
+    pub(super) fn take_finished_successor<
+        C: OccurrenceSearchCharge<Refusal = core::convert::Infallible>,
+    >(
         &mut self,
         key: &WorthQueryOutputDemandKey,
+        charge: &mut C,
     ) -> Option<HeldRequiredSuccessor> {
         let record = self.records.get(key)?;
         record.held_successor.as_ref()?;
         // Only demands own a row: a prerequisite claim of a cached dependent
         // row keeps the row, not the successor.
-        let orphaned = record.interests <= 1 && !awaited_by_stale_owner(&self.records, key);
+        let orphaned = record.interests <= 1
+            && !infallible(awaited_by_stale_owner(&self.records, key, charge));
         if needs_successor(record) && !orphaned {
             return None;
         }

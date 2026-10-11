@@ -10,6 +10,7 @@
 //! gives its Ready back. The outputs the dependent consumed stay recorded
 //! in its lineage, which is what certifies it when it reopens.
 
+use super::super::refreshed_rejoin::OccurrenceSearchCharge;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -26,10 +27,11 @@ impl DemandRegistryState {
     /// `candidates`, then retire each terminal row nothing holds, and each
     /// upstream its release leaves the same way. The caller drops the
     /// returned rows and claims after releasing the registry lock.
-    pub(super) fn retire_closed_rows(
+    pub(super) fn retire_closed_rows<C: OccurrenceSearchCharge>(
         &mut self,
         mut candidates: Vec<WorthQueryOutputDemandKey>,
-    ) -> (Vec<DemandRecord>, Vec<Arc<WorthQueryOutputDemandKey>>) {
+        charge: &mut C,
+    ) -> Result<(Vec<DemandRecord>, Vec<Arc<WorthQueryOutputDemandKey>>), C::Refusal> {
         let mut retired = Vec::new();
         let mut claims = Vec::new();
         // Built once, on the first closed superseded candidate.
@@ -41,67 +43,72 @@ impl DemandRegistryState {
             if closed_cached(record) {
                 let prerequisites = record.prerequisites.clone();
                 for upstream in prerequisites {
-                    candidates.extend(self.follow_newest(&key, &upstream));
+                    candidates.extend(self.follow_newest(&key, &upstream, charge)?);
                 }
             }
             if self.records.get(&key).is_some_and(closed_superseded) {
                 let index = claimants.get_or_insert_with(|| claimant_index(&self.records));
                 for dependent in index.get(&key).into_iter().flatten() {
                     if self.records.get(dependent).is_some_and(closed_cached) {
-                        candidates.extend(self.follow_newest(dependent, &key));
+                        candidates.extend(self.follow_newest(dependent, &key, charge)?);
                     }
                 }
             }
             let Some(record) = self.records.get(&key) else {
                 continue;
             };
-            if !record.terminal() || held(&self.records, &key, record) {
+            if !record.terminal() || held(&self.records, &key, record, charge)? {
                 continue;
             }
-            let released = self.retire_row(&key, &mut retired);
+            let released = self.retire_row(&key, &mut retired, charge)?;
             candidates.extend(released.iter().map(|upstream| upstream.as_ref().clone()));
             claims.extend(released);
         }
-        (retired, claims)
+        Ok((retired, claims))
     }
 
     /// Remove `key`'s row with its claims, which it returns. A superseded
     /// row first hands its settlements to the newest row of its occurrence.
-    pub(super) fn retire_row(
+    pub(super) fn retire_row<C: OccurrenceSearchCharge>(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         retired: &mut Vec<DemandRecord>,
-    ) -> Vec<Arc<WorthQueryOutputDemandKey>> {
+        charge: &mut C,
+    ) -> Result<Vec<Arc<WorthQueryOutputDemandKey>>, C::Refusal> {
         if self.records.get(key).is_some_and(superseded) {
-            self.hand_settlements_to_newest(key);
+            self.hand_settlements_to_newest(key, charge)?;
         }
-        let released = self.release_record_prerequisites(key);
-        self.remove_required_member_if_released(key);
+        let released = self.release_record_prerequisites(key, charge)?;
+        self.remove_required_member_if_released(key, charge)?;
         if let Some(record) = self.records.remove(key) {
             self.obligation_reserved_bytes = self
                 .obligation_reserved_bytes
                 .saturating_sub(record.obligation_reserved_bytes());
             retired.push(record);
         }
-        released
+        Ok(released)
     }
 
     /// A dependent edge that read a retiring superseded row resolves through
     /// the row's settlement postings. They move to the newest row of its
     /// occurrence, ahead of that row's own, and leave with it.
-    fn hand_settlements_to_newest(&mut self, key: &WorthQueryOutputDemandKey) {
-        let Some(newest) = newest_of_occurrence(&self.records, key) else {
-            return;
+    fn hand_settlements_to_newest<C: OccurrenceSearchCharge>(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+        charge: &mut C,
+    ) -> Result<(), C::Refusal> {
+        let Some(newest) = newest_of_occurrence(&self.records, key, charge)? else {
+            return Ok(());
         };
         let newest = self
             .required_keys
             .get(&newest)
             .map_or_else(|| Arc::new(newest.clone()), Arc::clone);
         let Some(record) = self.records.get_mut(key) else {
-            return;
+            return Ok(());
         };
         if record.settlements.is_empty() {
-            return;
+            return Ok(());
         }
         let moved = std::mem::take(&mut record.settlements);
         for (identity, _) in &moved {
@@ -120,44 +127,52 @@ impl DemandRegistryState {
         self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(
             freed * std::mem::size_of::<(Arc<RecordedSettlementIdentity>, usize)>(),
         );
+        Ok(())
     }
 
     /// Move `dependent`'s claim on `upstream` to the newest row of its
     /// occurrence when `upstream` is superseded, its own demands closed, and
     /// that newest row settled Ready. Returns the row the claim left.
-    pub(super) fn follow_newest(
+    pub(super) fn follow_newest<C: OccurrenceSearchCharge>(
         &mut self,
         dependent: &WorthQueryOutputDemandKey,
         upstream: &WorthQueryOutputDemandKey,
-    ) -> Option<WorthQueryOutputDemandKey> {
+        charge: &mut C,
+    ) -> Result<Option<WorthQueryOutputDemandKey>, C::Refusal> {
         if !self.records.get(upstream).is_some_and(closed_superseded)
-            || !newest_ready(&self.records, upstream)
+            || !newest_ready(&self.records, upstream, charge)?
         {
-            return None;
+            return Ok(None);
         }
         // The superseded row's claims keep its newest row a required member;
         // the moved claim shares that member's key.
-        let newest = newest_of_occurrence(&self.records, upstream)?;
-        let newest = Arc::clone(self.required_keys.get(&newest)?);
-        let prerequisites = &mut self.records.get_mut(dependent)?.prerequisites;
-        let position = prerequisites
-            .iter()
-            .position(|claimed| claimed.as_ref() == upstream)?;
-        if prerequisites.contains(&newest) {
-            prerequisites.remove(position);
-        } else {
-            prerequisites[position] = Arc::clone(&newest);
+        let newest = newest_of_occurrence(&self.records, upstream, charge)?;
+        let followed = (|| {
+            let newest = newest?;
+            let newest = Arc::clone(self.required_keys.get(&newest)?);
+            let prerequisites = &mut self.records.get_mut(dependent)?.prerequisites;
+            let position = prerequisites
+                .iter()
+                .position(|claimed| claimed.as_ref() == upstream)?;
+            if prerequisites.contains(&newest) {
+                prerequisites.remove(position);
+            } else {
+                prerequisites[position] = Arc::clone(&newest);
+                self.records
+                    .get_mut(newest.as_ref())
+                    .expect("the newest row of the occurrence is retained")
+                    .framework_required_count += 1;
+            }
             self.records
-                .get_mut(newest.as_ref())
-                .expect("the newest row of the occurrence is retained")
-                .framework_required_count += 1;
+                .get_mut(upstream)
+                .expect("the claimed row is retained")
+                .framework_required_count -= 1;
+            Some(upstream.clone())
+        })();
+        if followed.is_some() {
+            self.remove_required_member_if_released(upstream, charge)?;
         }
-        self.records
-            .get_mut(upstream)
-            .expect("the claimed row is retained")
-            .framework_required_count -= 1;
-        self.remove_required_member_if_released(upstream);
-        Some(upstream.clone())
+        Ok(followed)
     }
 }
 
@@ -172,8 +187,15 @@ pub(super) fn closed_superseded(record: &DemandRecord) -> bool {
 }
 
 /// The newest row of `key`'s occurrence holds a Ready no refresh replaced.
-pub(super) fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool {
-    ready_at_newest(records, newest_of_occurrence(records, key))
+pub(super) fn newest_ready<C: OccurrenceSearchCharge>(
+    records: &Records,
+    key: &WorthQueryOutputDemandKey,
+    charge: &mut C,
+) -> Result<bool, C::Refusal> {
+    Ok(ready_at_newest(
+        records,
+        newest_of_occurrence(records, key, charge)?,
+    ))
 }
 
 pub(super) fn ready_at_newest(
@@ -219,12 +241,13 @@ pub(super) fn claimants_where(
 }
 
 /// A demand, a dependent's claim, or unfinished work still holds the row.
-pub(super) fn held(
+pub(super) fn held<C: OccurrenceSearchCharge>(
     records: &Records,
     key: &WorthQueryOutputDemandKey,
     record: &DemandRecord,
-) -> bool {
-    held_by_row(record) || awaited_by_stale_owner(records, key)
+    charge: &mut C,
+) -> Result<bool, C::Refusal> {
+    Ok(held_by_row(record) || awaited_by_stale_owner(records, key, charge)?)
 }
 
 pub(super) fn held_by_row(record: &DemandRecord) -> bool {

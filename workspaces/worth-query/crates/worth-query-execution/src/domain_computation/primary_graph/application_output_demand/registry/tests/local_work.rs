@@ -1,4 +1,4 @@
-use super::super::refreshed_rejoin::search_stale_owner;
+use super::super::refreshed_rejoin::awaited_by_stale_owner;
 use super::*;
 
 #[test]
@@ -30,7 +30,7 @@ fn occurrence_work_is_identical_with_zero_or_many_unrelated_rows() {
             );
         }
         let mut admission = record_admission();
-        assert!(search_stale_owner(&records, &selected, &mut admission).unwrap());
+        assert!(awaited_by_stale_owner(&records, &selected, &mut admission).unwrap());
         assert_eq!(
             admission.charged_work(),
             2 + 2,

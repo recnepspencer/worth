@@ -1,3 +1,5 @@
+use super::refreshed_rejoin::infallible;
+use super::refreshed_rejoin::unpaid_under_request;
 use super::{
     BoundOutputSource, DemandRegistryState, DemandState, SourceCustody,
     WorthQueryOutputDemandRegistry, WorthQueryPerformedOutputDemandSource,
@@ -220,7 +222,7 @@ impl WorthQueryOutputDemandRegistry {
             }
         }
         custody.bound_sources = Some(bound);
-        state.prune_completed_custody();
+        infallible(state.prune_completed_custody(&mut unpaid_under_request()));
         Ok(())
     }
 
@@ -352,7 +354,7 @@ fn retire_stale_records(
         }
         record.performed_source = None;
         record.wake.notify();
-        state.release_record_prerequisites(key);
+        infallible(state.release_record_prerequisites(key, &mut unpaid_under_request()));
     }
     // Remove only after every stale row has released its prerequisites: an
     // upstream row that sorts before its consumer is held until then.
