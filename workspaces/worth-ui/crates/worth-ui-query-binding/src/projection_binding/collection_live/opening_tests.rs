@@ -14,7 +14,7 @@ use worth_query::facade::{consumer_kit, domain, read};
 
 #[test]
 fn nested_collection_opening_is_denied_without_handler_contact() {
-    let (mut workspace, binding, contacts) = collection_opening_fixture();
+    let (mut workspace, binding, contacts) = collection_opening_fixture(false);
     let budget = crate::UiCollectionProjectionBudget::new(1, 64, 1, 65_536).unwrap();
     let outcome = workspace
         .with_advancement_mut(|_, workspace| binding.open(budget, workspace))
@@ -24,14 +24,16 @@ fn nested_collection_opening_is_denied_without_handler_contact() {
     };
     assert_eq!(
         stop.kind(),
-        super::UiCollectionProjectionOpenStopKind::ExecutionDenied
+        super::UiCollectionProjectionOpenStopKind::AdvancementDenied(
+            worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::NestedOpening
+        )
     );
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
 }
 
 #[test]
 fn admitted_collection_opening_succeeds_with_handler_contact() {
-    let (mut workspace, binding, contacts) = collection_opening_fixture();
+    let (mut workspace, binding, contacts) = collection_opening_fixture(false);
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
     let budget = crate::UiCollectionProjectionBudget::new(1, 64, 1, 65_536).unwrap();
     let outcome = binding.open(budget, &mut workspace);
@@ -46,7 +48,24 @@ fn admitted_collection_opening_succeeds_with_handler_contact() {
     ));
 }
 
-fn collection_opening_fixture() -> (
+#[test]
+fn executor_collection_opening_denial_is_distinct_from_a_refused_phase() {
+    let (mut workspace, binding, contacts) = collection_opening_fixture(true);
+    let budget = crate::UiCollectionProjectionBudget::new(1, 64, 1, 65_536).unwrap();
+    let outcome = binding.open(budget, &mut workspace);
+    let super::UiCollectionProjectionOpenOutcome::Stopped(stop) = outcome else {
+        panic!("the contacted executor refuses the opening");
+    };
+    assert_eq!(
+        stop.kind(),
+        super::UiCollectionProjectionOpenStopKind::ExecutionFailed
+    );
+    assert_eq!(contacts.load(Ordering::SeqCst), 1);
+}
+
+fn collection_opening_fixture(
+    refuse: bool,
+) -> (
     worth_query::facade::runtime::WorthQueryWorkspace,
     crate::UiCollectionProjectionBinding,
     Arc<AtomicUsize>,
@@ -91,7 +110,7 @@ fn collection_opening_fixture() -> (
             crate::WorthUiDomainEntry,
             WorthUiCollectionTextProjection,
             WorthUiCollectionTextProjectionFamily,
-            CountedExecutor(contacts.clone()),
+            CountedExecutor(contacts.clone(), refuse),
         );
     for dimension in [
         domain::WorthQueryConsumerSupportDimension::Live,
@@ -132,7 +151,7 @@ fn collection_opening_fixture() -> (
     (workspace, binding, contacts)
 }
 
-struct CountedExecutor(Arc<AtomicUsize>);
+struct CountedExecutor(Arc<AtomicUsize>, bool);
 
 impl
     domain::WorthQueryDomainOperationExecutor<
@@ -164,6 +183,12 @@ impl
         domain::WorthQueryOperationExecutorFailure,
     > {
         self.0.fetch_add(1, Ordering::SeqCst);
+        if self.1 {
+            return Err(domain::WorthQueryOperationExecutorFailure::new(
+                domain::WorthQueryOperationFailureClass::Indeterminate,
+                "fixture executor refuses after contact",
+            ));
+        }
         WorthUiCollectionTextProjectionExecutor.execute((), context, workspace)
     }
 }
