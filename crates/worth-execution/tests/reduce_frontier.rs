@@ -76,6 +76,34 @@ fn mapped_bytes(
     Ok(vec![*value as u8])
 }
 
+#[test]
+fn frontier_concatenation_preserves_partition_identity_order_at_every_width() {
+    let _guard = TEST_LOCK.lock().unwrap();
+    for workers in [4, 2, 1] {
+        let (mut tree, _, _) = map(8)
+            .run_reduce(
+                Some(&lease(workers)),
+                mapped_bytes,
+                Vec::<u8>::new(),
+                |left, right| left.iter().chain(right).copied().collect(),
+                256,
+                0,
+            )
+            .unwrap();
+        assert_eq!(
+            tree.result(),
+            &vec![1, 2, 3, 4, 5, 6, 7, 8],
+            "frontier reduction must combine in partition identity order after build"
+        );
+        tree.update(PartitionIdentity::new(4), vec![40]).unwrap();
+        assert_eq!(
+            tree.result(),
+            &vec![1, 2, 3, 40, 5, 6, 7, 8],
+            "frontier reduction must combine in partition identity order after update"
+        );
+    }
+}
+
 fn competing_failures(left: &Vec<u8>, right: &Vec<u8>) -> Vec<u8> {
     if left.is_empty() && right.as_slice() == [4] {
         panic!("later canonical task");

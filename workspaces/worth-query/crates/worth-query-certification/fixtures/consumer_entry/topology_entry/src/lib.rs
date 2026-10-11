@@ -23,6 +23,8 @@ pub use final_output::*;
 pub use initial_adjustment::*;
 #[cfg(test)]
 mod checkpoint_recovery;
+#[cfg(test)]
+mod compiled_example_drift;
 mod discovery_read;
 mod mutation;
 mod planar_edit;
@@ -34,8 +36,10 @@ mod principal;
 mod prior_cycle_adjustment;
 mod producer;
 mod readiness;
+pub mod sensor_telemetry;
 mod source_adjustment;
 mod vertex_replacement;
+pub mod warehouse_inventory;
 pub use vertex_replacement::*;
 
 pub use discovery_read::*;
