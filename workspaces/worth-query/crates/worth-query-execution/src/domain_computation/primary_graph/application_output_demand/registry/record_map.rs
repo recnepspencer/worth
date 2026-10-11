@@ -2,6 +2,8 @@
 use super::{DemandRecord, WorthQueryOutputDemandKey};
 use std::collections::BTreeMap;
 use std::ops::Bound::{Excluded, Included, Unbounded};
+mod mutation;
+pub(super) use mutation::RecordMutation;
 type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 #[derive(Default)]
 pub(super) struct DemandRecords(Map, BTreeMap<
@@ -30,7 +32,10 @@ impl DemandRecords {
     ) {
         self.0.retain(|key, row| {
             observe_row();
-            let keep = predicate(key, row);
+            let keep = {
+                let mut row = RecordMutation::new(row);
+                predicate(key, &mut row)
+            };
             if !keep {
                 let coordinate = key.source.occurrence_coordinate();
                 let keys = self.1.get_mut(&coordinate).expect("indexed row exists");
@@ -62,14 +67,17 @@ impl DemandRecords {
     pub(super) fn values(&self) -> impl DoubleEndedIterator<Item = &DemandRecord> {
         ObservedRows(self.0.values())
     }
-    pub(super) fn values_mut(&mut self) -> impl DoubleEndedIterator<Item = &mut DemandRecord> {
-        ObservedRows(self.0.values_mut())
+    pub(super) fn values_mut(&mut self) -> impl DoubleEndedIterator<Item = RecordMutation<'_>> {
+        ObservedRows(self.0.values_mut()).map(RecordMutation::new)
     }
     pub(super) fn get(&self, key: &WorthQueryOutputDemandKey) -> Option<&DemandRecord> {
         self.0.get(key)
     }
-    pub(super) fn get_mut(&mut self, key: &WorthQueryOutputDemandKey) -> Option<&mut DemandRecord> {
-        self.0.get_mut(key)
+    pub(super) fn get_mut(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+    ) -> Option<RecordMutation<'_>> {
+        self.0.get_mut(key).map(RecordMutation::new)
     }
     pub(super) fn contains_key(&self, key: &WorthQueryOutputDemandKey) -> bool {
         self.0.contains_key(key)
@@ -79,6 +87,7 @@ impl DemandRecords {
         key: WorthQueryOutputDemandKey,
         row: DemandRecord,
     ) -> Option<DemandRecord> {
+        row.closed_cleanup.publish_owner_state(&row);
         self.1
             .entry(key.source.occurrence_coordinate())
             .or_default()
@@ -154,7 +163,9 @@ impl DemandRecords {
             .into_iter()
             .flatten()
         {
-            visit(self.0.get_mut(key).expect("source index names a live row"));
+            visit(&mut RecordMutation::new(
+                self.0.get_mut(key).expect("source index names a live row"),
+            ));
         }
     }
 
@@ -224,11 +235,26 @@ impl<'a> IntoIterator for &'a DemandRecords {
     }
 }
 impl<'a> IntoIterator for &'a mut DemandRecords {
-    type Item = (&'a WorthQueryOutputDemandKey, &'a mut DemandRecord);
+    type Item = (&'a WorthQueryOutputDemandKey, RecordMutation<'a>);
     type IntoIter = ObservedRows<
-        std::collections::btree_map::IterMut<'a, WorthQueryOutputDemandKey, DemandRecord>,
+        MutRows<std::collections::btree_map::IterMut<'a, WorthQueryOutputDemandKey, DemandRecord>>,
     >;
     fn into_iter(self) -> Self::IntoIter {
-        ObservedRows(self.0.iter_mut())
+        ObservedRows(MutRows(self.0.iter_mut()))
+    }
+}
+
+pub(super) struct MutRows<I>(I);
+impl<'a, I: Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a mut DemandRecord)>> Iterator
+    for MutRows<I>
+{
+    type Item = (&'a WorthQueryOutputDemandKey, RecordMutation<'a>);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0
+            .next()
+            .map(|(key, row)| (key, RecordMutation::new(row)))
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
     }
 }

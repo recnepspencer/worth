@@ -37,6 +37,15 @@ pub(in super::super) fn unhold(
         // The admitted edge's vector and credit change owners, not capacity.
         // This fixture models a claim still held by its unpublished ticket.
         let mut state = interest.owner.state.lock().unwrap();
+        claims.claim_batch = state
+            .records
+            .get_mut(&interest.key)
+            .unwrap()
+            .claim_batch
+            .take();
+        if let Some(batch) = &claims.claim_batch {
+            batch.deactivate();
+        }
         claims.predecessors =
             std::mem::take(&mut state.records.get_mut(&interest.key).unwrap().prerequisites);
         claims.predecessor_slots_bytes =

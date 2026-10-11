@@ -232,6 +232,19 @@ impl<'a> World<'a> {
             retain_owned_key(&mut state, &keys[id]);
             owners.push((row.owners != 0).then(|| interest(&registry, keys[id].clone(), wake)));
         }
+        for (&id, row) in &model.rows {
+            if !row.claims.is_empty() {
+                let upstream = state.records[&keys[id]].prerequisites.clone();
+                let batch = state
+                    .prepare_claim_readthrough(&keys[id], &upstream, &mut record_admission())
+                    .unwrap();
+                if let Some(batch) = &batch {
+                    batch.install();
+                    batch.publish();
+                }
+                state.records.get_mut(&keys[id]).unwrap().claim_batch = batch;
+            }
+        }
         for (&id, entry) in &model.custody {
             let identity = keys[1].source.clone();
             state.source_custody.insert(

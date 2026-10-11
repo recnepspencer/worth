@@ -66,7 +66,7 @@ impl PreparedPrerequisiteClaims {
             Arc::clone(&identity),
             Arc::clone(self.context.key_arc()),
         );
-        let record = state
+        let mut record = state
             .records
             .get_mut(downstream)
             .expect("prepared demand stays pinned");
@@ -76,6 +76,13 @@ impl PreparedPrerequisiteClaims {
         record
             .settlements
             .push((Arc::clone(&identity), self.context.retained_bytes()));
+        if let Some(batch) = &self.claim_batch {
+            batch.publish();
+        }
+        let old_batch = std::mem::replace(&mut record.claim_batch, self.claim_batch.take());
+        if let Some(batch) = &old_batch {
+            batch.deactivate();
+        }
         let old = std::mem::replace(
             &mut record.prerequisites,
             std::mem::take(&mut self.predecessors),
@@ -84,13 +91,15 @@ impl PreparedPrerequisiteClaims {
             &mut record.checkpoint_prerequisites,
             self.checkpoint_predecessors.take(),
         );
+        record.finish();
         let released_slots = old.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
         for upstream in &old {
-            let prior = state
+            let mut prior = state
                 .records
                 .get_mut(upstream.as_ref())
                 .expect("settled prerequisite retained");
             prior.framework_required_count -= 1;
+            prior.finish();
             if !state.records[upstream].pending_cleanup_queued
                 && !state.defer_terminal_cleanup(upstream, 0)
             {
@@ -112,6 +121,7 @@ impl PreparedPrerequisiteClaims {
         self.published = true;
         drop(state);
         drop(old);
+        drop(old_batch);
         drop(old_checkpoint);
         super::super::SupersededSettlements::new(owner, Arc::clone(self.context.key_arc()))
     }

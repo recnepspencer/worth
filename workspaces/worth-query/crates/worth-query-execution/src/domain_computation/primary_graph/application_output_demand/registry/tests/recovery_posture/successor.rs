@@ -78,7 +78,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         .expect("the real performed application retains its read basis");
     {
         let mut state = registry.state.lock().unwrap();
-        let record = state.records.get_mut(&demand_key).unwrap();
+        let mut record = state.records.get_mut(&demand_key).unwrap();
         record.state = DemandState::Running;
         record.performed_source = Some(WorthQueryPerformedOutputDemandSource {
             receipt: performed,

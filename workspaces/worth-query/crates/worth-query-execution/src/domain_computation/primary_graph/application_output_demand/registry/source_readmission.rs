@@ -131,7 +131,7 @@ impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+        let mut record = state
             .records
             .get_mut(&interest.key)
             .ok_or_else(source_denial)?;
@@ -152,6 +152,7 @@ impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
                 .unwrap_or_else(|_| unreachable!("prepared readmission is installed once"));
             record.readmission_source = Some(self.readmission);
         }
+        record.finish();
         drop(state);
         Ok(self.source)
     }

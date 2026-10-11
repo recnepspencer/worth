@@ -170,7 +170,7 @@ impl PricedMutation<'_> {
         let note = self.state.take_closed_note(std::sync::Arc::clone(&key));
         note.prune(|state| {
             for key in &candidates {
-                if let Some(row) = state.records.get_mut(key) {
+                if let Some(mut row) = state.records.get_mut(key) {
                     if row.terminal()
                         && row.interests == 0
                         && row.framework_required_count == 0

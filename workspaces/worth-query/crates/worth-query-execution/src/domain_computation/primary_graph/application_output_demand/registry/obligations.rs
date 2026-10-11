@@ -90,7 +90,7 @@ impl DemandRegistryState {
         mut retired_members: Option<&mut Vec<super::required_members::DetachedRequiredMember>>,
         charge: &mut C,
     ) -> Result<ReleasedPrerequisiteResources, C::Refusal> {
-        let Some(record) = self.records.get_mut(key) else {
+        let Some(mut record) = self.records.get_mut(key) else {
             return Ok((Vec::new(), Vec::new(), None, 0));
         };
         if record.prepared_prerequisite_claims != 0
@@ -99,9 +99,11 @@ impl DemandRegistryState {
         {
             return Ok((Vec::new(), Vec::new(), None, 0));
         }
+        record.claim_batch.take();
         let prior = std::mem::take(&mut record.prerequisites);
         let checkpoint = record.checkpoint_prerequisites.take();
         let settlements = std::mem::take(&mut record.settlements);
+        record.finish();
         let mut refund = settlements
             .capacity()
             .checked_mul(std::mem::size_of::<(Arc<RecordedSettlementIdentity>, usize)>())
@@ -120,11 +122,12 @@ impl DemandRegistryState {
                 .expect("admitted settlement charge fits");
         }
         for upstream in &prior {
-            let record = self
+            let mut record = self
                 .records
                 .get_mut(upstream.as_ref())
                 .expect("framework prerequisite record remains retained");
             record.framework_required_count -= 1;
+            record.finish();
             for released in self.released_by_claim(upstream, charge)? {
                 if let Some(retired) = retired_members.as_deref_mut() {
                     let member =
@@ -168,15 +171,16 @@ impl DemandRegistryState {
             .count();
         let mut released = Vec::with_capacity(count);
         let mut settlements = Vec::with_capacity(count);
-        for (key, record) in &mut self.records {
+        for (key, mut record) in &mut self.records {
             infallible(charge.inspect_row());
-            if retired(key, record)
+            if retired(key, &record)
                 && record.prepared_prerequisite_claims == 0
                 && record.framework_required_count == 0
                 && !record.pending_cleanup_queued
             {
                 record.checkpoint_prerequisites.take();
                 if !record.prerequisites.is_empty() {
+                    record.claim_batch.take();
                     released.push(std::mem::take(&mut record.prerequisites));
                 }
                 if record.settlements.capacity() != 0 {
@@ -201,11 +205,12 @@ impl DemandRegistryState {
                 prior.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>(),
             );
             for upstream in prior {
-                let record = self
+                let mut record = self
                     .records
                     .get_mut(upstream.as_ref())
                     .expect("framework prerequisite record remains retained");
                 record.framework_required_count -= 1;
+                record.finish();
                 for released in self.released_by_claim(upstream, charge)? {
                     self.remove_required_member_if_released(&released, charge)?;
                 }

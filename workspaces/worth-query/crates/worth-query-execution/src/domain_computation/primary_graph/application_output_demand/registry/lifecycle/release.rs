@@ -23,7 +23,7 @@ impl WorthQueryOutputDemandRegistry {
             &interest.key,
             &mut charge,
         ));
-        if let Some(record) = state.records.get_mut(&interest.key) {
+        if let Some(mut record) = state.records.get_mut(&interest.key) {
             record.interests = record.interests.saturating_sub(1);
             if interest.requires_output {
                 record.required_interests = record.required_interests.saturating_sub(1);
@@ -42,44 +42,47 @@ impl WorthQueryOutputDemandRegistry {
         }) {
             state.note_closed_row(&interest.key);
         }
-        let remove = state.records.get_mut(&interest.key).is_some_and(|record| {
-            // Keep a ready ordinary output for an equivalent later demand.
-            // Source supersession and occurrence retirement remove it; closing
-            // the handle releases only the caller's interest.
-            let ready = record.has_cached_ready();
-            let stopped = matches!(record.state, DemandState::Failed(_))
-                || matches!(&record.state, DemandState::Output(output)
+        let remove = state
+            .records
+            .get_mut(&interest.key)
+            .is_some_and(|mut record| {
+                // Keep a ready ordinary output for an equivalent later demand.
+                // Source supersession and occurrence retirement remove it; closing
+                // the handle releases only the caller's interest.
+                let ready = record.has_cached_ready();
+                let stopped = matches!(record.state, DemandState::Failed(_))
+                    || matches!(&record.state, DemandState::Output(output)
                     if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. }));
-            if stopped
-                && record.interests == 0
-                && !record.pending_cleanup_queued
-                && !record.closed_cleanup.queued()
-            {
-                released_bytes += record.release_obligations();
-            }
-            record.interests == 0
-                && record.framework_required_count == 0
-                && record.prepared_prerequisite_claims == 0
-                && !record.pending_cleanup_queued
-                && !record.closed_cleanup.queued()
-                && ((!record.is_required() && !ready) || stopped)
-                && !(ready && replaced)
-                && record.performed_obligations.is_empty()
-                && record.performed_source.is_none()
-                && match &record.state {
-                    DemandState::Scheduling | DemandState::Running => false,
-                    DemandState::Output(output) => {
-                        matches!(
-                            output.advancement,
-                            WorthQueryOutputAdvancement::Stopped { .. }
-                        ) || matches!(
-                            output.checkpoint,
-                            Some(WorthQueryOutputCheckpoint::Ready(_))
-                        )
-                    }
-                    _ => true,
+                if stopped
+                    && record.interests == 0
+                    && !record.pending_cleanup_queued
+                    && !record.closed_cleanup.queued()
+                {
+                    released_bytes += record.release_obligations();
                 }
-        });
+                record.interests == 0
+                    && record.framework_required_count == 0
+                    && record.prepared_prerequisite_claims == 0
+                    && !record.pending_cleanup_queued
+                    && !record.closed_cleanup.queued()
+                    && ((!record.is_required() && !ready) || stopped)
+                    && !(ready && replaced)
+                    && record.performed_obligations.is_empty()
+                    && record.performed_source.is_none()
+                    && match &record.state {
+                        DemandState::Scheduling | DemandState::Running => false,
+                        DemandState::Output(output) => {
+                            matches!(
+                                output.advancement,
+                                WorthQueryOutputAdvancement::Stopped { .. }
+                            ) || matches!(
+                                output.checkpoint,
+                                Some(WorthQueryOutputCheckpoint::Ready(_))
+                            )
+                        }
+                        _ => true,
+                    }
+            });
         let terminal = state.records.get(&interest.key).is_some_and(|record| {
             matches!(record.state, DemandState::Failed(_))
                 || matches!(&record.state, DemandState::Output(output)
@@ -115,7 +118,7 @@ impl WorthQueryOutputDemandRegistry {
         let unawaited = state
             .records
             .get_mut(&interest.key)
-            .and_then(DemandRecord::take_unawaited_reopened);
+            .and_then(|mut record| record.take_unawaited_reopened());
         // A closing stale owner may have been the last one awaiting the
         // newest row of its occurrence.
         if terminal && !queued {

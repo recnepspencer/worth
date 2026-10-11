@@ -158,6 +158,8 @@ mod ready_backing;
 pub use custody_layout_observation::{
     required_custody_layout_for_test, RequiredCustodyLayoutForTest,
 };
+mod claim_readthrough;
+mod custody_visibility;
 #[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) mod join_observation;
 mod record_capacity;
@@ -250,6 +252,7 @@ struct DemandRecord {
     performed_obligations: Vec<PerformedOutputObligation>,
     framework_required_count: usize,
     prerequisites: Vec<Arc<WorthQueryOutputDemandKey>>,
+    claim_batch: Option<claim_readthrough::ClaimBatch>,
     checkpoint_prerequisites: Option<prerequisite_claims::CheckpointPrerequisiteClaims>,
     prepared_prerequisite_claims: usize,
     pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>,

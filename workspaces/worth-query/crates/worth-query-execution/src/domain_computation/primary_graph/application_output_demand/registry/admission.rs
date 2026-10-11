@@ -288,7 +288,7 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(prepared) = prepared_record {
             state.install_prepared_record(prepared);
         }
-        let record = state.records.get_mut(&key).expect("admitted record exists");
+        let mut record = state.records.get_mut(&key).expect("admitted record exists");
         if let Some(successor) = successor_of {
             let reopens_exact_ready = matches!(
                 &record.state,
@@ -323,14 +323,15 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(commit) = prepared_source_commit {
             if !record.source_commits.contains(&commit) {
                 if let Some(growth) = prepared_commit_growth {
-                    growth.install(record);
+                    growth.install(&mut record);
                 }
                 record.source_commits.push(commit);
             }
         }
         record.interests = record.interests.saturating_add(1);
         record.required_interests += usize::from(admission_kind.is_required());
-        let interest = interest(self, key, record, admission_kind.is_required());
+        let interest = interest(self, key, &record, admission_kind.is_required());
+        record.finish();
         state.install_required_member(required_member);
         let retired = state.take_optional_closed_cleanup(admission);
         drop(state);

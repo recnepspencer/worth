@@ -113,7 +113,7 @@ fn queued_member_reader_refuses_before_using_the_retained_set_as_truth() {
     let mut full = admission(u64::MAX);
     assert!(state.queued_member_released(&selected, &mut full).unwrap());
     // Two occurrence seeks and the one inspected queued row.
-    assert_eq!(full.charged_work(), 3);
+    assert_eq!(full.charged_work(), 9); // Three searches, each two seeks plus one row.
     for k in 0..3 {
         let denial = state
             .queued_member_released(&selected, &mut admission(k))

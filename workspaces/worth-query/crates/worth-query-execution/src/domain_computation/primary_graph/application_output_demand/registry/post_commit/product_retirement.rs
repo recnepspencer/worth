@@ -32,7 +32,7 @@ impl WorthQueryOutputDemandRegistry {
         let retired_cursors = state.take_discontinuity_cursors(occurrence);
         // Mark retained rows terminal before draining their descendants. A
         // descendant can release the final framework pin during this walk.
-        for record in state.records.values_mut() {
+        for mut record in state.records.values_mut() {
             infallible(sweep.inspect_row());
             if record.product_occurrence != occurrence
                 || (record.interests == 0

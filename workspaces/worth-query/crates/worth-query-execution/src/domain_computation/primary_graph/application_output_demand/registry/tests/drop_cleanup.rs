@@ -15,7 +15,7 @@ fn fixture(
     let ready = closed_retirement::ready();
     let mut state = registry.state.lock().unwrap();
     walk_bounds::add_live_custody(&mut state, &receipts, 1);
-    for row in state.records.values_mut() {
+    for mut row in state.records.values_mut() {
         row.interests = 0;
         row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::NoEffect,
@@ -28,7 +28,7 @@ fn fixture(
             usize::from(token || index != 0);
     }
     if !token {
-        let row = state.records.get_mut(&selected).unwrap();
+        let mut row = state.records.get_mut(&selected).unwrap();
         row.state = ready;
         row.interests = 1;
     }

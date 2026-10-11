@@ -181,7 +181,7 @@ impl DemandRegistryState {
             let posting_bytes = self
                 .records
                 .get_mut(key.as_ref())
-                .and_then(|record| {
+                .and_then(|mut record| {
                     let at = record
                         .settlements
                         .iter()

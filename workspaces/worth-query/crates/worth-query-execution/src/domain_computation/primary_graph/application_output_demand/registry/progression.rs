@@ -57,10 +57,11 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.charge_record_lookup(&interest.key, admission)?;
-        let record = state
+        let mut record = state
             .records
             .get_mut(&interest.key)
             .expect("live demand interest retains its owner record");
+        let predecessor = Succession::predecessor_of(&record.successor_of);
         let state @ DemandState::Scheduled = &mut record.state else {
             return Ok(WorthQueryOutputDemandAdvanceAdmission::Pending);
         };
@@ -69,10 +70,7 @@ impl WorthQueryOutputDemandRegistry {
         admission
             .charge_external_work(copy_work)
             .map_err(|_| empty_begin_work_denial())?;
-        Ok(start_scheduled(
-            state,
-            Succession::predecessor_of(&record.successor_of),
-        ))
+        Ok(start_scheduled(state, predecessor))
     }
 }
 
@@ -151,11 +149,11 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+        let mut record = state
             .records
             .get_mut(&interest.key)
             .expect("scheduled demand retains its owner record");
-        if demand_record_is_closed(record) {
+        if demand_record_is_closed(&record) {
             return;
         }
         if interrupted {
@@ -184,6 +182,7 @@ impl WorthQueryOutputDemandRegistry {
         };
         let terminal = matches!(record.state, DemandState::Failed(_));
         record.wake.notify();
+        record.finish();
         let released_prerequisites =
             terminal.then(|| release_completed_prerequisites(&mut state, &interest.key));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
@@ -209,11 +208,11 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+        let mut record = state
             .records
             .get_mut(&interest.key)
             .expect("executing demand retains its owner record");
-        if demand_record_is_closed(record) {
+        if demand_record_is_closed(&record) {
             return;
         }
         if rescheduled {
@@ -227,6 +226,7 @@ impl WorthQueryOutputDemandRegistry {
             record.release_obligations()
         };
         record.wake.notify();
+        record.finish();
         let released_prerequisites =
             (!rescheduled).then(|| release_completed_prerequisites(&mut state, &interest.key));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
@@ -246,7 +246,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state.records.get_mut(&interest.key).ok_or_else(|| {
+        let mut record = state.records.get_mut(&interest.key).ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed,
                 "output checkpoint was released during advancement",
@@ -274,7 +274,8 @@ impl WorthQueryOutputDemandRegistry {
                     interrupted_claim: None,
                 };
                 let released = record.release_obligations();
-                state.obligation_reserved_bytes =
+                record.finish();
+        state.obligation_reserved_bytes =
                     state.obligation_reserved_bytes.saturating_sub(released);
                 let released_prerequisites =
                     release_completed_prerequisites(&mut state, &interest.key);
@@ -309,6 +310,7 @@ impl WorthQueryOutputDemandRegistry {
             0
         };
         record.wake.notify();
+        record.finish();
         let released_prerequisites =
             terminal.then(|| release_completed_prerequisites(&mut state, &interest.key));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);

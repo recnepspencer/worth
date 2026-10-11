@@ -111,6 +111,12 @@ impl Model {
     }
     pub fn bind(&mut self, entry: usize, generation: u64) {
         self.prune();
+        // Rediscovery of the same root binding is idempotent in the eager tree;
+        // an earlier denial is not reconsidered by ensure_bound.
+        if let Some(bound) = self.custody[&entry].bound {
+            assert_eq!(bound, generation);
+            return;
+        }
         let denied = self.custody.iter().any(|(&id, c)| {
             id != entry && !c.retired && !c.denied && c.bound.is_some_and(|g| g > generation)
         });

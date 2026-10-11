@@ -38,6 +38,12 @@ impl WorthQueryOutputDemandRegistry {
         let custody = state
             .source_custody
             .get(receipt.committed_product_publication().composite_commit())
+            .filter(|_| {
+                super::post_commit::custody_reader::visible(
+                    &state,
+                    receipt.committed_product_publication().composite_commit(),
+                )
+            })
             .ok_or_else(|| {
                 denial(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -70,6 +76,12 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !super::post_commit::custody_reader::visible(
+            &state,
+            receipt.committed_product_publication().composite_commit(),
+        ) {
+            return None;
+        }
         let custody = state
             .source_custody
             .get_mut(receipt.committed_product_publication().composite_commit())
@@ -156,12 +168,16 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let custody = state.source_custody.get(commit).ok_or_else(|| {
-            denial(
-                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                "prepared source is absent",
-            )
-        })?;
+        let custody = state
+            .source_custody
+            .get(commit)
+            .filter(|_| super::post_commit::custody_reader::visible(&state, commit))
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                    "prepared source is absent",
+                )
+            })?;
         if let Some(retired) = &custody.retired {
             return Err(retired.clone());
         }
@@ -185,6 +201,7 @@ impl WorthQueryOutputDemandRegistry {
             .filter(|source| {
                 state.source_custody.iter().any(|(other_commit, other)| {
                     other_commit != commit
+                        && super::post_commit::custody_reader::visible(&state, other_commit)
                         && other.retired.is_none()
                         && other.occurrence == occurrence
                         && other.bound_sources.as_ref().is_some_and(|bound| {
@@ -262,6 +279,7 @@ impl WorthQueryOutputDemandRegistry {
             state
                 .source_custody
                 .get(commit)
+                .filter(|_| super::post_commit::custody_reader::visible(&state, commit))
                 .map(|custody| (custody.retired.clone(), custody.bound_sources.clone()))
         };
         let mut expected = sources.to_vec();

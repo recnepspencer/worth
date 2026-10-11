@@ -224,9 +224,10 @@ fn last_interest_drop_preserves_queued_obligations_for_admitted_cleanup() {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let (mut state, key) =
         queued_obligations_only(receipt.committed_product_publication().composite_commit());
-    let row = state.records.get_mut(key.as_ref()).unwrap();
+    let mut row = state.records.get_mut(key.as_ref()).unwrap();
     row.interests = 1;
     let wake = Arc::clone(&row.wake);
+    row.finish();
     let obligation_bytes = state.obligation_reserved_bytes;
     let required_bytes = state.required_reserved_bytes;
     let registry = WorthQueryOutputDemandRegistry::default();

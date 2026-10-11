@@ -7,7 +7,7 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 const ENTRY_VISIT: u64 = 1;
 const OCCURRENCE_SEEKS: u64 = 2;
 const ROW_INSPECTION: u64 = 1;
-const ENTRY_PRICE: u64 = 2 * ENTRY_VISIT + 5 * (OCCURRENCE_SEEKS + ROW_INSPECTION);
+const ENTRY_PRICE: u64 = 2 * ENTRY_VISIT + 7 * (OCCURRENCE_SEEKS + ROW_INSPECTION);
 const QUOTA: usize = super::super::cleanup::custody::FOREIGN_CUSTODY_DRAIN_QUOTA;
 
 thread_local! {
@@ -64,7 +64,7 @@ fn live_fixture(
             fixture_scope().0,
             false,
         );
-        for row in state.records.values_mut() {
+        for mut row in state.records.values_mut() {
             row.interests = 0;
             row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::NoEffect,
@@ -104,7 +104,7 @@ fn registry_foreign_custody_debt_cannot_starve_admission() {
     let mut own_work = admission(u64::MAX);
     let mut eager_interests = vec![admit(&eager, &own, &mut own_work).unwrap()];
     let entry_price =
-        2 * ENTRY_VISIT + 3 * (OCCURRENCE_SEEKS + 128) + 2 * 128 * (OCCURRENCE_SEEKS + 128);
+        2 * ENTRY_VISIT + 3 * (OCCURRENCE_SEEKS + 128) + 4 * 128 * (OCCURRENCE_SEEKS + 128);
     let ceiling =
         own_work.charged_work() + OCCURRENCE_SEEKS + ROW_INSPECTION + QUOTA as u64 * entry_price;
     assert!(
@@ -343,7 +343,7 @@ fn eager_cleanup(state: &mut DemandRegistryState) {
     assert!(state.records.values().all(|row| row.interests == 0));
     state.source_custody.clear();
     state.custody_cleanup = Default::default();
-    for row in state.records.values_mut() {
+    for mut row in state.records.values_mut() {
         row.source_commits.clear();
     }
 }
@@ -368,8 +368,8 @@ fn registry_custody_quote_prices_noted_entries_only() {
     state.drain_completed_custody(&mut paid).unwrap();
     assert_eq!(
         paid.charged_work(),
-        34,
-        "two noted entries at 17, live entries at zero"
+        46,
+        "two noted entries at 23: two entry visits and seven one-row walks"
     );
     assert_eq!(state.source_custody.len(), 2);
     assert!(!state.pending_custody_prune());

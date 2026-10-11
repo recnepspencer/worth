@@ -43,10 +43,13 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        match state.records.get_mut(key_of(&successor)) {
-            Some(record) if needs_successor(record) => record.held_successor.replace(successor),
+        let result = match state.records.get_mut(key_of(&successor)) {
+            Some(mut record) if needs_successor(&record) => {
+                record.held_successor.replace(successor)
+            }
             _ => Some(successor),
-        }
+        };
+        result
     }
 
     /// Take the successor held on `key`'s row so a dependent can resume it.
@@ -63,7 +66,7 @@ impl WorthQueryOutputDemandRegistry {
         Ok(state
             .records
             .get_mut(key)
-            .and_then(|record| record.held_successor.take()))
+            .and_then(|mut record| record.held_successor.take()))
     }
 }
 

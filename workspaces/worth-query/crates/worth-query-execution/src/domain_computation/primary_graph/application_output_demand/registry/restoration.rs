@@ -74,21 +74,39 @@ impl WorthQueryOutputDemandRegistry {
         })?;
         let required_member = state.prepare_required_member(&key)?;
         state.charge_record_lookup(&key, admission)?;
-        if let Some(record) = state.records.get_mut(&key) {
-            if record.product_occurrence != product_occurrence
-                || record.source_scope != Some(source_scope)
-            {
-                return Err(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    "restored output identity belongs to another source scope or occurrence",
-                ));
-            }
-            record.interests = record.interests.saturating_add(1);
-            record.required_interests += usize::from(admission_kind.is_required());
-            let interest = interest(self, key, record, admission_kind.is_required());
+        // Move the issued key only in the existing-row branch. The mutation
+        // guard finishes inside this closure, before registry membership edits.
+        let mut existing_key = Some(key);
+        let existing = state
+            .records
+            .get_mut(existing_key.as_ref().unwrap())
+            .map(|mut record| {
+                if record.product_occurrence != product_occurrence
+                    || record.source_scope != Some(source_scope)
+                {
+                    return Err(WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        "restored output identity belongs to another source scope or occurrence",
+                    ));
+                }
+                record.interests = record.interests.saturating_add(1);
+                record.required_interests += usize::from(admission_kind.is_required());
+                let interest = interest(
+                    self,
+                    existing_key
+                        .take()
+                        .expect("existing row takes its issued key"),
+                    &record,
+                    admission_kind.is_required(),
+                );
+                Ok(interest)
+            });
+        if let Some(existing) = existing {
+            let interest = existing?;
             state.install_required_member(required_member);
             return Ok((interest, false));
         }
+        let key = existing_key.expect("a new row still owns its key");
         let pending_member = required_member
             .as_ref()
             .map_or(0, |member| member.reserved_bytes());

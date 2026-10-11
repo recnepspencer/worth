@@ -57,25 +57,22 @@ impl DemandRegistryState {
         key: &WorthQueryOutputDemandKey,
         admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        let Some(row) = self
+        let Some(_) = self
             .records
             .get(key)
-            .filter(|row| row.pending_cleanup_queued)
+            .filter(|row| row.pending_cleanup_queued || row.closed_cleanup.queued())
         else {
             return Ok(false);
         };
-        if row.is_required() {
-            return Ok(false);
-        }
-        super::refreshed_rejoin::awaited_by_stale_owner(
+        let observation = super::claim_readthrough::observe_row(
             &self.records,
             key,
             &mut super::refreshed_rejoin::WalkAdmission::new(
                 admission,
                 super::refreshed_rejoin::WalkKind::RequiredMember,
             ),
-        )
-        .map(|awaited| !awaited)
+        )?;
+        Ok(!observation.required && !observation.awaited)
     }
 
     pub(super) fn prepare_required_member(
@@ -149,7 +146,7 @@ impl DemandRegistryState {
         }
         self.note_record_custody(key);
         let mut retired_source = None;
-        if let Some(record) = self.records.get_mut(key) {
+        if let Some(mut record) = self.records.get_mut(key) {
             // A reusable cached Ready keeps its original admitted source, funded
             // by that source's existing ticket, until the cache row is reclaimed.
             let reusable = matches!(&record.state, super::DemandState::Output(output)

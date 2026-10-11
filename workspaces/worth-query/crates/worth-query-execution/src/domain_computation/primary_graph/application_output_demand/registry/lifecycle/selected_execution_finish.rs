@@ -90,7 +90,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+        let mut record = state
             .records
             .get_mut(&self.interest.key)
             .expect("the selected executor retains its Interest");
@@ -99,8 +99,9 @@ impl PreparedSelectedExecutionFinish<'_> {
             .as_ref()
             .is_some_and(|member| Arc::ptr_eq(member, &self.member))
         {
-            relinquish_record(record);
+            relinquish_record(&mut record);
         }
+        record.finish();
         drop(state);
         // The retained member is destroyed after the registry guard.
         drop(self);
@@ -117,7 +118,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(record) = state.records.get_mut(&self.interest.key) else {
+        let Some(mut record) = state.records.get_mut(&self.interest.key) else {
             return Err((
                 empty_denial(WorthQueryOutputDemandDenialKind::Closed),
                 checkpoint,
@@ -141,6 +142,7 @@ impl PreparedSelectedExecutionFinish<'_> {
         let retired_source = record.performed_source.take();
         record.successor_of = None;
         record.wake.notify();
+        record.finish();
         drop(state);
         drop(retired_source);
         drop(retired_observation);
@@ -166,7 +168,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(record) = state.records.get_mut(&self.interest.key) else {
+        let Some(mut record) = state.records.get_mut(&self.interest.key) else {
             return;
         };
         if !record
@@ -186,6 +188,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             (bytes, std::mem::take(&mut record.performed_obligations))
         };
         record.wake.notify();
+        record.finish();
         if !rescheduled {
             state.defer_terminal_cleanup(self.member.key_arc(), 0);
         }

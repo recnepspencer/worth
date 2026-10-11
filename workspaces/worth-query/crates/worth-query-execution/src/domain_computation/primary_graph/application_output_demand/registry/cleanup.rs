@@ -30,7 +30,7 @@ impl DemandRegistryState {
         key: &Arc<WorthQueryOutputDemandKey>,
         retained_key_bytes: usize,
     ) -> bool {
-        let Some(record) = self.records.get_mut(key.as_ref()) else {
+        let Some(mut record) = self.records.get_mut(key.as_ref()) else {
             return false;
         };
         if !record.terminal()
@@ -261,13 +261,15 @@ impl DemandRegistryState {
         Ok(priced.complete(|priced| {
             let state = priced.state_mut();
             let head = state.pending_cleanup_head.take().unwrap();
-            let record = state.records.get_mut(head.as_ref()).unwrap();
-            state.pending_cleanup_head = record.pending_cleanup_next.take();
+            let mut record = state.records.get_mut(head.as_ref()).unwrap();
+            let next = record.pending_cleanup_next.take();
             record.pending_cleanup_queued = false;
             let retained_key_bytes = std::mem::take(&mut record.pending_cleanup_key_bytes);
             let release = record.terminal()
                 && record.framework_required_count == 0
                 && record.prepared_prerequisite_claims == 0;
+            record.finish();
+            state.pending_cleanup_head = next;
             let (released, settlements, checkpoint, release_refund) = if release {
                 priced.release_prerequisites_detached(head.as_ref(), &mut retired_members)
             } else {
@@ -275,7 +277,7 @@ impl DemandRegistryState {
             };
             let state = priced.state_mut();
             let (obligations, refund_obligation_bytes) = if release_obligations {
-                let record = state.records.get_mut(head.as_ref()).unwrap();
+                let mut record = state.records.get_mut(head.as_ref()).unwrap();
                 let refund = record.obligation_reserved_bytes();
                 let obligations = std::mem::take(&mut record.performed_obligations);
                 (obligations, refund)

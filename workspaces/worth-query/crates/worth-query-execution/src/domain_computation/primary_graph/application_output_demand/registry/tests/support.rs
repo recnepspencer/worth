@@ -89,6 +89,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
         performed_obligations: Vec::new(),
         framework_required_count: 0,
         prerequisites: Vec::new(),
+        claim_batch: None,
         checkpoint_prerequisites: None,
         prepared_prerequisite_claims: 0,
         pending_cleanup_next: None,

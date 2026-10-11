@@ -51,7 +51,7 @@ pub(super) fn supersede_predecessors(
             if key != successor
                 && key.replacement_order(successor) == Some(std::cmp::Ordering::Less)
             {
-                let record = state.records.get_mut(key).expect("occurrence key exists");
+                let mut record = state.records.get_mut(key).expect("occurrence key exists");
                 let denial = superseded_denial(&key.producer);
                 match &mut record.state {
                     DemandState::Output(output) => output.stop(denial),
@@ -59,6 +59,7 @@ pub(super) fn supersede_predecessors(
                 }
                 record.performed_source = None;
                 record.wake.notify();
+                record.finish();
                 priced.release_prerequisites(key);
             }
         }

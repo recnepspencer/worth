@@ -37,11 +37,17 @@ pub(in super::super) fn entry_allowance(
             let before = charge.admission_mut().charged_navigation();
             let selected = occurrence_rows(&state.records, key, &mut charge)?;
             let descent = charge.admission_mut().charged_navigation() - before;
-            add(&mut allowance.navigation, Some(descent), kind)?;
-            add(&mut allowance.paths, Some(1), kind)?;
-            for _ in selected {
+            add(&mut allowance.navigation, descent.checked_mul(3), kind)?;
+            add(&mut allowance.paths, Some(3), kind)?;
+            for (_, row) in selected {
                 charge.inspect_row()?;
-                add(&mut allowance.rows, Some(1), kind)?;
+                add(&mut allowance.rows, Some(3), kind)?;
+                let claims = row.closed_cleanup.node().claimants.lock().unwrap().len();
+                add(
+                    &mut allowance.rows,
+                    u64::try_from(claims).ok().and_then(|n| n.checked_mul(2)),
+                    kind,
+                )?;
             }
         }
     }

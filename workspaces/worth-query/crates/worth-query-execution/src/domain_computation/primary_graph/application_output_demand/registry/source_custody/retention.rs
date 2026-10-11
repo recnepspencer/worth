@@ -31,12 +31,17 @@ impl WorthQueryOutputDemandRegistry {
                 "product occurrence retired before custody transfer",
             ));
         }
-        if state.source_custody.contains_key(&commit) {
+        if super::super::post_commit::custody_reader::visible(&state, &commit) {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
                 "performed source is already retained",
             ));
         }
+        super::super::post_commit::custody_reader::prune_invisible_slot(
+            &mut state,
+            &commit,
+            &source.receipt,
+        );
         let scope = source.receipt.principal_scope().scope();
         let direct_root = matches!(root_kind, PreparedOutputRootKind::Required(_));
         if direct_root
@@ -161,9 +166,14 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let visible = super::super::post_commit::custody_reader::visible(
+            &state,
+            receipt.committed_product_publication().composite_commit(),
+        );
         let custody = state
             .source_custody
             .get_mut(receipt.committed_product_publication().composite_commit())
+            .filter(|_| visible)
             .filter(|custody| custody.retired.is_none())
             .filter(|custody| custody.root_kind == PreparedOutputRootKind::Discovered(root_type))
             .ok_or_else(|| {

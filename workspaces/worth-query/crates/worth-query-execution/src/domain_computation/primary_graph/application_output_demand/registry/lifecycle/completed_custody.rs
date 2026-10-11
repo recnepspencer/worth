@@ -1,5 +1,5 @@
 //! Drain one custody note at a time, after its complete price was admitted.
-use super::super::refreshed_rejoin::{infallible, source_rows, OccurrenceSearchCharge};
+use super::super::refreshed_rejoin::{infallible, OccurrenceSearchCharge};
 use super::*;
 use core::convert::Infallible;
 use worth_runtime_world::facade::CompositeCommitIdentity;
@@ -37,58 +37,9 @@ impl DemandRegistryState {
         CONTACTS.with(|count| count.set(count.get() + 1));
         let note = self.take_custody_note(commit);
         let state = note.state();
-        infallible(charge.inspect_row());
-        let custody = &state.source_custody[commit];
-        if custody.token_count != 0 {
+        if !infallible(state.custody_prunable(commit, charge)) {
             note.requeue();
             return Ok(());
-        }
-        if custody.retired.is_none() {
-            let Some(bound) = &custody.bound_sources else {
-                note.requeue();
-                return Ok(());
-            };
-            let fully_superseded = !bound.is_empty()
-                && bound
-                    .iter()
-                    .all(|source| custody.source_denial(&source.identity).is_some());
-            if !custody.completed && !fully_superseded {
-                note.requeue();
-                return Ok(());
-            }
-            if !bound.iter().all(|source| {
-                custody.consumed_sources.contains(&source.identity)
-                    || custody.source_denial(&source.identity).is_some()
-            }) {
-                note.requeue();
-                return Ok(());
-            }
-            let held = bound.iter().any(|source| {
-                infallible(source_rows(&state.records, &source.identity, charge)).any(
-                    |(key, record)| {
-                        infallible(charge.inspect_row());
-                        record.source_commits.contains(commit)
-                            && (record.interests != 0
-                                || infallible(refreshed_rejoin::awaited_by_stale_owner(
-                                    &state.records,
-                                    key,
-                                    charge,
-                                ))
-                                || !record.performed_obligations.is_empty()
-                                || !matches!(
-                                    record.state,
-                                    DemandState::Output(WorthQueryOutputProgress {
-                                        checkpoint: Some(WorthQueryOutputCheckpoint::Ready(_)),
-                                        ..
-                                    }) | DemandState::Failed(_)
-                                ))
-                    },
-                )
-            });
-            if held {
-                note.requeue();
-                return Ok(());
-            }
         }
         let custody = note.prune();
         for source in custody.bound_sources.iter().flatten() {

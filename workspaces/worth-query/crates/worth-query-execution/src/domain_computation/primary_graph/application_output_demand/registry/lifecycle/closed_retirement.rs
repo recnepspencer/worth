@@ -108,17 +108,18 @@ impl DemandRegistryState {
             .required_keys
             .get(&newest)
             .map_or_else(|| Arc::new(newest.clone()), Arc::clone);
-        let Some(record) = self.records.get_mut(key) else {
+        let Some(mut record) = self.records.get_mut(key) else {
             return Ok(());
         };
         if record.settlements.is_empty() {
             return Ok(());
         }
         let moved = std::mem::take(&mut record.settlements);
+        record.finish();
         for (identity, _) in &moved {
             self.settlement_keys.repoint(identity, Arc::clone(&newest));
         }
-        let record = self
+        let mut record = self
             .records
             .get_mut(newest.as_ref())
             .expect("the newest row of the occurrence is retained");
@@ -154,14 +155,23 @@ impl DemandRegistryState {
         let followed = (|| {
             let newest = newest?;
             let newest = Arc::clone(self.required_keys.get(&newest)?);
-            let prerequisites = &mut self.records.get_mut(dependent)?.prerequisites;
+            let target = self.records.get(newest.as_ref())?.closed_cleanup.node();
+            let mut dependent_record = self.records.get_mut(dependent)?;
+            let prerequisites = &mut dependent_record.prerequisites;
             let position = prerequisites
                 .iter()
                 .position(|claimed| claimed.as_ref() == upstream)?;
-            if prerequisites.contains(&newest) {
+            let duplicate = prerequisites.contains(&newest);
+            if duplicate {
                 prerequisites.remove(position);
             } else {
                 prerequisites[position] = Arc::clone(&newest);
+            }
+            if let Some(batch) = &mut dependent_record.claim_batch {
+                batch.retarget(position, (!duplicate).then_some(&target));
+            }
+            dependent_record.finish();
+            if !duplicate {
                 self.records
                     .get_mut(newest.as_ref())
                     .expect("the newest row of the occurrence is retained")

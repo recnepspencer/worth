@@ -65,7 +65,7 @@ impl DemandRegistryState {
             .remove_custody(&commit)
             .expect("the selected source is retained");
         let mut admitted = Vec::new();
-        for record in self.records.values_mut() {
+        for mut record in self.records.values_mut() {
             if record
                 .performed_source
                 .as_ref()

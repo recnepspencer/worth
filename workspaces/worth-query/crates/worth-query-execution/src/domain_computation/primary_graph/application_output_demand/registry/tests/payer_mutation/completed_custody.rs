@@ -84,9 +84,9 @@ fn check(entry: u8) {
                 const INSPECTED_ROW: u64 = 1;
                 let walk = OCCURRENCE_PATH + INSPECTED_ROW;
                 let custody_quote = ENTRY_VISIT + walk + walk;
-                let custody_execution = ENTRY_VISIT + 2 * walk + walk;
+                let custody_execution = ENTRY_VISIT + 2 * walk + 3 * walk;
                 let custody_price = custody_quote + custody_execution;
-                assert_eq!(custody_price, 17);
+                assert_eq!(custody_price, 23); // Eager claim projection adds two one-row walks.
                 let mutation_price = match entry {
                     0 => 19,
                     1 => 29,

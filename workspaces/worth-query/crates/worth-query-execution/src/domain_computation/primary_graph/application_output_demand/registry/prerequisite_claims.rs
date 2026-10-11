@@ -27,6 +27,7 @@ use crate::domain_computation::primary_graph::{
 pub(in crate::domain_computation::primary_graph) struct PreparedPrerequisiteClaims {
     context: RequiredOutputDemandContext,
     predecessors: Vec<Arc<WorthQueryOutputDemandKey>>,
+    claim_batch: Option<super::claim_readthrough::ClaimBatch>,
     checkpoint_predecessors: Option<CheckpointPrerequisiteClaims>,
     predecessor_slots_bytes: usize,
     reserved_identity: Option<Arc<RecordedSettlementIdentity>>,
@@ -219,7 +220,9 @@ impl RequiredOutputDemandContext {
         admission
             .admit_read_scratch(owner_growth as u64)
             .map_err(|_| capacity_denial())?;
-        let settlements = &mut state.records.get_mut(downstream).unwrap().settlements;
+        let claim_batch = state.prepare_claim_readthrough(downstream, &predecessors, admission)?;
+        let mut downstream_record = state.records.get_mut(downstream).unwrap();
+        let settlements = &mut downstream_record.settlements;
         settlements
             .try_reserve_exact(1)
             .map_err(|_| capacity_denial())?;
@@ -232,7 +235,11 @@ impl RequiredOutputDemandContext {
             actual_settlement_growth <= settlement_growth,
             "admitted settlement slots"
         );
+        downstream_record.finish();
         state.required_reserved_bytes += actual_settlement_growth;
+        if let Some(batch) = &claim_batch {
+            batch.install();
+        }
         for upstream in &predecessors {
             let prepared = state
                 .prepare_required_member(upstream)
@@ -254,6 +261,7 @@ impl RequiredOutputDemandContext {
         Ok(PreparedPrerequisiteClaims {
             context: self,
             predecessors,
+            claim_batch,
             checkpoint_predecessors,
             predecessor_slots_bytes,
             reserved_identity: None,

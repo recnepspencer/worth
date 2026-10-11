@@ -35,11 +35,12 @@ impl WorthQueryOutputDemandRegistry {
                 request_admission,
             )? {
                 let state = prepared.mutation.state_mut();
-                let old_record = state.records.get_mut(&replaced.key).unwrap();
+                let mut old_record = state.records.get_mut(&replaced.key).unwrap();
                 let mut old_slots = std::mem::take(&mut old_record.performed_obligations);
                 let old_bytes =
                     old_slots.capacity() * std::mem::size_of::<PerformedOutputObligation>();
-                let next_record = state.records.get_mut(&replacement.key).unwrap();
+                old_record.finish();
+                let mut next_record = state.records.get_mut(&replacement.key).unwrap();
                 let mut next_slots = std::mem::take(&mut next_record.performed_obligations);
                 let next_bytes =
                     next_slots.capacity() * std::mem::size_of::<PerformedOutputObligation>();
@@ -52,7 +53,7 @@ impl WorthQueryOutputDemandRegistry {
                             .same_semantic_source(&replacement.key.source)
                     }));
                 if let Some(growth) = prepared.commit_growth {
-                    growth.install(next_record);
+                    growth.install(&mut next_record);
                 }
                 next_record
                     .source_commits
@@ -60,6 +61,7 @@ impl WorthQueryOutputDemandRegistry {
                 next_record.performed_obligations = prepared.slots;
                 // Retired Vec backings still exist after this guard is released.
                 // Their credits remain reserved until their physical Drop.
+                next_record.finish();
                 state.obligation_reserved_bytes += prepared.bytes;
                 state.install_required_member(prepared.required_member);
                 let (_, claims) = state.finish_superseded_row(&replaced.key, subject);

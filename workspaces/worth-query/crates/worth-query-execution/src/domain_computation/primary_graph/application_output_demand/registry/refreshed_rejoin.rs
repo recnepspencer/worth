@@ -71,8 +71,8 @@ impl WorthQueryOutputDemandRegistry {
         };
         state.charge_record_lookup(&newest, admission)?;
         let member = state.prepare_required_member(&newest)?;
-        let record = state.records.get_mut(&newest).expect("newest row exists");
-        let joinable = accepts_semantic_join(record)
+        let mut record = state.records.get_mut(&newest).expect("newest row exists");
+        let joinable = accepts_semantic_join(&record)
             && record.product_occurrence == occurrence
             && record.source_scope == scope;
         let Some(readmission) = record.readmission_source.as_ref().filter(|_| joinable) else {
@@ -81,7 +81,8 @@ impl WorthQueryOutputDemandRegistry {
         let readmission = Arc::clone(readmission);
         record.interests = record.interests.saturating_add(1);
         record.required_interests += usize::from(stale.requires_output);
-        let rejoined = interest(self, newest, record, stale.requires_output);
+        let rejoined = interest(self, newest, &record, stale.requires_output);
+        record.finish();
         state.install_required_member(member);
         Ok(Some((rejoined, readmission)))
     }
@@ -117,6 +118,19 @@ pub(super) fn awaited_by_stale_owner<C: OccurrenceSearchCharge>(
     key: &WorthQueryOutputDemandKey,
     charge: &mut C,
 ) -> Result<bool, C::Refusal> {
+    awaited_by_stale_owner_matching(records, key, charge, |row, _| {
+        Ok(row.interests != 0 || row.framework_required_count != 0)
+    })
+}
+
+/// Physical cleanup and read-through share this occurrence scan; its holder
+/// predicate decides whether a deferred claim still belongs to an older row.
+pub(super) fn awaited_by_stale_owner_matching<C: OccurrenceSearchCharge>(
+    records: &super::record_map::DemandRecords,
+    key: &WorthQueryOutputDemandKey,
+    charge: &mut C,
+    mut owns_claim: impl FnMut(&DemandRecord, &mut C) -> Result<bool, C::Refusal>,
+) -> Result<bool, C::Refusal> {
     let mut awaited = false;
     for (other, record) in occurrence_rows(records, key, charge)? {
         charge.inspect_row()?;
@@ -126,8 +140,7 @@ pub(super) fn awaited_by_stale_owner<C: OccurrenceSearchCharge>(
         match refresh_order(other, key) {
             Some(Ordering::Greater) if !record.unpublished_new_key() => return Ok(false),
             Some(Ordering::Less) => {
-                awaited |= (record.interests != 0 || record.framework_required_count != 0)
-                    && superseded(record);
+                awaited |= owns_claim(record, charge)? && superseded(record);
             }
             _ => {}
         }

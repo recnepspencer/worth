@@ -157,7 +157,7 @@ impl WorthQueryOutputDemandRegistry {
             .map_err(|_| capacity_denial())?;
         let capacity = state.reserve_required_custody_capacity(key_bytes)?;
         let interest_key = key.clone();
-        let record = state
+        let mut record = state
             .records
             .get_mut(key)
             .expect("selected Ready row retained");
@@ -171,6 +171,7 @@ impl WorthQueryOutputDemandRegistry {
             },
             owner: self.clone(),
         };
+        record.finish();
         drop(state);
         Ok(Some(SelectedRequiredRefreshClaim {
             interest,

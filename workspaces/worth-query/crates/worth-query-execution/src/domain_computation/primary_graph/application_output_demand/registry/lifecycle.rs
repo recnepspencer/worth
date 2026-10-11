@@ -22,7 +22,9 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let custody = state.source_custody.get_mut(&prepared.source_commit).ok_or_else(|| {
+        let visible = super::post_commit::custody_reader::visible(&state, &prepared.source_commit);
+        let custody = state.source_custody
+            .get_mut(&prepared.source_commit).filter(|_| visible).ok_or_else(|| {
             crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                 "the program source publication no longer retains custody",
@@ -164,11 +166,11 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+        let mut record = state
             .records
             .get_mut(&interest.key)
             .expect("executing demand retains its owner record");
-        selected_execution_finish::relinquish_record(record);
+        selected_execution_finish::relinquish_record(&mut record);
     }
 }
 

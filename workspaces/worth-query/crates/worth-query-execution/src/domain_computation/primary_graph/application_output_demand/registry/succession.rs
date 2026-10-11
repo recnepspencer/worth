@@ -151,7 +151,7 @@ impl super::DemandRegistryState {
         let Some(replaced) = replaced else {
             return false;
         };
-        let record = self
+        let mut record = self
             .records
             .get_mut(&replaced)
             .expect("the replaced Ready row is retained");

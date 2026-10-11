@@ -57,9 +57,9 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(record) = state.records.get_mut(key) {
+        if let Some(mut record) = state.records.get_mut(key) {
             record.required_stop = stop;
-        }
+        };
     }
 }
 

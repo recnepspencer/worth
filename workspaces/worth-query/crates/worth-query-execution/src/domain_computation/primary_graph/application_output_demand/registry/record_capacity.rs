@@ -52,7 +52,7 @@ impl Drop for RecordCapacity {
 }
 
 impl DemandRegistryState {
-    fn reserve_record_capacity(
+    pub(super) fn reserve_record_capacity(
         &self,
         bytes: usize,
     ) -> Result<RecordCapacity, WorthQueryOutputDemandDenial> {
@@ -173,7 +173,7 @@ impl DemandRegistryState {
         ));
         record_capacity.work_membership = Some(Arc::downgrade(&work_membership));
         let closed_cleanup = super::cleanup::ClosedCleanupLinks::new(
-            Arc::clone(work_membership.key_arc()),
+            Arc::clone(&work_membership),
             self.reserve_record_capacity(closed_note_bytes)?,
         );
         let mut source_commits = Vec::new();
@@ -201,6 +201,7 @@ impl DemandRegistryState {
             performed_obligations: Vec::new(),
             framework_required_count: 0,
             prerequisites: Vec::new(),
+            claim_batch: None,
             checkpoint_prerequisites: None,
             prepared_prerequisite_claims: 0,
             pending_cleanup_next: None,
@@ -359,7 +360,7 @@ fn work_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-fn capacity_denial() -> WorthQueryOutputDemandDenial {
+pub(super) fn capacity_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         "ordered demand-record storage exceeds retained capacity",

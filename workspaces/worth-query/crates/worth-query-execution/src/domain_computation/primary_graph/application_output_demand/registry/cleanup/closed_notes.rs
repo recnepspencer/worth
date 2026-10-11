@@ -4,20 +4,32 @@ use std::sync::{Arc, Weak};
 
 pub(in super::super) struct ClosedCleanupLinks(Arc<ClosedNoteBacking>);
 pub(in super::super) struct ClosedNoteBacking {
-    key: std::sync::Mutex<Option<Arc<WorthQueryOutputDemandKey>>>,
+    pub(in super::super) claim_owner: super::super::claim_readthrough::OwnerState,
+    pub(in super::super) claimants:
+        std::sync::Mutex<super::super::claim_readthrough::IncomingClaims>,
+    key: std::sync::Mutex<Option<ClosedNoteKey>>,
     closed_note: std::sync::Mutex<ClosedNoteLinks>,
     _capacity: super::super::record_capacity::RecordCapacity,
 }
 impl ClosedCleanupLinks {
     pub(in super::super) fn new(
-        key: Arc<WorthQueryOutputDemandKey>,
+        key: Arc<super::super::required_work::RequiredWorkMembership>,
         capacity: super::super::record_capacity::RecordCapacity,
     ) -> Self {
         Self(Arc::new(ClosedNoteBacking {
-            key: std::sync::Mutex::new(Some(key)),
+            claim_owner: Default::default(),
+            claimants: Default::default(),
+            key: std::sync::Mutex::new(Some(ClosedNoteKey::Funded(key))),
             closed_note: Default::default(),
             _capacity: capacity,
         }))
+    }
+    pub(in super::super) fn node(&self) -> Arc<ClosedNoteBacking> {
+        Arc::clone(&self.0)
+    }
+    pub(in super::super) fn publish_owner_state(&self, row: &DemandRecord) {
+        *self.0.claim_owner.lock().unwrap() =
+            super::super::claim_readthrough::ClaimOwnerState::from_record(row);
     }
     pub(in super::super) fn queued(&self) -> bool {
         self.0.closed_note.lock().unwrap().queued
@@ -27,21 +39,33 @@ impl ClosedCleanupLinks {
 impl Default for ClosedCleanupLinks {
     fn default() -> Self {
         Self(Arc::new(ClosedNoteBacking {
+            claim_owner: Default::default(),
+            claimants: Default::default(),
             key: Default::default(),
             closed_note: Default::default(),
             _capacity: super::super::record_capacity::fixture_capacity(),
         }))
     }
 }
+enum ClosedNoteKey {
+    // Keeping the original owner keeps its key-allocation credit alive too.
+    Funded(Arc<super::super::required_work::RequiredWorkMembership>),
+    #[cfg(test)]
+    Fixture(Arc<WorthQueryOutputDemandKey>),
+}
 impl ClosedNoteBacking {
     fn key_arc(&self) -> Arc<WorthQueryOutputDemandKey> {
-        Arc::clone(
-            self.key
-                .lock()
-                .unwrap()
-                .as_ref()
-                .expect("noted key was admitted"),
-        )
+        match self
+            .key
+            .lock()
+            .unwrap()
+            .as_ref()
+            .expect("noted key was admitted")
+        {
+            ClosedNoteKey::Funded(member) => Arc::clone(member.key_arc()),
+            #[cfg(test)]
+            ClosedNoteKey::Fixture(key) => Arc::clone(key),
+        }
     }
 }
 #[derive(Default)]
@@ -127,13 +151,18 @@ impl DemandRegistryState {
         let node = Arc::clone(&row.closed_cleanup.0);
         let mut funded_key = node.key.lock().unwrap();
         if funded_key.is_none() {
-            *funded_key = Some(Arc::clone(
-                row.work_membership
-                    .as_ref()
-                    .map(|member| member.key_arc())
-                    .or_else(|| self.required_keys.get(key))
-                    .expect("an admitted owner retains its key through release"),
-            ));
+            #[cfg(test)]
+            {
+                *funded_key = Some(if let Some(member) = &row.work_membership {
+                    ClosedNoteKey::Funded(Arc::clone(member))
+                } else {
+                    ClosedNoteKey::Fixture(Arc::clone(
+                        self.required_keys
+                            .get(key)
+                            .expect("a fixture owner retains its key through release"),
+                    ))
+                });
+            }
         }
         drop(funded_key);
         self.closed_cleanup.enqueue(node);
@@ -204,5 +233,11 @@ impl Drop for ClosedRowNote<'_> {
         if self.outstanding {
             self.state.closed_cleanup.enqueue(Arc::clone(&self.node));
         }
+    }
+}
+
+impl Drop for ClosedCleanupLinks {
+    fn drop(&mut self) {
+        self.0.claim_owner.lock().unwrap().live = false;
     }
 }

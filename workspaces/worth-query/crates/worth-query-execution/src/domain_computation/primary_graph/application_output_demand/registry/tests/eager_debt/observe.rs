@@ -1,5 +1,5 @@
 //! Compare reader-visible values and retained debt after every operation.
-use super::super::super::refreshed_rejoin::{awaited_by_stale_owner, infallible};
+use super::super::super::refreshed_rejoin::infallible;
 use super::*;
 pub(super) fn compare(
     world: &World<'_>,
@@ -17,22 +17,13 @@ pub(super) fn compare(
     let mut differences = Vec::new();
     for (id, key) in world.keys.iter().enumerate() {
         let physical = state.records.get(key);
-        let awaited = infallible(awaited_by_stale_owner(
+        let observation = infallible(super::super::super::claim_readthrough::observe_row(
             &state.records,
             key,
             &mut OracleWalk::after_effect(),
         ));
-        let required = physical.is_some_and(|r| r.is_required());
-        let held = physical.is_some_and(|r| {
-            r.interests != 0
-                || r.required_interests != 0
-                || r.framework_required_count != 0
-                || r.prepared_prerequisite_claims != 0
-                || r.pending_cleanup_queued
-                || !r.performed_obligations.is_empty()
-                || r.performed_source.is_some()
-                || r.held_successor.is_some()
-        }) || awaited;
+        let (awaited, required, held) =
+            (observation.awaited, observation.required, observation.held);
         if (awaited, required, held)
             != (
                 world.model.awaited(id),
@@ -106,7 +97,14 @@ pub(super) fn compare(
         if expected.is_none() && actual.is_some_and(|c| !c.cleanup.queued) {
             differences.push(format!("removed custody {id} unnoted"));
         }
-        if let (Some(actual), Some(expected)) = (actual, expected) {
+        let visible = super::super::super::post_commit::custody_reader::visible(
+            &state,
+            &world.context.commit(id),
+        );
+        if visible != expected.is_some() {
+            differences.push(format!("reader custody {id} presence differs"));
+        }
+        if let (Some(actual), Some(expected)) = (actual.filter(|_| visible), expected) {
             let bound = actual.bound_sources.clone();
             let expected_bound = expected.bound.map(|generation| {
                 vec![super::super::super::BoundOutputSource {

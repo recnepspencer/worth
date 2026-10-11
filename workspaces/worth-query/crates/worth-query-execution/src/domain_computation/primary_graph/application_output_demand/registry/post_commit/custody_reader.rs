@@ -15,6 +15,31 @@ pub(in super::super) fn resolve_before_binding(
     }
 }
 
+/// This reads a publication already committed into source custody; there is
+/// no request admission. All readers project the same eager entry eligibility.
+pub(in super::super) fn visible(
+    state: &DemandRegistryState,
+    commit: &worth_runtime_world::facade::CompositeCommitIdentity,
+) -> bool {
+    // The commit was the publication that installed this custody entry.
+    !infallible(state.custody_prunable(commit, &mut PostCommitSweep::after_effect()))
+}
+
+/// A new committed publication replaces a logically absent slot. Consume that
+/// slot's own debt before reusing its identity; unrelated notes are untouched.
+pub(in super::super) fn prune_invisible_slot(
+    state: &mut DemandRegistryState,
+    commit: &worth_runtime_world::facade::CompositeCommitIdentity,
+    receipt: &WorthQueryApplicationCommitReceipt,
+) {
+    if state.source_custody.contains_key(commit) {
+        state.note_custody(commit);
+        infallible(
+            state.prune_custody_entry(commit, &mut PostCommitSweep::after_source_commit(receipt)),
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::super::tests::walk_bounds;
@@ -29,7 +54,7 @@ mod tests {
             for neighbors in [1, 64] {
                 let mut state = DemandRegistryState::default();
                 walk_bounds::add_custody(&mut state, &receipts[..count], 1);
-                for row in state.records.values_mut() {
+                for mut row in state.records.values_mut() {
                     row.interests = 0;
                     row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
                         WorthQueryOutputDemandDenialKind::NoEffect,
@@ -54,7 +79,7 @@ mod tests {
                 assert!(!state.pending_custody_prune());
             }
         }
-        // Each entry: custody entry + held row + stale-owner row + retiring row.
-        assert_eq!(contacts, [4, 4, 8, 8, 16, 16]);
+        // Each entry: custody entry + held row + three projected searches + retiring row.
+        assert_eq!(contacts, [6, 6, 12, 12, 24, 24]);
     }
 }

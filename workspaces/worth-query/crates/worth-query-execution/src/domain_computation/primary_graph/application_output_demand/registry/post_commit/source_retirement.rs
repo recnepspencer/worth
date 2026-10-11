@@ -32,7 +32,7 @@ pub(in super::super) fn retire_stale_records(
     .map(|(key, _)| key.clone())
     .collect::<Vec<_>>();
     for key in &keys {
-        let record = state
+        let mut record = state
             .records
             .get_mut(key)
             .expect("source occurrence key exists");
@@ -46,6 +46,7 @@ pub(in super::super) fn retire_stale_records(
         }
         record.performed_source = None;
         record.wake.notify();
+        record.finish();
         infallible(state.release_record_prerequisites(key, &mut charge));
     }
     // Remove only after every stale row has released its prerequisites: an

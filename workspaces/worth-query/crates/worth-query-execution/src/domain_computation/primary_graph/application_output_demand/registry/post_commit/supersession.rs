@@ -13,7 +13,7 @@ impl DemandRegistryState {
         WorthQueryOutputDemandDenial,
         Vec<Arc<WorthQueryOutputDemandKey>>,
     ) {
-        let record = self
+        let mut record = self
             .records
             .get_mut(key)
             .expect("superseded demand retains its owner record");
@@ -42,6 +42,7 @@ impl DemandRegistryState {
         let released = record.release_obligations();
         record.wake.notify();
         // The supersession stop is installed above; no World receipt is carried here.
+        record.finish();
         if unpublished {
             // The row ends without an output of its own: the newest Ready it
             // replaced answers for the occurrence again.

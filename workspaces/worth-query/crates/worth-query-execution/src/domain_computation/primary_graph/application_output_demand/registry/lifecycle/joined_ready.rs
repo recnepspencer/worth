@@ -59,11 +59,12 @@ impl WorthQueryOutputDemandRegistry {
         .complete(|priced| {
             let claims = priced.release_prerequisites(key);
             let state = priced.state_mut();
-            let record = state.records.get_mut(key).expect("the row was checked");
+            let mut record = state.records.get_mut(key).expect("the row was checked");
             let ready = std::mem::replace(&mut record.state, DemandState::Admitted);
             let readmission = record.readmission_source.take();
             record.required_stop = None;
             record.wake.notify();
+            record.finish();
             let upstream = claims.iter().map(|claim| claim.as_ref().clone()).collect();
             let retired = priced.retire_closed_rows(upstream);
             Ok((ready, readmission, claims, retired))

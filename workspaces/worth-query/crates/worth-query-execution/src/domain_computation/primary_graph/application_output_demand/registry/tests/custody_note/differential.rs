@@ -75,7 +75,7 @@ fn eager(registry: &WorthQueryOutputDemandRegistry) {
         .collect();
     for commit in removed {
         state.discard_custody(&commit);
-        for row in state.records.values_mut() {
+        for mut row in state.records.values_mut() {
             row.source_commits.retain(|c| c != &commit);
         }
     }
@@ -167,7 +167,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
                 .collect();
             let mut state = result.0.state.lock().unwrap();
             walk_bounds::add_custody_in_scope(&mut state, &foreign, 1 + seed % 3, scope);
-            for (key, row) in &mut state.records {
+            for (key, mut row) in &mut state.records {
                 if key.producer.starts_with("custody-unrelated-") {
                     row.interests = 0;
                     row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(

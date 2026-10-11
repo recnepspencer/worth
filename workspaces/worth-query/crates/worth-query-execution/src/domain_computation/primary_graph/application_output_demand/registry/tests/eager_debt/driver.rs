@@ -175,5 +175,9 @@ pub(super) fn run(context: &world::Context, seed: u64, divergences: &mut Vec<Str
         "admission-free binding after quiescence",
         &mut |w| w.bind(),
     );
+    apply(&mut world, "unused program source owner closes", &mut |w| {
+        w.registry.discard_prepared_source(&context.commit(0));
+        w.model.custody.remove(&0);
+    });
     observe::compare(&world, seed, step + 1, "quiescent value", divergences, true);
 }

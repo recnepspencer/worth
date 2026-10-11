@@ -26,13 +26,14 @@ impl PreparedPrerequisiteClaims {
         }
         self.reserved_posting.take();
         for upstream in &self.predecessors {
-            if let Some(record) = state.records.get_mut(upstream.as_ref()) {
-                record.framework_required_count -= 1;
-                if !state.records[upstream].pending_cleanup_queued
-                    && !state.defer_terminal_cleanup(upstream, 0)
-                {
-                    infallible(state.remove_required_member_if_released(upstream, charge));
-                }
+            let Some(mut record) = state.records.get_mut(upstream.as_ref()) else {
+                continue;
+            };
+            record.framework_required_count -= 1;
+            let pending = record.pending_cleanup_queued;
+            record.finish();
+            if !pending && !state.defer_terminal_cleanup(upstream, 0) {
+                infallible(state.remove_required_member_if_released(upstream, charge));
             }
         }
         for upstream in &self.predecessors {
