@@ -198,7 +198,7 @@ mod tests {
             assert_eq!(
                 comparison_work_failure(fact.most_comparison_work(), reserved, &admission),
                 Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum }),
-                "a relation has no fact limit: its overrun is WorkExhausted on every width"
+                "a relation has no fact limit: its overrun has no invented requirement at every width"
             );
             assert_eq!(
                 comparison_work_failure(Some(2), 2, &admission),
