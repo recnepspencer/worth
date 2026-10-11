@@ -6,8 +6,8 @@ use crate::transactions::data::{CommitExecutionDenial, CommitExecutionDenialKind
 use worth_execution::{MapDenial, ScanDenial, WorkCeilingDenial};
 
 impl QueryReadExecutionStop {
-    /// Semantic fragment absence has no execution cause. Resource and control
-    /// failures retain their native cause and the selected partition.
+    /// Semantic fragment absence has no execution cause. Caller input, resource
+    /// and control failures retain their native cause and selected partition.
     pub fn execution_denial(&self) -> Option<CommitExecutionDenial> {
         // None classifies fragment absence and other shape failures as non-request stops;
         // it does not consume this stop. Query's denial handoffs own the original
@@ -51,7 +51,8 @@ impl QueryReadExecutionStop {
 fn scan_denial(denial: ScanDenial) -> Option<Cause> {
     match denial {
         ScanDenial::MemoryOverflow => Some(Cause::MemoryOverflow),
-        ScanDenial::IdentitiesNotCanonical | ScanDenial::CoverageMismatch => None,
+        ScanDenial::IdentitiesNotCanonical => Some(Cause::ExpectedIdentitiesNotCanonical),
+        ScanDenial::CoverageMismatch => None,
     }
 }
 fn map_denial(denial: MapDenial) -> Option<Cause> {
