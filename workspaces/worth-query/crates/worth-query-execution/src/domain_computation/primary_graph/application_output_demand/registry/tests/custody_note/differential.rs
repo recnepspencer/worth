@@ -63,6 +63,9 @@ fn assert_noted(registry: &WorthQueryOutputDemandRegistry, step: &str, seed: u64
     }
 }
 fn eager(registry: &WorthQueryOutputDemandRegistry) {
+    registry
+        .drain_closed_cleanup_admitted(&mut record_admission())
+        .unwrap();
     let mut state = registry.state.lock().unwrap();
     let removed: Vec<_> = state
         .source_custody
@@ -78,7 +81,9 @@ fn eager(registry: &WorthQueryOutputDemandRegistry) {
     }
 }
 
-fn value(registry: &WorthQueryOutputDemandRegistry) -> impl PartialEq + std::fmt::Debug {
+pub(in super::super::super) fn value(
+    registry: &WorthQueryOutputDemandRegistry,
+) -> impl PartialEq + std::fmt::Debug {
     let state = registry.state.lock().unwrap();
     let records: Vec<_> = state
         .records
@@ -268,6 +273,10 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
             eager(&reference);
             assert_noted(&registry, "token drop", seed);
         }
+        registry
+            .drain_closed_cleanup_admitted(&mut record_admission())
+            .unwrap();
+        assert_noted(&registry, "paid claim transfer", seed);
         let remaining = registry.state.lock().unwrap().custody_cleanup.len;
         for _ in 0..remaining
             .div_ceil(super::super::super::cleanup::custody::FOREIGN_CUSTODY_DRAIN_QUOTA)

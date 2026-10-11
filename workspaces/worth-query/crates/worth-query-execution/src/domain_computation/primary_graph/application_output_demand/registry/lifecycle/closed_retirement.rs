@@ -84,7 +84,7 @@ impl DemandRegistryState {
         }
         let released = self.release_record_prerequisites(key, charge)?;
         self.remove_required_member_if_released(key, charge)?;
-        if let Some(record) = self.records.remove(key) {
+        if let Some(record) = self.remove_record(key) {
             self.obligation_reserved_bytes = self
                 .obligation_reserved_bytes
                 .saturating_sub(record.obligation_reserved_bytes());

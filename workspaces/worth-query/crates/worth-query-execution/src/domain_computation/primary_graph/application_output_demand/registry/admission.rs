@@ -29,6 +29,7 @@ impl WorthQueryOutputDemandRegistry {
         successor_of: Option<OutputRefreshPredecessor<'_>>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial> {
+        self.drain_closed_for_occurrence(&requested_key, admission)?;
         let mut state = self
             .state
             .lock()
@@ -331,6 +332,9 @@ impl WorthQueryOutputDemandRegistry {
         record.required_interests += usize::from(admission_kind.is_required());
         let interest = interest(self, key, record, admission_kind.is_required());
         state.install_required_member(required_member);
+        let retired = state.take_optional_closed_cleanup(admission);
+        drop(state);
+        drop(retired);
         Ok(interest)
     }
 }

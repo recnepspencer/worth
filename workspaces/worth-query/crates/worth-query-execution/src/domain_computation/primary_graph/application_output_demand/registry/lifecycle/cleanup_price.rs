@@ -8,7 +8,9 @@ use super::closed_retirement::{closed_cached, closed_superseded};
 use crate::domain_computation::primary_graph::application_query::observed_source;
 use crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity;
 use crate::domain_computation::primary_graph::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::{
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 type Occurrence = (
@@ -28,6 +30,41 @@ pub(in super::super) fn price_cleanup<'a>(
     walks.extend(cascade_walks(state, cascade, admission, kind)?);
     let allowance = super::super::cleanup::custody_price::noted_allowance(state, admission, kind)?;
     price_mutation_with_source_allowance(state, admission, &walks, kind, allowance)
+}
+
+pub(in super::super) fn price_closed_cascade<'a>(
+    state: &'a mut DemandRegistryState,
+    admission: &mut InvalidationEditAdmission,
+    roots: &[WorthQueryOutputDemandKey],
+) -> Result<PricedMutation<'a>, WorthQueryOutputDemandDenial> {
+    let kind = WalkKind::TerminalCleanup;
+    for key in roots {
+        let Some(row) = state.records.get(key) else {
+            continue;
+        };
+        if row.terminal()
+            && row.interests == 0
+            && row.framework_required_count == 0
+            && row.prepared_prerequisite_claims == 0
+            && !row.performed_obligations.is_empty()
+        {
+            let work = row
+                .performed_obligations
+                .capacity()
+                .checked_add(row.performed_obligations.len())
+                .and_then(|n| {
+                    n.checked_mul(std::mem::size_of::<super::super::PerformedOutputObligation>())
+                })
+                .and_then(|n| n.checked_add(8))
+                .ok_or_else(|| kind.denial())?;
+            admission
+                .charge_external_work(u64::try_from(work).map_err(|_| kind.denial())?)
+                .map_err(|_| kind.denial())?;
+        }
+    }
+    let mut walks = cascade_walks(state, roots, admission, kind)?;
+    walks.extend(roots.iter().cloned().map(|key| (key, 1)));
+    super::super::refreshed_rejoin::price_mutation(state, admission, &walks, kind)
 }
 
 struct Candidate {
@@ -89,11 +126,52 @@ impl CascadeQuote {
         admission: &mut InvalidationEditAdmission,
         kind: WalkKind,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
+        // Count inline row headers before admitting the plan's cloned keys,
+        // edge lists, ordered indices and cascade worklists.
+        let mut edges = Some(0usize);
+        let mut producer = 0usize;
+        charge_whole_map(&state.records, admission, WholeMapPasses::One, 0)
+            .map_err(|_| kind.denial())?
+            .visit_rows(|key, row| {
+                edges = edges.and_then(|n| n.checked_add(row.prerequisites.len()));
+                producer = producer.max(key.producer.len());
+            })?;
+        let edges = edges.ok_or_else(|| kind.denial())?;
+        let slots = state
+            .records
+            .len()
+            .checked_mul(24)
+            .and_then(|n| edges.checked_mul(12).and_then(|edges| n.checked_add(edges)))
+            .and_then(|n| n.checked_add(8))
+            .ok_or_else(|| kind.denial())?;
+        let slot = std::mem::size_of::<WorthQueryOutputDemandKey>()
+            .checked_add(producer)
+            .and_then(|n| n.checked_add(std::mem::size_of::<Candidate>()))
+            .and_then(|n| n.checked_add(12 * std::mem::size_of::<usize>()))
+            .ok_or_else(|| kind.denial())?;
+        let scratch = slots.checked_mul(slot).ok_or_else(|| kind.denial())?;
+        admission
+            .admit_read_scratch(u64::try_from(scratch).map_err(|_| kind.denial())?)
+            .map_err(|_| {
+                super::super::WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+                    "closed-row cascade scratch exceeds request preparation",
+                )
+            })?;
+        // Both the edge index and reachability traverse these existing edges.
+        admission
+            .charge_external_work(
+                u64::try_from(edges)
+                    .ok()
+                    .and_then(|n| n.checked_mul(2))
+                    .ok_or_else(|| kind.denial())?,
+            )
+            .map_err(|_| kind.denial())?;
         let mut quote = Self {
             candidates: BTreeMap::new(),
             occurrences: BTreeMap::new(),
             incoming: BTreeMap::new(),
-            edges: 0,
+            edges: u64::try_from(edges).map_err(|_| kind.denial())?,
         };
         // The receipt supplies this map and is consumed by the plan's scan.
         charge_whole_map(&state.records, admission, WholeMapPasses::One, 0)
@@ -109,7 +187,6 @@ impl CascadeQuote {
                     .iter()
                     .map(|key| key.as_ref().clone())
                     .collect();
-                quote.edges = quote.edges.saturating_add(prerequisites.len() as u64);
                 for upstream in &prerequisites {
                     *quote.incoming.entry(upstream.clone()).or_default() += 1;
                 }
@@ -123,10 +200,6 @@ impl CascadeQuote {
                     },
                 );
             })?;
-        // Both the read-only edge index and reachability traverse the edges.
-        admission
-            .charge_external_work(quote.edges.checked_mul(2).ok_or_else(|| kind.denial())?)
-            .map_err(|_| kind.denial())?;
         Ok(quote)
     }
 

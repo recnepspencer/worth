@@ -27,6 +27,7 @@ impl WorthQueryOutputDemandRegistry {
         interest: &WorthQueryOutputDemandInterest,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        self.drain_closed_cleanup_admitted(admission)?;
         let mut state = self
             .state
             .lock()

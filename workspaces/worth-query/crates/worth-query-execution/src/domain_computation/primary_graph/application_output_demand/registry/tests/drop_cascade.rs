@@ -1,5 +1,6 @@
-//! The Drop cascade precedes another Drop's admission-free member read.
+//! Drop keeps the old claim until an admission pays for its transfer.
 use super::*;
+mod differential;
 
 #[test]
 fn registry_drop_cascade_transfers_before_newest_owner_can_close() {
@@ -33,13 +34,24 @@ fn registry_drop_cascade_transfers_before_newest_owner_can_close() {
     let wake = Arc::clone(&dependent_row.wake);
     state.records.insert(dependent.clone(), dependent_row);
     state.required_keys.insert(Arc::new(newest.clone()));
+    retain_owned_key(&mut state, &dependent);
+    retain_owned_key(&mut state, &newest);
     drop(state);
     let next_owner = interest(&registry, newest.clone(), next_wake);
     drop(interest(&registry, dependent.clone(), wake));
-    // No admission occurs between these Drops. The second one removes an
-    // unrequired member. Delaying the transfer loses the Arc follow_newest
-    // needs, even though the Ready row itself remains cached.
+    // The stale claim keeps the newest member through both Drops.
     drop(next_owner);
+    let state = registry.state.lock().unwrap();
+    assert!(
+        state.records.contains_key(&old),
+        "Drop must leave the claim transfer unpaid"
+    );
+    assert_eq!(state.records[&dependent].prerequisites[0].as_ref(), &old);
+    assert!(state.records[&dependent].closed_cleanup.queued());
+    drop(state);
+    registry
+        .drain_closed_cleanup_admitted(&mut record_admission())
+        .unwrap();
     let state = registry.state.lock().unwrap();
     assert!(!state.records.contains_key(&old));
     assert_eq!(state.records[&newest].framework_required_count, 1);
@@ -76,20 +88,22 @@ fn registry_drop_cascade_names_its_released_row_bound() {
             state.records.insert(key("chain", 1, slot), row);
         }
         let root = key("chain", 1, 1);
+        retain_owned_key(&mut state, &root);
         let wake = Arc::clone(&state.records[&root].wake);
         drop(state);
         let before = super::super::record_map::occurrence_rows_visited();
         drop(interest(&registry, root, wake));
         contacts.push(super::super::record_map::occurrence_rows_visited() - before);
+        registry
+            .drain_closed_cleanup_admitted(&mut record_admission())
+            .unwrap();
         assert_eq!(
             registry.state.lock().unwrap().records.len(),
             receipts.len() * 3
         );
     }
-    // One own replaced-row visit, two upstream visits per released edge
-    // (newest search and member), and two per cascade-retired row:
-    // 1+2*(L-1)+2*(L-1) = 4L-3.
-    assert_eq!(contacts, [1, 5, 13]);
+    // Drop only searches its own one-row occurrence, regardless of its edges.
+    assert_eq!(contacts, [1, 1, 1]);
 }
 
 #[cfg(feature = "test-query-execution-observer")]
@@ -135,6 +149,7 @@ fn registry_drop_cascade_names_its_whole_map_claimant_bound() {
         };
         let wake = Arc::clone(&row.wake);
         state.records.insert(dependent.clone(), row);
+        retain_owned_key(&mut state, &dependent);
         drop(state);
         let whole = super::super::record_map::whole_rows();
         let occurrence = super::super::record_map::occurrence_rows_visited();
@@ -144,7 +159,6 @@ fn registry_drop_cascade_names_its_whole_map_claimant_bound() {
             super::super::record_map::occurrence_rows_visited() - occurrence,
         ));
     }
-    // One claimant-index pass over N=3+4+neighbors, and 15 occurrence-row
-    // contacts for the member, transfer, held, posting and retirement walks.
-    assert_eq!(contacts, [(8, 15), (71, 15)]);
+    // Drop links its cue without a claimant pass or an upstream walk.
+    assert_eq!(contacts, [(0, 1), (0, 1)]);
 }

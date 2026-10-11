@@ -199,6 +199,7 @@ impl DemandRegistryState {
             prepared_prerequisite_claims: 0,
             pending_cleanup_next: None,
             pending_cleanup_queued: false,
+            closed_cleanup: Default::default(),
             pending_cleanup_key_bytes: 0,
             settlements: Vec::new(),
             product_occurrence,

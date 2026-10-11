@@ -159,6 +159,35 @@ impl PricedMutation<'_> {
         infallible(self.state.retire_closed_rows(candidates, &mut self.charge))
     }
 
+    pub(in super::super) fn prune_closed_note(
+        &mut self,
+        key: std::sync::Arc<WorthQueryOutputDemandKey>,
+        candidates: Vec<WorthQueryOutputDemandKey>,
+    ) -> (
+        Vec<super::super::DemandRecord>,
+        Vec<std::sync::Arc<WorthQueryOutputDemandKey>>,
+    ) {
+        let note = self.state.take_closed_note(std::sync::Arc::clone(&key));
+        note.prune(|state| {
+            for key in &candidates {
+                if let Some(row) = state.records.get_mut(key) {
+                    if row.terminal()
+                        && row.interests == 0
+                        && row.framework_required_count == 0
+                        && row.prepared_prerequisite_claims == 0
+                    {
+                        let released = row.release_obligations();
+                        state.obligation_reserved_bytes =
+                            state.obligation_reserved_bytes.saturating_sub(released);
+                    }
+                }
+            }
+            let retired = infallible(state.retire_closed_rows(candidates, &mut self.charge));
+            infallible(state.remove_required_member_if_released(&key, &mut self.charge));
+            retired
+        })
+    }
+
     pub(in super::super) fn complete<T>(
         mut self,
         operation: impl FnOnce(&mut Self) -> Result<T, Infallible>,

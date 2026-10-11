@@ -60,7 +60,7 @@ pub(in super::super) fn retire_stale_records(
             && record.prepared_prerequisite_claims == 0
             && !record.pending_cleanup_queued
         {
-            state.records.remove(&key);
+            state.remove_record(&key);
             if let Some(member) = state.required_keys.take(&key) {
                 state.required_reserved_bytes = state.required_reserved_bytes.saturating_sub(
                     super::required_members::member_bytes(member.as_ref())

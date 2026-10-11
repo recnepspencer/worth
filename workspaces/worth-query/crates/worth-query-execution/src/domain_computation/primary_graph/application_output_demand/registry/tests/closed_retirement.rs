@@ -55,6 +55,7 @@ fn claim_on_superseded(
             .insert(newest.clone(), record(occurrence(), newest_state, 1));
         state.required_keys.insert(Arc::new(newest.clone()));
         state.records.insert(dependent.clone(), dependent_record);
+        retain_owned_key(&mut state, &dependent);
     }
     let interest = interest(&registry, dependent, wake);
     (registry, interest, old, newest)
@@ -70,17 +71,6 @@ fn a_closing_dependent_keeps_its_claim_while_the_newest_row_still_refreshes() {
     assert_eq!(state.records[&old].framework_required_count, 1);
     assert_eq!(state.records[&newest].framework_required_count, 0);
     assert_eq!(claims(&state.records[&dependent]), vec![old]);
-}
-
-#[test]
-fn a_closing_dependent_moves_its_claim_once_the_newest_row_is_ready() {
-    let (registry, interest, old, newest) = claim_on_superseded(ready());
-    let dependent = interest.key.clone();
-    drop(interest);
-    let state = registry.state.lock().unwrap();
-    assert!(!state.records.contains_key(&old));
-    assert_eq!(state.records[&newest].framework_required_count, 1);
-    assert_eq!(claims(&state.records[&dependent]), vec![newest]);
 }
 
 #[test]

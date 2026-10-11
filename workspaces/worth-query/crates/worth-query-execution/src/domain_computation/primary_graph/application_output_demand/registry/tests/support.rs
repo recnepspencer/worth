@@ -93,6 +93,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
         prepared_prerequisite_claims: 0,
         pending_cleanup_next: None,
         pending_cleanup_queued: false,
+        closed_cleanup: Default::default(),
         pending_cleanup_key_bytes: 0,
         settlements: Vec::new(),
         product_occurrence: occurrence,
@@ -142,4 +143,25 @@ fn interest_with_requirement(
         },
         owner: registry.clone(),
     }
+}
+
+/// Retain the owned key exactly as prepare_new_record does, without activating work.
+pub(in super::super) fn retain_owned_key(
+    state: &mut DemandRegistryState,
+    key: &WorthQueryOutputDemandKey,
+) {
+    if state.records[key].work_membership.is_some() {
+        return;
+    }
+    let queue = state.required_work_queue.get_or_insert_with(|| {
+        Arc::new(super::super::required_work::RequiredWorkQueue::new(
+            Arc::new(test_record_capacity()),
+        ))
+    });
+    let member = Arc::new(super::super::required_work::RequiredWorkMembership::new(
+        Arc::new(key.clone()),
+        queue,
+        test_record_capacity(),
+    ));
+    state.records.get_mut(key).unwrap().work_membership = Some(member);
 }

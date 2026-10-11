@@ -72,7 +72,7 @@ pub(super) fn supersede_predecessors(
                 || record.pending_cleanup_queued
                 || !record.terminal();
             if !keep {
-                let record = state.records.remove(&key).expect("selected row exists");
+                let record = state.remove_record(&key).expect("selected row exists");
                 state.obligation_reserved_bytes = state
                     .obligation_reserved_bytes
                     .saturating_sub(record.obligation_reserved_bytes());

@@ -73,6 +73,8 @@ fn fixture(
             completed: true,
         },
     );
+    retain_owned_key(&mut state, &dependent);
+    retain_owned_key(&mut state, &newest);
     drop(state);
     registry.complete_prepared_source(receipt);
     let next_owner = interest(&registry, newest.clone(), next_wake);
@@ -109,6 +111,9 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
         );
     }
     drop(dependent);
+    registry
+        .drain_closed_cleanup_admitted(&mut record_admission())
+        .unwrap();
     let mut state = registry.state.lock().unwrap();
     assert_eq!(state.records[&newest].framework_required_count, 1);
     state.drain_foreign_custody_quota(&mut record_admission());
@@ -133,4 +138,4 @@ fn copy_ready(ready: &DemandState) -> DemandState {
     ))
 }
 
-mod differential;
+pub(super) mod differential;

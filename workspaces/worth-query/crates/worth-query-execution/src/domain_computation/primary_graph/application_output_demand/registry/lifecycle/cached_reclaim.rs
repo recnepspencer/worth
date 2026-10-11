@@ -35,6 +35,7 @@ impl WorthQueryOutputDemandRegistry {
         bytes: usize,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
+        self.drain_closed_cleanup_admitted(admission)?;
         let mut retired = Vec::new();
         let mut claims = Vec::new();
         let reclaimed = {
@@ -56,6 +57,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        self.drain_closed_cleanup_admitted(admission)?;
         let mut retired = Vec::new();
         let mut claims = Vec::new();
         let mut released = None;

@@ -1,3 +1,6 @@
+pub(super) mod closed;
+mod closed_notes;
+pub(super) use closed_notes::{ClosedCleanupLinks, ClosedCleanupQueue};
 pub(super) mod custody;
 mod custody_notes;
 pub(super) mod custody_price;
@@ -292,7 +295,7 @@ impl DemandRegistryState {
                     && record.performed_source.is_none()
                     && !record.pending_cleanup_queued
             }) {
-                state.records.remove(head.as_ref())
+                state.remove_record(head.as_ref())
             } else {
                 None
             };

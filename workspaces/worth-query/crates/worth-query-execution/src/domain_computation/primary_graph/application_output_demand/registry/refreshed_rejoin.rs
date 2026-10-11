@@ -154,29 +154,6 @@ pub(super) fn replaced_under_refresh<C: OccurrenceSearchCharge>(
     Ok(newer && awaited_by_stale_owner(records, key, charge)?)
 }
 
-/// The closed superseded rows the published row at `key` replaced. Kept
-/// while it refreshed, they answer for nothing once it has published.
-pub(super) fn replaced_by_published<C: OccurrenceSearchCharge>(
-    records: &super::record_map::DemandRecords,
-    key: &WorthQueryOutputDemandKey,
-    charge: &mut C,
-) -> Result<Vec<WorthQueryOutputDemandKey>, C::Refusal> {
-    if !matches!(records.get(key), Some(record) if matches!(record.state, DemandState::Output(_))) {
-        return Ok(Vec::new());
-    }
-    let mut replaced = Vec::new();
-    for (other, record) in occurrence_rows(records, key, charge)? {
-        charge.inspect_row()?;
-        if refresh_order(other, key) == Some(Ordering::Less)
-            && record.interests == 0
-            && superseded(record)
-        {
-            replaced.push(other.clone());
-        }
-    }
-    Ok(replaced)
-}
-
 /// The newest row of `key`'s occurrence. A closing stale owner of `key` may
 /// have been the last one awaiting it.
 pub(super) fn newest_of_occurrence<C: OccurrenceSearchCharge>(
