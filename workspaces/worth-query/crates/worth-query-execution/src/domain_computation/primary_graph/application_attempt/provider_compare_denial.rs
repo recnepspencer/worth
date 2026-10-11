@@ -11,16 +11,23 @@ pub(in crate::domain_computation::primary_graph) fn provider_compare_denied(
     let denial = match denial {
         Compare::ProviderSession(failure) => {
             if let Some(allocation) = failure.allocation_denial() {
-                use worth_execution::ExecutionAllocationDenialKind as Kind;
-                match allocation.kind() {
-                    Kind::Cancelled => return Progression::Cancelled,
-                    Kind::DeadlineElapsed => return Progression::TimedOut,
-                    Kind::Layout
-                    | Kind::Lease(_)
-                    | Kind::Allocator
-                    | Kind::CapacityMismatch
-                    | Kind::WriteBeyondReserved
-                    | Kind::IncompleteSeal => {}
+                use worth_execution::{
+                    ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
+                    WorkCeilingDenial as Request,
+                };
+                match allocation.classify() {
+                    Class::Request(Request::Stopped(Stop::Cancelled)) => {
+                        return Progression::Cancelled
+                    }
+                    Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
+                        return Progression::TimedOut
+                    }
+                    Class::Request(Request::Admission(_))
+                    | Class::Request(Request::Stopped(
+                        Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+                    ))
+                    | Class::Request(Request::Panicked)
+                    | Class::Physical(_) => {}
                 }
             }
             provider_session_denied(failure)
