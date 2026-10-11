@@ -143,7 +143,7 @@ mod tests {
         {
             let state = registry.state.lock().unwrap();
             assert_eq!(state.records.len(), 1);
-            assert_eq!(state.closed_cleanup.len, 3);
+            assert_eq!(state.closed_cleanup.len(), 3);
             assert!(state.closed_cleanup.valid_order());
         }
         drop(WorthQueryOutputDemandInterest {
@@ -157,7 +157,7 @@ mod tests {
             .unwrap();
         let state = registry.state.lock().unwrap();
         assert!(state.records.is_empty());
-        assert_eq!(state.closed_cleanup.len, 0);
+        assert_eq!(state.closed_cleanup.len(), 0);
         assert!(state.closed_cleanup.head().is_none());
     }
 

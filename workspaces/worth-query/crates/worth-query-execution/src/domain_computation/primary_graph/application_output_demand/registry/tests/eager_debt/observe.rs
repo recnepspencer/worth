@@ -202,7 +202,7 @@ pub(super) fn compare(
             ));
         }
     }
-    if quiescent && (state.closed_cleanup.len != 0 || state.custody_cleanup.len != 0) {
+    if quiescent && (state.closed_cleanup.len() != 0 || state.custody_cleanup.len != 0) {
         differences.push("final note orders nonempty".into());
     }
     if !differences.is_empty() {

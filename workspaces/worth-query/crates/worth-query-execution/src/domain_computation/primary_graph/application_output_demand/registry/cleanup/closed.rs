@@ -8,13 +8,14 @@ type RetiredClosedRows = (Vec<DemandRecord>, Vec<Arc<WorthQueryOutputDemandKey>>
 impl DemandRegistryState {
     pub(in super::super) fn take_closed_cleanup_step(
         &mut self,
-        key: Arc<WorthQueryOutputDemandKey>,
+        note: super::closed_notes::QueuedClosedRow,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<RetiredClosedRows, WorthQueryOutputDemandDenial> {
-        if !self.records.contains_key(&key) {
+        let key = note.key();
+        if !note.names(&self.records) {
             admission.inspect_row()?;
             return Ok(self
-                .take_closed_note(key)
+                .take_closed_note(note)
                 .prune(|_| (Vec::new(), Vec::new())));
         }
         // The candidates are one occurrence, and their cloned keys are admitted
@@ -45,7 +46,7 @@ impl DemandRegistryState {
         debug_assert!(roots.len() <= count);
         Ok(
             super::super::lifecycle::cleanup_price::price_closed_cascade(self, admission, &roots)?
-                .complete(|priced| Ok(priced.prune_closed_note(key, roots))),
+                .complete(|priced| Ok(priced.prune_closed_note(note, roots))),
         )
     }
 
@@ -56,8 +57,8 @@ impl DemandRegistryState {
         admission: &mut InvalidationEditAdmission,
     ) -> Option<RetiredClosedRows> {
         debug_assert_eq!(FOREIGN_CLOSED_DRAIN_QUOTA, 1);
-        let key = self.closed_cleanup.head()?;
-        match self.take_closed_cleanup_step(key, admission) {
+        let note = self.closed_cleanup.front()?;
+        match self.take_closed_cleanup_step(note, admission) {
             Ok(retired) => Some(retired),
             Err(denial) => {
                 debug_assert!(matches!(
@@ -83,25 +84,19 @@ impl WorthQueryOutputDemandRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if state.closed_cleanup.len == 0 {
+            if state.closed_cleanup.len() == 0 {
                 return Ok(());
             }
             let mut found = None;
-            for (candidate, row) in occurrence_rows(&state.records, key, admission)? {
+            for (_, row) in occurrence_rows(&state.records, key, admission)? {
                 admission.inspect_row()?;
                 if row.closed_cleanup.queued() {
-                    found = Some(Arc::clone(
-                        row.work_membership
-                            .as_ref()
-                            .map(|member| member.key_arc())
-                            .or_else(|| state.required_keys.get(candidate))
-                            .unwrap(),
-                    ));
+                    found = row.closed_cleanup.queued_note();
                     break;
                 }
             }
             match found {
-                Some(key) => Some(state.take_closed_cleanup_step(key, admission)?),
+                Some(note) => Some(state.take_closed_cleanup_step(note, admission)?),
                 None => None,
             }
         };
@@ -113,17 +108,17 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let visits = self.state.lock().unwrap().closed_cleanup.len;
+        let visits = self.state.lock().unwrap().closed_cleanup.len();
         for _ in 0..visits {
             let retired = {
                 let mut state = self
                     .state
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
-                let Some(key) = state.closed_cleanup.head() else {
+                let Some(note) = state.closed_cleanup.front() else {
                     break;
                 };
-                state.take_closed_cleanup_step(key, admission)?
+                state.take_closed_cleanup_step(note, admission)?
             };
             drop(retired);
         }

@@ -314,8 +314,9 @@ struct DemandRegistryState {
 
 impl Default for DemandRegistryState {
     fn default() -> Self {
+        let closed_cleanup = cleanup::ClosedCleanupQueue::default();
         Self {
-            records: record_map::DemandRecords::new(),
+            records: record_map::DemandRecords::with_cleanup(closed_cleanup.clone()),
             _empty_root_capacity: None,
             record_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_record_retained_bytes(),
             record_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
@@ -329,7 +330,7 @@ impl Default for DemandRegistryState {
             required_custody_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             settlement_keys: settlement_index::SettlementIndex::default(),
             pending_cleanup_head: None,
-            closed_cleanup: Default::default(),
+            closed_cleanup,
             custody_cleanup: Default::default(),
             source_preparations: HashMap::new(),
             source_custody: BTreeMap::new(),

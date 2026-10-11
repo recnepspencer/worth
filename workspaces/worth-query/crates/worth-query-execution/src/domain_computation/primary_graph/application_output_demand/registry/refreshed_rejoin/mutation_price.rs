@@ -161,13 +161,14 @@ impl PricedMutation<'_> {
 
     pub(in super::super) fn prune_closed_note(
         &mut self,
-        key: std::sync::Arc<WorthQueryOutputDemandKey>,
+        queued: super::super::cleanup::closed_notes::QueuedClosedRow,
         candidates: Vec<WorthQueryOutputDemandKey>,
     ) -> (
         Vec<super::super::DemandRecord>,
         Vec<std::sync::Arc<WorthQueryOutputDemandKey>>,
     ) {
-        let note = self.state.take_closed_note(std::sync::Arc::clone(&key));
+        let key = queued.key();
+        let note = self.state.take_closed_note(queued);
         note.prune(|state| {
             for key in &candidates {
                 if let Some(mut row) = state.records.get_mut(key) {

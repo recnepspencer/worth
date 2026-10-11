@@ -29,19 +29,6 @@ impl WorthQueryOutputDemandRegistry {
                 record.required_interests = record.required_interests.saturating_sub(1);
             }
         }
-        if state.records.get(&interest.key).is_some_and(|row| {
-            row.interests == 0
-                && ((row.has_cached_ready() && !row.prerequisites.is_empty())
-                    || (row.terminal()
-                        && (!row.prerequisites.is_empty()
-                            || (row.framework_required_count != 0
-                                && refreshed_rejoin::superseded(row))
-                            || row.prepared_prerequisite_claims != 0
-                            || !row.settlements.is_empty()
-                            || !row.performed_obligations.is_empty())))
-        }) {
-            state.note_closed_row(&interest.key);
-        }
         let remove = state
             .records
             .get_mut(&interest.key)

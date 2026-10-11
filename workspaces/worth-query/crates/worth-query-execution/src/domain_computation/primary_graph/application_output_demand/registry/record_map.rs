@@ -8,7 +8,9 @@ type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 #[derive(Default)]
 pub(super) struct DemandRecords(Map, BTreeMap<
     crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate,
-    std::collections::BTreeSet<WorthQueryOutputDemandKey>>);
+    std::collections::BTreeSet<WorthQueryOutputDemandKey>>,
+    super::cleanup::ClosedCleanupQueue,
+);
 #[cfg(feature = "test-query-execution-observer")]
 thread_local! { static WHOLE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
 #[cfg(test)]
@@ -56,6 +58,10 @@ impl DemandRecords {
             self.insert(key, row);
         }
     }
+    pub(super) fn with_cleanup(queue: super::cleanup::ClosedCleanupQueue) -> Self {
+        Self(Default::default(), Default::default(), queue)
+    }
+    #[cfg(test)]
     pub(super) fn new() -> Self {
         Self::default()
     }
@@ -87,7 +93,7 @@ impl DemandRecords {
         key: WorthQueryOutputDemandKey,
         row: DemandRecord,
     ) -> Option<DemandRecord> {
-        row.closed_cleanup.publish_owner_state(&row);
+        self.2.bind(&key, &row);
         self.1
             .entry(key.source.occurrence_coordinate())
             .or_default()
