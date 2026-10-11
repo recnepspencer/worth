@@ -22,7 +22,7 @@ pub(super) fn create_entity_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(execution, runtime, Allocation::SystemAllocation)
+        .commit(execution, runtime)
         .expect("entity create should commit");
     let entity = changed_entities(&outcome)[0];
     release_commit_snapshot(runtime, &outcome);
@@ -49,7 +49,7 @@ pub(super) fn update_entity_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(execution, runtime, Allocation::SystemAllocation)
+        .commit(execution, runtime)
         .expect("entity update should commit");
     release_commit_snapshot(runtime, &outcome);
 }
@@ -69,7 +69,7 @@ pub(super) fn delete_entity_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(execution, runtime, Allocation::SystemAllocation)
+        .commit(execution, runtime)
         .expect("entity delete should commit");
     release_commit_snapshot(runtime, &outcome);
 }
@@ -100,7 +100,7 @@ pub(super) fn create_relation_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(execution, runtime, Allocation::SystemAllocation)
+        .commit(execution, runtime)
         .expect("relation create should commit");
     let relation = changed_relations(&outcome)[0];
     release_commit_snapshot(runtime, &outcome);
@@ -122,7 +122,7 @@ pub(super) fn delete_relation_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(execution, runtime, Allocation::SystemAllocation)
+        .commit(execution, runtime)
         .expect("relation delete should commit");
     release_commit_snapshot(runtime, &outcome);
 }

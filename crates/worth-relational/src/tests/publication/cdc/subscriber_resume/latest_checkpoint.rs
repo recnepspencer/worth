@@ -50,13 +50,7 @@ fn latest_available_checkpoint_reflects_head_continuation_state_for_subscriber_c
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    visible_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    visible_txn.commit(execution, &runtime).unwrap();
 
     install_schema_version(&mut runtime, SchemaVersionId(3));
     let mut upgrade_txn = {
@@ -78,13 +72,7 @@ fn latest_available_checkpoint_reflects_head_continuation_state_for_subscriber_c
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    upgrade_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    upgrade_txn.commit(execution, &runtime).unwrap();
 
     let resumed = runtime
         .publication()

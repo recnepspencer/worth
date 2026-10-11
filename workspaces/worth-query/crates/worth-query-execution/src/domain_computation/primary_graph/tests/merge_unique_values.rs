@@ -299,11 +299,7 @@ fn commit(
         )
         .expect("the fixture batch stages");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("the fixture commits")
 }
 

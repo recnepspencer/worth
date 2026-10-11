@@ -136,11 +136,7 @@ fn a_demand_puts_exactly_its_record_in_front_of_the_platform_touched_slot_rules(
         )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the compliant record passes the strict reading");
     let counters = runtime.performance_access().counters();
     release_test_commit_snapshot(&runtime, &outcome);

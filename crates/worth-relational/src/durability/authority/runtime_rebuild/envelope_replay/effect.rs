@@ -152,11 +152,7 @@ pub(super) fn replay_ordinary_commit(
         )
     })?;
     let outcome = restored
-        .commit_branch_transaction(
-            execution,
-            txn,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit_branch_transaction(execution, txn)
         .map_err(|error| {
             DurabilityError::new(
                 RecoveryFailureClass::ReplayFailure,

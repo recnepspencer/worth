@@ -127,11 +127,7 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
                         .push_batch(batch, ExecutionAllocationPolicy::SystemAllocation)
                         .unwrap();
                     runtime
-                        .prepare_branch_transaction(
-                            &phase.borrowed_request_for_test(),
-                            transaction,
-                            ExecutionAllocationPolicy::SystemAllocation,
-                        )
+                        .prepare_branch_transaction(&phase.borrowed_request_for_test(), transaction)
                         .unwrap()
                 })
             })

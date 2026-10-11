@@ -178,13 +178,7 @@ fn commit_entity_create(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    transaction.commit(execution, runtime).unwrap()
 }
 
 fn commit_entity_patch(
@@ -205,13 +199,7 @@ fn commit_entity_patch(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    transaction.commit(execution, runtime).unwrap()
 }
 
 fn commit_relation_create(
@@ -237,13 +225,7 @@ fn commit_relation_create(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    transaction.commit(execution, runtime).unwrap()
 }
 
 fn commit_relation_patch(
@@ -264,13 +246,7 @@ fn commit_relation_patch(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    transaction.commit(execution, runtime).unwrap()
 }
 
 fn whole_set(

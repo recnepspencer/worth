@@ -83,13 +83,7 @@ fn cdc_certification_savepoint_abandoned_work_never_leaks_into_stream_truth() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert!(rollback.summary().has_discarded_entity_creation());
 

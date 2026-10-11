@@ -36,13 +36,7 @@ fn bulk_create_entities_match_equivalent_singular_creates() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let bulk_outcome = bulk_txn
-        .commit(
-            execution,
-            &bulk_runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let bulk_outcome = bulk_txn.commit(execution, &bulk_runtime).unwrap();
 
     let singular_runtime = apply_batches(execution, vec![batch_create("a"), batch_create("b")]);
     let bulk_read = bulk_runtime
@@ -124,13 +118,12 @@ fn staged_parallel_bulk_entity_import_matches_serial_reference() {
         )
         .expect("test staging stays within configured resource budgets");
         let outcome = if leased {
-            runtime.commit_branch_transaction_with_lease(execution, txn, &test_execution_lease())
-        } else {
-            txn.commit(
-                execution,
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            runtime.commit_branch_transaction(
+                &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
+                txn,
             )
+        } else {
+            txn.commit(execution, &runtime)
         }
         .unwrap();
         let read = runtime
@@ -233,13 +226,7 @@ fn cross_context_relations_respect_relation_kind_policy() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     assert!(matches!(
         error,

@@ -193,11 +193,7 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
         )
         .expect("candidate stages");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares");
     let RelationalPublicationOutcome::Performed(performed) =
         runtime.publication_port().compare_and_publish(candidate)
@@ -249,11 +245,7 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
         )
         .expect("later candidate stages");
     let later = runtime
-        .prepare_branch_transaction(
-            execution,
-            later,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, later)
         .expect("later candidate prepares");
     assert!(matches!(
         runtime.publication_port().compare_and_publish(later),

@@ -110,13 +110,7 @@ fn assert_commit_affinity_substitutions(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-        let committed = transaction
-            .commit(
-                execution,
-                runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
+        let committed = transaction.commit(execution, runtime).unwrap();
         retain_commit_basis(provider, runtime, &committed);
         release_commit_snapshot(runtime, &committed);
     });
@@ -198,13 +192,7 @@ fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-            let committed = transaction
-                .commit(
-                    execution,
-                    runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .unwrap();
+            let committed = transaction.commit(execution, runtime).unwrap();
             retain_commit_basis(provider, runtime, &committed);
             release_commit_snapshot(runtime, &committed);
         });
@@ -254,13 +242,7 @@ fn later_deletion_cannot_erase_exact_commit_truth() {
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-        let committed = transaction
-            .commit(
-                execution,
-                runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
+        let committed = transaction.commit(execution, runtime).unwrap();
         retain_commit_basis(provider, runtime, &committed);
         release_commit_snapshot(runtime, &committed);
     });

@@ -47,11 +47,7 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
         }
 
         let error = transaction
-            .commit(
-                execution,
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .commit(execution, &runtime)
             .expect_err("same-record updates must conflict");
         assert!(matches!(
             error,
@@ -207,13 +203,7 @@ fn compatibility_and_native_scalar_authoring_publish_identical_patch_meaning() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let native = transaction
-        .commit(
-            execution,
-            &native_runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let native = transaction.commit(execution, &native_runtime).unwrap();
 
     assert_eq!(
         compatibility.patch()[0].authoritative_patch,
@@ -261,11 +251,7 @@ fn compatibility_and_native_updates_on_one_target_have_one_conflict_law() {
         .expect("test staging stays within configured resource budgets");
 
     assert!(matches!(
-        transaction.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        ),
+        transaction.commit(execution, &runtime),
         Err(TransactionCommitError::Conflict {
             error: CommitConflict {
                 class: ConflictClass::ConflictingIntent { .. },
@@ -317,13 +303,7 @@ fn mixed_native_entity_and_relation_updates_share_one_atomic_commit() {
         )
         .expect("test staging stays within configured resource budgets");
 
-    let committed = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = transaction.commit(execution, &runtime).unwrap();
     assert_eq!(committed.patch().len(), 2);
     assert!(committed.patch().iter().any(
         |record: &crate::publication::patch::data::PublishedAuthoritativeRecordPatch| {

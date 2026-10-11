@@ -57,12 +57,7 @@ fn subscriber_stream_rejects_when_normalized_continuation_proof_exceeds_complexi
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let error = runtime
         .publication()

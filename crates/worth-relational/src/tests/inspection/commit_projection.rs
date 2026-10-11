@@ -92,11 +92,7 @@ fn merge_commit_inspection_stays_envelope_projected() {
         )
         .expect("test staging stays within configured resource budgets");
     feature_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("feature update");
 
     let merge = merge_commit_from_branches(

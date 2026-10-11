@@ -44,11 +44,7 @@ fn owner_issues_transaction_context_from_exact_main_identity() {
         )
         .unwrap();
     let result = transaction
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &world.runtime)
         .expect("owner-issued context routes through the ordinary commit authority");
     assert_eq!(result.commit.branch_id, BranchId("main".to_owned()));
     assert!(matches!(
@@ -204,19 +200,11 @@ fn unrelated_branch_progress_is_not_staled_by_main_branch_movement() {
         )
         .unwrap();
     main_transaction
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &world.runtime)
         .expect("main branch movement succeeds independently");
 
     let committed = storm_transaction
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &world.runtime)
         .expect("main branch movement must not stale an unrelated storm basis");
     assert_eq!(committed.commit.branch_id, BranchId("storm".to_owned()));
     assert_oracle_matches(execution, &world, &expected);
@@ -274,11 +262,7 @@ fn source_movement_cannot_mutate_a_forked_target_reference() {
         )
         .unwrap();
     advance
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &world.runtime)
         .expect("source movement succeeds after the fork");
 
     let after = capture_reference_evidence(

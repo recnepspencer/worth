@@ -106,12 +106,8 @@ fn complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutati
     )
     .expect("test staging stays within configured resource budgets");
     let feature_only = changed_entities(
-        &txn.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("feature-only create"),
+        &txn.commit(execution, &runtime)
+            .expect("feature-only create"),
     )[0];
 
     let prepared = runtime

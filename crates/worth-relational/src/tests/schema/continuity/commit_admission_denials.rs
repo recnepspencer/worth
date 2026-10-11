@@ -34,11 +34,7 @@ fn ordinary_commit_keeps_the_admitted_branch_root_schema_when_live_registry_drif
     )
     .expect("test staging stays within configured resource budgets");
     let committed = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("ambient registry drift cannot reinterpret an admitted branch root");
 
     assert_eq!(committed.envelope().schema_version, SchemaVersionId(1));
@@ -111,13 +107,7 @@ fn declared_schema_transition_rejects_wrong_source_basis() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     match error {
         crate::transactions::data::TransactionCommitError::Conflict { error, .. } => {
@@ -194,13 +184,7 @@ fn declared_schema_transition_rejects_wrong_target_basis() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     match error {
         crate::transactions::data::TransactionCommitError::Conflict { error, .. } => {
@@ -279,13 +263,7 @@ fn declared_schema_transition_requires_non_empty_runtime_basis() {
             )
             .expect("owner-admitted transaction context")
     };
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     match error {
         crate::transactions::data::TransactionCommitError::Conflict { error, .. } => {
@@ -362,13 +340,7 @@ fn declared_type_continuity_denied_schema_transition_reports_specific_conflict_c
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     match error {
         crate::transactions::data::TransactionCommitError::Conflict { error, .. } => {

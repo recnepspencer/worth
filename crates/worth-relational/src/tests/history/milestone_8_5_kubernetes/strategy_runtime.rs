@@ -102,7 +102,7 @@ pub(super) fn execute_strategy_commit(
         .lower_execution_with_input(runtime, &request, &execution, transaction_validation_input)
         .expect("lowered strategy plan");
     let validated = authority
-        .validate_lowered_plan(runtime, lowered)
+        .validate_lowered_plan(request_execution, runtime, lowered)
         .expect("validated strategy plan");
     authority
         .execute_validated_commit(request_execution, runtime, validated)

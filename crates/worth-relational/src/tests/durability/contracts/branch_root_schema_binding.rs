@@ -98,11 +98,7 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("schema transition commits");
     runtime
         .durability_authority()

@@ -59,11 +59,7 @@ fn shared_source_retains_the_live_runtime_authority_and_observes_later_commits()
             )
             .expect("test staging stays within configured resource budgets");
         transaction
-            .commit(
-                &execution,
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .commit(&execution, &runtime)
             .expect("real shared-runtime commit")
     };
     let entity = committed

@@ -193,12 +193,7 @@ fn durability_contract_failure_descriptor_canonical_basis_version_mismatch_is_ex
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let segment_path = runtime
         .durability()

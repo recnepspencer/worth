@@ -142,11 +142,7 @@ fn discarded_candidate_leaves_truth_unchanged_and_releases_its_obligation() {
         .expect("the semantic reroute remains inside its declared budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("the preparation port installs the canonical candidate");
     let discarded = services
         .preparation_port()

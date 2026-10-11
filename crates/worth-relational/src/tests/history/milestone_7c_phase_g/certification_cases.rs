@@ -129,11 +129,7 @@ pub(super) fn certify_prefer_richer_merge_execution(
         )
         .expect("test staging stays within configured resource budgets");
     feature_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("feature branch seed");
 
     let prepared = runtime

@@ -42,7 +42,7 @@ mod republication;
 mod restoration;
 mod seeded_absence;
 mod tree_count;
-mod tree_stop;
+
 mod tree_work;
 use installation::{
     install, install_with_reuse, Application, OracleProgram, Request, EVEN_Y, ODD_Y, SCOPE,
@@ -51,7 +51,6 @@ mod branch_sharing;
 mod differential;
 mod parallel_history_reuse;
 mod program;
-mod worker_axis;
 
 use program::{OracleRoot, RegionArtifact, RegionConnection, TOTALS_RETAINED_BYTES, TOTALS_WORK};
 

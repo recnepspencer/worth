@@ -205,11 +205,7 @@ fn assert_overlapping_field_reads(
         )
         .expect("stage summary change");
     transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("summary change publication");
     assert_entity_summary(execution, &runtime, entity, "after", "open");
     assert_shared_field_reads(&runtime, false, leased);

@@ -41,11 +41,7 @@ fn dropping_the_performed_witness_leaves_settlement_recoverable() {
         )
         .unwrap();
     assert!(runtime
-        .prepare_branch_transaction(
-            execution,
-            blocked,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, blocked)
         .unwrap_err()
         .detail()
         .contains("requires explicit owner settlement"));
@@ -200,11 +196,7 @@ fn interruption_after_movement_retains_its_pending_settlement() {
             )
             .unwrap();
         let candidate = runtime
-            .prepare_branch_transaction(
-                execution,
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .unwrap();
         let reference_before = runtime
             .branch_reference_state(&BranchId("main".to_owned()))
@@ -334,11 +326,7 @@ fn perform_main_write(
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares");
     match runtime.publication_port().compare_and_publish(candidate) {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,

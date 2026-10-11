@@ -35,11 +35,7 @@ pub(super) fn commit_through_services(
         .expect("the empty batch remains within its declared budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("preparation service produces the canonical candidate");
     let performed = match services.publication_port().compare_and_publish(candidate) {
         RelationalPublicationOutcome::Performed(performed) => performed,
@@ -70,11 +66,7 @@ pub(super) fn commit_direct(
         )
         .expect("the direct empty batch remains within budget");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("the compatibility path commits canonically")
 }
 

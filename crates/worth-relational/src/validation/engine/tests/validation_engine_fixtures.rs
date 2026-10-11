@@ -203,11 +203,7 @@ pub(super) fn create_entity_of_kind(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("entity creation must succeed");
     outcome
         .changed_records
@@ -243,11 +239,7 @@ pub(super) fn create_relation_of_kind(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("relation creation must succeed");
     outcome
         .changed_records
@@ -344,9 +336,5 @@ pub(super) fn commit_entity_with_summary(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    txn.commit(execution, runtime)
 }

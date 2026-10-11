@@ -64,3 +64,6 @@ pub(crate) fn run_with_remaining_request_work<R>(
         None => run(lease),
     }
 }
+
+#[cfg(test)]
+mod tests;

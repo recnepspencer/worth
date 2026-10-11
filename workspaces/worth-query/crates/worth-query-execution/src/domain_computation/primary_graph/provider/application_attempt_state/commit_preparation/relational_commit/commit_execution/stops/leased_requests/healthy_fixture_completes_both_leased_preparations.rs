@@ -16,11 +16,7 @@ fn healthy_fixture_completes_both_leased_preparations() {
                 .schema_registry(schema())
                 .build();
             let created = transaction(&runtime, "source")
-                .commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit(execution, &runtime)
                 .unwrap();
             let index = related_index(&runtime);
             let lease = authority()
@@ -44,10 +40,9 @@ fn healthy_fixture_completes_both_leased_preparations() {
                 .unwrap()
                 .0;
             let _prepared = runtime
-                .prepare_branch_transaction_with_lease(
-                    execution,
+                .prepare_branch_transaction(
+                    &worth_execution::ExecutionRequest::leased(&lease),
                     transaction(&runtime, "target"),
-                    &lease,
                 )
                 .expect("the same fixture admits ordinary leased preparation");
             assert_eq!(

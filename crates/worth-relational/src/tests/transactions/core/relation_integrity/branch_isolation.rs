@@ -60,13 +60,7 @@ fn relation_integrity_rejected_branch_local_commit_does_not_advance_truth_or_lea
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationCardinalityViolation);

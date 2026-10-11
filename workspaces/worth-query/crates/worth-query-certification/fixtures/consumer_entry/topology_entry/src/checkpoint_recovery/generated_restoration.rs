@@ -203,7 +203,7 @@ fn suspend_and_restore(
         .expect("the producer source is readable")
         .observed_sources()[0]
         .clone();
-    let suspended = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+    let suspended = crate::checkpoint_recovery::support::host_call(application, |phase| {
         application
             .on_branch(application.current_world())
             .select(phase)
@@ -279,6 +279,3 @@ fn reconstruct_ring(
         .finish()
         .unwrap_or_else(|_| panic!("every suspended record is reconstructed once"))
 }
-
-#[cfg(feature = "test-query-execution-observer")]
-mod advancement_custody;

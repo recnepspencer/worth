@@ -53,6 +53,7 @@ pub(super) fn verify_strategy_reexecution_surface(
     };
     let Some(observed) = lower_strategy_replay(
         &basis_runtime,
+        request,
         envelope,
         expected_artifacts,
         &execution,
@@ -231,6 +232,7 @@ fn execute_strategy_replay(
 
 fn lower_strategy_replay(
     basis_runtime: &RelationalRuntime,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
     envelope: &CanonicalCommitEnvelope,
     expected_artifacts: &StrategyCommitArtifactBundle,
     execution: &StrategyExecutionDraft,
@@ -293,7 +295,7 @@ fn lower_strategy_replay(
             ));
             return None;
         }
-        match strategy_authority.validate_lowered_plan(basis_runtime, lowered) {
+        match strategy_authority.validate_lowered_plan(request, basis_runtime, lowered) {
             Ok(validated) => validated.strategy_commit_artifacts().cloned(),
             Err(error) => {
                 mismatches.push(strategy_mismatch(

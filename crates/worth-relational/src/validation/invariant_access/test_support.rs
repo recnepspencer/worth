@@ -199,13 +199,7 @@ pub(super) fn create_entity(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, runtime).unwrap();
     match outcome.changed_records[0] {
         crate::facade::transactions::RecordRef::Entity(entity_id) => entity_id,
         _ => panic!("expected entity"),

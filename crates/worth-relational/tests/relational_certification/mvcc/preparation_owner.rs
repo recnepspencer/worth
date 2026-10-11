@@ -49,11 +49,7 @@ fn production_preparation_port_observes_initial_schema_replacement() {
         .expect("transaction stages against the installed schema");
 
     let candidate = preparation
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("production port observes the atomically replaced schema world");
     preparation
         .discard_prepared_candidate(candidate)

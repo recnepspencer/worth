@@ -94,11 +94,7 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         )
         .expect("test staging stays within configured resource budgets");
         let outcome = txn
-            .commit(
-                execution,
-                runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .commit(execution, runtime)
             .map_err(commit_error_to_harness_error)?;
         let entity_ids = outcome
             .changed_records
@@ -118,11 +114,7 @@ impl HarnessAdapter for RelationalHarnessAdapter {
                 )
                 .expect("test staging stays within configured resource budgets");
             relation_txn
-                .commit(
-                    execution,
-                    runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit(execution, runtime)
                 .map_err(commit_error_to_harness_error)?;
         }
         Ok(())
@@ -144,12 +136,8 @@ impl HarnessAdapter for RelationalHarnessAdapter {
             )
             .expect("test staging stays within configured resource budgets");
         }
-        txn.commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .map_err(commit_error_to_harness_error)?;
+        txn.commit(execution, runtime)
+            .map_err(commit_error_to_harness_error)?;
         Ok(())
     }
 

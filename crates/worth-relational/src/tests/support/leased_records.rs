@@ -1,7 +1,7 @@
 use super::*;
 
 pub(crate) fn create_entity_outcome_with_lease(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
     lease: &worth_execution::ExecutionResourceLease<'_>,
@@ -22,6 +22,9 @@ pub(crate) fn create_entity_outcome_with_lease(
         )
         .expect("leased entity stages");
     runtime
-        .commit_branch_transaction_with_lease(execution, transaction, lease)
+        .commit_branch_transaction(
+            &worth_execution::ExecutionRequest::leased(lease),
+            transaction,
+        )
         .expect("leased entity commits")
 }

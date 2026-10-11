@@ -59,12 +59,8 @@ pub(super) fn certify_dense_fanout_compile_wave_rich_diagnostics(
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("chip fanout relation burst commit with rich diagnostics")
+                txn.commit(execution, &runtime)
+                    .expect("chip fanout relation burst commit with rich diagnostics")
             };
             let commit_micros = commit_started_at.elapsed().as_micros();
             let commit = runtime

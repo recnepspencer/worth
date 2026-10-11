@@ -56,6 +56,15 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         matches!(self.form, RequestBacking::Leased(_))
     }
 
+    /// Fixed-size backing metadata; commits derive their allocation authority
+    /// from this request rather than accepting an independent policy.
+    pub fn allocation_policy(self) -> super::ExecutionAllocationPolicy<'request, 'authority> {
+        match self.form {
+            RequestBacking::Leased(lease) => super::ExecutionAllocationPolicy::Execution(lease),
+            RequestBacking::Serial(_) => super::ExecutionAllocationPolicy::SystemAllocation,
+        }
+    }
+
     pub fn memory_limit(self) -> u64 {
         match self.form {
             RequestBacking::Leased(lease) => lease.policy().budget().charged_memory_bytes(),

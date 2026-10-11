@@ -266,11 +266,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
         .expect("test staging stays within configured resource budgets");
     assert!(
         matches!(
-            runtime.prepare_branch_transaction(
-                execution,
-                overflow,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            ),
+            runtime.prepare_branch_transaction(execution, overflow),
             Err(TransactionCommitError::PublicationDeferred {
                 deferred: crate::mvcc::RelationalPublicationDeferred::CandidateCapacityExhausted {
                     maximum_candidates: 2,
@@ -329,10 +325,6 @@ fn prepared_write_on(
         )
         .expect("test staging stays within configured resource budgets");
     runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("contention candidate prepares")
 }

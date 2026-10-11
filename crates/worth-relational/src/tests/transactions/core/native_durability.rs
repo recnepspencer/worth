@@ -59,13 +59,7 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let initial = initial
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let initial = initial.commit(execution, &runtime).unwrap();
     let relation = changed_relations(&initial)[0];
 
     let status = field_key("status");
@@ -88,13 +82,7 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let cleared = clear_transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let cleared = clear_transaction.commit(execution, &runtime).unwrap();
 
     let (expected_entity_state, expected_relation_state) = {
         let read = runtime

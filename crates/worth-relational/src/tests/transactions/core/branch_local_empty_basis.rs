@@ -27,10 +27,7 @@ fn empty_branch_validation_uses_local_zero_after_unrelated_main_progress() {
             .expect("owner-admitted transaction context")
     };
     let validated = transaction
-        .validate(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .validate(execution, &runtime)
         .expect("empty branch validation should use its local basis");
 
     assert_eq!(validated.validated_against_version, VersionId(0));

@@ -38,11 +38,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         )
         .expect("test staging stays within configured resource budgets");
     let first = runtime
-        .prepare_branch_transaction(
-            execution,
-            first,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, first)
         .expect("first candidate prepares");
 
     let mut second = runtime
@@ -58,11 +54,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         )
         .expect("test staging stays within configured resource budgets");
     let second = runtime
-        .prepare_branch_transaction(
-            execution,
-            second,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, second)
         .expect("second candidate prepares");
     let start = Arc::new(Barrier::new(3));
     let (first_done, first_completion) = std::sync::mpsc::sync_channel(1);

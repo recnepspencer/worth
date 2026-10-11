@@ -35,12 +35,7 @@ fn subscriber_stream_rejects_unsupported_contract_upgrade_boundary() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let contract = SubscriberContractDeclaration {
         contract_id: "subscriber.contract.geometry.v1".to_string(),
@@ -105,12 +100,7 @@ fn subscriber_stream_applies_contract_upgrade_when_declared_supported() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let contract = SubscriberContractDeclaration {
         contract_id: "subscriber.contract.geometry.v2".to_string(),
@@ -180,12 +170,7 @@ fn subscriber_stream_rejects_renegotiation_required_boundary() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let error = runtime
         .publication()

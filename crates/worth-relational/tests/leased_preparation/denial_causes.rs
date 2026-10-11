@@ -56,7 +56,10 @@ fn assert_request_cause(
         )
         .expect("intent stages");
     let error = runtime
-        .prepare_branch_transaction_with_lease(execution, transaction, &lease)
+        .prepare_branch_transaction(
+            &worth_execution::ExecutionRequest::leased(&lease),
+            transaction,
+        )
         .expect_err("commit execution stops");
     let TransactionCommitError::Execution { denial, .. } = error else {
         panic!("wrong commit stop: {error:?}");

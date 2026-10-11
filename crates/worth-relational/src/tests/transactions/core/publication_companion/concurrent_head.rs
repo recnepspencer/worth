@@ -44,11 +44,7 @@ fn prepare_on_main(
         )
         .expect("candidate stages");
     runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares")
 }
 

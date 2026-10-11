@@ -37,13 +37,7 @@ fn invariant_failure_artifact_preserves_specific_code_localization_and_proof_bou
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     let diagnostics = runtime.publication().diagnostics();
     let artifact = diagnostics
         .by_scope(DiagnosticsScope::Invariant)
@@ -162,12 +156,7 @@ fn invariant_diagnostics_trace_proof_boundary_for_relation_integrity_execution()
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let diagnostics = runtime.publication().diagnostics();
     let entry = diagnostics
@@ -256,13 +245,7 @@ fn collect_all_invariant_failures_emits_multiple_relation_integrity_entries_for_
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let _error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let _error = txn.commit(execution, &runtime).unwrap_err();
 
     let diagnostics = runtime.publication().diagnostics();
     let failure_artifact = diagnostics

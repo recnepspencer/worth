@@ -59,9 +59,7 @@ fn replay_contract_reports_schema_lineage_drift_at_summary_layer_when_digest_is_
     };
     txn.push_batch(batch_create("b"), Allocation::SystemAllocation)
         .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(execution, &runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         outcome.commit.commit_id,

@@ -46,10 +46,6 @@ pub(crate) fn commit_branch_batch_result(
         )
         .unwrap();
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("branch batch commits through production publication")
 }

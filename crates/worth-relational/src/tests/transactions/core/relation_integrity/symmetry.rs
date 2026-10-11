@@ -57,13 +57,7 @@ fn relation_integrity_commit_boundary_requires_paired_inverse_edge() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationSymmetryViolation);
@@ -158,13 +152,7 @@ fn relation_integrity_commit_boundary_requires_canonical_undirected_ordering() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationSymmetryViolation);
@@ -232,13 +220,7 @@ fn relation_integrity_commit_boundary_prohibits_inverse_duplication() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationSymmetryViolation);
@@ -304,13 +286,7 @@ fn relation_integrity_commit_boundary_requires_paired_twin_edge() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationSymmetryViolation);

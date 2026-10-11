@@ -45,11 +45,7 @@ fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
         .unwrap();
     let candidate = world
         .runtime
-        .prepare_branch_transaction(
-            execution,
-            candidate_transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, candidate_transaction)
         .unwrap();
     let cost_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
 

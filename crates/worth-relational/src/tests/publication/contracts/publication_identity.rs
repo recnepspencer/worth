@@ -230,11 +230,7 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("the test-only root court must reject the real commit path");
     assert!(format!("{error:?}").contains("UnresolvedContentSymbol"));
 

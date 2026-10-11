@@ -19,11 +19,7 @@ fn publication_port_denies_candidate_after_owner_drop() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares while its owner is live");
     let publication_cell = candidate.publication_cell_for_test();
     let expected_root = candidate.expected_root_for_test();
@@ -77,11 +73,7 @@ fn runtime_drop_waits_for_admitted_publication_to_leave_linearization() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares while its owner is live");
     let publication_cell = candidate.publication_cell_for_test();
     let branch_gate = std::sync::Arc::clone(publication_cell.coordination());

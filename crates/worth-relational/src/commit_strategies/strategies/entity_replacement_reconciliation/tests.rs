@@ -171,11 +171,7 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
         .expect("test staging stays within configured resource budgets");
     }
     let commit = txn
-        .commit(
-            request_execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(request_execution, &runtime)
         .expect("replacement patch commit");
     let replacement_id = crate::tests::support::changed_entities(&commit)
         .into_iter()

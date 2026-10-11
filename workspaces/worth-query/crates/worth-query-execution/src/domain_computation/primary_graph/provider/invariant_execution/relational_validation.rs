@@ -64,9 +64,7 @@ impl WorthQueryPrimaryGraphProvider {
                 .map_err(map_transaction_staging_failure)?;
             #[cfg(test)]
             self.fault_port.candidate_staged_for_validation();
-            Ok::<_, WorthQueryInvariantExecutionFailure>(
-                transaction.validate(runtime, allocation_control.policy()),
-            )
+            Ok::<_, WorthQueryInvariantExecutionFailure>(transaction.validate(execution, runtime))
         });
         let candidate = candidate?.map_err(map_validation_failure)?;
         validate_owner_evidence(candidate.invariant_evidence(), branch)?;

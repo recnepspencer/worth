@@ -75,11 +75,7 @@ fn actual_companion_cutover_resolves_only_its_prepared_observer() {
             )
             .unwrap();
         let candidate = runtime
-            .prepare_branch_transaction(
-                execution,
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .unwrap();
         let outcome = runtime.publication_port().compare_and_publish(candidate);
         let observer = participant.observer.lock().unwrap().take().unwrap();

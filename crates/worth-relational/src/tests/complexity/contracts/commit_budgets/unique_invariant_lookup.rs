@@ -33,13 +33,7 @@ fn complexity_budget_unique_entity_invariant_scans_the_selected_state() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(
@@ -90,13 +84,7 @@ fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(

@@ -56,11 +56,7 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
         .expect("the Supply Chain reroute remains inside its declared budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("the preparation port builds the canonical reroute candidate");
     let performed = match services.publication_port().compare_and_publish(candidate) {
         RelationalPublicationOutcome::Performed(performed) => performed,
@@ -144,11 +140,7 @@ fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
         )
         .expect("the Supply Chain maintenance delta remains in budget");
     let committed = transaction
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &world.runtime)
         .expect("the compatibility commit performs canonically");
 
     assert!(matches!(

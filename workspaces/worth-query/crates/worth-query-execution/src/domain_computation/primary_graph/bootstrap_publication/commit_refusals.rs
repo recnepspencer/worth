@@ -24,7 +24,7 @@ use worth_relational::facade::{
 };
 
 pub(in crate::domain_computation::primary_graph) fn refused_commit(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     request: LeaseRequest,
 ) -> worth_relational::facade::transactions::TransactionCommitError {
     let schema = RelationalSchemaRegistry::new()
@@ -62,7 +62,10 @@ pub(in crate::domain_computation::primary_graph) fn refused_commit(
     // Bootstrap has no production lease injector until 7.6. Exercise its
     // error-mapping seam using a real owner refusal, without threading a lease.
     runtime
-        .prepare_branch_transaction_with_lease(execution, transaction, &lease)
+        .prepare_branch_transaction(
+            &worth_execution::ExecutionRequest::leased(&lease),
+            transaction,
+        )
         .expect_err("commit preparation refused")
 }
 

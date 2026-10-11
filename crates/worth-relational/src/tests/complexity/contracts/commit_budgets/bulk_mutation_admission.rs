@@ -133,11 +133,7 @@ fn complexity_budget_bulk_mutation_admission_remains_side_effect_free_until_comm
         )
         .expect("test staging stays within configured resource budgets");
     let _ = commit_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("commit should succeed");
     let committed_counters = runtime.performance_access().counters();
 

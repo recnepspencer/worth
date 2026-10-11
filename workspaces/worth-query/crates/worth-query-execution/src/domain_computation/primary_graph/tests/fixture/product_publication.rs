@@ -95,11 +95,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             )
             .expect("fixture mutation stays within configured resource budgets");
         runtime
-            .prepare_branch_transaction(
-                execution,
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .expect("fixture mutation prepares a real Relational candidate")
     });
 

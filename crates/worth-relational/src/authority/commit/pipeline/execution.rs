@@ -13,10 +13,9 @@ pub(crate) fn prepare_authoritative_commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-    crate::execution::check_commit_request(execution)?;
+    let allocation_policy = execution.allocation_policy();
+    super::consult_stage(execution, super::CommitStage::Admission)?;
     let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         &context.validation_input,
         allocation_policy,
@@ -49,15 +48,16 @@ pub(crate) fn prepare_authoritative_commit(
         .expect("admitted commit branch remains registered")
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
-    let admitted = admit_commit_execution(runtime, context)?;
-    let prepared = prepare_commit_execution(runtime, admitted, lease)?;
-    let boundary_validated = validate_commit_boundary(runtime, prepared, lease, &scope_control)?;
-    let mutated = mutate_commit_execution(runtime, boundary_validated, lease, &scope_control)?;
-    let history_bound = bind_commit_history(runtime, mutated)?;
+    let admitted = admit_commit_execution(execution, runtime, context)?;
+    let prepared = prepare_commit_execution(execution, runtime, admitted)?;
+    let boundary_validated =
+        validate_commit_boundary(execution, runtime, prepared, &scope_control)?;
+    let mutated = mutate_commit_execution(execution, runtime, boundary_validated, &scope_control)?;
+    let history_bound = bind_commit_history(execution, runtime, mutated)?;
     let snapshot_validated =
-        validate_snapshot_publication(runtime, history_bound, lease, &scope_control)?;
-    let assembled = assemble_commit_artifacts(runtime, snapshot_validated, lease)?;
-    let mut prepared = prepare_commit_publication_execution(runtime, assembled)?;
+        validate_snapshot_publication(execution, runtime, history_bound, &scope_control)?;
+    let assembled = assemble_commit_artifacts(execution, runtime, snapshot_validated)?;
+    let mut prepared = prepare_commit_publication_execution(execution, runtime, assembled)?;
     prepared.append_diagnostics(diagnostic_capture.finish());
     if let Some(interruption) =
         control.observe(crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation)
@@ -65,6 +65,7 @@ pub(crate) fn prepare_authoritative_commit(
         retention_binding.record_interruption(interruption);
         return Err(TransactionCommitError::interrupted(interruption));
     }
+    super::consult_stage(execution, super::CommitStage::CandidateRegistration)?;
     let published_snapshot_slot =
         runtime
             .reserve_published_snapshot_slot()
@@ -151,10 +152,13 @@ pub(crate) fn prepare_authoritative_commit(
     Ok(candidate)
 }
 
+/// The borrowed request proves custody through publication; it is never retained.
 pub(crate) fn publish_prepared_authoritative_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     candidate: crate::mvcc::PreparedRelationalCommitCandidate,
 ) -> Result<CommitResult, TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Publication)?;
     runtime
         .history
         .record_publication_attempt(candidate.branch());
@@ -216,12 +220,6 @@ pub(crate) fn execute_authoritative_commit(
     context: AuthoritativeCommitContext,
 ) -> Result<CommitResult, TransactionCommitError> {
     let preparation = runtime.preparation_runtime_snapshot();
-    let candidate = prepare_authoritative_commit(
-        execution,
-        &preparation,
-        context,
-        None,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )?;
-    publish_prepared_authoritative_commit(runtime, candidate)
+    let candidate = prepare_authoritative_commit(execution, &preparation, context)?;
+    publish_prepared_authoritative_commit(execution, runtime, candidate)
 }

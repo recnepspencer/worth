@@ -27,10 +27,6 @@ pub(super) fn prepare_update(
         )
         .unwrap();
     runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap()
 }

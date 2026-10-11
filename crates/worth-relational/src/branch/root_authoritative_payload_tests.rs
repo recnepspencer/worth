@@ -94,11 +94,7 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
         )
         .expect("test staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("schema transition commits");
     let (root, envelope) = committed_root_and_envelope(&runtime, outcome.commit.commit_id);
 

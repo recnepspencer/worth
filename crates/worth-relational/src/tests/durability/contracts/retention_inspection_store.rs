@@ -84,12 +84,7 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
     runtime.durability_authority().checkpoint().unwrap();
     let expected = capture_inspection_truth_bundle(
@@ -206,11 +201,7 @@ fn invalid_store_path_does_not_relabel_performed_in_memory_publication() {
     )
     .expect("test staging stays within configured resource budgets");
     let durability_deferred = txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("the performed movement is not falsely acknowledged as durable");
     match &durability_deferred {
         TransactionCommitError::PerformedButDurabilityDeferred { error, .. } => {

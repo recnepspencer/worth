@@ -102,11 +102,7 @@ fn interrupted_publication_releases_its_pending_settlement_reservation() {
             )
             .unwrap();
         let candidate = runtime
-            .prepare_branch_transaction(
-                execution,
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .unwrap();
         let reference_before = runtime
             .branch_reference_state(&BranchId("main".to_owned()))
@@ -173,11 +169,7 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
         )
         .unwrap();
     assert!(matches!(
-        runtime.prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        ),
+        runtime.prepare_branch_transaction(execution, transaction),
         Err(
             crate::transactions::data::TransactionCommitError::PublicationDeferred {
                 deferred:
@@ -240,11 +232,7 @@ fn the_pending_settlement_record_exists_before_the_moved_head_is_observable() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let reference_before = runtime
         .branch_reference_state(&BranchId("main".to_owned()))
@@ -298,10 +286,6 @@ fn prepared_main_write(
         )
         .expect("test staging stays within configured resource budgets");
     runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares")
 }

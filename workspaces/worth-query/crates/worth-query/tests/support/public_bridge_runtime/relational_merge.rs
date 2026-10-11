@@ -85,11 +85,7 @@ fn create_empty_entity(
         )
         .expect("test staging stays within configured resource budgets");
     let committed = transaction
-        .commit(
-            execution,
-            runtime,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("public merge seed should commit");
     runtime
         .snapshots()

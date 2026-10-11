@@ -49,13 +49,7 @@ fn sixteen_seeded_shapes_preserve_generations_and_answers_and_charge_native_unit
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
-            let created = transaction
-                .commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .unwrap();
+            let created = transaction.commit(execution, &runtime).unwrap();
             if let Some(previous) = last.replace(created) {
                 release_test_commit_snapshot(&runtime, &previous);
             }

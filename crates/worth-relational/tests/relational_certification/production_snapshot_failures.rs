@@ -52,11 +52,7 @@ fn pinned_snapshot_observation_does_not_select_a_later_head() {
         )
         .unwrap();
     transaction
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &world.runtime)
         .expect("later head update commits through the public facade");
 
     let observed = super::world::supply_chain::observe_supply_chain(execution, &world)

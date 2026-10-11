@@ -225,11 +225,7 @@ fn write_comparison_fields(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("comparison fields must be valid for the declared fixture schema");
 }
 

@@ -36,11 +36,7 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
 
     assert_eq!(runtime.reap_expired_prepared_candidates(), 1);
@@ -153,11 +149,7 @@ fn foreign_publication_port_denies_before_reference_movement() {
         )
         .unwrap();
     let candidate = source
-        .prepare_branch_transaction(
-            execution,
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("source candidate prepares");
     let foreign = runtime_with_test_schema();
 
@@ -240,9 +232,5 @@ fn prepared_write(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    runtime.prepare_branch_transaction(
-        execution,
-        transaction,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    runtime.prepare_branch_transaction(execution, transaction)
 }

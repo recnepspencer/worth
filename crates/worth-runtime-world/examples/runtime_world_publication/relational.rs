@@ -79,13 +79,7 @@ impl CargoRecords {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-        let result = tx
-            .commit(
-                execution,
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
+        let result = tx.commit(execution, &runtime).unwrap();
         let grain = result
             .changed_records
             .iter()
@@ -118,11 +112,7 @@ impl CargoRecords {
         .unwrap();
         self.runtime
             .preparation_port()
-            .prepare_branch_transaction(
-                execution,
-                tx,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, tx)
             .unwrap()
     }
 }

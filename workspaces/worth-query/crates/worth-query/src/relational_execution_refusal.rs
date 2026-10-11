@@ -20,7 +20,7 @@ use worth_relational::facade::{
 };
 
 pub(crate) fn work_exhausted(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> TransactionCommitError {
     let owner = crate::test_execution_authority::authority();
     let schema = RelationalSchemaRegistry::new()
@@ -66,7 +66,10 @@ pub(crate) fn work_exhausted(
         })
         .unwrap();
     let error = runtime
-        .prepare_branch_transaction_with_lease(execution, transaction, &lease)
+        .prepare_branch_transaction(
+            &worth_execution::ExecutionRequest::leased(&lease),
+            transaction,
+        )
         .expect_err("real owner refusal");
     let TransactionCommitError::Execution { denial, .. } = &error else {
         panic!("execution refused");

@@ -102,11 +102,7 @@ fn commit_only_other_outbox(
                 )
                 .expect("test staging stays within configured resource budgets");
             let committed = transaction
-                .commit(
-                    request_execution,
-                    runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit(request_execution, runtime)
                 .expect("the other outbox commits");
             let expected_record_ref = RecordRef::Entity(
                 committed

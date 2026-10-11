@@ -164,11 +164,7 @@ pub(super) fn commit_empty(
     let committed = runtime
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .expect("transaction binds to exact branch")
-        .commit(
-            execution,
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("empty fixture transaction commits");
     let receipt = committed.commit.clone();
     super::fixture::release_test_commit_snapshot(runtime, &committed);

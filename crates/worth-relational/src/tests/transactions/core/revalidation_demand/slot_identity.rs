@@ -30,11 +30,7 @@ fn judgement_tracks_the_nonzero_slot_named_by_the_demand() {
         )
         .expect("staging stays within configured resource budgets");
     let target_outcome = target_transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the compliant target passes even though both neighbours fail");
     release_test_commit_snapshot(&runtime, &target_outcome);
 
@@ -46,11 +42,7 @@ fn judgement_tracks_the_nonzero_slot_named_by_the_demand() {
         )
         .expect("staging stays within configured resource budgets");
     let error = bystander_transaction
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("the oversized bystander must be the record judged");
 
     let TransactionCommitError::Conflict { error, .. } = error else {

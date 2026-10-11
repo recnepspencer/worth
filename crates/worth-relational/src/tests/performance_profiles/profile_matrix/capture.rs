@@ -28,12 +28,8 @@ fn perf_profile_matrix() {
                     )
                     .expect("test staging stays within configured resource budgets");
                 }
-                txn.commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("certification-core commit")
+                txn.commit(execution, &runtime)
+                    .expect("certification-core commit")
             };
             let commit_micros = commit_started_at.elapsed().as_micros();
 
@@ -158,12 +154,8 @@ fn perf_profile_matrix() {
                     )
                     .expect("test staging stays within configured resource budgets");
                 }
-                txn.commit(
-                    execution,
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("geometry-kernel commit")
+                txn.commit(execution, &runtime)
+                    .expect("geometry-kernel commit")
             };
             let commit_micros = commit_started_at.elapsed().as_micros();
 

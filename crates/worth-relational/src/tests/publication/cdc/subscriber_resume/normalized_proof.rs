@@ -29,12 +29,7 @@ fn subscriber_stream_composes_prior_and_new_boundaries_into_normalized_proof() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        execution,
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let first_batch = runtime
         .publication()
@@ -68,13 +63,7 @@ fn subscriber_stream_composes_prior_and_new_boundaries_into_normalized_proof() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    second_txn
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    second_txn.commit(execution, &runtime).unwrap();
 
     let resumed = runtime
         .publication()
@@ -131,13 +120,7 @@ fn resumed_subscriber_stream_preserves_prior_boundary_and_adds_new_boundary_trac
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    first_transition
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    first_transition.commit(execution, &runtime).unwrap();
 
     let first_batch = runtime
         .publication()
@@ -171,13 +154,7 @@ fn resumed_subscriber_stream_preserves_prior_boundary_and_adds_new_boundary_trac
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    second_transition
-        .commit(
-            execution,
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    second_transition.commit(execution, &runtime).unwrap();
 
     let resumed = runtime
         .publication()

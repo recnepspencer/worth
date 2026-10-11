@@ -290,13 +290,7 @@ fn stale_schema_transition_basis_cannot_install_target_authority() {
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .unwrap();
-    let committed = ordinary
-        .commit(
-            execution,
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = ordinary.commit(execution, &world.runtime).unwrap();
     world
         .runtime
         .snapshots()

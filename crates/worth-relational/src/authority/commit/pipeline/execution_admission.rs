@@ -186,7 +186,9 @@ impl AdmittedCommitExecution {
     }
 }
 
+/// Required request borrow proves this work belongs to the caller, without retaining it.
 pub(super) fn admit_commit_execution(
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
 ) -> Result<AdmittedCommitExecution, TransactionCommitError> {

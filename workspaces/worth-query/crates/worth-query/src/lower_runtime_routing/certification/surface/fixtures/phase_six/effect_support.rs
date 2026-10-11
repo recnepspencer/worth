@@ -72,11 +72,7 @@ pub(crate) fn create_entity(
     )
     .expect("phase-six effect fixture staging fits the configured transaction budget");
     let outcome = txn
-        .commit(
-            execution,
-            runtime,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("seed commit should succeed");
     let entity_id = outcome
         .changed_records
