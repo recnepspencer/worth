@@ -67,7 +67,7 @@ pub(super) fn supersede_predecessors(
     // and removal then use only this closed set, never unrelated registry rows.
     let mut keys = Vec::new();
     for (key, _) in
-        super::refreshed_rejoin::occurrence_rows_admitted(&state.records, successor, admission)?
+        super::refreshed_rejoin::search_occurrence_rows(&state.records, successor, admission)?
     {
         admission
             .charge_external_work(6)

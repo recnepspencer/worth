@@ -19,6 +19,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
+mod walk_charge;
+use walk_charge::OccurrenceSearchCharge;
+
 impl WorthQueryOutputDemandRegistry {
     /// Issue an interest in the newest joinable row of the same occurrence
     /// when `stale`'s row was superseded by a newer source. The caller swaps
@@ -49,7 +52,7 @@ impl WorthQueryOutputDemandRegistry {
         // Only this occurrence is traversed; unrelated records affect the
         // ordered navigation report, never this request's declared work.
         let Some(newest) =
-            newest_matching_row_admitted(&state.records, &stale.key, admission, |key, record| {
+            newest_matching_row(&state.records, &stale.key, admission, |key, record| {
                 refresh_order(key, &stale.key) == Some(Ordering::Greater)
                     && record.product_occurrence == occurrence
                     && record.source_scope == scope
@@ -102,35 +105,22 @@ pub(super) fn awaited_by_stale_owner(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> bool {
-    let mut awaited = false;
-    for (other, record) in occurrence_rows(records, key) {
-        if other == key {
-            continue;
-        }
-        match refresh_order(other, key) {
-            Some(Ordering::Greater) if !record.unpublished_new_key() => return false,
-            Some(Ordering::Less) => {
-                awaited |= (record.interests != 0 || record.framework_required_count != 0)
-                    && superseded(record);
-            }
-            _ => {}
-        }
+    match search_stale_owner(records, key, &mut ()) {
+        Ok(awaited) => awaited,
+        Err(refusal) => match refusal {},
     }
-    awaited
 }
 
 /// Charge only the occurrence-local rows actually inspected. A row that is
 /// already required does not need this traversal at all.
-pub(super) fn awaited_by_stale_owner_admitted(
+pub(super) fn search_stale_owner<C: OccurrenceSearchCharge>(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, WorthQueryOutputDemandDenial> {
+    charge: &mut C,
+) -> Result<bool, C::Refusal> {
     let mut awaited = false;
-    for (other, record) in occurrence_rows_admitted(records, key, admission)? {
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
+    for (other, record) in search_occurrence_rows(records, key, charge)? {
+        charge.inspect_row()?;
         if other == key {
             continue;
         }
@@ -191,36 +181,36 @@ pub(super) fn newest_lawful_successor<'keys>(
     keys: impl Iterator<Item = &'keys WorthQueryOutputDemandKey>,
     predecessor: &WorthQueryOutputDemandKey,
 ) -> Option<&'keys WorthQueryOutputDemandKey> {
-    let mut newest = None;
-    for candidate in
-        keys.filter(|candidate| refresh_order(candidate, predecessor) == Some(Ordering::Greater))
-    {
-        match newest {
-            None => newest = Some(candidate),
-            Some(current) => match refresh_order(candidate, current) {
-                Some(Ordering::Greater) => newest = Some(candidate),
-                Some(Ordering::Less) => {}
-                Some(Ordering::Equal) if candidate == current => {}
-                _ => return None,
-            },
-        }
+    match newest_matching_key(keys.map(|key| (key, ())), &mut (), |candidate, _| {
+        refresh_order(candidate, predecessor) == Some(Ordering::Greater)
+    }) {
+        Ok(newest) => newest,
+        Err(refusal) => match refusal {},
     }
-    newest
 }
 
-/// Select a lawful row after charging each inspected payload in the selected occurrence.
-pub(super) fn newest_matching_row_admitted(
+/// Select a lawful row with the caller's charge for the walk and inspected rows.
+pub(super) fn newest_matching_row<C: OccurrenceSearchCharge>(
     records: &super::record_map::DemandRecords,
     requested: &WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
+    charge: &mut C,
     accepts: impl Fn(&WorthQueryOutputDemandKey, &DemandRecord) -> bool,
-) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
+) -> Result<Option<WorthQueryOutputDemandKey>, C::Refusal> {
+    let rows = search_occurrence_rows(records, requested, charge)?;
+    newest_matching_key(rows, charge, |key, record| accepts(key, record))
+        .map(|newest| newest.cloned())
+}
+
+/// Incomparable candidates cannot become newest through iteration order.
+fn newest_matching_key<'keys, R, C: OccurrenceSearchCharge>(
+    rows: impl Iterator<Item = (&'keys WorthQueryOutputDemandKey, R)>,
+    charge: &mut C,
+    accepts: impl Fn(&WorthQueryOutputDemandKey, &R) -> bool,
+) -> Result<Option<&'keys WorthQueryOutputDemandKey>, C::Refusal> {
     let mut newest: Option<&WorthQueryOutputDemandKey> = None;
-    for (candidate, record) in occurrence_rows_admitted(records, requested, admission)? {
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
-        if !accepts(candidate, record) {
+    for (candidate, record) in rows {
+        charge.inspect_row()?;
+        if !accepts(candidate, &record) {
             continue;
         }
         match newest {
@@ -233,7 +223,7 @@ pub(super) fn newest_matching_row_admitted(
             },
         }
     }
-    Ok(newest.cloned())
+    Ok(newest)
 }
 
 /// How `row` orders against `other` among the rows of one occurrence. A
@@ -258,25 +248,19 @@ pub(super) fn occurrence_rows<'records>(
     records: &'records super::record_map::DemandRecords,
     key: &'records WorthQueryOutputDemandKey,
 ) -> impl Iterator<Item = (&'records WorthQueryOutputDemandKey, &'records DemandRecord)> {
-    records.occurrence_rows(key)
+    match search_occurrence_rows(records, key, &mut ()) {
+        Ok(rows) => rows,
+        Err(refusal) => match refusal {},
+    }
 }
 
-pub(super) fn occurrence_rows_admitted<'a>(
+pub(super) fn search_occurrence_rows<'a, C: OccurrenceSearchCharge>(
     records: &'a super::record_map::DemandRecords,
     key: &'a WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<
-    impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)>,
-    WorthQueryOutputDemandDenial,
-> {
-    let path = u64::from(usize::BITS - records.len().leading_zeros())
-        .checked_mul(11)
-        .and_then(|n| n.checked_add(1))
-        .ok_or_else(work_denial)?;
-    admission
-        .charge_ordered_operations(2, path.checked_mul(2).ok_or_else(work_denial)?)
-        .map_err(|_| work_denial())?;
-    Ok(occurrence_rows(records, key))
+    charge: &mut C,
+) -> Result<impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)>, C::Refusal> {
+    charge.occurrence_path(records.len())?;
+    Ok(records.occurrence_rows(key))
 }
 
 pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {

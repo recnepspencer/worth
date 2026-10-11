@@ -38,7 +38,7 @@ impl WorthQueryOutputDemandRegistry {
         let exact_retained_row = if let Some(selected) =
             selected_output.as_ref().filter(|_| !stable_refresh)
         {
-            super::refreshed_rejoin::newest_matching_row_admitted(
+            super::refreshed_rejoin::newest_matching_row(
                 &state.records,
                 &requested_key,
                 admission,
@@ -59,7 +59,7 @@ impl WorthQueryOutputDemandRegistry {
             None
         } else {
             let mut found = None;
-            for (key, record) in super::refreshed_rejoin::occurrence_rows_admitted(
+            for (key, record) in super::refreshed_rejoin::search_occurrence_rows(
                 &state.records,
                 &requested_key,
                 admission,
@@ -348,7 +348,7 @@ pub(super) fn newest_semantic_key(
 ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
     let mut newest = None;
     for (key, record) in
-        super::refreshed_rejoin::occurrence_rows_admitted(&state.records, requested, admission)?
+        super::refreshed_rejoin::search_occurrence_rows(&state.records, requested, admission)?
     {
         admission
             .charge_external_work(1)

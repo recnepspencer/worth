@@ -41,7 +41,7 @@ impl WorthQueryOutputDemandRegistry {
             return Ok(None);
         };
         let required = record.is_required()
-            || super::super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+            || super::super::refreshed_rejoin::search_stale_owner(
                 &state.records,
                 selected.key(),
                 admission,
@@ -165,7 +165,7 @@ impl WorthQueryOutputDemandRegistry {
                 charge_required_key_lookup(&state, selected.key(), admission)?;
                 let live = if let Some(record) = state.records.get(selected.key()) {
                     (record.is_required()
-                        || super::super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+                        || super::super::refreshed_rejoin::search_stale_owner(
                             &state.records,
                             selected.key(),
                             admission,
@@ -261,7 +261,7 @@ impl WorthQueryOutputDemandRegistry {
                 let occurrence = match state.records.get(work.key()) {
                     Some(record)
                         if (record.is_required()
-                            || super::super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+                            || super::super::refreshed_rejoin::search_stale_owner(
                                 &state.records,
                                 work.key(),
                                 admission,
