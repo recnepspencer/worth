@@ -9,6 +9,8 @@ use crate::query::data::{QueryExecutionOutcome, QueryWorkerFragment};
 
 const RESULT_BUDGET_DIVISOR: u64 = 4;
 
+mod packet_identity;
+
 #[cfg(test)]
 mod caller_lease_tests;
 
@@ -185,15 +187,28 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
         ) -> Result<QueryWorkerFragment, MapKernelFailure<QueryReadPacketDenial>>
         + Sync,
 ) -> Result<(Vec<QueryWorkerFragment>, ExecutionReport), QueryReadExecutionStop> {
+    let identities = packet_identity::identities(&packets);
+    schedule_query_packets(packets, identities, lease, execute)
+}
+
+fn schedule_query_packets(
+    packets: Vec<PacketizedQueryWork>,
+    identities: Vec<PartitionIdentity>,
+    lease: &ExecutionResourceLease<'_>,
+    execute: impl Fn(
+            &PacketizedQueryWork,
+            usize,
+            u64,
+            &mut MapKernelContext<'_, '_>,
+        ) -> Result<QueryWorkerFragment, MapKernelFailure<QueryReadPacketDenial>>
+        + Sync,
+) -> Result<(Vec<QueryWorkerFragment>, ExecutionReport), QueryReadExecutionStop> {
     let packet_count = packets.len();
     let packet_count_u64 = u64::try_from(packet_count).unwrap_or(u64::MAX);
     let per_packet_ceiling = lease.policy().budget().charged_memory_bytes()
         / RESULT_BUDGET_DIVISOR
             .saturating_mul(packet_count_u64)
             .max(1);
-    let identities: Vec<_> = (0..packet_count)
-        .map(|ordinal| PartitionIdentity::new(ordinal as u64 + 1))
-        .collect();
     let partitions = identities
         .iter()
         .copied()

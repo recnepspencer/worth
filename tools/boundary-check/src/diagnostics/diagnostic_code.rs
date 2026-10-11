@@ -30,6 +30,7 @@ pub(crate) enum DiagnosticCode {
     Bc7008RequestConstruction,
     Bc7009CanonicalOrder,
     Bc7010AllocationDenialPattern,
+    Bc7011PacketIdentity,
     Bc8001SnapshotBaseline,
     Bc8002FacadeSnapshotDrift,
     Bc8003CrateDagSnapshotDrift,
@@ -39,7 +40,7 @@ pub(crate) enum DiagnosticCode {
 
 impl DiagnosticCode {
     #[cfg(test)]
-    pub(crate) const ALL: [Self; 32] = [
+    pub(crate) const ALL: [Self; 33] = [
         Self::Bc1001IllegalCrateName,
         Self::Bc1002UnreservedDomain,
         Self::Bc2001BandDependencyViolation,
@@ -67,6 +68,7 @@ impl DiagnosticCode {
         Self::Bc7008RequestConstruction,
         Self::Bc7009CanonicalOrder,
         Self::Bc7010AllocationDenialPattern,
+        Self::Bc7011PacketIdentity,
         Self::Bc8001SnapshotBaseline,
         Self::Bc8002FacadeSnapshotDrift,
         Self::Bc8003CrateDagSnapshotDrift,
@@ -103,6 +105,7 @@ impl DiagnosticCode {
             Self::Bc7008RequestConstruction => "BC7008_REQUEST_CONSTRUCTION",
             Self::Bc7009CanonicalOrder => "BC7009_CANONICAL_ORDER",
             Self::Bc7010AllocationDenialPattern => "BC7010_ALLOCATION_DENIAL_PATTERN",
+            Self::Bc7011PacketIdentity => "BC7011_PACKET_IDENTITY",
             Self::Bc8001SnapshotBaseline => "BC8001_SNAPSHOT_BASELINE",
             Self::Bc8002FacadeSnapshotDrift => "BC8002_FACADE_SNAPSHOT_DRIFT",
             Self::Bc8003CrateDagSnapshotDrift => "BC8003_CRATE_DAG_SNAPSHOT_DRIFT",
@@ -132,6 +135,7 @@ impl DiagnosticCode {
             Self::Bc7008RequestConstruction => "tools/boundary-check/config/road1.toml [[request_constructor_denials]]; borrow the caller request or construct backing only at the declared policy-taking host entry",
             Self::Bc7009CanonicalOrder => "tools/boundary-check/src/source_rules/analysis/canonical_order.rs; order Query Execution by declared identity; named TypeId containers are membership only",
             Self::Bc7010AllocationDenialPattern => "tools/boundary-check/src/source_rules/analysis/allocation_denial_patterns.rs; raw allocation kind access and aliases belong to worth-execution; call denial.classify() at every consumer door",
+            Self::Bc7011PacketIdentity => "tools/boundary-check/src/source_rules/analysis/packet_identity.rs; packet naming sees only canonical partitions; placement facts belong only to scheduling",
             Self::Bc8001SnapshotBaseline | Self::Bc8002FacadeSnapshotDrift | Self::Bc8003CrateDagSnapshotDrift => "tools/boundary-check/snapshots/; regenerate the governed snapshot explicitly with boundary-check --update-snapshots",
             Self::Bc8004FacadeDocMissing | Self::Bc8005FacadeDocDebtStale => "tools/boundary-check/snapshots/facade-doc-debt.toml; document the named definition with a `///` comment, or delete the paid debt entry",
         };
