@@ -27,7 +27,7 @@ fn naming_cannot_bucket_by_any_lease_width_or_machine_count() {
 
 #[test]
 fn placement_reads_belong_to_scheduling_not_nested_naming() {
-    let allowed = "fn identities(packets: &[Packet]) { packets.iter().enumerate().map(|(ordinal, _)| PartitionIdentity::new(ordinal + 1)); }
+    let allowed = "fn identities(packets: &[Packet]) { packets.iter().enumerate(); }
         fn schedule_query_packets(identities: Vec<PartitionIdentity>, lease: &Lease) { let width = lease.policy().budget().max_workers().get(); }
         #[cfg(test)] fn fixture(width: usize) {}";
     assert!(diagnostics(allowed).is_empty());
@@ -35,6 +35,83 @@ fn placement_reads_belong_to_scheduling_not_nested_naming() {
         diagnostics("fn schedule_query_packets(width: usize) { fn identities(width: usize) {} }");
     assert_eq!(found.len(), 1, "nested naming has no schedule permission");
     assert_eq!(found[0].code(), DiagnosticCode::Bc7011PacketIdentity);
+}
+
+#[test]
+fn scope_follows_both_packetization_and_packet_execution() {
+    for suffix in [
+        "query_packetization.rs",
+        "query_packetization/targets.rs",
+        "query_preparation_packetization.rs",
+        "query_preparation_packetization/targets.rs",
+        "query_execution/leased_map.rs",
+        "query_execution/leased_map/packet_identity.rs",
+    ] {
+        let file = crate::source_syntax::parse_file("fn chunk(max_workers: usize) {}").unwrap();
+        let found = findings(&format!("{READER}{suffix}"), &file.items);
+        assert_eq!(
+            found.len(),
+            1,
+            "packetization cannot depend on placement: {suffix}"
+        );
+        let diagnostic = Diagnostic::new(
+            DiagnosticCode::Bc7011PacketIdentity,
+            found[0].1.clone(),
+            found[0].2,
+        );
+        assert_eq!(diagnostic.code(), DiagnosticCode::Bc7011PacketIdentity);
+    }
+    let file = crate::source_syntax::parse_file("fn record(width: usize) {}").unwrap();
+    assert!(
+        findings(
+            &format!("{READER}query_execution/leased_scan.rs"),
+            &file.items
+        )
+        .is_empty(),
+        "record byte width is not worker width"
+    );
+}
+
+#[test]
+fn packet_declaration_has_no_lease() {
+    for source in [
+        "fn declare_packets(packets: Vec<NamedQueryPacket>, lease: &ExecutionResourceLease) {}",
+        "use worth_execution::ExecutionResourceLease as Authority;",
+        "fn declare_packets(packets: Vec<NamedQueryPacket>) { let lease = authority(); }",
+    ] {
+        let file = crate::source_syntax::parse_file(source).unwrap();
+        let found = findings(
+            &format!("{READER}query_execution/leased_map/packet_identity.rs"),
+            &file.items,
+        );
+        assert_eq!(
+            found.len(),
+            1,
+            "packet declaration precedes scheduling authority: {source}"
+        );
+        let diagnostic = Diagnostic::new(
+            DiagnosticCode::Bc7011PacketIdentity,
+            found[0].1.clone(),
+            found[0].2,
+        );
+        assert_eq!(diagnostic.code(), DiagnosticCode::Bc7011PacketIdentity);
+    }
+}
+
+#[test]
+fn scheduling_and_raw_entry_cannot_mint_packet_names() {
+    for source in [
+        "fn schedule_query_packets(width: usize) { PartitionIdentity::new(width); }",
+        "fn execute_leased_query_packets(packets: Vec<Packet>) { PartitionIdentity::new(1); }",
+    ] {
+        let found = diagnostics(source);
+        assert_eq!(
+            found.len(),
+            1,
+            "packet names are minted only in the identity owner: {source}"
+        );
+        assert_eq!(found[0].code(), DiagnosticCode::Bc7011PacketIdentity);
+    }
 }
 
 #[test]

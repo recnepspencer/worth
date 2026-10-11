@@ -68,6 +68,39 @@ fn placement_fact(tokens: TokenStream) -> bool {
     )
 }
 
+fn packetization_source(source: &str) -> bool {
+    let Some(relative) = source.strip_prefix(READER) else {
+        return false;
+    };
+    ["query_packetization", "query_preparation_packetization"]
+        .iter()
+        .any(|name| relative == format!("{name}.rs") || relative.starts_with(&format!("{name}/")))
+        || relative == SCHEDULE_SOURCE
+        || relative == "query_execution/leased_map/packet_identity.rs"
+}
+
+fn mints_partition_identity(block: &syn::Block) -> bool {
+    struct Constructor(bool);
+    impl<'ast> Visit<'ast> for Constructor {
+        fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
+            if let syn::Expr::Path(function) = call.func.as_ref() {
+                let mut segments = function.path.segments.iter().rev();
+                if segments.next().is_some_and(|part| part.ident == "new")
+                    && segments
+                        .next()
+                        .is_some_and(|part| part.ident == "PartitionIdentity")
+                {
+                    self.0 = true;
+                }
+            }
+            visit::visit_expr_call(self, call);
+        }
+    }
+    let mut constructor = Constructor(false);
+    constructor.visit_block(block);
+    constructor.0
+}
+
 fn partition_set_only(signature: &syn::Signature) -> bool {
     if signature.inputs.len() != 1
         || signature
@@ -106,9 +139,7 @@ struct NamingBoundary<'a> {
 
 impl NamingBoundary<'_> {
     fn observes_placement(&self, tokens: TokenStream) -> bool {
-        if self.source == format!("{READER}{SCHEDULE_SOURCE}")
-            || self.source.ends_with("leased_map/packet_identity.rs")
-        {
+        if packetization_source(self.source) {
             placement_fact(tokens)
         } else {
             machine_fact(tokens)
@@ -127,6 +158,17 @@ impl NamingBoundary<'_> {
             && signature.ident == "identities";
         let reason = if naming && !partition_set_only(signature) {
             Some("packet naming accepts only the canonical partition set")
+        } else if self.source == format!("{READER}query_execution/leased_map/packet_identity.rs")
+            && contains(
+                quote::quote!(#signature #block),
+                &["ExecutionResourceLease", "lease"],
+            )
+        {
+            Some("packet declaration finishes before scheduling receives the lease")
+        } else if self.source == format!("{READER}{SCHEDULE_SOURCE}")
+            && mints_partition_identity(block)
+        {
+            Some("packet identities are minted only by their declaration owner")
         } else if schedule {
             machine_fact(quote::quote!(#signature #block))
                 .then_some("machine observations belong only to the authority width reader")
@@ -198,7 +240,10 @@ impl<'ast> Visit<'ast> for NamingBoundary<'_> {
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
         if !self.in_schedule
             && !self.in_width_home
-            && self.observes_placement(item.to_token_stream())
+            && (self.observes_placement(item.to_token_stream())
+                || (self.source
+                    == format!("{READER}query_execution/leased_map/packet_identity.rs")
+                    && contains(item.to_token_stream(), &["ExecutionResourceLease", "lease"])))
         {
             self.found.push((
                 item.use_token.span.start().line,

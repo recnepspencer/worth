@@ -1,6 +1,6 @@
 use worth_execution::{
-    ChargedBytes, ExecutionResourceLease, MapDenial, MapKernelContext, MapKernelFailure, MapStop,
-    ScanDenial,
+    ChargedBytes, ExecutionResourceLease, MapDenial, MapKernelContext, MapKernelFailure,
+    MapOutcome, MapStop, ScanDenial,
 };
 use worth_foundational::{ExecutionReport, PartitionIdentity};
 
@@ -208,5 +208,21 @@ fn schedule_query_packets(
         / RESULT_BUDGET_DIVISOR
             .saturating_mul(packet_count_u64)
             .max(1);
-    packet_identity::run_packets(packets, per_packet_ceiling, lease, execute)
+    let map = packet_identity::declared_map(packets, per_packet_ceiling)?;
+    match map.run(Some(lease), |input, context| {
+        context.checkpoint(0)?;
+        execute(&input.work, input.ordinal, per_packet_ceiling, context)
+    }) {
+        MapOutcome::Complete { values, report } => Ok((values, report)),
+        MapOutcome::Stopped {
+            boundary,
+            reason,
+            report,
+            ..
+        } => Err(QueryReadExecutionStop::PacketStopped {
+            boundary,
+            reason,
+            report,
+        }),
+    }
 }
