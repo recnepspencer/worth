@@ -67,7 +67,11 @@ impl RawAccess<'_> {
             .take(path.segments.len().saturating_sub(1))
         {
             prefix.segments.push(segment.clone());
-            if self.aliases.raw_path(&prefix, &self.scope) {
+            let ty = syn::Type::Path(syn::TypePath {
+                qself: None,
+                path: prefix.clone(),
+            });
+            if self.aliases.mentions_raw(&ty, &self.scope) {
                 self.refuse(segment.ident.span());
             }
         }

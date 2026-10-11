@@ -277,3 +277,21 @@ fn qualified_self_tuple_and_struct_patterns_are_reads() {
 fn a_multiline_qualified_self_read_is_one_diagnostic() {
     assert_raw_kind_diagnostics("fn f() { let raw = <\n<Vec<ExecutionAllocationDenialKind> as IntoIterator>::Item\n>::Cancelled; }", 1);
 }
+
+#[test]
+fn paths_past_types_mentioning_raw_are_reads() {
+    for source in [
+        "type Item<C> = <C as IntoIterator>::Item; fn f() { Item::<Vec<ExecutionAllocationDenialKind>>::Cancelled; }",
+        "type Kinds = Vec<ExecutionAllocationDenialKind>; fn f() { Kinds::new(); }",
+        "type Kinds = Vec<ExecutionAllocationDenialKind>; fn f() { <Kinds>::new(); }",
+        "impl T for Item<Vec<ExecutionAllocationDenialKind>>::Out {}",
+        "fn f(k: Other) { match k { Item::<Vec<ExecutionAllocationDenialKind>>::Cancelled => (), _ => () } }",
+    ] {
+        assert_raw_kind_diagnostics(source, 1);
+    }
+}
+
+#[test]
+fn a_descendants_nominal_type_shadows_an_ancestor_alias() {
+    assert_raw_kind_diagnostics("type K = ExecutionAllocationDenialKind; mod child { struct K; impl K { fn new() -> Self { Self } } fn f() { K::new(); } }", 1);
+}
