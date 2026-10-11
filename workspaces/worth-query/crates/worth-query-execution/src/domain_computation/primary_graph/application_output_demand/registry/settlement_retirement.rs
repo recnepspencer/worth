@@ -58,16 +58,17 @@ impl SupersededSettlements {
         self,
         displaced: Option<Identity>,
         owner: &SourceInvalidationOwner,
-    ) {
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
         let named = self
             .registry
-            .retire_superseded_settlements(&self.key, owner);
+            .retire_superseded_settlements(&self.key, owner)?;
         // A named settlement is retried by the next supersession. One no row
         // of this occurrence posts retires as a released settlement does.
         if let Some(displaced) = displaced.filter(|displaced| !named.contains(displaced)) {
             self.registry
                 .retire_released_settlements(vec![(displaced, 0)], owner);
         }
+        Ok(())
     }
 }
 
@@ -97,22 +98,19 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         key: &WorthQueryOutputDemandKey,
         owner: &SourceInvalidationOwner,
-    ) -> Vec<Identity> {
+    ) -> Result<Vec<Identity>, WorthQueryOutputDemandDenial> {
         let mut admission = owner.edit_admission();
         let candidates = {
             let state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let Ok(candidates) = state.prepare_superseded_settlements(key, &mut admission) else {
-                return Vec::new();
-            };
-            candidates
+            state.prepare_superseded_settlements(key, &mut admission)?
         };
         if !candidates.is_empty() {
             drop(self.retire_settlements(&candidates, owner, &mut admission));
         }
-        candidates
+        Ok(candidates)
     }
 
     /// Released settlements already left this index; their rows may still

@@ -352,7 +352,11 @@ fn publish_with_snapshot(
     let owner = &provider.graph.source_owner.invalidation_owner;
     let displaced = recorded.and_then(|recorded| recorded.displaced);
     match (superseded, displaced) {
-        (Some(superseded), displaced) => superseded.retire(displaced, owner),
+        (Some(superseded), displaced) => {
+            // World already committed. Refusing this later owner edit cannot
+            // turn publication into a failure or classify displaced as released.
+            drop(superseded.retire(displaced, owner));
+        }
         (None, Some(displaced)) => {
             drop(owner.retire_released([displaced], &mut owner.edit_admission()));
         }

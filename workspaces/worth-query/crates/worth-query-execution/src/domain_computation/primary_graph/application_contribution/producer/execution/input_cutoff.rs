@@ -262,9 +262,13 @@ where
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),
     })?;
-    prerequisites
-        .publish(Arc::clone(published.exact_settlement()))
-        .retire(displaced, source_owner);
+    // The stable publication has committed; this later maintenance refusal
+    // cannot undo it or classify displaced as released.
+    drop(
+        prerequisites
+            .publish(Arc::clone(published.exact_settlement()))
+            .retire(displaced, source_owner),
+    );
     Ok(ProducerInputProgression::StablePublished(published))
 }
 
