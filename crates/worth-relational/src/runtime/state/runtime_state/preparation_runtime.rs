@@ -103,6 +103,8 @@ impl RelationalPreparationRuntime {
     pub(crate) fn admit_operation(
         &self,
     ) -> Option<super::owner_lifecycle::AdmittedRelationalRuntimeOperation> {
+        #[cfg(test)]
+        crate::mvcc::split_contacts::admission();
         self.lifecycle.admit()
     }
 

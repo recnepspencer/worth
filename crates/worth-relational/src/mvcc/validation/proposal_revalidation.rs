@@ -9,6 +9,8 @@ impl RelationalPreparationRuntime {
         &self,
         candidate: ValidatedRelationalProposal,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        #[cfg(test)]
+        crate::mvcc::transaction::split_contacts::revalidation();
         self.ensure_validated_proposal_branch_is_current(&candidate)?;
         if candidate.custom_invariant_generation
             != self.schema_contract_runtime.custom_invariant_generation

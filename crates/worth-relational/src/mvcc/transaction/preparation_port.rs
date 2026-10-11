@@ -54,6 +54,10 @@ impl RelationalPreparationPort {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Validation,
+        )?;
         let _operation = self.admit_operation()?;
         let configuration = self.binding.configuration_binding();
         let epoch = configuration.operation();
@@ -64,8 +68,12 @@ impl RelationalPreparationPort {
             runtime
         };
         let proposal = runtime
-            .validate_branch_transaction(execution, transaction)
+            .validate_consulted_branch_transaction(execution, transaction)
             .map_err(attach_validation_rejection)?;
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Admission,
+        )?;
         self.prepare_validated_proposal_inner(execution, &runtime, proposal)
     }
 
@@ -74,6 +82,10 @@ impl RelationalPreparationPort {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         proposal: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Admission,
+        )?;
         let _operation = self.admit_operation()?;
         let configuration = self.binding.configuration_binding();
         let epoch = configuration.operation();
@@ -108,7 +120,7 @@ impl RelationalPreparationPort {
         proposal: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
         let proposal = runtime.revalidate_proposal_for_publication(proposal)?;
-        crate::authority::commit::pipeline::prepare_authoritative_commit(
+        crate::authority::commit::pipeline::prepare_consulted_authoritative_commit(
             execution,
             runtime,
             crate::authority::commit::pipeline::AuthoritativeCommitContext::from_validated_proposal(

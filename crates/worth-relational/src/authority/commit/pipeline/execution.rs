@@ -14,8 +14,16 @@ pub(crate) fn prepare_authoritative_commit(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-    let allocation_policy = execution.allocation_policy();
     super::consult_stage(execution, super::CommitStage::Admission)?;
+    prepare_consulted_authoritative_commit(execution, runtime, context)
+}
+
+pub(crate) fn prepare_consulted_authoritative_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &crate::runtime::RelationalPreparationRuntime,
+    context: AuthoritativeCommitContext,
+) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    let allocation_policy = execution.allocation_policy();
     let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         &context.validation_input,
         allocation_policy,

@@ -18,6 +18,18 @@ impl RelationalPreparationRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Validation,
+        )?;
+        self.validate_consulted_branch_transaction(execution, transaction)
+    }
+
+    pub(crate) fn validate_consulted_branch_transaction(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         let runtime = if execution.is_leased() {
             self.with_commit_work_budget()
         } else {
@@ -36,6 +48,10 @@ impl RelationalPreparationRuntime {
         merged_plan: crate::transactions::data::MergedCommitPlan,
         strategy: StrategyProposalDecoration,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Validation,
+        )?;
         self.validate_branch_transaction_source(
             execution,
             transaction,
@@ -54,10 +70,6 @@ impl RelationalPreparationRuntime {
         )>,
         strategy: Option<StrategyProposalDecoration>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        crate::authority::commit::pipeline::consult_stage(
-            execution,
-            crate::authority::commit::pipeline::CommitStage::Validation,
-        )?;
         let lease = crate::authority::commit::pipeline::request_lease(execution);
         let allocation_policy = execution.allocation_policy();
         require_not_interrupted(
