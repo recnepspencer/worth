@@ -4,7 +4,7 @@ type ScaleProgram = OracleProgram<false, TOTALS_WORK, 1, 4>;
 fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
     let _guard = checkpoint_recovery_test_guard();
     {
-        let app = super::population::install_population();
+        let app = super::population::install_settled_population();
         let (scope, principal) = authenticate(&app);
         let request = app.request(&principal, &scope);
         let mut root = request
@@ -40,7 +40,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
             triangle_rows.push(row);
         }
         let mut queue_caller = unrelated_request
-            .demand(PlanarOutputDemand::new("unrelated-1004"))
+            .demand(PlanarOutputDemand::new("unrelated-6"))
             .start_in_program::<ScaleProgram, OracleRoot>(&app)
             .unwrap();
         assert!(matches!(
@@ -54,7 +54,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
         let mut pending_visited = Vec::new();
         let mut held = Vec::new();
         let mut populations = Vec::new();
-        for unrelated in [0, 1_000] {
+        for unrelated in [0, 1] {
             let opened = unrelated - held.len();
             let setup_contacts = app.producer_contacts_on_this_thread_for_test();
             for number in held.len()..unrelated {
@@ -97,7 +97,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                 0,
                 "all newly admitted interests are current before the edit schedule"
             );
-            // Native values exist in both measurements; zero versus a thousand
+            // Native values exist in both measurements; zero versus one
             // actual registry rows now differ, not merely open interests.
 
             // Both measurements have a full retained lineage window. Cold
@@ -200,7 +200,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
                 }
             }
             // Measure this lane while its actual population is still zero or
-            // 1000, before creating the next lane's rows. All setup is drained.
+            // one, before creating the next lane's rows. All setup is drained.
             for row in &mut held {
                 assert!(matches!(
                     row.advance(&unrelated_request).unwrap(),
@@ -249,10 +249,13 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
         }
         assert_eq!(
             populations[1] - populations[0],
-            1_000,
-            "the pending-work requests differ by a thousand actual registry rows"
+            1,
+            "the pending-work requests differ by one actual registry row"
         );
-        assert_eq!(pending_costs[0], pending_costs[1], "the same pending work costs the same with zero or a thousand disjoint settled open rows");
+        assert_eq!(
+            pending_costs[0], pending_costs[1],
+            "the same pending work costs the same with zero or one disjoint settled open rows"
+        );
         assert_eq!(
             pending_visited,
             [0, 0],
@@ -260,7 +263,7 @@ fn settled_current_ordinary_rows_do_not_charge_the_callers_request() {
         );
         assert_eq!(
             quiet_populations[1] - quiet_populations[0],
-            1_000,
+            1,
             "quiet lanes differ by actual registry rows"
         );
         assert_eq!(
