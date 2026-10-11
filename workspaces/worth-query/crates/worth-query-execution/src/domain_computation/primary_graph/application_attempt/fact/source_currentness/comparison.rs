@@ -14,9 +14,24 @@ impl WorthQueryApplicationObservedFact {
             return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
         }
         match self {
-            Self::RetiredOutputEntity { .. } => {
-                Ok((self.remains_equal_in(runtime, execution, snapshot), 1))
-            }
+            Self::RetiredOutputEntity {
+                entity_id,
+                kind,
+                created_at,
+                deleted_at,
+                ..
+            } => Ok((
+                super::super::retirement_equality::remains_equal(
+                    runtime,
+                    execution,
+                    snapshot,
+                    *entity_id,
+                    *kind,
+                    *created_at,
+                    *deleted_at,
+                ),
+                1,
+            )),
             Self::SourceEntity { entity_id } => {
                 let view = runtime
                     .read_truth()

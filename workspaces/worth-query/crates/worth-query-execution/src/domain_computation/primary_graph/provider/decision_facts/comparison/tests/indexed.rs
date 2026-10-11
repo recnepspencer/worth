@@ -81,7 +81,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 graph
                     .integration_handle()
                     .with_runtime(&borrowed_execution, |runtime| {
-                        assert!(fact.remains_equal_in(runtime, execution, snapshot));
+                        assert!(fact.remains_equal_in(runtime, execution, snapshot).unwrap());
                         assert!(selectors
                             .remains_equal(execution, fact, runtime, snapshot, control)
                             .unwrap());

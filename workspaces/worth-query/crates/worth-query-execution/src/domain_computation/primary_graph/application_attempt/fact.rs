@@ -9,6 +9,7 @@ mod equality;
 mod indexed_entity_selection;
 mod locator_identity;
 mod movement;
+mod retirement_equality;
 mod source_currentness;
 mod source_merge;
 mod workflow_definition_predecessor;

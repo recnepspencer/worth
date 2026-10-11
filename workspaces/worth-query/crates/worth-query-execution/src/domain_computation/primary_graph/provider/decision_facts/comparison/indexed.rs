@@ -52,7 +52,9 @@ impl PreparedSelections {
             candidates,
         } = fact
         else {
-            return Ok(fact.remains_equal_in(runtime, execution, snapshot));
+            return fact
+                .remains_equal_in(runtime, execution, snapshot)
+                .map_err(super::super::fact_read_set_failure);
         };
         // Preserve scalar malformed-limit refusal before index admission.
         if *candidate_limit == 0 || *candidate_limit == usize::MAX {

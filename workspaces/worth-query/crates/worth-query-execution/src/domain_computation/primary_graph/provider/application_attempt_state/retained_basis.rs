@@ -21,16 +21,15 @@ impl WorthQueryObservedApplicationFactBasis {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
-    ) -> Result<bool, crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial>
-    {
+    ) -> Result<bool, crate::domain_computation::WorthQueryDecisionReadSetFailure> {
         let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
             runtime,
             self.product.observation().basis().relational_basis(),
         )
-        .map_err(crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::from)?;
+        .map_err(|denial| super::super::decision_facts::snapshot_read_set_failure(denial.into()))?;
         let fresh = self.fact.remains_equal_in(execution, runtime, &snapshot);
         crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-        Ok(fresh)
+        fresh.map_err(super::super::decision_facts::fact_read_set_failure)
     }
 }
 

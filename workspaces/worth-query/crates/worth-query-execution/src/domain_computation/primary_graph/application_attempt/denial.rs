@@ -276,6 +276,15 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn into_native_query_read_stop(
+        self,
+    ) -> Option<Box<worth_relational::facade::runtime::QueryReadExecutionStop>> {
+        match self.cause {
+            AttemptDenialCause::NativeQueryRead(stop) => Some(stop),
+            _ => None,
+        }
+    }
+
     /// The language denial behind `WorkflowConditionExpressionDenied`.
     pub const fn expression(
         &self,

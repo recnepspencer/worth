@@ -134,7 +134,9 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
                 } => self
                     .selections
                     .remains_equal(execution, fact, runtime, snapshot, control),
-                _ => Ok(fact.remains_equal_in(execution, runtime, snapshot)),
+                _ => fact
+                    .remains_equal_in(execution, runtime, snapshot)
+                    .map_err(super::fact_read_set_failure),
             })?;
         check_control(control)?;
         admission.observe_current_version(if fresh {
