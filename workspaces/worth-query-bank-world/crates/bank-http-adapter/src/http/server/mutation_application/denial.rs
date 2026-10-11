@@ -8,7 +8,7 @@ pub(in crate::http::server) fn request_mutation_denial(
     use WorthQueryApplicationRequestMutationDenialKind as Denial;
     match kind {
         Denial::ExecutionRequest(cause) => super::super::advancement_denial::advancement(cause),
-        Denial::IdempotencyExecutionDenied(kind) => pending_execution_denial(kind),
+        Denial::IdempotencyExecutionDenied(stop) => pending_execution_stop(stop),
         Denial::ProductSelection => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
@@ -68,14 +68,31 @@ pub(in crate::http::server) fn request_mutation_denial(
     }
 }
 
+pub(in crate::http::server) fn pending_execution_stop(
+    stop: Result<
+        worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+        worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+    >,
+) -> BankHttpDenial {
+    use worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Control;
+    match stop {
+        Ok(kind) => pending_execution_denial(kind),
+        Err(Control::Cancelled) => {
+            BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
+        }
+        Err(Control::TimedOut) => BankHttpDenial::new(
+            BankHttpDenialKind::DeadlineExceeded,
+            BankHttpNextAction::Retry,
+        ),
+    }
+}
+
 // Pending publication uses the same action law as a commit refusal.
 pub(in crate::http::server) fn pending_execution_denial(
     kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
 ) -> BankHttpDenial {
     use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
     match kind {
-        Kind::ExecutionControlStopped(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled) => BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry),
-        Kind::ExecutionControlStopped(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut) => BankHttpDenial::new(BankHttpDenialKind::DeadlineExceeded, BankHttpNextAction::Retry),
         Kind::ExecutionResource { denial, .. } => {
             super::commit_denial::execution_resource(denial).1
         }

@@ -11,6 +11,7 @@ allocation-probes = []
 test-durability-faults = ["worth-relational/test-durability-faults"]
 test-primary-graph-faults = []
 test-query-execution-observer = [
+    "worth-execution/test-request-consults",
     "worth-signal/test-execution-observer",
     "worth-runtime-world/test-execution-observer",
 ]

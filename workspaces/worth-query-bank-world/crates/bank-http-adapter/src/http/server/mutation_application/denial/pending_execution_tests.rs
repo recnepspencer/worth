@@ -58,7 +58,9 @@ fn mapping_contract_pending_execution_preserves_the_actor_that_can_act() {
         let expected = BankHttpDenial::new(category, next);
         assert_eq!(
             request_mutation_denial(
-                WorthQueryApplicationRequestMutationDenialKind::IdempotencyExecutionDenied(kind)
+                WorthQueryApplicationRequestMutationDenialKind::IdempotencyExecutionDenied(Ok(
+                    kind
+                ))
             ),
             expected,
             "request path: {kind:?}"
@@ -66,7 +68,7 @@ fn mapping_contract_pending_execution_preserves_the_actor_that_can_act() {
         assert_eq!(
             crate::http::server::estate_denial::estate_denial(
                 bank_server::BankEstateProgressionDenial::Idempotency(
-                    bank_server::BankEstateIdempotencyResolutionDenial::ExecutionDenied(kind)
+                    bank_server::BankEstateIdempotencyResolutionDenial::ExecutionDenied(Ok(kind))
                 )
             ),
             expected,

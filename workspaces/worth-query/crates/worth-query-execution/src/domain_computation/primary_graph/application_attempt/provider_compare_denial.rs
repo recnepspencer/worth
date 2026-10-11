@@ -51,9 +51,6 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
     };
     let detail = failure.detail();
     let denial = match kind {
-        Kind::ExecutionControlStopped(stop) => {
-            Denial::provider_execution_denied(Stage::ProviderCommit, Err(stop), detail)
-        }
         Kind::IndexMaintenanceBudgetExceeded => {
             Denial::index_maintenance_budget_exceeded(Stage::ProviderCommit, detail)
         }
@@ -133,20 +130,17 @@ pub(in crate::domain_computation::primary_graph) mod preparation_outcome;
 #[cfg(test)]
 mod tests;
 
-pub(in crate::domain_computation::primary_graph) fn provider_session_kind_denied(
-    kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+pub(in crate::domain_computation::primary_graph) fn provider_session_execution_denied(
+    stop: Result<
+        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    >,
     stage: Stage,
     detail: impl Into<std::sync::Arc<str>>,
 ) -> Denial {
     // The preparation refusal retains its category and retry policy while
     // carrying the distinct cause and the stage that stopped it.
-    let cause = match kind {
-        crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionControlStopped(
-            stop,
-        ) => Err(stop),
-        kind => Ok(kind),
-    };
-    Denial::provider_execution_denied(stage, cause, detail)
+    Denial::provider_execution_denied(stage, stop, detail)
 }
 
 pub(in crate::domain_computation::primary_graph) fn control_stopped_outcome(

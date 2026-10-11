@@ -4,7 +4,7 @@ use crate::domain_computation::{
     WorthQueryDecisionFactRequest, WorthQueryDecisionReadSetFreshnessOutcome,
     WorthQueryFreshDecisionReadSet, WorthQuerySessionBoundReadsAndEffects,
 };
-use graph::application_attempt::provider_compare_denial::provider_session_kind_denied;
+use graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
 use graph::application_attempt::provider_execution::outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome as Progression,
 };
@@ -245,7 +245,7 @@ where
         )),
         Ok(Err(IdempotencyDenial::ExecutionDenied(kind))) => {
             Some(Progression::Denied(
-                provider_session_kind_denied(
+                provider_session_execution_denied(
                     kind,
                     ExecutionDenialStage::Idempotency,
                     "pending publication execution refused",

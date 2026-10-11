@@ -20,11 +20,18 @@ use crate::domain_computation::primary_graph::schema_layout::WorthQueryAftermath
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryAftermathCausalityReadDenial {
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
-    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    ExecutionDenied(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     Unavailable,
 }
 
@@ -135,7 +142,7 @@ fn aftermath_index_currency_denial(
     denial: crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
 ) -> WorthQueryAftermathCausalityReadDenial {
     match denial {
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryAftermathCausalityReadDenial::ExecutionDenied(stop.unwrap_or_else(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionControlStopped)),
+        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryAftermathCausalityReadDenial::ExecutionDenied(stop),
 
         crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
             crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,

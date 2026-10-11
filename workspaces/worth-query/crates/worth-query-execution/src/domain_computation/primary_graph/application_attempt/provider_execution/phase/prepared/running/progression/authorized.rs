@@ -1,6 +1,6 @@
 use super::commit_resolution::{finish_authorized_compare, WorthQueryAuthorizedCompareContext};
 use crate::domain_computation::primary_graph as graph;
-use graph::application_attempt::provider_compare_denial::provider_session_kind_denied;
+use graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
 use graph::application_attempt::provider_execution::aftermath_resolution::resolve_exact_committed_aftermath;
 use graph::application_attempt::provider_execution::outcome::{
     progression_denied, progression_from_authorization_denial, WorthQueryProviderProgressionOutcome,
@@ -220,7 +220,7 @@ where
         }
         Err(IdempotencyDenial::ExecutionDenied(kind)) => {
             candidate.discard();
-            WorthQueryProviderProgressionOutcome::Denied(provider_session_kind_denied(
+            WorthQueryProviderProgressionOutcome::Denied(provider_session_execution_denied(
                 kind,
                 ExecutionDenialStage::Idempotency,
                 "pending publication execution refused",

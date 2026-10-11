@@ -73,6 +73,15 @@ fn settlement_publication_denial(
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> WorthQueryApplicationSettlementRecoveryError {
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+    match super::relational_execution_denial::native_preparation_kind(&failure) {
+        Ok(Some(kind)) => {
+            return WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(Ok(kind))
+        }
+        Err(stop) => {
+            return WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(Err(stop))
+        }
+        Ok(None) => {}
+    }
     match failure.kind() {
         Kind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
@@ -92,9 +101,8 @@ fn settlement_publication_denial(
         | Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ExecutionWorkerPanicked { .. }
         | Kind::ExecutionIdentitiesNotCanonical { .. }
-        | Kind::ExecutionUncheckedCustomKernel { .. }
-        | Kind::ExecutionControlStopped(_)) => {
-            WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(kind)
+        | Kind::ExecutionUncheckedCustomKernel { .. }) => {
+            WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(Ok(kind))
         }
         Kind::AllocationDenied
         | Kind::ForeignOperationAttempt
@@ -138,7 +146,7 @@ mod tests {
             Default::default(),
         ));
         assert!(
-            matches!(observed, WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(actual) if actual == kind)
+            matches!(observed, WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(actual) if actual == Ok(kind))
         );
     }
 }

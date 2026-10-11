@@ -42,16 +42,7 @@ pub(super) fn seal(
             &relation,
             Some(pending.outcome_identity),
         )
-        .map_err(|denial| match denial {
-            WorthQueryAftermathCausalityReadDenial::ExecutionDenied(kind) => WorthQueryProviderSessionFailure::new(kind,
-                crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
-                "index currency execution stopped during aftermath sealing", Default::default())
-                .with_recovery_posture(crate::domain_computation::WorthQueryProviderSessionRecoveryPosture::RecoveryRequired),
-            WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted { .. } => {
-                snapshot_capacity_failure("aftermath causality could not be read at publication")
-            }
-            _ => failure("aftermath causality could not be read at publication"),
-        })?
+        .map_err(sealing_denial)?
         .filter(|committed| committed.child() == application.commit_reference())
         .ok_or_else(|| failure("published commit does not carry its aftermath causality"))?;
     pending
@@ -60,4 +51,50 @@ pub(super) fn seal(
         .expect("pending application retains its evidence until cutover")
         .seal_aftermath_causality(committed);
     Ok(())
+}
+
+fn sealing_denial(
+    denial: WorthQueryAftermathCausalityReadDenial,
+) -> WorthQueryProviderSessionFailure {
+    match denial {
+            WorthQueryAftermathCausalityReadDenial::ExecutionDenied(stop) => WorthQueryProviderSessionFailure::checked_read_stopped(stop,
+                crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+                "request stopped during aftermath sealing")
+                .with_recovery_posture(crate::domain_computation::WorthQueryProviderSessionRecoveryPosture::RecoveryRequired),
+            WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted { .. } => {
+                snapshot_capacity_failure("aftermath causality could not be read at publication")
+            }
+            _ => failure("aftermath causality could not be read at publication"),
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn checked_aftermath_stop_keeps_recovery_custody_by_value() {
+        use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+        use crate::domain_computation::{
+            WorthQueryProviderSessionControlStopKind as Control,
+            WorthQueryProviderSessionDenialKind as Kind,
+            WorthQueryProviderSessionRecoveryPosture as Posture,
+        };
+        for stop in [
+            Err(Control::Cancelled),
+            Ok(Kind::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: None,
+                policy_ancestor: None,
+            }),
+        ] {
+            let failure = sealing_denial(WorthQueryAftermathCausalityReadDenial::ExecutionDenied(
+                stop,
+            ));
+            assert_eq!(failure.checked_read_stop(), Some(stop));
+            assert_eq!(failure.recovery_posture(), Posture::RecoveryRequired);
+            assert_eq!(
+                failure.stage(),
+                crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit
+            );
+        }
+    }
 }

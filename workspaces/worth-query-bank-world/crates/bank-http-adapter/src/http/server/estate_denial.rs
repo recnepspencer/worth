@@ -69,7 +69,7 @@ fn idempotency_denial(denial: BankEstateIdempotencyResolutionDenial) -> BankHttp
     use BankHttpNextAction as Next;
     let (denial, next) = match denial {
         Idempotency::ExecutionDenied(kind) => {
-            return super::mutation_application::pending_execution_denial(kind)
+            return super::mutation_application::pending_execution_stop(kind)
         }
         Idempotency::Authorization(denial) => return authorization_denial(denial.kind()),
         // The key's earlier commit took effect; reading current state shows it.

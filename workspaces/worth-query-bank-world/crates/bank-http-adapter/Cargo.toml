@@ -27,7 +27,7 @@ worth-query-host.workspace = true
 worth-foundational.workspace = true
 
 [dev-dependencies]
-bank-server = { workspace = true, features = ["test-controls"] }
+bank-server = { workspace = true, features = ["test-controls", "test-request-lifetime-probes"] }
 reqwest.workspace = true
 
 [lints]

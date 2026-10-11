@@ -80,7 +80,7 @@ where
                     None,
                 )
                 .map_err(|denial| match denial {
-                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ExecutionDenied(kind) => WorthQueryRedoDenial::new(super::WorthQueryRedoDenialKind::ExecutionRequest(kind)),
+                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ExecutionDenied(kind) => redo_read_stop(kind),
                     crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted {
                         maximum_active_snapshots,
                     } => WorthQueryRedoDenial::active_snapshot_capacity_exhausted(
@@ -339,4 +339,38 @@ pub(crate) fn map_recovery_denial(
         | K::DisclosureAdmissionRequired
         | K::UnresolvedExternalPosture => WorthQueryRedoDenialKind::NewlyUnauthorized,
     })
+}
+
+fn redo_read_stop(
+    stop: Result<
+        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    >,
+) -> WorthQueryRedoDenial {
+    WorthQueryRedoDenial::new(super::WorthQueryRedoDenialKind::ExecutionRequest(stop))
+}
+#[cfg(test)]
+mod read_stop_tests {
+    use super::*;
+    #[test]
+    fn redo_read_request_denial_keeps_its_value() {
+        use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+        use crate::domain_computation::{
+            WorthQueryProviderSessionControlStopKind as Control,
+            WorthQueryProviderSessionDenialKind as Kind,
+        };
+        for stop in [
+            Err(Control::Cancelled),
+            Ok(Kind::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: None,
+                policy_ancestor: None,
+            }),
+        ] {
+            assert_eq!(
+                redo_read_stop(stop).kind(),
+                super::super::WorthQueryRedoDenialKind::ExecutionRequest(stop)
+            );
+        }
+    }
 }

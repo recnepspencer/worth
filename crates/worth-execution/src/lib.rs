@@ -49,3 +49,8 @@ pub use reduction::{
     ReductionTree,
 };
 pub use report::ChargedBytes;
+
+#[cfg(feature = "test-request-consults")]
+pub use authority::consult_observation::{
+    with_request_consult_observer, RequestConsultObservation,
+};

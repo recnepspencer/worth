@@ -21,3 +21,6 @@ pub use memory::{
 };
 pub use request::ExecutionRequest;
 pub use serial::SerialRequest;
+
+#[cfg(any(test, feature = "test-request-consults"))]
+pub(crate) use request::consult_observation;

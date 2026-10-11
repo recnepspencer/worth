@@ -222,7 +222,7 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
                 let kind = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, denial.partition_identity).unwrap();
                 for stage in [Stage::Idempotency, Stage::InvariantExecution] {
                     let application =
-                        provider_session_kind_denied(kind, stage, "the refusing owner");
+                        provider_session_execution_denied(Ok(kind), stage, "the refusing owner");
                     assert_eq!(
                         application.kind(),
                         Application::ExecutionResource {
@@ -313,7 +313,7 @@ fn native_cause_context_and_commit_log_survive_application_kind_mapping() {
         policy_ancestor: None,
     };
     assert_eq!(denial.execution_denial_cause(), Some(Ok(cause)));
-    let earlier = provider_session_kind_denied(cause, Stage::Idempotency, error.detail())
+    let earlier = provider_session_execution_denied(Ok(cause), Stage::Idempotency, error.detail())
         .with_provider_session_failure(failure);
     assert_eq!(earlier.kind(), denial.kind());
     assert_eq!(

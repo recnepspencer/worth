@@ -93,7 +93,6 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                     | Session::ExecutionWorkerPanicked { .. }
                     | Session::ExecutionIdentitiesNotCanonical { .. }
                     | Session::ExecutionUncheckedCustomKernel { .. }
-                    | Session::ExecutionControlStopped(_)
                     | Session::ActiveSnapshotCapacityExhausted { .. }
                     | Session::AllocationDenied
                     | Session::RetentionCapacityExhausted

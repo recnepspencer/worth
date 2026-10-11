@@ -341,3 +341,6 @@ where
         self.primary_provider.application_attempt_work()
     }
 }
+
+#[cfg(feature = "test-query-execution-observer")]
+mod primary_index_generations;

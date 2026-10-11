@@ -29,8 +29,8 @@ fn mapping_contract_pending_execution_retains_kind_and_ancestry() {
     ));
     assert_eq!(
         provider,
-        WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(kind)
+        WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(Ok(kind))
     );
     let application = crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_provider(provider);
-    assert_eq!(application.kind(), crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(kind));
+    assert_eq!(application.kind(), crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(Ok(kind)));
 }

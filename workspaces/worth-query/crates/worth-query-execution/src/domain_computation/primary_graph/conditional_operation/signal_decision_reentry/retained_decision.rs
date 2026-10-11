@@ -28,7 +28,10 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) enum Wor
     OperationSettlementExecutionDenied(
         BridgeConditionalDecisionEvidence,
         crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
-        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
     ),
     OperationBackpressured(
         BridgeConditionalDecisionEvidence,

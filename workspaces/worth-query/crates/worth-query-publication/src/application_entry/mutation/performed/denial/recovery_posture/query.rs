@@ -64,6 +64,7 @@ fn authorization_posture(kind: AuthorizationKind) -> WorthQueryRequiredOutputRec
 fn principal_posture(kind: PrincipalKind) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
+        PrincipalKind::ExecutionRequest(_) => Retryable,
         PrincipalKind::ExpiredAuthentication
         | PrincipalKind::Cancelled
         | PrincipalKind::DeadlineExceeded
@@ -117,6 +118,7 @@ fn scope_posture(kind: ScopeKind) -> WorthQueryRequiredOutputRecoveryPosture {
 fn admission_posture(kind: AdmissionKind) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
+        AdmissionKind::ExecutionRequest(_) => Retryable,
         AdmissionKind::Cancelled
         | AdmissionKind::DeadlineExceeded
         | AdmissionKind::BasisUnavailable
@@ -208,6 +210,29 @@ mod tests {
                 AuthorizationKind::ForeignRuntime,
             )),
             WorthQueryRequiredOutputRecoveryPosture::Terminal,
+        );
+    }
+}
+
+#[cfg(test)]
+mod currency_request_tests {
+    use super::*;
+    #[test]
+    fn currency_stop_has_the_execution_twins_retry_posture() {
+        use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
+        use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
+        let kind = Kind::ExecutionResource {
+            denial: Resource::WorkExhausted,
+            partition_identity: None,
+            policy_ancestor: None,
+        };
+        assert_eq!(
+            admission_posture(AdmissionKind::ExecutionRequest(kind)),
+            WorthQueryRequiredOutputRecoveryPosture::Retryable
+        );
+        assert_eq!(
+            principal_posture(PrincipalKind::ExecutionRequest(kind)),
+            WorthQueryRequiredOutputRecoveryPosture::Retryable
         );
     }
 }

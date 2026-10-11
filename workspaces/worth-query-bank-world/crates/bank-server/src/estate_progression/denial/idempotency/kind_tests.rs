@@ -74,7 +74,7 @@ fn pending_execution_refusal_preserves_exact_kind() {
         partition_identity: Some(3),
     };
     assert_eq!(
-        from_kind(Query::ExecutionDenied(kind), 0),
-        Bank::ExecutionDenied(kind)
+        from_kind(Query::ExecutionDenied(Ok(kind)), 0),
+        Bank::ExecutionDenied(Ok(kind))
     );
 }

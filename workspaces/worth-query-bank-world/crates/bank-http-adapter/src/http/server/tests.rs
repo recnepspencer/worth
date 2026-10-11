@@ -384,3 +384,5 @@ fn continuation(outcome: &BankHttpAccountActivityPageOutcome) -> &str {
         other => panic!("activity page did not continue: {other:?}"),
     }
 }
+
+mod currency_work_stop;

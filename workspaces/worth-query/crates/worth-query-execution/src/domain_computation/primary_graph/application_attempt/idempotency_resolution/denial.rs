@@ -10,7 +10,12 @@ use crate::domain_computation::primary_graph::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationIdempotencyResolutionDenialKind {
     /// Execution refused to finish the pending publication used by this read.
-    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    ExecutionDenied(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     /// The admission's current authority no longer holds, or inspecting the key was
     /// not authorized, for the named reason. The authorization denial has the
     /// contributing causes.

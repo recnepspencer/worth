@@ -127,7 +127,10 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     IdempotencyUnavailable,
     /// Execution refused pending-publication recovery while resolving this key.
     IdempotencyExecutionDenied(
-        worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+        Result<
+            worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+            worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+        >,
     ),
     /// The provider has run out of snapshot or retention identities, so no
     /// key resolves until the runtime is reconfigured.

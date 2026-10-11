@@ -51,7 +51,12 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempote
     /// The key's first-encoding record matches every durable part of this
     /// intent but names its operation by a seal no later runtime can confirm.
     RecordedIntentUnverifiable,
-    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    ExecutionDenied(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     Unavailable,
 }
 
@@ -223,6 +228,15 @@ fn pending_publication_denial(
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+    match super::relational_execution_denial::native_preparation_kind(&failure) {
+        Ok(Some(kind)) => {
+            return WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(Ok(kind))
+        }
+        Err(stop) => {
+            return WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(Err(stop))
+        }
+        Ok(None) => {}
+    }
     match failure.kind() {
         Kind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
@@ -242,9 +256,8 @@ fn pending_publication_denial(
         | Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ExecutionWorkerPanicked { .. }
         | Kind::ExecutionIdentitiesNotCanonical { .. }
-        | Kind::ExecutionUncheckedCustomKernel { .. }
-        | Kind::ExecutionControlStopped(_)) => {
-            WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(kind)
+        | Kind::ExecutionUncheckedCustomKernel { .. }) => {
+            WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(Ok(kind))
         }
         Kind::AllocationDenied
         | Kind::ForeignOperationAttempt
@@ -272,7 +285,7 @@ fn idempotency_index_currency_denial(
     denial: crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
     match denial {
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(stop.unwrap_or_else(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionControlStopped)),
+        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(stop),
 
         crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
             crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,
