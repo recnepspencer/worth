@@ -69,7 +69,7 @@ fn assert_request_cause(request: LeaseRequest, expected: fn(Cause) -> bool) {
 
 #[test]
 fn cancelled_lease_preserves_both_request_causes() {
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     let source = worth_execution::CancellationSource::new();
     source.cancel();
     assert_request_cause(lease_request(32 * 1024 * 1024, source.token()), |cause| {
@@ -79,7 +79,7 @@ fn cancelled_lease_preserves_both_request_causes() {
 
 #[test]
 fn expired_lease_preserves_both_request_causes() {
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     let mut request = lease_request(32 * 1024 * 1024, CancellationToken::new());
     request.deadline = Some(Instant::now());
     assert_request_cause(request, |cause| cause == Cause::DeadlineElapsed);
@@ -87,7 +87,7 @@ fn expired_lease_preserves_both_request_causes() {
 
 #[test]
 fn exhausted_work_lease_preserves_both_request_causes() {
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     assert_request_cause(
         lease_request_with_work(32 * 1024 * 1024, CancellationToken::new(), 0),
         |cause| cause == Cause::WorkExhausted,
@@ -96,7 +96,7 @@ fn exhausted_work_lease_preserves_both_request_causes() {
 
 #[test]
 fn exhausted_policy_memory_preserves_both_request_causes() {
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     assert_request_cause(lease_request(0, CancellationToken::new()), |cause| {
         matches!(
             cause,
@@ -111,7 +111,7 @@ fn exhausted_policy_memory_preserves_both_request_causes() {
 
 #[test]
 fn exhausted_process_memory_preserves_both_request_causes() {
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     let held = authority()
         .request_lease(lease_request(64 * 1024 * 1024, CancellationToken::new()))
         .expect("competing request is admitted");

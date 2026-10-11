@@ -40,6 +40,13 @@ use worth_relational::facade::{
 static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
 static TEST_SERIAL: Mutex<()> = Mutex::new(());
 
+// One failed test must not show as a poisoned lock in every other.
+fn serial() -> std::sync::MutexGuard<'static, ()> {
+    TEST_SERIAL
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
 fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
@@ -72,7 +79,7 @@ fn lease_request_with_work(
 
 #[test]
 fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
         .build();
@@ -160,7 +167,7 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
 
 #[test]
 fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publication() {
-    let _serial = TEST_SERIAL.lock().unwrap();
+    let _serial = serial();
     let authority = authority();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
