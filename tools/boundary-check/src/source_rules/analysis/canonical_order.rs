@@ -14,6 +14,14 @@ const CRATES: &[&str] = &[
     "worth-execution",
     "worth-runtime-bridge",
 ];
+const ADDRESS_CRATES: &[&str] = &[
+    "worth-query-execution",
+    "worth-runtime-world",
+    "worth-execution",
+    "worth-runtime-bridge",
+    "worth-signal",
+    "worth-relational",
+];
 
 /// Named exceptions are membership contracts, never permission to iterate for
 /// output, selection, or cost. Every exception names its membership consumer.
@@ -39,7 +47,7 @@ pub(super) fn validate(root: &std::path::Path) -> Result<Vec<Diagnostic>, String
     let mut diagnostics = Vec::new();
     for workspace in ["", "workspaces/worth-query"] {
         for governed in super::workspace_crates::discover_workspace_crates(root, workspace)? {
-            if CRATES.contains(&governed.package.as_str()) || governed.package == "worth-signal" {
+            if ADDRESS_CRATES.contains(&governed.package.as_str()) {
                 let graph = super::crate_modules::parse_crate_modules(&governed)?;
                 diagnostics.extend(enforce(&governed, &graph));
             }
@@ -49,7 +57,7 @@ pub(super) fn validate(root: &std::path::Path) -> Result<Vec<Diagnostic>, String
 }
 
 fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
-    if !CRATES.contains(&governed.package.as_str()) && governed.package != "worth-signal" {
+    if !ADDRESS_CRATES.contains(&governed.package.as_str()) {
         return Vec::new();
     }
     let files: Vec<_> = graph
@@ -60,7 +68,7 @@ fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
     findings(&files)
         .into_iter()
         .filter(|finding| {
-            governed.package != "worth-signal" || finding.reason == "ordering impl reads an address"
+            CRATES.contains(&governed.package.as_str()) || address_order::is_finding(finding.reason)
         })
         .map(|finding| {
             Diagnostic::new(
@@ -79,7 +87,9 @@ fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
 }
 
 fn findings(files: &[(&str, &[syn::Item])]) -> Vec<inventory::Finding> {
-    inventory::scan(files)
+    let mut found = inventory::scan(files);
+    found.extend(address_order::scan(files));
+    found
         .into_iter()
         .filter(|finding| {
             finding.reason != "ordered container keyed by TypeId"

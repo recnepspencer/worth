@@ -163,6 +163,27 @@ fn address_order_fixture_refuses_order_but_allows_equality_hashing() {
 }
 
 #[test]
+fn address_spellings_cannot_hide_an_order() {
+    let fixture = crate::source_syntax::parse_file(include_str!(
+        "../../../../tests/fixtures/canonical_order_rules/address_spellings.rs"
+    ))
+    .unwrap();
+    for item in fixture.items {
+        let syn::Item::Mod(case) = item else {
+            panic!("one module per spelling")
+        };
+        let items = case.content.unwrap().1;
+        let found = findings(&[("src/ordinary.rs", &items)]);
+        assert_eq!(
+            found.len(),
+            1,
+            "{} must refuse exactly its address order",
+            case.ident
+        );
+    }
+}
+
+#[test]
 fn every_runtime_owner_is_in_scope() {
     let root =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");
@@ -177,4 +198,24 @@ fn every_runtime_owner_is_in_scope() {
     }
     governed.package = "worth-signal".to_owned();
     assert!(super::enforce(&governed, &graph).is_empty());
+}
+
+#[test]
+fn every_lower_owner_refuses_address_order() {
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");
+    let mut governed =
+        super::super::workspace_crates::discover_workspace_crates(&root, "workspaces/worth-query")
+            .unwrap()
+            .remove(0);
+    let mut graph = super::super::crate_modules::parse_crate_modules(&governed).unwrap();
+    graph.modules.values_mut().next().unwrap().items = crate::source_syntax::parse_file(
+        include_str!("../../../../tests/fixtures/canonical_order_rules/address_order.rs"),
+    )
+    .unwrap()
+    .items;
+    for package in super::ADDRESS_CRATES {
+        governed.package = (*package).into();
+        assert_eq!(super::enforce(&governed, &graph).len(), 3, "{package}");
+    }
 }
