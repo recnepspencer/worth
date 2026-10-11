@@ -48,7 +48,7 @@ fn run() {
         primary_graph::{
             signal_request_charges_on_this_thread_for_test as signal_charges,
             signal_request_refusals_on_this_thread_for_test as signal_refusals,
-            SignalCheckpointDenial,
+            SignalCheckpointDenialForTest as SignalCheckpointDenial,
         },
     };
     let ceiling = budget_measurement::ceiling();

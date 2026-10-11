@@ -8,7 +8,8 @@ use worth_query_host::facade::{
     application_entry::WorthQueryApplicationOutputDemandDenial as OutputDenial,
     primary_graph::{
         signal_request_charges_on_this_thread_for_test as signal_charges,
-        signal_request_refusals_on_this_thread_for_test as signal_refusals, SignalCheckpointDenial,
+        signal_request_refusals_on_this_thread_for_test as signal_refusals,
+        SignalCheckpointDenialForTest as SignalCheckpointDenial,
     },
 };
 
