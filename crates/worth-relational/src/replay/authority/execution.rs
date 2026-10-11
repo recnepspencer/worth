@@ -299,7 +299,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &reconstruction.runtime,
             &request,
             selected_lineage_authority.as_ref(),
-        );
+        )?;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let outcome = replay_comparison_outcome(
             request,

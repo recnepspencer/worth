@@ -3,7 +3,7 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalR
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
 
-pub(super) fn replay_commit_stop(
+pub(crate) fn replay_commit_stop(
     error: TransactionCommitError,
     detail: String,
 ) -> RelationalRecoveryStop {

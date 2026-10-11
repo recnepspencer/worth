@@ -7,6 +7,7 @@ use std::collections::BTreeSet;
 use super::root_inventory::RecoveredRootInventory;
 
 mod commit_stop;
+pub(crate) use commit_stop::replay_commit_stop;
 mod effect;
 mod owner_bindings;
 mod preparation;
