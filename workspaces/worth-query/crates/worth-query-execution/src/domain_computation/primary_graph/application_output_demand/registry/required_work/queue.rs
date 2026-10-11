@@ -132,6 +132,36 @@ impl Drop for RequiredWorkQueue {
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
+    /// Leave one checked attempt for the real producer scheduling, so its
+    /// subsequent readiness evaluation refuses the exhausted runtime counter.
+    #[doc(hidden)]
+    pub fn leave_one_readiness_attempt_for_test(&self) {
+        self.next_output_producer_attempt
+            .store(u64::MAX - 1, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Read the exact issued rows and their recorded intrinsic stop values.
+    #[doc(hidden)]
+    pub fn required_row_stops_for_root_for_test(
+        &self,
+        root: worth_relational::facade::identity::EntityId,
+    ) -> Vec<(
+        String,
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>,
+    )> {
+        let state = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state
+            .records
+            .iter()
+            .filter(|(key, _)| key.source_epoch().root_entity_for_test() == root)
+            .map(|(key, record)| (format!("{key:?}"), record.required_stop.clone()))
+            .collect()
+    }
+
     #[doc(hidden)]
     pub fn queued_required_work_for_test(&self) -> usize {
         let queue = self
