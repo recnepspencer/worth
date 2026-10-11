@@ -3,13 +3,14 @@
 use super::SourceEpoch;
 
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerApplicability;
-use std::{any::TypeId, cmp::Ordering};
+use crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity;
+use std::cmp::Ordering;
 
 // Family and source precede the binding: one output occurrence remains a
 // contiguous range even when Initial and Preserve have separate executors.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandKey {
-    pub(super) family: TypeId,
+    pub(super) family: OutputFamilyIdentity,
     pub(super) source: SourceEpoch,
     pub(super) applicability: WorthQueryProducerApplicability,
     pub(super) producer: String,
@@ -17,21 +18,21 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandKe
 
 impl WorthQueryOutputDemandKey {
     pub(in crate::domain_computation::primary_graph) fn new(
-        family: TypeId,
+        family: &'static str,
         producer: String,
         applicability: WorthQueryProducerApplicability,
         source: SourceEpoch,
     ) -> Self {
         Self {
-            family,
+            family: OutputFamilyIdentity::declared(family),
             producer,
             applicability,
             source,
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn family_type(&self) -> TypeId {
-        self.family
+    pub(in crate::domain_computation::primary_graph) fn family_identity(&self) -> &str {
+        self.family.as_str()
     }
 
     pub(in crate::domain_computation::primary_graph) fn producer_identity(&self) -> &str {
@@ -62,9 +63,10 @@ impl WorthQueryOutputDemandKey {
             && self.source.same_semantic_source(&other.source)
     }
 
-    pub(super) fn comparison_work(&self) -> Option<usize> {
+    pub(in crate::domain_computation::primary_graph) fn comparison_work(&self) -> Option<usize> {
         self.producer
             .len()
+            .checked_add(self.family.as_str().len())?
             .checked_add(self.applicability.profile_kind().len())?
             .checked_add(10)
     }
@@ -85,7 +87,7 @@ impl WorthQueryOutputDemandKey {
             }));
         }
         // Another binding may succeed this row only through the declared
-        // Initial→Preserve transition of the same profile, never text order.
+        // Initial-to-Preserve transition of the same profile, never text order.
         if self.applicability.profile_kind() != other.applicability.profile_kind()
             || self.applicability.lifecycle() == other.applicability.lifecycle()
         {

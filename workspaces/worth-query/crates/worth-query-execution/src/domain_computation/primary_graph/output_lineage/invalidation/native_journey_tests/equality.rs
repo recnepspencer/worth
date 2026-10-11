@@ -1,5 +1,6 @@
 //! Native actor consequence with real source snapshots and delivered touches.
 //! The test-only relation mint exercises the actor, not producer authorization.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
@@ -15,8 +16,6 @@ use crate::domain_computation::primary_graph::{
         },
     },
 };
-
-struct OtherUpstream;
 
 #[path = "equality/pending_resolution.rs"]
 mod pending_resolution;
@@ -62,18 +61,25 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         output_binding,
     }
     };
-    let a_source = source(TypeId::of::<StatusOutput>());
+    let a_source = source(OutputBindingIdentity::declared("StatusOutput"));
     let a0 = RecordedSettlementIdentity::retain(&a_source, coordinate, 0);
     let a1 = RecordedSettlementIdentity::retain(&a_source, coordinate, 1);
     let a2 = RecordedSettlementIdentity::retain(&a_source, coordinate, 2);
     let b = RecordedSettlementIdentity::retain(
-        &source(TypeId::of::<DownstreamOutput>()),
+        &source(OutputBindingIdentity::declared("DownstreamOutput")),
         coordinate,
         0,
     );
-    let c = RecordedSettlementIdentity::retain(&source(TypeId::of::<LateOutput>()), coordinate, 0);
-    let other =
-        RecordedSettlementIdentity::retain(&source(TypeId::of::<OtherUpstream>()), coordinate, 0);
+    let c = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("LateOutput")),
+        coordinate,
+        0,
+    );
+    let other = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("OtherUpstream")),
+        coordinate,
+        0,
+    );
 
     handle.with_runtime_mut(|runtime| {
         write_field(runtime, entity, label.clone(), "prime");
@@ -184,7 +190,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         output_binding,
     }
     };
-    let a_source = source(TypeId::of::<StatusOutput>());
+    let a_source = source(OutputBindingIdentity::declared("StatusOutput"));
     let a0 = RecordedSettlementIdentity::retain(&a_source, coordinate, 0);
     let a1 = RecordedSettlementIdentity::retain(&a_source, coordinate, 1);
     handle.with_runtime_mut(|runtime| {

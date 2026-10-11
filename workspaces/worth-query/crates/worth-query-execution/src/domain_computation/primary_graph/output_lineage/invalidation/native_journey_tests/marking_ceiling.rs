@@ -1,6 +1,7 @@
 //! The installed marking ceiling bounds reader fan-out, never a legal writer.
 //! Unwatched touch keys are not marking work; matched fan-out above the
 //! ceiling publishes as a counted discontinuity that readers fully verify.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::super::logical_marking::NativeMarkingPrecision;
 use super::super::mark_state::FullVerificationReason;
@@ -145,7 +146,7 @@ fn matched_fan_out_above_the_ceiling_publishes_and_readers_fully_verify() {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity().clone(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<StatusOutput>(),
+        output_binding: OutputBindingIdentity::declared("StatusOutput"),
     };
     // A first match spends one visit plus two ordered reads and three ordered
     // edits, each at least one visit, so a quarter-ceiling of readers of one

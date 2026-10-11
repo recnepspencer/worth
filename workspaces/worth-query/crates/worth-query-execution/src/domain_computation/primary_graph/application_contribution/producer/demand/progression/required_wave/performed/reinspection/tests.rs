@@ -77,7 +77,7 @@ fn assert_publication_credit(replay: bool, publish: bool) {
         );
         let key = |producer: &str| {
             WorthQueryOutputDemandKey::new(
-                std::any::TypeId::of::<()>(),
+                "performed-member-test-family",
                 producer.to_owned(),
                 WorthQueryProducerApplicability::new(
                     "test",

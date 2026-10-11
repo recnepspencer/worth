@@ -55,7 +55,7 @@ where
             )
         })?;
         let key = rejoined.key();
-        if key.family_type() != std::any::TypeId::of::<Family>()
+        if key.family_identity() != Family::IDENTITY
             || entry.declaration.output_family_type != std::any::TypeId::of::<Family>()
             || entry.declaration.identity != key.producer_identity()
             || !entry

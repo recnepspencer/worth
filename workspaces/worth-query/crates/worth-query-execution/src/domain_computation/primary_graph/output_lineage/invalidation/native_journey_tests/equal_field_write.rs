@@ -1,4 +1,5 @@
 //! Equal field writes preserve native stamps and the installed actor's marks.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::*;
 
@@ -43,10 +44,13 @@ fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_cha
         output_binding,
     }
     };
-    let output =
-        RecordedSettlementIdentity::retain(&source(TypeId::of::<StatusOutput>()), coordinate, 0);
+    let output = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("StatusOutput")),
+        coordinate,
+        0,
+    );
     let downstream = RecordedSettlementIdentity::retain(
-        &source(TypeId::of::<DownstreamOutput>()),
+        &source(OutputBindingIdentity::declared("DownstreamOutput")),
         coordinate,
         0,
     );

@@ -1,8 +1,6 @@
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
-use std::{
-    any::TypeId,
-    sync::{Arc, OnceLock},
-};
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use std::sync::{Arc, OnceLock};
 
 use super::{checkpoint_identity, source_facts, RestoredOutputBinding};
 use crate::domain_computation::primary_graph::output_lineage::{
@@ -41,13 +39,18 @@ fn unrelated_partition_selection(population: u64) {
         runtime_authority,
         schema: schema.clone(),
         scope,
-        output_binding: TypeId::of::<RestoredOutputBinding>(),
+        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
     };
     let target = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let sibling = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        "RestoredOutputBinding",
+    );
+
     lineage.record_recovered_prior_output(
-        source.output_binding,
+        lineage.binding_type(&source.output_binding),
         runtime_authority,
         schema.clone(),
         scope,
@@ -62,7 +65,7 @@ fn unrelated_partition_selection(population: u64) {
     );
     for number in 1..=population {
         lineage.record_recovered_prior_output(
-            source.output_binding,
+            lineage.binding_type(&source.output_binding),
             runtime_authority,
             schema.clone(),
             scope,
@@ -95,7 +98,7 @@ fn unrelated_partition_selection(population: u64) {
             scope,
             occurrence,
             population + 1,
-            &[source.output_binding],
+            &[lineage.binding_type(&source.output_binding)],
             partition(0),
             1,
         )
@@ -286,12 +289,17 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
         runtime_authority,
         schema: schema.clone(),
         scope,
-        output_binding: TypeId::of::<RestoredOutputBinding>(),
+        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
     };
     let correspondence = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        "RestoredOutputBinding",
+    );
+
     lineage.record_restoration(
-        source.output_binding,
+        lineage.binding_type(&source.output_binding),
         runtime_authority,
         schema.clone(),
         scope,
@@ -313,7 +321,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
             scope,
             child.lifecycle_incarnation(),
             child.reference_generation().get(),
-            &[source.output_binding],
+            &[lineage.binding_type(&source.output_binding)],
             partition(0),
             2,
         )

@@ -798,6 +798,10 @@ pub enum DeterminismContract {
 - `ContractEquivalent` names an installed, identity-bearing equivalence
   predicate, digested into revision identity. Certification uses it in place of
   bitwise comparison.
+- Order comes from one declared identity. Every sort that decides a result,
+  a charge or the failure reported has a total key, built by one comparison
+  formula. No production path walks a hash container, and none orders by
+  `TypeId` or by address; the boundary check and crate lints refuse both.
 
 Throughput-relaxed determinism is deleted rather than deferred: it breaks replay
 and reconstruction identity, and nothing needs it. Floating-point associativity is
@@ -2770,6 +2774,8 @@ The next phase may trust that partition-granular reuse is exact.
   - Commits and publications apply in canonical key order, and apply accepts
     only canonical order, by type. The least canonical failure is reported;
     nothing after it is kept or charged.
+    - Canonical order is one declared identity with a total key at every
+      deciding sort in Query, World, Bridge and Execution. *Completed.*
   - One execution report per advancement, a failed one included, lists its
     commits and publications in order.
   - A handler that does not compute needs no change.

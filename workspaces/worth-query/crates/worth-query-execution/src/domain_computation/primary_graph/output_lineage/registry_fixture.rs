@@ -1,4 +1,5 @@
 //! A real restored lineage slot for the registry's exact-index owner tests.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use std::any::TypeId;
 use std::sync::Arc;
@@ -51,6 +52,11 @@ fn recorded_settlements(
     );
     let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity);
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(
+        std::any::TypeId::of::<RegistryRestoredOutput>(),
+        "RegistryRestoredOutput",
+    );
+
     for partition in partitions {
         lineage.record_restoration(
         TypeId::of::<RegistryRestoredOutput>(),
@@ -76,7 +82,7 @@ fn recorded_settlements(
         runtime_authority,
         schema,
         scope,
-        output_binding: TypeId::of::<RegistryRestoredOutput>(),
+        output_binding: OutputBindingIdentity::declared("RegistryRestoredOutput"),
     };
     let coordinate = ProductCoordinate {
         occurrence: observation.lifecycle_incarnation(),

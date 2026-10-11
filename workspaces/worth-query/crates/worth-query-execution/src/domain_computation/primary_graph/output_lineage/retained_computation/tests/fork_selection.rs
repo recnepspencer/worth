@@ -1,5 +1,6 @@
 //! Exact fork horizons select one prior, and local absence ends inheritance.
 use super::*;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use worth_runtime_world::facade::{
     ProductBranchCreationIntent, ProductBranchCreationPlans, RelationalBranchCreationPlan,
     RuntimeWorldBranchCreationOutcome, RuntimeWorldCancellationSource, SignalBranchCreationPlan,
@@ -48,6 +49,8 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         .unwrap();
     let nested = make(&admitted_child, "computation-nested");
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(std::any::TypeId::of::<()>(), "()");
+
     let entity = worth_relational::facade::identity::EntityId::new(
         worth_relational::facade::identity::PartitionId::main(),
         1,
@@ -57,7 +60,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity().clone(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<()>(),
+        output_binding: OutputBindingIdentity::declared("()"),
     };
     let parent = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -67,7 +70,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
     let restored =
         |lineage: &mut WorthQueryApplicationOutputLineage,
          observation: &worth_runtime_world::facade::ProductBranchObservation| {
-            lineage.record_restoration(source.output_binding, source.runtime_authority, source.schema.clone(), source.scope, observation,
+            lineage.record_restoration(lineage.binding_type(&source.output_binding), source.runtime_authority, source.schema.clone(), source.scope, observation,
             Arc::new(super::super::super::WorthQueryApplicationOutputCorrespondence::default()),
             super::super::super::RecordedSourceIdentity::Checkpoint(crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x72; 32])),
             partition, None, [0x73; 32], super::super::super::ComputationSourceEvidence::for_test(false).retain_facts(Arc::from([])), None, None);

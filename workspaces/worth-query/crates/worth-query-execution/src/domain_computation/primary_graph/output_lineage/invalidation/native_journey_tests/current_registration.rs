@@ -1,4 +1,5 @@
 //! Stable preparation cannot reinterpret a cutoff at an older source root.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 
 use super::*;
@@ -28,7 +29,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<StatusOutput>(),
+        output_binding: OutputBindingIdentity::declared("StatusOutput"),
     };
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();

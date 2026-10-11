@@ -10,5 +10,6 @@ error[E0624]: associated function `admit` is private
   | |         runtime: &RuntimeBridge,
   | |         declaration: &BridgeSubscriptionDeclaration,
   | |         basis_request: BridgeSubscriptionBasisRequest,
+  | |         execution: worth_execution::ExecutionRequest<'_, '_>,
   | |     ) -> Result<Self, BridgeSubscriptionAdmissionRejection> {
   | |___________________________________________________________- private associated function defined here

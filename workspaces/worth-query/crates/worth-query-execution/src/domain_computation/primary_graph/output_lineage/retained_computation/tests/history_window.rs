@@ -1,5 +1,6 @@
 //! A superseded fork-pinned state refunds only outside retained history.
 use super::*;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, live_scope, publish_relational_mutation, AccountLabel,
     AccountStatus,
@@ -58,9 +59,11 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(account),
-        output_binding: TypeId::of::<()>(),
+        output_binding: OutputBindingIdentity::declared("()"),
     };
     let mut lineage = WorthQueryApplicationOutputLineage::default();
+    lineage.fixture_binding(std::any::TypeId::of::<()>(), "()");
+
     lineage
         .retention
         .install(1 << 30, std::num::NonZeroUsize::new(2).unwrap());
@@ -68,7 +71,7 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
     let record =
         |lineage: &mut WorthQueryApplicationOutputLineage,
          observation: &worth_runtime_world::facade::ProductBranchObservation| {
-            lineage.record_restoration(source.output_binding, source.runtime_authority, source.schema.clone(),
+            lineage.record_restoration(lineage.binding_type(&source.output_binding), source.runtime_authority, source.schema.clone(),
             source.scope, observation,
             Arc::new(super::super::super::WorthQueryApplicationOutputCorrespondence::default()),
             super::super::super::RecordedSourceIdentity::Checkpoint(

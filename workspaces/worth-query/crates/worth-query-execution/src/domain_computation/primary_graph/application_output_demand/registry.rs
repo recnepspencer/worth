@@ -1,5 +1,5 @@
 pub(in crate::domain_computation::primary_graph) use lifecycle::RunningSelectedExecution;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Condvar, Mutex};
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
@@ -305,7 +305,7 @@ struct DemandRegistryState {
     pending_cleanup_head: Option<Arc<WorthQueryOutputDemandKey>>,
     source_preparations:
         HashMap<worth_runtime_world::facade::ProductBranchIncarnation, SourcePreparationState>,
-    source_custody: HashMap<worth_runtime_world::facade::CompositeCommitIdentity, SourceCustody>,
+    source_custody: BTreeMap<worth_runtime_world::facade::CompositeCommitIdentity, SourceCustody>,
 }
 
 impl Default for DemandRegistryState {
@@ -326,7 +326,7 @@ impl Default for DemandRegistryState {
             settlement_keys: settlement_index::SettlementIndex::default(),
             pending_cleanup_head: None,
             source_preparations: HashMap::new(),
-            source_custody: HashMap::new(),
+            source_custody: BTreeMap::new(),
         }
     }
 }

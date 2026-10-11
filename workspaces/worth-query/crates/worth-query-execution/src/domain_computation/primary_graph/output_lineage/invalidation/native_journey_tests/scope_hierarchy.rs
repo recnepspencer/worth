@@ -1,6 +1,7 @@
 //! A Native leaf touch queues its ancestor scopes and no sibling subtree.
 use super::super::logical_marking::NativeMarkingPrecision;
 use super::*;
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::{
     application_output_demand::{SelectedRequiredWorkKind, WorthQueryOutputDemandRegistry},
     tests::fixture::{Account, AccountIdentity},
@@ -11,7 +12,6 @@ use worth_relational::facade::{
     transactions::{CreateIntent, CreatedEntityRef, EntitySpec},
 };
 const DEPTH: usize = 6;
-struct ScopeOutput;
 
 #[test]
 fn a_deep_native_leaf_has_identical_work_with_eight_or_sixty_four_sibling_subtrees() {
@@ -80,7 +80,7 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
             runtime_authority: world.application.runtime.authority_identity().as_u64(),
             schema: world.application.installed_schema.binding_identity().clone(),
             scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(*entity),
-            output_binding: TypeId::of::<ScopeOutput>(),
+            output_binding: OutputBindingIdentity::declared("ScopeOutput"),
         }, coordinate, 0)).collect();
         for n in 0..entities.len() {
             // Each distinct Native scope above the leaf consumes exactly its

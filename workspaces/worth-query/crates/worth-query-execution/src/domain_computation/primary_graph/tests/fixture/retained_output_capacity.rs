@@ -95,7 +95,7 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
         .lock()
         .unwrap()
         .install_output_families(BTreeMap::from([(
-            RetainedFamily::IDENTITY.to_owned(),
+            RetainedFamily::IDENTITY.to_owned().into(),
             vec![(
                 TypeId::of::<RetentionOutputs>(),
                 "retained-account".to_owned(),

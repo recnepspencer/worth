@@ -1,4 +1,5 @@
 //! Same-position native replacements share their unchanged history allocation.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use super::*;
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
@@ -27,7 +28,7 @@ fn pinned_same_position_replacements_share_history_but_own_their_root_bytes() {
         runtime_authority: world.application.runtime.authority_identity().as_u64(),
         schema: world.application.installed_schema.binding_identity(),
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: TypeId::of::<StatusOutput>(),
+        output_binding: OutputBindingIdentity::declared("StatusOutput"),
     };
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();

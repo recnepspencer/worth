@@ -1,5 +1,6 @@
 //! The ordinary native writer must mark the installed Query actor before its
 //! new source head can be read. No World publication or Query feed is involved.
+use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 #[path = "native_journey_tests/concurrent_first_writers.rs"]
 mod concurrent_first_writers;
@@ -87,9 +88,6 @@ use crate::domain_computation::primary_graph::{
 };
 
 struct StatusOutput;
-struct LabelOutput;
-struct DownstreamOutput;
-struct LateOutput;
 
 fn snapshot(runtime: &RelationalRuntime) -> (SnapshotHandle, PositionedRelationalSnapshot) {
     let basis = runtime
@@ -253,16 +251,26 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
         output_binding,
     }
     };
-    let a =
-        RecordedSettlementIdentity::retain(&source(TypeId::of::<StatusOutput>()), coordinate, 0);
-    let b = RecordedSettlementIdentity::retain(&source(TypeId::of::<LabelOutput>()), coordinate, 0);
-    let c = RecordedSettlementIdentity::retain(
-        &source(TypeId::of::<DownstreamOutput>()),
+    let a = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("StatusOutput")),
         coordinate,
         0,
     );
-    let late =
-        RecordedSettlementIdentity::retain(&source(TypeId::of::<LateOutput>()), coordinate, 0);
+    let b = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("LabelOutput")),
+        coordinate,
+        0,
+    );
+    let c = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("DownstreamOutput")),
+        coordinate,
+        0,
+    );
+    let late = RecordedSettlementIdentity::retain(
+        &source(OutputBindingIdentity::declared("LateOutput")),
+        coordinate,
+        0,
+    );
     handle.with_runtime_mut(|runtime| {
         // Ensure the real companion has a selected cell even if fixture
         // installation happened before its subscription became active.
