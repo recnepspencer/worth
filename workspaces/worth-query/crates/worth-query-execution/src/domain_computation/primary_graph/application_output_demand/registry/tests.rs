@@ -23,6 +23,7 @@ pub(super) fn record_admission() -> InvalidationEditAdmission {
 }
 
 mod caller_chain;
+mod delivery_binding;
 pub(super) mod closed_retirement;
 mod consumer_custody;
 mod custody_drain;

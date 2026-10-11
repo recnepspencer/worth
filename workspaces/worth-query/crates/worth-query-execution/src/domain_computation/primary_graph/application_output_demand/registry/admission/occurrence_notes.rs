@@ -43,7 +43,11 @@ pub(super) fn discover(
             DemandState::Output(output) => output.published_commit.as_ref(),
             _ => None,
         };
-        if !stable_refresh && selected.is_some_and(|selected| pending_commit == Some(selected)) {
+        if !stable_refresh
+            && key.producer == requested.producer
+            && key.applicability == requested.applicability
+            && selected.is_some_and(|selected| pending_commit == Some(selected))
+        {
             notes.delivery = Some(key.clone());
             break;
         }
