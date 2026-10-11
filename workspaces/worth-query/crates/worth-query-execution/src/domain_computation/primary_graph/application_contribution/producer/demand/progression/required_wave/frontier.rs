@@ -11,8 +11,6 @@ pub(super) enum MemberState {
     WaitingDeclaration(usize),
     /// Inspection issued no Ready; this claim cannot be a declared predecessor.
     UnselectedClaim,
-    /// Its plan left the caller's scope without computing or applying.
-    ReleasedPlan,
     Prepared,
     // Only the caller keeps its return report. Upstream reports live in the
     // basis-bound resolved set and must die when that basis moves.
@@ -35,10 +33,7 @@ impl MemberState {
             | Self::Prepared
             | Self::Pending
             | Self::Held(_) => true,
-            Self::Current(_)
-            | Self::AcceptedCaller
-            | Self::UnselectedClaim
-            | Self::ReleasedPlan => false,
+            Self::Current(_) | Self::AcceptedCaller | Self::UnselectedClaim => false,
         }
     }
 }
@@ -92,10 +87,7 @@ impl RequiredFrontier {
                 // An owner rejected this claim without issuing a Ready. Its
                 // held token cannot become a selected upstream. The native
                 // Upstream below has its own issued pin and gets a new slot.
-                if matches!(
-                    member.state,
-                    MemberState::UnselectedClaim | MemberState::ReleasedPlan
-                ) {
+                if matches!(member.state, MemberState::UnselectedClaim) {
                     continue;
                 }
                 if let MemberState::AcceptedCaller = member.state {

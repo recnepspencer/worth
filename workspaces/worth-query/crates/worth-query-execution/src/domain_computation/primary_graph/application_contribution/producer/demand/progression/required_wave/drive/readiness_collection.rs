@@ -36,12 +36,18 @@ where
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
     let mut plans = Vec::new();
-    loop {
+    'collect: loop {
         let mut index = 0;
         while index < frontier.members.len() {
             if !matches!(frontier.members[index].state, MemberState::Inspect) {
                 index += 1;
                 continue;
+            }
+            // A root decides the caller or requested return before publication.
+            // If its upstream woke it while siblings prepared, run that wave
+            // first; certify the root on the next pass with no plans held.
+            if index == 0 && !plans.is_empty() {
+                break 'collect;
             }
             // Queued work and a caller waiting on a genuine PendingExact edge
             // must leave all owed upstreams Ready before preparing. A caller
@@ -162,14 +168,6 @@ where
                     runtime.output_demands.clear_required_stop(member.key());
                     if index == 0 {
                         frontier.members[index].state = MemberState::Current(Some(decision));
-                        // Acceptance/return is the certification's decision.
-                        // Previously prepared siblings are dropped unapplied.
-                        for member in &mut frontier.members {
-                            if matches!(member.state, MemberState::Prepared) {
-                                member.state = MemberState::ReleasedPlan;
-                                member.caller = false;
-                            }
-                        }
                         return Ok(PreparedRequiredWave {
                             members: Vec::new(),
                         });
