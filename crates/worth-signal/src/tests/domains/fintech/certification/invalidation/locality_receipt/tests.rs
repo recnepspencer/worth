@@ -154,7 +154,7 @@ fn restore_case_crosses_a_real_checkpoint_boundary_before_completion() {
 }
 
 #[test]
-#[ignore = "scheduled 100,000-output dense scale courtroom"]
+#[ignore = "requires scale memory admission; the ordinary 64 MiB request refuses this case"]
 fn scheduled_dense_quarter_case_seals_in_isolation() {
     let generation_started = std::time::Instant::now();
     let case = scheduled_locality_cases()
@@ -176,7 +176,7 @@ fn scheduled_dense_quarter_case_seals_in_isolation() {
 }
 
 #[test]
-#[ignore = "retained 100,000-output restore benchmark artifact"]
+#[ignore = "requires scale memory admission; the ordinary 64 MiB request refuses this case"]
 fn retained_dense_restore_benchmark_covers_all_declared_seeds() {
     let case = retained_locality_benchmark_cases()[0];
     let LocalityScaleTuple::BranchRestoreLocalityReplay {

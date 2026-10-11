@@ -11,7 +11,7 @@ use crate::tests::performance_support::{
 use super::{eval_metrics_delta, perf_contract, policy_for};
 
 #[test]
-#[ignore = "performance baseline capture; run with -- --ignored --nocapture"]
+#[ignore = "requires matched release capture runner; legacy goldens use obsolete sample counts"]
 fn perf_fintech_mixed_fanout_profile_matrix() {
     for profile_name in ["operational", "development", "forensic"] {
         match profile_name {

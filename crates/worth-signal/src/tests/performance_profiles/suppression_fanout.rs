@@ -15,7 +15,7 @@ use crate::tests::support::{version_ab, DependencyBatchBuilder, ASPECT_A};
 use super::{eval_metrics_delta, hot_family_contract, ZERO_BROAD_ENTRY_ACCESS};
 
 #[test]
-#[ignore = "performance baseline capture; run with -- --ignored --nocapture"]
+#[ignore = "requires matched release capture runner; legacy goldens use obsolete sample counts"]
 fn perf_suppression_wide_fanout_serial() {
     // This standalone caller declares the operational serial memory policy.
     let serial_request = worth_execution::SerialRequest::from_memory(

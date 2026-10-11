@@ -39,7 +39,6 @@ fn measured_idle_versus_balanced_records_named_benefit() {
 }
 
 #[test]
-#[ignore = "timed comparison; run alone on a quiet machine with -- --ignored --nocapture"]
 fn measured_idle_versus_balanced_compares_wall_clock_reports() {
     let (balanced_report, idle_report, _, _) = packet_reports();
     assert!(idle_report.warm_median_micros * 100 <= balanced_report.warm_median_micros * 103);

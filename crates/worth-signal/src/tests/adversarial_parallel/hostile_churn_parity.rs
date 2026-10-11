@@ -123,7 +123,6 @@ fn harness_parity_holds_for_branchy_partitioned_output_identity_graph() {
 }
 
 #[test]
-#[ignore = "stress coverage for wide-graph leased parity loops"]
 fn stress_repeated_parallel_parity_on_wide_branch_graph() {
     compare_scenario(24, 25);
 }

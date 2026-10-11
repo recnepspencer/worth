@@ -14,7 +14,7 @@ use crate::tests::support::{version_ab, GraphDependencyBatchExt, ASPECT_A};
 use super::perf_contract;
 
 #[test]
-#[ignore = "performance baseline capture; run with -- --ignored --nocapture"]
+#[ignore = "requires matched release capture runner; legacy goldens use obsolete sample counts"]
 fn perf_harness_observability_profile_delta() {
     for profile_name in ["development", "forensic"] {
         let samples = capture_and_certify_perf_samples(
