@@ -1,6 +1,31 @@
 use super::findings;
 
 #[test]
+fn canonical_order_scope_is_pinned_by_name() {
+    assert_eq!(
+        super::CRATES,
+        &[
+            "worth-query-execution",
+            "worth-query-installation",
+            "worth-runtime-world",
+            "worth-execution",
+            "worth-runtime-bridge",
+        ]
+    );
+    assert_eq!(
+        super::ADDRESS_CRATES,
+        &[
+            "worth-query-execution",
+            "worth-runtime-world",
+            "worth-execution",
+            "worth-runtime-bridge",
+            "worth-signal",
+            "worth-relational",
+        ]
+    );
+}
+
+#[test]
 fn debug_inventory_fixture_refuses_members_but_accepts_sizes() {
     let root =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/canonical_order");
