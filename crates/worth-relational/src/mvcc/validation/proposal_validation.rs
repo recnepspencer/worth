@@ -40,7 +40,7 @@ impl RelationalPreparationRuntime {
             .map_err(crate::execution::allocation_commit_error)
     }
 
-    pub(crate) fn validate_lowered_strategy_proposal(
+    pub(crate) fn validate_consulted_lowered_strategy_proposal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
@@ -48,10 +48,6 @@ impl RelationalPreparationRuntime {
         merged_plan: crate::transactions::data::MergedCommitPlan,
         strategy: StrategyProposalDecoration,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        crate::authority::commit::pipeline::consult_stage(
-            execution,
-            crate::authority::commit::pipeline::CommitStage::Validation,
-        )?;
         let runtime = if execution.is_leased() {
             self.with_commit_work_budget(None)
         } else {
@@ -236,7 +232,7 @@ impl RelationalRuntime {
             .validate_branch_transaction(execution, transaction)
     }
 
-    pub(crate) fn validate_lowered_strategy_proposal(
+    pub(crate) fn validate_consulted_lowered_strategy_proposal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
@@ -245,7 +241,7 @@ impl RelationalRuntime {
         strategy: StrategyProposalDecoration,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.preparation_runtime_snapshot()
-            .validate_lowered_strategy_proposal(
+            .validate_consulted_lowered_strategy_proposal(
                 execution,
                 transaction,
                 selected_branch_state,

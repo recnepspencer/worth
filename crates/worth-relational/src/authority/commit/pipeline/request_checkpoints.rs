@@ -66,3 +66,6 @@ mod stage_counts;
 
 #[cfg(test)]
 mod work_account;
+
+#[cfg(test)]
+mod strategy_cancellation;
