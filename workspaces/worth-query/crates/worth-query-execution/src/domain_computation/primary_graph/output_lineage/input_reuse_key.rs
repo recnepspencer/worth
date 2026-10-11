@@ -3,6 +3,9 @@ use crate::domain_computation::primary_graph::{
     application_query::WorthQueryObservedSourceSelection,
 };
 
+#[cfg(test)]
+mod tests;
+
 /// The exact prepared input of a performed producer output. Its source
 /// selection retains runtime-owned meaning; a row restored from a checkpoint
 /// has no such proof, and a republished output continues its own.
