@@ -320,7 +320,7 @@ pub(super) fn root_revision_order(
         .flatten()
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn denial(
+pub(super) fn denial(
     kind: WorthQueryOutputDemandDenialKind,
     subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {

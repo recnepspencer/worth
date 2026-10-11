@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSettlement
 type Identity = Arc<RecordedSettlementIdentity>;
 use super::walk_charge::PostCommitWalk;
 #[cfg(test)]
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 #[cfg(test)]
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use core::convert::Infallible;
@@ -31,7 +31,7 @@ impl DiscoveryCharge for PostCommitWalk {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn after_publication(
+pub(in super::super) fn after_publication(
     state: &DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
     published: &SupersededSettlements,
@@ -44,7 +44,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 }
 
 #[cfg(test)]
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn under_request(
+pub(in super::super) fn under_request(
     state: &DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
     admission: &mut InvalidationEditAdmission,

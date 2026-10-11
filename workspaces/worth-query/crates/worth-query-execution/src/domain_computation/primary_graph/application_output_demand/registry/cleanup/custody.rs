@@ -1,7 +1,7 @@
 //! A queued global custody prune pays its complete quote before its first edit.
 use super::*;
 impl DemandRegistryState {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn drain_completed_custody(
+    pub(in super::super) fn drain_completed_custody(
         &mut self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {

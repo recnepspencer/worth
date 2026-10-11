@@ -16,7 +16,7 @@ use super::super::{
     DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint,
     WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
 };
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 
 impl WorthQueryOutputDemandRegistry {
     /// Release the idle Ready of `interest`'s row when that interest alone

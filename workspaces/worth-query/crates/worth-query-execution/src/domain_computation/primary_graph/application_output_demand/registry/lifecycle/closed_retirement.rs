@@ -30,9 +30,7 @@ impl DemandRegistryState {
     /// `candidates`, then retire each terminal row nothing holds, and each
     /// upstream its release leaves the same way. The caller drops the
     /// returned rows and claims after releasing the registry lock.
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn retire_closed_rows<
-        C: OccurrenceSearchCharge<Refusal = Infallible>,
-    >(
+    pub(in super::super) fn retire_closed_rows<C: OccurrenceSearchCharge<Refusal = Infallible>>(
         &mut self,
         mut candidates: Vec<WorthQueryOutputDemandKey>,
         charge: &mut C,
@@ -74,9 +72,7 @@ impl DemandRegistryState {
 
     /// Remove `key`'s row with its claims, which it returns. A superseded
     /// row first hands its settlements to the newest row of its occurrence.
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn retire_row<
-        C: OccurrenceSearchCharge<Refusal = Infallible>,
-    >(
+    pub(in super::super) fn retire_row<C: OccurrenceSearchCharge<Refusal = Infallible>>(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         retired: &mut Vec<DemandRecord>,
@@ -140,9 +136,7 @@ impl DemandRegistryState {
     /// Move `dependent`'s claim on `upstream` to the newest row of its
     /// occurrence when `upstream` is superseded, its own demands closed, and
     /// that newest row settled Ready. Returns the row the claim left.
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn follow_newest<
-        C: OccurrenceSearchCharge<Refusal = Infallible>,
-    >(
+    pub(in super::super) fn follow_newest<C: OccurrenceSearchCharge<Refusal = Infallible>>(
         &mut self,
         dependent: &WorthQueryOutputDemandKey,
         upstream: &WorthQueryOutputDemandKey,

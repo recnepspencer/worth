@@ -3,13 +3,14 @@ use super::super::refreshed_rejoin::{infallible, OccurrenceSearchCharge};
 use super::super::source_custody::denial;
 use super::walk_charge::PostCommitSweep;
 use super::*;
+use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 use std::cmp::Ordering;
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn retire_stale_records(
+pub(in super::super) fn retire_stale_records(
     state: &mut DemandRegistryState,
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    successor: &crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
+    successor: &WorthQueryObservedSourceEpoch,
 ) {
     // Custody retirement is source-wide: a changed query source invalidates
     // every producer record that was computed from its older epoch.

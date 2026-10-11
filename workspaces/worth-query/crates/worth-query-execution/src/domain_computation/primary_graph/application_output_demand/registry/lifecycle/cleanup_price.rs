@@ -5,19 +5,20 @@ use super::super::refreshed_rejoin::{
 };
 use super::super::{DemandRegistryState, WorthQueryOutputDemandKey};
 use super::closed_retirement::{closed_cached, closed_superseded};
-use crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate;
+use crate::domain_computation::primary_graph::application_query::observed_source;
 use crate::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use std::collections::{BTreeMap, BTreeSet};
 
-type Occurrence = (OutputFamilyIdentity, WorthQueryObservedSourceCoordinate);
+type Occurrence = (
+    OutputFamilyIdentity,
+    observed_source::source_identity::WorthQueryObservedSourceCoordinate,
+);
 
 type Walks = Vec<(WorthQueryOutputDemandKey, u64)>;
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn price_cleanup<
-    'a,
->(
+pub(in super::super) fn price_cleanup<'a>(
     state: &'a mut DemandRegistryState,
     admission: &mut InvalidationEditAdmission,
     mut walks: Walks,
@@ -29,7 +30,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     price_mutation_with_source_allowance(state, admission, &walks, kind, allowance)
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn custody_walks(
+pub(in super::super) fn custody_walks(
     state: &DemandRegistryState,
     walks: &mut Walks,
     admission: &mut InvalidationEditAdmission,

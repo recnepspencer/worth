@@ -1,23 +1,21 @@
 //! Actual mutation walk sites stay local when another occurrence grows.
+use super::super::super::tests::{self as registry_tests, key, occurrence, record, OracleWalk};
+use super::super::super::{DemandState, WorthQueryOutputCheckpoint, WorthQueryOutputProgress};
 use super::*;
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::{
-    key, occurrence, record,
+use crate::domain_computation::primary_graph::{
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 use core::convert::Infallible;
 
 impl DemandRegistryState {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn assert_walk_site<
-        C,
-    >(
-        site: usize,
-        mut payer: impl FnMut() -> C,
-    ) where
+    pub(in super::super::super) fn assert_walk_site<C>(site: usize, mut payer: impl FnMut() -> C)
+    where
         C: OccurrenceSearchCharge<Refusal = Infallible>,
     {
-        let ready = crate::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready();
+        let ready = registry_tests::closed_retirement::ready();
         let crate::domain_computation::primary_graph::application_output_demand::registry::DemandState::Output(output) = ready else { panic!("Ready fixture") };
         let Some(crate::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputCheckpoint::Ready(completion)) = output.checkpoint else { panic!("Ready fixture") };
-        let receipts = crate::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::receipt_batch();
+        let receipts = registry_tests::walk_bounds::receipt_batch();
         let mut tally = 0;
         let mut contacts = Vec::new();
         for (neighbors, entries) in [(1, 1), (64, 4)] {
@@ -25,17 +23,20 @@ impl DemandRegistryState {
             let newest = key("own", 2, 1);
             let dependent = key("dependent", 1, 2);
             let mut state = DemandRegistryState::default();
-            let mut prior = record(occurrence(), super::super::super::DemandState::Failed(
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
-                        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Superseded, "")), 0);
+            let mut prior = record(
+                occurrence(),
+                DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::Superseded,
+                    "",
+                )),
+                0,
+            );
             prior.framework_required_count = 1;
             state.records.insert(old.clone(), prior);
             let ready = || {
-                super::super::super::DemandState::Output(
-                    super::super::super::WorthQueryOutputProgress::new(
-                        super::super::super::WorthQueryOutputCheckpoint::Ready(completion.clone()),
-                    ),
-                )
+                DemandState::Output(WorthQueryOutputProgress::new(
+                    WorthQueryOutputCheckpoint::Ready(completion.clone()),
+                ))
             };
             state
                 .records
@@ -52,21 +53,25 @@ impl DemandRegistryState {
             for generation in 1..=neighbors {
                 state.records.insert(
                     key("larger-other", generation, 3),
-                    record(occurrence(), super::super::super::DemandState::Admitted, 0),
+                    record(occurrence(), DemandState::Admitted, 0),
                 );
             }
             if site == 6 {
                 let mut stopped = ready();
-                if let super::super::super::DemandState::Output(output) = &mut stopped {
-                    output.stop(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
-                            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Superseded, ""));
+                if let DemandState::Output(output) = &mut stopped {
+                    output.stop(WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::Superseded,
+                        "",
+                    ));
                 }
                 state.records.get_mut(&old).unwrap().state = stopped;
-                state.records.get_mut(&newest).unwrap().state = super::super::super::DemandState::Failed(
-                        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
-                            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Superseded, ""));
+                state.records.get_mut(&newest).unwrap().state =
+                    DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::Superseded,
+                        "",
+                    ));
             }
-            crate::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody(&mut state, &receipts[..entries], neighbors);
+            registry_tests::walk_bounds::add_custody(&mut state, &receipts[..entries], neighbors);
             let before = super::super::super::record_map::occurrence_rows_visited();
             let mut charge = payer();
             let done = match site {
@@ -124,35 +129,35 @@ impl DemandRegistryState {
 
 #[test]
 fn registry_row_retirement_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(0, crate::domain_computation::primary_graph::application_output_demand::registry::tests::OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(0, OracleWalk::after_effect);
 }
 
 #[test]
 fn registry_follow_newest_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(1, crate::domain_computation::primary_graph::application_output_demand::registry::tests::OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(1, OracleWalk::after_effect);
 }
 
 #[test]
 fn registry_newest_ready_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(2, crate::domain_computation::primary_graph::application_output_demand::registry::tests::OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(2, OracleWalk::after_effect);
 }
 
 #[test]
 fn registry_held_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(3, crate::domain_computation::primary_graph::application_output_demand::registry::tests::OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(3, OracleWalk::after_effect);
 }
 
 #[test]
 fn registry_prerequisite_release_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(4, crate::domain_computation::primary_graph::application_output_demand::registry::tests::OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(4, OracleWalk::after_effect);
 }
 
 #[test]
 fn registry_member_release_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(5, crate::domain_computation::primary_graph::application_output_demand::registry::tests::OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(5, OracleWalk::after_effect);
 }
 
 #[test]
 fn registry_revive_ready_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(6, crate::domain_computation::primary_graph::application_output_demand::registry::tests::OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(6, OracleWalk::after_effect);
 }

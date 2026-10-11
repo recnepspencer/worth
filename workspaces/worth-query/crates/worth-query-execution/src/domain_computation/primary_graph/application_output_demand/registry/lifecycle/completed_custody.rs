@@ -5,7 +5,7 @@ use super::*;
 use core::convert::Infallible;
 
 impl DemandRegistryState {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prune_completed_custody<
+    pub(in super::super) fn prune_completed_custody<
         C: OccurrenceSearchCharge<Refusal = Infallible>,
     >(
         &mut self,

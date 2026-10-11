@@ -1,7 +1,6 @@
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct OracleWalk;
+pub(in super::super) struct OracleWalk;
 impl OracleWalk {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn after_effect(
-    ) -> Self {
+    pub(in super::super) fn after_effect() -> Self {
         Self
     }
 }

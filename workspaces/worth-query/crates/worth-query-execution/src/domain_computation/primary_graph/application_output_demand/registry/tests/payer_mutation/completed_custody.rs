@@ -2,6 +2,7 @@
 use super::super::super::refreshed_rejoin::infallible;
 use super::super::super::{BoundOutputSource, PreparedOutputRootKind, SourceCustody};
 use super::*;
+use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
 
 #[test]
 fn registry_requests_price_completed_custody_joined() {
@@ -17,7 +18,7 @@ fn registry_requests_price_completed_custody_unheld() {
 }
 
 fn check(entry: u8) {
-    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let receipt = recoverable_commit_support::committed_recoverable_application();
     let commit = receipt
         .committed_product_publication()
         .composite_commit()
@@ -103,7 +104,7 @@ fn check(entry: u8) {
 
 #[test]
 fn registry_completed_custody_is_not_swept_after_commit() {
-    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let receipt = recoverable_commit_support::committed_recoverable_application();
     let commit = receipt
         .committed_product_publication()
         .composite_commit()

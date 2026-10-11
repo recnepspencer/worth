@@ -2,7 +2,7 @@
 use super::super::refreshed_rejoin::infallible;
 use super::walk_charge::PostCommitWalk;
 use super::*;
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_replaced_member(
+pub(in super::super) fn release_replaced_member(
     state: &mut DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
 ) {

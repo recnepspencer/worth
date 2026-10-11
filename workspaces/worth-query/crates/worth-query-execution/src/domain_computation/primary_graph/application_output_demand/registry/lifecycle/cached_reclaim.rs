@@ -22,7 +22,7 @@ use super::super::{
 use super::closed_retirement::{
     claimants_where, closed_cached, closed_superseded, held_by_row, ready_at_newest,
 };
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };

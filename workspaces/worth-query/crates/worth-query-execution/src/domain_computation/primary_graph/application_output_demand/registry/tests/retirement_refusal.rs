@@ -3,11 +3,12 @@ use super::*;
 use crate::domain_computation::execution_runtime::source_invalidation::{
     WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
 };
+use crate::domain_computation::primary_graph::output_lineage::registry_fixture;
 use crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner;
 
 #[test]
 fn refused_request_discovery_never_releases_the_displaced_settlement() {
-    let (_lineage, displaced) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+    let (_lineage, displaced) = registry_fixture::recorded_settlement();
     let registry = WorthQueryOutputDemandRegistry::default();
     let selected = Arc::new(key("retirement-result", 2, 1));
     let mut prelude = record_admission();
@@ -58,7 +59,7 @@ fn refused_request_discovery_never_releases_the_displaced_settlement() {
 
 #[test]
 fn registry_post_commit_discovery_keeps_one_holder_for_an_unposted_displaced() {
-    let (_lineage, displaced) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+    let (_lineage, displaced) = registry_fixture::recorded_settlement();
     let registry = WorthQueryOutputDemandRegistry::default();
     let selected = Arc::new(key("retirement-result", 2, 1));
     let mut prelude = record_admission();

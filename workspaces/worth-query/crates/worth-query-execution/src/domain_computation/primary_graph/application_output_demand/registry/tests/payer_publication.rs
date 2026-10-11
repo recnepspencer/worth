@@ -1,6 +1,7 @@
 //! Committed claims queue terminal members; the next request owns their walk.
 use super::super::WorthQueryOutputCheckpoint;
 use super::*;
+use crate::domain_computation::primary_graph::output_lineage::registry_fixture;
 
 #[test]
 fn publication_queues_released_counts_then_drain_matches_eager_member_removal() {
@@ -15,7 +16,7 @@ fn publication_queues_released_counts_then_drain_matches_eager_member_removal() 
         .unwrap(),
         1,
     );
-    let (_lineage, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+    let (_lineage, identity) = registry_fixture::recorded_settlement();
     for seed in 0..16 {
         let (queued, selected, held) = published(seed, &identity, &owner, None);
         let (eager, _, _) = published(seed, &identity, &owner, None);
@@ -160,7 +161,7 @@ fn registry_ready_upstream_declines_queue_and_published_member_walk_completes() 
             .unwrap(),
             1,
         );
-    let (_lineage, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+    let (_lineage, identity) = registry_fixture::recorded_settlement();
     let DemandState::Output(output) = super::closed_retirement::ready() else {
         panic!("Ready fixture")
     };

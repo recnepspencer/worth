@@ -103,9 +103,12 @@ impl WorthQueryOutputDemandRegistry {
 mod tests {
     use super::super::super::tests::{key, record};
     use super::*;
+    use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
     #[test]
     fn registry_product_retirement_sweep_names_its_registry_bound() {
-        let receipts: Vec<_> = (0..5).map(|_| crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application()).collect();
+        let receipts: Vec<_> = (0..5)
+            .map(|_| recoverable_commit_support::committed_recoverable_application())
+            .collect();
         let mut contacts = Vec::new();
         for (rows, custody_entries) in [(2, 0), (5, 1), (9, 4)] {
             let registry = WorthQueryOutputDemandRegistry::default();

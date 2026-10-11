@@ -3,10 +3,9 @@
 //! together with their invalidation rows, never before them: a live dependent
 //! row still resolves its upstream demand through this index.
 //!
-//! Retirement is an owner derived edit after the effect has committed. It runs
-//! under the owner's own edit admission, so it can neither fail nor starve the
-//! request that published; a denied retirement waits for the next one. A
-//! superseded settlement waits in this index, which names it again. A
+//! Discovery after publication is an infallible occurrence walk. Derived
+//! owner edits use a later owner admission; refusal retains the retry holder.
+//! A superseded settlement waits in this index, which names it again. A
 //! released one has left this index and waits with the invalidation owner.
 //!
 //! A row retired for custody drops its postings and keeps its lineage, so a
@@ -223,7 +222,7 @@ impl DemandRegistryState {
 }
 
 #[cfg(test)]
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn admit_slots(
+pub(super) fn admit_slots(
     count: usize,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenial> {

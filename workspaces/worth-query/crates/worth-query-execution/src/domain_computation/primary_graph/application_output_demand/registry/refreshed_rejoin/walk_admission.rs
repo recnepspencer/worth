@@ -3,8 +3,7 @@ use super::{InvalidationEditAdmission, OccurrenceSearchCharge, WorthQueryOutputD
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) enum WalkKind
-{
+pub(in super::super) enum WalkKind {
     Rejoin,
     #[cfg(test)]
     SettlementRetirement,
@@ -17,9 +16,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 }
 
 impl WalkKind {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn denial(
-        self,
-    ) -> WorthQueryOutputDemandDenial {
+    pub(in super::super) fn denial(self) -> WorthQueryOutputDemandDenial {
         let subject = match self {
             Self::Rejoin => "refreshed output rejoin exceeds request work",
             #[cfg(test)]
@@ -40,24 +37,20 @@ impl WalkKind {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct WalkAdmission<
-    'a,
-> {
+pub(in super::super) struct WalkAdmission<'a> {
     admission: &'a mut InvalidationEditAdmission,
     kind: WalkKind,
 }
 
 impl<'a> WalkAdmission<'a> {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn new(
+    pub(in super::super) fn new(
         admission: &'a mut InvalidationEditAdmission,
         kind: WalkKind,
     ) -> Self {
         Self { admission, kind }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn admission_mut(
-        &mut self,
-    ) -> &mut InvalidationEditAdmission {
+    pub(in super::super) fn admission_mut(&mut self) -> &mut InvalidationEditAdmission {
         self.admission
     }
 }

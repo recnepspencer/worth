@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use std::sync::Arc;
 
 use super::supersession::reject_older_successor;

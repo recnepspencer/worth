@@ -1,7 +1,7 @@
 //! Price selected occurrence walks before a registry mutation starts.
 use super::super::{DemandRegistryState, WorthQueryOutputDemandKey};
 use super::{infallible, occurrence_rows, OccurrenceSearchCharge, WalkAdmission, WalkKind};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use core::convert::Infallible;
 
@@ -9,9 +9,7 @@ use core::convert::Infallible;
 /// rows, but must neither insert rows nor grow an occurrence before walking.
 /// The existing immutable whole-map receipt is a different proof and keeps
 /// its immutable borrow. This receipt pays occurrence-local upper bounds.
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct PricedMutation<
-    'a,
-> {
+pub(in super::super) struct PricedMutation<'a> {
     state: &'a mut DemandRegistryState,
     charge: PricedMutationWalk,
 }
@@ -21,17 +19,14 @@ struct PricedMutationWalk {
     rows: u64,
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct SourceWalkAllowance
-{
+pub(in super::super) struct SourceWalkAllowance {
     pub paths: u64,
     pub rows: u64,
     pub entries: u64,
     pub navigation: u64,
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn price_mutation<
-    'a,
->(
+pub(in super::super) fn price_mutation<'a>(
     state: &'a mut DemandRegistryState,
     admission: &mut InvalidationEditAdmission,
     walks: &[(WorthQueryOutputDemandKey, u64)],
@@ -51,9 +46,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     )
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn price_mutation_with_source_allowance<
-    'a,
->(
+pub(in super::super) fn price_mutation_with_source_allowance<'a>(
     state: &'a mut DemandRegistryState,
     admission: &mut InvalidationEditAdmission,
     walks: &[(WorthQueryOutputDemandKey, u64)],
@@ -101,13 +94,11 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 }
 
 impl PricedMutation<'_> {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prune_completed_custody(
-        &mut self,
-    ) {
+    pub(in super::super) fn prune_completed_custody(&mut self) {
         infallible(self.state.prune_completed_custody(&mut self.charge));
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn retire_closed_rows(
+    pub(in super::super) fn retire_closed_rows(
         &mut self,
         candidates: Vec<WorthQueryOutputDemandKey>,
     ) -> (
@@ -117,28 +108,22 @@ impl PricedMutation<'_> {
         infallible(self.state.retire_closed_rows(candidates, &mut self.charge))
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn complete<
-        T,
-    >(
+    pub(in super::super) fn complete<T>(
         mut self,
         operation: impl FnOnce(&mut Self) -> Result<T, Infallible>,
     ) -> T {
         infallible(operation(&mut self))
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn state(
-        &self,
-    ) -> &DemandRegistryState {
+    pub(in super::super) fn state(&self) -> &DemandRegistryState {
         self.state
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn state_mut(
-        &mut self,
-    ) -> &mut DemandRegistryState {
+    pub(in super::super) fn state_mut(&mut self) -> &mut DemandRegistryState {
         self.state
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_prerequisites(
+    pub(in super::super) fn release_prerequisites(
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> Vec<std::sync::Arc<WorthQueryOutputDemandKey>> {
@@ -148,7 +133,7 @@ impl PricedMutation<'_> {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_prerequisites_detached(
+    pub(in super::super) fn release_prerequisites_detached(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         members: &mut Vec<super::super::required_members::DetachedRequiredMember>,
@@ -159,7 +144,7 @@ impl PricedMutation<'_> {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_member(
+    pub(in super::super) fn release_member(
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> super::super::required_members::DetachedRequiredMember {
@@ -169,7 +154,7 @@ impl PricedMutation<'_> {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn follow_newest(
+    pub(in super::super) fn follow_newest(
         &mut self,
         dependent: &WorthQueryOutputDemandKey,
         upstream: &WorthQueryOutputDemandKey,
@@ -180,7 +165,7 @@ impl PricedMutation<'_> {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn retire_row(
+    pub(in super::super) fn retire_row(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         retired: &mut Vec<super::super::DemandRecord>,

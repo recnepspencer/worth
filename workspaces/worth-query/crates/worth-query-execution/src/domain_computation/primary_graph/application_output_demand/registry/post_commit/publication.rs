@@ -3,7 +3,7 @@ use super::super::refreshed_rejoin::infallible;
 use super::walk_charge::PostCommitWalk;
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_published_member(
+pub(in super::super) fn release_published_member(
     state: &mut DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
     published: &RecordedSettlementIdentity,
@@ -13,7 +13,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
         &mut PostCommitWalk::after_publication(published),
     ));
 }
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn release_settled_member(
+pub(in super::super) fn release_settled_member(
     state: &mut DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
     accepted: &WorthQueryAcceptedOutputAuthority,

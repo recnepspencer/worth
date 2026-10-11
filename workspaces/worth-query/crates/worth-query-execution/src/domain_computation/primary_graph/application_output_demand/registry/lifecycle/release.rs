@@ -1,19 +1,16 @@
 //! Closing the last interest must complete without a request.
+mod cancelled_prerequisites;
 use super::super::refreshed_rejoin::infallible;
 use super::*;
 
 /// The private field seals construction to this release module. Its only
 /// production constructor is the interest Drop release entry below.
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct CleanupWalk
-{
+pub(in super::super) struct CleanupWalk {
     _release: (),
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn release(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-    ) {
+    pub(super) fn release(&self, interest: &WorthQueryOutputDemandInterest) {
         let mut charge = CleanupWalk { _release: () };
         let mut state = self
             .state
@@ -147,11 +144,4 @@ impl WorthQueryOutputDemandRegistry {
         }
         infallible(state.prune_completed_custody(&mut CleanupWalk { _release: () }));
     }
-}
-
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn cancelled_prerequisite_member(
-    state: &mut DemandRegistryState,
-    key: &WorthQueryOutputDemandKey,
-) {
-    infallible(state.remove_required_member_if_released(key, &mut CleanupWalk { _release: () }));
 }

@@ -14,7 +14,7 @@ use super::{
     DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputDemandInterest,
     WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
 };
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };

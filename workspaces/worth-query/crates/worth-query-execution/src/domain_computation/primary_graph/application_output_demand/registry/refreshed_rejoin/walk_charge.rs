@@ -7,8 +7,7 @@ use super::{
 use core::convert::Infallible;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) enum WholeMapPasses
-{
+pub(in super::super) enum WholeMapPasses {
     One,
     Two,
 }
@@ -17,18 +16,14 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 /// Its fields are sealed here; registry callers can only obtain it by paying.
 /// Each search consumes a paid pass; the consuming chain call serves disjoint
 /// occurrences in one pass. No caller receives the private pass payer.
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct PrepaidOccurrenceWalk<
-    'records,
-> {
+pub(in super::super) struct PrepaidOccurrenceWalk<'records> {
     records: &'records DemandRecords,
     remaining: u8,
 }
 
 /// Keep combined payments atomic, including the two-pass reclaim and the
 /// joined-Ready walk's four additional units. No successful charge, no receipt.
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn charge_whole_map<
-    'records,
->(
+pub(in super::super) fn charge_whole_map<'records>(
     records: &'records DemandRecords,
     admission: &mut InvalidationEditAdmission,
     passes: WholeMapPasses,
@@ -50,7 +45,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 
 impl PrepaidOccurrenceWalk<'_> {
     /// Consume one paid pass for a read-only mutation plan on this map.
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn visit_rows(
+    pub(in super::super) fn visit_rows(
         mut self,
         mut visit: impl FnMut(&WorthQueryOutputDemandKey, &super::super::DemandRecord),
     ) -> Result<(), WorthQueryOutputDemandDenial> {
@@ -71,7 +66,7 @@ impl PrepaidOccurrenceWalk<'_> {
         })
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn stale_owner(
+    pub(in super::super) fn stale_owner(
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
@@ -83,7 +78,7 @@ impl PrepaidOccurrenceWalk<'_> {
         )))
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn newest(
+    pub(in super::super) fn newest(
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
@@ -96,7 +91,7 @@ impl PrepaidOccurrenceWalk<'_> {
         )))
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn replaced_ready(
+    pub(in super::super) fn replaced_ready(
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
@@ -108,7 +103,7 @@ impl PrepaidOccurrenceWalk<'_> {
 
     /// One consuming pass over disjoint occurrences, including their upstream
     /// occurrences. A discovered occurrence enters the chain only once.
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn chain(
+    pub(in super::super) fn chain(
         mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> Result<Vec<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
@@ -137,8 +132,7 @@ struct PaidPass<'records> {
     records: &'records DemandRecords,
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) trait OccurrenceSearchCharge
-{
+pub(in super::super) trait OccurrenceSearchCharge {
     type Refusal;
 
     fn occurrence_path(&mut self, records: usize) -> Result<(), Self::Refusal>;
@@ -186,11 +180,7 @@ impl OccurrenceSearchCharge for PaidPass<'_> {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn infallible<
-    T,
->(
-    result: Result<T, Infallible>,
-) -> T {
+pub(in super::super) fn infallible<T>(result: Result<T, Infallible>) -> T {
     match result {
         Ok(value) => value,
         Err(never) => match never {},

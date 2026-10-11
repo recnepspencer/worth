@@ -7,6 +7,7 @@ pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish:
     PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
 };
 
+use super::post_commit::{release_completed_member, release_completed_prerequisites};
 use super::succession::Succession;
 use super::*;
 
@@ -182,11 +183,10 @@ impl WorthQueryOutputDemandRegistry {
         };
         let terminal = matches!(record.state, DemandState::Failed(_));
         record.wake.notify();
-        let released_prerequisites = terminal.then(|| {
-            super::post_commit::release_completed_prerequisites(&mut state, &interest.key)
-        });
+        let released_prerequisites =
+            terminal.then(|| release_completed_prerequisites(&mut state, &interest.key));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        super::post_commit::release_completed_member(&mut state, &interest.key);
+        release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
     }
@@ -226,11 +226,10 @@ impl WorthQueryOutputDemandRegistry {
             record.release_obligations()
         };
         record.wake.notify();
-        let released_prerequisites = (!rescheduled).then(|| {
-            super::post_commit::release_completed_prerequisites(&mut state, &interest.key)
-        });
+        let released_prerequisites =
+            (!rescheduled).then(|| release_completed_prerequisites(&mut state, &interest.key));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        super::post_commit::release_completed_member(&mut state, &interest.key);
+        release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
     }
@@ -263,7 +262,10 @@ impl WorthQueryOutputDemandRegistry {
         };
         match &output.advancement {
             WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {}
-            WorthQueryOutputAdvancement::Stopped { denial: stopped, interrupted_claim: Some(active) } if *active == claim => {
+            WorthQueryOutputAdvancement::Stopped {
+                denial: stopped,
+                interrupted_claim: Some(active),
+            } if *active == claim => {
                 let stopped = stopped.clone();
                 output.checkpoint.get_or_insert(checkpoint);
                 output.advancement = WorthQueryOutputAdvancement::Stopped {
@@ -273,8 +275,9 @@ impl WorthQueryOutputDemandRegistry {
                 let released = record.release_obligations();
                 state.obligation_reserved_bytes =
                     state.obligation_reserved_bytes.saturating_sub(released);
-                let released_prerequisites = super::post_commit::release_completed_prerequisites(&mut state, &interest.key);
-                super::post_commit::release_completed_member(&mut state, &interest.key);
+                let released_prerequisites =
+                    release_completed_prerequisites(&mut state, &interest.key);
+                release_completed_member(&mut state, &interest.key);
                 drop(state);
                 drop(released_prerequisites);
                 return Err(stopped);
@@ -305,11 +308,10 @@ impl WorthQueryOutputDemandRegistry {
             0
         };
         record.wake.notify();
-        let released_prerequisites = terminal.then(|| {
-            super::post_commit::release_completed_prerequisites(&mut state, &interest.key)
-        });
+        let released_prerequisites =
+            terminal.then(|| release_completed_prerequisites(&mut state, &interest.key));
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        super::post_commit::release_completed_member(&mut state, &interest.key);
+        release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
         Ok(())

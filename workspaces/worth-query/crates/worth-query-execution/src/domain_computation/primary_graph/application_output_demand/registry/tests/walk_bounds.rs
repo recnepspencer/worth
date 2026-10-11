@@ -3,12 +3,11 @@ use super::super::refreshed_rejoin::{
     awaited_by_stale_owner, newest_of_occurrence, occurrence_rows, OccurrenceSearchCharge,
 };
 use super::*;
+use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
 use core::convert::Infallible;
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn check<C>(
-    search: usize,
-    mut payer: impl FnMut() -> C,
-) where
+pub(in super::super) fn check<C>(search: usize, mut payer: impl FnMut() -> C)
+where
     C: OccurrenceSearchCharge<Refusal = Infallible>,
 {
     let mut contacts = Vec::new();
@@ -73,11 +72,12 @@ fn registry_stale_owner_body_keeps_its_bound() {
 }
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn receipt_batch(
-) -> Vec<WorthQueryApplicationCommitReceipt> {
-    (0..4).map(|_| crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application()).collect()
+pub(in super::super) fn receipt_batch() -> Vec<WorthQueryApplicationCommitReceipt> {
+    (0..4)
+        .map(|_| recoverable_commit_support::committed_recoverable_application())
+        .collect()
 }
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn add_custody(
+pub(in super::super) fn add_custody(
     state: &mut DemandRegistryState,
     receipts: &[WorthQueryApplicationCommitReceipt],
     rows: u64,
