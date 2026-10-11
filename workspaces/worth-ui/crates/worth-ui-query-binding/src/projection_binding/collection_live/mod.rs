@@ -129,7 +129,7 @@ impl crate::UiCollectionProjectionBinding {
             open::open_collection_projection(&phase, &mut self, budget, workspace)
         }) {
             Ok(Ok(opened)) => opened.into_outcome(self),
-            Ok(Err(stop)) => UiCollectionProjectionOpenOutcome::Stopped(stop),
+            Ok(Err(kind)) => stopped(&self, kind),
             Err(cause) => stopped(
                 &self,
                 UiCollectionProjectionOpenStopKind::AdvancementDenied(cause),

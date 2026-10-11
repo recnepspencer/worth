@@ -1,9 +1,8 @@
 use worth_query::facade::installed::{self, collection, observation};
 
 use super::{
-    opening_stop, UiCollectionProjectionOpenOutcome, UiCollectionProjectionOpenReceipt,
-    UiCollectionProjectionOpenStop, UiCollectionProjectionOpenStopKind as StopKind,
-    UiLiveCollectionProjection,
+    UiCollectionProjectionOpenOutcome, UiCollectionProjectionOpenReceipt,
+    UiCollectionProjectionOpenStopKind as StopKind, UiLiveCollectionProjection,
 };
 
 pub(super) fn open_collection_projection(
@@ -11,9 +10,9 @@ pub(super) fn open_collection_projection(
     binding: &mut crate::UiCollectionProjectionBinding,
     budget: crate::UiCollectionProjectionBudget,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
-) -> Result<OpenedCollection, UiCollectionProjectionOpenStop> {
+) -> Result<OpenedCollection, StopKind> {
     let Some(prepared) = binding.take_prepared() else {
-        return Err(opening_stop(binding, StopKind::AlreadyOpened));
+        return Err(StopKind::AlreadyOpened);
     };
     let (reference, bound, native_request) = prepared.into_parts();
     let (request, text_accesses, application_item_key_access) = native_request.into_parts();
@@ -25,73 +24,73 @@ pub(super) fn open_collection_projection(
     .into_result()
     {
         Ok(admitted) => admitted,
-        Err(_) => return Err(opening_stop(binding, StopKind::ResourceAdmission)),
+        Err(_) => return Err(StopKind::ResourceAdmission),
     };
     let executed =
         match installed::transition::execution(admitted.execute_in_advancement(phase, workspace)) {
             installed::transition::WorthQueryExecutionTransition::Executed(value) => value,
             installed::transition::WorthQueryExecutionTransition::Deferred(_) => {
-                return Err(opening_stop(binding, StopKind::ExecutionDeferred));
+                return Err(StopKind::ExecutionDeferred);
             }
             installed::transition::WorthQueryExecutionTransition::Denied(_) => {
-                return Err(opening_stop(binding, StopKind::ExecutionDenied));
+                return Err(StopKind::ExecutionDenied);
             }
             installed::transition::WorthQueryExecutionTransition::Stale(_) => {
-                return Err(opening_stop(binding, StopKind::ExecutionStale));
+                return Err(StopKind::ExecutionStale);
             }
             installed::transition::WorthQueryExecutionTransition::RebindRequired(_) => {
-                return Err(opening_stop(binding, StopKind::ExecutionRebindRequired));
+                return Err(StopKind::ExecutionRebindRequired);
             }
             installed::transition::WorthQueryExecutionTransition::Failed(_) => {
-                return Err(opening_stop(binding, StopKind::ExecutionFailed));
+                return Err(StopKind::ExecutionFailed);
             }
         };
     let published = match installed::transition::publication(executed.publish()) {
         installed::transition::WorthQueryPublicationTransition::Published(value) => value,
         installed::transition::WorthQueryPublicationTransition::Denied(_) => {
-            return Err(opening_stop(binding, StopKind::PublicationDenied));
+            return Err(StopKind::PublicationDenied);
         }
         installed::transition::WorthQueryPublicationTransition::Stale(_) => {
-            return Err(opening_stop(binding, StopKind::PublicationStale));
+            return Err(StopKind::PublicationStale);
         }
         installed::transition::WorthQueryPublicationTransition::RebindRequired(_) => {
-            return Err(opening_stop(binding, StopKind::PublicationRebindRequired));
+            return Err(StopKind::PublicationRebindRequired);
         }
         installed::transition::WorthQueryPublicationTransition::Failed(_) => {
-            return Err(opening_stop(binding, StopKind::PublicationFailed));
+            return Err(StopKind::PublicationFailed);
         }
     };
     let consumed = match installed::transition::consumption(published.consume_bound(request)) {
         installed::transition::WorthQueryConsumptionTransition::Consumed(value) => value,
         installed::transition::WorthQueryConsumptionTransition::Denied(_) => {
-            return Err(opening_stop(binding, StopKind::ConsumptionDenied));
+            return Err(StopKind::ConsumptionDenied);
         }
         installed::transition::WorthQueryConsumptionTransition::Deferred(_) => {
-            return Err(opening_stop(binding, StopKind::ConsumptionDeferred));
+            return Err(StopKind::ConsumptionDeferred);
         }
         installed::transition::WorthQueryConsumptionTransition::Stale(_) => {
-            return Err(opening_stop(binding, StopKind::ConsumptionStale));
+            return Err(StopKind::ConsumptionStale);
         }
         installed::transition::WorthQueryConsumptionTransition::RebindRequired(_) => {
-            return Err(opening_stop(binding, StopKind::ConsumptionRebindRequired));
+            return Err(StopKind::ConsumptionRebindRequired);
         }
         installed::transition::WorthQueryConsumptionTransition::Failed(_) => {
-            return Err(opening_stop(binding, StopKind::ConsumptionFailed));
+            return Err(StopKind::ConsumptionFailed);
         }
     };
     let settled = match installed::transition::settlement(consumed.settle()) {
         installed::transition::WorthQuerySettlementTransition::Settled(value) => value,
         installed::transition::WorthQuerySettlementTransition::Denied(_) => {
-            return Err(opening_stop(binding, StopKind::SettlementDenied));
+            return Err(StopKind::SettlementDenied);
         }
         installed::transition::WorthQuerySettlementTransition::Stale(_) => {
-            return Err(opening_stop(binding, StopKind::SettlementStale));
+            return Err(StopKind::SettlementStale);
         }
         installed::transition::WorthQuerySettlementTransition::RebindRequired(_) => {
-            return Err(opening_stop(binding, StopKind::SettlementRebindRequired));
+            return Err(StopKind::SettlementRebindRequired);
         }
         installed::transition::WorthQuerySettlementTransition::Failed(_) => {
-            return Err(opening_stop(binding, StopKind::SettlementFailed));
+            return Err(StopKind::SettlementFailed);
         }
     };
     let breadth = collection::WorthQueryCollectionWindowBreadth::new(
@@ -103,7 +102,7 @@ pub(super) fn open_collection_projection(
     .expect("the WUI collection budget proves a nonzero coherent Query breadth");
     let consumer = match settled.prepare_collection_consumer(breadth) {
         Ok(value) => value,
-        Err(_) => return Err(opening_stop(binding, StopKind::CollectionConsumer)),
+        Err(_) => return Err(StopKind::CollectionConsumer),
     };
     let fact = crate::projection_consumption::derive_initial_collection_projection(
         crate::projection_consumption::UiCollectionDerivationContext {
@@ -120,31 +119,28 @@ pub(super) fn open_collection_projection(
     {
         observation::WorthQueryProjectionPromotionOutcome::Promoted(value) => value,
         observation::WorthQueryProjectionPromotionOutcome::Denied(_) => {
-            return Err(opening_stop(binding, StopKind::PromotionDenied));
+            return Err(StopKind::PromotionDenied);
         }
         observation::WorthQueryProjectionPromotionOutcome::Deferred(_) => {
-            return Err(opening_stop(binding, StopKind::PromotionDeferred));
+            return Err(StopKind::PromotionDeferred);
         }
         observation::WorthQueryProjectionPromotionOutcome::Stale(_) => {
-            return Err(opening_stop(binding, StopKind::PromotionStale));
+            return Err(StopKind::PromotionStale);
         }
         observation::WorthQueryProjectionPromotionOutcome::RebindRequired(_) => {
-            return Err(opening_stop(binding, StopKind::PromotionRebindRequired));
+            return Err(StopKind::PromotionRebindRequired);
         }
         observation::WorthQueryProjectionPromotionOutcome::AuthorityRevalidationRequired(_) => {
-            return Err(opening_stop(
-                binding,
-                StopKind::PromotionAuthorityRevalidationRequired,
-            ));
+            return Err(StopKind::PromotionAuthorityRevalidationRequired);
         }
         observation::WorthQueryProjectionPromotionOutcome::Failed(_) => {
-            return Err(opening_stop(binding, StopKind::PromotionFailed));
+            return Err(StopKind::PromotionFailed);
         }
     };
     let lease = match promoted.into_managed_lease(workspace) {
         observation::WorthQueryProjectionLeaseAdmissionOutcome::Admitted(value) => value,
         observation::WorthQueryProjectionLeaseAdmissionOutcome::Stopped(_) => {
-            return Err(opening_stop(binding, StopKind::LeaseAdmission));
+            return Err(StopKind::LeaseAdmission);
         }
     };
     Ok(OpenedCollection {
