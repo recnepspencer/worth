@@ -221,11 +221,11 @@ fn a_refresh_cancelled_under_tight_custody_settles_on_the_next_advance() {
 #[test]
 fn publication_driven_retryable_progress_is_followed_by_stable_terminal_stops() {
     let _guard = checkpoint_recovery_test_guard();
-    let budget = support::capacity_region::search(
+    let budget = support::observation::capacity_region::search(
         "publication terminal",
         1,
         128 * 1024,
-        support::capacity_region::Goal::Hit,
+        support::observation::capacity_region::Goal::Hit,
         publication_budget::measure,
     )
     .require_hit("publication terminal");
