@@ -1,9 +1,15 @@
 //! The guide's marked fences are the exact sources compiled by this fixture.
 
-use std::{fs, path::Path};
-
+// A test that reads a host path is a native-only check of the docs.
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn compiled_examples_match_build_guide() {
+    use std::{fs, path::Path};
+
+    fn normalized(text: &str) -> String {
+        text.replace("\r\n", "\n")
+    }
+
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
     let root = manifest
         .ancestors()
@@ -66,8 +72,4 @@ fn compiled_examples_match_build_guide() {
         ["warehouse_inventory.rs", "sensor_telemetry.rs"],
         "both examples must retain their compiled markers"
     );
-}
-
-fn normalized(text: &str) -> String {
-    text.replace("\r\n", "\n")
 }
