@@ -65,3 +65,4 @@ fn sampled_plan_key_for(
 
 // CONTRACT: derived_index
 // LANES: success, access_contract, determinism
+mod patch_allocation;

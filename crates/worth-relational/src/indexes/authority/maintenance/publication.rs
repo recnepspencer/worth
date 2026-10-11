@@ -10,33 +10,14 @@ pub(super) struct PreparedRefresh {
     pub(super) reused: Vec<DerivedIndexGeneration>,
 }
 
-impl worth_execution::ChargedBytes for PreparedRefresh {
-    fn additional_charged_bytes(&self) -> u64 {
-        (self.publication.branch_id.0.capacity() as u64)
-            .saturating_add(
-                (self.entries.capacity()
-                    * std::mem::size_of::<(DerivedIndexId, DerivedIndexEntries)>())
-                    as u64,
-            )
-            .saturating_add(
-                self.entries
-                    .iter()
-                    .map(|(_, entries)| entries.owned_allocation_capacity_bytes())
-                    .sum::<u64>(),
-            )
-            .saturating_add(
-                (self.reused.capacity() * std::mem::size_of::<DerivedIndexGeneration>()) as u64,
-            )
-            .saturating_add(
-                self.reused
-                    .iter()
-                    .map(DerivedIndexGeneration::owned_allocation_capacity_bytes)
-                    .sum::<u64>(),
-            )
-    }
-}
-
 impl PreparedRefresh {
+    pub(super) fn prepare_publication(&self, work: &mut MaintenanceWork) -> Result<(), Denial> {
+        work.array::<DerivedIndexGeneration>(self.entries.len() + self.reused.len())?;
+        work.prepare(
+            0,
+            (self.publication.branch_id.0.len() * 2 * self.entries.len()) as u64,
+        )
+    }
     pub(super) fn publish_admitted(
         self,
         runtime: &crate::runtime::RelationalRuntime,
@@ -99,7 +80,8 @@ impl PreparedRefresh {
         self,
         runtime: &crate::runtime::RelationalRuntime,
     ) -> Vec<DerivedIndexGeneration> {
-        let mut generations = self.reused;
+        let mut generations = Vec::with_capacity(self.reused.len() + self.entries.len());
+        generations.extend(self.reused);
         generations.extend(self.entries.into_iter().map(|(index_id, entries)| {
             publish_prepared_generation(runtime, &self.publication, index_id, entries)
         }));

@@ -31,6 +31,8 @@ pub(super) fn edit<K: Ord + Clone, R: Clone>(
         (true, Err(position)) | (false, Ok(position)) => position,
         _ => return Err(Denial::PriorEntryMismatch),
     };
+    prepare_map::<K, R>(entries.len(), 1, work)?;
+    prepare_row::<R>(rows.len(), insert, work)?;
     reserve_paths(entries.len(), &rows, work)?;
     if insert {
         rows.insert(position, row);
@@ -108,8 +110,18 @@ pub(super) fn prepare_map<K: Ord + Clone, R: Clone>(
     width: usize,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
-    // im 15 OrdMap: a 64-entry key/value chunk and a 65-pointer
-    // child chunk, four chunk offsets, and the Arc control block.
+    let (nodes, bytes) = persistent_map_path_bytes::<K, R>(keys)?;
+    work.lookup(keys, width)?;
+    work.prepare((nodes * 64) as u64, bytes as u64)
+}
+
+fn persistent_map_path_bytes<K: Ord + Clone, R: Clone>(
+    keys: usize,
+) -> Result<(usize, usize), Denial> {
+    // im 15 OrdMap copies at most the search path plus a sibling and a
+    // split/rebalance node at each level, and two roots: 3h + 2 nodes.
+    // Each node holds 64 Arc<K>/vector pairs, 65 child pointers, four
+    // offsets and two Arc words. Include the new key's Arc header/payload.
     let node = std::mem::size_of::<(std::sync::Arc<K>, DerivedIndexRows<R>)>()
         .checked_mul(64)
         .and_then(|n| n.checked_add(std::mem::size_of::<usize>() * 71))
@@ -122,8 +134,7 @@ pub(super) fn prepare_map<K: Ord + Clone, R: Clone>(
         .checked_mul(nodes)
         .and_then(|n| n.checked_add(std::mem::size_of::<K>() + 2 * std::mem::size_of::<usize>()))
         .ok_or(Denial::WorkBudgetExceeded)?;
-    work.lookup(keys, width)?;
-    work.prepare((nodes * 64) as u64, bytes as u64)
+    Ok((nodes, bytes))
 }
 
 fn prepare_row<R>(rows: usize, insert: bool, work: &mut MaintenanceWork) -> Result<(), Denial> {

@@ -6,27 +6,30 @@ use crate::indexes::data::{
     DerivedIndexMaintenanceDenialKind as Denial, DerivedIndexMaintenanceWork,
 };
 use worth_execution::{
-    ChargedBytes, ExecutionRequest, MapKernelFailure, MapStop, ScanOutcome, WorkCeilingDenial,
+    ChargedBytes, ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure, MapStop,
+    ScanOutcome, WorkCeilingDenial,
 };
 use worth_foundational::PartitionIdentity;
 
-// A native refusal (e.g. cold-required) finishes the pass and can be retried.
-// Execution stops still terminate the pattern at their exact charge boundary.
-struct MaintenancePreparation<T>(Result<T, Denial>);
-impl<T: ChargedBytes> ChargedBytes for MaintenancePreparation<T> {
+// Carries the pass's own additions, already reserved before allocation.
+// Reading its charge is constant time, including for persistent index patches.
+#[derive(Debug)]
+pub(super) struct MaintenancePreparation<T> {
+    pub(super) value: T,
+    _memory: ExecutionMemoryReservation,
+}
+impl<T> ChargedBytes for MaintenancePreparation<T> {
     fn additional_charged_bytes(&self) -> u64 {
-        match &self.0 {
-            Ok(value) => value.additional_charged_bytes(),
-            Err(denial) => denial.owned_allocation_capacity_bytes(),
-        }
+        self._memory.bytes()
     }
 }
 
-pub(super) fn run<T: ChargedBytes>(
+pub(super) fn run<T>(
     execution: &ExecutionRequest<'_, '_>,
     budget: DerivedIndexMaintenanceBudget,
     mut prepare: impl FnMut(&mut MaintenanceWork<'_, '_, '_>) -> Result<T, Denial>,
-) -> Result<(T, DerivedIndexMaintenanceWork), DerivedIndexMaintenanceDenial> {
+) -> Result<(MaintenancePreparation<T>, DerivedIndexMaintenanceWork), DerivedIndexMaintenanceDenial>
+{
     let mut counts = DerivedIndexMaintenanceWork::default();
     execution
         .consult()
@@ -36,26 +39,32 @@ pub(super) fn run<T: ChargedBytes>(
         })?;
     let result = execution
         .in_scope(|lease| {
+            let mut memory = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
+                .map_err(|denial| Denial::Execution(execution::denial::lease_denial(denial)))?;
+            let mut prepared = None;
             let scan = execution::admit_ordered_scan(vec![(PartitionIdentity::new(0), ())])
                 .map_err(|stop| {
                     let crate::indexes::data::DerivedIndexExecutionDenialKind::Cause(cause) =
                         crate::indexes::data::DerivedIndexExecutionDenial::from(stop).kind;
                     Denial::Execution(cause)
                 })?;
-            let output_capacity = execution.memory_limit() / 4;
-            let outcome = scan.run(lease, (), 0, output_capacity, 0, 0, |_, _, context| {
-                let mut work = MaintenanceWork::request_paid(budget, context);
-                let result = prepare(&mut work);
+            // The scan owns only its unit receipt. The pass's additions are
+            // reserved incrementally on the same request before allocation.
+            let outcome = scan.run(lease, (), 0, 0, 0, 0, |_, _, context| {
+                let mut work = MaintenanceWork::request_paid(budget, context, &mut memory);
+                prepared = Some(prepare(&mut work));
                 counts = work.counts;
-                Ok::<_, MapKernelFailure<()>>(((), MaintenancePreparation(result)))
+                Ok::<_, MapKernelFailure<()>>(((), ()))
             });
+            #[cfg(test)]
+            LAST_ALLOCATION_BYTES.with(|bytes| bytes.set(memory.bytes()));
             match outcome {
-                ScanOutcome::Complete { mut prefixes, .. } => {
-                    prefixes
-                        .pop()
-                        .expect("one maintenance preparation for the singleton scan")
-                        .0
-                }
+                ScanOutcome::Complete { .. } => prepared
+                    .expect("singleton scan prepared one maintenance pass")
+                    .map(|value| MaintenancePreparation {
+                        value,
+                        _memory: memory,
+                    }),
                 ScanOutcome::Stopped { reason, .. } => Err(Denial::Execution(match reason {
                     MapStop::Admission(denial) => execution::denial::lease_denial(denial),
                     MapStop::WorkExhausted { .. } => Cause::WorkExhausted,
@@ -85,4 +94,13 @@ fn request_denial(denial: WorkCeilingDenial) -> Denial {
         WorkCeilingDenial::Stopped(stop) => execution::kernel_failure(MapKernelFailure::Stop(stop)),
         WorkCeilingDenial::Panicked => Cause::WorkerFailed,
     })
+}
+
+#[cfg(test)]
+thread_local! {
+    static LAST_ALLOCATION_BYTES: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+#[cfg(test)]
+pub(crate) fn last_allocation_bytes() -> u64 {
+    LAST_ALLOCATION_BYTES.with(std::cell::Cell::get)
 }

@@ -21,6 +21,8 @@ mod comparison_payment;
 mod reads;
 mod record_metadata;
 mod request_payment;
+#[cfg(test)]
+pub(crate) use request_payment::last_allocation_bytes;
 mod work;
 
 use super::{IndexAuthority, IndexGenerationPublicationBasis};
@@ -69,10 +71,12 @@ impl IndexAuthority<'_> {
             {
                 return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
             }
-            self.prepare_refresh(execution, &request, None, &projection, work)
+            let prepared = self.prepare_refresh(execution, &request, None, &projection, work)?;
+            prepared.prepare_publication(work)?;
+            Ok(prepared)
         })?;
         Ok(DerivedIndexMaintenanceOutcome {
-            generations: prepared.publish(self.runtime),
+            generations: prepared.value.publish(self.runtime),
             work: counts,
         })
     }
@@ -90,10 +94,12 @@ impl IndexAuthority<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
         let (prepared, counts) = request_payment::run(execution, budget, |work| {
-            self.prepare_basis_refresh(&request, basis, before, work, execution)
+            let prepared = self.prepare_basis_refresh(&request, basis, before, work, execution)?;
+            prepared.prepare_publication(work)?;
+            Ok(prepared)
         })?;
         Ok(DerivedIndexMaintenanceOutcome {
-            generations: prepared.publish(self.runtime),
+            generations: prepared.value.publish(self.runtime),
             work: counts,
         })
     }

@@ -124,7 +124,7 @@ fn refresh_entities(
     }
     for id in changed {
         work.prepare(pending.len() as u64, 0)?;
-        let (old, new) = if work.has_preparation() {
+        let (old, new) = if work.prepares_allocations() {
             if before.is_some() {
                 work.read()?;
             }
@@ -150,7 +150,7 @@ fn refresh_entities(
                 continue;
             }
             work.prepare(1, 0)?;
-            let (old_key, new_key) = if work.has_preparation() {
+            let (old_key, new_key) = if work.prepares_allocations() {
                 (
                     super::field_keys::entity(before, *id, locator, work)?,
                     super::field_keys::entity(Some(after), *id, locator, work)?,
@@ -198,7 +198,7 @@ fn refresh_relations(
     }
     for id in changed {
         work.prepare(pending.len() as u64, 0)?;
-        let (old, new) = if work.has_preparation() {
+        let (old, new) = if work.prepares_allocations() {
             if before.is_some() {
                 work.read()?;
             }
@@ -224,7 +224,7 @@ fn refresh_relations(
                 continue;
             }
             work.prepare(1, 0)?;
-            let (old_key, new_key) = if work.has_preparation() {
+            let (old_key, new_key) = if work.prepares_allocations() {
                 (
                     super::field_keys::relation(before, *id, locator, work)?,
                     super::field_keys::relation(Some(after), *id, locator, work)?,

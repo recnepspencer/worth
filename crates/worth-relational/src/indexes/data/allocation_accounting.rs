@@ -20,24 +20,10 @@ impl DerivedIndexArtifacts {
 }
 
 impl DerivedIndexGeneration {
-    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+    pub(super) fn owned_allocation_capacity_bytes(&self) -> u64 {
         (self.source_branch_id.0.capacity() as u64)
             .saturating_add(self.applicability.branch_id.0.capacity() as u64)
             .saturating_add(self.entries.owned_allocation_capacity_bytes())
-    }
-}
-
-impl super::DerivedIndexMaintenanceDenialKind {
-    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
-        use crate::branch::RelationalBranchBasisDenial as Basis;
-        match self {
-            Self::Basis(
-                Basis::UnknownBranch(branch)
-                | Basis::ArchivedBranch(branch)
-                | Basis::DeletingBranch(branch),
-            ) => branch.0.capacity() as u64,
-            _ => 0,
-        }
     }
 }
 

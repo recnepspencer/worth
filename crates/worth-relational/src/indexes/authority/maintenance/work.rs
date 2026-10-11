@@ -6,7 +6,10 @@ use crate::indexes::data::{
 pub(super) struct MaintenanceAdmissionRefusal;
 
 enum MaintenancePayer<'a, 'run, 'lease> {
-    Request(&'a mut worth_execution::MapKernelContext<'run, 'lease>),
+    Request(
+        &'a mut worth_execution::MapKernelContext<'run, 'lease>,
+        &'a mut worth_execution::ExecutionMemoryReservation,
+    ),
     Admission(&'a mut dyn FnMut(u64, u64) -> Result<(), MaintenanceAdmissionRefusal>),
     #[cfg(test)]
     Test,
@@ -21,6 +24,13 @@ pub(super) struct MaintenanceWork<'a, 'run, 'lease> {
 impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     pub(super) fn has_preparation(&self) -> bool {
         matches!(self.payer, MaintenancePayer::Admission(_))
+    }
+    pub(super) fn prepares_allocations(&self) -> bool {
+        match self.payer {
+            MaintenancePayer::Request(..) | MaintenancePayer::Admission(_) => true,
+            #[cfg(test)]
+            MaintenancePayer::Test => false,
+        }
     }
     #[cfg(test)]
     pub(super) fn new(budget: DerivedIndexMaintenanceBudget) -> Self {
@@ -45,11 +55,12 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     pub(super) fn request_paid(
         budget: DerivedIndexMaintenanceBudget,
         context: &'a mut worth_execution::MapKernelContext<'run, 'lease>,
+        memory: &'a mut worth_execution::ExecutionMemoryReservation,
     ) -> Self {
         Self {
             budget,
             counts: Default::default(),
-            payer: MaintenancePayer::Request(context),
+            payer: MaintenancePayer::Request(context, memory),
         }
     }
 
@@ -62,7 +73,18 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             }
             // Native work is paid by charge; framework preparation consults the
             // same active request without duplicating the native receipt.
-            MaintenancePayer::Request(context) => checkpoint(context, 0),
+            MaintenancePayer::Request(context, memory) => {
+                checkpoint(context, 0)?;
+                let total = memory
+                    .bytes()
+                    .checked_add(bytes)
+                    .ok_or(Denial::WorkBudgetExceeded)?;
+                memory.resize(total).map_err(|denial| {
+                    Denial::Execution(crate::execution::denial::lease_denial(
+                        worth_execution::LeaseDenial::MemoryExhausted(denial),
+                    ))
+                })
+            }
             #[cfg(test)]
             MaintenancePayer::Test => Ok(()),
         }
@@ -71,7 +93,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     pub(super) fn charge(&mut self, units: usize) -> Result<(), Denial> {
         #[cfg(test)]
         super::charge_rendezvous::meet();
-        if let MaintenancePayer::Request(context) = &mut self.payer {
+        if let MaintenancePayer::Request(context, _) = &mut self.payer {
             checkpoint(context, 0)?;
             if units as u64 > context.remaining_work() {
                 checkpoint(context, units as u64)?;
@@ -81,7 +103,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             return Err(Denial::WorkBudgetExceeded);
         }
         match &mut self.payer {
-            MaintenancePayer::Request(context) => checkpoint(context, units as u64)?,
+            MaintenancePayer::Request(context, _) => checkpoint(context, units as u64)?,
             MaintenancePayer::Admission(prepare) => {
                 prepare(units as u64, 0).map_err(|_| Denial::WorkBudgetExceeded)?
             }
@@ -95,7 +117,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     pub(super) fn remaining(&self) -> usize {
         let native = self.native_remaining();
         match &self.payer {
-            MaintenancePayer::Request(context) => usize::try_from(context.remaining_work())
+            MaintenancePayer::Request(context, _) => usize::try_from(context.remaining_work())
                 .map_or(native, |remaining| native.min(remaining)),
             _ => native,
         }
@@ -109,7 +131,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
 
     pub(super) fn bounded_scan_denial(&mut self) -> Denial {
         let native = self.native_remaining();
-        if let MaintenancePayer::Request(context) = &mut self.payer {
+        if let MaintenancePayer::Request(context, _) = &mut self.payer {
             let remaining = context.remaining_work();
             if remaining <= native as u64 {
                 let Some(required) = remaining.checked_add(1) else {
@@ -176,7 +198,7 @@ mod tests {
                 super::super::request_payment::run(&execution, budget, |work| Ok(work.remaining()))
             })
             .unwrap();
-        assert_eq!(result.unwrap().0, 2);
+        assert_eq!(result.unwrap().0.value, 2);
     }
 
     #[test]

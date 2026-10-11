@@ -90,3 +90,6 @@ impl<'runtime> IndexAuthority<'runtime> {
         rebuild_unique_entity_aspect_field_indexes(execution, self.runtime)
     }
 }
+
+#[cfg(test)]
+pub(crate) use maintenance::last_allocation_bytes;

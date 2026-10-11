@@ -44,22 +44,6 @@ impl PreparedCandidateIndexPublication {
     }
 }
 
-impl worth_execution::ChargedBytes for PreparedCandidateIndexPublication {
-    fn additional_charged_bytes(&self) -> u64 {
-        (self.branch_id.0.capacity() as u64)
-            .saturating_add(
-                (self.generations.capacity() * std::mem::size_of::<DerivedIndexGeneration>())
-                    as u64,
-            )
-            .saturating_add(
-                self.generations
-                    .iter()
-                    .map(DerivedIndexGeneration::owned_allocation_capacity_bytes)
-                    .sum::<u64>(),
-            )
-    }
-}
-
 impl IndexAuthority<'_> {
     /// Budget and derive exact native index deltas from a prepared candidate
     /// before World can perform its publication. No generation is made visible
@@ -76,7 +60,7 @@ impl IndexAuthority<'_> {
             self.prepare_candidate_indexes(candidate, index_ids, before, work, execution)
         })?;
         candidate
-            .attach_prepared_indexes(prepared)
+            .attach_prepared_indexes(prepared.value)
             .map(|()| counts)
             .map_err(|kind| DerivedIndexMaintenanceDenial { kind, work: counts })
     }
@@ -104,6 +88,8 @@ impl IndexAuthority<'_> {
         let (expected_root, prepared_root) = candidate
             .index_preparation_roots()
             .ok_or(Denial::CandidateUnavailable)?;
+        work.prepare(0, (candidate.branch().0.len() * 3) as u64)?;
+        work.array::<DerivedIndexId>(index_ids.len())?;
         let branch_id = candidate.branch().clone();
         let envelope = prepared_root
             .canonical_envelope()
@@ -134,6 +120,12 @@ impl IndexAuthority<'_> {
         let prepared = self.prepare_refresh(execution, &request, before.as_ref(), &after, work)?;
         work.charge(prepared.entries.len())?;
         work.counts.generation_publications_reserved = prepared.entries.len();
+        work.array::<DerivedIndexGeneration>(prepared.entries.len())?;
+        work.array::<crate::indexes::data::DerivedIndexGenerationId>(prepared.entries.len())?;
+        work.prepare(
+            0,
+            (prepared.publication.branch_id.0.len() * 2 * prepared.entries.len()) as u64,
+        )?;
         let generation_ids = self
             .runtime
             .indexes
