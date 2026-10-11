@@ -34,7 +34,7 @@ impl ApplicationManagedComputation<Schema, Feature> for Wide {
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
     const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(1 << 32, 4096);
+        ApplicationComputationResourceCeiling::new(usize::MAX, 4096);
 }
 
 /// Counts every owner call. Only the gather of slot 1 reads a fact.
