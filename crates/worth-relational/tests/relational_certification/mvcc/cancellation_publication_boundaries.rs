@@ -9,7 +9,7 @@ use worth_relational::facade::mvcc::{
 
 #[test]
 fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothing() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(request_execution, SupplyChainScale::court());
@@ -40,7 +40,7 @@ fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothi
     let event = match world
         .runtime
         .publication_port()
-        .compare_and_publish(candidate)
+        .compare_and_publish(request_execution, candidate)
     {
         RelationalPublicationOutcome::Interrupted(event) => event,
         outcome => panic!("pre-critical cancellation must win: {outcome:?}"),
@@ -60,7 +60,7 @@ fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothi
 
 #[test]
 fn cancellation_inside_the_supply_chain_critical_section_is_deferred() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(request_execution, SupplyChainScale::court());
@@ -88,7 +88,14 @@ fn cancellation_inside_the_supply_chain_critical_section_is_deferred() {
         .prepare_branch_transaction(request_execution, transaction)
         .unwrap();
     let port = world.runtime.publication_port();
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let request_execution =
+                &worth_execution::ExecutionRequest::serial(&publication_request);
+            port.compare_and_publish(request_execution, candidate)
+        }
+    });
 
     reached.wait();
     assert_eq!(

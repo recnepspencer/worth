@@ -55,7 +55,10 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         .branch_reference_state(&branch)
         .expect("the injected rootless branch reference remains observable");
 
-    let failure = match runtime.publication_port().compare_and_publish(candidate) {
+    let failure = match runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         RelationalPublicationOutcome::Failed(failure) => failure,
         outcome => panic!("rootlessness must be a typed no-movement failure: {outcome:?}"),
     };

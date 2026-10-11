@@ -166,18 +166,34 @@ pub(crate) fn publish_prepared_authoritative_commit(
     runtime: &crate::runtime::RelationalRuntime,
     candidate: crate::mvcc::PreparedRelationalCommitCandidate,
 ) -> Result<CommitResult, TransactionCommitError> {
-    super::consult_stage(execution, super::CommitStage::Publication)?;
-    runtime
-        .history
-        .record_publication_attempt(candidate.branch());
-    let outcome = runtime.publication_port().compare_and_publish(candidate);
+    let outcome = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate);
     let performed = match outcome {
+        crate::mvcc::RelationalPublicationOutcome::RequestStopped(stop) => {
+            return Err(TransactionCommitError::execution(stop.into()));
+        }
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         crate::mvcc::RelationalPublicationOutcome::Stale(stale) => {
             return Err(TransactionCommitError::conflict(
                 crate::transactions::data::CommitConflict::new(
                     crate::transactions::data::ConflictClass::StaleValidationBasis {
                         detail: format!("branch moved before publication: {stale:?}"),
+                    },
+                ),
+            ));
+        }
+        crate::mvcc::RelationalPublicationOutcome::Denied(
+            crate::mvcc::RelationalPublicationDenial::ForeignRuntime {
+                expected_runtime_instance_id,
+                actual_runtime_instance_id,
+            },
+        ) => {
+            return Err(TransactionCommitError::conflict(
+                crate::transactions::data::CommitConflict::new(
+                    crate::transactions::data::ConflictClass::ForeignRuntime {
+                        expected_runtime_instance_id,
+                        actual_runtime_instance_id,
                     },
                 ),
             ));

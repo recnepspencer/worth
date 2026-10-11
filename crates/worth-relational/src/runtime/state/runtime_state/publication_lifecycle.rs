@@ -61,6 +61,15 @@ impl RelationalRuntimePublicationOwner {
 }
 
 impl RelationalRuntimePublicationBinding {
+    #[cfg(test)]
+    pub(crate) fn prepared_candidate_count(&self) -> usize {
+        self.lifecycle
+            .candidates
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
+    }
+
     pub(crate) fn companion_registry(&self) -> &Arc<crate::mvcc::publication::CompanionRegistry> {
         &self.lifecycle.companion
     }

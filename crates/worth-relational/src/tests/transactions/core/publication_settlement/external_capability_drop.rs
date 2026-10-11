@@ -17,8 +17,9 @@ fn runtime_recovers_settlement_after_external_capability_is_dropped() {
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("runtime recovery candidate performs before its injected append fault");
     };

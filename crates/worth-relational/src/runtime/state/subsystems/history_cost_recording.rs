@@ -10,12 +10,6 @@ impl HistorySubsystem {
         });
     }
 
-    pub(crate) fn record_publication_attempt(&self, branch_id: &BranchId) {
-        self.record_branch_sharing_operation(branch_id, |costs| {
-            costs.publication_attempts = costs.publication_attempts.saturating_add(1);
-        });
-    }
-
     pub(crate) fn record_root_publication(
         &self,
         branch_id: &BranchId,

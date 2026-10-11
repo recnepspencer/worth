@@ -11,7 +11,7 @@ use crate::tests::support::*;
 /// move, so a stale attempt must give back the exact reservation it installed.
 #[test]
 fn stale_publication_releases_its_pending_settlement_reservation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -19,8 +19,9 @@ fn stale_publication_releases_its_pending_settlement_reservation() {
     let loser = prepared_main_write(execution, &runtime, "stale-loser");
     let winner = prepared_main_write(execution, &runtime, "stale-winner");
 
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(winner)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, winner)
     else {
         panic!("the first publisher from a shared basis performs");
     };
@@ -40,8 +41,9 @@ fn stale_publication_releases_its_pending_settlement_reservation() {
     let contacts_before = runtime
         .publication_binding()
         .pending_settlement_contact_count();
-    let crate::mvcc::RelationalPublicationOutcome::Stale(_) =
-        runtime.publication_port().compare_and_publish(loser)
+    let crate::mvcc::RelationalPublicationOutcome::Stale(_) = runtime
+        .publication_port()
+        .compare_and_publish(execution, loser)
     else {
         panic!("the second publisher from the same basis is stale");
     };
@@ -72,7 +74,7 @@ fn stale_publication_releases_its_pending_settlement_reservation() {
 /// is a no-movement path, so it must not retain settlement state either.
 #[test]
 fn interrupted_publication_releases_its_pending_settlement_reservation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for interruption in [
@@ -108,8 +110,9 @@ fn interrupted_publication_releases_its_pending_settlement_reservation() {
             .branch_reference_state(&BranchId("main".to_owned()))
             .unwrap();
 
-        let crate::mvcc::RelationalPublicationOutcome::Interrupted(event) =
-            runtime.publication_port().compare_and_publish(candidate)
+        let crate::mvcc::RelationalPublicationOutcome::Interrupted(event) = runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
         else {
             panic!("an injected critical-section interruption must not move the reference");
         };
@@ -139,7 +142,7 @@ fn interrupted_publication_releases_its_pending_settlement_reservation() {
 /// reservation: the registry needs no second capacity check to stay bounded.
 #[test]
 fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = RelationalRuntimeApi::builder()
@@ -207,7 +210,7 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
 /// its settlement record must already exist at that instant.
 #[test]
 fn the_pending_settlement_record_exists_before_the_moved_head_is_observable() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -240,7 +243,13 @@ fn the_pending_settlement_record_exists_before_the_moved_head_is_observable() {
     let binding = runtime.publication_binding();
     let port = runtime.publication_port();
 
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            port.compare_and_publish(execution, candidate)
+        }
+    });
     reached.wait();
     // Both observations are taken before releasing the paused publisher, so a
     // failing assertion cannot strand it on the barrier.

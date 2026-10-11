@@ -90,20 +90,18 @@ pub(super) fn transaction_staging(
     }
 }
 
-pub(super) fn transaction_commit(
-    error: TransactionCommitError,
+pub(super) fn execution_denial(
+    denial: worth_relational::facade::transactions::CommitExecutionDenial,
 ) -> RelationalEffectExecutionFailure {
-    match error {
-        TransactionCommitError::Execution { denial, .. } => {
-            let translated = match denial.kind {
-                worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
-                    worth_query_execution::facade::primary_graph::relational_execution_kind(
-                        cause,
-                        denial.partition_identity,
-                    )
-                }
-            };
-            match translated {
+    let translated = match denial.kind {
+        worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
+            worth_query_execution::facade::primary_graph::relational_execution_kind(
+                cause,
+                denial.partition_identity,
+            )
+        }
+    };
+    match translated {
                 Ok(kind) => RelationalEffectExecutionFailure::Denied {
                     kind: EffectExecutionDenialKind::RelationalExecutionDenied(kind),
                     message: format!("{denial:?}"),
@@ -116,7 +114,13 @@ pub(super) fn transaction_commit(
                     message: format!("{denial:?}"),
                 },
             }
-        }
+}
+
+pub(super) fn transaction_commit(
+    error: TransactionCommitError,
+) -> RelationalEffectExecutionFailure {
+    match error {
+        TransactionCommitError::Execution { denial, .. } => execution_denial(denial),
         TransactionCommitError::Conflict { error, .. } => {
             if let Some(allocation) = error.allocation_denial() {
                 return allocation_failure(allocation);

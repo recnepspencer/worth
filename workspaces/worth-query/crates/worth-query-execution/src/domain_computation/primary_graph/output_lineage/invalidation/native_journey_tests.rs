@@ -146,8 +146,9 @@ fn write_batch(
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    let RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("ordinary native field mutation must publish");
     };

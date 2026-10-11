@@ -158,7 +158,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         let (performed, second, hang_guard) = std::thread::scope(|threads| {
             let first_thread = threads.spawn(|| {
                 let published = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    port.compare_and_publish(first)
+                    port.compare_and_publish(request_execution, first)
                 }));
                 first_done.send(()).unwrap();
                 published.unwrap()
@@ -177,7 +177,8 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
                 }
                 return Err("hang guard: the first candidate did not reach its prepared gate");
             }
-            let second_thread = threads.spawn(|| port.compare_and_publish(second));
+            let second_thread =
+                threads.spawn(|| port.compare_and_publish(request_execution, second));
             let overlapping = observe_second.recv_timeout(std::time::Duration::from_secs(10));
             release_first.send(()).unwrap();
             let first = first_thread

@@ -223,7 +223,7 @@ fn active_custody_identity_repair_settles_only_the_recorded_relational_commit() 
         .state
         .relational
         .publication_port()
-        .compare_and_publish(candidate)
+        .compare_and_publish(execution, candidate)
     {
         worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
             performed

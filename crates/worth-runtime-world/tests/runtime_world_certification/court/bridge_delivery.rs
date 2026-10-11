@@ -27,7 +27,7 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
             .runtime
             .owner_component_services()
             .publication_port()
-            .compare_and_publish(candidate)
+            .compare_and_publish(request_execution, candidate)
         else {
             panic!("real source commit must perform")
         };

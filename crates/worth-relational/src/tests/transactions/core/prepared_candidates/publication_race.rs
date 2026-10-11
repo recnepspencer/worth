@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -60,24 +60,34 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
     let (first_done, first_completion) = std::sync::mpsc::sync_channel(1);
     let first_start = Arc::clone(&start);
     let first_port = runtime.publication_port();
-    let first_thread = std::thread::spawn(move || {
-        first_start.wait();
-        let outcome = first_port.compare_and_publish(first);
-        first_done
-            .send(())
-            .expect("first completion receiver lives");
-        outcome
+    let first_thread = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+
+            first_start.wait();
+            let outcome = first_port.compare_and_publish(execution, first);
+            first_done
+                .send(())
+                .expect("first completion receiver lives");
+            outcome
+        }
     });
     let (second_done, second_completion) = std::sync::mpsc::sync_channel(1);
     let second_start = Arc::clone(&start);
     let second_port = runtime.publication_port();
-    let second_thread = std::thread::spawn(move || {
-        second_start.wait();
-        let outcome = second_port.compare_and_publish(second);
-        second_done
-            .send(())
-            .expect("second completion receiver lives");
-        outcome
+    let second_thread = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+
+            second_start.wait();
+            let outcome = second_port.compare_and_publish(execution, second);
+            second_done
+                .send(())
+                .expect("second completion receiver lives");
+            outcome
+        }
     });
     start.wait();
     let first_thread_result = join_completed_worker(

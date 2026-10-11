@@ -190,7 +190,10 @@ fn publish_one_branch(
                 "preparation refusal nor a validation denial",
             ));
 
-        match services.publication.compare_and_publish(candidate) {
+        match services
+            .publication
+            .compare_and_publish(execution, candidate)
+        {
             RelationalPublicationOutcome::Performed(performed) => {
                 return settle(services, performed);
             }

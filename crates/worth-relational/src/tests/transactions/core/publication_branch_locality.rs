@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 #[test]
 fn paused_storm_publication_does_not_contact_or_wait_on_maintenance() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_test_schema();
@@ -38,12 +38,17 @@ fn paused_storm_publication_does_not_contact_or_wait_on_maintenance() {
     let storm_contacts_after_test_gate = storm_gate.contact_count();
     let (storm_finished, storm_completion) = std::sync::mpsc::sync_channel(1);
     let storm_port = runtime.publication_port();
-    let storm_thread = std::thread::spawn(move || {
-        let outcome = storm_port.compare_and_publish(storm);
-        storm_finished
-            .send(())
-            .expect("storm completion receiver lives");
-        outcome
+    let storm_thread = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+
+            let outcome = storm_port.compare_and_publish(execution, storm);
+            storm_finished
+                .send(())
+                .expect("storm completion receiver lives");
+            outcome
+        }
     });
     let wait_deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
     while storm_gate.wait_count() == 0 && std::time::Instant::now() < wait_deadline {
@@ -59,12 +64,17 @@ fn paused_storm_publication_does_not_contact_or_wait_on_maintenance() {
     let maintenance_started = std::time::Instant::now();
     let (maintenance_finished, maintenance_completion) = std::sync::mpsc::sync_channel(1);
     let maintenance_port = runtime.publication_port();
-    let maintenance_thread = std::thread::spawn(move || {
-        let outcome = maintenance_port.compare_and_publish(maintenance);
-        maintenance_finished
-            .send(())
-            .expect("maintenance completion receiver lives");
-        outcome
+    let maintenance_thread = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+
+            let outcome = maintenance_port.compare_and_publish(execution, maintenance);
+            maintenance_finished
+                .send(())
+                .expect("maintenance completion receiver lives");
+            outcome
+        }
     });
     if matches!(
         maintenance_completion.recv_timeout(std::time::Duration::from_secs(1)),

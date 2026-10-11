@@ -32,7 +32,7 @@ impl RealReferenceFixture {
         match self
             ._relational_runtime
             .publication_port()
-            .compare_and_publish(candidate)
+            .compare_and_publish(execution, candidate)
         {
             RelationalPublicationOutcome::Performed(performed) => performed,
             outcome => {

@@ -100,6 +100,7 @@ impl RelationalPreparationPort {
 
     /// Consume a prepared candidate without publishing it and release its
     /// owner-governed registration.
+    /// Requestless cleanup: discarding retained resources cannot be refused by a request.
     pub fn discard_prepared_candidate(
         &self,
         candidate: crate::mvcc::PreparedRelationalCommitCandidate,

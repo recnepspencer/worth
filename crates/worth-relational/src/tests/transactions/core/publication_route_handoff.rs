@@ -5,7 +5,7 @@ use crate::tests::support::*;
 
 #[test]
 fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -37,10 +37,15 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
     let port = runtime.publication_port();
     let publisher_done = Arc::new(AtomicBool::new(false));
     let publisher_done_signal = Arc::clone(&publisher_done);
-    let publisher = std::thread::spawn(move || {
-        let outcome = port.compare_and_publish(candidate);
-        publisher_done_signal.store(true, Ordering::Release);
-        outcome
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+
+            let outcome = port.compare_and_publish(execution, candidate);
+            publisher_done_signal.store(true, Ordering::Release);
+            outcome
+        }
     });
 
     let wait_deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);

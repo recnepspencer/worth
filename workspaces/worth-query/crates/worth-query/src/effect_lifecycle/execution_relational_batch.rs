@@ -78,7 +78,15 @@ pub(super) fn execute_lowered_mutation_batch(
     let candidate = runtime
         .prepare_branch_transaction(execution, txn)
         .map_err(super::relational_execution_deferred::transaction_commit)?;
-    let performed = match runtime.publication_port().compare_and_publish(candidate) {
+    let performed = match runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
+        worth_relational::facade::mvcc::RelationalPublicationOutcome::RequestStopped(stop) => {
+            return Err(super::relational_execution_deferred::execution_denial(
+                stop.into(),
+            ));
+        }
         worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
             performed
         }

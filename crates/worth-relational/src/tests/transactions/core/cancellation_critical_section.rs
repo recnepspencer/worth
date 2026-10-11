@@ -9,7 +9,7 @@ use crate::tests::support::*;
 
 #[test]
 fn cancellation_while_waiting_for_publication_coordination_denies_before_movement() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -42,7 +42,13 @@ fn cancellation_while_waiting_for_publication_coordination_denies_before_movemen
         .unwrap();
     let port = runtime.publication_port();
 
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            port.compare_and_publish(execution, candidate)
+        }
+    });
     let wait_deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
     while coordination.wait_count() == 0 && std::time::Instant::now() < wait_deadline {
         std::thread::yield_now();
@@ -73,7 +79,7 @@ fn cancellation_while_waiting_for_publication_coordination_denies_before_movemen
 
 #[test]
 fn cancellation_inside_publication_critical_section_defers_until_performed() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -106,7 +112,13 @@ fn cancellation_inside_publication_critical_section_defers_until_performed() {
         .unwrap();
     let port = runtime.publication_port();
 
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            port.compare_and_publish(execution, candidate)
+        }
+    });
     reached.wait();
     assert_eq!(
         runtime
