@@ -72,7 +72,6 @@ fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommit
             "{entry:?}: refusal moves no head"
         );
     }
-    eprintln!("{entry:?}, ceiling {ceiling}, dispatch charges {charges:?}");
     (outcome, charges.into_iter().sum())
 }
 
@@ -81,18 +80,16 @@ fn one_work_account_bounds_the_same_proposal_on_every_entry() {
     // Sum dispatch reports, rather than reading the account's stored balance.
     // No enclosing scope is allowed to hide the split-account defect.
     let completed = ENTRIES.map(|entry| {
-        let (outcome, charged) = commit(entry, u64::MAX);
+        let (outcome, charged) = commit(entry, 116);
         outcome.unwrap();
         charged
     });
-    assert!(completed[0] > 0, "this fixture exercises charged data work");
     assert_eq!(
-        completed, [completed[0]; 4],
-        "equal proposal, equal total work"
+        completed, [116; 4],
+        "one entity with two fields: ordinary, batch, split, strategy each charge 116"
     );
-    let one_short = completed[0] - 1;
     let refused = ENTRIES.map(|entry| {
-        let (outcome, _) = commit(entry, one_short);
+        let (outcome, _) = commit(entry, 115);
         matches!(outcome, Err(TransactionCommitError::Execution { denial, .. })
             if denial.kind == CommitExecutionDenialKind::Cause(crate::execution::RelationalExecutionDenialCause::WorkExhausted))
     });
