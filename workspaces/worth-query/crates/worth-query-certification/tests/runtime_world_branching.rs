@@ -362,3 +362,6 @@ fn duplicate_reordered_and_foreign_clocks_fail_closed() {
 fn provider_replacement_requires_fresh_runtime_publication() {
     courtroom::provider_replacement_requires_fresh_runtime_publication();
 }
+
+#[path = "support/process_deadline.rs"]
+mod process_deadline;

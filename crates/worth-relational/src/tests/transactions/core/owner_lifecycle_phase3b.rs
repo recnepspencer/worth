@@ -7,14 +7,14 @@ use crate::tests::support::*;
 
 /// Every wait in this module is bounded. A court that is red because a thread
 /// deadlocked must fail, not hang the suite, so the settlement worker is
-/// detached and reports through a channel instead of a join.
+/// observed through a bounded completion event before any join.
 const COMPLETION_BUDGET: Duration = Duration::from_secs(5);
 const NEGATIVE_BUDGET: Duration = Duration::from_millis(100);
 
 /// An owner released while one of its own settlements is running on another
 /// thread finishes, and that settlement finishes with a real receipt.
 ///
-/// The settlement worker is never joined. If completing a settlement could
+/// A bounded join follows completion or disconnection. If a settlement could
 /// close the runtime it borrowed, the worker would block on its own admission
 /// and this court would fail on its bounded receive rather than hang.
 #[test]
@@ -30,11 +30,12 @@ fn phase3b_owner_drop_during_off_thread_settlement_completes() {
 
     let (settled_sender, settled_receiver) = sync_channel(1);
     let worker_port = port.clone();
-    std::thread::spawn(move || {
+    let settling = std::thread::spawn(move || {
         let outcome = worker_port
             .settle_performed_publication(performed)
             .map(|result| result.commit.commit_id);
-        let _ = settled_sender.send(outcome);
+        let _ = settled_sender.send(());
+        outcome
     });
     reached.wait();
 
@@ -52,16 +53,21 @@ fn phase3b_owner_drop_during_off_thread_settlement_completes() {
 
     release.wait();
     assert_eq!(
-        settled_receiver
-            .recv_timeout(COMPLETION_BUDGET)
-            .expect("an admitted settlement completes even though its owner is closing")
-            .expect("the admitted settlement produces a real receipt"),
+        join_completed_worker(
+            settled_receiver.recv_timeout(COMPLETION_BUDGET),
+            settling,
+            COMPLETION_BUDGET,
+            "an admitted settlement completes even though its owner is closing"
+        )
+        .expect("the admitted settlement produces a real receipt"),
         commit_id,
     );
-    closed_receiver
-        .recv_timeout(COMPLETION_BUDGET)
-        .expect("the owner finishes once its last admitted operation returns");
-    owner_drop.join().expect("the owner drop thread joins");
+    join_completed_worker(
+        closed_receiver.recv_timeout(COMPLETION_BUDGET),
+        owner_drop,
+        COMPLETION_BUDGET,
+        "the owner finishes once its last admitted operation returns",
+    );
 
     assert!(!port.retains_pending_settlement(commit_id));
     assert!(matches!(
@@ -93,11 +99,12 @@ fn phase3b_settlement_admitted_after_owner_drop_is_denied() {
 
     let (settled_sender, settled_receiver) = sync_channel(1);
     let worker_port = port.clone();
-    std::thread::spawn(move || {
+    let settling = std::thread::spawn(move || {
         let outcome = worker_port
             .settle_performed_publication(paused)
             .map(|result| result.commit.commit_id);
-        let _ = settled_sender.send(outcome);
+        let _ = settled_sender.send(());
+        outcome
     });
     reached.wait();
 
@@ -123,13 +130,18 @@ fn phase3b_settlement_admitted_after_owner_drop_is_denied() {
 
     release.wait();
     assert_eq!(
-        settled_receiver
-            .recv_timeout(COMPLETION_BUDGET)
-            .expect("the admitted settlement is not denied by the close it overlapped")
-            .expect("the admitted settlement produces a real receipt"),
+        join_completed_worker(
+            settled_receiver.recv_timeout(COMPLETION_BUDGET),
+            settling,
+            COMPLETION_BUDGET,
+            "the admitted settlement is not denied by the close it overlapped"
+        )
+        .expect("the admitted settlement produces a real receipt"),
         paused_commit_id,
     );
-    owner_drop.join().expect("the owner drop thread joins");
+    owner_drop
+        .join()
+        .unwrap_or_else(|worker_panic| std::panic::resume_unwind(worker_panic));
 }
 
 /// Recovery replaces a whole runtime. The replaced runtime is closed by that

@@ -11,10 +11,17 @@ fn profile() -> worth_query_host::facade::runtime::WorthQueryOutputDemandResourc
         .with_registry_required_retained_bytes(std::num::NonZeroUsize::new(1 << 40).unwrap())
 }
 pub(super) fn install_population() -> ScaleApplication {
-    author_population()
+    author_population(1_008)
 }
 
-fn author_population() -> ScaleApplication {
+pub(super) fn install_settled_population() -> ScaleApplication {
+    // Twenty-five cycle edits and seventy-five publications prime one hundred
+    // real admissions. Both measured lanes then render three-digit operation
+    // identities, so label-width charges cannot counterfeit population work.
+    author_population(75)
+}
+
+fn author_population(vertices: usize) -> ScaleApplication {
     let model = Model::new(&mut Lcg(SEEDS[0]));
     let app = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 4>(
         None,
@@ -26,7 +33,7 @@ fn author_population() -> ScaleApplication {
     let request = app.request(&principal, &scope);
     // Each public edit creates one valid triangle within its declared
     // invariant budget. Both lanes restore the same publicly authored truth.
-    for triangle in 0..1_008_usize.div_ceil(3) {
+    for triangle in 0..vertices.div_ceil(3) {
         use worth_query_consumer_values::{PlanarOperation, PlanarVertex};
         let source = request
             .query(PlanarRead {
@@ -60,7 +67,7 @@ fn author_population() -> ScaleApplication {
             WorthQueryApplicationMutationOutcome::Committed { .. }
         ));
     }
-    for number in 0..1_008_u64 {
+    for number in 0..vertices as u64 {
         let name = format!("unrelated-{number}");
         let source = request
             .query(PlanarRead {
