@@ -36,6 +36,74 @@ fn literal_macro_doors_and_crate_visible_doors_are_discovered() {
 }
 
 #[test]
+fn parameterized_macro_doors_cannot_bypass_discovery() {
+    let root =
+        std::env::temp_dir().join(format!("parameterized-control-door-{}", std::process::id()));
+    let file = root.join("crates/worth-execution/src/lib.rs");
+    fs::create_dir_all(file.parent().unwrap()).unwrap();
+    fs::write(
+        &file,
+        "macro_rules! emit { ($name:ident) => { pub fn $name() {} }; } emit!(hidden_for_test);",
+    )
+    .unwrap();
+    let (diagnostics, doors) = load(&root);
+    fs::remove_dir_all(root).unwrap();
+    assert_eq!(
+        diagnostics.len(),
+        1,
+        "ambiguous declarations fail closed: {diagnostics:?}"
+    );
+    assert_eq!(diagnostics[0].code(), DiagnosticCode::Bc7012ControlSeal);
+    assert!(diagnostics[0].message().contains("hidden_for_test"));
+    assert!(!doors.contains_key("hidden_for_test"));
+}
+
+#[test]
+fn a_macro_reference_cannot_grant_control_ownership() {
+    let source = "macro_rules! passthrough { ($($item:tt)*) => { $($item)* }; }
+        passthrough! { fn production(runtime: &Runtime) { runtime.operation_control_for_test(); } }";
+    assert!(public_items::test_names(source).is_err());
+    let doors = BTreeMap::from([(
+        "operation_control_for_test".into(),
+        BTreeSet::from(["crates/worth-execution/".into()]),
+    )]);
+    let denied = references(
+        "workspaces/worth-query/crates/worth-query-host/src/lib.rs",
+        source,
+        &doors,
+    );
+    assert_eq!(denied.len(), 1);
+    assert_eq!(denied[0].code(), DiagnosticCode::Bc7012ControlSeal);
+}
+
+#[test]
+fn thread_local_storage_does_not_grant_ownership_of_its_control_types() {
+    let source = "thread_local! { static SLOT: Cell<ForeignForTest> = const { Cell::new(ForeignForTest::new()) }; }
+        pub fn local_for_test() {}";
+    assert_eq!(
+        public_items::test_names(source).unwrap(),
+        BTreeSet::from(["local_for_test".into()])
+    );
+    let doors = BTreeMap::from([
+        (
+            "ForeignForTest".into(),
+            BTreeSet::from(["crates/worth-execution/".into()]),
+        ),
+        (
+            "local_for_test".into(),
+            BTreeSet::from(["workspaces/worth-query/crates/worth-query-host/".into()]),
+        ),
+    ]);
+    let denied = references(
+        "workspaces/worth-query/crates/worth-query-host/src/lib.rs",
+        source,
+        &doors,
+    );
+    assert_eq!(denied.len(), 1);
+    assert_eq!(denied[0].code(), DiagnosticCode::Bc7012ControlSeal);
+}
+
+#[test]
 fn a_neighbor_of_a_test_door_is_still_production_code() {
     let mut doors = doors();
     let owner = "workspaces/worth-query/crates/worth-query-host/";

@@ -18,8 +18,12 @@ pub(super) fn test_names(source: &str) -> Result<BTreeSet<String>, String> {
         types: types.0.clone(),
         names: types.0,
         receiver: None,
+        macro_error: None,
     };
     names.visit_file(&file);
+    if let Some(error) = names.macro_error {
+        return Err(error);
+    }
     Ok(names
         .names
         .into_iter()
@@ -78,6 +82,40 @@ struct PublicNames {
     types: BTreeSet<String>,
     names: BTreeSet<String>,
     receiver: Option<String>,
+    macro_error: Option<String>,
+}
+impl PublicNames {
+    fn macro_invocation(&mut self, item: &syn::Macro) {
+        // The standard storage macro declares only the named statics. Types
+        // and calls inside their initializers are references, never new doors.
+        let standard_thread_local = item.path.is_ident("thread_local")
+            || (item.path.segments.len() == 2
+                && item.path.segments[0].ident == "std"
+                && item.path.segments[1].ident == "thread_local");
+        if standard_thread_local {
+            if let Ok(file) = syn::parse2::<syn::File>(item.tokens.clone()) {
+                if file
+                    .items
+                    .iter()
+                    .all(|item| matches!(item, syn::Item::Static(_)))
+                {
+                    for item in file.items {
+                        if let syn::Item::Static(item) = item {
+                            self.visit_item_static(&item);
+                        }
+                    }
+                    return;
+                }
+            }
+        }
+        if let Some(name) = super::macro_items::ambiguous_argument(item.tokens.clone()) {
+            self.macro_error = Some(format!(
+                "cannot establish ownership of macro argument `{name}`; use a literal exported declaration"
+            ));
+            return;
+        }
+        super::macro_items::names(item.tokens.clone(), &mut self.names);
+    }
 }
 impl<'ast> Visit<'ast> for PublicNames {
     fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
@@ -106,7 +144,11 @@ impl<'ast> Visit<'ast> for PublicNames {
         if super::source_regions::test_only(&item.attrs) {
             return;
         }
-        super::macro_items::names(item.mac.tokens.clone(), &mut self.names);
+        if item.mac.path.is_ident("macro_rules") {
+            super::macro_items::names(item.mac.tokens.clone(), &mut self.names);
+        } else {
+            self.macro_invocation(&item.mac);
+        }
         if item.attrs.iter().any(|attr| {
             attr.path().segments.len() == 1
                 && spelling(&attr.path().segments[0].ident) == "macro_export"
@@ -120,7 +162,7 @@ impl<'ast> Visit<'ast> for PublicNames {
         if super::source_regions::test_only(&item.attrs) {
             return;
         }
-        super::macro_items::names(item.mac.tokens.clone(), &mut self.names);
+        self.macro_invocation(&item.mac);
     }
     fn visit_item_trait(&mut self, item: &'ast syn::ItemTrait) {
         if super::source_regions::test_only(&item.attrs) {
