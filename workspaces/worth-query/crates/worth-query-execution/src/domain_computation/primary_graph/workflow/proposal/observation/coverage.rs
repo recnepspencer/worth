@@ -136,7 +136,7 @@ pub(super) fn observe_coverages(
         proposal,
         direction,
         maximum_work_units,
-    )
+    )?
     .ok_or_else(|| denial("workflow proposal coverage relation is unavailable"))?;
     if relations.len() != count {
         return Err(denial("workflow proposal coverage inventory changed"));

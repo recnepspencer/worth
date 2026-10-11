@@ -209,3 +209,6 @@ impl WorthQueryApplicationObservedFact {
         locator_identity::write(self, output)
     }
 }
+
+#[cfg(test)]
+mod cancellation_tests;

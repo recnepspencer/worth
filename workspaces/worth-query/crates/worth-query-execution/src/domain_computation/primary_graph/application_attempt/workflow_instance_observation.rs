@@ -230,7 +230,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         entity,
         WorthQueryApplicationAdjacencyDirection::Outgoing,
         2,
-    )
+    )?
     .ok_or_else(|| denial("workflow instance live membership is unavailable"))?;
     let live_membership = match live_memberships.as_slice() {
         [] => None,

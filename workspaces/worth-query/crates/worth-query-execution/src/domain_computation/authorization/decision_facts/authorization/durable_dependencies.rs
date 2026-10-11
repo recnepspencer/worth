@@ -68,19 +68,24 @@ impl WorthQueryDurableAuthorizationDependencies {
         observed: &Self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-    ) -> bool {
-        self.primary == observed.primary
-            && self.delegation == observed.delegation
-            && observed.activation.is_none()
-            && self.activation.as_ref().is_some_and(|activation| {
-                RelationalAuthorizationDurableDependencies::from_wire_string(activation).is_ok_and(
-                    |stamp| {
-                        stamp
-                            .source_revisions_match(runtime, execution, snapshot)
-                            .is_ok_and(|matches| matches)
-                    },
-                )
-            })
+    ) -> Result<bool, worth_execution::MapKernelStop> {
+        execution.check_live()?;
+        if self.primary != observed.primary
+            || self.delegation != observed.delegation
+            || observed.activation.is_some()
+        {
+            return Ok(false);
+        }
+        let Some(activation) = &self.activation else {
+            return Ok(false);
+        };
+        let Ok(stamp) = RelationalAuthorizationDurableDependencies::from_wire_string(activation)
+        else {
+            return Ok(false);
+        };
+        let observed = stamp.source_revisions_match(runtime, execution, snapshot);
+        execution.check_live()?;
+        Ok(observed.unwrap_or(false))
     }
 }
 
@@ -118,3 +123,6 @@ fn validate(encoded: &str) -> Result<(), ()> {
         .map(|_| ())
         .map_err(|_| ())
 }
+
+#[cfg(test)]
+mod cancellation_tests;

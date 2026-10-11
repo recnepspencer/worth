@@ -85,7 +85,7 @@ pub(super) fn select_lineage<Spec: ApplicationWorkflowSpec>(
         lineage,
         WorthQueryApplicationAdjacencyDirection::Outgoing,
         CURRENT_DEFINITION_WORK_LIMIT,
-    )
+    )?
     .ok_or_else(|| lineage_denial(definition.identity().as_str()))?;
     // A retired lineage has no current relation. The predecessor fact decides
     // whether that absence is the author's expectation or a stale revision.

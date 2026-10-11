@@ -102,7 +102,7 @@ where
                     published.branch(),
                     compiled.lineage(),
                 )
-            })
+            })?
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::WorkflowLineageUnavailable,
@@ -135,7 +135,7 @@ where
                 WorthQueryApplicationAdjacencyDirection::Incoming,
                 maximum_instances.saturating_mul(2).saturating_add(1),
             )
-        });
+        })?;
         let declared_deadline = self.lease.handle().with_runtime(execution, |runtime| {
             super::workflow_deadline::definition_deadline(
                 execution,

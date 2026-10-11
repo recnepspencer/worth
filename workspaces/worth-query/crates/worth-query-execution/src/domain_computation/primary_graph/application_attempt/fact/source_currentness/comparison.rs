@@ -299,6 +299,11 @@ fn map_adjacency_denial(
     denial: super::super::AdjacencyObservationDenial,
 ) -> WorthQuerySourceCurrentnessFailure {
     match denial {
+        // The caller observes request interruption again before accepting any
+        // comparison value, and returns its native preflight stop.
+        super::super::AdjacencyObservationDenial::Interrupted(_) => {
+            WorthQuerySourceCurrentnessFailure::Unavailable
+        }
         super::super::AdjacencyObservationDenial::SnapshotUnavailable => {
             WorthQuerySourceCurrentnessFailure::Unavailable
         }

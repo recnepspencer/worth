@@ -235,7 +235,7 @@ fn observe_retirement<Spec: ApplicationWorkflowSpec>(
         lineage,
         WorthQueryApplicationAdjacencyDirection::Outgoing,
         CURRENT_DEFINITION_WORK_LIMIT,
-    )
+    )?
     .ok_or_else(|| lineage_denial(subject))?;
     let current_relation = match relations.as_slice() {
         [] => None,
@@ -282,7 +282,7 @@ fn observe_lineage(
         definition,
         WorthQueryApplicationAdjacencyDirection::Incoming,
         LINEAGE_WORK_LIMIT,
-    )
+    )?
     .ok_or_else(|| lineage_denial(subject))?;
     let [relation] = relations.as_slice() else {
         return Err(lineage_denial(subject));

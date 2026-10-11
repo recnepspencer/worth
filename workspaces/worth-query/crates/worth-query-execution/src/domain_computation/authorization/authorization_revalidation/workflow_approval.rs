@@ -150,7 +150,13 @@ where
                 let dependencies_match = match support.role() {
                     crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::DelegationTarget => authority
                         .dependencies()
-                        .delegation_target_support_matches(execution, observed.decision(), runtime, snapshot),
+                        .delegation_target_support_matches(execution, observed.decision(), runtime, snapshot)
+                        .map_err(|stop| WorthQueryOperationAuthorizationDenial::new(
+                            match stop {
+                                worth_execution::MapKernelStop::Cancelled => super::super::WorthQueryOperationAuthorizationDenialKind::Cancelled,
+                                worth_execution::MapKernelStop::DeadlineElapsed => super::super::WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded,
+                                _ => super::super::WorthQueryOperationAuthorizationDenialKind::CanonicalWorkDenied,
+                            }, "workflow approval support"))?,
                     crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::ElevationUpperBound => authority
                         .dependencies()
                         .support_matches(observed.decision()),

@@ -17,7 +17,7 @@ pub(super) fn successor_identity(
     snapshot: &SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     source: EntityId,
-) -> Option<String> {
+) -> Result<Option<String>, super::super::super::WorthQueryApplicationAttemptDenial> {
     let successors = observe_adjacency(
         runtime,
         execution,
@@ -27,18 +27,23 @@ pub(super) fn successor_identity(
         WorthQueryApplicationAdjacencyDirection::Incoming,
         2,
     )?;
-    let [successor] = successors.as_slice() else {
-        return None;
+    let Some(successors) = successors else {
+        return Ok(None);
     };
-    match observe_field_value(
-        runtime,
-        execution,
-        snapshot,
-        successor.from,
-        layout.instance.entity_kind,
-        &layout.instance.identity,
-    )? {
-        AspectValue::String(InternedString::Raw(identity)) => Some(identity),
-        _ => None,
-    }
+    let [successor] = successors.as_slice() else {
+        return Ok(None);
+    };
+    Ok(
+        match observe_field_value(
+            runtime,
+            execution,
+            snapshot,
+            successor.from,
+            layout.instance.entity_kind,
+            &layout.instance.identity,
+        ) {
+            Some(AspectValue::String(InternedString::Raw(identity))) => Some(identity),
+            _ => None,
+        },
+    )
 }

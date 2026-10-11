@@ -209,3 +209,7 @@ mod tests {
         assert_eq!(counter.load(std::sync::atomic::Ordering::Relaxed), u64::MAX);
     }
 }
+
+#[cfg(test)]
+#[path = "operation_admission/request_read_stops_tests.rs"]
+mod request_read_stops_tests;

@@ -41,7 +41,8 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
         lineage,
         2,
         &expected
-    ));
+    )
+    .unwrap());
     assert!(
         !remains_equal(
             &runtime,
@@ -51,7 +52,8 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
             lineage,
             1,
             &expected
-        ),
+        )
+        .unwrap(),
         "a membership that already fills the lineage admits no start",
     );
 
@@ -65,7 +67,8 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
             lineage,
             2,
             &expected
-        ),
+        )
+        .unwrap(),
         "a start that read one member cannot commit once another joined",
     );
     assert!(
@@ -77,7 +80,8 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
             lineage,
             8,
             &expected
-        ),
+        )
+        .unwrap(),
         "the raced membership differs however much room is left",
     );
     for snapshot in [&read.snapshot, &raced.snapshot] {
@@ -100,6 +104,7 @@ fn incoming(
         WorthQueryApplicationAdjacencyDirection::Incoming,
         8,
     )
+    .unwrap()
     .expect("the fixture membership is readable")
 }
 

@@ -164,7 +164,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
                 *anchor,
                 *direction,
                 *maximum_work_units,
-            );
+            )?;
             let relations = relations.ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
