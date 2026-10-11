@@ -42,7 +42,7 @@ fn discover_nested(root: &Path, directory: &Path, roots: &mut Vec<String>) -> Re
     }
     let manifest = directory.join("Cargo.toml");
     if manifest.is_file()
-        && fs::read_to_string(&manifest)
+        && crate::source_documents::read_to_string(&manifest)
             .map_err(|e| e.to_string())?
             .parse::<toml::Value>()
             .map_err(|e| e.to_string())?
@@ -87,7 +87,7 @@ fn mentions_raw_kind(directory: &Path) -> Result<bool, String> {
                 return Ok(true);
             }
         } else if path.extension().is_some_and(|extension| extension == "rs")
-            && fs::read_to_string(&path)
+            && crate::source_documents::read_to_string(&path)
                 .map_err(|e| format!("read {}: {e}", path.display()))?
                 .contains("ExecutionAllocationDenialKind")
         {

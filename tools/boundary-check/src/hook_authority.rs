@@ -1,6 +1,5 @@
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 use serde_json::Value;
-use std::fs;
 use std::path::Path;
 
 const SETTINGS_PATH: &str = ".claude/settings.json";
@@ -15,7 +14,7 @@ pub(crate) fn validate_hook_authority(root: &Path) -> Vec<Diagnostic> {
     if !root.join(".git").exists() {
         return Vec::new();
     }
-    let settings = match fs::read_to_string(root.join(SETTINGS_PATH)) {
+    let settings = match crate::source_documents::read_to_string(root.join(SETTINGS_PATH)) {
         Ok(settings) => settings,
         Err(error) => return vec![violation(format!("read hook authority failed: {error}"))],
     };

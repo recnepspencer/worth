@@ -172,9 +172,9 @@ fn collect_entries_recursive(
 }
 
 fn verify_lib_rs_contract(path: &Path) -> Result<Option<String>, String> {
-    let text = fs::read_to_string(path)
+    let text = crate::source_documents::read_to_string(path)
         .map_err(|e| format!("read source file {}: {e}", path.display()))?;
-    let syntax = crate::source_syntax::parse_file(&text)
+    let syntax = crate::source_syntax::parse_named(path, &text)
         .map_err(|e| format!("parse {}: {e}", path.display()))?;
     if syntax.items.is_empty() {
         return Ok(Some("lib.rs must not be empty".to_owned()));
@@ -217,9 +217,9 @@ fn verify_lib_rs_contract(path: &Path) -> Result<Option<String>, String> {
 }
 
 fn verify_facade_rs_contract(path: &Path) -> Result<Option<String>, String> {
-    let text = fs::read_to_string(path)
+    let text = crate::source_documents::read_to_string(path)
         .map_err(|e| format!("read source file {}: {e}", path.display()))?;
-    let syntax = crate::source_syntax::parse_file(&text)
+    let syntax = crate::source_syntax::parse_named(path, &text)
         .map_err(|e| format!("parse {}: {e}", path.display()))?;
     if syntax.items.is_empty() {
         return Ok(Some("facade.rs must not be empty".to_owned()));

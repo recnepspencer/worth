@@ -171,7 +171,7 @@ fn collect_manifest_target_paths(
     target_kinds: &[&str],
 ) -> Result<(), String> {
     let manifest_path = governed.crate_root.join("Cargo.toml");
-    let text = fs::read_to_string(&manifest_path)
+    let text = crate::source_documents::read_to_string(&manifest_path)
         .map_err(|error| format!("read {}: {error}", manifest_path.display()))?;
     let manifest: toml::Value = toml::from_str(&text)
         .map_err(|error| format!("parse {}: {error}", manifest_path.display()))?;
@@ -230,9 +230,11 @@ fn parse_module_tree(
     modules: &mut BTreeMap<Vec<String>, ModuleNode>,
     descend: ModuleFilter<'_>,
 ) -> Result<(), String> {
-    let text = crate::scan_profile::measure("Rust file read", || fs::read_to_string(source_path))
-        .map_err(|e| format!("read {}: {e}", source_path.display()))?;
-    let file: File = crate::source_syntax::parse_file(&text)
+    let text = crate::scan_profile::measure("Rust file read", || {
+        crate::source_documents::read_to_string(source_path)
+    })
+    .map_err(|e| format!("read {}: {e}", source_path.display()))?;
+    let file: File = crate::source_syntax::parse_named(source_path, &text)
         .map_err(|e| format!("parse {}: {e}", source_path.display()))?;
     let relative_source = relative_under_crate(crate_root, source_path)?;
 

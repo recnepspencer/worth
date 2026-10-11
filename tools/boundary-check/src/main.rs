@@ -17,6 +17,7 @@ mod scan;
 mod scan_profile;
 mod seed_contracts;
 mod snapshots;
+mod source_documents;
 mod source_rules;
 mod source_syntax;
 mod subworkspace_rules;

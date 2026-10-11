@@ -8,7 +8,6 @@ use super::production_scope::{production_graphs, production_modules};
 use crate::config::ThreadingSiteConfig;
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
 use std::path::Path;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -142,7 +141,7 @@ fn record(found: &mut BTreeMap<Site, usize>, source: String, item: String, kind:
 }
 
 fn parallel_dependencies(manifest: &Path) -> Result<Vec<&'static str>, String> {
-    let text = fs::read_to_string(manifest)
+    let text = crate::source_documents::read_to_string(manifest)
         .map_err(|error| format!("read {}: {error}", manifest.display()))?;
     let value: toml::Value =
         toml::from_str(&text).map_err(|error| format!("parse {}: {error}", manifest.display()))?;

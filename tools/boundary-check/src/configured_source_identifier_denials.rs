@@ -62,20 +62,20 @@ fn visit_rust_sources(
         if path.is_dir() {
             visit_rust_sources(workspace, &path, rule, diagnostics);
         } else if path.extension().is_some_and(|extension| extension == "rs") {
-            let source = match fs::read_to_string(&path) {
+            let source = match crate::source_documents::read_to_string(&path) {
                 Ok(source) => source,
                 Err(error) => {
                     diagnostics.push(unreadable_source_diagnostic(workspace, &path, &error));
                     continue;
                 }
             };
-            diagnostics.extend(diagnostics_for_source(
+            diagnostics.extend(diagnostics_for_syntax(
                 &path
                     .strip_prefix(workspace)
                     .unwrap_or(&path)
                     .display()
                     .to_string(),
-                &source,
+                crate::source_syntax::parse_named(&path, &source),
                 rule,
             ));
         }
@@ -97,12 +97,21 @@ fn unreadable_source_diagnostic(
     )
 }
 
+#[cfg(test)]
 fn diagnostics_for_source(
     path: &str,
     source: &str,
     rule: &SourceIdentifierDenialConfig,
 ) -> Vec<Diagnostic> {
-    let Ok(file) = crate::source_syntax::parse_file(source) else {
+    diagnostics_for_syntax(path, crate::source_syntax::parse_file(source), rule)
+}
+
+fn diagnostics_for_syntax(
+    path: &str,
+    syntax: syn::Result<syn::File>,
+    rule: &SourceIdentifierDenialConfig,
+) -> Vec<Diagnostic> {
+    let Ok(file) = syntax else {
         return vec![Diagnostic::new(
             DiagnosticCode::Bc2001BandDependencyViolation,
             path,

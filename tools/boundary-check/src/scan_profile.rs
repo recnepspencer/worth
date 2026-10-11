@@ -42,3 +42,14 @@ pub(crate) fn measure<T>(name: &'static str, operation: impl FnOnce() -> T) -> T
     row.1 += start.elapsed();
     result
 }
+
+pub(crate) fn record_count(name: &'static str, count: usize) {
+    if ENABLED.load(Ordering::Relaxed) {
+        PHASES
+            .lock()
+            .expect("profile lock")
+            .entry(name)
+            .or_default()
+            .0 += count as u64;
+    }
+}

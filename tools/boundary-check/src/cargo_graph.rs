@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub(crate) fn parse_workspace_manifest(path: &Path) -> Result<WorkspaceManifest, String> {
-    let text =
-        fs::read_to_string(path).map_err(|e| format!("read manifest {}: {e}", path.display()))?;
+    let text = crate::source_documents::read_to_string(path)
+        .map_err(|e| format!("read manifest {}: {e}", path.display()))?;
     toml::from_str(&text).map_err(|e| format!("parse manifest {}: {e}", path.display()))
 }
 
@@ -60,7 +60,7 @@ pub(crate) fn package_name_from_manifest(path: &Path) -> Result<String, String> 
 }
 
 pub(crate) fn parse_package_manifest(path: &Path) -> Result<Road1Package, String> {
-    let text = fs::read_to_string(path)
+    let text = crate::source_documents::read_to_string(path)
         .map_err(|e| format!("read crate manifest {}: {e}", path.display()))?;
     let value: toml::Value = toml::from_str(&text)
         .map_err(|e| format!("parse crate manifest {}: {e}", path.display()))?;

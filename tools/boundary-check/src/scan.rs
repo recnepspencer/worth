@@ -29,6 +29,7 @@ pub(crate) fn run(
     config_path: PathBuf,
     snapshot_mode: SnapshotMode,
 ) -> Result<(), Vec<Diagnostic>> {
+    let sources = crate::source_documents::Session::new();
     let root = fs::canonicalize(root).map_err(|error| {
         vec![Diagnostic::new(
             crate::diagnostics::DiagnosticCode::Bc5002SubworkspaceContractViolation,
@@ -37,7 +38,7 @@ pub(crate) fn run(
         )]
     })?;
     let resolved_config_path = resolve_config_path(&root, &config_path);
-    let config_text = match fs::read_to_string(&resolved_config_path) {
+    let config_text = match crate::source_documents::read_to_string(&resolved_config_path) {
         Ok(text) => text,
         Err(error) => {
             return Err(vec![Diagnostic::new(
@@ -266,6 +267,9 @@ pub(crate) fn run(
         println!("boundary-check: updated {}", path.display());
     }
 
+    let counts = sources.counts();
+    scan_profile::record_count("physical Rust source reads", counts.reads);
+    scan_profile::record_count("full-file Rust syntax parses", counts.parses);
     if diagnostics.is_empty() {
         return Ok(());
     }

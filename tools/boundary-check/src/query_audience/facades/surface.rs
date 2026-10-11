@@ -1,5 +1,4 @@
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
-use std::fs;
 use std::path::Path;
 use syn::{Item, ItemMod, UseTree, Visibility};
 
@@ -7,8 +6,9 @@ pub(super) fn validate_facade_only_lib(
     path: &Path,
     relative: &str,
 ) -> Result<Vec<Diagnostic>, String> {
-    let text = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    let syntax = crate::source_syntax::parse_file(&text)
+    let text = crate::source_documents::read_to_string(path)
+        .map_err(|e| format!("read {}: {e}", path.display()))?;
+    let syntax = crate::source_syntax::parse_named(path, &text)
         .map_err(|e| format!("parse {}: {e}", path.display()))?;
     let mut diagnostics = Vec::new();
     let mut facade_exports = 0usize;
@@ -63,8 +63,9 @@ pub(super) fn validate_reexport_only_facade(
     authority_packages: &[String],
     audience_packages: &[&str],
 ) -> Result<Vec<Diagnostic>, String> {
-    let text = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    let syntax = crate::source_syntax::parse_file(&text)
+    let text = crate::source_documents::read_to_string(path)
+        .map_err(|e| format!("read {}: {e}", path.display()))?;
+    let syntax = crate::source_syntax::parse_named(path, &text)
         .map_err(|e| format!("parse {}: {e}", path.display()))?;
     let mut diagnostics = Vec::new();
     let authority_crates = authority_packages

@@ -1,7 +1,6 @@
 use super::relative_to_root;
 use crate::config::QueryAudienceContract;
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
-use std::fs;
 use std::path::Path;
 
 pub(super) fn validate_cold_certification_leaf(
@@ -26,7 +25,7 @@ pub(super) fn validate_cold_certification_leaf(
     }
 
     let certification_manifest = certification_root.join("Cargo.toml");
-    let certification_text = fs::read_to_string(&certification_manifest)
+    let certification_text = crate::source_documents::read_to_string(&certification_manifest)
         .map_err(|e| format!("read {}: {e}", certification_manifest.display()))?;
     let certification_value: toml::Value = toml::from_str(&certification_text)
         .map_err(|e| format!("parse {}: {e}", certification_manifest.display()))?;
@@ -76,7 +75,7 @@ fn reject_ordinary_certification_dependencies(
     ordinary_packages.extend(contract.internal_packages.iter().map(String::as_str));
     for ordinary_package in ordinary_packages {
         let manifest_path = query_crates_root.join(ordinary_package).join("Cargo.toml");
-        let text = fs::read_to_string(&manifest_path)
+        let text = crate::source_documents::read_to_string(&manifest_path)
             .map_err(|e| format!("read {}: {e}", manifest_path.display()))?;
         let value: toml::Value =
             toml::from_str(&text).map_err(|e| format!("parse {}: {e}", manifest_path.display()))?;
@@ -103,7 +102,7 @@ pub(super) fn validate_authority_dependencies(
     audience_packages: &[&str],
 ) -> Result<Vec<Diagnostic>, String> {
     let manifest_path = crate_root.join("Cargo.toml");
-    let text = fs::read_to_string(&manifest_path)
+    let text = crate::source_documents::read_to_string(&manifest_path)
         .map_err(|e| format!("read {}: {e}", manifest_path.display()))?;
     let value: toml::Value =
         toml::from_str(&text).map_err(|e| format!("parse {}: {e}", manifest_path.display()))?;

@@ -39,7 +39,7 @@ pub(crate) fn validate_source_owner_isolations(
         let mut methods = Vec::new();
         let mut parsed = Vec::new();
         for (path, source) in rust_sources(workspace, &rule.owner_roots, &mut diagnostics) {
-            match crate::source_syntax::parse_file(&source) {
+            match crate::source_syntax::parse_named(&workspace.join(&path), &source) {
                 Ok(file) => parsed.push((path, file)),
                 Err(_) => diagnostics.push(unparsable(&path)),
             }
@@ -58,19 +58,34 @@ pub(crate) fn validate_source_owner_isolations(
         }
         owned.add_foreign_type_methods(methods, &declared);
         for (path, source) in rust_sources(workspace, &rule.guarded_roots, &mut diagnostics) {
-            diagnostics.extend(diagnostics_for_source(&path, &source, &owned, rule));
+            diagnostics.extend(diagnostics_for_syntax(
+                &path,
+                crate::source_syntax::parse_named(&workspace.join(&path), &source),
+                &owned,
+                rule,
+            ));
         }
     }
     diagnostics
 }
 
+#[cfg(test)]
 fn diagnostics_for_source(
     path: &str,
     source: &str,
     owned: &OwnedItems,
     rule: &SourceOwnerIsolationConfig,
 ) -> Vec<Diagnostic> {
-    let Ok(file) = crate::source_syntax::parse_file(source) else {
+    diagnostics_for_syntax(path, crate::source_syntax::parse_file(source), owned, rule)
+}
+
+fn diagnostics_for_syntax(
+    path: &str,
+    syntax: syn::Result<syn::File>,
+    owned: &OwnedItems,
+    rule: &SourceOwnerIsolationConfig,
+) -> Vec<Diagnostic> {
+    let Ok(file) = syntax else {
         return vec![unparsable(path)];
     };
     let module = module_path(path);
@@ -155,7 +170,7 @@ fn rust_sources(
                 Err(error) => diagnostics.push(unreadable(&relative, &error)),
             }
         } else if path.extension().is_some_and(|extension| extension == "rs") {
-            match fs::read_to_string(&path) {
+            match crate::source_documents::read_to_string(&path) {
                 Ok(source) => sources.push((relative, source)),
                 Err(error) => diagnostics.push(unreadable(&relative, &error)),
             }

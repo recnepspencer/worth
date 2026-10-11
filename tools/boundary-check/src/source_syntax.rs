@@ -7,13 +7,31 @@
 //! raw because its bare spelling is not an identifier; no rule names one.
 
 use proc_macro2::{Group, Ident, TokenStream, TokenTree};
-use quote::ToTokens;
+use syn::visit_mut::VisitMut;
 
 pub(crate) fn parse_file(source: &str) -> syn::Result<syn::File> {
     crate::scan_profile::measure("Rust parse and raw normalization", || {
-        let parsed = syn::parse_file(source)?;
-        syn::parse2(bare_identifiers(parsed.into_token_stream()))
+        crate::source_documents::record_parse();
+        let mut parsed = syn::parse_file(source)?;
+        if source.contains("r#") {
+            BareIdentifiers.visit_file_mut(&mut parsed);
+        }
+        Ok(parsed)
     })
+}
+
+pub(crate) fn parse_named(path: &std::path::Path, source: &str) -> syn::Result<syn::File> {
+    crate::source_documents::parsed(path, || parse_file(source))
+}
+
+struct BareIdentifiers;
+impl VisitMut for BareIdentifiers {
+    fn visit_ident_mut(&mut self, identifier: &mut Ident) {
+        *identifier = bare(identifier.clone());
+    }
+    fn visit_token_stream_mut(&mut self, tokens: &mut TokenStream) {
+        *tokens = bare_identifiers(tokens.clone());
+    }
 }
 
 fn bare_identifiers(tokens: TokenStream) -> TokenStream {
