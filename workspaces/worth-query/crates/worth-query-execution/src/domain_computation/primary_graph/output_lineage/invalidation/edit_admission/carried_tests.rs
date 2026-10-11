@@ -11,7 +11,13 @@ fn exhaustion_charges_the_exact_u64_remainder_at_every_pointer_width() {
         maximum_preparation_bytes: 4096,
     });
     admission.charge_external_work(17).unwrap();
+    assert_eq!(
+        admission.remaining_work_amount(),
+        maximum - 17,
+        "remaining work is an exact u64 amount above the machine word"
+    );
     admission.exhaust_work_for_test().unwrap();
+    assert_eq!(admission.remaining_work_amount(), 0);
     assert_eq!(
         admission.charged_work(),
         maximum,

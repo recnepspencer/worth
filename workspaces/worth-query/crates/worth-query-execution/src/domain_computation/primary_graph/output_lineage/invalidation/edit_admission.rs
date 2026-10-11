@@ -161,17 +161,24 @@ impl InvalidationEditAdmission {
         self.with_totals(|totals| totals.index_bytes)
     }
 
-    /// A count bound, saturating at the machine word. Never a work amount:
-    /// use it to bound how many entries a request can afford.
+    /// A count bound saturating at the machine word; never a work amount.
     pub(in crate::domain_computation::primary_graph) fn remaining_work(&self) -> usize {
-        usize::try_from(self.budget.maximum_work_visits - self.charged_work()).unwrap_or(usize::MAX)
+        match usize::try_from(self.remaining_work_amount()) {
+            Ok(bound) => bound,
+            Err(_) => usize::MAX,
+        }
+    }
+
+    /// The exact unspent work amount, independent of the machine word.
+    pub(in crate::domain_computation::primary_graph) fn remaining_work_amount(&self) -> u64 {
+        self.budget.maximum_work_visits - self.charged_work()
     }
 
     #[cfg(any(test, feature = "test-query-execution-observer"))]
     pub(in crate::domain_computation::primary_graph) fn exhaust_work_for_test(
         &mut self,
     ) -> Result<(), CompanionPreflightStop> {
-        self.work(self.budget.maximum_work_visits - self.charged_work())
+        self.work(self.remaining_work_amount())
     }
 
     pub(in crate::domain_computation::primary_graph) fn carry_for_publication(
@@ -278,10 +285,12 @@ impl InvalidationEditAdmission {
         read: impl FnOnce(usize) -> Result<(Answer, usize), Failure>,
     ) -> Result<Result<Answer, Failure>, CompanionPreflightStop> {
         let maximum = self.remaining_work();
-        let reserved = self.reserve_external_work(u64::try_from(maximum).unwrap_or(u64::MAX))?;
+        let reserved = self.reserve_external_work(
+            u64::try_from(maximum).expect("the admitted count fits a u64 work amount"),
+        )?;
         match read(maximum) {
             Ok((answer, spent)) => {
-                let spent = u64::try_from(spent).unwrap_or(u64::MAX);
+                let spent = u64::try_from(spent).expect("the spent count fits a u64 work amount");
                 debug_assert!(
                     spent <= reserved.reserved,
                     "a reserved read spent {spent} of {}",

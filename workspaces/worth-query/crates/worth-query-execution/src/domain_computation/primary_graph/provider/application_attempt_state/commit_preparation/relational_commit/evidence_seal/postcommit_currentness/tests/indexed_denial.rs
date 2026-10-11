@@ -280,3 +280,45 @@ fn request_admission() -> InvalidationEditAdmission {
         maximum_preparation_bytes: 1024 * 1024,
     })
 }
+
+#[test]
+fn source_currentness_denial_keeps_its_large_u64_allowance() {
+    let world = installed_authorization_world(true);
+    let facts = committed_indexed_facts(&world);
+    let fact = facts
+        .iter()
+        .find(|fact| {
+            matches!(
+                fact,
+                WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
+            )
+        })
+        .unwrap();
+    let selected = world.selected_product();
+    world
+        .application
+        .runtime
+        .primary_graph()
+        .unwrap()
+        .integration_handle()
+        .with_runtime(|runtime| {
+            let maximum = 1_u64 << 40;
+            let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
+                maximum_work_visits: maximum,
+                maximum_preparation_bytes: 0,
+            });
+            admission.charge_external_work(maximum - 1).unwrap();
+            assert_eq!(
+                fact.source_currentness_in(
+                    runtime,
+                    selected.application_basis().snapshot_handle(),
+                    &mut admission
+                ),
+                Err(CompanionPreflightStop::WorkExhausted {
+                    required: maximum + 1,
+                    maximum
+                }),
+                "a guarded source denial retains the exact u64 allowance"
+            );
+        });
+}

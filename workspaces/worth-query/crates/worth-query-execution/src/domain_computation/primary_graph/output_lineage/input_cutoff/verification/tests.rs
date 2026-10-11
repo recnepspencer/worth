@@ -70,12 +70,12 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
             // An ample allowance proves the marked fact current, so any `false`
             // below comes from exhaustion alone, never from a changed source.
             let mut ample = currentness(1 << 20);
-            let full = ample.remaining_work();
+            let full = ample.remaining_work_amount();
             assert!(matches!(
                 marked_facts_permit_reuse(&facts, runtime, &snapshot, &mut ample),
                 Ok(true)
             ));
-            let required = u64::try_from(full - ample.remaining_work()).unwrap();
+            let required = full - ample.remaining_work_amount();
             assert!(required > 1, "re-verification costs a visit plus its probe");
 
             // Every smaller allowance runs out inside re-verification. Each one
