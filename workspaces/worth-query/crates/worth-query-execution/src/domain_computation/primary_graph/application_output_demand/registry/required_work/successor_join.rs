@@ -74,11 +74,10 @@ fn replacement_comparison_work(
             >())
         })
         .ok_or_else(empty_work_denial)?;
-    let work = prior
-        .comparison_work()
+    let work = super::super::key_comparison::comparison_work([prior, successor])
         .ok_or_else(empty_work_denial)?
-        .checked_add(successor.comparison_work().ok_or_else(empty_work_denial)?)
-        .and_then(|n| n.checked_add(1))
+        .total
+        .checked_add(1)
         .and_then(|n| n.checked_add(occurrence.checked_mul(4)?))
         .and_then(|n| n.checked_add(64 + 2 * std::mem::size_of::<u64>() + 4))
         .ok_or_else(empty_work_denial)?;
@@ -87,4 +86,26 @@ fn replacement_comparison_work(
 
 fn empty_work_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
+}
+
+#[cfg(test)]
+mod comparison_tests {
+    #[test]
+    fn successor_join_prices_both_declared_keys_and_occurrence_reads() {
+        let (short, long) = super::super::super::key_comparison::fixtures::keys();
+        let occurrence = 64
+            + std::mem::size_of::<worth_relational::facade::identity::EntityId>()
+            + std::mem::size_of::<worth_runtime_world::facade::ProductBranchIncarnation>();
+        let expected = (4 + 1 + 1 + 10)
+            + (4 + 15 + 16 + 10)
+            + 1
+            + 4 * occurrence
+            + 64
+            + 2 * std::mem::size_of::<u64>()
+            + 4;
+        assert_eq!(
+            super::replacement_comparison_work(&short, &long).unwrap(),
+            expected as u64
+        );
+    }
 }

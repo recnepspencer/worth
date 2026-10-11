@@ -60,8 +60,8 @@ impl WorthQueryApplicationProgramInstallationDenial {
 
     /// Hands back the structured support refusal this denial was raised from.
     ///
-    /// Installation denials that never reached support admission — an
-    /// undeclared program binding, for one — carry no support reason, so a
+    /// Installation denials that never reached support admission (an
+    /// undeclared program binding, for one) carry no support reason, so a
     /// caller reading `None` learns that the refusal happened elsewhere rather
     /// than that the reason was lost.
     pub const fn support_denial(&self) -> Option<&WorthQueryProgramSupportDenial> {

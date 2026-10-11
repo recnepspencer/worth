@@ -4,8 +4,8 @@ use super::{work_denial, WorthQueryOutputDemandDenial, WorthQueryOutputDemandKey
 pub(super) fn key_work(
     key: &WorthQueryOutputDemandKey,
 ) -> Result<u64, WorthQueryOutputDemandDenial> {
-    key.comparison_work()
-        .and_then(|bytes| u64::try_from(bytes).ok())
+    super::super::key_comparison::comparison_work([key])
+        .and_then(|bytes| u64::try_from(bytes.maximum).ok())
         .ok_or_else(work_denial)
 }
 
