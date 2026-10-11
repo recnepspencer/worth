@@ -32,11 +32,11 @@ fn assert_raw_kind_diagnostics(source: &str, count: usize) {
 
 #[test]
 fn raw_match_arm_is_refused() {
-    assert!(refused("fn f(k: ExecutionAllocationDenialKind) { match k { ExecutionAllocationDenialKind::Cancelled => (), _ => () } }"));
+    assert_raw_kind_diagnostics("fn f(k: ExecutionAllocationDenialKind) { match k { ExecutionAllocationDenialKind::Cancelled => (), _ => () } }", 1);
 }
 #[test]
 fn classifier_call_is_accepted() {
-    assert!(!refused("fn f(k: ExecutionAllocationDenialKind) { match k.classify() { ExecutionAllocationDenialClass::Request(cause) => (), ExecutionAllocationDenialClass::Physical(kind) => () } }"));
+    assert_raw_kind_diagnostics("fn f(k: ExecutionAllocationDenialKind) { match k.classify() { ExecutionAllocationDenialClass::Request(cause) => (), ExecutionAllocationDenialClass::Physical(kind) => () } }", 0);
 }
 #[test]
 fn raw_construction_in_a_test_file_is_accepted() {
@@ -66,7 +66,7 @@ fn aliases_and_nested_matches_patterns_are_refused() {
         "fn f(k: ExecutionAllocationDenialKind) { use worth_execution::ExecutionAllocationDenialKind as Raw; matches!(k, Raw::Cancelled if true); }",
         "fn f(k: ExecutionAllocationDenialKind) { match k { r#ExecutionAllocationDenialKind::Layout => (), _ => () } }",
         "macro_rules! stopped { ($value:expr) => { matches!($value, ExecutionAllocationDenialKind::Cancelled) }; }",
-    ] { assert!(refused(source), "accepted {source}"); }
+    ] { assert_raw_kind_diagnostics(source, 1); }
 }
 #[test]
 fn production_raw_construction_is_refused() {
@@ -75,7 +75,7 @@ fn production_raw_construction_is_refused() {
         "fn f(k: Other) { matches!(ExecutionAllocationDenialKind::Layout, _); }",
         "fn f(k: ExecutionAllocationDenialKind) { ExecutionAllocationDenialKind::classify(k); }",
     ] {
-        assert!(refused(source), "accepted {source}");
+        assert_raw_kind_diagnostics(source, 1);
     }
 }
 #[test]
@@ -91,7 +91,7 @@ fn raw_if_let_pattern_is_refused() {
         "fn f(k: ExecutionAllocationDenialKind) { if let ExecutionAllocationDenialKind::Cancelled = k {} }",
         "fn f(k: ExecutionAllocationDenialKind) { let ExecutionAllocationDenialKind::Lease(lease) = k else { return }; }",
         "fn f(k: ExecutionAllocationDenialKind) { while let ExecutionAllocationDenialKind::Cancelled = k {} }",
-    ] { assert!(refused(source), "accepted {source}"); }
+    ] { assert_raw_kind_diagnostics(source, 1); }
 }
 #[test]
 fn imported_bare_variants_are_refused() {
@@ -99,7 +99,7 @@ fn imported_bare_variants_are_refused() {
         "use worth_execution::ExecutionAllocationDenialKind::*; fn f(k: ExecutionAllocationDenialKind) { match k { Cancelled => (), Lease(_) => (), _ => () } }",
         "use worth_execution::ExecutionAllocationDenialKind::{Cancelled, Lease}; fn f(k: ExecutionAllocationDenialKind) { if let Lease(_) = k {} }",
         "use worth_execution::ExecutionAllocationDenialKind::Cancelled; fn f(k: ExecutionAllocationDenialKind) { matches!(k, Cancelled); }",
-    ] { assert!(refused(source), "accepted {source}"); }
+    ] { assert_raw_kind_diagnostics(source, 1); }
 }
 #[test]
 fn raw_type_alias_is_refused() {
@@ -107,14 +107,14 @@ fn raw_type_alias_is_refused() {
         "type K = worth_execution::ExecutionAllocationDenialKind; fn f(k: K) { matches!(k, K::Cancelled); }",
         "trait T { type K = worth_execution::ExecutionAllocationDenialKind; }",
         "impl T for Other { type K = worth_execution::ExecutionAllocationDenialKind; }",
-    ] { assert!(refused(source), "accepted {source}"); }
+    ] { assert_raw_kind_diagnostics(source, if source.starts_with("type K") { 2 } else { 1 }); }
 }
 #[test]
 fn foreign_trait_impl_is_refused() {
     for source in [
         "impl LocalTrait for worth_execution::ExecutionAllocationDenialKind { fn stopped(self) -> bool { matches!(self, Self::Cancelled) } }",
         "impl LocalTrait for &worth_execution::ExecutionAllocationDenialKind {}",
-    ] { assert!(refused(source), "accepted {source}"); }
+    ] { assert_raw_kind_diagnostics(source, 1); }
 }
 #[test]
 fn type_named_alone_in_a_signature_is_accepted() {
@@ -126,7 +126,7 @@ fn raw_access_inside_macros_is_refused() {
         "fn f(k: ExecutionAllocationDenialKind) { let v = vec![match k { ExecutionAllocationDenialKind::Cancelled => 1, _ => 0 }]; }",
         "macro_rules! alias { () => { type K = ExecutionAllocationDenialKind; }; }",
         "macro_rules! extension { () => { impl LocalTrait for ExecutionAllocationDenialKind { fn stopped(self) -> bool { matches!(self, Self::Cancelled) } } }; }",
-    ] { assert!(refused(source), "accepted {source}"); }
+    ] { assert_raw_kind_diagnostics(source, 1); }
 }
 #[test]
 fn only_the_execution_owner_can_match_raw_patterns() {
@@ -199,7 +199,7 @@ fn a_variant_import_in_an_inline_module_inside_a_macro_is_refused_once() {
 
 #[test]
 fn a_variant_import_in_a_nested_inline_module_is_refused() {
-    assert!(refused("mod outer { mod inner { use worth_execution::ExecutionAllocationDenialKind::Cancelled; } }"));
+    assert_raw_kind_diagnostics("mod outer { mod inner { use worth_execution::ExecutionAllocationDenialKind::Cancelled; } }", 1);
 }
 
 #[test]
