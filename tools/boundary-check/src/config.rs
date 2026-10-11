@@ -49,6 +49,9 @@ pub(crate) struct RequestConstructorDenialConfig {
     pub(crate) carried_signal_only: bool,
     #[serde(default)]
     pub(crate) signal_doors_only: bool,
+    /// Additional constructor spellings forbidden in the production module graph.
+    #[serde(default)]
+    pub(crate) constructor_names: Vec<String>,
     pub(crate) guidance: String,
 }
 
