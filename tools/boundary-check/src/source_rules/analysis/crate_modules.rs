@@ -13,7 +13,7 @@ use crate::cargo_graph::normalize_path;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use syn::{Attribute, File, Item, ItemMod, Visibility};
+use syn::{Attribute, Item, ItemMod, Visibility};
 
 /// One governed crate discovered under configured subworkspace roots.
 #[derive(Clone, Debug)]
@@ -234,7 +234,7 @@ fn parse_module_tree(
         crate::source_documents::read_to_string(source_path)
     })
     .map_err(|e| format!("read {}: {e}", source_path.display()))?;
-    let file: File = crate::source_syntax::parse_named(source_path, &text)
+    let file = crate::source_syntax::parse_named(source_path, &text)
         .map_err(|e| format!("parse {}: {e}", source_path.display()))?;
     let relative_source = relative_under_crate(crate_root, source_path)?;
 
@@ -242,7 +242,7 @@ fn parse_module_tree(
     for item in &file.items {
         if let Item::Mod(item_mod) = item {
             if descend(item_mod) {
-                child_mods.push(item_mod.clone());
+                child_mods.push(item_mod);
             }
         }
     }
@@ -252,8 +252,8 @@ fn parse_module_tree(
         module_path.clone(),
         relative_source,
         public_from_parent,
-        file.attrs,
-        file.items,
+        file.attrs.clone(),
+        file.items.clone(),
     );
 
     for item_mod in child_mods {
@@ -262,7 +262,7 @@ fn parse_module_tree(
             source_path,
             module_dir,
             &module_path,
-            &item_mod,
+            item_mod,
             modules,
             descend,
         )?;
@@ -293,7 +293,7 @@ fn load_child_module(
         for item in items {
             if let Item::Mod(nested_mod) = item {
                 if descend(nested_mod) {
-                    nested.push(nested_mod.clone());
+                    nested.push(nested_mod);
                 }
             }
         }
@@ -312,7 +312,7 @@ fn load_child_module(
                 parent_source,
                 &child_dir,
                 &child_path,
-                &nested_mod,
+                nested_mod,
                 modules,
                 descend,
             )?;

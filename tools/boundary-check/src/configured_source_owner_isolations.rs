@@ -76,12 +76,17 @@ fn diagnostics_for_source(
     owned: &OwnedItems,
     rule: &SourceOwnerIsolationConfig,
 ) -> Vec<Diagnostic> {
-    diagnostics_for_syntax(path, crate::source_syntax::parse_file(source), owned, rule)
+    diagnostics_for_syntax(
+        path,
+        crate::source_syntax::parse_file(source).map(std::rc::Rc::new),
+        owned,
+        rule,
+    )
 }
 
 fn diagnostics_for_syntax(
     path: &str,
-    syntax: syn::Result<syn::File>,
+    syntax: syn::Result<std::rc::Rc<syn::File>>,
     owned: &OwnedItems,
     rule: &SourceOwnerIsolationConfig,
 ) -> Vec<Diagnostic> {

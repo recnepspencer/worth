@@ -185,7 +185,7 @@ fn extract_exports(path: &Path) -> Result<Vec<String>, String> {
     let syntax = crate::source_syntax::parse_named(path, &text)
         .map_err(|e| format!("parse facade {}: {e}", path.display()))?;
     let mut exports = BTreeSet::new();
-    for item in syntax.items {
+    for item in syntax.items.clone() {
         match item {
             Item::Use(item_use) if matches!(item_use.vis, Visibility::Public(_)) => {
                 if item_use.attrs.iter().any(|attribute| {
@@ -258,7 +258,7 @@ mod tests {
         let syntax =
             crate::source_syntax::parse_file("pub use x::{A, B as C};\nuse x::Private;").unwrap();
         let mut exports = BTreeSet::new();
-        for item in syntax.items {
+        for item in syntax.items.clone() {
             if let Item::Use(item) = item {
                 if matches!(item.vis, Visibility::Public(_)) {
                     collect(&item.tree, None, &mut exports, Path::new("facade.rs")).unwrap();

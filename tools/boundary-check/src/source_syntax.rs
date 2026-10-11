@@ -20,7 +20,10 @@ pub(crate) fn parse_file(source: &str) -> syn::Result<syn::File> {
     })
 }
 
-pub(crate) fn parse_named(path: &std::path::Path, source: &str) -> syn::Result<syn::File> {
+pub(crate) fn parse_named(
+    path: &std::path::Path,
+    source: &str,
+) -> syn::Result<std::rc::Rc<syn::File>> {
     crate::source_documents::parsed(path, || parse_file(source))
 }
 

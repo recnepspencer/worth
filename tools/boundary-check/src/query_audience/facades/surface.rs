@@ -13,7 +13,7 @@ pub(super) fn validate_facade_only_lib(
     let mut diagnostics = Vec::new();
     let mut facade_exports = 0usize;
 
-    for item in syntax.items {
+    for item in syntax.items.clone() {
         match item {
             Item::Mod(ItemMod {
                 vis: Visibility::Public(_),
@@ -82,7 +82,7 @@ pub(super) fn validate_reexport_only_facade(
         return Ok(diagnostics);
     }
 
-    for item in syntax.items {
+    for item in syntax.items.clone() {
         match item {
             Item::Use(item_use) if matches!(item_use.vis, Visibility::Public(_)) => {
                 validate_reexport(

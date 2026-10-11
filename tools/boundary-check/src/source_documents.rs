@@ -19,6 +19,8 @@ struct Documents {
     aliases: BTreeMap<PathBuf, PathBuf>,
     bytes: BTreeMap<PathBuf, Result<Rc<[u8]>, ReadFailure>>,
     syntax: BTreeMap<PathBuf, syn::Result<Rc<syn::File>>>,
+    production_graphs:
+        BTreeMap<(PathBuf, String), Result<Rc<Vec<crate::source_rules::ModuleGraph>>, String>>,
     counts: Counts,
 }
 #[derive(Clone)]
@@ -122,21 +124,38 @@ pub(crate) fn record_parse() {
 pub(crate) fn parsed(
     path: &Path,
     operation: impl FnOnce() -> syn::Result<syn::File>,
-) -> syn::Result<syn::File> {
+) -> syn::Result<Rc<syn::File>> {
     let Some(documents) = current() else {
-        return operation();
+        return operation().map(Rc::new);
     };
     let key = documents.borrow_mut().key(path);
     if let Some(cached) = documents.borrow().syntax.get(&key) {
-        return cached
-            .as_ref()
-            .map(|syntax| syntax.as_ref().clone())
-            .map_err(Clone::clone);
+        return cached.clone();
     }
     // Parsing may update the work count; release the cache borrow first.
     let result = operation().map(Rc::new);
     documents.borrow_mut().syntax.insert(key, result.clone());
-    result.map(|syntax| syntax.as_ref().clone())
+    result
+}
+pub(crate) fn production_graphs(
+    root: &Path,
+    crate_root: &str,
+    operation: impl FnOnce() -> Result<Vec<crate::source_rules::ModuleGraph>, String>,
+) -> Result<Rc<Vec<crate::source_rules::ModuleGraph>>, String> {
+    let Some(documents) = current() else {
+        return operation().map(Rc::new);
+    };
+    let key = (root.to_path_buf(), crate_root.to_owned());
+    if let Some(cached) = documents.borrow().production_graphs.get(&key) {
+        return cached.clone();
+    }
+    let result =
+        crate::scan_profile::measure("production module graph build", operation).map(Rc::new);
+    documents
+        .borrow_mut()
+        .production_graphs
+        .insert(key, result.clone());
+    result
 }
 #[cfg(test)]
 mod tests;
