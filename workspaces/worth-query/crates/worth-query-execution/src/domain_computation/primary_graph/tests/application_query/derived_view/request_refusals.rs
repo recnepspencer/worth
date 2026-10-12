@@ -94,32 +94,34 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
             .application
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request();
-                for index in 0..3 {
+                for index in 0..4 {
                     let memory = if index == 0 { 0 } else { 1 << 20 };
                     let lease = host_custody
                         .borrowed_request_for_test()
                         .in_scope(|parent| {
                             let parent = parent.expect("the active phase carries a lease");
-                            parent
-                                .child(worth_execution::LeaseRequest {
-                                    policy: worth_foundational::ExecutionRequestPolicy::new(
-                                        parent.policy().posture(),
-                                        parent.policy().determinism(),
-                                        worth_foundational::ExecutionBudget::new(
-                                            std::num::NonZeroUsize::new(workers.unwrap_or(1))
-                                                .unwrap(),
-                                            memory,
-                                            parent.policy().budget().work_ceiling(),
-                                        ),
+                            let policy = worth_execution::LeaseRequest {
+                                policy: worth_foundational::ExecutionRequestPolicy::new(
+                                    parent.policy().posture(),
+                                    parent.policy().determinism(),
+                                    worth_foundational::ExecutionBudget::new(
+                                        std::num::NonZeroUsize::new(workers.unwrap_or(1)).unwrap(),
+                                        memory,
+                                        parent.policy().budget().work_ceiling(),
                                     ),
-                                    cancellation: if index == 1 {
-                                        cancelled.token()
-                                    } else {
-                                        CancellationToken::new()
-                                    },
-                                    deadline: (index == 2).then(Instant::now),
-                                })
-                                .unwrap()
+                                ),
+                                cancellation: if index == 1 {
+                                    cancelled.token()
+                                } else {
+                                    CancellationToken::new()
+                                },
+                                deadline: (index == 2).then(Instant::now),
+                            };
+                            if index == 3 {
+                                worth_execution::ExecutionResourceLease::serial(policy).unwrap()
+                            } else {
+                                parent.child(policy).unwrap()
+                            }
                         })
                         .unwrap();
                     let request = ExecutionRequest::leased(&lease);
@@ -203,6 +205,10 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                         2 => {
                             assert_eq!(denial, WorthQueryManagedDerivedViewDenial::DeadlineElapsed)
                         }
+                        3 => assert_eq!(
+                            denial,
+                            WorthQueryManagedDerivedViewDenial::UnrelatedNestedLease
+                        ),
                         _ => unreachable!(),
                     }
                     assert_eq!(prepared, 0);

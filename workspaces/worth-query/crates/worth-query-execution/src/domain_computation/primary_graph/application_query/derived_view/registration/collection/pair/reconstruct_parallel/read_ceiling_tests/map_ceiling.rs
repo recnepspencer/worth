@@ -132,6 +132,9 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
                 },
             )]))
             .unwrap();
+            let memory_before = execution
+                .in_scope(|lease| lease.unwrap().charged_memory_bytes())
+                .unwrap();
             let (outcome, _) = execution
                 .run(
                     ExecutionWorkCeiling::new(before_lookup + lookup - 1),
@@ -160,6 +163,13 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
                 }
                 MapOutcome::Complete { .. } => panic!("one-short lookup must stop"),
             }
+            let memory_after = execution
+                .in_scope(|lease| lease.unwrap().charged_memory_bytes())
+                .unwrap();
+            assert_eq!(
+                memory_after, memory_before,
+                "the stopped reconstruction read releases all transient memory"
+            );
         })
         .expect("the fixture block owns its installed host call")
 }

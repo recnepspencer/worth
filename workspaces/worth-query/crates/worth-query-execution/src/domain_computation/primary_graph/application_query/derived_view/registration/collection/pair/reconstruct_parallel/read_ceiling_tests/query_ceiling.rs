@@ -87,6 +87,9 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
                 },
             )]))
             .unwrap();
+            let memory_before = execution
+                .in_scope(|lease| lease.unwrap().charged_memory_bytes())
+                .unwrap();
             let (outcome, _) = execution
                 .run(ExecutionWorkCeiling::new(u64::MAX), |lease| {
                     map.run_owned(lease, |pair, context| pair.run(execution, context))
@@ -116,6 +119,13 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
                 }
                 MapOutcome::Complete { .. } => panic!("the Query-local read must deny"),
             }
+            let memory_after = execution
+                .in_scope(|lease| lease.unwrap().charged_memory_bytes())
+                .unwrap();
+            assert_eq!(
+                memory_after, memory_before,
+                "the stopped reconstruction read releases all transient memory"
+            );
         })
         .expect("the fixture block owns its installed host call")
 }
