@@ -131,6 +131,7 @@ fn commit(
     ceiling: u64,
     cancel: bool,
 ) -> (Result<CommitResult, TransactionCommitError>, u64) {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let (runtime, entity_id) = installed_rule_world();
     let mut candidate = transaction(&runtime);
     candidate
