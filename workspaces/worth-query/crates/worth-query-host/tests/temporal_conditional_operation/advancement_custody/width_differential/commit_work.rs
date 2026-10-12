@@ -7,10 +7,10 @@ const INVARIANT_POINTS: u64 = 3;
 const INVARIANT_PACKETS: u64 = 3;
 const INTENT_VISITS: u64 = 6;
 const PARTITION_VISITS: u64 = 6;
-const CUSTOM_SCOPE_CLONES: u64 = 2;
-const CUSTOM_KIND_CHECKS: u64 = 1;
-const CUSTOM_JOURNAL_VISITS: u64 = 2;
-const CUSTOM_INTENT_VISITS: u64 = 2;
+// The two journal slots and two merged intents exclude workflow custody's
+// declared kinds. Its shared footprint replaces that rule's scope capture.
+const CANDIDATE_JOURNAL_VISITS: u64 = 2;
+const CANDIDATE_INTENT_VISITS: u64 = 2;
 const INCLUDED_NATIVE: u64 = 2;
 const INCLUDED_CUSTOM: u64 = 1;
 const BUILTIN_RECORD_CHECKS: u64 = 8;
@@ -33,12 +33,7 @@ const TOUCH_ORDERING_PASSES: u64 = (u64::BITS - TOUCHES.leading_zeros()) as u64;
 const PACKET_SCOPE_PARTITIONS: u64 = 6;
 const REDUCTION_SORT_STEPS: u64 = 2;
 
-pub(super) fn quote(placement: super::Placement) -> u64 {
-    let super::Placement::Leased(_) = placement else {
-        // The unleased engine has no checked preparation, packet, or reducer
-        // kernels. Signal and the read still charge the surrounding request.
-        return 0;
-    };
+pub(super) fn quote() -> u64 {
     let planning =
         INVARIANT_POINTS * (NATIVE_REGISTRATIONS + CUSTOM_REGISTRATIONS) * REGISTRATION_VISIT
             + (INVARIANT_POINTS
@@ -47,10 +42,8 @@ pub(super) fn quote(placement: super::Placement) -> u64 {
                 + INVARIANT_PACKETS
                 + INTENT_VISITS
                 + PARTITION_VISITS
-                + CUSTOM_SCOPE_CLONES
-                + CUSTOM_KIND_CHECKS
-                + CUSTOM_JOURNAL_VISITS
-                + CUSTOM_INTENT_VISITS)
+                + CANDIDATE_JOURNAL_VISITS
+                + CANDIDATE_INTENT_VISITS)
                 * RECORD_VISIT;
     let descriptive = TOUCH_VISITS * RECORD_VISIT
         + INDEX_LOCATORS * (INDEX_LOCATOR_BASE + INDEX_PATH_FIELDS * INDEX_LOCATOR_PASSES)

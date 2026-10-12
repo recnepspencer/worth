@@ -14,10 +14,10 @@ const CUSTOM_PACKETS: u64 = 1;
 const INVARIANT_PACKETS: u64 = NATIVE_PACKETS + CUSTOM_PACKETS;
 const INTENTS: u64 = 2;
 const PARTITIONS: u64 = 2;
-const CUSTOM_SCOPE_CLONES: u64 = INTENTS;
-const CUSTOM_KIND_CHECKS: u64 = 1;
-const CUSTOM_JOURNAL_VISITS: u64 = INTENTS;
-const CUSTOM_INTENT_VISITS: u64 = INTENTS;
+// Account and idempotency occupy the two journal slots. Their kinds do not
+// touch workflow custody: only the shared candidate footprint is prepared.
+const CANDIDATE_JOURNAL_VISITS: u64 = INTENTS;
+const CANDIDATE_INTENT_VISITS: u64 = INTENTS;
 
 // Account has Policy, Membership and Annotations bindings. Only Policy
 // changes: its five declared fields are visited, but only Status is written.
@@ -70,10 +70,8 @@ const fn quote() -> u64 {
                 + INVARIANT_PACKETS
                 + INVARIANT_POINTS * INTENTS
                 + INVARIANT_POINTS * PARTITIONS
-                + CUSTOM_SCOPE_CLONES
-                + CUSTOM_KIND_CHECKS
-                + CUSTOM_JOURNAL_VISITS
-                + CUSTOM_INTENT_VISITS)
+                + CANDIDATE_JOURNAL_VISITS
+                + CANDIDATE_INTENT_VISITS)
                 * RECORD_VISIT;
     let descriptive = DESCRIPTIVE_VISITS * RECORD_VISIT
         + INDEX_LOCATORS * (INDEX_LOCATOR_BASE + INDEX_LOCATOR_PASSES)

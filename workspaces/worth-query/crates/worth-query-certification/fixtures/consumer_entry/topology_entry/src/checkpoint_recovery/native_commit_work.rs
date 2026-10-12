@@ -26,6 +26,9 @@ struct Shape {
     invariant_packets: u64,
     intent_visits: u64,
     partition_visits: u64,
+    candidate_entity_slots: u64,
+    candidate_relation_slots: u64,
+    candidate_intents: u64,
     scope_entity_clones: u64,
     scope_kind_checks: u64,
     scope_readable_kinds: u64,
@@ -70,6 +73,11 @@ const fn quote(s: Shape) -> u64 {
                 + s.partition_visits
                 + s.commits * 3)
                 * RECORD_VISIT;
+    // Only PositivePlanarTurn captures a scope. The workflow-custody rule's
+    // kinds are absent: a single footprint serves both registrations and pays
+    // one unit per journal slot and intent, without an untouched rule meter.
+    let narrowing = (s.candidate_entity_slots + s.candidate_relation_slots + s.candidate_intents)
+        * RECORD_VISIT;
     let custom_scope = (s.scope_entity_clones
         + s.scope_kind_checks
         + s.scope_readable_kinds
@@ -111,6 +119,7 @@ const fn quote(s: Shape) -> u64 {
     // Strategy diagnostics consult and retain storage, without invariant work.
     let reduction = (s.reduction_sort_steps + s.invariant_packets * 2) * RECORD_VISIT;
     planning
+        + narrowing
         + custom_scope
         + descriptive
         + packet_preparation
@@ -131,8 +140,12 @@ pub(super) const MUTATION_COMMIT_WORK: u64 = quote(Shape {
     invariant_packets: 4,
     intent_visits: 6,
     partition_visits: 6,
-    scope_entity_clones: 10,
-    scope_kind_checks: 2,
+    // Body and idempotency journal slots; the two merged intents name them.
+    candidate_entity_slots: 2,
+    candidate_relation_slots: 0,
+    candidate_intents: 2,
+    scope_entity_clones: 8,
+    scope_kind_checks: 1,
     scope_readable_kinds: 24,
     scope_relation_kinds: 1,
     scope_relation_reads: 8,
@@ -140,9 +153,9 @@ pub(super) const MUTATION_COMMIT_WORK: u64 = quote(Shape {
     scope_adjacency_candidates: 8,
     scope_seeds: 1,
     scope_seed_candidates: 2,
-    scope_entity_journal: 4,
+    scope_entity_journal: 2,
     scope_relation_journal: 0,
-    scope_intents: 4,
+    scope_intents: 2,
     rule_scope_steps: 9,
     packet_partition_ids: 8,
     builtin_record_steps: 24,
@@ -168,8 +181,15 @@ pub(super) const ADVANCEMENT_COMMIT_WORK: u64 = quote(Shape {
     invariant_packets: 20,
     intent_visits: 48,
     partition_visits: 84,
-    scope_entity_clones: 38,
-    scope_kind_checks: 6,
+    // The root has two journal entities; each producer has four entities and
+    // three relations. Their intents number two/seven/seven. Scope retention
+    // excludes the untouched workflow rule's two/one/one partition entries;
+    // producer rows and links occupy the same primary partition.
+    candidate_entity_slots: 2 + 4 + 4,
+    candidate_relation_slots: 0 + 3 + 3,
+    candidate_intents: 2 + 7 + 7,
+    scope_entity_clones: 34,
+    scope_kind_checks: 3,
     scope_readable_kinds: 96,
     scope_relation_kinds: 7,
     scope_relation_reads: 32,
@@ -177,9 +197,9 @@ pub(super) const ADVANCEMENT_COMMIT_WORK: u64 = quote(Shape {
     scope_adjacency_candidates: 32,
     scope_seeds: 7,
     scope_seed_candidates: 14,
-    scope_entity_journal: 20,
-    scope_relation_journal: 12,
-    scope_intents: 32,
+    scope_entity_journal: 10,
+    scope_relation_journal: 6,
+    scope_intents: 16,
     rule_scope_steps: 63,
     packet_partition_ids: 24,
     builtin_record_steps: 170,
