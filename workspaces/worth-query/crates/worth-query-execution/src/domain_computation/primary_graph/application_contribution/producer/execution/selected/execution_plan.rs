@@ -38,10 +38,9 @@ where
         .map_err(|cause| {
             denial(
                 WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
-                "selected producer phase",
+                "producer phase",
             )
         })?;
-
     // Fund the typed edition/type checks and the move-only execution split
     // before any early refusal. Producer subjects are borrowed statics.
     let entry_work = u64::try_from(
@@ -128,7 +127,6 @@ where
         )
         .map_err(|stop| super::super::selected_public::preparation_stop::<Schema, Binding>(stop))?;
     let plan = super::super::post_authorization::prepare_authorized::<Schema, Binding>(
-        execution,
         phase,
         runtime,
         shared.selected(),

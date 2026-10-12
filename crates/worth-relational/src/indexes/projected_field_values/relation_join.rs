@@ -12,7 +12,7 @@ use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_relation_join_index_checked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     definition: RelationJoinDefinition,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
 ) -> Result<BTreeMap<RelationJoinKey, Vec<RelationJoinEntry>>, IndexKernelStop> {
@@ -65,7 +65,7 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
 
 fn collect_join_relations_checked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     leg: RelationJoinLeg,
     shared_entity_kind: KindId,
     collected: &mut BTreeMap<EntityId, BTreeMap<EntityId, RelationId>>,
@@ -121,7 +121,7 @@ fn collect_join_relations_checked(
 
 pub(in crate::indexes) fn build_relation_join_index(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     definition: RelationJoinDefinition,
 ) -> BTreeMap<RelationJoinKey, Vec<RelationJoinEntry>> {
     let left = collect_join_relations(
@@ -163,7 +163,7 @@ pub(in crate::indexes) fn build_relation_join_index(
 
 fn collect_join_relations(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     leg: RelationJoinLeg,
     shared_entity_kind: KindId,
 ) -> BTreeMap<EntityId, BTreeMap<EntityId, RelationId>> {

@@ -51,7 +51,7 @@ struct ReadTransition {
 
 pub(in crate::domain_computation::primary_graph) fn read_live_instances(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    truth: &mut WorkflowAdoptionTruth<'_>,
+    truth: &mut WorkflowAdoptionTruth,
     layout: &WorthQueryWorkflowLayout,
     branch_occurrence: u64,
 ) -> Result<Vec<WorkflowLiveInstance>, WorkflowAdoptionReadDenial> {
@@ -105,7 +105,7 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
 
 fn read_transition(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    truth: &mut WorkflowAdoptionTruth<'_>,
+    truth: &mut WorkflowAdoptionTruth,
     layout: &WorthQueryWorkflowLayout,
     transition: EntityId,
 ) -> Result<ReadTransition, WorkflowAdoptionReadDenial> {

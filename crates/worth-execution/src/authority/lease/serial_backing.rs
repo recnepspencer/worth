@@ -1,12 +1,6 @@
 //! An owned, policy-bounded lease backing that has no physical pool.
-use super::{
-    AuthorityInner, EquivalenceRegistry, ExecutionAuthorityConfig, ExecutionResourceLease,
-    LeaseDenial, LeaseNode, LeaseRequest, Ledger,
-};
-use std::{
-    num::NonZeroUsize,
-    sync::{Arc, Mutex},
-};
+use super::{ExecutionResourceLease, LeaseDenial, LeaseRequest};
+use std::num::NonZeroUsize;
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
@@ -35,28 +29,10 @@ impl ExecutionResourceLease<'static> {
                 budget.work_ceiling(),
             ),
         );
-        let authority = Arc::new(AuthorityInner {
-            config: ExecutionAuthorityConfig {
-                max_workers: NonZeroUsize::MIN,
-                charged_memory_bytes: None,
-            },
-            pool: None,
-            equivalences: EquivalenceRegistry::default(),
-            ledger: Mutex::new(Ledger::default()),
-        });
-        Ok(Self {
-            node: Arc::new(LeaseNode {
-                id: authority.next_id(),
-                parent: None,
-                max_workers: 1,
-                posture: ExecutionPosture::Serial,
-                charged_memory_bytes: budget.charged_memory_bytes(),
-                deadline: request.deadline,
-                cancellation: request.cancellation,
-            }),
-            authority,
-            _authority: std::marker::PhantomData,
+        super::ExecutionAuthority::serial().request_lease(LeaseRequest {
             policy,
+            cancellation: request.cancellation,
+            deadline: request.deadline,
         })
     }
 }

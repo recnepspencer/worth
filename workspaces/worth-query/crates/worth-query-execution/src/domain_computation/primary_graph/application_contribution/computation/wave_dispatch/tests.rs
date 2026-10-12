@@ -22,10 +22,7 @@ fn run(
     worth_foundational::ExecutionReport,
 ) {
     let cancel = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
-        cancel.token(),
-    );
+    let scope = WorthQueryRequestScope::new(None, cancel.token());
     let policy = test_policy(NonZeroUsize::new(width.unwrap_or(1)).unwrap(), 1 << 24);
     let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
         RuntimeWorldExecutionPlacement::Leased {
@@ -60,7 +57,7 @@ fn charged(rank: u64, units: u64, fails: bool) -> PreparedMember {
 fn member_denials_travel_as_data_and_charge_the_whole_wave_at_every_width() {
     const CHARGES: [u64; 4] = [3, 1, 4, 2];
     for failure in 0..4 {
-        for width in [None, Some(1), Some(2), Some(4)] {
+        for width in [None, Some(1), Some(2), Some(5)] {
             let (settled, report) = run(
                 width,
                 CHARGES
@@ -95,7 +92,7 @@ fn member_denials_travel_as_data_and_charge_the_whole_wave_at_every_width() {
 #[test]
 fn independent_member_spans_compose_by_max_at_serial_and_leased_posture() {
     const CHARGES: [u64; 4] = [3, 1, 4, 2];
-    for width in [None, Some(1), Some(2), Some(4)] {
+    for width in [None, Some(1), Some(2), Some(5)] {
         let (settled, report) = run(
             width,
             CHARGES
@@ -107,7 +104,11 @@ fn independent_member_spans_compose_by_max_at_serial_and_leased_posture() {
         assert_eq!(settled.len(), CHARGES.len());
         assert!(settled.iter().all(Result::is_ok));
         assert_eq!(report.charged_work(), CHARGES.iter().sum::<u64>());
-        assert_eq!(report.charged_span(), *CHARGES.iter().max().unwrap());
+        assert_eq!(
+            report.charged_span(),
+            *CHARGES.iter().max().unwrap(),
+            "independent member spans take the maximum at every posture"
+        );
     }
 }
 #[test]
@@ -153,7 +154,7 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
 fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
     use std::sync::Condvar;
     for failure in [None, Some(0), Some(1), Some(2), Some(3)] {
-        for workers in [2, 4] {
+        for workers in [2, 5] {
             let schedule = Arc::new((Mutex::new((Vec::new(), false)), Condvar::new()));
             let members = (0..4)
                 .map(|rank| {
@@ -224,5 +225,11 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
 
 mod exhaustion;
 mod interruptions;
+mod present_interruption;
 
 mod nested_outcomes;
+
+pub(super) mod seeded_dispatch;
+
+mod diagnostic_charge;
+mod overlap;

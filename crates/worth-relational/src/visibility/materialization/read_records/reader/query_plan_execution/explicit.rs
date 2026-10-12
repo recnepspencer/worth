@@ -1,6 +1,6 @@
 use super::*;
 
-impl VisibilityReadContext<'_> {
+impl RelationalPinnedRead {
     pub(super) fn execute_explicit_query_plan(
         &self,
         plan: SnapshotPinnedQueryPlan,
@@ -14,10 +14,8 @@ impl VisibilityReadContext<'_> {
             prepare_explicit_packets(targets, budget)
         })?;
         let metrics = PacketizedQueryMetrics::from_packets(&packets);
-        record_query_packet_metrics(self.runtime, &plan, &metrics);
-        let Some(basis) = resolve_snapshot_basis(self.runtime, &plan.snapshot) else {
-            return Ok(None);
-        };
+        record_query_packet_metrics(&self.performance_access(), &plan, &metrics);
+        let basis = &self.basis;
         let remaining_lease = lease
             .map(|lease| remaining_work_lease(lease, preparation))
             .transpose()?;
@@ -26,14 +24,14 @@ impl VisibilityReadContext<'_> {
             self,
             &plan,
             packets,
-            &basis,
+            basis,
             execution,
             remaining_lease.as_ref(),
         )
         .map_err(|stop| combine_query_stop(stop, preparation))?;
         let report = Some(combine_query_reports(preparation, report));
         Ok(Some(query_execution_outcome_maybe_leased(
-            self.runtime,
+            &self.performance_access(),
             plan,
             metrics.packet_count,
             metrics.touched_partitions,

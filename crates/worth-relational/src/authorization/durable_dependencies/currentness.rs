@@ -103,7 +103,7 @@ impl RelationalAuthorizationDurableDependencies {
 
 fn field_revision_matches(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &crate::visibility::materialization::read_records::VisibilityProjectionView<'_>,
+    view: &crate::visibility::materialization::read_records::VisibilityProjectionView,
     field: &FieldDependency,
 ) -> Result<bool, Denial> {
     let locator = AspectFieldLocator::new(

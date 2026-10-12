@@ -11,7 +11,7 @@ use super::VisibilityProjectionView;
 #[path = "field_revisions/admitted_entity.rs"]
 mod admitted_entity;
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     /// Native field status and revision at an exact immutable root. `None`
     /// means unavailable provenance; it never means an absent field. Current
     /// checkpoint images retain native revisions, including absent revisions.
@@ -62,12 +62,10 @@ impl VisibilityProjectionView<'_> {
         let revisions = partition
             .relation_arena
             .field_revisions_at(relation.slot_index())?;
-        let (aspect_symbol, field_symbol) = self.runtime.services.symbols.with_read(|symbols| {
-            (
-                symbols.symbol(locator.aspect().aspect_key().as_str()),
-                symbols.symbol(field.as_str()),
-            )
-        });
+        let (aspect_symbol, field_symbol) = (
+            self.symbols.symbol(locator.aspect().aspect_key().as_str()),
+            self.symbols.symbol(field.as_str()),
+        );
         let explicit = aspect_symbol
             .zip(field_symbol)
             .and_then(|key| revisions.get(&key).copied());

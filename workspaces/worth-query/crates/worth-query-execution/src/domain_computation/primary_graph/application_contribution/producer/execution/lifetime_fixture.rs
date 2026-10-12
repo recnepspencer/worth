@@ -51,7 +51,6 @@ impl InstalledSelectedProducerExecutor<Schema> for LifetimeOnly {
 
     fn inspect_frozen_ready<'basis>(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _inspection: super::required_cue::FrozenInspection<'basis, '_, Schema>,
         _admission: &mut InvalidationEditAdmission,
     ) -> Result<super::required_cue::FrozenCurrentInspection<'basis>, ProducerExecutionStop>

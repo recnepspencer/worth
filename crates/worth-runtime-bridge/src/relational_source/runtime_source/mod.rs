@@ -10,6 +10,7 @@ mod branch_heads;
 mod canonical_subscription;
 mod committed_patches;
 mod continuity_lineage;
+mod lock_observation;
 mod observation_bindings;
 mod retained_entity_projection;
 mod retained_snapshot;

@@ -138,5 +138,5 @@ fn observed_account_source() -> crate::domain_computation::primary_graph::WorthQ
                 .observed_sources()[0]
                 .clone()
         })
-        .unwrap()
+        .expect("the typed frame source owns its host request")
 }

@@ -71,7 +71,7 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
 
 fn assert_borrowed_title(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     entity: EntityId,
 ) {
     let root = view.basis.root().unwrap();
@@ -136,8 +136,8 @@ fn projection_preserves_identity_kind_and_lifecycle_across_exact_and_historical_
 
 fn assert_projection_lifecycle(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    before: &VisibilityProjectionView<'_>,
-    after: &VisibilityProjectionView<'_>,
+    before: &VisibilityProjectionView,
+    after: &VisibilityProjectionView,
     entity: EntityId,
 ) {
     let scope = ProjectionAspectScope::whole_aspects([aspect_key("name")]);

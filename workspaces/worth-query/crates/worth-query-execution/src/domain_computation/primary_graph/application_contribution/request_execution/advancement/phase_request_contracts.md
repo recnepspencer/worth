@@ -27,7 +27,7 @@ fn pause<'held, Schema: ApplicationSchema + 'static>(
     wake: &mut Option<ExecutionRequest<'held, 'held>>,
 ) {
     let _ = app.with_application_advancement(scope, |phase| {
-        *wake = Some(phase.execution_request_for(runtime).unwrap());
+        *wake = Some(phase.checked_execution_request_for(runtime).unwrap());
     });
 }
 ```
@@ -41,7 +41,7 @@ fn pause<Schema: ApplicationSchema + 'static>(
     wake: &mut Option<()>,
 ) {
     let _ = app.with_application_advancement(scope, |phase| {
-        let _ = phase.execution_request_for(runtime).unwrap();
+        let _ = phase.checked_execution_request_for(runtime).unwrap();
         *wake = Some(phase.complete());
     });
 }

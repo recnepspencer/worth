@@ -36,7 +36,7 @@ fn retained_read_defers_component_cleanup_and_preserves_retry_authority() {
                 .expect("the survivor must be selectable before sibling cleanup")
                 .conditional_clock(
                     &phase
-                        .execution_request_for(world.application.product_runtime())
+                        .checked_execution_request_for(world.application.product_runtime())
                         .expect("phase belongs to application"),
                     &world.clock,
                 )

@@ -1,12 +1,10 @@
 //! The compute and complete phases of a prepared partitioned computation.
 
 mod decision_plan;
+pub(super) mod kernel_observation;
 mod transport;
 
-use std::collections::BTreeMap;
-use std::sync::Mutex;
-
-use worth_execution::{ExecutionMap, MapKernelContext, MapKernelStop};
+use worth_execution::{ExecutionMap, MapKernelContext};
 use worth_query_declaration::facade::application_program::{
     ApplicationFeature, ApplicationManagedComputation,
 };
@@ -64,6 +62,8 @@ where
     pub(super) run: PreparedRun<Schema, Feature, Computation, Owner>,
     /// Where the completed run is left for seal, when a producer runs it.
     pub(super) deposit: ComputationDeposit,
+    pub(super) kernel_observation_for_test:
+        Option<kernel_observation::KernelCostObservationForTest>,
 }
 
 /// Every partition gathered, or only the marked ones.
@@ -101,6 +101,31 @@ where
     Computation: ApplicationManagedComputation<Schema, Feature>,
     Owner: WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>,
 {
+    /// Restrict this owned prepared run's compute allowance for certification.
+    #[doc(hidden)]
+    pub fn with_compute_ceiling_for_test(mut self, ceiling: u64) -> Self {
+        crate::domain_computation::execution_observation::owned_control_scope::current_id();
+        match &mut self.run {
+            PreparedRun::Full { remaining_work, .. } => {
+                *remaining_work = (*remaining_work).min(ceiling)
+            }
+            PreparedRun::Incremental(prepared) => prepared.restrict_compute_ceiling(ceiling),
+        }
+        self
+    }
+
+    /// Observe this receiver's full-equivalent map bill without a thread recorder.
+    #[doc(hidden)]
+    pub fn observe_kernel_cost_for_test(
+        mut self,
+        report: impl Fn(u64, u64) + Send + Sync + 'static,
+    ) -> Self {
+        self.kernel_observation_for_test = Some(
+            kernel_observation::KernelCostObservationForTest::new(report),
+        );
+        self
+    }
+
     /// Computes every partition through the execution map and reduces the
     /// results over the canonical tree, inside what `prepare` left of the
     /// computation's declared work.
@@ -141,35 +166,67 @@ where
             WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
         )
         .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-        let kernel_units = Mutex::new(BTreeMap::new());
-        let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
-                      context: &mut MapKernelContext<'_, '_>| {
-            let mut spent = 0_u64;
+        let retain = match &self.run {
+            PreparedRun::Full { recording, .. } => {
+                recording.as_ref().is_ok_and(FullRecording::can_retain)
+            }
+            PreparedRun::Incremental(prepared) => prepared.can_retain(),
+        };
+        let recording_steps = super::incremental::KernelRecording::new(execution.request, retain);
+        let compute_kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
+                              context: &mut MapKernelContext<'_, '_>,
+                              steps: &mut Option<super::incremental::KernelSteps>,
+                              #[cfg(test)] native: Option<
+            &worth_execution::ExecutionResourceLease<'_>,
+        >| {
             let (computed, refused) = {
                 let mut charge = |work| {
                     context.checkpoint(work)?;
-                    spent = spent
-                        .checked_add(work)
-                        .ok_or(MapKernelStop::WorkCounterOverflow)?;
+                    recording_steps.accepted(steps, work);
                     Ok(())
                 };
-                let mut checkpoint =
+                let checkpoint =
                     WorthQueryManagedComputationCheckpoint::for_partition(&mut charge, execution);
+                #[cfg(test)]
+                let checkpoint = checkpoint.with_native_lease_for_test(native);
+                let mut checkpoint = checkpoint;
                 let computed = owner.compute_partition(
                     WorthQueryComputationPartitionView::new(partition),
                     &mut checkpoint,
                 );
                 (computed, checkpoint.refused())
             };
-            kernel_units
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .insert(partition.identity, spent);
             match refused {
                 Some(refused) => Err(kernel_failure(refused.into())),
                 None => computed.map_err(kernel_failure),
             }
         };
+        let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
+                      context: &mut MapKernelContext<'_, '_>| {
+            let mut steps = recording_steps.start();
+            let result = compute_kernel(
+                partition,
+                context,
+                &mut steps,
+                #[cfg(test)]
+                None,
+            );
+            recording_steps.finish(partition.identity, steps, context.charged_cost());
+            result
+        };
+        // Certification reruns the same owner without touching request retention
+        // or its memory reservations. The original kernel alone records steps.
+        let diagnostic_kernel =
+            |partition: &Gathered<Schema, Feature, Computation, Owner>,
+             context: &mut MapKernelContext<'_, '_>| {
+                compute_kernel(
+                    partition,
+                    context,
+                    &mut None,
+                    #[cfg(test)]
+                    None,
+                )
+            };
         let exhausted = || {
             WorthQueryPartitionedComputationDenial::Resource(
                 WorthQueryManagedComputationResourceDenial::WorkExhausted,
@@ -187,6 +244,19 @@ where
                     .request
                     .dispatch()
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+                #[cfg(test)]
+                let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
+                              context: &mut MapKernelContext<'_, '_>| {
+                    let mut steps = recording_steps.start();
+                    let result = compute_kernel(
+                        partition,
+                        context,
+                        &mut steps,
+                        Some(dispatch.native_lease_for_test()),
+                    );
+                    recording_steps.finish(partition.identity, steps, context.charged_cost());
+                    result
+                };
                 // The map's admission takes over the gathered partitions' hold,
                 // and the tree is handed to `tree_memory` as the run ends.
                 let mut tree_memory = execution
@@ -200,7 +270,7 @@ where
                             &map,
                             memory.into_held(),
                             &mut tree_memory,
-                            kernel,
+                            (kernel, diagnostic_kernel),
                             (reducer.identity)(),
                             reducer.combine,
                             declared_bytes,
@@ -216,18 +286,23 @@ where
                         })?;
                     reduced.map_err(WorthQueryPartitionedComputationDenial::from_reduce)
                 })?;
+                if let Some(observer) = &self.kernel_observation_for_test {
+                    observer.record(
+                        report
+                            .charged_work()
+                            .checked_sub(metrics.charged_work)
+                            .expect("tree work is included"),
+                        report
+                            .charged_span()
+                            .checked_sub(metrics.charged_span)
+                            .expect("tree span is included"),
+                    );
+                }
                 let reduced = tree.result().clone();
                 let completed = match recording {
-                    Ok(recording) => recording.complete(
-                        kernel_units
-                            .into_inner()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner),
-                        tree,
-                        tree_memory,
-                        metrics.charged_work,
-                        cause,
-                        report,
-                    ),
+                    Ok(recording) => {
+                        recording.complete(recording_steps.take(), tree, tree_memory, cause, report)
+                    }
                     Err(reason) => {
                         observe_unretained(cause, report);
                         CompletedComputationRetention::Absent(PriorAbsence::Suppressed(reason))
@@ -240,7 +315,14 @@ where
                     reduced,
                     computed_work,
                     completed,
-                } = prepared.compute(execution.request, kernel, &reducer, transport)?;
+                } = prepared.compute(
+                    execution.request,
+                    kernel,
+                    &recording_steps,
+                    self.kernel_observation_for_test.as_ref(),
+                    &reducer,
+                    transport,
+                )?;
                 (reduced, computed_work, completed)
             }
         };

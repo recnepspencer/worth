@@ -135,7 +135,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .unwrap()
                 .conditional_clock(
                     &phase
-                        .execution_request_for(world.application.product_runtime())
+                        .checked_execution_request_for(world.application.product_runtime())
                         .expect("phase belongs to application"),
                     &world.clock,
                 )
@@ -166,7 +166,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .unwrap()
                 .conditional_clock(
                     &phase
-                        .execution_request_for(world.application.product_runtime())
+                        .checked_execution_request_for(world.application.product_runtime())
                         .expect("phase belongs to application"),
                     &world.clock,
                 )
@@ -218,7 +218,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .unwrap()
                 .conditional_clock(
                     &phase
-                        .execution_request_for(world.application.product_runtime())
+                        .checked_execution_request_for(world.application.product_runtime())
                         .expect("phase belongs to application"),
                     &world.clock,
                 )
@@ -287,7 +287,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .unwrap()
                 .conditional_clock(
                     &phase
-                        .execution_request_for(world.application.product_runtime())
+                        .checked_execution_request_for(world.application.product_runtime())
                         .expect("phase belongs to application"),
                     &world.clock,
                 )

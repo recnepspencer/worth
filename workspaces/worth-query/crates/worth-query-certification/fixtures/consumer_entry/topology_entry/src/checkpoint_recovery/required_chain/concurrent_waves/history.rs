@@ -28,14 +28,21 @@ macro_rules! settle {
     };
 }
 #[derive(Debug, PartialEq)]
-struct Observed {
+pub(super) struct Observed {
     committed: Vec<String>,
-    work: u64,
-    span: u64,
+    pub(super) work: u64,
+    pub(super) span: u64,
     lengths: [u64; 2],
     settled: bool,
 }
 fn run(placement: Placement, failure: Option<(usize, Failure)>) -> Observed {
+    run_costs(placement, failure, computation::COSTS)
+}
+pub(super) fn run_costs(
+    placement: Placement,
+    failure: Option<(usize, Failure)>,
+    costs: [usize; 2],
+) -> Observed {
     let _restore = Restore(place(placement));
     arm(None);
     let profile =
@@ -150,7 +157,7 @@ fn run(placement: Placement, failure: Option<(usize, Failure)>) -> Observed {
     }
     let overlap = matches!(placement, Placement::Leased(width) if width.get() > 1)
         && !matches!(failure, Some((_, Failure::Prepare)));
-    let schedule = Schedule::new(roots.clone(), failure, overlap);
+    let schedule = Schedule::declared(roots.to_vec(), costs.to_vec(), failure, overlap);
     arm(Some(schedule.clone()));
     observations();
     let outcome = join.advance(&request);

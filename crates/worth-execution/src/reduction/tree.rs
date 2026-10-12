@@ -8,6 +8,7 @@ use super::plan::{ReductionDenial, ReductionPlan};
 
 mod construction;
 mod edit;
+mod full_cost;
 mod memory;
 mod recombine;
 mod scheduled;
@@ -30,6 +31,7 @@ pub(super) struct Node<T> {
     pub(super) left: Link<T>,
     pub(super) right: Link<T>,
     pub(super) retained_bytes: u64,
+    pub(super) full_subtree_span: u64,
 }
 
 /// Completed node recombinations and entered combine calls for one operation.

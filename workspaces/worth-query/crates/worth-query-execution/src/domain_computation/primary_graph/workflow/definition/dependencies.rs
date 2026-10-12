@@ -44,7 +44,7 @@ impl WorkflowDefinitionDependencies {
 
 pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    truth: &mut WorkflowAdoptionTruth<'_>,
+    truth: &mut WorkflowAdoptionTruth,
     layout: &WorthQueryWorkflowLayout,
     lineage: EntityId,
     definition: EntityId,
@@ -142,7 +142,7 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
 
 fn read_node(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    truth: &mut WorkflowAdoptionTruth<'_>,
+    truth: &mut WorkflowAdoptionTruth,
     layout: &WorthQueryWorkflowLayout,
     entity: EntityId,
 ) -> Result<WorkflowRetainedNode, WorkflowAdoptionReadDenial> {

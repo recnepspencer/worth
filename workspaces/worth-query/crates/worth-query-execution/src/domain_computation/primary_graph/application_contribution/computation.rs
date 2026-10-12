@@ -176,6 +176,8 @@ where
                 charge: Some(&mut delegated),
             },
             execution: &execution,
+            #[cfg(test)]
+            native: None,
         };
         let computed = self
             .installed

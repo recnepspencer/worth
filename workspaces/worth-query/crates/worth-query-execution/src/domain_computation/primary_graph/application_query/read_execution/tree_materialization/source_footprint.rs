@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
 pub(super) fn collect_source_footprints(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &VisibilityProjectionView<'_>,
+    projection: &VisibilityProjectionView,
     graph: &WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &WorthQueryApplicationQueryGovernance,
@@ -165,7 +165,7 @@ fn footprint_counts(
 #[allow(clippy::too_many_arguments)]
 fn collect_node(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &VisibilityProjectionView<'_>,
+    projection: &VisibilityProjectionView,
     graph: &WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &WorthQueryApplicationQueryGovernance,

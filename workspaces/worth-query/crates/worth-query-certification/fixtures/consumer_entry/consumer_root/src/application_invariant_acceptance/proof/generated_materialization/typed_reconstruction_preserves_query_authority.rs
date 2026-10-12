@@ -110,7 +110,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         .with_host_advancement(|phase| {
             application.fail_next_durable_append_for_test(
                 &phase
-                    .execution_request_for(application.product_runtime())
+                    .checked_execution_request_for(application.product_runtime())
                     .expect("matching installed phase"),
             )
         })
@@ -183,7 +183,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         .with_host_advancement(|phase| {
             application.fail_next_durable_append_for_test(
                 &phase
-                    .execution_request_for(application.product_runtime())
+                    .checked_execution_request_for(application.product_runtime())
                     .expect("matching installed phase"),
             )
         })

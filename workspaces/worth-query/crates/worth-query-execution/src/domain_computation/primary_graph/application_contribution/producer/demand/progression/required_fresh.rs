@@ -28,7 +28,6 @@ where
     /// Preparation retains the real typed successor until canonical apply.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn prepare_required_fresh<'owner, Family>(
         &'owner self,
-        execution: worth_execution::ExecutionRequest<'owner, 'owner>,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
         fresh: FreshOutputDisclosure<
             FamilySourceQuery<Schema, Family>,
@@ -55,6 +54,14 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
         WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
     {
+        let execution = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "advancement phase",
+                )
+            })?;
         let mut slot = PreparedRequiredFreshSlot::<Schema, Family>::prepare(
             &self.output_demands,
             claim,
@@ -115,7 +122,6 @@ where
                         )
                         .and_then(|fresh| {
                             self.prepare_validated_output_demand_with_schedule(
-                        execution,
                         phase,
                         &mut successor,
                         principal,

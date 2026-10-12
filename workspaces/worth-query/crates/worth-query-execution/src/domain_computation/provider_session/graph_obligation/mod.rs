@@ -5,7 +5,7 @@ mod owner_execution;
 mod read_terminal;
 mod session;
 pub(in crate::domain_computation) use session::{
-    WorthQueryManagedGraphReadDenial, WorthQueryPreparedReadCompletion,
+    WorthQueryManagedGraphReadDenial, WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion,
     WorthQueryPreparedSessionRead,
 };
 mod session_identity;
@@ -29,3 +29,9 @@ pub(in crate::domain_computation) use session::{
 pub use session_identity::{
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
 };
+
+#[cfg(test)]
+pub(in crate::domain_computation) use owner_execution::pin_panic;
+
+#[cfg(test)]
+pub(in crate::domain_computation) use owner_execution::pin_control;

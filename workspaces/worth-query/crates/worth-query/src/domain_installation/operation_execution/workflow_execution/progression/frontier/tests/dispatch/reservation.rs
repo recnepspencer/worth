@@ -32,7 +32,7 @@ pub(super) fn start_reservation(
     let owner = workspace.advancement_owner();
     owner
         .with_advancement(|phase| {
-            let request = phase.execution_request_for(&owner).unwrap();
+            let request = phase.checked_execution_request_for(&owner).unwrap();
             let (scope, map) = scoped_map_reservation(request, declaration);
             root + scope + map
         })

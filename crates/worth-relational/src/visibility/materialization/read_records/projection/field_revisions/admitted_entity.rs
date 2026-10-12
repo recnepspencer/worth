@@ -10,7 +10,7 @@ use crate::storage::overlay::PartitionAccess;
 
 use super::super::VisibilityProjectionView;
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     /// Admission covers the selected catalog walk, text comparisons and
     /// revision lookup before each read. There is no owned record projection.
     /// `None` retains the unrestricted read's unavailable/undeclared meaning.
@@ -100,11 +100,10 @@ impl VisibilityProjectionView<'_> {
                 .unwrap_or(u64::MAX)
                 .saturating_add(2),
         )?;
-        let (aspect_symbol, field_symbol) = self
-            .runtime
-            .services
-            .symbols
-            .with_read(|symbols| (symbols.symbol(aspect_text), symbols.symbol(field_text)));
+        let (aspect_symbol, field_symbol) = (
+            self.symbols.symbol(aspect_text),
+            self.symbols.symbol(field_text),
+        );
         let explicit = if let Some(key) = aspect_symbol.zip(field_symbol) {
             admit_work(btree_navigation_work(revisions.len()))?;
             revisions.get(&key).copied()

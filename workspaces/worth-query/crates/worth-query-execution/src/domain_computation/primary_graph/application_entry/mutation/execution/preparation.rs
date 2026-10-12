@@ -5,7 +5,7 @@ use super::*;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[allow(clippy::too_many_arguments)]
     pub(in crate::domain_computation::primary_graph) fn prepare_mutation_handler_plan<
-        'advance,
+        'advance: 'authority,
         'authority,
         Binding,
     >(
@@ -29,7 +29,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
     >
     where
-        'advance: 'authority,
         Binding: ApplicationMutationBinding<Schema>,
     {
         let execution = match phase.execution_for(&self.product_runtime) {
@@ -73,17 +72,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
         );
         let mut handler_contacted = false;
-        let phase_request =
-            phase
-                .execution_request_for(&self.product_runtime)
-                .map_err(|cause| {
-                    WorthQueryMutationHandlerExecutionReport::new(
-                        Err(MutationHandlerExecutionDenial::ForeignAdvancementPhase(
-                            cause,
-                        )),
-                        WorthQueryMutationHandlerWork::NotStarted,
-                    )
-                })?;
+        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(cause) => {
+                return Err(WorthQueryMutationHandlerExecutionReport::new(
+                    Err(MutationHandlerExecutionDenial::ForeignAdvancementPhase(
+                        cause,
+                    )),
+                    WorthQueryMutationHandlerWork::NotStarted,
+                ))
+            }
+        };
         let projected = {
             self.mutation_projection
                 .project_admitted_operation_with_request(

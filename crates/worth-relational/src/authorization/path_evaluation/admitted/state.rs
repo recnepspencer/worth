@@ -25,9 +25,9 @@ impl Witness {
         self.entities.get(ordinal).copied()
     }
 }
-pub(super) struct Context<'r, 'v, 's> {
+pub(super) struct Context<'r, 'v> {
     pub(super) runtime: &'r RelationalRuntime,
-    pub(super) view: &'v VisibilityProjectionView<'s>,
+    pub(super) view: &'v VisibilityProjectionView,
 }
 pub(super) struct State<'a, A> {
     pub(super) dependencies: RelationalAuthorizationDependencySets,

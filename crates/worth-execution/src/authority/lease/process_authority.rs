@@ -30,13 +30,13 @@ impl ExecutionAuthority {
         let pool = if !crate::backend::HAS_OS_THREADS {
             None
         } else {
-            Some(
+            Some(Arc::new(
                 ThreadPoolBuilder::new()
                     .num_threads(config.max_workers.get())
                     .thread_name(|index| format!("worth-execution-{index}"))
                     .build()
                     .map_err(|error| ConstructionDenial::PoolConstruction(error.to_string()))?,
-            )
+            ))
         };
         let authority = Self {
             inner: Arc::new(AuthorityInner {

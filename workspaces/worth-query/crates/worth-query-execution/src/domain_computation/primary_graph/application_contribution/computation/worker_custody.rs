@@ -1,26 +1,17 @@
 //! A member compute cannot open a second installed host advancement.
-use std::{cell::Cell, marker::PhantomData, rc::Rc};
-thread_local! { static ACTIVE: Cell<bool> = const { Cell::new(false) }; }
-
+// Execution carries this same refusal context onto every descendant worker.
 pub(in crate::domain_computation::primary_graph) struct MemberComputeCustody {
-    previous: bool,
-    _thread: PhantomData<Rc<()>>,
+    _context: worth_execution::ExecutionOwnerContext,
 }
 impl MemberComputeCustody {
     pub(super) fn enter() -> Self {
         Self {
-            previous: ACTIVE.with(|active| active.replace(true)),
-            _thread: PhantomData,
+            _context: worth_execution::ExecutionOwnerContext::enter(),
         }
     }
 }
-impl Drop for MemberComputeCustody {
-    fn drop(&mut self) {
-        ACTIVE.with(|active| active.set(self.previous));
-    }
-}
 pub(in crate::domain_computation::primary_graph) fn active() -> bool {
-    ACTIVE.with(Cell::get)
+    worth_execution::ExecutionOwnerContext::is_active()
 }
 
 #[cfg(test)]

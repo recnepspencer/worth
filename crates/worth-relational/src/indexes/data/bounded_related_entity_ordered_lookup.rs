@@ -142,6 +142,7 @@ impl BoundedRelatedEntityOrderedLookupOutcome {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BoundedRelatedEntityOrderedLookupDenialKind {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     InvalidPageWidth,
     SnapshotUnavailable,
     IndexNotInstalled,

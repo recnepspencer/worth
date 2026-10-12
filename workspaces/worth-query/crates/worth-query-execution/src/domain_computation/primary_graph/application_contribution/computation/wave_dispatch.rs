@@ -87,32 +87,43 @@ pub(in crate::domain_computation::primary_graph) fn dispatch(
         Err(denial) => return vec![Err(WorthQueryAdvancementDenial::Resource(denial))],
     };
     let outcome = request.in_scope(|lease| {
-        let outcome = map.run_owned(
-            lease,
-            |input: PreparedMember, context| -> Result<_, MapKernelFailure<NoMemberFailure>> {
-                let member = wave.member();
-                let mut slots = Vec::with_capacity(input.requests.len());
-                for request in input.requests {
-                    // A prior request's untaken cause cannot reach a later
-                    // request, even when that request returns its own error.
-                    context.checkpoint(0)?;
-                    let context = std::cell::RefCell::new(&mut *context);
-                    let mut charge = |units| context.borrow_mut().checkpoint(units);
-                    let mut take = || context.borrow_mut().take_nested_computation_stop();
-                    let slot = request.run(WorthQueryMemberExecution::for_kernel(
-                        &member,
-                        &mut charge,
-                        &mut take,
-                    ));
-                    slots.push(slot);
+        let kernel = |input: PreparedMember,
+                      context: &mut worth_execution::MapKernelContext<'_, '_>|
+         -> Result<_, MapKernelFailure<NoMemberFailure>> {
+            let member = wave.member();
+            let mut slots = Vec::with_capacity(input.requests.len());
+            for request in input.requests {
+                // A prior request's untaken cause cannot reach a later
+                // request, even when that request returns its own error.
+                context.checkpoint(0)?;
+                let context = std::cell::RefCell::new(&mut *context);
+                let mut charge = |units| context.borrow_mut().checkpoint(units);
+                let mut take = || context.borrow_mut().take_nested_computation_stop();
+                let slot = request.run(WorthQueryMemberExecution::for_kernel(
+                    &member,
+                    &mut charge,
+                    &mut take,
+                ));
+                slots.push(slot);
+            }
+            let result = ComputedMember {
+                slots,
+                custody: None,
+            };
+            Ok(result)
+        };
+        let outcome =
+            match super::super::request_execution::certified_wave_seed_for_test(wave.request()) {
+                Some(seed) => {
+                    let (outcome, order) = map.run_owned_perturbed_for_test(lease, seed, kernel);
+                    #[cfg(test)]
+                    tests::seeded_dispatch::record(order);
+                    #[cfg(not(test))]
+                    drop(order);
+                    outcome
                 }
-                let result = ComputedMember {
-                    slots,
-                    custody: None,
-                };
-                Ok(result)
-            },
-        );
+                None => map.run_owned(lease, kernel),
+            };
         retain_outcome(execution, outcome)
     });
     match outcome {

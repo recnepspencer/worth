@@ -152,7 +152,7 @@ pub(super) fn capture(
 
 pub(super) fn capture_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     entity: EntityId,
     remaining: &mut usize,
 ) -> Result<EntityDependency, Denial> {
@@ -174,7 +174,7 @@ pub(super) fn capture_entity(
 
 pub(super) fn capture_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     relation: RelationId,
     remaining: &mut usize,
 ) -> Result<RelationDependency, Denial> {

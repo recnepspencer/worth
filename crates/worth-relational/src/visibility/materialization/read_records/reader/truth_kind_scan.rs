@@ -64,90 +64,17 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         visibility: KindScanVisibility,
         maximum_work_units: usize,
     ) -> Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded> {
-        let mut scan = EntityKindScan::new(maximum_work_units);
-        for partition_id in state.partition_ids() {
-            self.scan_entity_kind_in_partition(
-                state,
-                registry,
-                partition_id,
-                kind_id,
-                visibility,
-                &mut scan,
-            )?;
-        }
-        let read = scan.finish();
-        debug_assert!(
-            super::truth_access::authoritative_entity_records_are_canonical(read.records())
-        );
-        Ok(read)
-    }
-
-    pub(super) fn scan_entity_kind_in_partition(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        visibility: KindScanVisibility,
-        scan: &mut EntityKindScan,
-    ) -> Result<(), EntityKindTruthReadLimitExceeded> {
-        let current_version = VersionSource::current_version_id(self.runtime);
-        let Some(partition) = state.get_partition(partition_id) else {
-            return Ok(());
-        };
-        match visibility {
-            KindScanVisibility::Live => {
-                for slot in partition.entity_arena.live_bitset.iter_set_slots() {
-                    scan.examine_slot()?;
-                    if !slot_kind_matches_current(&partition.entity_arena, slot, kind_id) {
-                        continue;
-                    }
-                    scan.reserve_with(|| {
-                        self.runtime.services.instrumentation.count(|counters| {
-                            counters.visible_authoritative_entity_records_materialized += 1;
-                        });
-                        materialize_current_authoritative_entity_record(
-                            registry,
-                            partition,
-                            partition_id,
-                            slot,
-                        )
-                        .expect("a matching live entity slot must materialize")
-                    })?;
-                }
-            }
-            KindScanVisibility::AtVersion(version_id) => {
-                for slot in partition.entity_arena.occupied_slots() {
-                    scan.examine_slot()?;
-                    self.runtime.services.instrumentation.count(|counters| {
-                        counters.visibility_entity_slot_scans += 1;
-                    });
-                    if !entity_slot_matches_kind_at_version(
-                        partition,
-                        slot,
-                        kind_id,
-                        version_id,
-                        current_version,
-                    ) {
-                        continue;
-                    }
-                    scan.reserve_with(|| {
-                        self.runtime.services.instrumentation.count(|counters| {
-                            counters.visible_authoritative_entity_records_materialized += 1;
-                        });
-                        materialize_authoritative_entity_record_at_version(
-                            registry,
-                            partition,
-                            partition_id,
-                            slot,
-                            version_id,
-                        )
-                        .expect("a matching historical entity slot must materialize")
-                    })?;
-                }
-            }
-        }
-        Ok(())
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .bounded_entities_of_kind_in_state(
+            state,
+            registry,
+            kind_id,
+            visibility,
+            maximum_work_units,
+        )
     }
 }
 
@@ -240,5 +167,101 @@ impl EntityKindTruthReadLimitExceeded {
 
     pub const fn consumed_work_units(self) -> usize {
         self.entity_slots_examined + self.entity_records_reserved
+    }
+}
+
+impl ProjectionRecordReader<'_> {
+    pub(crate) fn bounded_entities_of_kind_in_state(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        kind_id: crate::identity::data::KindId,
+        visibility: KindScanVisibility,
+        maximum_work_units: usize,
+    ) -> Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded> {
+        let mut scan = EntityKindScan::new(maximum_work_units);
+        for partition_id in state.partition_ids() {
+            self.scan_entity_kind_in_partition(
+                state,
+                registry,
+                partition_id,
+                kind_id,
+                visibility,
+                &mut scan,
+            )?;
+        }
+        let read = scan.finish();
+        debug_assert!(
+            super::truth_access::authoritative_entity_records_are_canonical(read.records())
+        );
+        Ok(read)
+    }
+
+    pub(super) fn scan_entity_kind_in_partition(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        partition_id: crate::identity::data::PartitionId,
+        kind_id: crate::identity::data::KindId,
+        visibility: KindScanVisibility,
+        scan: &mut EntityKindScan,
+    ) -> Result<(), EntityKindTruthReadLimitExceeded> {
+        let current_version = self.current_version;
+        let Some(partition) = state.get_partition(partition_id) else {
+            return Ok(());
+        };
+        match visibility {
+            KindScanVisibility::Live => {
+                for slot in partition.entity_arena.live_bitset.iter_set_slots() {
+                    scan.examine_slot()?;
+                    if !slot_kind_matches_current(&partition.entity_arena, slot, kind_id) {
+                        continue;
+                    }
+                    scan.reserve_with(|| {
+                        self.instrumentation.count(|counters| {
+                            counters.visible_authoritative_entity_records_materialized += 1;
+                        });
+                        materialize_current_authoritative_entity_record(
+                            registry,
+                            partition,
+                            partition_id,
+                            slot,
+                        )
+                        .expect("a matching live entity slot must materialize")
+                    })?;
+                }
+            }
+            KindScanVisibility::AtVersion(version_id) => {
+                for slot in partition.entity_arena.occupied_slots() {
+                    scan.examine_slot()?;
+                    self.instrumentation.count(|counters| {
+                        counters.visibility_entity_slot_scans += 1;
+                    });
+                    if !entity_slot_matches_kind_at_version(
+                        partition,
+                        slot,
+                        kind_id,
+                        version_id,
+                        current_version,
+                    ) {
+                        continue;
+                    }
+                    scan.reserve_with(|| {
+                        self.instrumentation.count(|counters| {
+                            counters.visible_authoritative_entity_records_materialized += 1;
+                        });
+                        materialize_authoritative_entity_record_at_version(
+                            registry,
+                            partition,
+                            partition_id,
+                            slot,
+                            version_id,
+                        )
+                        .expect("a matching historical entity slot must materialize")
+                    })?;
+                }
+            }
+        }
+        Ok(())
     }
 }

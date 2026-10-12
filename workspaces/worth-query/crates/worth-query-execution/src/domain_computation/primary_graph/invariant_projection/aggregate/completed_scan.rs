@@ -132,7 +132,7 @@ impl AggregateScanReader<'_, '_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
-        worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+        worth_relational::facade::runtime::VisibilityProjectionView,
         WorthQueryInvariantAggregateDenial,
     > {
         self.runtime

@@ -75,7 +75,7 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                 assert!(output.checkpoint.is_some());
                 if fails_row {
                     assert!(
-                        matches!(output.advancement(), WorthQueryOutputAdvancement::Stopped { denial, .. }
+                        matches!(&output.advancement(), WorthQueryOutputAdvancement::Stopped { denial, .. }
                         if denial.kind() == kind)
                     );
                 } else {

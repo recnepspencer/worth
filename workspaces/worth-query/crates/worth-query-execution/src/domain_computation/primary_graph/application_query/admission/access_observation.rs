@@ -110,11 +110,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 WorthQueryPrincipalResolutionMode::Ordinary,
                             )
                             .and_then(|truth| truth.validate_entity_freshness(execution, scope))
-                            .map_err(|_| {
-                                denial(
-                                    WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
-                                    query.name(),
-                                )
+                            .map_err(|refusal| {
+                                use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
+                                let kind = match refusal.interruption() {
+                                    Some(Stop::Cancelled) => WorthQueryApplicationQueryAdmissionDenialKind::Cancelled,
+                                    Some(Stop::DeadlineExceeded) => WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded,
+                                    None => WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
+                                };
+                                denial(kind, query.name())
                             })
                     })
                     .and_then(|()| {

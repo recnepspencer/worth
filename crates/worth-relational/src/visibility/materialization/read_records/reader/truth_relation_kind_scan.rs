@@ -54,78 +54,17 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         visibility: KindScanVisibility,
         maximum_work_units: usize,
     ) -> Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial> {
-        let mut scan = RelationKindScan::new(maximum_work_units, true);
-        for partition_id in state.partition_ids() {
-            self.scan_relation_kind_in_partition(
-                state,
-                registry,
-                partition_id,
-                kind_id,
-                visibility,
-                &mut scan,
-            )?;
-        }
-        Ok(scan.finish())
-    }
-
-    pub(super) fn scan_relation_kind_in_partition(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        visibility: KindScanVisibility,
-        scan: &mut RelationKindScan,
-    ) -> Result<(), RelationKindTruthReadDenial> {
-        let current_version = VersionSource::current_version_id(self.runtime);
-        let Some(partition) = state.get_partition(partition_id) else {
-            return Ok(());
-        };
-        match visibility {
-            KindScanVisibility::Live => {
-                for slot in partition.relation_arena.live_bitset.iter_set_slots() {
-                    scan.examine_slot()?;
-                    if !slot_kind_matches_current(&partition.relation_arena, slot, kind_id) {
-                        continue;
-                    }
-                    scan.reserve_with(partition_id, slot, || {
-                        materialize_current_authoritative_relation_record(
-                            registry,
-                            partition,
-                            partition_id,
-                            slot,
-                        )
-                    })?;
-                }
-            }
-            KindScanVisibility::AtVersion(version_id) => {
-                for slot in partition.relation_arena.occupied_slots() {
-                    scan.examine_slot()?;
-                    self.runtime.services.instrumentation.count(|counters| {
-                        counters.visibility_relation_slot_scans += 1;
-                    });
-                    if !relation_slot_matches_kind_at_version(
-                        partition,
-                        slot,
-                        kind_id,
-                        version_id,
-                        current_version,
-                    ) {
-                        continue;
-                    }
-                    scan.reserve_with(partition_id, slot, || {
-                        materialize_authoritative_relation_record_at_version(
-                            registry,
-                            partition,
-                            partition_id,
-                            slot,
-                            version_id,
-                        )
-                    })?;
-                }
-            }
-        }
-        Ok(())
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .bounded_relations_of_kind_in_state(
+            state,
+            registry,
+            kind_id,
+            visibility,
+            maximum_work_units,
+        )
     }
 }
 
@@ -233,6 +172,90 @@ impl RelationKindTruthReadLimitExceeded {
 
     pub const fn consumed_work_units(self) -> usize {
         self.relation_slots_examined + self.relation_records_reserved
+    }
+}
+
+impl ProjectionRecordReader<'_> {
+    pub(crate) fn bounded_relations_of_kind_in_state(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        kind_id: crate::identity::data::KindId,
+        visibility: KindScanVisibility,
+        maximum_work_units: usize,
+    ) -> Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial> {
+        let mut scan = RelationKindScan::new(maximum_work_units, true);
+        for partition_id in state.partition_ids() {
+            self.scan_relation_kind_in_partition(
+                state,
+                registry,
+                partition_id,
+                kind_id,
+                visibility,
+                &mut scan,
+            )?;
+        }
+        Ok(scan.finish())
+    }
+
+    pub(super) fn scan_relation_kind_in_partition(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        partition_id: crate::identity::data::PartitionId,
+        kind_id: crate::identity::data::KindId,
+        visibility: KindScanVisibility,
+        scan: &mut RelationKindScan,
+    ) -> Result<(), RelationKindTruthReadDenial> {
+        let current_version = self.current_version;
+        let Some(partition) = state.get_partition(partition_id) else {
+            return Ok(());
+        };
+        match visibility {
+            KindScanVisibility::Live => {
+                for slot in partition.relation_arena.live_bitset.iter_set_slots() {
+                    scan.examine_slot()?;
+                    if !slot_kind_matches_current(&partition.relation_arena, slot, kind_id) {
+                        continue;
+                    }
+                    scan.reserve_with(partition_id, slot, || {
+                        materialize_current_authoritative_relation_record(
+                            registry,
+                            partition,
+                            partition_id,
+                            slot,
+                        )
+                    })?;
+                }
+            }
+            KindScanVisibility::AtVersion(version_id) => {
+                for slot in partition.relation_arena.occupied_slots() {
+                    scan.examine_slot()?;
+                    self.instrumentation.count(|counters| {
+                        counters.visibility_relation_slot_scans += 1;
+                    });
+                    if !relation_slot_matches_kind_at_version(
+                        partition,
+                        slot,
+                        kind_id,
+                        version_id,
+                        current_version,
+                    ) {
+                        continue;
+                    }
+                    scan.reserve_with(partition_id, slot, || {
+                        materialize_authoritative_relation_record_at_version(
+                            registry,
+                            partition,
+                            partition_id,
+                            slot,
+                            version_id,
+                        )
+                    })?;
+                }
+            }
+        }
+        Ok(())
     }
 }
 

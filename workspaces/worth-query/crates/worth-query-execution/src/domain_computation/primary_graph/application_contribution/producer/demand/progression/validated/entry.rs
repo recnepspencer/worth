@@ -119,7 +119,6 @@ where
         let waiting = || CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending);
         let wave_authority = commit_authority.clone();
         let checkpoint_progress = match self.advance_ordinary_validated_output_demand(
-            execution,
             phase,
             demand,
             principal,

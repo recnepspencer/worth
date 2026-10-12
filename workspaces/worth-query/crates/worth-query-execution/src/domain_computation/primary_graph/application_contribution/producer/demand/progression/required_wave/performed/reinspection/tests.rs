@@ -52,7 +52,6 @@ fn assert_publication_credit(replay: bool, publish: bool) {
                 let execution = phase
                     .execution_request_for(&world.application.product_runtime)
                     .unwrap();
-
                 let runtime = &world.application;
                 let mut admission = runtime.demand_request_admission();
                 let (shared, positioned) = super::super::super::selection::select_required_basis(
@@ -150,6 +149,6 @@ fn assert_publication_credit(replay: bool, publish: bool) {
                 assert!(!frontier.queued_member(0).unwrap().refused(credit));
                 assert!(matches!(frontier.members[0].state, MemberState::Pending));
             })
-            .expect("the fixture owns its installed host request");
+            .expect("the owner proof owns its request");
     });
 }

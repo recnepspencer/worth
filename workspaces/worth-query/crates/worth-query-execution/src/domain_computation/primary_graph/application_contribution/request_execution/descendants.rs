@@ -9,21 +9,22 @@ pub(in crate::domain_computation::primary_graph) struct MemberRequestExecution<'
 }
 impl<'authority> QueryRequestExecution<'authority> {
     fn descendant(&self) -> Self {
-        let form = Form {
-            lease: self
-                .form
-                .lease
-                .as_ref()
-                .map(|lease| {
-                    lease.controlled_child(worth_execution::CancellationToken::new(), None)
-                })
-                .map_err(|denial| *denial),
-            policy: self.form.policy,
+        let form = match &self.form {
+            Form::Leased { lease, policy } | Form::Serial { lease, policy } => Form::Leased {
+                lease: lease
+                    .as_ref()
+                    .map(|lease| {
+                        lease.controlled_child(worth_execution::CancellationToken::new(), None)
+                    })
+                    .map_err(|denial| *denial),
+                policy: *policy,
+            },
         };
         Self {
             cancellation: self.cancellation.clone(),
             deadline: self.deadline,
             declared_work: self.declared_work,
+            certified_seed: self.certified_seed,
             form,
         }
     }

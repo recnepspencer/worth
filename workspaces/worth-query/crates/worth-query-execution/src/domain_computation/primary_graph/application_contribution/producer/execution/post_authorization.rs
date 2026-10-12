@@ -14,7 +14,6 @@ type MutationScope<Schema, Binding> = <<Operation<Schema, Binding> as Applicatio
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn execute_authorized<Schema, Binding>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -58,14 +57,13 @@ where
             SourceQuery<Schema, Binding>,
         >,
 {
-    let compute_execution = phase.execution_for(&runtime.product_runtime).map_err(|_| {
+    let member_execution = phase.execution_for(&runtime.product_runtime).map_err(|_| {
         denial(
             WorthQueryOutputDemandDenialKind::ForeignSettlement,
             Binding::IDENTITY,
         )
     })?;
     let plan = prepare_authorized::<Schema, Binding>(
-        *execution,
         phase,
         runtime,
         selected,
@@ -85,5 +83,5 @@ where
         request_admission,
         producer_contacts,
     )?;
-    super::canonical_apply::run_one(plan, compute_execution, request_admission)
+    super::canonical_apply::run_one(plan, member_execution, request_admission)
 }

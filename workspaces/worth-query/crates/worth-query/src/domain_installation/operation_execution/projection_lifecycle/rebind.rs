@@ -81,20 +81,22 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundDomainProjectio
     ) -> WorthQueryProjectionRebindOutcome<D, O, F, L> {
         let owner = workspace.advancement_owner();
         let mut retained = Some((self, candidate, witness));
-        match owner.with_advancement(|phase| {
-            let (current, candidate, witness) = retained
-                .take()
-                .expect("host call retains its projection before admission");
-            current.rebind_with_in_advancement(
-                request_execution,
-                phase
-                    .execution_request_for(&owner)
-                    .expect("the opener lent this owner its phase"),
-                candidate,
-                witness,
-                workspace,
-            )
-        }) {
+        match owner
+            .with_advancement(|phase| {
+                let execution = phase.checked_execution_request_for(&owner)?;
+                let (current, candidate, witness) = retained
+                    .take()
+                    .expect("host call retains its projection before admission");
+                Ok(current.rebind_with_in_advancement(
+                    request_execution,
+                    execution,
+                    candidate,
+                    witness,
+                    workspace,
+                ))
+            })
+            .and_then(std::convert::identity)
+        {
             Ok(outcome) => outcome,
             Err(denial) => {
                 let (current, candidate, _witness) = retained

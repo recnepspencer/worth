@@ -14,7 +14,7 @@ use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_relation_aspect_field_index(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
 ) -> BTreeMap<AuthoritativeFieldComparisonKey, Vec<RelationId>> {
     let mut entries = BTreeMap::new();
@@ -33,7 +33,7 @@ pub(in crate::indexes) fn build_relation_aspect_field_index(
 
 pub(in crate::indexes) fn build_relation_aspect_field_index_checked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
 ) -> Result<BTreeMap<AuthoritativeFieldComparisonKey, Vec<RelationId>>, IndexKernelStop> {

@@ -80,3 +80,74 @@ impl worth_execution::ChargedBytes for ReadPlan<'_> {
         0
     }
 }
+
+impl ReadPlan<'_> {
+    /// After session custody accepts the same exact root/World selection,
+    /// Native work uses the shared capability's operational snapshot. The
+    /// session retains and seals its own original receipt after the join.
+    pub(in crate::domain_computation::primary_graph::application_query) fn with_snapshot<'b>(
+        &'b self,
+        snapshot: &'b SnapshotHandle,
+    ) -> ReadPlan<'b> {
+        ReadPlan {
+            name: self.name,
+            contract: self.contract,
+            root: self.root,
+            snapshot,
+            parameters: self.parameters,
+            governance: self.governance,
+            maximum_work: self.maximum_work,
+            maximum_result_count: self.maximum_result_count,
+        }
+    }
+    pub(in crate::domain_computation::primary_graph::application_query) fn selected_indexes(
+        &self,
+        graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    ) -> Vec<worth_relational::facade::indexes::DerivedIndexId> {
+        self.contract
+            .predicates()
+            .iter()
+            .filter_map(|predicate| {
+                let (entity, aspect, field) = predicate.field();
+                graph
+                    .equality_field(entity, aspect, field)?
+                    .equality_index_id
+            })
+            .collect()
+    }
+}
+
+impl ReadPlan<'_> {
+    pub(in crate::domain_computation::primary_graph::application_query) fn snapshot_unavailable_denial(
+        &self,
+    ) -> super::WorthQueryApplicationReadExecutionDenial {
+        let predicates = self.contract.predicates();
+        if !self.contract.root_paths().is_empty() {
+            super::read_execution_denial(
+                super::WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
+                self.name,
+            )
+        } else if let [predicate] = predicates {
+            super::read_execution_denial(
+                super::WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+                predicate.field().2,
+            )
+        } else {
+            super::read_execution_denial(
+                super::WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+                self.name,
+            )
+        }
+    }
+    pub(in crate::domain_computation::primary_graph::application_query) fn predicate_unavailable_denial(
+        &self,
+    ) -> super::WorthQueryApplicationReadExecutionDenial {
+        super::read_execution_denial(
+            super::WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+            match self.contract.predicates() {
+                [predicate] => predicate.field().2,
+                _ => self.name,
+            },
+        )
+    }
+}

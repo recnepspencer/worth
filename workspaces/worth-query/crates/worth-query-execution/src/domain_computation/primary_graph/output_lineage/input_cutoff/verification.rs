@@ -363,7 +363,6 @@ fn facts_are_current<'fact>(
     }
     Ok(true)
 }
-
 fn fact_is_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     fact: &WorthQueryApplicationObservedFact,
@@ -379,7 +378,6 @@ fn fact_is_current(
         }
     }
 }
-
 mod matched_roots;
 mod pending_upstream;
 #[cfg(test)]

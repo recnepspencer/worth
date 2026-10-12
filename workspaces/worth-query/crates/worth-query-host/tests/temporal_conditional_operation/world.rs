@@ -60,7 +60,7 @@ impl CourtroomWorld {
             host.with_advancement(|phase| {
                 self.application.reinstall_conditional_runtime(
                     &phase
-                        .execution_request_for(&host)
+                        .checked_execution_request_for(&host)
                         .expect("phase belongs to application"),
                     branch,
                 )
@@ -85,7 +85,7 @@ impl CourtroomWorld {
                     .unwrap()
                     .conditional_clock(
                         &phase
-                            .execution_request_for(self.application.product_runtime())
+                            .checked_execution_request_for(self.application.product_runtime())
                             .expect("phase belongs to application"),
                         &self.clock,
                     )

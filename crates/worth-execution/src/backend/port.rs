@@ -173,3 +173,35 @@ where
         taken,
     )
 }
+
+/// The receiver owns this recorder for exactly this controlled dispatch.
+pub(crate) fn run_owned_batch_perturbed_for_test<T, R, E, F>(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    batch: AdmittedBatch<T>,
+    seed: u64,
+    kernel: &F,
+) -> (BatchOutcome<R, E>, Vec<usize>)
+where
+    T: ChargedBytes + Send,
+    R: ChargedBytes + Send,
+    E: ChargedBytes + Send,
+    F: Fn(T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
+{
+    let (declaration, values) = batch.into_parts();
+    let order = std::sync::Mutex::new(Vec::new());
+    let inputs = super::input::TracedOwnedInputsForTest {
+        values: OwnedInputs(values),
+        order: &order,
+    };
+    let outcome = run_batch(
+        lease,
+        &declaration,
+        inputs,
+        BackendKind::Perturbation(seed),
+        kernel,
+        true,
+        None,
+        None,
+    );
+    (outcome, order.into_inner().unwrap())
+}

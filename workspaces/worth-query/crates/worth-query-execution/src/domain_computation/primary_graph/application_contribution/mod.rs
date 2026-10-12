@@ -113,3 +113,6 @@ pub use request_execution::with_bootstrap_advancement;
 pub use request_execution::WorthQueryBootstrapAdvancementPhase;
 
 pub(in crate::domain_computation::primary_graph) use request_execution::advancement::observation::application::record_commit as record_advancement_commit;
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;

@@ -4,6 +4,8 @@ mod evaluation;
 mod input;
 mod meter;
 mod native;
+mod owner_context;
+pub use owner_context::ExecutionOwnerContext;
 mod ordered;
 mod panic_boundary;
 mod perturbation;
@@ -24,6 +26,7 @@ pub(crate) use admission::execution_memory_requirement;
 pub(crate) use admission::execution_memory_requirement_for_lease;
 pub(crate) use admission::AdmittedBatch;
 pub use admission::BatchDenial;
+pub(crate) use meter::detach_meter_for_test;
 pub(crate) use meter::enter_certification_activity;
 pub(crate) use meter::enter_retained_memory;
 pub(crate) use meter::has_active_kernel;
@@ -54,3 +57,5 @@ pub(crate) use meter::{request_refusal, request_stop};
 
 mod scope_refusal;
 pub(crate) use scope_refusal::{run_admitting_scope, ScopeKernelFailure};
+
+pub(crate) use port::run_owned_batch_perturbed_for_test;

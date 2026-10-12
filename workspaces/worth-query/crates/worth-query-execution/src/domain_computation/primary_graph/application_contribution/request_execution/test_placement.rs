@@ -3,10 +3,10 @@
 //! a chosen worker count, or on such a lease with each full reduction also
 //! certified against the serial oracle and a seeded perturbed backend.
 //!
-//! Leased placements draw from the one physical authority a process may
-//! construct. It admits twice the machine's width; serial placement owns a
-//! pool-free lease backing. Each policy carries its own budget, far under the
-//! physical authority's, so tests running at once never meet on its memory.
+//! Every lease is drawn from the one authority a process may construct. It
+//! admits twice the machine's width, so a lease may ask for more workers than
+//! the machine has. Each policy carries its own budget, far under the
+//! authority's, so tests running at once never meet on its memory.
 
 use super::test_authority::query_test_execution_authority_for_test;
 pub use super::test_authority::test_execution_workers_for_test;
@@ -120,11 +120,7 @@ pub(super) fn placed(
     match placement {
         WorthQueryExecutionPlacementForTest::World => world,
         WorthQueryExecutionPlacementForTest::Serial => {
-            RuntimeWorldExecutionPlacement::Serial(ExecutionRequestPolicy::new(
-                ExecutionPosture::Serial,
-                DeterminismContract::CanonicalBitwise,
-                request_policy(NonZeroUsize::MIN).budget(),
-            ))
+            RuntimeWorldExecutionPlacement::Serial(request_policy(NonZeroUsize::MIN))
         }
         WorthQueryExecutionPlacementForTest::Leased(workers)
         | WorthQueryExecutionPlacementForTest::Certified { workers, .. } => {
@@ -158,40 +154,139 @@ pub(super) fn certify<T, K, R, E, Kernel, Combine>(
     combine: Combine,
     max_value_bytes: u64,
     (run, report): (&ReductionTree<R, Combine>, &ExecutionReport),
-) where
+) -> Result<(), worth_execution::WorkCeilingDenial>
+where
     T: Sync + ChargedBytes,
     R: Send + Sync + ChargedBytes + Clone + CanonicalBits,
     E: Send + ChargedBytes,
     Kernel: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
     Combine: Fn(&R, &R) -> R + Clone + Sync,
 {
-    let (certified, certified_report, _) = map
-        .certify_reduce(lease, seed, kernel, identity, combine, max_value_bytes, 0)
-        .unwrap_or_else(|failure| match failure {
-            ReduceCertificationFailure::Run(_) => {
-                panic!(
-                    "the oracle or the perturbed run of seed {seed} stopped where the run did not"
-                )
-            }
-            ReduceCertificationFailure::Mismatch(mismatch) => {
-                panic!("the perturbed run of seed {seed} differs from the oracle: {mismatch:?}")
-            }
-        });
-    let same_bits = compare_canonical_values(lease, run.result(), certified.result())
-        .unwrap_or_else(|stop| panic!("the certified result could not be compared: {stop:?}"));
+    use worth_execution::{MapKernelStop, WorkCeilingDenial};
+    let request_stop = |lease: &ExecutionResourceLease<'_>| {
+        if lease.is_cancelled() {
+            Some(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
+        } else if lease.deadline_elapsed() {
+            Some(WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed))
+        } else {
+            None
+        }
+    };
+    let (checked, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX).run_detached_for_test(
+        lease,
+        |diagnostic| {
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let (certified, certified_report, _) = match map.certify_reduce(
+                    diagnostic,
+                    seed,
+                    kernel,
+                    identity,
+                    combine,
+                    max_value_bytes,
+                    0,
+                ) {
+                    Ok(value) => value,
+                    Err(failure) => {
+                        return Err(certification_failure(diagnostic, seed, failure));
+                    }
+                };
+                let same_bits =
+                    match compare_canonical_values(diagnostic, run.result(), certified.result()) {
+                        Ok(same) => same,
+                        Err(stop) => {
+                            if let Some(stop) = request_stop(diagnostic) {
+                                return Err(stop);
+                            }
+                            panic!("the certified result could not be compared: {stop:?}");
+                        }
+                    };
+                Ok((
+                    same_bits,
+                    certified_report.charged_work(),
+                    certified_report.charged_span(),
+                ))
+            }))
+        },
+    )?;
+    let (same_bits, work, span) = match checked {
+        Ok(result) => result?,
+        Err(payload) => std::panic::resume_unwind(payload),
+    };
     assert!(
         same_bits,
         "the run's result differs from the certified one under seed {seed}"
     );
     assert_eq!(
         report.charged_work(),
-        certified_report.charged_work(),
+        work,
         "the run's charged work differs from the certified one under seed {seed}"
     );
+    assert_eq!(
+        report.charged_span(),
+        span,
+        "the run's charged span differs from the certified one under seed {seed}"
+    );
+    Ok(())
+}
+
+fn certification_failure<E>(
+    lease: &ExecutionResourceLease<'_>,
+    seed: u64,
+    failure: ReduceCertificationFailure<E>,
+) -> worth_execution::WorkCeilingDenial {
+    use worth_execution::{
+        MapKernelStop, MapStop, OracleMismatch, ReduceInputDenial, ReductionRunFailure,
+        ReductionRunStop, WorkCeilingDenial,
+    };
+    match failure {
+        ReduceCertificationFailure::Run(ReduceInputDenial::MapStopped {
+            reason:
+                MapStop::Failure {
+                    cause:
+                        MapKernelFailure::Stop(
+                            stop @ (MapKernelStop::Cancelled | MapKernelStop::DeadlineElapsed),
+                        ),
+                    ..
+                },
+            ..
+        })
+        | ReduceCertificationFailure::Run(ReduceInputDenial::ReductionStopped {
+            failure:
+                ReductionRunFailure {
+                    reason:
+                        ReductionRunStop::Hook(
+                            stop @ (MapKernelStop::Cancelled | MapKernelStop::DeadlineElapsed),
+                        ),
+                    ..
+                },
+            ..
+        }) => WorkCeilingDenial::Stopped(stop),
+        ReduceCertificationFailure::Mismatch(OracleMismatch::Stop) => {
+            if lease.is_cancelled() {
+                WorkCeilingDenial::Stopped(MapKernelStop::Cancelled)
+            } else if lease.deadline_elapsed() {
+                WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed)
+            } else {
+                panic!("the oracle or perturbed run of seed {seed} stopped where the run did not")
+            }
+        }
+        ReduceCertificationFailure::Mismatch(mismatch) => {
+            panic!("the perturbed run of seed {seed} differs from the oracle: {mismatch:?}")
+        }
+        ReduceCertificationFailure::Run(_) => {
+            if lease.is_cancelled() {
+                WorkCeilingDenial::Stopped(MapKernelStop::Cancelled)
+            } else if lease.deadline_elapsed() {
+                WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed)
+            } else {
+                panic!("the oracle or perturbed run of seed {seed} stopped where the run did not")
+            }
+        }
+    }
 }
 
 /// Bounds the test thread's requests with a host's declared budget.
-/// Placement decides the backing; every request carries this work ceiling.
+/// Placement decides the backing; every request keeps its declared policy ceiling.
 pub fn bound_advancement_requests_on_this_thread_for_test(
     budget: Option<ExecutionBudget>,
 ) -> Option<ExecutionBudget> {
@@ -265,54 +360,7 @@ impl Drop for FixturePlacement {
 }
 
 #[cfg(test)]
-mod scope_tests {
-    use super::*;
-    use crate::domain_computation::execution_observation::WorthQueryExecutionObservation as Observation;
-    #[test]
-    fn unwinding_clears_placement_and_budget_before_the_thread_is_reused() {
-        assert!(std::panic::catch_unwind(|| {
-            let _guard = Observation::install_on_this_thread();
-            place_managed_computations_on_this_thread_for_test(
-                WorthQueryExecutionPlacementForTest::Serial,
-            );
-            bound_advancement_requests_on_this_thread_for_test(Some(ExecutionBudget::new(
-                NonZeroUsize::MIN,
-                7,
-                9,
-            )));
-            panic!("exercise placement cleanup");
-        })
-        .is_err());
-        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
-        assert!(REQUEST_BUDGET.get().is_none());
-    }
-    #[test]
-    fn dropping_an_older_guard_cannot_clear_a_newer_guards_placement() {
-        let outer = Observation::install_on_this_thread();
-        place_managed_computations_on_this_thread_for_test(
-            WorthQueryExecutionPlacementForTest::Serial,
-        );
-        let inner = Observation::install_on_this_thread();
-        let leased = WorthQueryExecutionPlacementForTest::Leased(NonZeroUsize::MIN);
-        place_managed_computations_on_this_thread_for_test(leased);
-        drop(outer);
-        assert_eq!(PLACEMENT.get(), leased);
-        drop(inner);
-        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
-    }
-    #[test]
-    fn an_inner_guard_restores_only_a_still_owned_outer_placement() {
-        let outer = Observation::install_on_this_thread();
-        place_managed_computations_on_this_thread_for_test(
-            WorthQueryExecutionPlacementForTest::Serial,
-        );
-        let inner = Observation::install_on_this_thread();
-        place_managed_computations_on_this_thread_for_test(
-            WorthQueryExecutionPlacementForTest::Leased(NonZeroUsize::MIN),
-        );
-        drop(inner);
-        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::Serial);
-        drop(outer);
-        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
-    }
-}
+mod scope_tests;
+
+#[cfg(test)]
+mod certification_tests;

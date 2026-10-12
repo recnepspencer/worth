@@ -28,20 +28,51 @@ impl WorthQueryGraphReadOwnerPort {
         }
     }
 
-    pub(super) fn execute_prepared<T>(
+    pub(super) fn pin_prepared(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &ApplicationSchemaBindingIdentity,
-        read: impl FnOnce(&RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
-    ) -> Result<T, WorthQueryGraphReadOwnerPortDenial> {
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        select_indexes: impl FnOnce(
+            &WorthQueryPrimaryGraphLayout,
+        ) -> Vec<worth_relational::facade::indexes::DerivedIndexId>,
+    ) -> Result<
+        (
+            worth_relational::facade::runtime::RelationalPinnedRead,
+            Arc<WorthQueryPrimaryGraphLayout>,
+        ),
+        super::WorthQueryManagedGraphReadDenial,
+    > {
+        use super::WorthQueryManagedGraphReadDenial as Denial;
         if &self.binding != binding {
-            return Err(WorthQueryGraphReadOwnerPortDenial::ForeignGraph);
+            return Err(Denial::ForeignGraph);
         }
-        // Release graph custody before resuming a worker panic, so the read-only
-        // operation cannot poison the runtime for another root or request.
-        Ok(self
+        let selected_indexes = select_indexes(&self.layout);
+        let read = self
             .source
-            .with_runtime_unwind_isolated(execution, |runtime| read(runtime, &self.layout)))
+            .with_runtime_mut_unwind_isolated(execution, |runtime| {
+                #[cfg(test)]
+                let replacement = pin_control::snapshot();
+                #[cfg(test)]
+                let snapshot = replacement.as_ref().unwrap_or(snapshot);
+                let result = runtime.read_truth().pin_read_capability(
+                    snapshot,
+                    &selected_indexes,
+                    execution,
+                );
+                #[cfg(test)]
+                pin_panic::panic_if_armed();
+                result
+            })
+            .map_err(|denial| {
+                use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as Pin;
+                match denial {
+                    Pin::Request(stop) => Denial::RequestStop(stop),
+                    Pin::SnapshotUnavailable => Denial::SnapshotUnavailable,
+                    Pin::IndexNotInstalled(index) => Denial::IndexNotInstalled(index),
+                }
+            })?;
+        Ok((read, Arc::clone(&self.layout)))
     }
 
     pub(super) fn execute<T>(
@@ -84,3 +115,27 @@ impl WorthQuerySessionGraphReadProof {
         }
     }
 }
+
+#[cfg(test)]
+pub(in crate::domain_computation) mod pin_panic {
+    use std::cell::Cell;
+    thread_local! { static ARMED: Cell<bool> = const { Cell::new(false) }; }
+    pub(in crate::domain_computation) struct PanicDuringPinGuardForTest(bool);
+    impl PanicDuringPinGuardForTest {
+        pub(in crate::domain_computation) fn install_on_this_thread() -> Self {
+            assert!(crate::domain_computation::execution_observation::is_installed());
+            Self(ARMED.replace(true))
+        }
+    }
+    impl Drop for PanicDuringPinGuardForTest {
+        fn drop(&mut self) {
+            ARMED.set(self.0);
+        }
+    }
+    pub(super) fn panic_if_armed() {
+        assert!(!ARMED.replace(false), "injected panic inside owner pin");
+    }
+}
+
+#[cfg(test)]
+pub(in crate::domain_computation) mod pin_control;

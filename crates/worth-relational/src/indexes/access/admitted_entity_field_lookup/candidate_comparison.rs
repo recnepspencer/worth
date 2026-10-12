@@ -2,7 +2,7 @@ use super::*;
 
 pub(super) fn borrowed_matches<E>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     entity: EntityId,
     locator: &AspectFieldLocator,
     expected: &AspectValue,

@@ -140,7 +140,9 @@ fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
                         (
                             PartitionIdentity::new(index as u64 + 1),
                             KeylessPartition {
-                                value: pair.worker(&world.application, root.entity_id()).unwrap(),
+                                value: pair
+                                    .worker(&request, &world.application, root.entity_id())
+                                    .unwrap(),
                                 kernel_scratch_bytes: 0,
                                 max_result_bytes: capacity,
                             },

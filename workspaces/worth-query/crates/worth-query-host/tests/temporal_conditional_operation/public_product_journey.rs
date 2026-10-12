@@ -88,7 +88,7 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence(
                 .unwrap()
                 .conditional_clock(
                     &phase
-                        .execution_request_for(world.application.product_runtime())
+                        .checked_execution_request_for(world.application.product_runtime())
                         .expect("phase belongs to application"),
                     &world.clock,
                 )
@@ -178,7 +178,7 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence(
                 .unwrap()
                 .conditional_clock(
                     &phase
-                        .execution_request_for(world.application.product_runtime())
+                        .checked_execution_request_for(world.application.product_runtime())
                         .expect("phase belongs to application"),
                     &world.clock,
                 )

@@ -2,7 +2,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
-
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
 enum ExecutionPreparation<'owner, Query, Value> {
     Reached(OwnStages<Query, Value>),
@@ -15,9 +14,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         Family,
     >(
         &'owner self,
-        execution: worth_execution::ExecutionRequest<'owner, 'owner>,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
-
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -44,6 +41,14 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         FamilySourceValue<Schema, Family>: 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        let execution = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "advancement phase",
+                )
+            })?;
         let waiting = || OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending);
         let disclosed_value = disclosure.value();
         let disclosed_source = disclosure.source();
@@ -361,14 +366,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 )))
             }
         });
-        result.map_err(|stop| match stop {
-            execution::ProducerExecutionStop::RequestAdmissionDenied(rejection) => {
-                rejection.into_denial()
-            }
-            execution::ProducerExecutionStop::ExecutionStopped(denial) => denial,
-            execution::ProducerExecutionStop::LiveOutputNotReused { producer, reason } => {
-                execution::ProducerExecutionStop::live_output_not_reused(producer, reason)
-            }
-        })
+        result.map_err(execution::ProducerExecutionStop::into_output_denial)
     }
 }

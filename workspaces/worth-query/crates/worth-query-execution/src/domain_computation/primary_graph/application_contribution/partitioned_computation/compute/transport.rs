@@ -14,8 +14,12 @@ where
             prepared_work: _,
             run,
             deposit: _,
+            kernel_observation_for_test,
         } = self;
-        match run {
+        let observer_bytes = kernel_observation_for_test
+            .as_ref()
+            .map_or(0, |observer| observer.bytes());
+        observer_bytes.saturating_add(match run {
             PreparedRun::Full {
                 map,
                 memory,
@@ -31,7 +35,7 @@ where
                         .map_or(0, |recording| recording.transport_bytes()),
                 ),
             PreparedRun::Incremental(prepared) => prepared.transport_bytes(),
-        }
+        })
     }
     pub(in super::super) fn result_capacity(&self) -> u64 {
         let count = match &self.run {

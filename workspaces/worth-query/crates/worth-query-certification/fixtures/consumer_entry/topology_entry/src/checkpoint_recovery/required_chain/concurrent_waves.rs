@@ -19,3 +19,7 @@ mod frozen_truth;
 mod abandonment_thaw;
 
 mod two_owners;
+
+mod checkpoint_restore;
+
+mod charge_prefix;

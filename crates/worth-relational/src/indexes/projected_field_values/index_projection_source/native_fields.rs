@@ -6,7 +6,7 @@ use crate::visibility::materialization::read_records::{
 };
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
-impl IndexProjectionSource<'_, '_> {
+impl IndexProjectionSource<'_> {
     pub(in crate::indexes) fn try_for_each_entity_field<E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

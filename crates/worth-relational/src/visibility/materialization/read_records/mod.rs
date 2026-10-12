@@ -24,6 +24,7 @@ pub use reader::{
     FrontierAdjacencyTruthReadLimitExceeded, FrontierFieldEqualityTruthReadLimitExceeded,
     PositionedRelationalSnapshot, QueryLeasedReadOutcome, QueryReadExecutionStop,
     QueryReadPacketDenial, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
+    RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
     RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial, VisibilityReadContext,
 };
 
@@ -34,3 +35,7 @@ impl RelationalRuntime {
         VisibilityReadContext::new(self)
     }
 }
+
+pub(crate) use projection::ProjectionRecordSource;
+
+pub use reader::BoundedFrontierReadStop;

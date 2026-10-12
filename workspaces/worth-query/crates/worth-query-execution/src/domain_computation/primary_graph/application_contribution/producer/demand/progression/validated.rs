@@ -21,7 +21,6 @@ where
 {
     fn advance_ordinary_validated_output_demand<Family>(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -46,7 +45,6 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         let prepared = self.prepare_validated_output_demand_with_schedule(
-            *execution,
             phase,
             demand,
             principal,

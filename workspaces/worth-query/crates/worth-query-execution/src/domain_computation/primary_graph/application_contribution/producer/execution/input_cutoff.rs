@@ -66,7 +66,7 @@ fn fresh<'owner, Schema, OperationType, Input, Scope>(
 /// construction. The Fresh branch returns the original preparation custody;
 /// no input/context proof or source fact set is reconstructed on fallback.
 pub(super) fn advance_input_cutoff<'owner, Schema, Binding, OperationType, Input, Scope>(
-    execution: worth_execution::ExecutionRequest<'owner, 'owner>,
+    phase: &'owner WorthQueryAdvancementPhase<'owner>,
     runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     selected: &'owner WorthQuerySelectedProductOperation<'_, Schema>,
     operation: &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
@@ -88,6 +88,14 @@ where
     Binding: WorthQueryApplicationProducerBinding<Schema>,
 {
     let scope = operation.operation_scope_binding();
+    let execution = phase
+        .execution_request_for(&runtime.product_runtime)
+        .map_err(|cause| {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                "advancement phase",
+            )
+        })?;
     let observation = selected.product().observation();
     let handle = &runtime.primary_provider.graph;
     let source_owner = &handle.source_owner.invalidation_owner;
@@ -235,7 +243,7 @@ where
             // published. Recompare prepared facts; do not rerun a handler read.
             let current = runtime
                 .on_branch(selected.product().product_branch())
-                .select_with_request(&execution)
+                .select(phase)
                 .map_err(|stop| {
                     denial(
                         WorthQueryOutputDemandDenialKind::ProductSelection(stop),

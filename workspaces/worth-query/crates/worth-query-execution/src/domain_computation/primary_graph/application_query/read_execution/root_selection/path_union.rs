@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::application_query::{
 
 pub(super) fn select_root_path_union(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     paths: &[WorthQueryInstalledRootPath],
@@ -27,7 +27,6 @@ pub(super) fn select_root_path_union(
     interruption: super::super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
-        .read_truth()
         .project_snapshot(plan.snapshot, execution)
         .ok_or_else(|| traversal_denial(plan.name))?;
     let mut roots = BTreeMap::new();
@@ -88,8 +87,8 @@ pub(super) fn select_root_path_union(
 
 fn traverse_path(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     path: &WorthQueryInstalledRootPath,
@@ -150,25 +149,21 @@ fn traverse_path(
         work.checkpoint(step.relation())?;
         let read = match step.direction() {
             ApplicationQueryRootPathDirection::Forward => runtime
-                .read_truth()
-                .bounded_outgoing_relations_for_frontier_at_version(
+                .bounded_outgoing_relations_for_frontier(
                     execution,
                     &anchors,
                     layout.kind,
-                    plan.snapshot.version_id(),
                     work.remaining(),
                 ),
             ApplicationQueryRootPathDirection::Reverse => runtime
-                .read_truth()
-                .bounded_incoming_relations_for_frontier_at_version(
+                .bounded_incoming_relations_for_frontier(
                     execution,
                     &anchors,
                     layout.kind,
-                    plan.snapshot.version_id(),
                     work.remaining(),
                 ),
         }
-        .map_err(|_| work_limit_denial(step.relation()))?;
+        .map_err(|stop| frontier_denial(stop, step.relation()))?;
         work.charge(
             read.adjacency_lists_read(),
             read.relation_records_examined(),
@@ -212,8 +207,8 @@ fn traverse_path(
 
 fn apply_guards(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     path: &WorthQueryInstalledRootPath,
@@ -279,10 +274,9 @@ fn apply_guards(
             layout.entity_kind,
             &layout.locator,
             guard.expected(),
-            plan.snapshot.version_id(),
             work.remaining(),
         )
-        .map_err(|_| work_limit_denial(guard.field().as_str()))?;
+        .map_err(|stop| frontier_denial(stop, guard.field().as_str()))?;
         work.charge_predicate(
             read.entity_records_examined(),
             read.matching_entity_ids_reserved(),
@@ -297,29 +291,28 @@ fn apply_guards(
 #[allow(clippy::too_many_arguments)]
 fn read_governed_root_guard(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     _projection: crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationInternalProjectionAdmission<'_>,
     frontier: &BTreeSet<EntityId>,
     entity_kind: worth_relational::facade::identity::KindId,
     locator: &worth_foundational::facade::AspectFieldLocator,
     expected: &worth_foundational::facade::AspectValue,
-    version: worth_relational::facade::identity::VersionId,
     maximum_work: usize,
 ) -> Result<
     worth_relational::facade::runtime::BoundedFrontierFieldEqualityTruthRead,
-    worth_relational::facade::runtime::FrontierFieldEqualityTruthReadLimitExceeded,
+    worth_relational::facade::runtime::BoundedFrontierReadStop<
+        worth_relational::facade::runtime::FrontierFieldEqualityTruthReadLimitExceeded,
+        worth_execution::MapKernelStop,
+    >,
 > {
-    runtime
-        .read_truth()
-        .bounded_entity_field_equals_for_frontier_at_version(
-            execution,
-            frontier,
-            entity_kind,
-            locator,
-            expected,
-            version,
-            maximum_work,
-        )
+    runtime.bounded_entity_field_equals_for_frontier(
+        execution,
+        frontier,
+        entity_kind,
+        locator,
+        expected,
+        maximum_work,
+    )
 }
 
 fn traversal_denial(subject: &str) -> WorthQueryApplicationReadExecutionDenial {
@@ -334,4 +327,24 @@ fn work_limit_denial(subject: &str) -> WorthQueryApplicationReadExecutionDenial 
         WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
         subject,
     )
+}
+
+fn frontier_denial<L>(
+    stop: worth_relational::facade::runtime::BoundedFrontierReadStop<
+        L,
+        worth_execution::MapKernelStop,
+    >,
+    subject: &str,
+) -> WorthQueryApplicationReadExecutionDenial {
+    match stop {
+        worth_relational::facade::runtime::BoundedFrontierReadStop::Limit(_) => {
+            work_limit_denial(subject)
+        }
+        worth_relational::facade::runtime::BoundedFrontierReadStop::Admission(stop) => {
+            super::super::denial::relational_cause_denial(
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::from(stop),
+                subject,
+            )
+        }
+    }
 }

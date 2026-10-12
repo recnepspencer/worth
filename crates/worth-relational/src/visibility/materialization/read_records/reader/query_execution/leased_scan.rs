@@ -3,31 +3,29 @@ use std::cell::{Cell, RefCell};
 use worth_execution::{MapKernelContext, MapKernelFailure};
 
 use super::super::query_packetization::PacketizedQueryWork;
+use super::super::RelationalPinnedRead;
 use super::leased_map::{QueryPacketBudget, QueryReadPacketDenial};
 use crate::identity::data::{KindId, PartitionId};
 use crate::query::data::{PlannedQueryPacket, QueryFragmentCounters, QueryWorkerFragment};
-use crate::runtime::{RelationalRuntime, VisibilityProjectionView};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::visibility::materialization::read_records::ProjectionRecordSource;
 use crate::visibility::materialization::read_records::{
     entity_query_locus_comparison_key, entity_query_locus_value,
     relation_query_locus_comparison_key, relation_query_locus_value,
 };
-use crate::visibility::snapshot_states::{SnapshotStateBasis, VisibilitySnapshotBasis};
 
 type PacketFailure = MapKernelFailure<QueryReadPacketDenial>;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_scan_fragment(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    basis: &VisibilitySnapshotBasis,
+    reader: &RelationalPinnedRead,
     packet: &PlannedQueryPacket,
     work: &PacketizedQueryWork,
     ordinal: u64,
     ceiling: u64,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<QueryWorkerFragment, PacketFailure> {
-    let projection =
-        VisibilityProjectionView::new(runtime, SnapshotStateBasis::Exact(basis.clone()));
+    let projection = reader;
     let meter = RefCell::new(QueryPacketBudget::new(context, ceiling)?);
     let candidate_bytes = Cell::new(0);
     let mut entities = Vec::new();

@@ -5,7 +5,7 @@ use crate::storage::overlay::PartitionAccess;
 
 use super::VisibilityProjectionView;
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     /// Native revision for one aspect at this view's selected immutable basis.
     ///
     /// The outer option rejects a stale entity identity. The inner option is
@@ -24,11 +24,7 @@ impl VisibilityProjectionView<'_> {
         {
             return None;
         }
-        let symbol = self
-            .runtime
-            .services
-            .symbols
-            .with_read(|symbols| symbols.symbol(aspect.as_str()));
+        let symbol = self.symbols.symbol(aspect.as_str());
         let versions = partition
             .entity_arena
             .aspect_versions_at(entity.slot_index())?;

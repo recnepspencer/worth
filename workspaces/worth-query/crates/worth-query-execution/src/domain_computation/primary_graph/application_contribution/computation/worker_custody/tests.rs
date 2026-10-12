@@ -81,3 +81,5 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
         assert!(!active());
     }
 }
+
+mod nested_worker;

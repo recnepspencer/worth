@@ -33,4 +33,4 @@ pub use receipt::{
     RelationalChangeReceiptStale,
 };
 pub use retained_observation::RelationalRetainedObservation;
-pub use runtime_handle::RelationalRuntimeHandle;
+pub use runtime_handle::{RelationalRuntimeHandle, RelationalRuntimeLockObservationForTest};

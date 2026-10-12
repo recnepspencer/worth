@@ -17,6 +17,7 @@ pub struct Input {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Outcome {
     pub value: u64,
+    pub computation_work: u64,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Denied {
@@ -35,6 +36,7 @@ pub struct Decision<S> {
     target: WorthQueryInvariantMutationTarget<S, Node>,
     value: u64,
     applied: u64,
+    computation_work: u64,
 }
 impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
     type Input = Input;
@@ -102,7 +104,6 @@ pub struct Handler(
         computation::Owner,
     >,
 );
-thread_local! {pub static CHARGES:std::cell::RefCell<Vec<u64>>=const{std::cell::RefCell::new(Vec::new())};}
 impl OperationHandler<Schema, Binding<Schema>> for Handler {
     fn decide(
         &self,
@@ -117,6 +118,7 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
                 target: reader.mutation_target(&node)?,
                 value,
                 applied: applied + 1,
+                computation_work: 0,
             })
         })();
         match decided {
@@ -163,11 +165,12 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
                 }) => return HandlerResult::DomainDenied(Denied { partition }),
                 Err(error) => panic!("unexpected computation denial: {error:?}"),
             };
-            CHARGES.with(|charges| charges.borrow_mut().push(computed.charged_work()));
+            let computation_work = computed.charged_work();
             let value = computed.complete().unwrap();
             match decided {
                 HandlerResult::Completed(mut decision) => {
                     decision.value = value;
+                    decision.computation_work = computation_work;
                     HandlerResult::Completed(decision)
                 }
                 HandlerResult::DomainDenied(cause) => HandlerResult::DomainDenied(cause),
@@ -201,6 +204,7 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
         match written {
             Ok(()) => HandlerResult::Completed(Outcome {
                 value: decision.value,
+                computation_work: decision.computation_work,
             }),
             Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
         }

@@ -13,8 +13,8 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
 /// An issued selected view with its caller's existing admission callback.
 /// The request is lent to the lookup, and is never kept in this input.
-pub struct BoundedEntityFieldSelectedLookup<'a, 'runtime, E, F> {
-    view: &'a VisibilityProjectionView<'runtime>,
+pub struct BoundedEntityFieldSelectedLookup<'a, E, F> {
+    view: &'a VisibilityProjectionView,
     index: DerivedIndexId,
     kind: KindId,
     locator: &'a AspectFieldLocator,
@@ -23,12 +23,12 @@ pub struct BoundedEntityFieldSelectedLookup<'a, 'runtime, E, F> {
     prepare: F,
     error: std::marker::PhantomData<fn() -> E>,
 }
-impl<'a, 'runtime, E, F> BoundedEntityFieldSelectedLookup<'a, 'runtime, E, F>
+impl<'a, E, F> BoundedEntityFieldSelectedLookup<'a, E, F>
 where
     F: FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
 {
     pub fn new(
-        view: &'a VisibilityProjectionView<'runtime>,
+        view: &'a VisibilityProjectionView,
         index: DerivedIndexId,
         kind: KindId,
         locator: &'a AspectFieldLocator,
@@ -48,8 +48,8 @@ where
         }
     }
 }
-impl<E, F> sealed::Sealed for BoundedEntityFieldSelectedLookup<'_, '_, E, F> {}
-impl<E, F> BoundedEntityFieldLookupRead for BoundedEntityFieldSelectedLookup<'_, '_, E, F>
+impl<E, F> sealed::Sealed for BoundedEntityFieldSelectedLookup<'_, E, F> {}
+impl<E, F> BoundedEntityFieldLookupRead for BoundedEntityFieldSelectedLookup<'_, E, F>
 where
     F: FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
 {

@@ -83,7 +83,6 @@ where
         )
         .map_err(|error| request_authority_denied(Binding::IDENTITY, error))?;
     post_authorization::execute_authorized::<Schema, Binding>(
-        execution,
         phase,
         runtime,
         &selected,

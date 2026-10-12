@@ -200,7 +200,7 @@ fn computed_results_cannot_cross_stage_or_frontier_identities() {
                 .with_advancement(|phase| {
                     other
                         .prepare_frontier_computation(inputs())
-                        .compute(phase.execution_request_for(&owner).unwrap())
+                        .compute(phase.checked_execution_request_for(&owner).unwrap())
                 })
                 .unwrap()
         });
@@ -209,7 +209,7 @@ fn computed_results_cannot_cross_stage_or_frontier_identities() {
             .with_advancement(|phase| {
                 let mut computed = run
                     .prepare_frontier_computation(inputs())
-                    .compute(phase.execution_request_for(&owner).unwrap());
+                    .compute(phase.checked_execution_request_for(&owner).unwrap());
                 if foreign_frontier {
                     let foreign = foreign.expect("the foreign product was prepared");
                     for (member, foreign_member) in computed.prefix.iter_mut().zip(foreign.prefix) {

@@ -2,13 +2,13 @@ use worth_execution::ExecutionResourceLease;
 use worth_foundational::ExecutionReport;
 
 use super::super::query_packetization::PacketizedQueryWork;
-use super::super::{SnapshotPinnedQueryPlan, VisibilityReadContext};
+use super::super::{RelationalPinnedRead, SnapshotPinnedQueryPlan};
 use super::leased_explicit::execute_leased_explicit_fragment;
 use super::leased_map::{execute_leased_query_packets, QueryReadExecutionStop};
 use crate::storage::overlay::PartitionAccess;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_explicit_query_fragments_from_exact_basis(
-    reader: &VisibilityReadContext<'_>,
+    reader: &RelationalPinnedRead,
     plan: &SnapshotPinnedQueryPlan,
     packets: Vec<PacketizedQueryWork>,
     basis: &crate::visibility::snapshot_states::VisibilitySnapshotBasis,

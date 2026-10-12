@@ -190,7 +190,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         subject: &str,
-    ) -> Result<VisibilityProjectionView<'_>, WorthQueryInvariantProjectionTraversalDenial> {
+    ) -> Result<VisibilityProjectionView, WorthQueryInvariantProjectionTraversalDenial> {
         self.runtime
             .read_truth()
             .project_snapshot(self.snapshot, execution)

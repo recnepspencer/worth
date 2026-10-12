@@ -1,5 +1,5 @@
 //! The worker carries a scope-free read capability and a closed raw binding.
-//! Native reads still borrow the installed owner under its runtime lock.
+//! Native reads carry exact immutable custody and cannot name the owner port.
 pub(in crate::domain_computation::primary_graph::application_query) mod batch;
 
 use super::super::{
@@ -19,7 +19,7 @@ use worth_relational::facade::identity::EntityId;
 pub(in crate::domain_computation::primary_graph::application_query) struct PreparedRead<'a> {
     pub(in crate::domain_computation::primary_graph::application_query) plan: ReadPlan<'a>,
     pub(in crate::domain_computation::primary_graph::application_query) session:
-        WorthQueryPreparedSessionRead<'a>,
+        WorthQueryPreparedSessionRead,
     pub(in crate::domain_computation::primary_graph::application_query) buffer:
         WorthQueryApplicationResultBufferReservation,
     pub(in crate::domain_computation::primary_graph::application_query) batch:
@@ -207,7 +207,12 @@ impl PreparedRead<'_> {
         let check = |subject: &str| charge(0, subject);
         let read = session.execute(execution, |runtime, graph| {
             entered.set(true);
-            super::read_prepared_root_rows(
+            #[cfg(test)]
+            if let Some(witness) = witness {
+                witness.native_read_enter(root);
+            }
+            let plan = plan.with_snapshot(runtime.snapshot());
+            let answer = super::read_prepared_root_rows(
                 runtime,
                 execution,
                 graph,
@@ -216,7 +221,12 @@ impl PreparedRead<'_> {
                 Some(&spent),
                 maximum,
                 super::ReadInterruption::Execution(&check),
-            )
+            );
+            #[cfg(test)]
+            if let Some(witness) = witness {
+                witness.native_read_exit(root);
+            }
+            answer
         });
         let batch_rows = if let Some(batch) = batch {
             let actual = if entered.get() {
@@ -250,15 +260,22 @@ impl PreparedRead<'_> {
                 denial: map_authorized_read_denial(ReadDenial::Read(read), plan.name),
             })),
             Err(
-                WorthQueryManagedGraphReadDenial::MutationSession
+                cause @ (WorthQueryManagedGraphReadDenial::RequestStop(_)
+                | WorthQueryManagedGraphReadDenial::SnapshotUnavailable
+                | WorthQueryManagedGraphReadDenial::IndexNotInstalled(_)
+                | WorthQueryManagedGraphReadDenial::MutationSession
                 | WorthQueryManagedGraphReadDenial::ForeignBasis
                 | WorthQueryManagedGraphReadDenial::ForeignGraph
                 | WorthQueryManagedGraphReadDenial::ForeignReadProof
-                | WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch,
-            ) => Err(MapKernelFailure::Domain(Denial::ReadDenied {
-                root,
-                denial: map_authorized_read_denial(ReadDenial::Session, plan.name),
-            })),
+                | WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch),
+            ) => {
+                let read =
+                    super::managed_read_denial(cause, &plan).map_err(MapKernelFailure::Stop)?;
+                Err(MapKernelFailure::Domain(Denial::ReadDenied {
+                    root,
+                    denial: map_authorized_read_denial(read, plan.name),
+                }))
+            }
         }
     }
 }

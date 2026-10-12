@@ -188,6 +188,7 @@ where
                         prepared_work: prepared.remaining_work().spent(),
                         run: PreparedRun::Incremental(prepared),
                         deposit,
+                        kernel_observation_for_test: None,
                     });
                 }
                 // Routing again met a partition identity collision, and the
@@ -296,6 +297,7 @@ where
                 cause,
             },
             deposit,
+            kernel_observation_for_test: None,
         })
     }
 }

@@ -311,9 +311,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                     )
                     .unwrap()
                     .expect("main-cell hint remains selectable behind fork-cell hint");
-                let selected_main = registry.select_required_claim(
-                    &mut selected_main, &main_root, &mut owner.edit_admission(),
-                ).unwrap().expect("the inspected main-branch claim selects its current cause");
+                let selected_main = registry.select_required_claim(&mut selected_main, &main_root, &mut owner.edit_admission()).unwrap().expect("the inspected main-branch claim selects its current cause");
                 assert!(matches!(
                     selected_main.kind(),
                     SelectedRequiredWorkKind::Native { branch, .. } if branch.branch_id() == &main

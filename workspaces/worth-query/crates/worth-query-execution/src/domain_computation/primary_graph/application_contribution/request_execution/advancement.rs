@@ -82,11 +82,12 @@ impl QueryRequestExecution<'_> {
     pub(in crate::domain_computation::primary_graph) fn execution_request(
         &self,
     ) -> Result<ExecutionRequest<'_, '_>, Resource> {
-        self.form
-            .lease
-            .as_ref()
-            .map(ExecutionRequest::leased)
-            .map_err(|denial| execution_denial::lease_denial(*denial))
+        match &self.form {
+            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
+                .as_ref()
+                .map(ExecutionRequest::leased)
+                .map_err(|denial| execution_denial::lease_denial(*denial)),
+        }
     }
 
     fn run_advancement<R>(
@@ -95,13 +96,12 @@ impl QueryRequestExecution<'_> {
         source_instance: Option<u64>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        observation::begin(
-            self.form
-                .lease
+        observation::begin(match &self.form {
+            Form::Leased { lease, policy } | Form::Serial { lease, policy } => lease
                 .as_ref()
                 .map(|lease| lease.resolved_posture())
-                .unwrap_or(self.form.policy.posture()),
-        );
+                .unwrap_or(policy.posture()),
+        });
         let result = self.run_admitted_advancement(owner, source_instance, body);
         observation::record_result(&result);
         result
@@ -122,7 +122,10 @@ impl QueryRequestExecution<'_> {
             ));
         }
         let mut body_unwind = None;
-        let outcome = request.run(ExecutionWorkCeiling::new(self.declared_work), |_| {
+        let outcome = request.run(ExecutionWorkCeiling::new(self.declared_work), |lease| {
+            observation::record_workers(
+                lease.map_or(1, |lease| lease.policy().budget().max_workers().get()),
+            );
             let active = ActiveAdvancement { execution: self };
             let source = match (source_instance, owner) {
                 (Some(source), _) => phase_custody::AdvancementSource::Relational(source),
@@ -185,7 +188,8 @@ mod installed_opening;
 
 /// Installation runs serially under the host's memory and aggregate work bounds.
 /// Custody is per thread; another thread's public call owns its own request.
-/// Every posture reports the lease's exact policy memory denial.
+/// Installation's serial placement reports zero memory as `PolicyMemoryLimit`;
+/// an installed leased opener instead reports a policy `MemoryLimit`.
 pub fn with_bootstrap_advancement<R>(
     policy: worth_foundational::ExecutionRequestPolicy,
     body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
@@ -196,14 +200,8 @@ pub fn with_bootstrap_advancement<R>(
         cancellation: cancellation.clone(),
         deadline: None,
         declared_work: policy.budget().work_ceiling(),
-        form: Form {
-            lease: worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
-                policy,
-                cancellation,
-                deadline: None,
-            }),
-            policy,
-        },
+        certified_seed: super::test_placement::certifying(),
+        form: super::serial_placement::form(policy, cancellation, None),
     };
     execution.run_advancement(None, None, |phase| {
         body(WorthQueryBootstrapAdvancementPhase {
@@ -227,14 +225,8 @@ pub(in crate::domain_computation::primary_graph) fn with_serial_host_advancement
         cancellation: cancellation.clone(),
         deadline,
         declared_work: policy.budget().work_ceiling(),
-        form: Form {
-            lease: worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
-                policy,
-                cancellation,
-                deadline,
-            }),
-            policy,
-        },
+        certified_seed: super::test_placement::certifying(),
+        form: super::serial_placement::form(policy, cancellation, deadline),
     };
     execution.run_advancement(Some(owner), None, body)
 }
@@ -325,7 +317,6 @@ pub(in crate::domain_computation::primary_graph) use observation::record_caller_
 pub(crate) fn drain_test_advancement_observations() {
     drop(observation::advancement_observations_on_this_thread_for_test());
 }
-
 #[cfg(test)]
 mod test_host_policy;
 #[cfg(test)]

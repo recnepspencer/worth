@@ -81,7 +81,7 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
                         .unwrap()
                         .conditional_clock(
                             &phase
-                                .execution_request_for(application.product_runtime())
+                                .checked_execution_request_for(application.product_runtime())
                                 .expect("phase belongs to application"),
                             clock,
                         )

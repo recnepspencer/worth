@@ -1,5 +1,4 @@
 use crate::identity::data::{PartitionId, VersionId};
-use crate::runtime::RelationalRuntime;
 use crate::storage::overlay::{PartitionAccess, PartitionState};
 use crate::storage::partition::DenseSlotBitSet;
 use crate::storage::substrate::{HistoricalMetadata, RecordArena, RecordKind};
@@ -27,13 +26,12 @@ pub(in super::super) fn relation_visible_in_partition_at_version(
 }
 
 pub(in super::super) fn visible_relation_slots_in_partition_from_state(
-    runtime: &RelationalRuntime,
+    current_version: VersionId,
     state: &(impl PartitionAccess + ?Sized),
     partition_id: PartitionId,
     version_id: VersionId,
-    count_scans: impl Fn(&RelationalRuntime, usize),
+    count_scans: impl Fn(usize),
 ) -> Option<DenseSlotBitSet> {
-    let current_version = runtime.current_version_id();
     let partition = state.get_partition(partition_id)?;
     let arena = &partition.relation_arena;
     let mut visible_slots = DenseSlotBitSet::with_capacity(arena.slot_count());
@@ -42,7 +40,7 @@ pub(in super::super) fn visible_relation_slots_in_partition_from_state(
             visible_slots.set(slot, true);
         }
     } else {
-        count_scans(runtime, arena.slot_count());
+        count_scans(arena.slot_count());
         for slot in arena.occupied_slots() {
             if visible_relation_metadata(partition, slot, version_id).is_some() {
                 visible_slots.set(slot, true);
@@ -67,16 +65,15 @@ where
 }
 
 pub(in super::super) fn visible_slots_in_partition_from_state<K: RecordKind>(
-    runtime: &RelationalRuntime,
+    current_version: VersionId,
     state: &(impl PartitionAccess + ?Sized),
     partition_id: PartitionId,
     version_id: VersionId,
-    count_scans: impl Fn(&RelationalRuntime, usize),
+    count_scans: impl Fn(usize),
 ) -> Option<DenseSlotBitSet>
 where
     K::Meta: HistoricalMetadata,
 {
-    let current_version = runtime.current_version_id();
     let partition = state.get_partition(partition_id)?;
     let arena = K::arena(partition);
     let mut visible_slots = DenseSlotBitSet::with_capacity(arena.slot_count());
@@ -85,7 +82,7 @@ where
             visible_slots.set(slot, true);
         }
     } else {
-        count_scans(runtime, arena.slot_count());
+        count_scans(arena.slot_count());
         for slot in arena.occupied_slots() {
             if record_visible_in_arena_at_version(arena, slot, version_id) {
                 visible_slots.set(slot, true);

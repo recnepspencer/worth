@@ -9,7 +9,7 @@ use worth_relational::facade::{identity::EntityId, runtime::VisibilityProjection
 
 pub(super) fn select<Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    branch: &VisibilityProjectionView<'_>,
+    branch: &VisibilityProjectionView,
     layout: &WorthQueryPrimaryGraphLayout,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
     maximum_work: usize,

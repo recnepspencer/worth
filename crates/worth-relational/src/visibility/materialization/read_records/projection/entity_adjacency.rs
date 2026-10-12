@@ -19,7 +19,7 @@ use crate::visibility::materialization::read_records::reader::{
     AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead,
 };
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     pub fn bounded_outgoing_relations_of_kind(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -77,7 +77,7 @@ impl VisibilityProjectionView<'_> {
         let mut examined = 0_usize;
         for relation_id in relation_ids.iter().copied() {
             if examined + records.len() == maximum_work_units {
-                ledger.settle(self.runtime);
+                ledger.settle_instrumentation(&self.instrumentation);
                 return Err(AdjacencyTruthReadLimitExceeded::new(
                     examined,
                     records.len(),
@@ -94,7 +94,7 @@ impl VisibilityProjectionView<'_> {
                 continue;
             }
             if examined + records.len() == maximum_work_units {
-                ledger.settle(self.runtime);
+                ledger.settle_instrumentation(&self.instrumentation);
                 return Err(AdjacencyTruthReadLimitExceeded::new(
                     examined,
                     records.len(),
@@ -102,7 +102,7 @@ impl VisibilityProjectionView<'_> {
             }
             records.push(record);
         }
-        ledger.settle(self.runtime);
+        ledger.settle_instrumentation(&self.instrumentation);
         records.sort_by_key(relation_identity_order_key);
         Ok(BoundedAdjacencyTruthRead::new(records, examined))
     }

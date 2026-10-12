@@ -40,7 +40,9 @@ fn scope_admission_reports_shape_work_only_when_construction_ran() {
         let execution = QueryRequestExecution::open(
             RuntimeWorldExecutionPlacement::Leased {
                 authority: query_test_execution_authority_for_test(),
-                policy: test_policy(NonZeroUsize::MIN, MEMORY),
+                // This half exercises post-shape scheduled admission; one worker
+                // now uses the checked serial tree and has no frontier admission.
+                policy: test_policy(NonZeroUsize::new(2).unwrap(), MEMORY),
             },
             &request,
         );
@@ -65,18 +67,19 @@ fn scope_admission_reports_shape_work_only_when_construction_ran() {
         let inputs = execution.reserve(0).unwrap();
         tree_runs();
         COMBINES.store(0, Ordering::Relaxed);
+        let kernel = |value: &u64, context: &mut worth_execution::MapKernelContext<'_, '_>| {
+            context.checkpoint(KERNEL_WORK)?;
+            if entries.fetch_add(1, Ordering::Relaxed) + 1 == PARTITIONS {
+                *filled.lock().unwrap() = Some(fill_room(&execution));
+            }
+            Ok::<u64, MapKernelFailure<u32>>(*value)
+        };
         let outcome = execution.dispatch().unwrap().reduce(
             10_000,
             &map,
             inputs,
             &mut tree_memory,
-            |value, context| {
-                context.checkpoint(KERNEL_WORK)?;
-                if entries.fetch_add(1, Ordering::Relaxed) + 1 == PARTITIONS {
-                    *filled.lock().unwrap() = Some(fill_room(&execution));
-                }
-                Ok::<u64, MapKernelFailure<u32>>(*value)
-            },
+            (kernel, kernel),
             0,
             sum as fn(&u64, &u64) -> u64,
             4096,

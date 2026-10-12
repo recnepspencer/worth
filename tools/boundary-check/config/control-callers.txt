@@ -120,7 +120,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/generated_restoration/advancement_custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/generated_restoration/native_writer.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/late_cancellation.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/serial_observation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/observation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/diamond/dropped_dependency.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/diamond/initial_dependency.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/exact_invalidation.rs
@@ -288,6 +288,28 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/request_stops/requested_custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/selection_at_inspection.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/unfunded_refresh.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/charge_prefix.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/charge_prefix/cost_cell.rs
+
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/computation/wave_dispatch.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/operation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/runtime.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/observation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/transfer_history.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/assessment_history.rs
+# Only the armed certification path enters the sealed detached resource ledger.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement.rs
+
+# Exact reader of the one-stage framework reservation.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/tree_memory.rs
+
+# Diagnostic resource proof uses the same sealed detached meter.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement/certification_tests.rs
+
+# Owned assessment-phase reports are read by this exact test adapter.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/assessment_trace.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/generated_materialization/typed_reconstruction_preserves_query_authority.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/execution/execution/dropped_mutation_settlement_recovers_by_commit_id_and_reopens_th.rs
 workspaces/worth-query/crates/worth-query-execution/ crates/worth-server/tests/operation_scheduler_phase_eight/refused_basis_read.rs
@@ -302,3 +324,19 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/selected_product_lifecycle/retained_read_defers_component_cleanup_and_preserves_retry_autho.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query/src/domain_installation/installation_state/substrate_compilation/invariant/lease_tests.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-ui/crates/worth-ui-query-binding/src/product_projection/status_integrity/lease_tests.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/deadline.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/matrix/runtime/interruption.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/parallel_history_reuse/engagement.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/native_concurrency.rs
+crates/worth-relational/ crates/worth-relational/src/tests/query/execution/empty_request_seams.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pinning_reasons.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/branch_adoption_recovery/foreign_phase.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pin_custody_tests.rs
+crates/worth-relational/ crates/worth-runtime-bridge/src/relational_source/runtime_source/lock_observation.rs
+crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/grant_selection_stops.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/reconstruction_stops.rs
+# Unit-only custody of the Bridge lock-observation guard for the pinned-read proof.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/freshness_stops.rs

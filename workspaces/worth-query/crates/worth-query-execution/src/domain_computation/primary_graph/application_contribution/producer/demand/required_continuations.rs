@@ -213,6 +213,7 @@ where
 
     fn advance_checkpoint(
         &mut self,
+
         phase: &WorthQueryAdvancementPhase<'_>,
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -225,10 +226,9 @@ where
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
-                    "required checkpoint phase",
+                    "required-checkpoint-phase",
                 )
             })?;
-
         let demand = self
             .demand
             .as_mut()
@@ -275,8 +275,8 @@ where
             .execution_request_for(&runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
-                    super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
-                    "required continuation phase",
+                    super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "required successor advancement phase",
                 )
             })?;
         self.run_again(

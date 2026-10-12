@@ -17,6 +17,7 @@ use super::{
 
 mod array_backing;
 mod byte_backing;
+mod diagnostic;
 mod fixed_backing;
 mod limits;
 mod memory;
@@ -25,6 +26,7 @@ mod refusal;
 mod reservation;
 mod retained;
 mod room;
+mod serial_authority;
 mod serial_backing;
 mod worker_context;
 mod worker_width;
@@ -102,7 +104,7 @@ pub struct ExecutionAuthority {
 #[derive(Debug)]
 struct AuthorityInner {
     config: ExecutionAuthorityConfig,
-    pool: Option<ThreadPool>,
+    pool: Option<Arc<ThreadPool>>,
     equivalences: EquivalenceRegistry,
     ledger: Mutex<Ledger>,
 }

@@ -81,7 +81,9 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
             let map = ExecutionMap::<_, ()>::from_keyless_partitions(BTreeMap::from([(
                 PartitionIdentity::new(1),
                 KeylessPartition {
-                    value: plans.worker(&world.application, root.entity_id()).unwrap(),
+                    value: plans
+                        .worker(execution, &world.application, root.entity_id())
+                        .unwrap(),
                     kernel_scratch_bytes: 0,
                     max_result_bytes: capacity,
                 },

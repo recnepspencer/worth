@@ -93,7 +93,7 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
             let mut declaration = members(1, None);
             declaration[0].1 = domain::WorthQueryWorkflowValue::Text("1:9:131072".into());
             let (scope, map) = super::reservation::scoped_map_reservation(
-                phase.execution_request_for(&owner).unwrap(),
+                phase.checked_execution_request_for(&owner).unwrap(),
                 sample_run.prepare_frontier_computation(declaration),
             );
             (map, bytes - root - scope)
