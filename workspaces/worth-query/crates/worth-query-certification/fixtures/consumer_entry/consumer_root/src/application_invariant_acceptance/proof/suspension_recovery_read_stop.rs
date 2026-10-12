@@ -14,7 +14,7 @@ use worth_query_topology_entry::{PlanarFinalOutputProducer, PlanarSourceAdjustme
 fn suspension_recovery_keeps_the_cancelled_source_read_and_live_retry() {
     std::thread::Builder::new()
         .stack_size(8 * 1024 * 1024)
-        .spawn(|| prove(false))
+        .spawn(|| prove(false, false))
         .unwrap()
         .join()
         .unwrap();
@@ -24,13 +24,23 @@ fn suspension_recovery_keeps_the_cancelled_source_read_and_live_retry() {
 fn suspension_recovery_keeps_cancellation_inside_adoption_preparation() {
     std::thread::Builder::new()
         .stack_size(8 * 1024 * 1024)
-        .spawn(|| prove(true))
+        .spawn(|| prove(true, false))
         .unwrap()
         .join()
         .unwrap();
 }
 
-fn prove(at_preparation: bool) {
+#[test]
+fn suspension_recovery_keeps_the_external_request_cancellation() {
+    std::thread::Builder::new()
+        .stack_size(8 * 1024 * 1024)
+        .spawn(|| prove(false, true))
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+fn prove(at_preparation: bool, external_only: bool) {
     let schema = crate::installed_schema();
     let world = installation::install(&schema);
     let application = &world.application;
@@ -112,9 +122,11 @@ fn prove(at_preparation: bool) {
             .product_runtime()
             .before_adoption_preparation_for_test(move || preparation_cancellation.cancel())
     });
+    let external_cancellation = worth_execution::CancellationSource::new();
+    let external_stop = external_cancellation.clone();
     let host = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
-        worth_execution::CancellationSource::new().token(),
+        external_cancellation.token(),
         None,
     );
     let execution = worth_execution::ExecutionRequest::serial(&host);
@@ -131,11 +143,21 @@ fn prove(at_preparation: bool) {
                 && fired.get().is_none()
             {
                 fired.set(Some(at));
-                cancellation.cancel();
+                if external_only {
+                    external_stop.cancel();
+                } else {
+                    cancellation.cancel();
+                }
             }
         },
         || {
-            execution.run(worth_execution::ExecutionWorkCeiling::new(100_000), |_| application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<crate::ConsumerSchema>>(&execution, recovery, &interrupted)).unwrap().0
+            if external_only {
+                // No outer SDK run: the application scope stays live, so only
+                // consulting the supplied request can observe this cancellation.
+                application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<crate::ConsumerSchema>>(&execution, recovery, &interrupted)
+            } else {
+                execution.run(worth_execution::ExecutionWorkCeiling::new(100_000), |_| application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<crate::ConsumerSchema>>(&execution, recovery, &interrupted)).unwrap().0
+            }
         },
     );
     if !at_preparation {
@@ -167,6 +189,12 @@ fn prove(at_preparation: bool) {
     let recovery = failure.into_recovery();
     assert_eq!(recovery.product_branch(), branch);
     assert_eq!(read_y(&request, "final:anchor-b"), retained);
+    let retry_host = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&retry_host);
     let suspended = execution.run(worth_execution::ExecutionWorkCeiling::new(100_000), |_| application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<crate::ConsumerSchema>>(&execution, recovery, &scope)).unwrap().0.unwrap_or_else(|failure| panic!("live retry adopts the retained effects: {:?}", failure.stage()));
     assert_eq!(suspended.product_branch(), branch);
 }
