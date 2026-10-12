@@ -162,16 +162,11 @@ impl WorthQueryOutputDemandDenial {
         use crate::basis::WorthQueryProductBranchAdmissionDenial as Branch;
         use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
         let kind = match denial {
-            Branch::ReadExecution(Err(Control::Cancelled)) | Branch::ObservationCancelled => {
-                WorthQueryOutputDemandDenialKind::Cancelled
-            }
-            Branch::ReadExecution(Err(Control::TimedOut)) | Branch::ObservationDeadlineExceeded => {
-                WorthQueryOutputDemandDenialKind::TimedOut
-            }
-            Branch::ReadExecution(Ok(cause)) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
-                crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause),
-            ),
-            other => WorthQueryOutputDemandDenialKind::ProductSelection(other),
+            Branch::Stopped(Err(Control::Cancelled)) => WorthQueryOutputDemandDenialKind::Cancelled,
+            Branch::Stopped(Err(Control::TimedOut)) => WorthQueryOutputDemandDenialKind::TimedOut,
+            Branch::Stopped(Ok(cause)) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
+                crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause)),
+            refused @ Branch::Refused(_) => WorthQueryOutputDemandDenialKind::ProductSelection(refused),
         };
         Self::new(kind, subject)
     }

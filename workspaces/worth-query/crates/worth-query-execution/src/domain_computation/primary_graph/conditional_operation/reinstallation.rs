@@ -122,7 +122,14 @@ where
         let selected = self
             .on_branch(product_branch)
             .select_with_request(execution)
-            .map_err(|denial| bridge_denial(format!("product selection failed: {denial:?}")))?;
+            .map_err(|denial| match denial {
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop) => {
+                    super::temporal_reconstruction::denial::read_stopped(stop)
+                }
+                refused @ crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                    bridge_denial(format!("product selection failed: {refused:?}"))
+                }
+            })?;
         let truth = WorthQueryConditionalTruthBasis::from_selected(selected);
         let mut bridge_candidate = self
             .bridge

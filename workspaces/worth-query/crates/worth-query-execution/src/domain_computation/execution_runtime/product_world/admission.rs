@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_runtime_world::facade::{RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial};
 
 use super::WorthQueryProductRuntime;
@@ -9,7 +10,9 @@ impl WorthQueryProductRuntime {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
         if occurrence.owner_identity() != self.owner.owner_identity() {
-            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
         }
         let observation = self
             .owner
@@ -45,7 +48,11 @@ impl WorthQueryProductRuntime {
         let bridge_source = self
             .source
             .retain_branch_basis_for_bridge(observation.basis().relational_basis())
-            .map_err(|_| WorthQueryProductBranchAdmissionDenial::BridgeSourceUnavailable)?;
+            .map_err(|_| {
+                WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::BridgeSourceUnavailable,
+                )
+            })?;
         Ok(WorthQueryProductBranchLease::new(
             super::WorthQueryProductPublicationBinding::new(
                 observation,
@@ -68,7 +75,9 @@ impl WorthQueryProductRuntime {
         ) -> Result<Output, WorthQueryProductBranchAdmissionDenial>,
     ) -> Result<Output, WorthQueryProductBranchAdmissionDenial> {
         if identity.owner_identity() != self.owner.owner_identity() {
-            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
         }
         let gate = match self.activations.gate(identity) {
             Ok(gate) => gate,
@@ -79,7 +88,9 @@ impl WorthQueryProductRuntime {
                     .observation_port()
                     .observe_product_branch(identity)
                     .map_err(map_world_denial)?;
-                return Err(WorthQueryProductBranchAdmissionDenial::ProductActivationUnavailable);
+                return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ProductActivationUnavailable,
+                ));
             }
             Err(denial) => return Err(denial.into()),
         };
@@ -90,7 +101,9 @@ impl WorthQueryProductRuntime {
                 .observe_product_branch(identity)
                 .map_err(map_world_denial)?;
             if observation.owner_identity() != self.owner.owner_identity() {
-                return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+                return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ForeignOwner,
+                ));
             }
             admit(observation)
         })
@@ -103,40 +116,40 @@ pub(super) fn map_world_denial(
     match denial {
         RuntimeWorldServiceDenial::OwnerUnavailable(_)
         | RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable) => {
-            WorthQueryProductBranchAdmissionDenial::OwnerUnavailable
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::OwnerUnavailable)
         }
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner) => {
-            WorthQueryProductBranchAdmissionDenial::ForeignOwner
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignOwner)
         }
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::RetiredBranch) => {
-            WorthQueryProductBranchAdmissionDenial::RetiredBranch
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::RetiredBranch)
         }
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect,
-        ) => WorthQueryProductBranchAdmissionDenial::ObservationCancelled,
+        ) => WorthQueryProductBranchAdmissionDenial::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)),
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
-        ) => WorthQueryProductBranchAdmissionDenial::ObservationDeadlineExceeded,
+        ) => WorthQueryProductBranchAdmissionDenial::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut)),
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::CapacityExhausted) => {
-            WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted)
         }
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::CustodyCapacityExhausted,
-        ) => WorthQueryProductBranchAdmissionDenial::CustodyCapacityExhausted,
+        ) => WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::CustodyCapacityExhausted),
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::IdentityExhausted) => {
-            WorthQueryProductBranchAdmissionDenial::ObservationIdentityExhausted
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationIdentityExhausted)
         }
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::CurrentnessAccountingOverflow,
-        ) => WorthQueryProductBranchAdmissionDenial::ObservationAccountingOverflow,
+        ) => WorthQueryProductBranchAdmissionDenial::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow, partition_identity: None, policy_ancestor: None })),
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::StaleSourceHead) => {
-            WorthQueryProductBranchAdmissionDenial::ObservationStaleSourceHead
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationStaleSourceHead)
         }
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::DuplicateName
             | RuntimeWorldBranchAdmissionDenial::PlansOmitted
             | RuntimeWorldBranchAdmissionDenial::ForkSourceChanged
             | RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable,
-        ) => WorthQueryProductBranchAdmissionDenial::ObservationRejected,
+        ) => WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationRejected),
     }
 }

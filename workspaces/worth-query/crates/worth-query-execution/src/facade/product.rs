@@ -5,8 +5,9 @@
 
 pub use crate::basis::{
     WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial,
-    WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationRecovery,
-    WorthQueryProductBranchCreationRecoveryCause, WorthQueryProductBranchCreationRecoveryFailure,
+    WorthQueryProductBranchAdmissionRefusalKind, WorthQueryProductBranchCreateError,
+    WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchCreationRecoveryCause,
+    WorthQueryProductBranchCreationRecoveryFailure,
     WorthQueryProductBranchCreationRecoveryInspection,
     WorthQueryProductBranchCreationRecoveryNextAction,
     WorthQueryProductBranchCreationRecoveryRelease,

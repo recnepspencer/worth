@@ -4,6 +4,7 @@ use super::super::super::fixture::{
     CapabilityElevationIdentity, CapabilityElevationScenario, CapabilityReviewIdentity,
 };
 use super::super::capability_progression::time;
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryElevationRequestOutcome, WorthQueryEntityResolutionDenialKind,
@@ -135,7 +136,7 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         elevation.kind(),
-        WorthQueryEntityResolutionDenialKind::UnknownEntity
+        WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity)
     );
     let review = world
         .application
@@ -160,6 +161,6 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         review.kind(),
-        WorthQueryEntityResolutionDenialKind::UnknownEntity
+        WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity)
     );
 }

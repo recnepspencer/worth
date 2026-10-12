@@ -1,3 +1,5 @@
+#[path = "operation/approval_denial.rs"]
+mod approval_denial;
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use std::sync::{Arc, Mutex};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -274,8 +276,8 @@ impl WorkflowOperationAuthority {
         let selected = runtime
             .on_branch(self.observation.product_branch())
             .select_with_request(execution)
-            .map_err(|denial| match denial.request_stop() {
-                Some(cause) => WorthQueryApplicationAttemptDenial::new(
+            .map_err(|denial| match denial {
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(cause) => WorthQueryApplicationAttemptDenial::new(
                     match cause {
                         Ok(kind) => WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind),
                         Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,
@@ -283,7 +285,7 @@ impl WorkflowOperationAuthority {
                     },
                     "workflow operation authority",
                 ),
-                None => mismatch(),
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => mismatch(),
             })?;
         let current =
             WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
@@ -305,34 +307,13 @@ impl WorkflowOperationAuthority {
         )
         .map_err(|_| mismatch())?;
         runtime
-            .readmit_workflow_approval_authority_on_product(execution,
+            .readmit_workflow_approval_authority_on_product(
+                execution,
                 &self.approval_authority,
                 lease.product(),
                 self.session_identity,
             )
-            .map_err(|denial| {
-                use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
-                let kind = match denial.kind() {
-                    WorthQueryOperationAuthorizationDenialKind::StalePrincipal => {
-                        WorthQueryApplicationAttemptDenialKind::WorkflowApprovalPrincipalStale
-                    }
-                    WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing => {
-                        WorthQueryApplicationAttemptDenialKind::WorkflowApprovalGrantUnavailable
-                    }
-                    WorthQueryOperationAuthorizationDenialKind::CapabilityExpired => {
-                        WorthQueryApplicationAttemptDenialKind::WorkflowApprovalExpired
-                    }
-                    WorthQueryOperationAuthorizationDenialKind::DelegationLineageChanged
-                    | WorthQueryOperationAuthorizationDenialKind::DelegationRejected => {
-                        WorthQueryApplicationAttemptDenialKind::WorkflowApprovalDelegationChanged
-                    }
-                    WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable => {
-                        WorthQueryApplicationAttemptDenialKind::WorkflowTrustedTimeUnavailable
-                    }
-                    _ => WorthQueryApplicationAttemptDenialKind::WorkflowApprovalAuthorityDenied,
-                };
-                WorthQueryApplicationAttemptDenial::new(kind, denial.to_string())
-            })?;
+            .map_err(approval_denial::denial)?;
         lease.handle().with_runtime(execution, |runtime| {
             let mut current = true;
             for fact in self.facts.iter() {

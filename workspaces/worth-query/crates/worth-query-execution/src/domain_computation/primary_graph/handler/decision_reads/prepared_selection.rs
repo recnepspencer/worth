@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
@@ -116,7 +117,9 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         if matches.len() > 1 {
             return Err(HandlerExecutionDenial::new(
                 WorthQueryEntityResolutionDenial::new(
-                    WorthQueryEntityResolutionDenialKind::AmbiguousEntity,
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::AmbiguousEntity,
+                    ),
                     field.field(),
                 ),
             ));

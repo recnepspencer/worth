@@ -4,7 +4,6 @@ use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
 /// Why an authenticated principal could not be resolved to its principal
 /// entity.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
 pub enum WorthQueryPrincipalResolutionDenialKind {
     /// The supplied phase belongs to another installed runtime.
     ForeignPhase,
@@ -126,7 +125,13 @@ pub(super) fn principal_binding_resolution_denial(
         WorthQueryPrincipalBindingInstallationDenialKind::StaleGeneration => {
             WorthQueryPrincipalResolutionDenialKind::StaleInstalledSchema
         }
-        _ => WorthQueryPrincipalResolutionDenialKind::BindingNotInstalled,
+        WorthQueryPrincipalBindingInstallationDenialKind::BindingNotInstalled
+        | WorthQueryPrincipalBindingInstallationDenialKind::BindingMeaningChanged
+        | WorthQueryPrincipalBindingInstallationDenialKind::PackageIdentityChanged
+        | WorthQueryPrincipalBindingInstallationDenialKind::SchemaMeaningChanged
+        | WorthQueryPrincipalBindingInstallationDenialKind::AuthorityMismatch => {
+            WorthQueryPrincipalResolutionDenialKind::BindingNotInstalled
+        }
     };
     resolution_denial(resolution_kind, binding)
 }
@@ -177,7 +182,19 @@ pub(super) fn principal_index_currency_denial(
         super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
             super::WorthQueryExactBasisSnapshotDenial::BranchMaterializationSuspended,
         ) => WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended,
-        _ => WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable,
+        super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(_)
+        | super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
+            super::WorthQueryExactBasisSnapshotDenial::BranchObservationUnavailable
+            | super::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted
+            | super::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted
+            | super::WorthQueryExactBasisSnapshotDenial::ForeignRuntime { .. }
+            | super::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted { .. }
+            | super::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted,
+        ) => WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable,
+        #[cfg(test)]
+        super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
+            super::WorthQueryExactBasisSnapshotDenial::BranchIdentityUnavailable,
+        ) => WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable,
     };
     resolution_denial(kind, binding)
 }

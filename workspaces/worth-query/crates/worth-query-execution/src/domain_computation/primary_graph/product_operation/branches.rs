@@ -56,7 +56,7 @@ impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
     > {
         match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution, self, source.relational_basis()) {
             Ok(selected) => Ok(Some(*selected.revision())),
-            Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) => Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ReadExecution(stop)),
+            Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) => Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop)),
             Err(_) => Ok(None),
         }
     }

@@ -85,7 +85,7 @@ pub(super) enum WorthQueryTemporalTerminalFailure {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum WorthQueryTemporalAdmissionTerminalFailure {
     Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind),
-    Entity(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind),
+    Entity(crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind),
     Authorization(
         crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind,
     ),
@@ -277,6 +277,11 @@ where
         }
         Err(WorthQueryTemporalReentryDenial::ControlStopped(cause)) => {
             WorthQueryTemporalReentryOutcome::ControlStopped(cause)
+        }
+        Err(WorthQueryTemporalReentryDenial::ExecutionStopped(kind)) => {
+            WorthQueryTemporalReentryOutcome::TerminalFailure(
+                WorthQueryTemporalReentryDenial::execution_failure(kind),
+            )
         }
         Err(WorthQueryTemporalReentryDenial::Terminal(failure)) => {
             WorthQueryTemporalReentryOutcome::TerminalFailure(

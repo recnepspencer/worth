@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use std::num::NonZeroUsize;
 
 use worth_runtime_world::facade::ProductBranchHistoryTraversal;
@@ -26,11 +27,15 @@ impl WorthQueryProductRuntime {
                 .next()
                 .is_none_or(|commit| commit.identity() != current.selected_commit())
         {
-            return Err(WorthQueryProductBranchAdmissionDenial::ObservationRejected);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationRejected,
+            ));
         }
         let predecessor = self.admit_product_history_entry(&history, 1)?;
         if !predecessor.relational_basis().materialization_is_complete() {
-            return Err(WorthQueryProductBranchAdmissionDenial::ObservationRejected);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationRejected,
+            ));
         }
         Ok(WorthQueryProductObservationLease::suspended_security(
             predecessor.observation().clone(),
@@ -44,7 +49,9 @@ impl WorthQueryProductRuntime {
         maximum: NonZeroUsize,
     ) -> Result<ProductBranchHistoryTraversal, WorthQueryProductBranchAdmissionDenial> {
         if branch.occurrence().owner_identity() != self.owner.owner_identity() {
-            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
         }
         let history = self
             .owner
@@ -61,7 +68,9 @@ impl WorthQueryProductRuntime {
         maximum: NonZeroUsize,
     ) -> Result<ProductBranchHistoryTraversal, WorthQueryProductBranchAdmissionDenial> {
         if previous.lifecycle_incarnation().owner_identity() != self.owner.owner_identity() {
-            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
         }
         let gate = self.activations.gate(previous.branch_identity())?;
         gate.with_admission(|| {
@@ -78,7 +87,9 @@ impl WorthQueryProductRuntime {
         index: usize,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
         if history.lifecycle_incarnation().owner_identity() != self.owner.owner_identity() {
-            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
         }
         let gate = self.activations.gate(history.branch_identity())?;
         gate.with_admission(|| {

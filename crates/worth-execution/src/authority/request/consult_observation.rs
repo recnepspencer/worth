@@ -2,6 +2,7 @@
 use std::cell::RefCell;
 struct Probe {
     count: usize,
+    charges: Vec<(usize, u64)>,
     observe: Box<dyn FnMut(usize)>,
 }
 thread_local! { static PROBE:RefCell<Option<Probe>>=const{RefCell::new(None)}; }
@@ -16,11 +17,16 @@ impl RequestConsultObservationForTest {
             previous: PROBE.with(|p| {
                 p.replace(Some(Probe {
                     count: 0,
+                    charges: Vec::new(),
                     observe: Box::new(observe),
                 }))
             }),
             _thread: std::marker::PhantomData,
         }
+    }
+    /// The cumulative root-scope Work required at each actual charge.
+    pub fn charged_prefixes_for_test(&self) -> Vec<(usize, u64)> {
+        PROBE.with(|p| p.borrow().as_ref().unwrap().charges.clone())
     }
     pub fn count_for_test(&self) -> usize {
         PROBE.with(|p| p.borrow().as_ref().unwrap().count)
@@ -79,4 +85,15 @@ mod tests {
         );
         assert_eq!(count, 2);
     }
+}
+
+pub(crate) fn charged_prefix(required: impl FnOnce() -> u64) {
+    if !is_installed() {
+        return;
+    }
+    PROBE.with(|p| {
+        if let Some(probe) = p.borrow_mut().as_mut() {
+            probe.charges.push((probe.count, required()));
+        }
+    });
 }

@@ -2,6 +2,7 @@ use super::super::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) fn bridge_reconstruction_denial(
     detail: impl Into<String>,
@@ -59,13 +60,34 @@ pub(super) fn principal(
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
     use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Kind;
     match denial.kind() {
+        Kind::ExecutionRequest(kind) => read_stopped(Ok(kind)),
+        Kind::Cancelled => read_stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)),
+        Kind::DeadlineExceeded => read_stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut)),
+        Kind::ProjectionWorkBudgetExceeded => read_stopped(crate::facade::primary_graph::relational_execution_kind(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted, None)),
+        Kind::ProjectionPreparationMemoryExhausted => read_stopped(crate::facade::primary_graph::relational_execution_kind(worth_relational::facade::transactions::RelationalExecutionDenialCause::MemoryLimitExceedsParent, None)),
+
         Kind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
         Kind::RetentionCapacityExhausted => retention_capacity_reconstruction_denial(),
         Kind::RetentionIdentityExhausted => retention_identity_reconstruction_denial(),
         Kind::SnapshotIdentityExhausted => snapshot_identity_reconstruction_denial(),
-        _ => reconstruction_denial(
+        Kind::ForeignPhase
+            | Kind::PrimaryGraphNotInstalled
+            | Kind::BindingNotInstalled
+            | Kind::ForeignRuntime
+            | Kind::StaleInstalledSchema
+            | Kind::ExpiredAuthentication
+            | Kind::BranchMaterializationSuspended
+            | Kind::IdentityIndexUnavailable
+            | Kind::CorruptIdentityIndex
+            | Kind::UnknownPrincipal
+            | Kind::DisabledPrincipal
+            | Kind::AmbiguousPrincipal
+            | Kind::MissingPrincipalTarget
+            | Kind::AmbiguousPrincipalTarget
+            | Kind::WrongPrincipalTargetKind
+            | Kind::StalePrincipalProof => reconstruction_denial(
             WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionPrincipal,
             format!("{:?}: {}", denial.kind(), denial.binding()),
         ),
@@ -77,13 +99,22 @@ pub(super) fn entity(
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
     use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind as Kind;
     match denial.kind() {
-        Kind::ActiveSnapshotCapacityExhausted {
+        Kind::Refused(ResolutionRefusal::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
-        } => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
-        Kind::RetentionCapacityExhausted => retention_capacity_reconstruction_denial(),
-        Kind::RetentionIdentityExhausted => retention_identity_reconstruction_denial(),
-        Kind::SnapshotIdentityExhausted => snapshot_identity_reconstruction_denial(),
-        _ => reconstruction_denial(
+        }) => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
+        Kind::Refused(ResolutionRefusal::RetentionCapacityExhausted) => {
+            retention_capacity_reconstruction_denial()
+        }
+        Kind::Refused(ResolutionRefusal::RetentionIdentityExhausted) => {
+            retention_identity_reconstruction_denial()
+        }
+        Kind::Refused(ResolutionRefusal::SnapshotIdentityExhausted) => {
+            snapshot_identity_reconstruction_denial()
+        }
+        Kind::Stopped(cause) => read_stopped(
+            crate::facade::primary_graph::relational_execution_kind(cause, None),
+        ),
+        Kind::Refused(_) => reconstruction_denial(
             WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionScope,
             format!("{:?}: {}", denial.kind(), denial.subject()),
         ),
@@ -94,91 +125,66 @@ pub(super) fn query_authorization(
     denial: super::super::WorthQueryTemporalQueryAuthorizationDenial,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
     use super::super::WorthQueryTemporalQueryAuthorizationDenial as Denial;
-    use crate::domain_computation::primary_graph::{
-        WorthQueryApplicationQueryAdmissionDenialKind as Query,
-        WorthQueryOperationAuthorizationDenialKind as Authorization,
-    };
-    let snapshot_maximum = match &denial {
-        Denial::Query(query) => match query.kind() {
-            Query::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            }
-            | Query::Authorization(Authorization::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            }) => Some(maximum_active_snapshots),
-            _ => None,
-        },
-        Denial::Authorization(authorization) => match authorization.kind() {
-            Authorization::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            } => Some(maximum_active_snapshots),
-            _ => None,
-        },
-    };
-    let retention_exhausted = match &denial {
-        Denial::Query(query) => matches!(
-            query.kind(),
-            Query::RetentionCapacityExhausted
-                | Query::Authorization(Authorization::RetentionCapacityExhausted)
-        ),
+    match denial {
+        Denial::Query(query) => query::admission(query.kind(), query.to_string()),
         Denial::Authorization(authorization) => {
-            authorization.kind() == Authorization::RetentionCapacityExhausted
+            query::authorization(authorization.kind(), authorization.to_string())
         }
-    };
-    if retention_exhausted {
-        return retention_capacity_reconstruction_denial();
     }
-    let retention_identity_exhausted = match &denial {
-        Denial::Query(query) => matches!(
-            query.kind(),
-            Query::RetentionIdentityExhausted
-                | Query::Authorization(Authorization::RetentionIdentityExhausted)
-        ),
-        Denial::Authorization(authorization) => {
-            authorization.kind() == Authorization::RetentionIdentityExhausted
-        }
-    };
-    if retention_identity_exhausted {
-        return retention_identity_reconstruction_denial();
-    }
-    let snapshot_identity_exhausted = match &denial {
-        Denial::Query(query) => matches!(
-            query.kind(),
-            Query::SnapshotIdentityExhausted
-                | Query::Authorization(Authorization::SnapshotIdentityExhausted)
-        ),
-        Denial::Authorization(authorization) => {
-            authorization.kind() == Authorization::SnapshotIdentityExhausted
-        }
-    };
-    if snapshot_identity_exhausted {
-        return snapshot_identity_reconstruction_denial();
-    }
-    snapshot_maximum.map_or_else(
-        || {
-            reconstruction_denial(
-                WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionQuery,
-                denial.to_string(),
-            )
-        },
-        snapshot_capacity_reconstruction_denial,
-    )
 }
+mod query;
 
 pub(super) fn one_shot(
     denial: crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenial,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
     use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Kind;
     match denial.kind() {
+        Kind::ExecutionRequest(kind) => read_stopped(Ok(kind)),
+        Kind::Cancelled => read_stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )),
+        Kind::DeadlineExceeded => read_stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )),
+
         Kind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
         Kind::RetentionCapacityExhausted => retention_capacity_reconstruction_denial(),
         Kind::RetentionIdentityExhausted => retention_identity_reconstruction_denial(),
         Kind::SnapshotIdentityExhausted => snapshot_identity_reconstruction_denial(),
-        _ => reconstruction_denial(
+        Kind::ForeignPlan
+        | Kind::StaleInstalledQuery
+        | Kind::StalePrincipal
+        | Kind::StaleScope
+        | Kind::Authorization(..)
+        | Kind::BasisUnavailable
+        | Kind::ExpiredBasis
+        | Kind::BasisReleaseFailed
+        | Kind::PredicateIndexUnavailable
+        | Kind::PredicateLookupOverflow
+        | Kind::ResultLimitExceeded
+        | Kind::CardinalityMismatch
+        | Kind::TraversalUnavailable
+        | Kind::ProjectionUnavailable
+        | Kind::Projection(..)
+        | Kind::ResultBufferLimitExceeded
+        | Kind::WorkLimitExceeded
+        | Kind::SourceIdentityExhausted => reconstruction_denial(
             WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionQuery,
             format!("{:?}: {}", denial.kind(), denial.subject()),
         ),
     }
+}
+
+pub(in crate::domain_computation::primary_graph::conditional_operation) fn read_stopped(
+    stop: Result<
+        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    >,
+) -> WorthQueryConditionalRuntimeInstallationDenial {
+    reconstruction_denial(
+        WorthQueryConditionalRuntimeInstallationDenialKind::ReadExecution(stop),
+        "conditional reconstruction read stopped",
+    )
 }

@@ -152,17 +152,20 @@ where
             } else {
                 let retained = self
                     .select_application_read_observation_with_request(execution, retained_basis)
-                    .map_err(|cause| {
-                        if cause.request_stop().is_some() {
+                    .map_err(|cause| match cause {
+                        cause
+                        @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
                             return WorthQueryOutputDemandDenial::product_selection(
                                 cause,
                                 Family::IDENTITY,
                             );
                         }
-                        WorthQueryOutputDemandDenial::new(
-                            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                            Family::IDENTITY,
-                        )
+                        crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                            WorthQueryOutputDemandDenial::new(
+                                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                                Family::IDENTITY,
+                            )
+                        }
                     })?;
                 if crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
                     retained.product().observation(),
@@ -289,8 +292,7 @@ where
                     });
                     // The source facts and the performed output witness are
                     // one fact set: either half moving ends exact reuse, and a
-                    // live output then selects the Preserve posture below.
-                    // A checkpoint row states the output half among its
+                    // live output selects Preserve. Checkpoints state the output half among their
                     // facts. A row of this runtime proves it by a sealed
                     // witness and a settlement the cutoff verifies: one the
                     // cutoff declines is not exact. A settlement it verifies

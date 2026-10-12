@@ -1,6 +1,7 @@
 //! The published host paired with the initial program that governed its
 //! installation, and with every other program it rostered.
 
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_program::{
@@ -168,7 +169,10 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 .admit_product_occurrence(occurrence)
             {
                 Ok(selected) => selected,
-                Err(BranchDenial::RetiredBranch | BranchDenial::IncarnationChanged) => continue,
+                Err(
+                    BranchDenial::Refused(AdmissionRefusal::RetiredBranch)
+                    | BranchDenial::Refused(AdmissionRefusal::IncarnationChanged),
+                ) => continue,
                 Err(_) => {
                     return Err(retirement
                         .inventory_unavailable(retained_program_bytes)

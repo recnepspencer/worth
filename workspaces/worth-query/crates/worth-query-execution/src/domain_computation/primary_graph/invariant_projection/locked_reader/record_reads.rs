@@ -1,5 +1,7 @@
 //! Entity/field reads of the selected native snapshot.
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where
@@ -32,13 +34,15 @@ where
         let execution = self.execution;
         if !self.work_budget.can_afford(3) {
             return Err(WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
                 field.field(),
             ));
         }
         let value = Field::Binding::encode(&value).map_err(|_| {
             WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::ValueEncodingRejected,
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::ValueEncodingRejected,
+                ),
                 field.field(),
             )
         })?;
@@ -58,7 +62,7 @@ where
         self.work_budget.consume(1 + examined);
         self.work.record_lookup(examined);
         let resolved = resolved.inspect_err(|denial| {
-            if let WorthQueryEntityResolutionDenialKind::ExecutionRequest(cause) = denial.kind() {
+            if let WorthQueryEntityResolutionDenialKind::Stopped(cause) = denial.kind() {
                 self.native_read_stop = Some(cause);
             }
         })?;
@@ -98,7 +102,12 @@ where
         let _execution = self.execution;
         match self.resolve_entity(field, value) {
             Ok(identity) => Ok(Some(identity)),
-            Err(denial) if denial.kind() == WorthQueryEntityResolutionDenialKind::UnknownEntity => {
+            Err(denial)
+                if denial.kind()
+                    == WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::UnknownEntity,
+                    ) =>
+            {
                 Ok(None)
             }
             Err(denial) => Err(denial),

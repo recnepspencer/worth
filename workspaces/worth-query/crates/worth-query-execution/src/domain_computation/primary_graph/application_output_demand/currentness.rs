@@ -327,6 +327,10 @@ fn require_current_facts(
         Err(RetainedFactStop::Work) => {
             Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
         }
+        Err(RetainedFactStop::Refused(refusal)) => Err(denial_subject(
+            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+            format!("comparison refused: {refusal:?}"),
+        )),
         Err(RetainedFactStop::Unavailable(fact)) => Err(denial_subject(
             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
             fact.locator_identity(),

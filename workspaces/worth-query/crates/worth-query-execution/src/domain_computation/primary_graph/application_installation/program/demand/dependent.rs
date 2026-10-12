@@ -79,13 +79,13 @@ where
         let retained_basis = self
             .runtime
             .select_application_read_observation_with_request(execution, basis);
-        if let Err(cause) = retained_basis {
-            if cause.request_stop().is_some() {
-                return Err(WorthQueryOutputDemandDenial::product_selection(
-                    cause,
-                    "dependent basis",
-                ));
-            }
+        if let Err(cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_)) =
+            retained_basis
+        {
+            return Err(WorthQueryOutputDemandDenial::product_selection(
+                cause,
+                "dependent basis",
+            ));
         }
         let minimum_basis = if retained_basis.is_ok() {
             Some(
@@ -98,13 +98,13 @@ where
         } else {
             None
         };
-        if let Some(Err(cause)) = &minimum_basis {
-            if cause.request_stop().is_some() {
-                return Err(WorthQueryOutputDemandDenial::product_selection(
-                    *cause,
-                    "dependent minimum observation",
-                ));
-            }
+        if let Some(Err(cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_))) =
+            &minimum_basis
+        {
+            return Err(WorthQueryOutputDemandDenial::product_selection(
+                *cause,
+                "dependent minimum observation",
+            ));
         }
         if retained_basis.is_err()
             || minimum_basis.as_ref().is_some_and(|basis| basis.is_err())

@@ -104,8 +104,8 @@ fn begin_preview_preserves_admission_stops_at_every_consult() {
                 })
             }).unwrap().0
         }).unwrap(),
-        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::ReadExecution(Err(Control::Cancelled))),
-        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::ReadExecution(Ok(Kind::ExecutionResource {
+        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::Stopped(Err(Control::Cancelled))),
+        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::Stopped(Ok(Kind::ExecutionResource {
             denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted,
             partition_identity: None, policy_ancestor: None,
         }))),
@@ -155,8 +155,8 @@ fn readmit_preview_keeps_source_selection_stops_at_every_consult() {
                 phase.execution_request_for(&runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| preview.borrow_mut().take().unwrap().readmit(&phase, &runtime).map(|readmitted| readmitted.discard().unwrap())).unwrap().0
             }).unwrap())
         },
-        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::ReadExecution(Err(Control::Cancelled))),
-        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::ReadExecution(Ok(Kind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }))),
+        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::Stopped(Err(Control::Cancelled))),
+        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::Stopped(Ok(Kind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }))),
     );
 }
 
@@ -181,7 +181,7 @@ fn support_retirement_keeps_read_stops_inventory_and_active_roster_at_every_cons
                 assert_eq!(inventory.current_branches(), 1);
                 Ok(())
             }
-            other => panic!("unexpected retirement answer: {other:?}"),
+            other @ (Err(Failure::Policy(..)) | Ok(..)) => panic!("unexpected retirement answer: {other:?}"),
         },
         Err(Control::Cancelled),
         Ok(Kind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }),
@@ -214,9 +214,9 @@ fn branch_creation_keeps_the_source_program_resolver_read_stop() {
     assert!(matches!(
         result,
         Err(
-            crate::basis::WorthQueryProductBranchCreateError::SourceAdmission(
-                Branch::ReadExecution(Err(Control::Cancelled))
-            )
+            crate::basis::WorthQueryProductBranchCreateError::SourceAdmission(Branch::Stopped(
+                Err(Control::Cancelled)
+            ))
         )
     ));
     assert_eq!(runtime.current_world(), before);
@@ -239,4 +239,32 @@ fn branch_creation_keeps_the_source_program_resolver_read_stop() {
             );
         })
         .unwrap();
+}
+
+#[test]
+fn failed_preview_discard_reports_its_stop_at_every_consult() {
+    let runtime = installed_preview_runtime();
+    let observation = runtime
+        .with_host_advancement(|phase| {
+            runtime
+                .on_branch(runtime.current_world())
+                .select(&phase)
+                .unwrap()
+                .retain_application_read()
+        })
+        .unwrap();
+    let identity = std::cell::Cell::new(0);
+    crate::test_read_stops::every_advancement_consult_with_door(
+        |counted| {
+            let ordinal = identity.get(); identity.set(ordinal + 1);
+            let mut preview = runtime.with_host_advancement(|phase| runtime.begin_preview(&phase, &observation, WorthQueryApplicationPreviewRequest::new(format!("readmit-preview-{ordinal}")))).unwrap().unwrap();
+            let _fault = preview.reject_discard_for_test();
+            let preview = std::cell::RefCell::new(Some(preview));
+            counted(&|request, ceiling| runtime.with_application_advancement(request, |phase| {
+                phase.execution_request_for(&runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| preview.borrow_mut().take().unwrap().readmit(&phase, &runtime).map(|readmitted| readmitted.discard().unwrap())).unwrap().0
+            }).unwrap())
+        },
+        WorthQueryApplicationPreviewReadmissionDenial::CleanupRejectedAfterStop { stop: Err(Control::Cancelled), cleanup: worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch },
+        WorthQueryApplicationPreviewReadmissionDenial::CleanupRejectedAfterStop { stop: Ok(Kind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }), cleanup: worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch },
+    );
 }

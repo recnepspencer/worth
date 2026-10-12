@@ -15,7 +15,6 @@ use crate::domain_computation::primary_graph::{
 /// and branch selection; capacity and identity exhaustion; continuation
 /// binding; disclosure governance; and work limits.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
 pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     /// The query is not installed as requested.
     InstalledQuery(WorthQueryApplicationQueryInstallationDenialKind),

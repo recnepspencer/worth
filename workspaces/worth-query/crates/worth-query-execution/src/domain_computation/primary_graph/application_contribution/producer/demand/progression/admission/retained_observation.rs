@@ -58,11 +58,17 @@ where
 
         let at = self
             .select_application_read_observation_with_request(execution, observation)
-            .map_err(|error| {
-                denial(
+            .map_err(|error| match error {
+                stopped @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
+                    WorthQueryOutputDemandDenial::product_selection(
+                        stopped,
+                        "retained output basis",
+                    )
+                }
+                error @ crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => denial(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                     format!("retained output basis unavailable: {error:?}"),
-                )
+                ),
             })?;
         let read =
             WorthQueryProductBranchReadIdentity::from_observation(at.product().observation());

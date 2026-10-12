@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionDenial as Admission;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -15,29 +16,9 @@ use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 mod settlement;
 use settlement::PublishedSuspensionSettlement;
 
-/// The step at which continuing a suspension recovery stopped. The recovery is
-/// handed back to continue again.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryGeneratedOutputSuspensionRecoveryStage {
-    SourceSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
-    /// The request stopped while continuing retained recovery.
-    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
-    /// The unpublished product state could not be inspected.
-    Inspection,
-    /// Owner settlement of the unpublished effects did not finish.
-    OwnerSettlement,
-    /// Adopting the settled effects could not be prepared.
-    AdoptionPreparation,
-    /// The adoption is not published yet; continue again.
-    AdoptionPublication,
-    /// Releasing an earlier recovery authority did not finish.
-    RecoveryHandoff,
-    /// Owner cleanup did not finish.
-    OwnerCleanup,
-    /// The recovery belongs to another runtime, schema binding, or producer, or
-    /// the product branch moved since the suspension.
-    StaleOccurrence,
-}
+#[path = "recovery/stage.rs"]
+mod stage;
+pub use stage::WorthQueryGeneratedOutputSuspensionRecoveryStage;
 
 /// Custody of a suspension whose publication moved some owners but not the
 /// product head.
@@ -293,10 +274,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(cause) => {
                 return Err(failure(
                     match cause {
-                        cause @ (crate::basis::WorthQueryProductBranchAdmissionDenial::ReadExecution(_)
-                            | crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCancelled
-                            | crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationDeadlineExceeded) => WorthQueryGeneratedOutputSuspensionRecoveryStage::SourceSelection(cause),
-                        _ => WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
+                        cause @ Admission::Stopped(_) => {
+                            WorthQueryGeneratedOutputSuspensionRecoveryStage::SourceSelection(cause)
+                        }
+                        Admission::Refused(_) => {
+                            WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence
+                        }
                     },
                     RecoveryState::World { recovery, retry },
                 ));

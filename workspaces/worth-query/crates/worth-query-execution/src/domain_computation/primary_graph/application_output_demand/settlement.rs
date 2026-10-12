@@ -278,11 +278,19 @@ where
             ));
         }
         self.select_application_read_observation_with_request(execution, &settlement.observation)
-            .map_err(|error| {
-                WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    format!("retained output basis unavailable: {error:?}"),
-                )
+            .map_err(|error| match error {
+                stopped @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
+                    WorthQueryOutputDemandDenial::product_selection(
+                        stopped,
+                        "retained output basis",
+                    )
+                }
+                error @ crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                        format!("retained output basis unavailable: {error:?}"),
+                    )
+                }
             })
     }
 

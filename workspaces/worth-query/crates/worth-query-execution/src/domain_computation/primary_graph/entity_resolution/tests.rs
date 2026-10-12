@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, StringApplicationValueBinding,
 };
@@ -64,7 +65,9 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
                     };
                     assert_eq!(
                         denial.kind(),
-                        WorthQueryEntityResolutionDenialKind::ForeignResolutionTruth
+                        WorthQueryEntityResolutionDenialKind::Refused(
+                            ResolutionRefusal::ForeignResolutionTruth
+                        )
                     );
                 });
         })

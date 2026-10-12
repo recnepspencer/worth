@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
@@ -72,7 +73,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     {
         self.resolve_optional_entity(field, value)?.ok_or_else(|| {
             HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::UnknownEntity,
+                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity),
                 field.field(),
             ))
         })
@@ -106,7 +107,9 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         if matches.len() > 1 {
             return Err(HandlerExecutionDenial::new(
                 WorthQueryEntityResolutionDenial::new(
-                    WorthQueryEntityResolutionDenialKind::AmbiguousEntity,
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::AmbiguousEntity,
+                    ),
                     field.field(),
                 ),
             ));
@@ -129,11 +132,13 @@ pub(super) fn resolution_denial(
         Ok(denial)
             if matches!(
                 denial.kind(),
-                WorthQueryEntityResolutionDenialKind::CandidateLimitExceeded { .. }
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::CandidateLimitExceeded { .. }
+                )
             ) =>
         {
             HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::AmbiguousEntity,
+                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::AmbiguousEntity),
                 subject,
             ))
         }

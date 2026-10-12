@@ -68,14 +68,10 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
         let _read_observation = super::super::read_observation::IntentReadObservation::enter();
         let intent = match reader.resolve_entity(self.identity_field, identity) {
             Ok(intent) => intent,
-            Err(denial) if matches!(denial.kind(),
-                crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::ExecutionRequest(_)
-                | crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Cancelled
-                | crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::DeadlineExceeded
-                | crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded
-                | crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::ProjectionPreparationMemoryExhausted
-            ) => return Err(WorthQueryTemporalReentryDenial::from_entity(denial)),
-            Err(_) => return Ok(false),
+            Err(denial) => match denial.kind() {
+                crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(_) => return Err(WorthQueryTemporalReentryDenial::from_entity(denial)),
+                crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => return Ok(false),
+            },
         };
         let currentness = (|| -> Result<(), String> {
         reader

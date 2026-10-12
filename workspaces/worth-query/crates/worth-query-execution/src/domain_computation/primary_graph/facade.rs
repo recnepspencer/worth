@@ -217,6 +217,7 @@ pub use super::entity_key::{WorthQueryApplicationEntityKey, WorthQueryApplicatio
 pub use super::entity_resolution::WorthQueryApplicationEntityIdentity;
 pub use super::entity_resolution_denial::{
     WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
+    WorthQueryEntityResolutionRefusalKind,
 };
 pub use super::expression::WorthQueryWorkflowConditionSources;
 pub use super::granular_invalidation::{
@@ -340,8 +341,9 @@ pub use super::workflow::{
     WorthQueryWorkflowInstanceProgressCounters,
 };
 pub use crate::basis::{
-    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
-    WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease,
+    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,
+    WorthQueryProductBranchLease, WorthQueryProductBranchReadIdentity,
+    WorthQueryProductObservationLease,
 };
 pub use crate::domain_computation::authorization::{
     WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,

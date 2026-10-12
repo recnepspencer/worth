@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::NoEffectCompositePublication;
@@ -252,7 +253,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(_) => {
                 return Err(
                     WorthQueryBranchSetAdoptionRecoveryFailure::ProductSelection {
-                        denial: WorthQueryProductBranchAdmissionDenial::ForeignPhase,
+                        denial: WorthQueryProductBranchAdmissionDenial::Refused(
+                            AdmissionRefusal::ForeignPhase,
+                        ),
                         recovery,
                     },
                 )

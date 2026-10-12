@@ -1,7 +1,10 @@
 //! Exact Relational truth used to resolve one application entity.
 
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 mod admitted_scope;
 mod freshness;
+mod preflight;
 mod product;
 pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
 mod resolved;
@@ -72,7 +75,9 @@ impl WorthQueryInstalledEntityResolutionContext {
             || relational.read_truth().project_snapshot(snapshot).is_none()
         {
             return Err(entity_denial(
-                WorthQueryEntityResolutionDenialKind::ForeignResolutionTruth,
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::ForeignResolutionTruth,
+                ),
                 "entity-resolution snapshot",
             ));
         }
@@ -117,13 +122,17 @@ impl WorthQueryEntityResolutionTruth<'_> {
                 .equality_field(entity, aspect, field)
                 .ok_or_else(|| {
                     entity_denial(
-                        WorthQueryEntityResolutionDenialKind::FieldNotInstalled,
+                        WorthQueryEntityResolutionDenialKind::Refused(
+                            ResolutionRefusal::FieldNotInstalled,
+                        ),
                         field,
                     )
                 })?;
             let index_id = layout.equality_index_id.ok_or_else(|| {
                 entity_denial(
-                    WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::EqualityIndexUnavailable,
+                    ),
                     field,
                 )
             })?;
@@ -147,12 +156,17 @@ impl WorthQueryEntityResolutionTruth<'_> {
             examined_candidate_count = lookup.examined_entry_count();
             if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
                 return Err(entity_denial(
-                    WorthQueryEntityResolutionDenialKind::AmbiguousEntity,
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::AmbiguousEntity,
+                    ),
                     field,
                 ));
             }
             lookup.candidate_entity_ids().first().ok_or_else(|| {
-                entity_denial(WorthQueryEntityResolutionDenialKind::UnknownEntity, field)
+                entity_denial(
+                    WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity),
+                    field,
+                )
             })?;
             Ok(WorthQueryResolvedEntity::from_lookup(
                 self.installed,
@@ -186,11 +200,11 @@ fn admit_request(
 ) -> Result<(), WorthQueryEntityResolutionDenial> {
     match scope.interruption() {
         Some(WorthQueryRequestInterruption::Cancelled) => Err(entity_denial(
-            WorthQueryEntityResolutionDenialKind::Cancelled,
+            WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::Cancelled),
             subject,
         )),
         Some(WorthQueryRequestInterruption::DeadlineExceeded) => Err(entity_denial(
-            WorthQueryEntityResolutionDenialKind::DeadlineExceeded,
+            WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::DeadlineElapsed),
             subject,
         )),
         None => Ok(()),
@@ -204,17 +218,19 @@ fn map_index_denial(
     let kind = match kind {
         BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
         | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
-            WorthQueryEntityResolutionDenialKind::CorruptIdentityIndex
+            WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::CorruptIdentityIndex)
         }
         BoundedEntityFieldLookupDenialKind::Execution(cause) => {
-            WorthQueryEntityResolutionDenialKind::ExecutionRequest(cause)
+            WorthQueryEntityResolutionDenialKind::Stopped(cause)
         }
         BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
         | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
         | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
         | BoundedEntityFieldLookupDenialKind::WrongIndexKind
         | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable => {
-            WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable
+            WorthQueryEntityResolutionDenialKind::Refused(
+                ResolutionRefusal::EqualityIndexUnavailable,
+            )
         }
     };
     entity_denial(kind, subject)

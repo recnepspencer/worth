@@ -83,7 +83,63 @@ impl WorthQueryOutputDemandDenialKind {
             Kind::Cancelled => Self::Cancelled,
             Kind::DeadlineExceeded => Self::TimedOut,
             Kind::ProductSecurityBasis(admission) => Self::ProductSelection(admission),
-            other => Self::RequestAuthorization(other),
+            other @ (Kind::ExecutionRequest(..)
+            | Kind::ForeignPhase
+            | Kind::ExpiredAuthentication
+            | Kind::ForeignRuntime
+            | Kind::StaleInstalledSchema
+            | Kind::StaleInstalledOperation
+            | Kind::StalePrincipal
+            | Kind::StaleScope
+            | Kind::MutationPreconditionRejected
+            | Kind::CanonicalWorkDenied
+            | Kind::TrustedTimeUnavailable
+            | Kind::InvalidOperationInput
+            | Kind::CapabilityProjectionRejected
+            | Kind::CapabilityGrantMissing
+            | Kind::CapabilityAuthorizationMissing
+            | Kind::PurposeMismatch
+            | Kind::ExplicitDenyRuleMatched
+            | Kind::ConflictRuleMatched
+            | Kind::SeparationOfDutyRuleMatched
+            | Kind::DistinctActorRuleMatched
+            | Kind::CapabilityRequired
+            | Kind::CapabilityNotRequired
+            | Kind::CapabilityExpired
+            | Kind::ElevationRequired
+            | Kind::ElevationNotApplicable
+            | Kind::ElevationProjectionRejected
+            | Kind::ElevationExpired
+            | Kind::ElevationInactive
+            | Kind::ElevationSelfApproval
+            | Kind::ElevationApproverConflict
+            | Kind::ElevationTransitionRequired
+            | Kind::ElevationLifecycleRoleMismatch
+            | Kind::ElevationRequestRejected
+            | Kind::ElevationApprovalRejected
+            | Kind::ElevationCloseRejected
+            | Kind::MandatoryReviewRejected
+            | Kind::ElevationDurationExceeded
+            | Kind::DelegationRejected
+            | Kind::DelegationTransitionRequired
+            | Kind::DelegationDepthExceeded
+            | Kind::DelegationCycle
+            | Kind::DelegationLineageChanged
+            | Kind::StaleAuthorization
+            | Kind::AdmissionIdentityExhausted
+            | Kind::ActiveSnapshotCapacityExhausted { .. }
+            | Kind::SnapshotIdentityExhausted
+            | Kind::RetentionCapacityExhausted
+            | Kind::RetentionIdentityExhausted
+            | Kind::GraphWorkAdmissionUnavailable
+            | Kind::ScopeMismatch
+            | Kind::PolicyNotInstalled
+            | Kind::InvalidInstalledPolicy
+            | Kind::RelationalObservationRejected
+            | Kind::GrantSelectionLimitExceeded
+            | Kind::BridgeEvaluationRejected
+            | Kind::InconsistentDecision
+            | Kind::PermissionDenied) => Self::RequestAuthorization(other),
         }
     }
 
@@ -98,21 +154,38 @@ impl WorthQueryOutputDemandDenialKind {
             Kind::DeadlineExceeded => Self::TimedOut,
             Kind::ProjectionWorkBudgetExceeded => Self::WorkBudgetExceeded,
             Kind::ProjectionPreparationMemoryExhausted => Self::RetentionBudgetExceeded,
-            other => Self::SourcePrincipal(other),
+            other @ (Kind::ForeignPhase
+            | Kind::ExecutionRequest(..)
+            | Kind::PrimaryGraphNotInstalled
+            | Kind::BindingNotInstalled
+            | Kind::ForeignRuntime
+            | Kind::StaleInstalledSchema
+            | Kind::ExpiredAuthentication
+            | Kind::BranchMaterializationSuspended
+            | Kind::IdentityIndexUnavailable
+            | Kind::CorruptIdentityIndex
+            | Kind::UnknownPrincipal
+            | Kind::DisabledPrincipal
+            | Kind::AmbiguousPrincipal
+            | Kind::MissingPrincipalTarget
+            | Kind::AmbiguousPrincipalTarget
+            | Kind::WrongPrincipalTargetKind
+            | Kind::StalePrincipalProof
+            | Kind::ActiveSnapshotCapacityExhausted { .. }
+            | Kind::SnapshotIdentityExhausted
+            | Kind::RetentionCapacityExhausted
+            | Kind::RetentionIdentityExhausted) => Self::SourcePrincipal(other),
         }
     }
 
     /// The request's scope did not resolve, as [`Self::of_principal_resolution`].
-    pub(in crate::domain_computation::primary_graph) const fn of_scope_resolution(
+    pub(in crate::domain_computation::primary_graph) fn of_scope_resolution(
         kind: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind,
     ) -> Self {
         use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind as Kind;
         match kind {
-            Kind::Cancelled => Self::Cancelled,
-            Kind::DeadlineExceeded => Self::TimedOut,
-            Kind::ProjectionWorkBudgetExceeded => Self::WorkBudgetExceeded,
-            Kind::ProjectionPreparationMemoryExhausted => Self::RetentionBudgetExceeded,
-            other => Self::SourceScope(other),
+            Kind::Stopped(cause) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(match crate::facade::primary_graph::relational_execution_kind(cause, None) { Ok(kind) => kind, Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => return Self::Cancelled, Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => return Self::TimedOut })),
+            Kind::Refused(_) => Self::SourceScope(kind),
         }
     }
 

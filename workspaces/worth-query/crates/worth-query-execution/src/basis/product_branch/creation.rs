@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_declaration::facade::branch::{
     WorthQueryProductBranchComponentPosture, WorthQueryProductBranchComponents,
@@ -88,7 +89,9 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
     ) -> Result<WorthQueryProductBranch, WorthQueryProductBranchCreateError> {
         let phase_request = phase.execution_request_for(self.runtime).map_err(|_| {
             WorthQueryProductBranchCreateError::SourceAdmission(
-                super::WorthQueryProductBranchAdmissionDenial::ForeignPhase,
+                super::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ForeignPhase,
+                ),
             )
         })?;
         let execution = &phase_request;

@@ -1,14 +1,14 @@
 /// Why an entity could not be resolved from its identity field.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryEntityResolutionDenialKind {
+    Stopped(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    Refused(WorthQueryEntityResolutionRefusalKind),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryEntityResolutionRefusalKind {
     /// The supplied phase belongs to another installed runtime.
     ForeignPhase,
-    /// The request stopped while reading the equality index.
-    ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    /// Resolution was cancelled.
-    Cancelled,
-    /// Resolution reached its deadline.
-    DeadlineExceeded,
     /// The primary graph is not installed.
     PrimaryGraphNotInstalled,
     /// The identity field is not installed.
@@ -23,10 +23,6 @@ pub enum WorthQueryEntityResolutionDenialKind {
     AmbiguousEntity,
     /// The identity index disagrees with stored records.
     CorruptIdentityIndex,
-    /// Resolution exceeded its work budget.
-    ProjectionWorkBudgetExceeded,
-    /// The exact selected lookup could not reserve its preparation backing.
-    ProjectionPreparationMemoryExhausted,
     /// A complete selection needs a nonzero finite candidate limit.
     InvalidCandidateLimit,
     /// The complete equality result exceeds the caller's candidate limit.

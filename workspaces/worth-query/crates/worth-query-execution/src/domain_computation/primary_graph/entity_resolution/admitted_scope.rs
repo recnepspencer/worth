@@ -1,5 +1,6 @@
 //! Selected retained-scope resolution through the admitted Native lookup.
 
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::indexes::{
@@ -8,6 +9,7 @@ use worth_relational::facade::indexes::{
 };
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::RelationalSnapshotProjectionAdmissionStop;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 use super::{
     entity_denial, WorthQueryApplicationEntityIdentity, WorthQueryEntityResolutionDenial,
@@ -41,10 +43,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .charge_external_work(82)
             .map_err(|stop| admission_denial(stop, field))?;
         let application = self.application();
-        let graph = application
-            .runtime
-            .primary_graph()
-            .ok_or_else(|| entity_denial(Kind::PrimaryGraphNotInstalled, entity))?;
+        let graph = application.runtime.primary_graph().ok_or_else(|| {
+            entity_denial(
+                Kind::Refused(ResolutionRefusal::PrimaryGraphNotInstalled),
+                entity,
+            )
+        })?;
         let installed = graph.retain_entity_resolution_context();
         let lookup = graph.with_runtime_mut(execution, |relational| {
             selected_index_is_current_admitted(
@@ -55,7 +59,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             )
             .map_err(|stop| admission_denial(stop, field))?
             .then_some(())
-            .ok_or_else(|| entity_denial(Kind::EqualityIndexUnavailable, field))?;
+            .ok_or_else(|| {
+                entity_denial(
+                    Kind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
+                    field,
+                )
+            })?;
             let view = relational
                 .read_truth()
                 .project_snapshot_admitted(
@@ -75,10 +84,15 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         admission_denial(stop, field)
                     }
                     RelationalSnapshotProjectionAdmissionStop::AccountingOverflow => {
-                        entity_denial(Kind::ProjectionWorkBudgetExceeded, field)
+                        entity_denial(Kind::Stopped(NativeReadStop::WorkCounterOverflow), field)
                     }
                 })?
-                .ok_or_else(|| entity_denial(Kind::ForeignResolutionTruth, field))?;
+                .ok_or_else(|| {
+                    entity_denial(
+                        Kind::Refused(ResolutionRefusal::ForeignResolutionTruth),
+                        field,
+                    )
+                })?;
             relational
                 .index_access()
                 .execute_bounded_entity_field_lookup(
@@ -102,20 +116,24 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         admission_denial(stop, field)
                     }
                     BoundedEntityFieldLookupAdmissionStop::AccountingOverflow => {
-                        entity_denial(Kind::ProjectionWorkBudgetExceeded, field)
+                        entity_denial(Kind::Stopped(NativeReadStop::WorkCounterOverflow), field)
                     }
-                    BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => {
-                        entity_denial(Kind::ForeignResolutionTruth, field)
-                    }
+                    BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => entity_denial(
+                        Kind::Refused(ResolutionRefusal::ForeignResolutionTruth),
+                        field,
+                    ),
                 })
         })?;
         if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
-            return Err(entity_denial(Kind::AmbiguousEntity, field));
+            return Err(entity_denial(
+                Kind::Refused(ResolutionRefusal::AmbiguousEntity),
+                field,
+            ));
         }
         lookup
             .candidate_entity_ids()
             .first()
-            .ok_or_else(|| entity_denial(Kind::UnknownEntity, field))?;
+            .ok_or_else(|| entity_denial(Kind::Refused(ResolutionRefusal::UnknownEntity), field))?;
         admission
             .charge_external_work(80)
             .map_err(|stop| admission_denial(stop, field))?;
@@ -138,14 +156,7 @@ fn admission_denial(
     stop: CompanionPreflightStop,
     subject: &str,
 ) -> WorthQueryEntityResolutionDenial {
-    use CompanionPreflightStop as Stop;
-    let kind = match stop {
-        Stop::PreparationMemoryExhausted { .. } | Stop::PreparationMemoryCounterOverflow => {
-            Kind::ProjectionPreparationMemoryExhausted
-        }
-        _ => Kind::ProjectionWorkBudgetExceeded,
-    };
-    entity_denial(kind, subject)
+    super::preflight::denial(stop, subject)
 }
 
 fn native_denial_kind(kind: BoundedEntityFieldLookupDenialKind) -> Kind {

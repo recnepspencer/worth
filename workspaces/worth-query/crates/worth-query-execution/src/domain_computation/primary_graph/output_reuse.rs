@@ -7,3 +7,7 @@ pub(super) use selection::{
     interruption_denial, memory_denial, read_denial, retained_output_settlement_is_verified,
     OutputDependencySelection, RetainedFactStop,
 };
+
+pub(in crate::domain_computation::primary_graph) use selection::{
+    preflight_stop, retained_fact_denial,
+};

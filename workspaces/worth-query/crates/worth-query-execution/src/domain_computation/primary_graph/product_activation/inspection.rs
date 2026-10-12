@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramIdentity, ApplicationProgramRevision,
 };
@@ -120,16 +121,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let inspection = inspect_selected_program(execution, self, basis);
         if let Err(WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) = &inspection {
-            return Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ReadExecution(*stop));
+            return Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(*stop));
         }
         let interpretation = if let (Some(support), Ok(selected)) =
             (self.installed_program_support(), &inspection)
         {
-            Some(
-                support.retain_interpretation(selected.revision()).ok_or(
-                    crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationRejected,
-                )?,
-            )
+            Some(support.retain_interpretation(selected.revision()).ok_or(
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ObservationRejected,
+                ),
+            )?)
         } else {
             None
         };
@@ -153,7 +154,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             || basis.identity().descriptor() != relational.descriptor()
             || basis.version_id() != relational.observation().version_id()
         {
-            return Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationRejected);
+            return Err(
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ObservationRejected,
+                ),
+            );
         }
         let (selected, interpretation) = self
             .retain_selected_program_interpretation(execution, relational)?

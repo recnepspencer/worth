@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 mod readmission;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -191,7 +192,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok(request) => request,
                 Err(_) => {
                     return Err((
-                        crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignPhase,
+                        crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                            AdmissionRefusal::ForeignPhase,
+                        ),
                         retained.take().expect("one retained recovery"),
                     ))
                 }

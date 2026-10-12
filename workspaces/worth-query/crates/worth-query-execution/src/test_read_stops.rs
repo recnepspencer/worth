@@ -205,3 +205,10 @@ pub(crate) fn consult_count_for_test(
 ) -> usize {
     observation.count_for_test()
 }
+
+#[allow(dead_code)] // The Host clock proof imports this shared harness.
+pub(crate) fn charged_prefixes_for_test(
+    observation: &worth_execution::RequestConsultObservationForTest,
+) -> Vec<(usize, u64)> {
+    observation.charged_prefixes_for_test()
+}

@@ -100,10 +100,11 @@ where
         let selected = self
             .on_branch(source_read.product_branch())
             .select_with_request(execution)
-            .map_err(|cause| {
-                if cause.request_stop().is_some() {
+            .map_err(|cause| match cause {
+                cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
                     WorthQueryOutputDemandDenial::product_selection(cause, "")
-                } else {
+                }
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
                     denial(WorthQueryOutputDemandDenialKind::Superseded, "")
                 }
             })?;
@@ -368,17 +369,8 @@ pub(super) struct ReadmittedOutput {
 fn restoration_resource_denial(
     stop: worth_relational::facade::mvcc::CompanionPreflightStop,
 ) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-    denial(
-        match stop {
-            Stop::PreparationMemoryExhausted { .. } | Stop::PreparationMemoryCounterOverflow => {
-                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-            }
-            Stop::Interrupted(event) => {
-                WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
-            }
-            _ => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        },
-        "",
+    crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+        crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
+        "selected demand projection unavailable",
     )
 }

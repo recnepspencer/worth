@@ -10,6 +10,7 @@
 //! observers of the World, whose release the registry cannot see: the
 //! refusal stands, retryable.
 
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::basis::WorthQueryProductBranchAdmissionDenial as Denial;
@@ -26,7 +27,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let mut reclaim = None;
         loop {
             match admit() {
-                Err(Denial::ObservationCapacityExhausted) => {
+                Err(Denial::Refused(AdmissionRefusal::ObservationCapacityExhausted)) => {
                     let admission = reclaim.get_or_insert_with(|| {
                         self.primary_provider
                             .graph
@@ -38,7 +39,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         self.output_demands.reclaim_unheld_observation(admission),
                         Ok(true)
                     ) {
-                        return Err(Denial::ObservationCapacityExhausted);
+                        return Err(Denial::Refused(
+                            AdmissionRefusal::ObservationCapacityExhausted,
+                        ));
                     }
                 }
                 answer => return answer,

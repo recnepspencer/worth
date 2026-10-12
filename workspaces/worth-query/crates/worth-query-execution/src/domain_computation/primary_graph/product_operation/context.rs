@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::basis::{
     WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
 };
@@ -82,7 +83,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryProductBranchAdmissionDenial,
     > {
         if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
-            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
         }
         let mut application_basis =
             self.retain_product_application_basis(execution, product.observation())?;
@@ -108,7 +111,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryProductBranchAdmissionDenial,
     > {
         if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
-            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
         }
         let application_basis =
             self.retain_product_application_basis(execution, product.observation())?;
@@ -139,7 +144,9 @@ where
     > {
         let request = phase
             .execution_request_for(&self.application.product_runtime)
-            .map_err(|_| WorthQueryProductBranchAdmissionDenial::ForeignPhase)?;
+            .map_err(|_| {
+                WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
+            })?;
         self.select_with_request(&request)
     }
 

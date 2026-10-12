@@ -162,20 +162,6 @@ fn cause(
         Decision::OperationTerminalFailure(
             _,
             Terminal::Admission(
-                Admission::Entity(graph::WorthQueryEntityResolutionDenialKind::ExecutionRequest(
-                    cause,
-                ))
-                | Admission::Invariant(InvariantKind::ExecutionRequest(cause))
-                | Admission::Projection(
-                    graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
-                        InvariantKind::ExecutionRequest(cause),
-                    ),
-                ),
-            ),
-        ) => Some(Cause::ReadExecution(*cause)),
-        Decision::OperationTerminalFailure(
-            _,
-            Terminal::Admission(
                 Admission::Principal(_)
                 | Admission::Entity(_)
                 | Admission::Authorization(_)
@@ -227,7 +213,7 @@ fn admission_retention_identity_exhausted(
         Admission::Principal(kind) => matches!(kind, PrincipalKind::RetentionIdentityExhausted),
         Admission::Entity(kind) => matches!(
             kind,
-            graph::WorthQueryEntityResolutionDenialKind::RetentionIdentityExhausted
+            graph::WorthQueryEntityResolutionRefusalKind::RetentionIdentityExhausted
         ),
         Admission::Authorization(kind) => {
             matches!(kind, AuthorizationKind::RetentionIdentityExhausted)
@@ -252,7 +238,7 @@ fn admission_snapshot_identity_exhausted(
         Admission::Principal(kind) => matches!(kind, PrincipalKind::SnapshotIdentityExhausted),
         Admission::Entity(kind) => matches!(
             kind,
-            graph::WorthQueryEntityResolutionDenialKind::SnapshotIdentityExhausted
+            graph::WorthQueryEntityResolutionRefusalKind::SnapshotIdentityExhausted
         ),
         Admission::Authorization(kind) => {
             matches!(kind, AuthorizationKind::SnapshotIdentityExhausted)

@@ -1,18 +1,18 @@
-/// Why the runtime refused to select and admit a basis on a product branch.
-///
-/// Returned when a request, read, or mutation names a product branch that the
-/// owning runtime cannot observe now. The refusal happens before any effect.
-/// Use [`Self::is_transient`] to tell capacity and
-/// availability causes (retry later) from a branch that is foreign, retired, or
-/// rejected (choose another branch).
+/// A selected-basis read either stopped its request or was refused before effect.
+/// The refusal kind is available only by explicitly handling the request stop.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchAdmissionDenial {
-    ReadExecution(
+    Stopped(
         Result<
             crate::domain_computation::WorthQueryProviderSessionDenialKind,
             crate::domain_computation::WorthQueryProviderSessionControlStopKind,
         >,
     ),
+    Refused(WorthQueryProductBranchAdmissionRefusalKind),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryProductBranchAdmissionRefusalKind {
     ForeignPhase,
     /// The runtime's branch-observation state is unusable after an internal failure.
     ObservationStatePoisoned,
@@ -28,18 +28,12 @@ pub enum WorthQueryProductBranchAdmissionDenial {
     ObservationRejected,
     /// The branch's source head moved while it was being observed.
     ObservationStaleSourceHead,
-    /// The observation was cancelled before any effect.
-    ObservationCancelled,
-    /// The observation reached its deadline before any effect.
-    ObservationDeadlineExceeded,
     /// The owner has no capacity for another branch observation.
     ObservationCapacityExhausted,
     /// The owner has no capacity for another custody entry.
     CustodyCapacityExhausted,
     /// The owner ran out of observation identities.
     ObservationIdentityExhausted,
-    /// The owner could not represent the selected currentness preparation cost.
-    ObservationAccountingOverflow,
     /// The program activation for the branch could not be read.
     ProductActivationUnavailable,
     /// The Relational basis for the branch could not be retained.
@@ -60,32 +54,15 @@ pub enum WorthQueryProductBranchAdmissionDenial {
     BridgeSourceUnavailable,
 }
 
-impl std::fmt::Display for WorthQueryProductBranchAdmissionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(formatter, "product branch admission denied: {self:?}")
-    }
-}
-
-impl std::error::Error for WorthQueryProductBranchAdmissionDenial {}
-
 impl WorthQueryProductBranchAdmissionDenial {
-    pub(crate) const fn request_stop(
-        self,
-    ) -> Option<
-        Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-        >,
-    > {
-        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    pub const fn is_transient(self) -> bool {
         match self {
-            Self::ReadExecution(cause) => Some(cause),
-            Self::ObservationCancelled => Some(Err(Control::Cancelled)),
-            Self::ObservationDeadlineExceeded => Some(Err(Control::TimedOut)),
-            _ => None,
+            Self::Stopped(_) => false,
+            Self::Refused(kind) => kind.is_transient(),
         }
     }
-
+}
+impl WorthQueryProductBranchAdmissionRefusalKind {
     pub const fn is_transient(self) -> bool {
         matches!(
             self,
@@ -102,13 +79,15 @@ impl WorthQueryProductBranchAdmissionDenial {
         )
     }
 }
-
+impl std::fmt::Display for WorthQueryProductBranchAdmissionDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "product branch admission denied: {self:?}")
+    }
+}
+impl std::error::Error for WorthQueryProductBranchAdmissionDenial {}
 impl From<crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationDenial>
-    for WorthQueryProductBranchAdmissionDenial
-{
-    fn from(
-        _denial: crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationDenial,
-    ) -> Self {
-        Self::ProductActivationUnavailable
+    for WorthQueryProductBranchAdmissionDenial {
+    fn from(_denial: crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationDenial) -> Self {
+        Self::Refused(WorthQueryProductBranchAdmissionRefusalKind::ProductActivationUnavailable)
     }
 }

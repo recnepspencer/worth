@@ -376,3 +376,6 @@ fn provider_replacement_requires_fresh_runtime_publication() {
 
 #[path = "temporal_conditional_operation/advancement_custody.rs"]
 mod advancement_custody;
+
+#[path = "temporal_conditional_operation/read_ceiling_terminal.rs"]
+mod read_ceiling_terminal;

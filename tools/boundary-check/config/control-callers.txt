@@ -297,3 +297,7 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/counted_read_stops.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
+
+workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/discard_fault.rs workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/counted_read_stops.rs
+
+workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/read_observation.rs workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/read_ceiling_terminal.rs

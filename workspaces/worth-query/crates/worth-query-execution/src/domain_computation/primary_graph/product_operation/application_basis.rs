@@ -1,4 +1,5 @@
 use crate::basis::WorthQueryProductBranchAdmissionDenial;
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::domain_computation::primary_graph::{
     application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
     WorthQueryPrimaryGraphApplicationRuntime,
@@ -12,7 +13,9 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         observation: &ProductBranchObservation,
     ) -> Result<WorthQueryApplicationBasisLease, WorthQueryProductBranchAdmissionDenial> {
         if observation.owner_identity() != self.product_runtime.owner.owner_identity() {
-            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
         }
         let mut lease = self
             .basis_leases
@@ -34,27 +37,39 @@ fn map_registration_denial(
     use worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial as Snapshot;
     match denial {
         Registration::Basis(Basis::RetentionCapacityExhausted) => {
-            WorthQueryProductBranchAdmissionDenial::RetentionCapacityExhausted
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::RetentionCapacityExhausted,
+            )
         }
         Registration::Basis(Basis::RetentionIdentityExhausted) => {
-            WorthQueryProductBranchAdmissionDenial::RetentionIdentityExhausted
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::RetentionIdentityExhausted,
+            )
         }
         Registration::Basis(Basis::SnapshotIdentityExhausted) => {
-            WorthQueryProductBranchAdmissionDenial::SnapshotIdentityExhausted
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::SnapshotIdentityExhausted,
+            )
         }
-        Registration::Basis(_) => {
-            WorthQueryProductBranchAdmissionDenial::RelationalBasisUnavailable
-        }
+        Registration::Basis(_) => WorthQueryProductBranchAdmissionDenial::Refused(
+            AdmissionRefusal::RelationalBasisUnavailable,
+        ),
         Registration::Snapshot(Snapshot::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
-        }) => WorthQueryProductBranchAdmissionDenial::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        },
+        }) => WorthQueryProductBranchAdmissionDenial::Refused(
+            AdmissionRefusal::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots,
+            },
+        ),
         Registration::Snapshot(Snapshot::SnapshotIdentityExhausted) => {
-            WorthQueryProductBranchAdmissionDenial::SnapshotIdentityExhausted
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::SnapshotIdentityExhausted,
+            )
         }
         Registration::Snapshot(Snapshot::ForeignRuntime { .. }) => {
-            WorthQueryProductBranchAdmissionDenial::RelationalSnapshotUnavailable
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::RelationalSnapshotUnavailable,
+            )
         }
     }
 }

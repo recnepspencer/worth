@@ -1,4 +1,6 @@
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use std::marker::PhantomData;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationDecisionReadTarget,
@@ -95,13 +97,17 @@ impl<Schema: ApplicationSchema, Operation>
             .equality_field(field.entity(), field.aspect(), field.field())
             .ok_or_else(|| {
                 selection_denial(
-                    WorthQueryEntityResolutionDenialKind::FieldNotInstalled,
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::FieldNotInstalled,
+                    ),
                     field.field(),
                 )
             })?;
         let index = layout.equality_index_id.ok_or_else(|| {
             selection_denial(
-                WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::EqualityIndexUnavailable,
+                ),
                 field.field(),
             )
         })?;
@@ -112,7 +118,9 @@ impl<Schema: ApplicationSchema, Operation>
             .project_observation(&self.reader.observation)
             .map_err(|_| {
                 selection_denial(
-                    WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::EqualityIndexUnavailable,
+                    ),
                     field.field(),
                 )
             })?;
@@ -134,7 +142,7 @@ impl<Schema: ApplicationSchema, Operation>
                 }
 
                 selection_denial(
-                    WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
+                    WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
                     field.field(),
                 )
             })?;
@@ -195,7 +203,9 @@ impl<Schema: ApplicationSchema, Operation>
         self.require_selection_budget(candidate_limit, prepared.field.field())?;
         let value = Field::Binding::encode(&value).map_err(|_| {
             selection_denial(
-                WorthQueryEntityResolutionDenialKind::ValueEncodingRejected,
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::ValueEncodingRejected,
+                ),
                 prepared.field.field(),
             )
         })?;
@@ -224,14 +234,23 @@ impl<Schema: ApplicationSchema, Operation>
                         }
                         BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
                         | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
-                            WorthQueryEntityResolutionDenialKind::CorruptIdentityIndex
+                            WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::CorruptIdentityIndex)
                         }
-                        _ => WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
+                        BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+                        | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+                        | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+                        | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+                        | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable => WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
                     };
                     selection_denial(kind, prepared.field.field())
                 }
-                Stop::ExactBasisRequired | Stop::AccountingOverflow => selection_denial(
-                    WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
+                Stop::AccountingOverflow => {
+                    let cause = NativeReadStop::WorkCounterOverflow;
+                    self.reader.native_read_stop.get_or_insert(cause);
+                    HandlerExecutionDenial::new(super::super::super::WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None))
+                }
+                Stop::ExactBasisRequired => selection_denial(
+                    WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
                     prepared.field.field(),
                 ),
             })?;
@@ -243,9 +262,11 @@ impl<Schema: ApplicationSchema, Operation>
             .record_lookup(outcome.examined_entry_count());
         if outcome.overflowed() {
             return Err(selection_denial(
-                WorthQueryEntityResolutionDenialKind::CandidateLimitExceeded {
-                    maximum: candidate_limit,
-                },
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::CandidateLimitExceeded {
+                        maximum: candidate_limit,
+                    },
+                ),
                 prepared.field.field(),
             ));
         }
