@@ -14,6 +14,7 @@ pub struct State {
     pub failure: Option<(u64, Phase)>,
     pub entered: Vec<u64>,
     pub completed: Vec<u64>,
+    pub kernel_entered: Vec<u64>,
     pub active: usize,
     pub peak: usize,
     pub witnesses: Vec<u64>,
@@ -72,6 +73,12 @@ impl Control {
             state.completed.push(key);
         }
     }
+    pub fn dispatched(&self, key: u64) {
+        let mut state = self.state.lock().unwrap();
+        if state.armed {
+            state.entered.push(key);
+        }
+    }
     pub fn enter_compute(&self, key: u64, part: u64, units: u64) -> u64 {
         let mut state = self.state.lock().unwrap();
         if !state.armed {
@@ -80,14 +87,16 @@ impl Control {
         state.active += 1;
         state.peak = state.peak.max(state.active);
         if part == 0 {
-            state.entered.push(key);
+            state.kernel_entered.push(key);
         }
         self.wake.notify_all();
         if self.overlap && part == 0 && state.witnesses.contains(&key) {
             let (next, hang_guard) = self
                 .wake
                 .wait_timeout_while(state, HANG_GUARD, |s| {
-                    s.witnesses.iter().any(|key| !s.entered.contains(key))
+                    s.witnesses
+                        .iter()
+                        .any(|key| !s.kernel_entered.contains(key))
                 })
                 .unwrap();
             state = next;

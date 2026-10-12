@@ -3,7 +3,7 @@ use super::cases::{self, Cell};
 use std::collections::BTreeMap;
 const CELL_TEST: &str =
     "checkpoint_recovery::parallel_history::matrix::runtime::required_matrix_cell";
-fn cell(cell: Cell) -> Result<String, String> {
+fn cell(cell: Cell) -> Result<(String, (u64, u64)), String> {
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", CELL_TEST, "--nocapture"])
         .env("WORTH_REQUIRED_MATRIX_CELL", cell.encode())
@@ -20,12 +20,21 @@ fn cell(cell: Cell) -> Result<String, String> {
         .lines()
         .find_map(|line| line.strip_prefix("MATRIX_OBSERVATION:"))
         .expect("cell returns its observation");
-    Ok(encoded.to_owned())
+    let remainder = stdout
+        .lines()
+        .find_map(|line| line.strip_prefix("MODEL_REMAINDER:work="))
+        .unwrap();
+    let (work, span) = remainder.split_once(" span=").unwrap();
+    Ok((
+        encoded.to_owned(),
+        (work.parse().unwrap(), span.parse().unwrap()),
+    ))
 }
 fn matrix(rows: Vec<Cell>) {
     let mut counts = [[0usize; 3]; 7];
     let mut anchors = BTreeMap::new();
     let mut red = Vec::new();
+    let mut remainders = BTreeMap::new();
     for row in rows {
         if row.family == 0 && row.fault > 0 {
             counts[0][1] += 1;
@@ -37,7 +46,17 @@ fn matrix(rows: Vec<Cell>) {
                     counts[row.family][2] += 1;
                     red.push(format!("{row:?}: {error}"));
                 }
-                Ok(observed) => {
+                Ok((observed, remainder)) => {
+                    if [4, 5].contains(&row.family) {
+                        if let Some(expected) = remainders.get(&row.fault) {
+                            if *expected != remainder {
+                                counts[row.family][2] += 1;
+                                red.push(format!("exact shared work/span remainder {row:?}: {expected:?} versus {remainder:?}; observed={observed:?}"));
+                            }
+                        } else {
+                            remainders.insert(row.fault, remainder);
+                        }
+                    }
                     let key = (row.family, row.fault);
                     if let Some(expected) = anchors.get(&key) {
                         if &observed != expected {
@@ -81,4 +100,37 @@ fn required_wave_full_declared_matrix() {
         );
     }
     matrix(rows);
+}
+
+#[test]
+fn required_price_failure_pair() {
+    matrix(
+        [4, 5]
+            .map(|family| Cell {
+                family,
+                workers: 1,
+                declaration: 0,
+                dispatch: 0,
+                fault: 2,
+                reuse: false,
+            })
+            .to_vec(),
+    );
+}
+#[test]
+fn required_price_all_failure_remainders() {
+    matrix(
+        (0..10)
+            .flat_map(|fault| {
+                [4, 5].map(move |family| Cell {
+                    family,
+                    workers: 1,
+                    declaration: 0,
+                    dispatch: 0,
+                    fault,
+                    reuse: false,
+                })
+            })
+            .collect(),
+    );
 }

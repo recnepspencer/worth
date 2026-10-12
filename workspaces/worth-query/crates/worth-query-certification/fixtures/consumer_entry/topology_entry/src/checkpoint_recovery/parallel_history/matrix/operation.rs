@@ -217,6 +217,12 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
                 }),
                 Err(error) => panic!("matrix preparation is admissible: {error:?}"),
             };
+            let next = if part.key == 0 {
+                let control = self.control.clone();
+                next.observe_computes_for_test(move || control.dispatched(node), || (), |_| {})
+            } else {
+                next
+            };
             plan = plan.zip(next).map(|(sum, next)| sum + next);
         }
         let control = self.control.clone();

@@ -46,6 +46,7 @@ pub fn values(world: &World, multiplier: u64) -> BTreeMap<u64, u64> {
 // members are dispatched in one wave; all dispatched compute remains charged.
 pub struct Advancement {
     pub kept: Vec<u64>,
+    pub dispatched: Vec<u64>,
     pub witnesses: Vec<u64>,
     pub work: u64,
     pub span: u64,
@@ -58,6 +59,7 @@ pub fn advancement(
     use super::control::Phase;
     let mut kept = Vec::new();
     let mut witnesses = Vec::new();
+    let mut dispatched = Vec::new();
     let mut work = 0;
     let mut span = 0;
     for wave in waves {
@@ -68,10 +70,30 @@ pub fn advancement(
                 if failure == Some((member.key, Phase::Prepare)) {
                     0
                 } else {
-                    member.partitions.iter().map(|p| p.work).sum()
+                    member
+                        .partitions
+                        .iter()
+                        .map(|p| {
+                            // A completed scalar frame builds its one-leaf tree;
+                            // a refused kernel never enters that reduction stage.
+                            let reduction =
+                                if p.key == 0 && failure == Some((member.key, Phase::Compute)) {
+                                    0
+                                } else {
+                                    super::super::structural_cost::reduction_work(&[1])
+                                };
+                            p.work + reduction
+                        })
+                        .sum()
                 }
             })
             .collect::<Vec<u64>>();
+        dispatched.extend(
+            wave.iter()
+                .zip(&costs)
+                .filter(|(_, cost)| **cost > 0)
+                .map(|(i, _)| world.members[*i].key),
+        );
         work += costs.iter().sum::<u64>();
         span += costs.iter().copied().max().unwrap_or(0);
         if witnesses.is_empty() {
@@ -90,6 +112,7 @@ pub fn advancement(
             if failure.is_some_and(|(failed, _)| failed == key) {
                 return Advancement {
                     kept,
+                    dispatched,
                     witnesses,
                     work,
                     span,
@@ -104,6 +127,7 @@ pub fn advancement(
     // The empty family changes no source; its caller is already current.
     Advancement {
         kept,
+        dispatched,
         witnesses,
         work,
         span,
