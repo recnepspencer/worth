@@ -120,7 +120,7 @@ fn prove() {
     assert_eq!(
         failure.stage(),
         primary_graph::WorthQueryGeneratedOutputSuspensionRecoveryStage::SourceSelection(
-            Branch::ReadExecution(Err(Stop::Cancelled))
+            Branch::Stopped(Err(Stop::Cancelled))
         )
     );
     let recovery = failure.into_recovery();

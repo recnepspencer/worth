@@ -12,6 +12,7 @@ use worth_query_host::facade::application_installation::{
     WorthQueryProgramOwner, WorthQuerySelectedProgramOwnerDenial,
 };
 use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial;
+use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 
 #[test]
 fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
@@ -114,7 +115,7 @@ fn same_typed_first_branch_from_another_live_host_cannot_select_an_owner() {
     assert!(matches!(
         host.selected_program_owner(&foreign_selection),
         Err(WorthQuerySelectedProgramOwnerDenial::ProductSelection(
-            WorthQueryProductBranchAdmissionDenial::ForeignOwner
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignOwner)
         ))
     ));
 }

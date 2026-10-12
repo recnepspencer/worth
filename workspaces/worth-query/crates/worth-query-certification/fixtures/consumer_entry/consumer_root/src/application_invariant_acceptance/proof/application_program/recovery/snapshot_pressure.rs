@@ -4,6 +4,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryRequiredOutputRecoveryPosture,
 };
 use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial;
+use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_topology_entry::{
     PlanarOutputDemand, PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
 };
@@ -64,7 +65,9 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
                 assert!(
                     matches!(
                         error,
-                        WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted
+                        WorthQueryProductBranchAdmissionDenial::Refused(
+                            AdmissionRefusal::ObservationCapacityExhausted
+                        )
                     ),
                     "snapshot pressure failed for the wrong reason: {error:?}"
                 );
@@ -96,7 +99,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         WorthQueryRequiredOutputPreparationDenial::Demand(
             worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Source(
             worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::ProductSelection(
-                WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted
+                WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted)
             )
             )
         )

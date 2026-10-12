@@ -7,6 +7,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjectionDenialKind as QueryProjection,
     WorthQueryProductBranchAdmissionDenial as QueryProductSelection,
 };
+use worth_query_host::facade::product::WorthQueryProductBranchAdmissionRefusalKind as QueryRefusal;
 
 use crate::{BankAuthorizationDenial, BankAuthorizationDenialKind};
 
@@ -145,33 +146,32 @@ pub(super) const fn product_selection(
 ) -> BankProductSelectionDenialKind {
     use BankProductSelectionDenialKind as Bank;
     match kind {
-        QueryProductSelection::ReadExecution(stop) => Bank::ReadExecution(stop),
-        QueryProductSelection::ForeignPhase => Bank::ForeignPhase,
-        QueryProductSelection::ObservationStatePoisoned => Bank::ObservationStatePoisoned,
-        QueryProductSelection::OwnerUnavailable => Bank::OwnerUnavailable,
-        QueryProductSelection::ForeignOwner => Bank::ForeignOwner,
-        QueryProductSelection::RetiredBranch => Bank::RetiredBranch,
-        QueryProductSelection::IncarnationChanged => Bank::IncarnationChanged,
-        QueryProductSelection::ObservationRejected => Bank::ObservationRejected,
-        QueryProductSelection::ObservationStaleSourceHead => Bank::ObservationStaleSourceHead,
-        QueryProductSelection::ObservationCancelled => Bank::ObservationCancelled,
-        QueryProductSelection::ObservationDeadlineExceeded => Bank::ObservationDeadlineExceeded,
-        QueryProductSelection::ObservationCapacityExhausted => Bank::ObservationCapacityExhausted,
-        QueryProductSelection::CustodyCapacityExhausted => Bank::CustodyCapacityExhausted,
-        QueryProductSelection::ObservationIdentityExhausted => Bank::ObservationIdentityExhausted,
-        QueryProductSelection::ObservationAccountingOverflow => Bank::ObservationAccountingOverflow,
-        QueryProductSelection::ProductActivationUnavailable => Bank::ProductActivationUnavailable,
-        QueryProductSelection::RelationalBasisUnavailable => Bank::RelationalBasisUnavailable,
-        QueryProductSelection::RelationalSnapshotUnavailable => Bank::RelationalSnapshotUnavailable,
-        QueryProductSelection::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        } => Bank::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
+        QueryProductSelection::Stopped(stop) => Bank::ReadExecution(stop),
+        QueryProductSelection::Refused(kind) => match kind {
+            QueryRefusal::ForeignPhase => Bank::ForeignPhase,
+            QueryRefusal::ObservationStatePoisoned => Bank::ObservationStatePoisoned,
+            QueryRefusal::OwnerUnavailable => Bank::OwnerUnavailable,
+            QueryRefusal::ForeignOwner => Bank::ForeignOwner,
+            QueryRefusal::RetiredBranch => Bank::RetiredBranch,
+            QueryRefusal::IncarnationChanged => Bank::IncarnationChanged,
+            QueryRefusal::ObservationRejected => Bank::ObservationRejected,
+            QueryRefusal::ObservationStaleSourceHead => Bank::ObservationStaleSourceHead,
+            QueryRefusal::ObservationCapacityExhausted => Bank::ObservationCapacityExhausted,
+            QueryRefusal::CustodyCapacityExhausted => Bank::CustodyCapacityExhausted,
+            QueryRefusal::ObservationIdentityExhausted => Bank::ObservationIdentityExhausted,
+            QueryRefusal::ProductActivationUnavailable => Bank::ProductActivationUnavailable,
+            QueryRefusal::RelationalBasisUnavailable => Bank::RelationalBasisUnavailable,
+            QueryRefusal::RelationalSnapshotUnavailable => Bank::RelationalSnapshotUnavailable,
+            QueryRefusal::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots,
+            } => Bank::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots,
+            },
+            QueryRefusal::RetentionCapacityExhausted => Bank::RetentionCapacityExhausted,
+            QueryRefusal::RetentionIdentityExhausted => Bank::RetentionIdentityExhausted,
+            QueryRefusal::SnapshotIdentityExhausted => Bank::SnapshotIdentityExhausted,
+            QueryRefusal::BridgeSourceUnavailable => Bank::BridgeSourceUnavailable,
         },
-        QueryProductSelection::RetentionCapacityExhausted => Bank::RetentionCapacityExhausted,
-        QueryProductSelection::RetentionIdentityExhausted => Bank::RetentionIdentityExhausted,
-        QueryProductSelection::SnapshotIdentityExhausted => Bank::SnapshotIdentityExhausted,
-        QueryProductSelection::BridgeSourceUnavailable => Bank::BridgeSourceUnavailable,
     }
 }
 

@@ -1,4 +1,5 @@
 use worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind as QueryKind;
+use worth_query_host::facade::primary_graph::WorthQueryEntityResolutionRefusalKind as Refusal;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankEntityResolutionDenialKind {
@@ -63,7 +64,7 @@ impl BankEntityResolutionDenial {
     pub(crate) fn from_query(kind: QueryKind) -> Self {
         use BankEntityResolutionDenialKind as Bank;
         let kind = match kind {
-            QueryKind::ExecutionRequest(cause) => {
+            QueryKind::Stopped(cause) => {
                 use worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Control;
                 match worth_query_host::facade::primary_graph::relational_execution_kind(
                     cause, None,
@@ -73,33 +74,29 @@ impl BankEntityResolutionDenial {
                     Err(Control::TimedOut) => Bank::DeadlineExceeded,
                 }
             }
-            QueryKind::ForeignPhase => Bank::ForeignPhase,
-            QueryKind::Cancelled => Bank::Cancelled,
-            QueryKind::DeadlineExceeded => Bank::DeadlineExceeded,
-            QueryKind::PrimaryGraphNotInstalled => Bank::PrimaryGraphNotInstalled,
-            QueryKind::FieldNotInstalled => Bank::FieldNotInstalled,
-            QueryKind::ValueEncodingRejected => Bank::ValueEncodingRejected,
-            QueryKind::EqualityIndexUnavailable => Bank::EqualityIndexUnavailable,
-            QueryKind::UnknownEntity => Bank::UnknownEntity,
-            QueryKind::AmbiguousEntity => Bank::AmbiguousEntity,
-            QueryKind::CorruptIdentityIndex => Bank::CorruptIdentityIndex,
-            QueryKind::ProjectionWorkBudgetExceeded => Bank::ProjectionWorkBudgetExceeded,
-            QueryKind::ProjectionPreparationMemoryExhausted => {
-                Bank::ProjectionPreparationMemoryExhausted
-            }
-            QueryKind::InvalidCandidateLimit => Bank::InvalidCandidateLimit,
-            QueryKind::CandidateLimitExceeded { maximum } => {
-                Bank::CandidateLimitExceeded { maximum }
-            }
-            QueryKind::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
-            } => Bank::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots,
+            QueryKind::Refused(kind) => match kind {
+                Refusal::ForeignPhase => Bank::ForeignPhase,
+                Refusal::PrimaryGraphNotInstalled => Bank::PrimaryGraphNotInstalled,
+                Refusal::FieldNotInstalled => Bank::FieldNotInstalled,
+                Refusal::ValueEncodingRejected => Bank::ValueEncodingRejected,
+                Refusal::EqualityIndexUnavailable => Bank::EqualityIndexUnavailable,
+                Refusal::UnknownEntity => Bank::UnknownEntity,
+                Refusal::AmbiguousEntity => Bank::AmbiguousEntity,
+                Refusal::CorruptIdentityIndex => Bank::CorruptIdentityIndex,
+                Refusal::InvalidCandidateLimit => Bank::InvalidCandidateLimit,
+                Refusal::CandidateLimitExceeded { maximum } => {
+                    Bank::CandidateLimitExceeded { maximum }
+                }
+                Refusal::ActiveSnapshotCapacityExhausted {
+                    maximum_active_snapshots,
+                } => Bank::ActiveSnapshotCapacityExhausted {
+                    maximum_active_snapshots,
+                },
+                Refusal::SnapshotIdentityExhausted => Bank::SnapshotIdentityExhausted,
+                Refusal::RetentionCapacityExhausted => Bank::RetentionCapacityExhausted,
+                Refusal::RetentionIdentityExhausted => Bank::RetentionIdentityExhausted,
+                Refusal::ForeignResolutionTruth => Bank::ForeignResolutionTruth,
             },
-            QueryKind::SnapshotIdentityExhausted => Bank::SnapshotIdentityExhausted,
-            QueryKind::RetentionCapacityExhausted => Bank::RetentionCapacityExhausted,
-            QueryKind::RetentionIdentityExhausted => Bank::RetentionIdentityExhausted,
-            QueryKind::ForeignResolutionTruth => Bank::ForeignResolutionTruth,
         };
         Self { kind }
     }

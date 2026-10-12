@@ -1,4 +1,5 @@
 use worth_query_consumer_values::{PlanarVertex, PlanarVertexReplacement};
+use worth_query_host::facade::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
@@ -339,7 +340,7 @@ fn require_absent(request: &Request<'_>, key: &str) {
         Err(WorthQueryApplicationRequestQueryDenial::ScopeResolution(denial)) => {
             assert_eq!(
                 denial.kind(),
-                WorthQueryEntityResolutionDenialKind::UnknownEntity
+                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity)
             );
         }
         Err(denial) => panic!("another denial cannot prove vertex absence: {denial:?}"),

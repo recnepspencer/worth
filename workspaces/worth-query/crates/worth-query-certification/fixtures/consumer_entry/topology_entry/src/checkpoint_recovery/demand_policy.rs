@@ -9,6 +9,7 @@ use worth_query_host::facade::application_contribution::WorthQueryProducerOutput
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandProgress,
 };
+use worth_query_host::facade::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile;
 
 pub(super) struct FinalArtifact;
@@ -274,7 +275,7 @@ fn installed_child_excess_is_denied_without_publishing_the_child() {
         .execute();
     assert!(matches!(child_read,
         Err(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::ScopeResolution(denial))
-            if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::UnknownEntity
+            if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity)
                 && denial.subject() == "BodyKey"
     ));
     let selected_child =

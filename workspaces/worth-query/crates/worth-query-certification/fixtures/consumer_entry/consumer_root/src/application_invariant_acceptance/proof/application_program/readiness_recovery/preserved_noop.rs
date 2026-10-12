@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 
 pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_successor(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
@@ -120,7 +121,9 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
     assert_eq!(
         cause.kind(),
         worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(
-            WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationCapacityExhausted
+            )
         )
     );
     let reopened = match ready

@@ -1,4 +1,6 @@
 use std::sync::atomic::Ordering;
+use worth_query_host::facade::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandProgress,
@@ -112,7 +114,7 @@ pub(super) fn denied_program_producer_releases_the_shared_claim(
                 WorthQueryApplicationOutputDemandDenial::Demand(cause)
             ) if cause.kind()
                 == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::SourceScope(
-                    worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::UnknownEntity
+                    worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity)
                 )
         ),
         "the producer's operation names a scope that does not resolve: {denial:?}"
@@ -258,7 +260,7 @@ pub(super) fn readiness_snapshot_pressure_keeps_published_output_recoverable(
                     denial
                 )
             ) if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(
-                WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted
+                WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted)
             )
         ),
         "readiness denial must retain its typed capacity cause: {failure:?}"
