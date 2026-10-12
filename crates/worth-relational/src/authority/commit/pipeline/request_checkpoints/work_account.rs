@@ -23,6 +23,17 @@ const ENTRIES: [Entry; 5] = [
     Entry::Authoritative,
 ];
 
+// The commit-track invoice included one serial-strategy diagnostic per
+// validation point. The edges width law prices that metadata at zero while
+// retaining its liveness consult and storage claim. Adjust only that row of
+// the existing invoice; no observed charge supplies this quote.
+const INVOICE_WITH_DIAGNOSTIC_WORK: u64 = 116;
+const VALIDATION_POINTS: u64 = 3;
+const FORMER_DIAGNOSTIC_PRICE: u64 = 1;
+const DIAGNOSTIC_PRICE: u64 = 0;
+const COMMIT_WORK: u64 =
+    INVOICE_WITH_DIAGNOSTIC_WORK - VALIDATION_POINTS * (FORMER_DIAGNOSTIC_PRICE - DIAGNOSTIC_PRICE);
+
 fn commit(entry: Entry, ceiling: u64) -> (Result<CommitResult, TransactionCommitError>, u64) {
     // All entries receive the same lowered mutation: one entity, two fields,
     // the same empty basis and installed invariant families. Only Batch adds
@@ -106,16 +117,17 @@ fn one_work_account_bounds_the_same_proposal_on_every_entry() {
     // Sum dispatch reports, rather than reading the account's stored balance.
     // No enclosing scope is allowed to hide the split-account defect.
     let completed = ENTRIES.map(|entry| {
-        let (outcome, charged) = commit(entry, 116);
+        let (outcome, charged) = commit(entry, COMMIT_WORK);
         outcome.unwrap();
         charged
     });
     assert_eq!(
-        completed, [116; 5],
-        "one entity with two fields: every commit entry charges 116"
+        completed,
+        [COMMIT_WORK; ENTRIES.len()],
+        "one entity with two fields: every commit entry pays the same exact invoice"
     );
     let refused = ENTRIES.map(|entry| {
-        let (outcome, _) = commit(entry, 115);
+        let (outcome, _) = commit(entry, COMMIT_WORK - 1);
         matches!(outcome, Err(TransactionCommitError::Execution { denial, .. })
             if denial.kind == CommitExecutionDenialKind::Cause(crate::execution::RelationalExecutionDenialCause::WorkExhausted))
     });
@@ -127,7 +139,7 @@ fn one_work_account_bounds_the_same_proposal_on_every_entry() {
 
 #[test]
 fn a_cancelled_authoritative_commit_keeps_its_typed_stop_and_head() {
-    let (outcome, _) = commit(Entry::AuthoritativeCancelled, 116);
+    let (outcome, _) = commit(Entry::AuthoritativeCancelled, COMMIT_WORK);
     let TransactionCommitError::Execution { denial, .. } = outcome.unwrap_err() else {
         panic!("an authoritative commit retains the request stop");
     };
