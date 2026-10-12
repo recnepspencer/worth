@@ -10,8 +10,8 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Inva
 pub(in crate::domain_computation::primary_graph) enum WorthQuerySourceCurrentnessFailure {
     /// The fact's own recorded bound refuses the comparison.
     WorkBudgetExceeded,
-    Unavailable,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    Unavailable,
 }
 
 impl WorthQueryApplicationObservedFact {
@@ -92,17 +92,20 @@ impl WorthQueryApplicationObservedFact {
                 u64::try_from(reserved_work - remaining)
                     .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
             )?;
-            check_request(execution)?;
             return match comparison {
                 Ok(equal) => Ok(Ok(FactMovement::from_equal(equal))),
                 Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
                     comparison_work_failure(most, reserved_work, admission).map(Err)
                 }
-                Err(failure) => Ok(Err(failure)),
+                Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+                    Err(CompanionPreflightStop::Execution(cause))
+                }
+                Err(WorthQuerySourceCurrentnessFailure::Unavailable) => {
+                    Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable))
+                }
             };
         }
         let comparison = self.comparison(runtime, execution, snapshot, reserved_work);
-        check_request(execution)?;
         match comparison {
             Ok((equal, work)) => {
                 reserved.settle(
@@ -113,7 +116,12 @@ impl WorthQueryApplicationObservedFact {
             Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
                 comparison_work_failure(most, reserved_work, admission).map(Err)
             }
-            Err(failure) => Ok(Err(failure)),
+            Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+                Err(CompanionPreflightStop::Execution(cause))
+            }
+            Err(WorthQuerySourceCurrentnessFailure::Unavailable) => {
+                Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable))
+            }
         }
     }
 }
@@ -139,11 +147,13 @@ impl WorthQueryApplicationObservedFact {
         let movement = self
             .source_currentness_in(runtime, execution, snapshot, &mut admission)
             .map_err(|stop| match stop {
+                CompanionPreflightStop::Execution(cause) => WorthQuerySourceCurrentnessFailure::Execution(cause),
                 CompanionPreflightStop::Interrupted(event) => WorthQuerySourceCurrentnessFailure::Execution(match event.interruption() {
                     worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled,
                     worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed,
                 }),
-                _ => WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
+                CompanionPreflightStop::WorkExhausted { .. } | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } | CompanionPreflightStop::WorkCounterOverflow => WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
+                CompanionPreflightStop::TopologyPending | CompanionPreflightStop::SelectedSourceMismatch | CompanionPreflightStop::SelectedPositionUnavailable { .. } | CompanionPreflightStop::ForeignCell | CompanionPreflightStop::RegistrationChanged | CompanionPreflightStop::PreparationMemoryExhausted { .. } | CompanionPreflightStop::PreparationMemoryCounterOverflow | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => WorthQuerySourceCurrentnessFailure::Unavailable,
             })??;
         let work = usize::try_from(admission.charged_work())
             .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
@@ -171,13 +181,15 @@ fn comparison_work_failure(
 fn check_request(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), CompanionPreflightStop> {
-    if let Some(event) =
-        worth_relational::facade::mvcc::RelationalInterruptionEvent::observe_request(
-            execution,
-            worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
-        )
-    {
-        return Err(CompanionPreflightStop::Interrupted(event));
+    if let Err(stop) = execution.consult() {
+        if let worth_execution::WorkCeilingDenial::Stopped(stopped) = stop {
+            if let Ok(event) = worth_relational::facade::mvcc::RelationalInterruptionEvent::from_request_stop(
+                stopped, worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
+            ) {
+                return Err(CompanionPreflightStop::Interrupted(event));
+            }
+        }
+        return Err(CompanionPreflightStop::Execution(stop.into()));
     }
     Ok(())
 }

@@ -180,3 +180,5 @@ let selected = world.selected_product(
 
 }).expect("the fixture block owns its installed host call")
 }
+
+mod lookup_stops;

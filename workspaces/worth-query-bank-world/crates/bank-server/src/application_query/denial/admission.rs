@@ -167,3 +167,7 @@ mod request_stop_tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "admission/request_stop_tests.rs"]
+mod admission_request_stop_tests;

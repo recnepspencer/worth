@@ -85,7 +85,17 @@ fn selection_refusal(denial: IndexedSelectionReobserveDenial) -> WorthQueryIndex
         IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::Execution(
             cause,
         )) => WorthQueryIndexedSelectionRefusal::Execution(cause),
-        _ => WorthQueryIndexedSelectionRefusal::Unavailable,
+        IndexedSelectionReobserveDenial::UnexpectedFact
+        | IndexedSelectionReobserveDenial::WorkBudgetExceeded
+        | IndexedSelectionReobserveDenial::Lookup(
+            BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+            | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+            | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+            | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+            | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+            | BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+            | BoundedEntityFieldLookupDenialKind::StorageParityMismatch,
+        ) => WorthQueryIndexedSelectionRefusal::Unavailable,
     }
 }
 
@@ -153,7 +163,20 @@ pub(super) fn remains_equal(
                 "indexed selection comparison",
             ),
         ),
-        Err(_) => Ok(false),
+        Err(
+            IndexedSelectionReobserveDenial::UnexpectedFact
+            | IndexedSelectionReobserveDenial::Overflow
+            | IndexedSelectionReobserveDenial::WorkBudgetExceeded
+            | IndexedSelectionReobserveDenial::Lookup(
+                BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+                | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+                | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+                | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+                | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+                | BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+                | BoundedEntityFieldLookupDenialKind::StorageParityMismatch,
+            ),
+        ) => Ok(false),
     }
 }
 
@@ -325,7 +348,20 @@ pub(in crate::domain_computation::primary_graph) fn currentness_with_remaining(
     )
     .map_err(|denial| match denial {
         IndexedSelectionReobserveDenial::WorkBudgetExceeded => Failure::WorkBudgetExceeded,
-        _ => Failure::Unavailable,
+        IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::Execution(
+            cause,
+        )) => Failure::Execution(cause),
+        IndexedSelectionReobserveDenial::UnexpectedFact
+        | IndexedSelectionReobserveDenial::Overflow
+        | IndexedSelectionReobserveDenial::Lookup(
+            BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+            | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+            | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+            | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+            | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+            | BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+            | BoundedEntityFieldLookupDenialKind::StorageParityMismatch,
+        ) => Failure::Unavailable,
     })?;
     Ok(!outcome.overflowed()
         && outcome.retain_definition().as_ref() == definition.as_ref()

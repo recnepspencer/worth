@@ -86,8 +86,8 @@ pub(super) fn prepare_decision_adjacency(
         direction,
         limit,
     ) {
-        Err(AdjacencyStructuralRevisionDenial::Execution(cause)) => return Err(cause),
         Ok(revision) => revision.revision(),
+        Err(AdjacencyStructuralRevisionDenial::Execution(cause)) => return Err(cause),
         // A zero recorded limit, or a missing anchor or basis, leaves the
         // decision fact without a native revision.
         Err(

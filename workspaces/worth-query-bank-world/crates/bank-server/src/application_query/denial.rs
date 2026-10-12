@@ -49,6 +49,7 @@ pub struct BankApplicationQueryLaneDenial<Kind> {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    RelationalExecution(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause),
     BridgeConditional(Box<worth_query_host::facade::primary_graph::BridgeConditionalDenialKind>),
     CorrespondenceDelivery(Box<worth_query_host::facade::primary_graph::BridgeCorrespondenceDeliveryStop>),
     ProductDelivery(Box<worth_query_host::facade::product::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind>),

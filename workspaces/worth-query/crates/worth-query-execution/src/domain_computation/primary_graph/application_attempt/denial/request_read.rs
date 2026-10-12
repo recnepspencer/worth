@@ -10,7 +10,7 @@ impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause
     }
 }
 impl WorthQueryApplicationAttemptDenial {
-    pub(in crate::domain_computation::primary_graph) fn relational_read_stopped(
+    pub(in crate::domain_computation) fn relational_read_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
         subject: &str,
     ) -> Self {
@@ -26,6 +26,27 @@ impl WorthQueryApplicationAttemptDenial {
         Self::new(kind, subject)
     }
 
+    pub(in crate::domain_computation) fn principal_read_stopped(
+        stop: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
+        subject: &str,
+    ) -> Self {
+        use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Principal;
+        let kind = match stop.kind() {
+            Principal::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            )) => WorthQueryApplicationAttemptDenialKind::Cancelled,
+            Principal::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            )) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
+            Principal::Stopped(Ok(kind)) => {
+                WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind)
+            }
+            Principal::Refused(_) => {
+                WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
+            }
+        };
+        Self::new(kind, subject)
+    }
     pub(in crate::domain_computation) fn request_read_stopped(
         stop: worth_execution::MapKernelStop,
         subject: &str,

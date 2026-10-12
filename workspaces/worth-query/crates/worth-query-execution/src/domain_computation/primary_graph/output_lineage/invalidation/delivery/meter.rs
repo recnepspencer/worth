@@ -113,7 +113,8 @@ pub(super) const fn degrades_delivery(stop: &CompanionPreflightStop) -> bool {
         | CompanionPreflightStop::ForeignCell
         | CompanionPreflightStop::RegistrationChanged
         | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }
-        | CompanionPreflightStop::Interrupted(_) => false,
+        | CompanionPreflightStop::Interrupted(_)
+        | CompanionPreflightStop::Execution(_) => false,
     }
 }
 

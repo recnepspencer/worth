@@ -144,15 +144,16 @@ fn observe_candidate_paths(
         [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
+    #[cfg(test)]
+    late_cancellation::cancel_at_observation();
     relational
         .observe_authorization(plan, execution)
-        .map_err(|_| {
-            denial(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::RelationalObservationRejected,
-                ),
-                installed.contract().name(),
-            )
+        .map_err(|refusal| {
+            use worth_relational::facade::authorization::RelationalAuthorizationObservationDenial as Refusal;
+            match refusal {
+                Refusal::Execution(cause) => super::super::denial::relational_read_denial(cause, installed.contract().name()),
+                Refusal::ForeignRuntime { .. } | Refusal::SnapshotUnavailable | Refusal::PrincipalUnavailableOrWrongKind | Refusal::ScopeUnavailableOrWrongKind | Refusal::ObservationIdentityExhausted | Refusal::PreparationAccountingOverflow => denial(WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::RelationalObservationRejected), installed.contract().name()),
+            }
         })
 }
 

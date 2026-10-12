@@ -282,6 +282,7 @@ fn require_witnessed_output(
         .and_then(|witness| witness.get())
         .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable))?;
     match witness.unchanged_in(execution, relational, snapshot, admission) {
+        Err(CompanionPreflightStop::Execution(cause)) => Err(super::super::output_reuse::read_denial(cause)),
         Ok(true) => Ok(()),
         Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
         Err(

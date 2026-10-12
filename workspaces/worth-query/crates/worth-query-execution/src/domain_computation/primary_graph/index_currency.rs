@@ -61,6 +61,11 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         runtime: &mut RelationalRuntime,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
+        execution.consult().map_err(|stop| {
+            WorthQueryPrimaryIndexCurrencyDenial::Execution(
+                crate::facade::primary_graph::relational_execution_kind(stop.into(), None),
+            )
+        })?;
         let observation = basis.observation();
         let Some(source_commit_id) = observation.commit_id() else {
             return Ok(());
@@ -91,6 +96,11 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
             super::index_maintenance_budget::cold_index_reconstruction_budget(),
             execution,
         );
+        execution.consult().map_err(|stop| {
+            WorthQueryPrimaryIndexCurrencyDenial::Execution(
+                crate::facade::primary_graph::relational_execution_kind(stop.into(), None),
+            )
+        })?;
         require_complete_build(build, expected)
     }
 }

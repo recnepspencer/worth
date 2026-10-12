@@ -54,3 +54,5 @@ pub use report::ChargedBytes;
 pub use authority::consult_observation::{
     with_request_consult_observer_for_test, RequestConsultObservationForTest,
 };
+#[doc(hidden)]
+pub use backend::ExecutionCheckpointObservationForTest;

@@ -206,6 +206,7 @@ fn admit_fields(
         );
         let candidates = match selection {
             Ok(candidates) => candidates,
+
             // More holders than the limit: the value is held.
             Err(WorthQueryIndexedSelectionRefusal::Overflowed) => {
                 return Err(field_denial(

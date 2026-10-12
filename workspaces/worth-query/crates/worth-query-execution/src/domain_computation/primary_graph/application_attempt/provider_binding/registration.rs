@@ -170,6 +170,22 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             staged,
             expected_steps,
         )),
+        Err(RegistrationStop::Execution(cause)) => {
+            let _ = staged.abort();
+            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+            let cause = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None);
+            Err(match cause {
+                Err(Control::Cancelled) => WorthQueryProviderProgressionOutcome::Cancelled,
+                Err(Control::TimedOut) => WorthQueryProviderProgressionOutcome::TimedOut,
+                Ok(kind) => WorthQueryProviderProgressionOutcome::Denied(
+                    super::super::WorthQueryApplicationCommitDenial::provider_execution_denied(
+                        DenialStage::ProviderPlan,
+                        Ok(kind),
+                        "consumed output backing request stopped",
+                    ),
+                ),
+            })
+        }
         Err(RegistrationStop::Interrupted(interruption)) => {
             use worth_relational::facade::mvcc::RelationalOperationInterruption as Interruption;
             let _ = staged.abort();

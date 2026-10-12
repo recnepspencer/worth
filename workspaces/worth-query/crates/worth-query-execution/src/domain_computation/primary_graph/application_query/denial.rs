@@ -16,6 +16,8 @@ use crate::domain_computation::primary_graph::{
 /// binding; disclosure governance; and work limits.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationQueryAdmissionDenialKind {
+    /// The request stopped while reading index currency.
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The query is not installed as requested.
     InstalledQuery(WorthQueryApplicationQueryInstallationDenialKind),
     /// The principal belongs to a different runtime.
@@ -96,8 +98,6 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
     GraphWorkAdmissionUnavailable,
     /// The runtime cannot execute the query's shape.
     ExecutionShapeUnsupported,
-    /// The request stopped index currency before query admission.
-    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
 }
 
 /// Refusal to admit an application query read.

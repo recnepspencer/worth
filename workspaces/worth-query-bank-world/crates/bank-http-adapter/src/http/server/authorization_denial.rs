@@ -14,10 +14,11 @@ use super::super::protocol::{
 pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHttpDenial {
     use BankAuthorizationDenialKind as Authorization;
     let (denial, next) = match kind {
-        // The request lapsed before authorization decided.
-        Authorization::ExecutionRequest(cause) => {
-            return super::mutation_application::pending_execution_denial(cause)
+        Authorization::RelationalExecution(cause) => {
+            return super::relational_execution_denial::denial(cause)
         }
+        // The request lapsed before authorization decided.
+        Authorization::ExecutionRequest(cause) => return execution_request_denial(cause),
         Authorization::Cancelled => (Kind::Cancelled, Next::Retry),
         Authorization::DeadlineExceeded => (Kind::DeadlineExceeded, Next::Retry),
         Authorization::ExpiredAuthentication => (Kind::Unauthenticated, Next::Authenticate),
@@ -87,6 +88,65 @@ pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHtt
         | Authorization::InconsistentDecision => (Kind::InternalDenied, Next::ContactOperator),
     };
     BankHttpDenial::new(denial, next)
+}
+
+// Typed Query request causes retain the authorization read's HTTP rule.
+fn execution_request_denial(
+    kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+) -> BankHttpDenial {
+    use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
+    use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Session;
+    match kind {
+        Session::ExecutionResource {
+            denial:
+                Resource::WorkExhausted
+                | Resource::MemoryLimit { .. }
+                | Resource::WorkerLimit
+                | Resource::PolicyMemoryLimit
+                | Resource::WorkLimit
+                | Resource::ResultCapacityExceeded
+                | Resource::ScratchCapacityExceeded,
+            ..
+        } => BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
+        kind @ (Session::ExecutionResource {
+            denial:
+                Resource::WorkCounterOverflow
+                | Resource::RetainedBytesExhausted
+                | Resource::CapacityOverflow
+                | Resource::ChargedBytesOverflow
+                | Resource::NestedLeaseMisuse
+                | Resource::NestedAdvancementOpening
+                | Resource::ForeignAdvancementPhase
+                | Resource::NoActiveExecutionScope
+                | Resource::EquivalenceContractUnavailable,
+            ..
+        }
+        | Session::ExecutionWorkerPanicked { .. }
+        | Session::ExecutionUncheckedCustomKernel { .. }
+        | Session::ExecutionIdentitiesNotCanonical { .. }
+        | Session::ExecutionNestedPatternStopped { .. }
+        | Session::RetentionIdentityExhausted
+        | Session::SnapshotIdentityExhausted
+        | Session::CandidateIdentityExhausted
+        | Session::IndexGenerationIdentityExhausted
+        | Session::ForeignOperationAttempt
+        | Session::ForeignExecutionBasis
+        | Session::ForeignGraphAuthority
+        | Session::UndeclaredOperationScope
+        | Session::ResourceEnvelopeMismatch
+        | Session::ProviderIdentityMismatch
+        | Session::ProviderGenerationMismatch
+        | Session::SessionProtocolUnsupported
+        | Session::ProviderPanicked
+        | Session::TokenNotMintedForPlan
+        | Session::EmptyPhysicalSessionIdentity
+        | Session::SessionIdentityExhausted
+        | Session::ActiveSnapshotCapacityExhausted { .. }
+        | Session::RetentionCapacityExhausted
+        | Session::IndexMaintenanceBudgetExceeded
+        | Session::AllocationDenied
+        | Session::ProviderRejected) => super::mutation_application::pending_execution_denial(kind),
+    }
 }
 
 #[cfg(test)]

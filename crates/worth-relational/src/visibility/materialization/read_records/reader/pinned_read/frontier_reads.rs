@@ -16,7 +16,7 @@ impl RelationalPinnedRead {
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<
             FrontierAdjacencyTruthReadLimitExceeded,
-            worth_execution::MapKernelStop,
+            worth_execution::WorkCeilingDenial,
         >,
     > {
         self.frontier_relations(
@@ -37,7 +37,7 @@ impl RelationalPinnedRead {
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<
             FrontierAdjacencyTruthReadLimitExceeded,
-            worth_execution::MapKernelStop,
+            worth_execution::WorkCeilingDenial,
         >,
     > {
         self.frontier_relations(
@@ -59,14 +59,14 @@ impl RelationalPinnedRead {
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<
             FrontierAdjacencyTruthReadLimitExceeded,
-            worth_execution::MapKernelStop,
+            worth_execution::WorkCeilingDenial,
         >,
     > {
         ProjectionRecordReader::new(self.current_version, &self.instrumentation)
             .bounded_relations_for_frontier_in_state(
                 self.basis.root().as_ref(),
                 self.schema(),
-                || request.check_live(),
+                || request.consult(),
                 entities,
                 kind,
                 self.basis.version_id(),
@@ -86,14 +86,14 @@ impl RelationalPinnedRead {
         BoundedFrontierFieldEqualityTruthRead,
         BoundedFrontierReadStop<
             FrontierFieldEqualityTruthReadLimitExceeded,
-            worth_execution::MapKernelStop,
+            worth_execution::WorkCeilingDenial,
         >,
     > {
         ProjectionRecordReader::new(self.current_version, &self.instrumentation)
             .bounded_entity_field_equals_for_frontier_in_state(
                 self.basis.root().as_ref(),
                 self.schema(),
-                || request.check_live(),
+                || request.consult(),
                 entities,
                 kind,
                 locator,

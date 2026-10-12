@@ -189,7 +189,6 @@ impl WorthQueryDelegationDecisionFact {
             }
         }
     }
-
     pub(super) fn remains_equal_in(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

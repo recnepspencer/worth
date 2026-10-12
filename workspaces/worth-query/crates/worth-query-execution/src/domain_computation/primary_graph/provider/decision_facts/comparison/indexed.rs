@@ -77,7 +77,13 @@ impl PreparedSelections {
                             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed admission"),
                         ));
                     }
-                    _ => return Ok(false),
+                    worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::WrongIndexKind
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::StorageParityMismatch => return Ok(false),
                 },
             };
             self.selectors.insert(key.clone(), prepared);

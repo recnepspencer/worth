@@ -36,12 +36,6 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency(
     Option<Vec<WorthQueryApplicationObservedRelation>>,
     super::super::WorthQueryApplicationAttemptDenial,
 > {
-    execution.check_live().map_err(|stop| {
-        super::super::WorthQueryApplicationAttemptDenial::request_read_stopped(
-            stop,
-            "adjacency observation",
-        )
-    })?;
     let observed = observe_adjacency_checked(
         runtime,
         execution,
@@ -51,12 +45,6 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency(
         direction,
         maximum_work_units,
     );
-    execution.check_live().map_err(|stop| {
-        super::super::WorthQueryApplicationAttemptDenial::request_read_stopped(
-            stop,
-            "adjacency observation",
-        )
-    })?;
     match observed {
         Ok(relations) => Ok(Some(relations)),
         Err(AdjacencyObservationDenial::Execution(cause)) => Err(
@@ -123,33 +111,42 @@ pub(super) fn observe_adjacency_with_work(
     direction: WorthQueryApplicationAdjacencyDirection,
     maximum_work_units: usize,
 ) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
-    if let Some(event) =
-        worth_relational::facade::mvcc::RelationalInterruptionEvent::observe_request(
-            execution,
-            worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
-        )
-    {
-        return Err(AdjacencyObservationDenial::Interrupted(event));
+    if let Err(stop) = execution.check_live() {
+        return Err(match worth_relational::facade::mvcc::RelationalInterruptionEvent::from_request_stop(
+            stop, worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
+        ) {
+            Ok(event) => AdjacencyObservationDenial::Interrupted(event),
+            Err(stop) => AdjacencyObservationDenial::Execution(stop.into()),
+        });
     }
-    let view = runtime
-        .read_truth()
-        .project_snapshot(snapshot, &execution)
-        .ok_or(AdjacencyObservationDenial::SnapshotUnavailable)?;
+    execution
+        .consult()
+        .map_err(|stop| AdjacencyObservationDenial::Execution(stop.into()))?;
+    let pin = runtime.read_truth().pin_read_capability(snapshot, &[], execution)
+        .map_err(|refusal| match refusal {
+            worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(stop) => AdjacencyObservationDenial::Execution(stop.into()),
+            worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::SnapshotUnavailable
+            | worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::IndexNotInstalled(_) => AdjacencyObservationDenial::SnapshotUnavailable,
+        })?;
     let frontier = std::collections::BTreeSet::from([anchor]);
-    // This scalar API budgets examined relations plus returned endpoints. The
-    // exact-root frontier primitive additionally charges its one anchor list.
     let work = maximum_work_units
         .checked_add(1)
         .ok_or(AdjacencyObservationDenial::WorkBudgetExceeded)?;
     let read =
         match direction {
-            WorthQueryApplicationAdjacencyDirection::Outgoing => view
+            WorthQueryApplicationAdjacencyDirection::Outgoing => pin
                 .bounded_outgoing_relations_for_frontier(execution, &frontier, relation_kind, work),
-            WorthQueryApplicationAdjacencyDirection::Incoming => view
+            WorthQueryApplicationAdjacencyDirection::Incoming => pin
                 .bounded_incoming_relations_for_frontier(execution, &frontier, relation_kind, work),
         }
-        .map_err(AdjacencyObservationDenial::Execution)?
-        .map_err(|_| AdjacencyObservationDenial::WorkBudgetExceeded)?;
+        .map_err(|stop| match stop {
+            worth_relational::facade::runtime::BoundedFrontierReadStop::Admission(stop) => {
+                AdjacencyObservationDenial::Execution(stop.into())
+            }
+            worth_relational::facade::runtime::BoundedFrontierReadStop::Limit(_) => {
+                AdjacencyObservationDenial::WorkBudgetExceeded
+            }
+        })?;
     let work_units = read.work_units();
     let relations = read
         .into_records()

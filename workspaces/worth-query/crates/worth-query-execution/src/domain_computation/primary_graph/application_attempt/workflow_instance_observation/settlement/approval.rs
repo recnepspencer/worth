@@ -103,16 +103,15 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
             "workflow approval principal evidence is nonportable",
         ));
     }
-    if !principal.remains_current_in(execution, runtime, snapshot, graph_layout).map_err(|denial| {
-        use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Principal;
-        use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as Attempt;
-        WorthQueryApplicationAttemptDenial::new(match denial.kind() {
-            Principal::Stopped(Ok(kind)) => Attempt::ExecutionRequest(kind),
-            Principal::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)) => Attempt::Cancelled,
-            Principal::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut)) => Attempt::DeadlineExceeded,
-            _ => Attempt::WorkflowApprovalPrincipalStale,
-        }, "workflow approval principal")
-    })? {
+    if !principal
+        .remains_current_in(execution, runtime, snapshot, graph_layout)
+        .map_err(|stop| {
+            WorthQueryApplicationAttemptDenial::principal_read_stopped(
+                stop,
+                "workflow approval principal",
+            )
+        })?
+    {
         return Err(WorthQueryApplicationAttemptDenial::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::WorkflowApprovalPrincipalStale,
             "workflow approval principal evidence is stale",

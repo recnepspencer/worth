@@ -106,6 +106,7 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
     /// work, allocating, opening a scope or containing a panic.
     pub fn consult(self) -> Result<(), WorkCeilingDenial> {
         consult_observation::reached();
+        crate::backend::record_request_consult_for_test();
         use crate::backend::KernelStop;
         let backing = match self.form {
             RequestBacking::Leased(lease) => lease.status().stop(),

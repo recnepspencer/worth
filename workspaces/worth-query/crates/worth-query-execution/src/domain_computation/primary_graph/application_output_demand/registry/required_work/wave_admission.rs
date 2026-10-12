@@ -113,6 +113,9 @@ fn requested_read_denial(
         CompanionPreflightStop as Stop, RelationalOperationInterruption,
     };
     let kind = match stop {
+        Stop::Execution(cause) => {
+            crate::domain_computation::primary_graph::output_reuse::read_denial(cause).kind()
+        }
         Stop::WorkExhausted { .. }
         | Stop::WorkExhaustedWithoutRequirement { .. }
         | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,

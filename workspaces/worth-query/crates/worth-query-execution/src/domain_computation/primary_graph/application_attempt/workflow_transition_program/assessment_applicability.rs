@@ -119,7 +119,7 @@ pub(super) fn observe(
                     AdjacencyStructuralRevisionDenial::Execution(cause) => {
                         WorthQueryApplicationAttemptDenial::relational_read_stopped(
                             cause,
-                            "assessment applicability",
+                            "applicability revision",
                         )
                     }
                     AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {

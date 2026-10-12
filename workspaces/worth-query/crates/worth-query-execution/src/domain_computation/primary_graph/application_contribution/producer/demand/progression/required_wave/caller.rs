@@ -124,6 +124,7 @@ where
         );
         match pending {
             Ok(Some(_)) => {}
+
             Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
                 return Err(denial(
                     WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,

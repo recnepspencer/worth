@@ -96,3 +96,51 @@ fn grant_selection_names_deadlines_and_every_ceiling_as_operational_stops() {
         Denial::Refused(AuthorizationRefusal::RelationalObservationRejected)
     );
 }
+
+#[test]
+fn grant_selection_retains_every_structural_execution_cause() {
+    use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+    let resource = |denial| Session::ExecutionResource {
+        denial,
+        partition_identity: None,
+        policy_ancestor: None,
+    };
+    for (cause, expected) in [
+        (
+            Cause::NoActiveExecutionScope,
+            resource(Resource::NoActiveExecutionScope),
+        ),
+        (
+            Cause::UnrelatedNestedLease,
+            resource(Resource::NestedLeaseMisuse),
+        ),
+        (
+            Cause::EquivalenceContractUnavailable,
+            resource(Resource::EquivalenceContractUnavailable),
+        ),
+        (
+            Cause::NestedStopped,
+            Session::ExecutionNestedPatternStopped {
+                partition_identity: None,
+            },
+        ),
+        (
+            Cause::WorkerFailed,
+            Session::ExecutionWorkerPanicked {
+                partition_identity: None,
+            },
+        ),
+        (
+            Cause::UncheckedCustomKernel,
+            Session::ExecutionUncheckedCustomKernel {
+                partition_identity: None,
+            },
+        ),
+    ] {
+        assert_eq!(
+            grant_lookup_denial_kind(Kind::Execution(cause)),
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Ok(expected))
+        );
+    }
+}

@@ -9,6 +9,7 @@ use worth_relational::facade::{
 };
 pub(super) fn denial(stop: Stop, subject: &str) -> WorthQueryEntityResolutionDenial {
     let kind = match stop {
+        Stop::Execution(cause) => Kind::Stopped(cause),
         Stop::Interrupted(event) => Kind::Stopped(match event.interruption() {
             RelationalOperationInterruption::Cancelled => Native::Cancelled,
             RelationalOperationInterruption::TimedOut => Native::DeadlineElapsed,

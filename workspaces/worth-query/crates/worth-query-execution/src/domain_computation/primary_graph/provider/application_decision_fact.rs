@@ -124,9 +124,10 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
-        execution
-            .check_live()
-            .map_err(|stop| SelfDenial::request_read_stopped(stop, "decision fact comparison"))?;
+        #[cfg(test)]
+        let _scope = super::super::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(
+            super::super::application_attempt::consult_observation::Door::Equality,
+        );
         let equal = match self {
             Self::Application { fact, .. } => {
                 fact.remains_equal_in(runtime, execution, snapshot)?
@@ -164,9 +165,6 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
                     SelfDenial::relational_read_stopped(cause, "authorization decision fact")
                 })?,
         };
-        execution
-            .check_live()
-            .map_err(|stop| SelfDenial::request_read_stopped(stop, "decision fact comparison"))?;
         Ok(equal)
     }
 }

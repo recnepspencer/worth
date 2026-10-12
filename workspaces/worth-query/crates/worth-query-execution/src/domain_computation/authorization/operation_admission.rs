@@ -211,5 +211,9 @@ mod tests {
 }
 
 #[cfg(test)]
+#[path = "operation_admission/retained_activation_read_tests.rs"]
+mod retained_activation_read_tests;
+
+#[cfg(test)]
 #[path = "operation_admission/request_read_stops_tests.rs"]
 mod request_read_stops_tests;

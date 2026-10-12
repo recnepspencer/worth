@@ -307,11 +307,12 @@ fn map_adjacency_denial(
     denial: super::super::AdjacencyObservationDenial,
 ) -> WorthQuerySourceCurrentnessFailure {
     match denial {
-        super::super::AdjacencyObservationDenial::Execution(cause) => {
-            WorthQuerySourceCurrentnessFailure::Execution(cause)
-        }
-        super::super::AdjacencyObservationDenial::Interrupted(_) => {
-            WorthQuerySourceCurrentnessFailure::Unavailable
+        super::super::AdjacencyObservationDenial::Execution(cause) => WorthQuerySourceCurrentnessFailure::Execution(cause),
+        super::super::AdjacencyObservationDenial::Interrupted(event) => {
+            WorthQuerySourceCurrentnessFailure::Execution(match event.interruption() {
+                worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled,
+                worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed,
+            })
         }
         super::super::AdjacencyObservationDenial::SnapshotUnavailable => {
             WorthQuerySourceCurrentnessFailure::Unavailable

@@ -359,3 +359,6 @@ fn durable_approval_readmission_denies_revoked_delegation_parent() {
 
 #[path = "workflow_approval_revalidation/parent_reactivation_does_not_revive_delegated_approval.rs"]
 mod parent_reactivation_does_not_revive_delegated_approval;
+
+#[path = "workflow_approval_revalidation/read_stop_oracle.rs"]
+mod read_stop_oracle;

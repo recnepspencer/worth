@@ -109,6 +109,7 @@ pub(in crate::domain_computation::primary_graph) fn preflight_stop(
     stop: CompanionPreflightStop,
 ) -> RetainedFactStop<'static> {
     match stop {
+        CompanionPreflightStop::Execution(cause) => RetainedFactStop::Execution(cause),
         CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
             RetainedFactStop::Memory
@@ -198,7 +199,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_output_settlement_i
 
 /// One owner read on the selection's meter: what it charged stays spent
 /// whether or not it answered.
-fn owner_read<Answer>(
+pub(in crate::domain_computation::primary_graph) fn owner_read<Answer>(
     answer: Result<Answer, CompanionPreflightStop>,
     unavailable: &'static str,
 ) -> Result<Answer, WorthQueryOutputDemandDenial> {

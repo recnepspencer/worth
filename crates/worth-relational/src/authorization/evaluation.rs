@@ -16,6 +16,11 @@ impl RelationalRuntime {
         admission: &mut A,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalAuthorizationObservationEvidence, Stop<A::Stop>> {
+        execution.check_live().map_err(|stop| {
+            Stop::Native(RelationalAuthorizationObservationDenial::Execution(
+                stop.into(),
+            ))
+        })?;
         let evaluation = self.evaluate_authorization_admitted(&plan, admission, execution)?;
         admission::prepare(admission, 1, 0)?;
         let identity = mint_observation_identity(&plan).ok_or(Stop::Native(

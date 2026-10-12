@@ -49,6 +49,7 @@ pub enum WorthQueryWorkflowDefinitionDiscoveryDenial {
     Cancelled,
     /// The caller's deadline elapsed during discovery.
     DeadlineExceeded,
+    /// The caller's bounded execution refused work, memory or execution structure.
     /// The lineage's records cannot be read within their fixed bounds, so
     /// no retry of the same discovery can succeed.
     LineageUnreadable,
@@ -69,6 +70,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        execution.consult().map_err(|stop| {
+            discovery_execution_denial(crate::facade::primary_graph::relational_execution_kind(
+                stop.into(),
+                None,
+            ))
+        })?;
         let graph = &self.application().primary_provider.graph;
         let layout = graph.layout.workflow();
         let snapshot = self.application_basis().snapshot_handle();
@@ -197,6 +204,8 @@ fn select_lineage(
     layout: &WorthQueryWorkflowLayout,
     identity: &str,
 ) -> Result<Option<Option<EntityId>>, super::super::WorthQueryApplicationAttemptDenial> {
+    #[cfg(test)]
+    let _scope = super::super::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(super::super::application_attempt::consult_observation::Door::Discovery);
     let selection = observe_indexed_entity_selection(
         runtime,
         execution,
@@ -261,3 +270,6 @@ fn discovery_execution_denial(
 fn text(value: &str) -> AspectValue {
     AspectValue::String(InternedString::Raw(value.to_owned()))
 }
+
+#[cfg(test)]
+mod request_stops;

@@ -5,8 +5,12 @@ use std::{
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 thread_local! { static PENDING: RefCell<Option<Pending>> = const { RefCell::new(None) }; }
+enum Action {
+    Cancel(WorthQueryCancellationSource),
+    Deadline(std::time::Instant),
+}
 struct Pending {
-    source: WorthQueryCancellationSource,
+    action: Action,
     remaining: usize,
     triggered: Rc<Cell<bool>>,
 }
@@ -19,10 +23,18 @@ impl FreshnessCancellationGuardForTest {
         source: WorthQueryCancellationSource,
         preceding_reads: usize,
     ) -> Self {
+        Self::install(Action::Cancel(source), preceding_reads)
+    }
+    pub(in crate::domain_computation::primary_graph) fn deadline_on_this_thread(
+        deadline: std::time::Instant,
+    ) -> Self {
+        Self::install(Action::Deadline(deadline), 0)
+    }
+    fn install(action: Action, preceding_reads: usize) -> Self {
         assert!(crate::domain_computation::execution_observation::is_installed());
         let triggered = Rc::new(Cell::new(false));
         let previous = PENDING.replace(Some(Pending {
-            source,
+            action,
             remaining: preceding_reads,
             triggered: Rc::clone(&triggered),
         }));
@@ -52,6 +64,12 @@ pub(super) fn cancel_before_lookup_for_test() {
     });
     if let Some(pending) = pending {
         pending.triggered.set(true);
-        pending.source.cancel();
+        match pending.action {
+            Action::Cancel(source) => source.cancel(),
+            Action::Deadline(deadline) => {
+                // Reach the caller's actual deadline; no elapsed-time assertion.
+                std::thread::sleep(deadline.saturating_duration_since(std::time::Instant::now()));
+            }
+        }
     }
 }

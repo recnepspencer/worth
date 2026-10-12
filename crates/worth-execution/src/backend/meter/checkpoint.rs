@@ -4,6 +4,7 @@ impl KernelContext<'_, '_> {
     /// Kernel checkpoint enforces the local remaining ceiling before work is
     /// done, while canonical settlement determines the accepted prefix.
     pub fn checkpoint(&mut self, units: u64) -> Result<(), KernelStop> {
+        super::super::checkpoint_observation::record(units);
         self.checkpoint_inner(units, false)
     }
 

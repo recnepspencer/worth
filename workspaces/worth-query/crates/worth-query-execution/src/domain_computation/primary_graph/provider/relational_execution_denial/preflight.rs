@@ -21,6 +21,7 @@ pub(in crate::domain_computation::primary_graph) fn preflight_execution_cause(
     stop: Stop,
 ) -> Result<Cause, PreflightReadRefusal> {
     match stop {
+        Stop::Execution(cause) => Ok(cause),
         Stop::WorkExhausted { .. } | Stop::WorkExhaustedWithoutRequirement { .. } => {
             Ok(Cause::WorkExhausted)
         }

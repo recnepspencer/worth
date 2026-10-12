@@ -50,6 +50,13 @@ pub(crate) use scope::{run_scope, run_scope_holding, run_scope_within, ScopeHold
 pub(crate) use meter::active_serial_memory;
 pub(crate) use meter::active_stop;
 
+mod checkpoint_observation;
+pub use checkpoint_observation::ExecutionCheckpointObservationForTest;
+
+pub(crate) fn record_request_consult_for_test() {
+    checkpoint_observation::record(1);
+}
+
 mod task_result;
 
 pub(crate) use meter::{record_nested, NestedStopOwner};

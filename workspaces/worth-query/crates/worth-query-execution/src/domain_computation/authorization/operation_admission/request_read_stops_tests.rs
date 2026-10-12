@@ -44,7 +44,7 @@ impl<Schema, Operation, Input, Scope>
             );
         }
     }
-    pub(in crate::domain_computation) fn assert_cancelled_retained_activation_read(
+    pub(in crate::domain_computation) fn assert_retained_activation_read_at_every_consult(
         &self,
         runtime: &RelationalRuntime,
         execution: &ExecutionRequest<'_, '_>,

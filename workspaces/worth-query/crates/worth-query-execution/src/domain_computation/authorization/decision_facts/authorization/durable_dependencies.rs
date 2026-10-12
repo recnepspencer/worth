@@ -72,6 +72,8 @@ impl WorthQueryDurableAuthorizationDependencies {
         bool,
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
     > {
+        #[cfg(test)]
+        let _scope = crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(crate::domain_computation::primary_graph::application_attempt::consult_observation::Door::Activation);
         execution
             .check_live()
             .map_err(crate::domain_computation::authorization::denial::kernel_stop_kind)?;

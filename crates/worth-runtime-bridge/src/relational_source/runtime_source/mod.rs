@@ -114,6 +114,24 @@ impl RuntimeBridgeRelationalSource {
         Ok(source)
     }
 
+    /// Binds a partition on an already-owned source, keeping its runtime handle
+    /// and registries. No native owner acquisition or new runtime custody occurs.
+    pub fn with_graph_partition(
+        mut self,
+        graph_role: impl Into<Arc<str>>,
+        relational_partition: PartitionId,
+        truth_partition: worth_foundational::facade::TruthPartitionRole,
+    ) -> Result<Self, RelationalBridgeSourceConfigurationError> {
+        let graph_role = graph_role.into();
+        validate_graph_role(&graph_role)?;
+        self.graph_role = graph_role;
+        self.partition = Some(RelationalBridgePartitionBinding {
+            relational: relational_partition,
+            truth: truth_partition,
+        });
+        Ok(self)
+    }
+
     fn admits_relational_partition(&self, partition_id: u32) -> bool {
         self.partition
             .as_ref()
@@ -132,3 +150,6 @@ fn validate_graph_role(
 }
 
 mod publication_result;
+
+#[cfg(test)]
+mod partition_binding_tests;

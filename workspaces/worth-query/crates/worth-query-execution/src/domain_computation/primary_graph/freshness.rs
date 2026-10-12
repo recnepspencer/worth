@@ -59,6 +59,8 @@ impl WorthQueryDurablePrincipalCurrentness {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
     ) -> Result<bool, WorthQueryPrincipalResolutionDenial> {
+        #[cfg(test)]
+        let _scope = crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(crate::domain_computation::primary_graph::application_attempt::consult_observation::Door::Approval);
         let Some(binding) = layout.principal_binding(&self.binding) else {
             return Ok(false);
         };

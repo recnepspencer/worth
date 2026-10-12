@@ -2,7 +2,7 @@ use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotHandle;
 
 use super::{
-    admission::{self, UnrestrictedObservation},
+    admission::{self, RequestObservation},
     RelationalAuthorizationBudgetedObservationStop as Stop,
     RelationalAuthorizationObservationAdmission, RelationalAuthorizationObservationEvidence,
     RelationalAuthorizationObservationFreshness, RelationalAuthorizationPlanAdmissionStop,
@@ -34,6 +34,13 @@ impl RelationalRuntime {
         };
         let current = match self.evaluate_authorization_admitted(&plan, admission, execution) {
             Ok(current) => current,
+            Err(Stop::Native(super::RelationalAuthorizationObservationDenial::Execution(
+                cause,
+            ))) => {
+                return Err(Stop::Native(
+                    super::RelationalAuthorizationObservationDenial::Execution(cause),
+                ));
+            }
             Err(Stop::Native(_) | Stop::ExactBasisRequired) => {
                 return Ok(RelationalAuthorizationObservationFreshness::Stale);
             }
@@ -83,15 +90,21 @@ impl RelationalRuntime {
         match self.compare_authorization_observation_budgeted(
             expected,
             &snapshot,
-            &mut UnrestrictedObservation,
+            &mut RequestObservation(execution),
             execution,
         ) {
             Ok(freshness) => freshness,
-            Err(Stop::Execution(cause)) => {
+            Err(Stop::Execution(cause) | Stop::Admission(cause)) => {
                 RelationalAuthorizationObservationFreshness::ExecutionStopped(cause)
             }
-            Err(Stop::AccountingOverflow) => RelationalAuthorizationObservationFreshness::Stale,
-            Err(Stop::Admission(impossible)) => match impossible {},
+            Err(Stop::AccountingOverflow) => {
+                RelationalAuthorizationObservationFreshness::ExecutionStopped(
+                    crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                )
+            }
+            Err(Stop::Native(super::RelationalAuthorizationObservationDenial::Execution(
+                cause,
+            ))) => RelationalAuthorizationObservationFreshness::ExecutionStopped(cause),
             Err(Stop::Native(_) | Stop::ExactBasisRequired) => {
                 RelationalAuthorizationObservationFreshness::Stale
             }

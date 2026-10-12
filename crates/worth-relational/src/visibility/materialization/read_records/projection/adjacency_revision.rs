@@ -52,6 +52,9 @@ impl VisibilityProjectionView {
         if maximum_work < 1 {
             return Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded);
         }
+        execution
+            .consult()
+            .map_err(|stop| AdjacencyStructuralRevisionDenial::Execution(stop.into()))?;
         if self
             .entity_record_with_projection_scope(
                 execution,

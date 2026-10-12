@@ -222,6 +222,7 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         | Settlement::CorrespondenceDelivery(_)
         | Settlement::ProductDelivery(_) => unavailable(),
         Settlement::ExecutionRequest(cause) => super::advancement_denial::advancement(cause),
+        Settlement::RelationalExecution(cause) => super::relational_execution_denial::denial(cause),
         Settlement::SourceQueryInstallation(_) => unavailable(),
         Settlement::SourcePrincipal(_) => stale(),
         Settlement::SourceScope(kind) => entity(kind),
@@ -288,3 +289,6 @@ const fn internal_denied() -> BankHttpDenial {
 
 #[cfg(test)]
 mod entity_stop_tests;
+#[cfg(test)]
+#[path = "query_denial/request_stop_tests.rs"]
+mod request_stop_tests;

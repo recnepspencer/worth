@@ -86,7 +86,12 @@ fn observe_adjacency_revision(
             COMPARISON_WORK_LIMIT,
         )
         .map_err(|unavailable| match unavailable {
-            AdjacencyStructuralRevisionDenial::Execution(cause) => crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "workflow observation"),
+            AdjacencyStructuralRevisionDenial::Execution(cause) => {
+                WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                    cause,
+                    "workflow publication revision",
+                )
+            }
             AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => super::denial(
                 "workflow publication membership revision exceeds its comparison work",
             ),

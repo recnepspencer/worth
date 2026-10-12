@@ -177,45 +177,74 @@ fn with_indexed_fact<R>(
     ) -> R,
 ) -> R {
     let world = installed_authorization_world(true);
-    world
+    let selected = world
         .application
-        .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
-            let selected = world.selected_product(&custody);
-            let snapshot = selected.application_basis().snapshot_handle();
-            let graph = world.application.runtime.primary_graph().unwrap();
-            let field = AccountStatus::reference();
-            let layout = graph
-                .layout
-                .equality_field(field.entity(), field.aspect(), field.field())
-                .unwrap();
-            let relation_kind = graph
-                .layout
-                .relation(AccountOwner::reference().name())
-                .unwrap()
-                .kind;
-            let source = CancellationSource::new();
-            let serial =
-                SerialRequest::from_memory(SerialMemoryBudget::new(64 << 20), source.token(), None);
-            let execution = ExecutionRequest::serial(&serial);
-            graph
-                .integration_handle()
-                .with_runtime(&execution, |runtime| {
-                    let fact = observe_indexed_entity_selection(
-                        runtime,
-                        &execution,
-                        snapshot,
-                        layout.equality_index_id.unwrap(),
-                        layout.entity_kind,
-                        layout.locator.clone(),
-                        StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(),
-                        2,
-                    )
-                    .unwrap();
-                    body(runtime, &execution, snapshot, &fact, &source, relation_kind)
-                })
-        })
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .unwrap();
+    let snapshot = selected.application_basis().snapshot_handle();
+    let graph = world.application.runtime.primary_graph().unwrap();
+    let field = AccountStatus::reference();
+    let layout = graph
+        .layout
+        .equality_field(field.entity(), field.aspect(), field.field())
+        .unwrap();
+    let relation_kind = graph
+        .layout
+        .relation(AccountOwner::reference().name())
         .unwrap()
+        .kind;
+    let source = CancellationSource::new();
+    let serial =
+        SerialRequest::from_memory(SerialMemoryBudget::new(64 << 20), source.token(), None);
+    let execution = ExecutionRequest::serial(&serial);
+    let outcome = graph
+        .integration_handle()
+        .with_runtime(&execution, |runtime| {
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let fact = observe_indexed_entity_selection(
+                    runtime,
+                    &execution,
+                    snapshot,
+                    layout.equality_index_id.unwrap(),
+                    layout.entity_kind,
+                    layout.locator.clone(),
+                    StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(),
+                    2,
+                )
+                .unwrap();
+                body(runtime, &execution, snapshot, &fact, &source, relation_kind)
+            }))
+        });
+    match outcome {
+        Ok(value) => value,
+        Err(payload) => std::panic::resume_unwind(payload),
+    }
 }
 
 mod counted;
+#[test]
+fn source_currentness_keeps_a_stop_raised_inside_the_indexed_read() {
+    with_indexed_fact(|runtime, execution, snapshot, fact, source, _| {
+        let _observation =
+            crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+        let cancel = source.clone();
+        let mut consults = 0;
+        let _probe =
+            worth_execution::ExecutionCheckpointObservationForTest::install_on_this_thread_for_test(
+                move || {
+                    consults += 1;
+                    if consults == 3 {
+                        cancel.cancel();
+                    }
+                },
+            );
+        let mut admission =
+            crate::domain_computation::primary_graph::InvalidationEditAdmission::new(
+                worth_relational::facade::mvcc::CompanionPreflightBudget {
+                    maximum_work_visits: 1_000_000,
+                    maximum_preparation_bytes: 64 << 20,
+                },
+            );
+        assert_eq!(fact.source_currentness_in(runtime, execution, snapshot, &mut admission), Err(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled)));
+    });
+}

@@ -150,6 +150,8 @@ impl WorthQueryEntityResolutionTruth<'_> {
                 2,
             )
             .map_err(|denial| map_index_denial(denial.kind(), field))?;
+            #[cfg(test)]
+            interruption_control::cancel_before_lookup_for_test();
             let lookup = self
                 .relational
                 .index_access()
