@@ -122,6 +122,7 @@ impl WorthQueryOutputDemandRegistry {
             return Ok(None);
         };
         if work.for_selected_branch(selected.branch_id(), admission)? {
+            self.pin_current_required_successor(&mut work, admission)?;
             Ok(Some(work))
         } else {
             Ok(None)

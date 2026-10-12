@@ -65,6 +65,7 @@ impl RequiredWorkClaim {
         };
         let selected = SelectedRequiredWork {
             membership: Arc::clone(&self.membership),
+            certification_membership: Arc::clone(&self.membership),
             version: member.version,
             kind,
             armed: true,

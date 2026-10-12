@@ -82,6 +82,8 @@ struct MembershipState {
 pub(in crate::domain_computation::primary_graph) struct SelectedRequiredWork {
     pub(in crate::domain_computation::primary_graph) membership: Arc<RequiredWorkMembership>,
     pub(in crate::domain_computation::primary_graph) version: u64,
+    // The registry pins the row that answers this occurrence after succession.
+    certification_membership: Arc<RequiredWorkMembership>,
     kind: SelectedRequiredWorkKind,
     armed: bool,
 }

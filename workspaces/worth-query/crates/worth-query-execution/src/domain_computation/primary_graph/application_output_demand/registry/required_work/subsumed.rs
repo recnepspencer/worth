@@ -52,7 +52,7 @@ impl SelectedRequiredWork {
         proof: CurrentProof<T>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
-        if !proof.certifies_record(&self.membership) {
+        if !proof.certifies_record(&self.certification_membership) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "Current proof does not certify this retained record and basis",
