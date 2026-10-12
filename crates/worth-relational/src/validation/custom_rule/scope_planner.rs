@@ -77,6 +77,10 @@ impl PreparedCustomInvariantScope {
         }
     }
 
+    pub(crate) fn retained_touched(&self) -> Arc<TouchedStructuralSet> {
+        Arc::clone(&self.touched)
+    }
+
     pub(crate) fn retain_restricted(
         &self,
         state: &InvariantStateView<'_>,

@@ -50,6 +50,29 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         work: super::CustomInvariantWorkMeter,
         access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
     ) -> Self {
+        work.try_charge(1);
+        Self::from_prepared_scope(
+            runtime,
+            observation,
+            version_id,
+            current_version_id,
+            prepared_scope,
+            retained_touched,
+            work,
+            access,
+        )
+    }
+
+    fn from_prepared_scope(
+        runtime: &InvariantRuntimeView<'runtime>,
+        observation: &'runtime InvariantObservation<'runtime>,
+        version_id: VersionId,
+        current_version_id: VersionId,
+        prepared_scope: &super::scope_planner::PreparedCustomInvariantScope,
+        retained_touched: Option<Arc<TouchedStructuralSet>>,
+        work: super::CustomInvariantWorkMeter,
+        access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+    ) -> Self {
         use crate::validation::engine::input_preparation::CandidateInputBasis;
         let inputs = runtime.shared_candidate_inputs();
         let version_id = observation.enforcement_version_id(version_id);
@@ -66,7 +89,6 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
             current_version_id,
         )
         .with_candidate_inputs(inputs, CandidateInputBasis::custom_committed(observation));
-        work.try_charge(1);
         let touched = retained_touched.unwrap_or_else(|| {
             prepared_scope.retain_restricted(&state_view, &committed_state_view, &access, &work)
         });
@@ -102,6 +124,30 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
             proposal_identity,
             work,
         }
+    }
+
+    /// Reporting an owner-proven skip executes no rule and spends no rule units.
+    pub(crate) fn not_applicable_provenance(
+        runtime: &InvariantRuntimeView<'runtime>,
+        observation: &'runtime InvariantObservation<'runtime>,
+        version_id: VersionId,
+        current_version_id: VersionId,
+        prepared_scope: &super::scope_planner::PreparedCustomInvariantScope,
+        retained_touched: Arc<TouchedStructuralSet>,
+        work: super::CustomInvariantWorkMeter,
+        access: Arc<crate::validation::data::CustomInvariantAccessContract>,
+    ) -> CustomInvariantProvenance {
+        Self::from_prepared_scope(
+            runtime,
+            observation,
+            version_id,
+            current_version_id,
+            prepared_scope,
+            Some(retained_touched),
+            work,
+            access,
+        )
+        .provenance()
     }
 
     pub fn observation_kind(&self) -> InvariantObservationKind {

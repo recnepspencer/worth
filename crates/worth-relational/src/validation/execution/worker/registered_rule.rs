@@ -46,15 +46,16 @@ pub(super) fn evaluate_registered_rule<'state>(
         crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::CustomNotApplicable {
             registration,
             prepared_scope,
+            retained_touched,
             work,
         } => {
-            let context = CustomInvariantExecutionContext::new(
+            let provenance = CustomInvariantExecutionContext::not_applicable_provenance(
                 runtime,
                 packet.observation,
                 packet.version_id,
                 packet.current_version_id,
                 prepared_scope,
-                None,
+                std::sync::Arc::clone(retained_touched),
                 work.clone(),
                 std::sync::Arc::new(registration.access_contract().clone()),
             );
@@ -62,7 +63,7 @@ pub(super) fn evaluate_registered_rule<'state>(
                 reported_rule: InvariantReportedRule::Custom(registration.descriptor().identity.clone()),
                 groups: registration.groups(),
                 cost: registration.cost_class(),
-                custom_provenance: Some(context.provenance()),
+                custom_provenance: Some(provenance),
                 verdicts: vec![InvariantVerdict::NotApplicable],
             }
         }

@@ -153,7 +153,7 @@ fn touched(runtime: &RelationalRuntime, plan: &MergedCommitPlan) -> Option<Candi
         Some(plan),
         None,
     );
-    CandidateTouchedKinds::from_request(&request)
+    CandidateTouchedKinds::from_request(&request, None)
 }
 
 fn plan(transaction: u64, intent: MutationIntent) -> MergedCommitPlan {

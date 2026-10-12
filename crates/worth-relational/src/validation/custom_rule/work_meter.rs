@@ -69,6 +69,13 @@ impl CustomPreparationBudget {
         stop.get_or_insert(CustomPreparationStop::UncheckedCustomKernel);
     }
 
+    /// Candidate-local inspection is request work, not a rule's allowance.
+    pub(crate) fn try_visit(&self, units: usize) -> bool {
+        CustomInvariantWorkMeter::new(NonZeroU64::new(u64::MAX).unwrap())
+            .with_lease(self)
+            .try_charge(units)
+    }
+
     pub(crate) fn try_plan_item(&self, retained_bytes: u64) -> bool {
         let meter =
             CustomInvariantWorkMeter::new(NonZeroU64::new(u64::MAX).unwrap()).with_lease(self);
@@ -215,8 +222,13 @@ impl CustomInvariantWorkMeter {
         }
         true
     }
+    /// Exact charged units; diagnostic provenance keeps its nonzero minimum.
+    pub(crate) fn charged_work(&self) -> u64 {
+        self.consumed.load(Ordering::Relaxed)
+    }
+
     pub(crate) fn consumed(&self) -> NonZeroU64 {
-        NonZeroU64::new(self.consumed.load(Ordering::Relaxed).max(1)).unwrap()
+        NonZeroU64::new(self.charged_work().max(1)).unwrap()
     }
     pub(crate) fn exceeded(&self) -> bool {
         self.exhausted.load(Ordering::Relaxed)
