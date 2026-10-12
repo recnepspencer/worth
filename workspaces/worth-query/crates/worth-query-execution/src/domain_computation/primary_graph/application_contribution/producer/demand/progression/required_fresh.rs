@@ -213,7 +213,7 @@ where
             claim.interest(),
         );
         self.admit_output_demand_with_source_admitted::<Family>(
-            &execution,
+            execution,
             fresh.value(),
             retained_source,
             None,

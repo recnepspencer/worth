@@ -77,7 +77,7 @@ where
         let mut pass = AdvancePass::Initial;
         loop {
             let result = self.advance_caller_pass(
-                &execution,
+                execution,
                 phase,
                 demand,
                 principal,
