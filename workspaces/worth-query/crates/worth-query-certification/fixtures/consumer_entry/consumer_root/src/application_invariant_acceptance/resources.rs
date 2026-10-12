@@ -7,9 +7,9 @@ use worth_query_host::facade::runtime::{
     WorthQueryProductWorldClock, WorthQueryProductWorldResources,
 };
 
-pub(super) fn world_resources() -> WorthQueryProductWorldResources {
-    // Bounds this fixture World's serial request memory and deterministic work.
-    let execution_policy = worth_foundational::ExecutionRequestPolicy::new(
+// Bounds this fixture World's serial request memory and deterministic work.
+pub(super) const EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
+    worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,
         worth_foundational::ExecutionBudget::new(
@@ -18,6 +18,8 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
             8_000_000,
         ),
     );
+
+pub(super) fn world_resources() -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
@@ -55,7 +57,7 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
             ),
         )
         .expect("the Query invalidation installation is valid"),
-        execution_policy,
+        EXECUTION_POLICY,
     )
     .expect("the consumer's finite World resources are valid")
 }

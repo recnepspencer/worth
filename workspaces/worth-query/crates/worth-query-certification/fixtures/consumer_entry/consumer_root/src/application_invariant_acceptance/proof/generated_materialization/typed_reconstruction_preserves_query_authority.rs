@@ -81,14 +81,15 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         .clone();
     let retained = read(request, &vertices[0].body_key);
     successor::require_stale_source_denial(application, scope, branch, stale_source);
-    match application.with_host_advancement(|host_phase| application
-        .on_branch(branch)
-        .select(&host_phase)
-        .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            scope,
-            wrong_source,
-        )).expect("installed host call opens")
+    let selected = application
+        .with_host_advancement(|phase| {
+            application
+                .on_branch(branch)
+                .select(&phase)
+                .expect("the Query-issued output occurrence remains selectable")
+        })
+        .expect("installed host call opens");
+    match selected.suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(scope, wrong_source)
     {
         Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionFailure::Qualification(
             worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
@@ -104,11 +105,15 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
             )
         })
         .expect("installed host call opens");
-    let recovery = match application.with_host_advancement(|host_phase| application
-        .on_branch(branch)
-        .select(&host_phase)
-        .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(scope, source)).expect("installed host call opens")
+    let selected = application
+        .with_host_advancement(|phase| {
+            application
+                .on_branch(branch)
+                .select(&phase)
+                .expect("the Query-issued output occurrence remains selectable")
+        })
+        .expect("installed host call opens");
+    let recovery = match selected.suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(scope, source)
     {
         Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(recovery)) => recovery,
         Err(failure) => panic!(
@@ -119,10 +124,13 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     };
     assert_eq!(recovery.product_branch(), branch);
     assert_eq!(read(request, &vertices[0].body_key), retained);
-    let recovery = match foreign.with_host_advancement(|phase| foreign
-        .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            &phase.execution_request_for(foreign.product_runtime()).expect("matching installed phase"), recovery, scope,
-        )).expect("installed host call opens") {
+    let host = worth_execution::SerialRequest::from_policy(
+        &crate::application_invariant_acceptance::resources::EXECUTION_POLICY,
+        scope.cancellation().execution_token(),
+        scope.deadline(),
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let recovery = match execution.run(worth_execution::ExecutionWorkCeiling::new(crate::application_invariant_acceptance::resources::EXECUTION_POLICY.budget().work_ceiling()), |_| foreign.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(&execution, recovery, scope)).expect("funded recovery request opens").0 {
         Ok(_) => panic!("a foreign Query runtime must not settle suspension custody"),
         Err(failure) => {
             assert_eq!(
@@ -132,10 +140,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
             failure.into_recovery()
         }
     };
-    let suspended = application.with_host_advancement(|phase| application
-        .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            &phase.execution_request_for(application.product_runtime()).expect("matching installed phase"), recovery, scope,
-        )).expect("installed host call opens")
+    let suspended = execution.run(worth_execution::ExecutionWorkCeiling::new(crate::application_invariant_acceptance::resources::EXECUTION_POLICY.budget().work_ceiling()), |_| application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(&execution, recovery, scope)).expect("funded recovery request opens").0
         .unwrap_or_else(|failure| {
             panic!(
                 "Query must adopt the settled suspension into World: {:?}",
@@ -179,17 +184,17 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         _ => panic!("the injected owner failure must retain opaque restoration recovery"),
     };
     assert_eq!(recovery.product_branch(), branch);
-    let recovery = match foreign
-        .with_host_advancement(|phase| {
-            foreign.continue_generated_output_restoration_recovery(
-                &phase
-                    .execution_request_for(foreign.product_runtime())
-                    .expect("matching installed phase"),
-                recovery,
-                scope,
-            )
-        })
-        .expect("installed host call opens")
+    let recovery = match execution
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(
+                crate::application_invariant_acceptance::resources::EXECUTION_POLICY
+                    .budget()
+                    .work_ceiling(),
+            ),
+            |_| foreign.continue_generated_output_restoration_recovery(&execution, recovery, scope),
+        )
+        .expect("funded recovery request opens")
+        .0
     {
         Ok(_) => panic!("a foreign Query runtime must not settle restoration custody"),
         Err(failure) => {
@@ -200,17 +205,20 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
             failure.into_recovery()
         }
     };
-    application
-        .with_host_advancement(|phase| {
-            application.continue_generated_output_restoration_recovery(
-                &phase
-                    .execution_request_for(application.product_runtime())
-                    .expect("matching installed phase"),
-                recovery,
-                scope,
-            )
-        })
-        .expect("installed host call opens")
+    execution
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(
+                crate::application_invariant_acceptance::resources::EXECUTION_POLICY
+                    .budget()
+                    .work_ceiling(),
+            ),
+            |_| {
+                application
+                    .continue_generated_output_restoration_recovery(&execution, recovery, scope)
+            },
+        )
+        .expect("funded recovery request opens")
+        .0
         .unwrap_or_else(|failure| {
             panic!(
                 "Query must adopt the settled restoration into World: {:?}",
@@ -250,4 +258,37 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         "worth.query.certification.planar-final-output-producer.v2"
     );
     retained::preserved_outputs_remain_read_only(application, request, scope, retained_source);
+}
+
+#[cfg(test)]
+mod journey_test {
+    use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+    #[test]
+    fn generated_reconstruction_journey_preserves_query_authority() {
+        std::thread::Builder::new()
+            .stack_size(8 * 1024 * 1024)
+            .spawn(|| {
+                use super::super::super::{authentication, installation};
+                let schema = crate::installed_schema();
+                let world = installation::install(&schema);
+                let foreign = installation::install(&schema);
+                let scope = authentication::request_scope();
+                let adapter = authentication::admit(world.application.installed_schema());
+                let principal = authentication::block_on(adapter.authenticate(
+                    authentication::LocalCredential::issued_for_model_owner(),
+                    &scope,
+                ))
+                .unwrap();
+                let request = world.application.request(&principal, &scope);
+                super::typed_reconstruction_preserves_query_authority(
+                    &world.application,
+                    &foreign.application,
+                    &request,
+                    &scope,
+                );
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    }
 }
