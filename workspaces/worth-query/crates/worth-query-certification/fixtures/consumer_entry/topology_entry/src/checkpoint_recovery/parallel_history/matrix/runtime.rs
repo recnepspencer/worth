@@ -321,11 +321,13 @@ pub fn run(cell: cases::Cell) -> Observed {
         "every dispatched member computes, including the discarded failed-wave suffix"
     );
     let overlap = !expected.witnesses.is_empty();
-    assert_eq!(
-        record.report.charged_span() < record.report.charged_work(),
-        expected.span < expected.work,
-        "independent members have critical-path span, never a sum of member spans"
-    );
+    // Native owners can also contain parallel work, even in a serial wave.
+    if expected.span < expected.work {
+        assert!(
+            record.report.charged_span() < record.report.charged_work(),
+            "independent members have critical-path span, never a sum of member spans"
+        );
+    }
     if cell.workers > 1 && overlap {
         assert!(
             state.peak >= 2,
