@@ -90,10 +90,17 @@ where
         let checked_changed = self.check_changed(changed, editions)?;
         let tree_bound =
             match &self.snapshot {
-                None => ReductionTree::<C, F>::checked_build_memory_bound(
-                    self.identities.as_slice().len(),
-                    self.max_reduction_value_bytes,
-                )
+                None => if lease.is_some() {
+                    ReductionTree::<C, F>::checked_build_memory_bound(
+                        self.identities.as_slice().len(),
+                        self.max_reduction_value_bytes,
+                    )
+                } else {
+                    ReductionTree::<C, F>::checked_serial_build_memory_bound(
+                        self.identities.as_slice().len(),
+                        self.max_reduction_value_bytes,
+                    )
+                }
                 .ok_or(ReductionEditMemoryBoundError::Overflow),
                 Some(snapshot) => checked_changed.map().identities().iter().try_fold(
                     self.max_reduction_value_bytes,

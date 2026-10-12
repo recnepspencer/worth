@@ -13,6 +13,7 @@ use super::{
 pub(crate) enum FrontierCharge {
     Node,
     CompletedNode,
+    PrefixJoin,
     TaskUnit,
 }
 
@@ -84,6 +85,7 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
         // A started canonical task implies its preceding DFS entries were
         // reached. These visits belong to the already-performed prefix, not
         // to new owner-side joins after the tasks.
+        let joins_before_stop = failed.as_ref().is_some_and(|(_, _, work)| *work != 0);
         let first = frontier.tasks.first();
         let entered_prefix = first.is_some_and(|spec| {
             built
@@ -146,7 +148,13 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
                         .max(right.as_ref().map_or(0, |child| child.metrics.charged_span));
                     let (partition, value) = shape.node_value(spec);
                     let mut engine = Engine::new(&identity, &combine, max_value_bytes, || {
-                        charge(FrontierCharge::Node)
+                        // A started later task fixes the canonical stop position.
+                        // Its interruption cannot overtake earlier deferred joins.
+                        charge(if joins_before_stop {
+                            FrontierCharge::PrefixJoin
+                        } else {
+                            FrontierCharge::Node
+                        })
                     });
                     let root = (|| {
                         engine.visit()?;

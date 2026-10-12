@@ -166,10 +166,12 @@ where
                 max_value_bytes,
                 |charge| match charge {
                     FrontierCharge::Node => context.checkpoint_frontier(1),
-                    FrontierCharge::CompletedNode | FrontierCharge::TaskUnit => {
-                        // These units belong to the completed canonical prefix. This
-                        // transfers its settled prefix; it authorizes no new work
-                        // and preserves the request's interruption latch.
+                    FrontierCharge::CompletedNode
+                    | FrontierCharge::PrefixJoin
+                    | FrontierCharge::TaskUnit => {
+                        // Charge the canonical prefix, including joins before a known
+                        // stopped task. The stop keeps its canonical position;
+                        // refused charges still stop before the join runs.
                         context.account_completed_work(1)?;
                         if matches!(charge, FrontierCharge::TaskUnit) {
                             accepted_task_work = accepted_task_work

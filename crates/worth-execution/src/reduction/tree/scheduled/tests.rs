@@ -137,14 +137,14 @@ fn a_cancelled_canonical_prefix_agrees_at_every_frontier_width() {
     let mut oracle = None;
     // Canonical task order constructs the interruption; frontier widths still
     // select different Node/Task event streams. Scheduling is not the oracle.
-    for backing in [0, 1, 2, 3] {
+    for backing in [0, 1, 2, 3, 4, 5] {
         let cancellation = crate::CancellationSource::new();
-        let mut policy = request(if backing == 3 { 2 } else { 1 }, 2_000, 100);
+        let mut policy = request(if backing >= 3 { backing - 1 } else { 1 }, 2_000, 100);
         policy.cancellation = cancellation.token();
         let lease = match backing {
             0 => None,
             1 => Some(crate::ExecutionResourceLease::serial(policy).unwrap()),
-            2 | 3 => Some(authority().request_lease(policy).unwrap()),
+            2..=5 => Some(authority().request_lease(policy).unwrap()),
             _ => unreachable!(),
         };
         let mut measured = None;
@@ -220,14 +220,14 @@ fn a_stop_after_the_last_combine_waits_for_the_next_checkpoint_at_every_width() 
     let mut oracle = None;
     // Canonical task order constructs the interruption; frontier widths still
     // select different Node/Task event streams. Scheduling is not the oracle.
-    for backing in [0, 1, 2, 3] {
+    for backing in [0, 1, 2, 3, 4, 5] {
         let cancellation = crate::CancellationSource::new();
-        let mut policy = request(if backing == 3 { 2 } else { 1 }, 2_000, 100);
+        let mut policy = request(if backing >= 3 { backing - 1 } else { 1 }, 2_000, 100);
         policy.cancellation = cancellation.token();
         let lease = match backing {
             0 => None,
             1 => Some(crate::ExecutionResourceLease::serial(policy).unwrap()),
-            2 | 3 => Some(authority().request_lease(policy).unwrap()),
+            2..=5 => Some(authority().request_lease(policy).unwrap()),
             _ => unreachable!(),
         };
         let mut measured = None;
