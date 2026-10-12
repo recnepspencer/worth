@@ -120,7 +120,13 @@ fn checkpoint_and_completed_counter_overflow_remain_request_owned() {
                 outer.stop,
                 Some(BatchStop::Failure {
                     identity: PartitionIdentity::new(1),
-                    cause: KernelFailure::Stop(KernelStop::NestedStopped),
+                    // A local refused increment is sticky, while an inherited
+                    // child request stop is reported by the nested latch.
+                    cause: KernelFailure::Stop(if completed {
+                        KernelStop::WorkCounterOverflow
+                    } else {
+                        KernelStop::NestedStopped
+                    }),
                 })
             );
             assert_eq!(outer.report.charged_work(), u64::MAX);
