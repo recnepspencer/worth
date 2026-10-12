@@ -28,6 +28,8 @@ use worth_query_host::facade::{
 // Ample for bootstrap admission; the ledger subject does not depend on this absolute size.
 const AUTHORITY_BYTES: usize = 4 * 1024;
 const RETAINED_BYTES: usize = 96;
+// This proof constrains memory; ordinary principal/product reads also need work.
+const ORDINARY_READ_WORK: u64 = 1024;
 
 fn install(
     authority: Arc<ExecutionAuthority>,
@@ -72,7 +74,11 @@ fn request() -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), AUTHORITY_BYTES as u64, 1),
+            ExecutionBudget::new(
+                NonZeroUsize::new(1).unwrap(),
+                AUTHORITY_BYTES as u64,
+                ORDINARY_READ_WORK,
+            ),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
