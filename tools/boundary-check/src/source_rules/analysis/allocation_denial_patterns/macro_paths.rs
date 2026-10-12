@@ -74,12 +74,47 @@ fn finish(candidate: &mut Vec<TokenTree>, path: &mut impl FnMut(Fragment), opera
     // Each candidate is disjoint, so parsing cannot repeatedly reread prefixes.
     if candidate.iter().any(colon) {
         *operations += candidate.len();
-        let tokens = std::mem::take(candidate).into_iter().collect();
-        if let Ok(candidate) = syn::parse2::<syn::TypePath>(tokens) {
-            path(Fragment::Path(candidate));
+        let tokens = std::mem::take(candidate);
+        match syn::parse2::<syn::TypePath>(tokens.iter().cloned().collect()) {
+            Ok(candidate) => path(Fragment::Path(candidate)),
+            Err(_) => recover_unclosed_angles(&tokens, path, operations),
         }
     } else {
         candidate.clear();
+    }
+}
+
+// An unmatched comparison angle cannot own the following DSL entries. Split
+// only at unmatched opens: each recovered piece is balanced and scanned once.
+fn recover_unclosed_angles(
+    tokens: &[TokenTree],
+    path: &mut impl FnMut(Fragment),
+    operations: &mut usize,
+) {
+    let mut unmatched = Vec::new();
+    for (index, token) in tokens.iter().enumerate() {
+        *operations += 1;
+        match token {
+            TokenTree::Punct(p) if p.as_char() == '<' => unmatched.push(index),
+            TokenTree::Punct(p) if p.as_char() == '>' => {
+                unmatched.pop();
+            }
+            _ => {}
+        }
+    }
+    if unmatched.is_empty() {
+        return;
+    }
+    let mut start = 0;
+    for end in unmatched.into_iter().chain(std::iter::once(tokens.len())) {
+        *operations += scan(&tokens[start..end], |fragment| {
+            // The first pass already owns groups and literal raw members.
+            // Visiting their descendants again could multiply nested work.
+            if matches!(fragment, Fragment::Path(_)) {
+                path(fragment);
+            }
+        });
+        start = end + 1;
     }
 }
 
@@ -102,24 +137,29 @@ mod tests {
 
     #[test]
     fn doubling_a_macro_body_doubles_token_work() {
-        let fragment = "Family::<ExecutionAllocationDenialKind>::Cancelled => value;";
-        let count = |n| {
-            let tokens = fragment
-                .repeat(n)
-                .parse::<proc_macro2::TokenStream>()
-                .unwrap();
-            let tokens: Vec<_> = tokens.into_iter().collect();
-            let mut reads = 0;
-            let work = scan(&tokens, |fragment| {
-                if matches!(fragment, super::Fragment::Path(_)) {
-                    reads += 1;
-                }
-            });
-            (work, reads)
-        };
-        let small = count(16);
-        let large = count(32);
-        assert_eq!(large.0, 2 * small.0);
-        assert_eq!((small.1, large.1), (16, 32));
+        for fragment in [
+            "Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
+            "a < b, Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
+            "a < b < c, Family::<ExecutionAllocationDenialKind>::Cancelled: value;",
+        ] {
+            let count = |n| {
+                let tokens = fragment
+                    .repeat(n)
+                    .parse::<proc_macro2::TokenStream>()
+                    .unwrap();
+                let tokens: Vec<_> = tokens.into_iter().collect();
+                let mut reads = 0;
+                let work = scan(&tokens, |fragment| {
+                    if matches!(fragment, super::Fragment::Path(_)) {
+                        reads += 1;
+                    }
+                });
+                (work, reads)
+            };
+            let small = count(16);
+            let large = count(32);
+            assert_eq!(large.0, 2 * small.0);
+            assert_eq!((small.1, large.1), (16, 32));
+        }
     }
 }

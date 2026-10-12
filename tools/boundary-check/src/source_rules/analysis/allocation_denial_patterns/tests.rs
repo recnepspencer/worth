@@ -311,3 +311,13 @@ fn a_label_before_a_leading_path_in_a_macro_cannot_hide_a_raw_kind_path() {
         1,
     );
 }
+
+#[test]
+fn an_unclosed_comparison_cannot_hide_a_generic_alias_read() {
+    for source in [
+        "type Id<T> = T; fn f() { tokens!(a < b, Id::<ExecutionAllocationDenialKind>::Cancelled => value); }",
+        "type Id<T> = T; fn f() { tokens!(a < b, Id::<ExecutionAllocationDenialKind>::Cancelled: value); }",
+    ] {
+        assert_raw_kind_diagnostics(source, 1);
+    }
+}
