@@ -255,8 +255,9 @@ pub(super) fn build_identity_indexes(
     graph
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
-            let build = runtime.index_authority().build_for_commit(
+            let build = build_requested_indexes(
                 execution,
+                runtime,
                 DerivedIndexBuildRequest {
                     source_commit_id,
                     branch_id: primary_relational_branch_id(),
@@ -266,6 +267,25 @@ pub(super) fn build_identity_indexes(
             identity_indexes_built(build, index_ids.len())
         })
 }
+
+// The bootstrap caller's request owns this work, just as it owns its commit.
+fn build_requested_indexes(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    request: DerivedIndexBuildRequest,
+) -> DerivedIndexBuildOutcome {
+    match execution.allocation_policy() {
+        worth_execution::ExecutionAllocationPolicy::Execution(lease) => runtime
+            .index_authority()
+            .build_for_commit_with_lease(execution, request, lease),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation => runtime
+            .index_authority()
+            .build_for_commit(execution, request),
+    }
+}
+
+#[cfg(test)]
+mod index_request_tests;
 
 fn identity_indexes_built(
     build: DerivedIndexBuildOutcome,
