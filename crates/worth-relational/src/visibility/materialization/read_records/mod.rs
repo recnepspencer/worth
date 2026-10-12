@@ -24,6 +24,7 @@ pub use reader::{
     FrontierAdjacencyTruthReadLimitExceeded, FrontierFieldEqualityTruthReadLimitExceeded,
     PositionedRelationalSnapshot, QueryLeasedReadOutcome, QueryReadExecutionStop,
     QueryReadPacketDenial, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
+    RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
     RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial, VisibilityReadContext,
 };
 
