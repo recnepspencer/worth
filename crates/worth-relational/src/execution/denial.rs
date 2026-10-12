@@ -164,3 +164,13 @@ mod keyless_admission;
 mod leased_causes;
 #[cfg(test)]
 mod tests;
+
+impl From<worth_execution::WorkCeilingDenial> for Cause {
+    fn from(stop: worth_execution::WorkCeilingDenial) -> Self {
+        match stop {
+            worth_execution::WorkCeilingDenial::Admission(denial) => lease_denial(denial),
+            worth_execution::WorkCeilingDenial::Stopped(stop) => kernel_stop(stop),
+            worth_execution::WorkCeilingDenial::Panicked => Cause::WorkerFailed,
+        }
+    }
+}

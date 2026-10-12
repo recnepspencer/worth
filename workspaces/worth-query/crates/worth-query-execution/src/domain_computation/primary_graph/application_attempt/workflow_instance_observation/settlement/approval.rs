@@ -103,7 +103,15 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
             "workflow approval principal evidence is nonportable",
         ));
     }
-    if !principal.remains_current_in(execution, runtime, snapshot, graph_layout) {
+    if !principal
+        .remains_current_in(execution, runtime, snapshot, graph_layout)
+        .map_err(|stop| {
+            WorthQueryApplicationAttemptDenial::principal_read_stopped(
+                stop,
+                "workflow approval principal",
+            )
+        })?
+    {
         return Err(WorthQueryApplicationAttemptDenial::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::WorkflowApprovalPrincipalStale,
             "workflow approval principal evidence is stale",

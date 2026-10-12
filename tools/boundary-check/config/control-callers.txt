@@ -292,3 +292,5 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 
 # Unit-only custody of the Bridge lock-observation guard for the pinned-read proof.
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner.rs
+
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/fact/consult_observation.rs

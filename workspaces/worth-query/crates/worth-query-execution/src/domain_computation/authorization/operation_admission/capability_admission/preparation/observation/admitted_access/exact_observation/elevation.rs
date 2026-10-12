@@ -123,7 +123,7 @@ where
             self.relational,
             self.snapshot,
             self.runtime.authorization.bridge(),
-        ) {
+        ).map_err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::relational_read_stop)? {
             return Err(stale(installed.contract().name()));
         }
         let observation =

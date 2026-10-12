@@ -31,6 +31,7 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
 
     /// Inspects interruption without charging work or opening an execution scope.
     pub fn check_live(self) -> Result<(), crate::MapKernelStop> {
+        crate::backend::record_request_consult_for_test();
         let (cancelled, expired) = match self.form {
             RequestBacking::Leased(lease) => {
                 let status = lease.status();
@@ -102,6 +103,7 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
     /// Read cancellation, deadline and exhausted active work without charging
     /// work, allocating, opening a scope or containing a panic.
     pub fn consult(self) -> Result<(), WorkCeilingDenial> {
+        crate::backend::record_request_consult_for_test();
         use crate::backend::KernelStop;
         let backing = match self.form {
             RequestBacking::Leased(lease) => lease.status().stop(),

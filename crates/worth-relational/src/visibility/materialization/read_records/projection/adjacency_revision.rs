@@ -20,6 +20,7 @@ pub struct AdjacencyStructuralRevision {
 /// distinct so a caller can tell an unpaid read from a missing anchor.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AdjacencyStructuralRevisionDenial {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     /// The caller's maximum cannot pay the one owner-index lookup. Nothing
     /// was read.
     WorkBudgetExceeded,
@@ -51,6 +52,9 @@ impl VisibilityProjectionView {
         if maximum_work < 1 {
             return Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded);
         }
+        execution
+            .consult()
+            .map_err(|stop| AdjacencyStructuralRevisionDenial::Execution(stop.into()))?;
         if self
             .entity_record_with_projection_scope(
                 execution,

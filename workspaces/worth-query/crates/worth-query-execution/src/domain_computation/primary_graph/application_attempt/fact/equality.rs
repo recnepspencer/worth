@@ -44,33 +44,18 @@ impl WorthQueryApplicationObservedFact {
                     runtime.read_truth().project_snapshot(snapshot, execution)
                         .and_then(|view| view.entity_field_revision(execution, *entity_id, locator)) == Some(expected)
                 }),
-            Self::SourceAdjacencyRevision {
-                relation_kind,
-                anchor,
-                direction,
-                native_revision,
-                comparison_work_limit,
-                ..
-            } => runtime
-                .read_truth()
-                .project_snapshot(snapshot, execution)
-                .is_some_and(|view| {
-                    match view.bounded_adjacency_structural_revision(execution,
-                        *anchor,
-                        *relation_kind,
-                        *direction,
-                        *comparison_work_limit,
-                    ) {
+            Self::SourceAdjacencyRevision { relation_kind, anchor, direction, native_revision, comparison_work_limit, .. } => {
+                match runtime.read_truth().project_snapshot(snapshot, execution) {
+                    None => false,
+                    Some(view) => match view.bounded_adjacency_structural_revision(execution, *anchor, *relation_kind, *direction, *comparison_work_limit) {
                         Ok(current) => current.revision() == *native_revision,
-                        // Equality needs an answer; an unpaid or unreadable
-                        // revision is not equal.
-                        Err(
-                            worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
+                        Err(worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::Execution(cause)) => return Err(SelfDenial::relational_read_stopped(cause, "structural revision comparison")),
+                        Err(worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
                             | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::AnchorUnavailable
-                            | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::BasisUnavailable,
-                        ) => false,
-                    }
-                }),
+                            | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::BasisUnavailable) => false,
+                    },
+                }
+            },
             Self::Entity {
                 entity_id, kind, ..
             } => runtime

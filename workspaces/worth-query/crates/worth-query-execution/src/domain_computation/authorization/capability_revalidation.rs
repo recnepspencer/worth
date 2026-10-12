@@ -237,7 +237,7 @@ where
         }
         if !authorization
             .principal()
-            .remains_current_in(execution, runtime, snapshot)
+            .remains_current_in(execution, runtime, snapshot).map_err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::principal_read_stop)?
         {
             return Err(denial(
                 WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
@@ -249,7 +249,7 @@ where
             runtime,
             snapshot,
             self.authorization.bridge(),
-        ) {
+        ).map_err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::relational_read_stop)? {
             return Err(denial(
                 WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
                 refresh.installed.contract().name(),

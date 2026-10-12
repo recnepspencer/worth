@@ -278,6 +278,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
     /// Kernel checkpoint enforces the local remaining ceiling before work is
     /// done, while canonical settlement determines the accepted prefix.
     pub fn checkpoint(&mut self, units: u64) -> Result<(), KernelStop> {
+        super::checkpoint_observation::record(units);
         let mut meter = self.meter.borrow_mut();
         if let Some(stop) = meter.checkpoint_stop {
             return Err(stop);

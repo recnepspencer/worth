@@ -71,7 +71,9 @@ fn exact_next_hop_anchor_retains_revocation_currentness() {
         delete_relation_on_branch(execution, &runtime, exact, BranchId("main".to_owned()));
 
     assert_eq!(
-        runtime.compare_authorization_observation(&admitted, revoked.snapshot.clone(), execution),
+        runtime
+            .compare_authorization_observation(&admitted, revoked.snapshot.clone(), execution)
+            .unwrap(),
         RelationalAuthorizationObservationFreshness::Stale,
     );
 }

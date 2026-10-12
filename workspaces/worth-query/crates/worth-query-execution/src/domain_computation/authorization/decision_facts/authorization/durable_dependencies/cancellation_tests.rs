@@ -23,14 +23,38 @@ impl WorthQueryAuthorizationDecisionFact {
             delegation: None,
             activation: None,
         };
-        assert_eq!(
-            retained.matches_with_retained_activation(execution, &observed, runtime, snapshot),
-            Ok(true)
-        );
-        source.cancel();
-        assert_eq!(
-            retained.matches_with_retained_activation(execution, &observed, runtime, snapshot),
-            Err(worth_execution::MapKernelStop::Cancelled)
-        );
+        use crate::domain_computation::primary_graph::application_attempt::consult_observation::{
+            Door, ReadConsultObservationForTest,
+        };
+        let count = {
+            let probe = ReadConsultObservationForTest::install_on_this_thread_for_test(
+                Door::Activation,
+                None,
+            );
+            assert_eq!(
+                retained.matches_with_retained_activation(execution, &observed, runtime, snapshot),
+                Ok(true)
+            );
+            probe.consults()
+        };
+        assert!(count > 1);
+        println!("retained activation door: {count} consults");
+        for k in 1..=count {
+            let cancel = worth_execution::CancellationSource::new();
+            let serial = worth_execution::SerialRequest::from_memory(
+                worth_execution::SerialMemoryBudget::new(64 << 20),
+                cancel.token(),
+                None,
+            );
+            let execution = worth_execution::ExecutionRequest::serial(&serial);
+            let probe = ReadConsultObservationForTest::install_callback_on_this_thread_for_test(
+                Door::Activation,
+                Some(k),
+                move || cancel.cancel(),
+            );
+            assert_eq!(retained.matches_with_retained_activation(&execution, &observed, runtime, snapshot), Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled));
+            assert!(probe.consults() >= k);
+        }
+        let _ = source;
     }
 }

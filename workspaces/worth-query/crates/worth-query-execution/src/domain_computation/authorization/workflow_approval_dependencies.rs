@@ -89,8 +89,10 @@ impl WorthQueryWorkflowApprovalDependencies {
         current: &super::WorthQueryAuthorizationDecisionFact,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-    ) -> Result<bool, worth_execution::MapKernelStop> {
-        execution.check_live()?;
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        execution.consult().map_err(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::from,
+        )?;
         let Some(expected) = &self.support else {
             return Ok(false);
         };

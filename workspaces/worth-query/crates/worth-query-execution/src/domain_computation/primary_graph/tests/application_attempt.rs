@@ -361,3 +361,6 @@ mod checked_invariant_hooks;
 
 #[path = "application_attempt/freshness_stops.rs"]
 mod freshness_stops;
+
+#[path = "application_attempt/equality_stop_oracle.rs"]
+mod equality_stop_oracle;

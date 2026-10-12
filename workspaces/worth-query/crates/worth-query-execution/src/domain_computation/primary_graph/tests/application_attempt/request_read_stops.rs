@@ -11,12 +11,6 @@ type Admission = WorthQueryAdmittedApplicationOperation<
     Account,
 >;
 #[test]
-fn cancelled_principal_and_authorization_fact_dispatch_keeps_the_stop() {
-    with_admitted_facts(|admission, runtime, execution, snapshot, source| {
-        admission.assert_cancelled_fact_dispatch(runtime, execution, snapshot, source)
-    });
-}
-#[test]
 fn cancelled_retained_activation_native_read_keeps_the_stop() {
     with_admitted_facts(|admission, runtime, execution, snapshot, source| {
         admission.assert_cancelled_retained_activation_read(runtime, execution, snapshot, source)
@@ -31,6 +25,8 @@ fn with_admitted_facts(
         &CancellationSource,
     ),
 ) {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let request = live_scope();
     world

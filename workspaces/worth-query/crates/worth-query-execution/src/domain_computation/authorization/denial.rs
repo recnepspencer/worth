@@ -36,6 +36,7 @@ pub enum WorthQueryOperationAuthorizationDenialKind {
     CanonicalWorkDenied,
     /// A structural failure in the caller's execution retains its native cause.
     RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The trusted clock needed for the decision was unavailable.
     TrustedTimeUnavailable,
     /// The operation input could not be evaluated for authorization.
@@ -107,7 +108,9 @@ pub enum WorthQueryOperationAuthorizationDenialKind {
     /// The runtime ran out of admission identities.
     AdmissionIdentityExhausted,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain the authorization basis.
@@ -336,4 +339,46 @@ pub(super) fn product_security_basis_denial(
         WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial),
         subject,
     )
+}
+
+impl WorthQueryOperationAuthorizationDenialKind {
+    pub(in crate::domain_computation) fn relational_read_stop(
+        cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    ) -> Self {
+        use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+        match cause {
+            Cause::Cancelled => Self::Cancelled,
+            Cause::DeadlineElapsed => Self::DeadlineExceeded,
+            cause => Self::RelationalExecution(cause),
+        }
+    }
+    pub(in crate::domain_computation) fn principal_read_stop(
+        stop: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
+    ) -> Self {
+        use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Kind;
+        match stop.kind() {
+            Kind::Cancelled => Self::Cancelled,
+            Kind::DeadlineExceeded => Self::DeadlineExceeded,
+            Kind::ExecutionRequest(kind) => Self::ExecutionRequest(kind),
+            _ => Self::StalePrincipal,
+        }
+    }
+}
+impl WorthQueryOperationAuthorizationDenial {
+    pub(in crate::domain_computation) fn relational_read_stop(
+        cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    ) -> Self {
+        Self::new(
+            WorthQueryOperationAuthorizationDenialKind::relational_read_stop(cause),
+            "authorization currentness",
+        )
+    }
+    pub(in crate::domain_computation) fn principal_read_stop(
+        stop: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
+    ) -> Self {
+        Self::new(
+            WorthQueryOperationAuthorizationDenialKind::principal_read_stop(stop),
+            "principal currentness",
+        )
+    }
 }

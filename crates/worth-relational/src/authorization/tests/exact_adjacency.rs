@@ -37,7 +37,8 @@ fn additive_foreign_edge_denies_exact_adjacency_and_stales_prior_observation() {
     assert_eq!(
         fixture
             .runtime
-            .compare_authorization_observation(&admitted, current_snapshot, execution),
+            .compare_authorization_observation(&admitted, current_snapshot, execution)
+            .unwrap(),
         RelationalAuthorizationObservationFreshness::Stale
     );
 }

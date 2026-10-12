@@ -43,3 +43,10 @@ pub(crate) use scope::{
 
 pub(crate) use meter::active_serial_memory;
 pub(crate) use meter::active_stop;
+
+mod checkpoint_observation;
+pub use checkpoint_observation::ExecutionCheckpointObservationForTest;
+
+pub(crate) fn record_request_consult_for_test() {
+    checkpoint_observation::record(1);
+}

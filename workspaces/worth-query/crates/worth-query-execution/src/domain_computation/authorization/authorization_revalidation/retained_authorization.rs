@@ -129,7 +129,7 @@ where
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         if !capability
             .principal()
-            .remains_current_in(execution, runtime, snapshot)
+            .remains_current_in(execution, runtime, snapshot).map_err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::principal_read_stop)?
         {
             return Err(stale_principal());
         }
@@ -138,7 +138,7 @@ where
             runtime,
             snapshot,
             self.authorization.bridge(),
-        ) {
+        ).map_err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::relational_read_stop)? {
             return Err(stale_authorization());
         }
         WorthQueryAuthorizationRevalidationObservation::from_axes(RevalidationObservationAxes {

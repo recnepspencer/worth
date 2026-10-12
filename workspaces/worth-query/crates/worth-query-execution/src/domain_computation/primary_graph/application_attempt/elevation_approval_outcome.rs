@@ -175,7 +175,7 @@ impl WorthQueryApprovedElevation {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
-    ) -> bool {
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         self.binding
             .requested()
             .supporting()

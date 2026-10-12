@@ -96,7 +96,7 @@ where
                 runtime,
                 snapshot,
                 self.authorization.bridge(),
-            )
+            ).map_err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::relational_read_stop)?
         {
             return Err(stale_authorization());
         }

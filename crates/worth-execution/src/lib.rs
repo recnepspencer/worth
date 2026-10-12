@@ -49,3 +49,6 @@ pub use reduction::{
     ReductionTree,
 };
 pub use report::ChargedBytes;
+
+#[doc(hidden)]
+pub use backend::ExecutionCheckpointObservationForTest;

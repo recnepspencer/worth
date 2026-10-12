@@ -65,7 +65,8 @@ fn exact_authorization_observation_stales_after_membership_revocation() {
     assert_eq!(
         fixture
             .runtime
-            .compare_authorization_observation(&admitted, unchanged, execution),
+            .compare_authorization_observation(&admitted, unchanged, execution)
+            .unwrap(),
         RelationalAuthorizationObservationFreshness::Fresh
     );
 
@@ -76,11 +77,10 @@ fn exact_authorization_observation_stales_after_membership_revocation() {
         BranchId("main".to_string()),
     );
     assert_eq!(
-        fixture.runtime.compare_authorization_observation(
-            &admitted,
-            revoked.snapshot.clone(),
-            execution
-        ),
+        fixture
+            .runtime
+            .compare_authorization_observation(&admitted, revoked.snapshot.clone(), execution)
+            .unwrap(),
         RelationalAuthorizationObservationFreshness::Stale
     );
 }
@@ -112,7 +112,8 @@ fn unrelated_relation_kind_does_not_widen_authorization_causality() {
     assert_eq!(
         fixture
             .runtime
-            .compare_authorization_observation(&admitted, current, execution),
+            .compare_authorization_observation(&admitted, current, execution)
+            .unwrap(),
         RelationalAuthorizationObservationFreshness::Fresh
     );
 }
@@ -144,7 +145,8 @@ fn newly_matching_parallel_path_stales_the_exact_observation() {
     assert_eq!(
         fixture
             .runtime
-            .compare_authorization_observation(&admitted, current, execution),
+            .compare_authorization_observation(&admitted, current, execution)
+            .unwrap(),
         RelationalAuthorizationObservationFreshness::Stale
     );
 }

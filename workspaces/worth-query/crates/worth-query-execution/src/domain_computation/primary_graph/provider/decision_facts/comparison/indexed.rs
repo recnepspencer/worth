@@ -77,7 +77,13 @@ impl PreparedSelections {
                             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed admission"),
                         ));
                     }
-                    _ => return Ok(false),
+                    worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::WrongIndexKind
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::StorageParityMismatch => return Ok(false),
                 },
             };
             self.selectors.insert(key.clone(), prepared);
@@ -98,9 +104,16 @@ impl PreparedSelections {
             Err(BoundedEntityFieldLookupAdmissionStop::Admission(denial)) => Err(denial),
             Err(BoundedEntityFieldLookupAdmissionStop::Lookup(denial)) => match denial.kind() {
                 worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause) => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed comparison"))),
-                _ => Ok(false),
+                worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::WrongIndexKind
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+ | worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::StorageParityMismatch => Ok(false),
             },
-            Err(_) => Ok(false),
+            Err(BoundedEntityFieldLookupAdmissionStop::AccountingOverflow) => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(worth_relational::facade::transactions::RelationalExecutionDenialCause::MemoryOverflow, "prepared indexed quote"))),
+            Err(BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired) => Ok(false),
         }
     }
 }

@@ -219,6 +219,7 @@ pub(super) fn capture_relation(
 
 pub(super) const fn adjacency_denial(denial: AdjacencyStructuralRevisionDenial) -> Denial {
     match denial {
+        AdjacencyStructuralRevisionDenial::Execution(cause) => Denial::Execution(cause),
         AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => Denial::DependencyBudgetExceeded,
         AdjacencyStructuralRevisionDenial::AnchorUnavailable => Denial::DependencyUnavailable,
         AdjacencyStructuralRevisionDenial::BasisUnavailable => Denial::SnapshotUnavailable,

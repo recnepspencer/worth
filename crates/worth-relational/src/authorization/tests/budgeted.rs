@@ -113,7 +113,8 @@ fn budgeted_currentness_preserves_legacy_result_and_carried_refusal() {
     assert_eq!(
         fixture
             .runtime
-            .compare_authorization_observation(&evidence, snapshot.clone(), execution),
+            .compare_authorization_observation(&evidence, snapshot.clone(), execution)
+            .unwrap(),
         RelationalAuthorizationObservationFreshness::Fresh
     );
     assert!(measured.work > 1 && measured.bytes > 0);
@@ -160,11 +161,10 @@ fn budgeted_currentness_preserves_legacy_result_and_carried_refusal() {
         Ok(RelationalAuthorizationObservationFreshness::Stale)
     );
     assert_eq!(
-        fixture.runtime.compare_authorization_observation(
-            &evidence,
-            revoked.snapshot.clone(),
-            execution
-        ),
+        fixture
+            .runtime
+            .compare_authorization_observation(&evidence, revoked.snapshot.clone(), execution)
+            .unwrap(),
         RelationalAuthorizationObservationFreshness::Stale
     );
 }

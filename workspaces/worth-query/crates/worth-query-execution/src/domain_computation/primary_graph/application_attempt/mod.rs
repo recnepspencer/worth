@@ -197,3 +197,6 @@ pub use workflow_transition_program::{
 };
 
 pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;
+
+#[cfg(test)]
+pub(in crate::domain_computation) use fact::consult_observation;

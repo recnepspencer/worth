@@ -82,6 +82,14 @@ impl WorthQueryPrincipalResolutionDenial {
         }
     }
 
+    pub(in crate::domain_computation) fn is_request_stop(&self) -> bool {
+        matches!(
+            self.kind,
+            WorthQueryPrincipalResolutionDenialKind::Cancelled
+                | WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded
+                | WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(_)
+        )
+    }
     pub const fn kind(&self) -> WorthQueryPrincipalResolutionDenialKind {
         self.kind
     }

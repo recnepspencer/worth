@@ -288,7 +288,6 @@ fn grant_lookup_denial_kind(
     refusal: worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind,
 ) -> WorthQueryOperationAuthorizationDenialKind {
     use worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind as Kind;
-    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
     use WorthQueryOperationAuthorizationDenialKind as Denial;
     match refusal {
         Kind::Execution(cause) => execution_denial_kind(cause),

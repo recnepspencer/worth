@@ -53,7 +53,7 @@ fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
                 "cancellation was raised inside the actual field read"
             );
         });
-    assert!(matches!(opened, Ok(()) | Err(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Interrupted(crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::Cancelled))));
+    assert_eq!(opened, Ok(()));
     let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome.unwrap() else {
         panic!("the read must stop before publication");
     };

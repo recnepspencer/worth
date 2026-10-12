@@ -212,3 +212,6 @@ impl WorthQueryApplicationObservedFact {
 
 #[cfg(test)]
 mod cancellation_tests;
+
+#[cfg(test)]
+pub(in crate::domain_computation) mod consult_observation;

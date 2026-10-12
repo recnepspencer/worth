@@ -151,7 +151,9 @@ fn strictly_greater_observation_stales_when_the_governing_field_reaches_equality
     let current = runtime.visibility_authority().snapshot();
 
     assert_eq!(
-        runtime.compare_authorization_observation(&admitted, current, execution),
+        runtime
+            .compare_authorization_observation(&admitted, current, execution)
+            .unwrap(),
         RelationalAuthorizationObservationFreshness::Stale
     );
     let denied = observe_predicate(

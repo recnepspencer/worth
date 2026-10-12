@@ -75,7 +75,7 @@ impl WorthQueryDelegationActivationDecisionFact {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
-    ) -> bool {
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         let _ = bridge;
         observation_is_current(execution, runtime, snapshot, &self.narrowing)
     }
@@ -85,7 +85,7 @@ impl WorthQueryDelegationActivationDecisionFact {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> bool {
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         observation_is_current(execution, runtime, snapshot, &self.narrowing)
     }
 }

@@ -68,8 +68,12 @@ impl WorthQueryDurableAuthorizationDependencies {
         observed: &Self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-    ) -> Result<bool, worth_execution::MapKernelStop> {
-        execution.check_live()?;
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        #[cfg(test)]
+        let _scope = crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(
+            crate::domain_computation::primary_graph::application_attempt::consult_observation::Door::Activation,
+        );
+
         if self.primary != observed.primary
             || self.delegation != observed.delegation
             || observed.activation.is_some()
@@ -83,9 +87,23 @@ impl WorthQueryDurableAuthorizationDependencies {
         else {
             return Ok(false);
         };
-        let observed = stamp.source_revisions_match(runtime, execution, snapshot);
-        execution.check_live()?;
-        Ok(observed.unwrap_or(false))
+        use worth_relational::facade::authorization::RelationalAuthorizationDependencyDenial as Denial;
+        match stamp.source_revisions_match(runtime, execution, snapshot) {
+            Ok(equal) => Ok(equal),
+            Err(Denial::Execution(cause)) => Err(cause),
+            Err(
+                Denial::ForeignRuntime
+                | Denial::SnapshotUnavailable
+                | Denial::InexactSnapshot
+                | Denial::IncompleteObservation
+                | Denial::DependencyUnavailable
+                | Denial::UnsupportedFieldLocator
+                | Denial::DependencyBudgetExceeded
+                | Denial::ByteBudgetExceeded
+                | Denial::MalformedWire
+                | Denial::UnsupportedVersion,
+            ) => Ok(false),
+        }
     }
 }
 

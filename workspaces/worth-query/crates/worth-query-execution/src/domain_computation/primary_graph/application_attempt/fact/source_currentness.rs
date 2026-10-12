@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Inva
 pub(in crate::domain_computation::primary_graph) enum WorthQuerySourceCurrentnessFailure {
     /// The fact's own recorded bound refuses the comparison.
     WorkBudgetExceeded,
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Unavailable,
 }
 
@@ -91,17 +92,18 @@ impl WorthQueryApplicationObservedFact {
                 u64::try_from(reserved_work - remaining)
                     .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
             )?;
-            check_request(execution)?;
             return match comparison {
                 Ok(equal) => Ok(Ok(FactMovement::from_equal(equal))),
                 Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
                     comparison_work_failure(most, reserved_work, admission).map(Err)
                 }
+                Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+                    Err(CompanionPreflightStop::Execution(cause))
+                }
                 Err(failure) => Ok(Err(failure)),
             };
         }
         let comparison = self.comparison(runtime, execution, snapshot, reserved_work);
-        check_request(execution)?;
         match comparison {
             Ok((equal, work)) => {
                 reserved.settle(
@@ -111,6 +113,9 @@ impl WorthQueryApplicationObservedFact {
             }
             Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
                 comparison_work_failure(most, reserved_work, admission).map(Err)
+            }
+            Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+                Err(CompanionPreflightStop::Execution(cause))
             }
             Err(failure) => Ok(Err(failure)),
         }

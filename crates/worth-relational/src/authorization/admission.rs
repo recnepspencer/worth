@@ -114,3 +114,13 @@ pub(super) fn legacy_stop(
         }
     }
 }
+
+pub(super) struct RequestObservation<'request, 'execution, 'authority>(
+    pub(super) &'request worth_execution::ExecutionRequest<'execution, 'authority>,
+);
+impl RelationalAuthorizationObservationAdmission for RequestObservation<'_, '_, '_> {
+    type Stop = crate::execution::RelationalExecutionDenialCause;
+    fn prepare(&mut self, _: u64, _: u64) -> Result<(), Self::Stop> {
+        self.0.consult().map_err(Into::into)
+    }
+}

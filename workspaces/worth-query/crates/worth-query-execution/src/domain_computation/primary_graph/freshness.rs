@@ -57,21 +57,28 @@ impl WorthQueryDurablePrincipalCurrentness {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
-    ) -> bool {
+    ) -> Result<bool, WorthQueryPrincipalResolutionDenial> {
+        #[cfg(test)]
+        let _scope = crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(
+            crate::domain_computation::primary_graph::application_attempt::consult_observation::Door::Approval,
+        );
+
         let Some(binding) = layout.principal_binding(&self.binding) else {
-            return false;
+            return Ok(false);
         };
-        let Ok(mapping) = observe_mapping(
+        let mapping = match observe_mapping(
             execution,
             runtime,
             snapshot,
             self.mapping,
             binding,
             &self.binding,
-        ) else {
-            return false;
+        ) {
+            Ok(value) => value,
+            Err(denial) if denial.is_request_stop() => return Err(denial),
+            Err(_) => return Ok(false),
         };
-        let Ok(target) = observe_exact_principal_target(
+        let target = match observe_exact_principal_target(
             execution,
             runtime,
             snapshot,
@@ -79,10 +86,12 @@ impl WorthQueryDurablePrincipalCurrentness {
             self.principal,
             binding,
             &self.binding,
-        ) else {
-            return false;
+        ) {
+            Ok(value) => value,
+            Err(denial) if denial.is_request_stop() => return Err(denial),
+            Err(_) => return Ok(false),
         };
-        mapping.enabled
+        Ok(mapping.enabled
             && mapping.entity_id == self.mapping
             && mapping.kind_id == self.mapping_kind
             && mapping.identity == self.mapping_identity
@@ -95,7 +104,7 @@ impl WorthQueryDurablePrincipalCurrentness {
             && target.principal_kind == self.principal_kind
             && target.principal_identity == self.principal_identity
             && target.principal_identity_revision == self.principal_identity_revision
-            && target.adjacency_revision == self.target_adjacency_revision
+            && target.adjacency_revision == self.target_adjacency_revision)
     }
 }
 
@@ -204,18 +213,25 @@ impl WorthQueryPrincipalFreshnessEvidence {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         layout: &WorthQueryPrimaryPrincipalBindingLayout,
         binding: &str,
-    ) -> bool {
-        let Ok(mapping) = observe_mapping(
+    ) -> Result<bool, WorthQueryPrincipalResolutionDenial> {
+        #[cfg(test)]
+        let _scope = crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(
+            crate::domain_computation::primary_graph::application_attempt::consult_observation::Door::Approval,
+        );
+
+        let mapping = match observe_mapping(
             execution,
             runtime,
             snapshot,
             self.mapping.entity_id,
             layout,
             binding,
-        ) else {
-            return false;
+        ) {
+            Ok(value) => value,
+            Err(denial) if denial.is_request_stop() => return Err(denial),
+            Err(_) => return Ok(false),
         };
-        let Ok(target) = observe_exact_principal_target(
+        let target = match observe_exact_principal_target(
             execution,
             runtime,
             snapshot,
@@ -223,10 +239,12 @@ impl WorthQueryPrincipalFreshnessEvidence {
             self.target.target,
             layout,
             binding,
-        ) else {
-            return false;
+        ) {
+            Ok(value) => value,
+            Err(denial) if denial.is_request_stop() => return Err(denial),
+            Err(_) => return Ok(false),
         };
-        mapping.enabled && self.matches(&mapping, &target)
+        Ok(mapping.enabled && self.matches(&mapping, &target))
     }
 }
 
