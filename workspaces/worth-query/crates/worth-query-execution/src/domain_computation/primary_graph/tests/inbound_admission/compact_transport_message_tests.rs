@@ -83,7 +83,7 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
         accepted.posture(),
         WorthQueryInboundReceiptPosture::AcceptedPending
     );
-    assert_eq!(accepted.pending_reason(), Some(crate::domain_computation::primary_graph::WorthQueryInboundPendingReason::OwnerRetryRequired));
+    assert_eq!(accepted.pending_reason(), Some(crate::domain_computation::primary_graph::WorthQueryInboundPendingReason::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Interrupted(crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::Cancelled))));
 
     let request = super::super::fixture::live_scope();
     world

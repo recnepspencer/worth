@@ -106,7 +106,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let recovery = binding.recovery();
         let prepared = match binding.prepare_relational_candidate(candidate, request, false) {
             Ok(prepared) => prepared,
-            Err(_) => return Outcome::NoEffect,
+            Err(no_effect) => {
+                if let Some(cause) =
+                    super::super::super::publication_request_denial::publication(no_effect.cause())
+                {
+                    return Outcome::Denied(Denial::ExecutionDenied(cause));
+                }
+                return Outcome::NoEffect;
+            }
         };
         let terminal = WorthQueryReservedProductPublicationReceipt::new(
             binding.root_identity(),
@@ -132,10 +139,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     terminal.fill(publication.consume(), None),
                 ))
             }
-            RuntimeWorldPublicationOutcome::NoEffect(_) => {
+            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
                 self.primary_provider
                     .clear_inbound_completion_publication_pending(&correlation);
-                Outcome::NoEffect
+                match super::super::super::publication_request_denial::publication(
+                    no_effect.cause(),
+                ) {
+                    Some(cause) => Outcome::Denied(Denial::ExecutionDenied(cause)),
+                    None => Outcome::NoEffect,
+                }
             }
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 Outcome::ProductUnpublished(WorthQueryUnpublishedInboundCompletion::new(

@@ -300,3 +300,5 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
 }
 
 mod transport_publication_and_recovery_obey_shared_operation_capacit;
+
+mod publication_stop_tests;

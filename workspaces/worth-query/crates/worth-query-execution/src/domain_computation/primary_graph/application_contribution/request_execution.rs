@@ -36,7 +36,7 @@ type Resource = WorthQueryManagedComputationResourceDenial;
 
 mod advancement;
 pub(in crate::domain_computation::primary_graph) use advancement::{
-    with_serial_host_advancement, with_world_advancement,
+    advancement_denial, with_serial_host_advancement, with_world_advancement,
 };
 
 pub use advancement::{

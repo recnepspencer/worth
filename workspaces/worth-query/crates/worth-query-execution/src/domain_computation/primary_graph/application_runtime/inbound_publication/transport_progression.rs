@@ -105,7 +105,14 @@ where
         let recovery = publication.recovery();
         let prepared = match publication.prepare_relational_candidate(candidate, request, false) {
             Ok(prepared) => prepared,
-            Err(_) => return Outcome::NoEffect(evidence),
+            Err(no_effect) => {
+                if let Some(cause) =
+                    super::super::super::publication_request_denial::publication(no_effect.cause())
+                {
+                    return Outcome::Denied(evidence, Denial::ExecutionDenied(cause));
+                }
+                return Outcome::NoEffect(evidence);
+            }
         };
         let terminal = WorthQueryReservedProductPublicationReceipt::new(
             publication.root_identity(),
@@ -126,10 +133,15 @@ where
                     terminal.fill(performed.consume(), None),
                 ))
             }
-            RuntimeWorldPublicationOutcome::NoEffect(_) => {
+            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
                 self.primary_provider
                     .clear_inbound_completion_publication_pending(&correlation);
-                Outcome::NoEffect(evidence)
+                match super::super::super::publication_request_denial::publication(
+                    no_effect.cause(),
+                ) {
+                    Some(cause) => Outcome::Denied(evidence, Denial::ExecutionDenied(cause)),
+                    None => Outcome::NoEffect(evidence),
+                }
             }
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 Outcome::ProductUnpublished(UnpublishedInstalledTransportCompletion::new(

@@ -17,7 +17,7 @@ use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 /// handed back to continue again.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputRestorationRecoveryStage {
-    /// The host request was refused before inspecting recovery facts.
+    /// The request stopped while continuing retained recovery.
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The unpublished product state could not be inspected.
     Inspection,
@@ -295,11 +295,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .prepare_settled_relational_adoption(&unpublished, request)
         {
             Ok(prepared) => prepared,
-            Err(_) => {
-                return Err(failure(
-                    WorthQueryGeneratedOutputRestorationRecoveryStage::AdoptionPreparation,
-                    RecoveryState::World { recovery, retry },
-                ));
+            Err(denial) => {
+                let stage =
+                    super::super::super::super::publication_request_denial::adoption(&denial)
+                        .map_or(
+                            WorthQueryGeneratedOutputRestorationRecoveryStage::AdoptionPreparation,
+                            WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied,
+                        );
+                return Err(failure(stage, RecoveryState::World { recovery, retry }));
             }
         };
         drop(unpublished);
@@ -325,11 +328,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     },
                 )
             }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::NoEffect(_) => {
-                Err(failure(
+            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+                let stage = super::super::super::super::publication_request_denial::publication(
+                    no_effect.cause(),
+                )
+                .map_or(
                     WorthQueryGeneratedOutputRestorationRecoveryStage::AdoptionPublication,
-                    RecoveryState::World { recovery, retry },
-                ))
+                    WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied,
+                );
+                Err(failure(stage, RecoveryState::World { recovery, retry }))
             }
             worth_runtime_world::facade::RuntimeWorldPublicationOutcome::ProductUnpublished(
                 effects,

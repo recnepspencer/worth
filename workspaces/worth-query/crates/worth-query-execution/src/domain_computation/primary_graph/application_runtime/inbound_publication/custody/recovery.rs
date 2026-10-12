@@ -118,8 +118,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let prepared = match publication.prepare_settled_relational_adoption(&unpublished, request)
         {
             Ok(prepared) => prepared,
-            Err(_) => {
-                return RecoveryProgress::Pending(prior, None, Pending::ProductRecoveryRequired)
+            Err(denial) => {
+                let pending =
+                    super::super::super::super::publication_request_denial::adoption(&denial)
+                        .map_or(Pending::ProductRecoveryRequired, Pending::ExecutionRequest);
+                return RecoveryProgress::Pending(prior, None, pending);
             }
         };
         let receipt = WorthQueryReservedProductPublicationReceipt::new(
@@ -147,8 +150,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .err();
                 RecoveryProgress::Performed(terminal, release)
             }
-            RuntimeWorldPublicationOutcome::NoEffect(_) => {
-                RecoveryProgress::Pending(prior, None, Pending::ProductRecoveryRequired)
+            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+                let pending = super::super::super::super::publication_request_denial::publication(
+                    no_effect.cause(),
+                )
+                .map_or(Pending::ProductRecoveryRequired, Pending::ExecutionRequest);
+                RecoveryProgress::Pending(prior, None, pending)
             }
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 let next = WorthQueryProductUnpublishedApplication::new(

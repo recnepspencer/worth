@@ -93,7 +93,7 @@ pub(in crate::domain_computation) use partitioned_computation::observe_discarded
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;
 
 pub(in crate::domain_computation::primary_graph) use request_execution::{
-    with_serial_host_advancement, with_world_advancement,
+    advancement_denial, with_serial_host_advancement, with_world_advancement,
 };
 
 pub use request_execution::{

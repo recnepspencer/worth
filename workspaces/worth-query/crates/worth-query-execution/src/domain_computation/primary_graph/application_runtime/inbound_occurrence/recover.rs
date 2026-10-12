@@ -1,5 +1,6 @@
 //! Owner-only continuation of accepted completion and exact World recovery.
 
+use super::super::super::publication_request_denial;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::{Arc, Mutex};
 
@@ -21,9 +22,9 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryInboundRecoveryState as State, WorthQueryInboundTerminalOwnerResult,
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt;
-use crate::domain_computation::{
-    WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecoveryReleaseFailure,
-};
+use crate::domain_computation::WorthQueryProductUnpublishedApplication;
+
+mod custody_cleanup;
 
 struct RecoveryGuard<'a> {
     custody: &'a Mutex<WorthQueryInboundCustody>,
@@ -275,11 +276,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let prepared = match binding.prepare_settled_relational_adoption(&unpublished, request) {
             Ok(prepared) => prepared,
-            Err(_) => {
-                return RecoveryStep::Retain(
-                    State::Active(recovery),
-                    Err(Denial::RecoveryUnavailable),
-                )
+            Err(denial) => {
+                let denial = publication_request_denial::adoption(&denial)
+                    .map_or(Denial::RecoveryUnavailable, Denial::ExecutionDenied);
+                return RecoveryStep::Retain(State::Active(recovery), Err(denial));
             }
         };
         drop(unpublished);
@@ -306,8 +306,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ));
                 self.finish_inbound_published(recovery, terminal)
             }
-            RuntimeWorldPublicationOutcome::NoEffect(_) => {
-                RecoveryStep::Retain(State::Active(recovery), Err(Denial::RecoveryUnavailable))
+            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+                let denial = publication_request_denial::publication(no_effect.cause())
+                    .map_or(Denial::RecoveryUnavailable, Denial::ExecutionDenied);
+                RecoveryStep::Retain(State::Active(recovery), Err(denial))
             }
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
                 let next = WorthQueryProductUnpublishedApplication::new(
@@ -317,83 +319,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 )
                 .into_recovery();
                 self.finish_inbound_handoff(recovery, next)
-            }
-        }
-    }
-
-    fn finish_inbound_handoff(
-        &self,
-        old: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
-        next: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
-    ) -> RecoveryStep {
-        match self.release_product_publication_recovery(old, 0) {
-            Ok(_) => RecoveryStep::Retain(State::Active(next), Ok(Posture::AcceptedPending)),
-            Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failed)) => {
-                RecoveryStep::Retain(
-                    State::HandoffWorld {
-                        old: failed.into_recovery(),
-                        next,
-                    },
-                    Err(Denial::RecoveryUnavailable),
-                )
-            }
-            Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup(failed)) => {
-                RecoveryStep::Retain(
-                    State::HandoffCleanup {
-                        cleanup: failed.into_cleanup(),
-                        next,
-                    },
-                    Err(Denial::RecoveryUnavailable),
-                )
-            }
-        }
-    }
-
-    fn finish_inbound_published(
-        &self,
-        old: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
-        terminal: Arc<WorthQueryInboundTerminalOwnerResult>,
-    ) -> RecoveryStep {
-        match self.release_product_publication_recovery(old, 0) {
-            Ok(_) => RecoveryStep::Terminal(terminal),
-            Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failed)) => {
-                RecoveryStep::Retain(
-                    State::PublishedWorld {
-                        old: failed.into_recovery(),
-                        terminal,
-                    },
-                    Err(Denial::RecoveryUnavailable),
-                )
-            }
-            Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup(failed)) => {
-                RecoveryStep::Retain(
-                    State::PublishedCleanup {
-                        cleanup: failed.into_cleanup(),
-                        terminal,
-                    },
-                    Err(Denial::RecoveryUnavailable),
-                )
-            }
-        }
-    }
-
-    fn finish_inbound_stale(
-        &self,
-        old: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
-    ) -> RecoveryStep {
-        match self.release_product_publication_recovery(old, 0) {
-            Ok(_) => RecoveryStep::StaleReleased,
-            Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failed)) => {
-                RecoveryStep::Retain(
-                    State::StaleWorld(failed.into_recovery()),
-                    Err(Denial::RecoveryStaleProduct),
-                )
-            }
-            Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup(failed)) => {
-                RecoveryStep::Retain(
-                    State::StaleCleanup(failed.into_cleanup()),
-                    Err(Denial::RecoveryUnavailable),
-                )
             }
         }
     }
