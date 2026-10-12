@@ -104,8 +104,9 @@ fn observed_account_source() -> crate::domain_computation::primary_graph::WorthQ
     let query = world
         .application
         .installed_schema()
-        .certification_query(FamilySourceQuery::<Schema, Family>::reference())
-        .unwrap();
+        .installed_query_binding::<fixture::TestAccountSourceBinding>()
+        .unwrap()
+        .into_query();
     let access =
         crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext::new(
             &principal, &account,

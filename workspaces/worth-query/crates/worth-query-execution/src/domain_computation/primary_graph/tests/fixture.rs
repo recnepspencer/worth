@@ -347,6 +347,7 @@ worth_query_application_schema! {
                     )
                     .allow(Principal::reference())],
                 )
+                .application_query_binding::<TestAccountSourceBinding>()
                 .application_query(application_queries::account_summary_definition())
                 .application_query(application_queries::scoped_account_summary_definition())
                 .application_query(application_queries::public_scoped_definition())
