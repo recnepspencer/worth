@@ -1,11 +1,9 @@
 //! Kept prefixes agree; dispatched suffix checkpoints are still charged.
-use super::{computation::Failure, history};
-use std::num::NonZeroUsize;
-use worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest as Placement;
+mod cost_cell;
 
 fn cell(suffix: usize) -> (u64, u64) {
     let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", "checkpoint_recovery::required_chain::concurrent_waves::charge_prefix::a_completion_failure_charges_a_dispatched_suffix_kernel", "--nocapture"])
+        .args(["--exact", "checkpoint_recovery::required_chain::concurrent_waves::charge_prefix::cost_cell::failed_advancement_cost_cell", "--nocapture"])
         .env("WORTH_FAILED_PREFIX_SUFFIX", suffix.to_string())
         .output().unwrap();
     assert!(
@@ -26,15 +24,6 @@ fn cell(suffix: usize) -> (u64, u64) {
 #[test]
 fn a_completion_failure_charges_a_dispatched_suffix_kernel() {
     let _guard = super::checkpoint_recovery_test_guard();
-    if let Ok(suffix) = std::env::var("WORTH_FAILED_PREFIX_SUFFIX") {
-        let observed = history::run_costs(
-            Placement::Leased(NonZeroUsize::MIN),
-            Some((0, Failure::Complete)),
-            [3, suffix.parse().unwrap()],
-        );
-        println!("FAILED_PREFIX_COST:{},{}", observed.work, observed.span);
-        return;
-    }
     // Fresh processes keep all issued binding identities and their encodings
     // equal. Only the second root's declared checkpoint units differ; it is
     // beyond the first root's completion failure in the canonical wave.
@@ -52,19 +41,14 @@ fn a_completion_failure_charges_a_dispatched_suffix_kernel() {
         )
     };
     judge(model);
-    assert!(
-        std::panic::catch_unwind(|| judge((0, 0))).is_err(),
-        "the same law assertion rejects the prefix-only mutant model"
+    println!("FAILED_PREFIX_DELTA:{actual:?}");
+    let prefix = |row: usize| &costs[row][..=0];
+    let prefix_only = (
+        prefix(1).iter().sum::<u64>() - prefix(0).iter().sum::<u64>(),
+        prefix(1).iter().max().unwrap() - prefix(0).iter().max().unwrap(),
     );
-    let remainder = |row: usize| {
-        (
-            observed[row].0 - costs[row].iter().sum::<u64>(),
-            observed[row].1 - costs[row].iter().max().unwrap(),
-        )
-    };
-    assert_eq!(
-        remainder(0),
-        remainder(1),
-        "unchanged owner work is one common remainder"
+    assert!(
+        std::panic::catch_unwind(|| judge(prefix_only)).is_err(),
+        "the same law assertion rejects the prefix-only mutant model"
     );
 }

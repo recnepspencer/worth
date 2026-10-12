@@ -11,8 +11,9 @@ pub struct ExecutionOwnerContext {
     _thread: PhantomData<Rc<()>>,
 }
 impl ExecutionOwnerContext {
-    /// Sealed owner arming door; the guard owns and restores its refusal marker.
-    pub fn enter_for_test() -> Self {
+    /// Public because Query owns member custody in another crate.
+    /// This refusal marker grants no graph, phase or execution authority.
+    pub fn enter() -> Self {
         CapturedOwnerContext(true).enter()
     }
     pub fn is_active() -> bool {
