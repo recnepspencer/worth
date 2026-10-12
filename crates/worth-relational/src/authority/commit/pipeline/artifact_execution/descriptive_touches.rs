@@ -69,22 +69,45 @@ pub(super) fn prepare(
         return Ok(Graph::unavailable());
     }
     match lease {
-        Some(lease) => crate::execution::prepare_borrowed_artifact(
-            lease,
-            runtime.commit_work_budget.as_ref(),
-            |checked| {
-                build(
-                    runtime,
-                    selected,
-                    working,
-                    deltas,
-                    adjacency,
-                    &mode,
-                    &mut TouchBudget::Checked(checked),
-                )
-            },
-        )
-        .map_err(|stop| TransactionCommitError::execution(stop.into())),
+        Some(lease) => {
+            let maximum = crate::execution::prepare_borrowed_artifact(
+                lease,
+                runtime.commit_work_budget.as_ref(),
+                0,
+                |checked| {
+                    Ok((
+                        maximum_touch_count(
+                            runtime,
+                            deltas,
+                            adjacency,
+                            &mut TouchBudget::Checked(checked),
+                        )?,
+                        0,
+                    ))
+                },
+            )
+            .map_err(|stop| TransactionCommitError::execution(stop.into()))?;
+            let bound =
+                extent::memory_bound(runtime, selected, working, deltas, maximum, &mode, lease)?;
+            crate::execution::prepare_borrowed_artifact(
+                lease,
+                runtime.commit_work_budget.as_ref(),
+                bound,
+                |checked| {
+                    build(
+                        runtime,
+                        selected,
+                        working,
+                        deltas,
+                        adjacency,
+                        &mode,
+                        maximum,
+                        &mut TouchBudget::Checked(checked),
+                    )
+                },
+            )
+            .map_err(|stop| TransactionCommitError::execution(stop.into()))
+        }
         None => build(
             runtime,
             selected,
@@ -92,6 +115,18 @@ pub(super) fn prepare(
             deltas,
             adjacency,
             &mode,
+            maximum_touch_count(runtime, deltas, adjacency, &mut TouchBudget::Legacy).map_err(
+                |failure| {
+                    TransactionCommitError::execution(
+                        crate::transactions::data::CommitExecutionDenial {
+                            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                                crate::execution::kernel_failure(failure),
+                            ),
+                            partition_identity: None,
+                        },
+                    )
+                },
+            )?,
             &mut TouchBudget::Legacy,
         )
         .map(|(graph, _)| graph)
@@ -113,9 +148,9 @@ fn build(
     deltas: &[CanonicalRecordAspectDelta],
     adjacency: &[AdjacencyDelta],
     mode: &TouchPreparationMode,
+    maximum: usize,
     budget: &mut TouchBudget<'_, '_, '_, '_>,
 ) -> Result<(Graph, u64), Failure> {
-    let maximum = maximum_touch_count(runtime, deltas, adjacency, budget)?;
     let slots = (maximum as u64)
         .checked_mul(size_of::<Touch>() as u64)
         .and_then(|bytes| bytes.checked_mul(2))
@@ -311,3 +346,5 @@ fn append_delta(
 mod index;
 mod merge;
 use index::append_index;
+
+mod extent;

@@ -3,8 +3,9 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_execution::ExecutionLeaseStatus;
 
-// Fixed-size ID, BTree node, and planning wrapper retention per visited
-// candidate. Variable-size keys and aspect values are claimed separately.
+// Fixed-size ID, BTree node, and wrapper retention for materializing
+// structural visits. Borrowed reads and authored checkpoints charge work only;
+// variable-size keys and aspect values are claimed separately.
 const STRUCTURAL_UNIT_BYTES: u64 = 128;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,13 +74,13 @@ impl CustomPreparationBudget {
     pub(crate) fn try_visit(&self, units: usize) -> bool {
         CustomInvariantWorkMeter::new(NonZeroU64::new(u64::MAX).unwrap())
             .with_lease(self)
-            .try_charge(units)
+            .try_charge_work(u64::try_from(units).unwrap_or(u64::MAX))
     }
 
     pub(crate) fn try_plan_item(&self, retained_bytes: u64) -> bool {
         let meter =
             CustomInvariantWorkMeter::new(NonZeroU64::new(u64::MAX).unwrap()).with_lease(self);
-        meter.try_charge(1) && meter.try_claim_bytes(retained_bytes)
+        meter.try_charge_work(1) && meter.try_claim_bytes(retained_bytes)
     }
 }
 
@@ -194,6 +195,15 @@ impl CustomInvariantWorkMeter {
         if !self.try_claim_bytes(units.saturating_mul(STRUCTURAL_UNIT_BYTES)) {
             return false;
         }
+        self.try_charge_work(units)
+    }
+
+    // Read-only planning visits have work but no allocation. Every retained
+    // plan payload is claimed explicitly by try_plan_item's byte declaration.
+    pub(super) fn try_charge_work(&self, units: u64) -> bool {
+        if self.exceeded() || !self.safe_point() {
+            return false;
+        }
         if let Some(leased) = &self.leased {
             if leased
                 .consumed_work
@@ -240,7 +250,7 @@ impl CustomInvariantWorkMeter {
 
 impl crate::validation::data::CustomInvariantLeaseBudget for CustomInvariantWorkMeter {
     fn checkpoint(&self, units: u64) -> bool {
-        usize::try_from(units).is_ok_and(|units| self.try_charge(units))
+        self.try_charge_work(units)
     }
 
     fn claim_result(&self, bytes: u64) -> bool {
@@ -255,3 +265,6 @@ impl crate::validation::data::CustomInvariantLeaseBudget for CustomInvariantWork
         self.check_claim_peak(bytes)
     }
 }
+
+#[cfg(test)]
+mod allocation_tests;

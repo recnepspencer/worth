@@ -179,7 +179,7 @@ fn binding_targets_field(
     }
 }
 
-fn authoritative_state<'a>(
+pub(super) fn authoritative_state<'a>(
     access: &'a impl PartitionAccess,
     target: &RecordRef,
 ) -> Option<&'a worth_foundational::facade::AuthoritativeRecordAspectState> {

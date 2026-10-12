@@ -50,3 +50,22 @@ pub(super) fn diff_fragment_slice_stream(
     stream.sort_unstable_by(|left, right| left.0.cmp(&right.0));
     Ok(OrderedReductionStream::new(stream))
 }
+
+/// Each result is one exact-reserved stream element plus its owned record;
+/// semantic comparison temporarily holds two strings for the largest record.
+pub(super) fn memory_bound(fragments: &[FoundationalPatchFragment]) -> (u64, u64) {
+    fragments
+        .iter()
+        .fold((0, 0), |(scratch, result), fragment| {
+            let bytes = fragment.published_record_owned_allocation_capacity_bytes();
+            (
+                scratch.max(bytes.saturating_mul(2).saturating_add(1024)),
+                result
+                    .saturating_add(std::mem::size_of::<(
+                        DiffReductionKey,
+                        PublishedAuthoritativeRecordPatch,
+                    )>() as u64)
+                    .saturating_add(bytes),
+            )
+        })
+}

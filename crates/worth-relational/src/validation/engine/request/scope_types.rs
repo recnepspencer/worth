@@ -28,6 +28,12 @@ pub(crate) struct PreparedRelationEndpointKey {
     pub(crate) entity_id: EntityReference,
 }
 
+impl std::borrow::Borrow<EntityReference> for PreparedRelationEndpointKey {
+    fn borrow(&self) -> &EntityReference {
+        &self.entity_id
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub(crate) struct PreparedRelationIntegrityScope {
     pub(crate) created_candidate_entities: BTreeSet<CreatedEntityRef>,

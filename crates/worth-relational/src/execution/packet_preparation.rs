@@ -72,13 +72,13 @@ impl<T> ChargedBytes for PreparedArtifact<T> {
 pub(crate) fn prepare_borrowed_artifact<T>(
     lease: &ExecutionResourceLease<'_>,
     work_budget: Option<&super::RequestWorkBudget>,
+    ceiling: u64,
     build: impl FnOnce(
         &mut PacketPreparationBudget<'_, '_, '_>,
     ) -> Result<(T, u64), MapKernelFailure<super::PacketBudgetDenial>>,
 ) -> Result<T, PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
     let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
-    let ceiling = lease.policy().budget().charged_memory_bytes() / PREPARATION_MEMORY_DIVISOR;
     let mut build = Some(build);
     let outcome = super::run_with_remaining_request_work(
         lease,

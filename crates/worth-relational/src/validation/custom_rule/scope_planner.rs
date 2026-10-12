@@ -101,115 +101,107 @@ impl PreparedCustomInvariantScope {
         ]
         .into_iter()
         .fold(0usize, usize::saturating_add);
-        if !work.try_charge(count) {
+        if !work.try_charge_work(u64::try_from(count).unwrap_or(u64::MAX)) {
             return Self::empty().touched;
         }
         if !claim_nested::claim_restricted_clones(&self.touched, work) {
             return Self::empty().touched;
         }
         Arc::new(TouchedStructuralSet::new(
-            self.touched
-                .direct_visible_entity_ids()
-                .iter()
-                .copied()
-                .filter(|id| {
+            claim_nested::retain_rows(
+                self.touched
+                    .direct_visible_entity_ids()
+                    .iter()
+                    .copied()
+                    .filter(|id| {
+                        state
+                            .entity_metadata(*id)
+                            .or_else(|| {
+                                work.try_charge_work(1)
+                                    .then(|| committed.entity_metadata(*id))
+                                    .flatten()
+                            })
+                            .is_some_and(|metadata| access.affects_entity(metadata.kind_id))
+                    }),
+            ),
+            claim_nested::retain_rows(self.touched.visible_entity_ids().iter().copied().filter(
+                |id| {
                     state
                         .entity_metadata(*id)
                         .or_else(|| {
-                            work.try_charge(1)
+                            work.try_charge_work(1)
                                 .then(|| committed.entity_metadata(*id))
                                 .flatten()
                         })
                         .is_some_and(|metadata| access.affects_entity(metadata.kind_id))
-                })
-                .collect::<Vec<_>>()
-                .into(),
-            self.touched
-                .visible_entity_ids()
-                .iter()
-                .copied()
-                .filter(|id| {
-                    state
-                        .entity_metadata(*id)
-                        .or_else(|| {
-                            work.try_charge(1)
-                                .then(|| committed.entity_metadata(*id))
-                                .flatten()
-                        })
-                        .is_some_and(|metadata| access.affects_entity(metadata.kind_id))
-                })
-                .collect::<Vec<_>>()
-                .into(),
-            self.touched
-                .visible_relation_ids()
-                .iter()
-                .copied()
-                .filter(|id| {
+                },
+            )),
+            claim_nested::retain_rows(self.touched.visible_relation_ids().iter().copied().filter(
+                |id| {
                     state
                         .relation_metadata(*id)
                         .or_else(|| {
-                            work.try_charge(1)
+                            work.try_charge_work(1)
                                 .then(|| committed.relation_metadata(*id))
                                 .flatten()
                         })
                         .is_some_and(|metadata| access.affects_relation(metadata.kind_id))
-                })
-                .collect::<Vec<_>>()
-                .into(),
-            self.touched.touched_partitions().to_vec().into(),
-            self.touched
-                .planned_entity_deletes()
-                .iter()
-                .copied()
-                .filter(|id| {
-                    state
-                        .entity_metadata(*id)
-                        .or_else(|| {
-                            work.try_charge(1)
-                                .then(|| committed.entity_metadata(*id))
-                                .flatten()
-                        })
-                        .is_some_and(|metadata| access.affects_entity(metadata.kind_id))
-                })
-                .collect::<Vec<_>>()
-                .into(),
-            self.touched
-                .planned_entity_creates()
-                .iter()
-                .filter(|create| access.affects_entity(create.kind_id()))
-                .cloned()
-                .collect::<Vec<_>>()
-                .into(),
-            self.touched
-                .planned_relation_creates()
-                .iter()
-                .filter(|create| access.affects_relation(create.kind_id()))
-                .cloned()
-                .collect::<Vec<_>>()
-                .into(),
-            self.touched
-                .planned_relation_deletes()
-                .iter()
-                .copied()
-                .filter(|id| {
-                    state
-                        .relation_metadata(*id)
-                        .or_else(|| {
-                            work.try_charge(1)
-                                .then(|| committed.relation_metadata(*id))
-                                .flatten()
-                        })
-                        .is_some_and(|metadata| access.affects_relation(metadata.kind_id))
-                })
-                .collect::<Vec<_>>()
-                .into(),
-            self.touched
-                .planned_relation_endpoint_updates()
-                .iter()
-                .filter(|update| access.affects_relation(update.kind_id()))
-                .cloned()
-                .collect::<Vec<_>>()
-                .into(),
+                },
+            )),
+            claim_nested::retain_rows(self.touched.touched_partitions().iter().copied()),
+            claim_nested::retain_rows(
+                self.touched
+                    .planned_entity_deletes()
+                    .iter()
+                    .copied()
+                    .filter(|id| {
+                        state
+                            .entity_metadata(*id)
+                            .or_else(|| {
+                                work.try_charge_work(1)
+                                    .then(|| committed.entity_metadata(*id))
+                                    .flatten()
+                            })
+                            .is_some_and(|metadata| access.affects_entity(metadata.kind_id))
+                    }),
+            ),
+            claim_nested::retain_rows(
+                self.touched
+                    .planned_entity_creates()
+                    .iter()
+                    .filter(|create| access.affects_entity(create.kind_id()))
+                    .cloned(),
+            ),
+            claim_nested::retain_rows(
+                self.touched
+                    .planned_relation_creates()
+                    .iter()
+                    .filter(|create| access.affects_relation(create.kind_id()))
+                    .cloned(),
+            ),
+            claim_nested::retain_rows(
+                self.touched
+                    .planned_relation_deletes()
+                    .iter()
+                    .copied()
+                    .filter(|id| {
+                        state
+                            .relation_metadata(*id)
+                            .or_else(|| {
+                                work.try_charge_work(1)
+                                    .then(|| committed.relation_metadata(*id))
+                                    .flatten()
+                            })
+                            .is_some_and(|metadata| access.affects_relation(metadata.kind_id))
+                    }),
+            ),
+            claim_nested::retain_rows(
+                self.touched
+                    .planned_relation_endpoint_updates()
+                    .iter()
+                    .filter(|update| access.affects_relation(update.kind_id()))
+                    .cloned(),
+            ),
         ))
     }
 }
@@ -254,7 +246,7 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
             current_version_id,
         )
         .with_candidate_inputs(inputs, CandidateInputBasis::custom_committed(observation));
-        work.try_charge(1);
+        work.try_charge_work(1);
         let touched =
             prepared_scope.retain_restricted(&state_view, &committed_state_view, &access, &work);
         let aspect_states =

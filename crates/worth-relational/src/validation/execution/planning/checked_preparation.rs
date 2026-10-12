@@ -30,11 +30,26 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
 ) -> Result<(PreparedInvariantExecution<'state>, u64, ExecutionReport), PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
     let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
-    let ceiling = lease.policy().budget().charged_memory_bytes() / 8;
     let outcome = crate::execution::run_with_remaining_request_work(
         lease,
         runtime.commit_work_budget.as_ref(),
         |child_lease| {
+            // One scratch extent and one retained output coexist. Use the
+            // request's remaining room, with the execution owner's framework
+            // declaration removed, instead of imposing a private eighth-share.
+            let fixed =
+                worth_execution::ExecutionMap::<(), ()>::declared_memory_requirement_for_lease::<
+                    CheckedPlan<'_>,
+                    PacketBudgetDenial,
+                >(child_lease, 1, 0, 0, 0, 0)
+                .unwrap_or(u64::MAX);
+            let ceiling = lease
+                .policy()
+                .budget()
+                .charged_memory_bytes()
+                .saturating_sub(lease.charged_memory_bytes())
+                .saturating_sub(fixed)
+                / 2;
             scan.run(
                 Some(child_lease), (), 0, ceiling, 0, ceiling,
                 |_, _, context| {

@@ -144,3 +144,5 @@ impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
             .map(inspect)
     }
 }
+
+mod native_fields;
