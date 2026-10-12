@@ -15,6 +15,8 @@ struct NativeState {
     peak: usize,
     owner_locked: usize,
     open: bool,
+    watchdog_failed: bool,
+    exits: std::collections::BTreeMap<EntityId, usize>,
 }
 pub(in crate::domain_computation::primary_graph) struct NativeReadRendezvousGuardForTest {
     witness: Arc<DispatchWitness>,
@@ -51,6 +53,14 @@ impl DispatchWitness {
             None => read(),
         }
     }
+    pub(in crate::domain_computation::primary_graph::application_query) fn native_read_exit(
+        &self,
+        root: EntityId,
+    ) {
+        if let Some(gate) = self.native_reads.lock().unwrap().clone() {
+            gate.exit(root);
+        }
+    }
     pub(in crate::domain_computation::primary_graph::application_query) fn native_read_enter(
         &self,
         root: EntityId,
@@ -62,6 +72,15 @@ impl DispatchWitness {
     }
 }
 impl NativeReadRendezvous {
+    fn exit(&self, root: EntityId) {
+        let mut state = self.state.lock().unwrap();
+        if self.roots.contains(&root) {
+            *state.exits.entry(root).or_default() += 1;
+            if self.owner.is_locked_for_test() {
+                state.owner_locked += 1;
+            }
+        }
+    }
     fn enter(&self, root: EntityId) {
         let mut state = self.state.lock().unwrap();
         if !self.roots.contains(&root) || state.entered.contains(&root) {
@@ -82,8 +101,15 @@ impl NativeReadRendezvous {
             state.open = true;
             self.ready.notify_all();
         }
-        while !state.open {
-            state = self.ready.wait(state).unwrap();
+        // Failure watchdog only: passing synchronization ends on the peer's event.
+        let (mut state, timeout) = self
+            .ready
+            .wait_timeout_while(state, Duration::from_secs(60), |state| !state.open)
+            .unwrap();
+        state.watchdog_failed |= timeout.timed_out();
+        if state.watchdog_failed {
+            state.open = true;
+            self.ready.notify_all();
         }
         state.held -= 1;
     }
@@ -91,6 +117,15 @@ impl NativeReadRendezvous {
 impl NativeReadRendezvousGuardForTest {
     pub(in crate::domain_computation::primary_graph) fn assert_overlap_for_test(&self) {
         let state = self.gate.state.lock().unwrap();
+        assert!(
+            !state.watchdog_failed,
+            "a peer missed the native read rendezvous"
+        );
+        assert_eq!(
+            state.exits,
+            std::collections::BTreeMap::from(self.gate.roots.map(|root| (root, 2))),
+            "both sides of each rooted read must exit"
+        );
         assert_eq!(
             state.owner_locked, 0,
             "a native read retained its owner's lock"

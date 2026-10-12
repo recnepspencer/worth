@@ -211,7 +211,7 @@ impl PreparedRead<'_> {
             if let Some(witness) = witness {
                 witness.native_read_enter(root);
             }
-            super::read_prepared_root_rows(
+            let answer = super::read_prepared_root_rows(
                 runtime,
                 execution,
                 graph,
@@ -220,7 +220,12 @@ impl PreparedRead<'_> {
                 Some(&spent),
                 maximum,
                 super::ReadInterruption::Execution(&check),
-            )
+            );
+            #[cfg(test)]
+            if let Some(witness) = witness {
+                witness.native_read_exit(root);
+            }
+            answer
         });
         let batch_rows = if let Some(batch) = batch {
             let actual = if entered.get() {
