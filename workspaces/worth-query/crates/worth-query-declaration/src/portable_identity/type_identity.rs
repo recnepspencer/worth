@@ -35,6 +35,14 @@ impl WorthQueryPortableTypeIdentity {
         }
     }
 
+    /// Heap storage retained beyond the identity's inline representation.
+    pub fn retained_heap_bytes(&self) -> usize {
+        match &self.0 {
+            Cow::Borrowed(_) => 0,
+            Cow::Owned(value) => value.capacity(),
+        }
+    }
+
     pub fn is_valid(&self) -> bool {
         !self.as_str().is_empty()
             && self.as_str().trim() == self.as_str()
@@ -42,5 +50,24 @@ impl WorthQueryPortableTypeIdentity {
                 .as_str()
                 .chars()
                 .any(|character| character.is_whitespace() || character.is_control())
+    }
+}
+
+#[cfg(test)]
+mod storage_tests {
+    use super::*;
+    #[test]
+    fn retained_identity_bytes_count_capacity_only_for_owned_text() {
+        assert_eq!(
+            WorthQueryPortableTypeIdentity::declared("declared").retained_heap_bytes(),
+            0
+        );
+        let mut text = String::with_capacity(128);
+        text.push_str("owned");
+        let capacity = text.capacity();
+        assert_eq!(
+            WorthQueryPortableTypeIdentity::from_untrusted(text).retained_heap_bytes(),
+            capacity
+        );
     }
 }

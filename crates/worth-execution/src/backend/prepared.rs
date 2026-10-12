@@ -43,7 +43,7 @@ pub(crate) fn prepare_batch_resources<T: ChargedBytes, R, E>(
     backend: BackendKind,
 ) -> Result<PreparedBatchResources, LeaseDenial> {
     if !lease.accepts_current_worker_context() {
-        return Err(LeaseDenial::UnrelatedNestedLease);
+        return Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease));
     }
     let memory_bytes = batch
         .execution_memory_bytes::<R, E>()
@@ -53,7 +53,7 @@ pub(crate) fn prepare_batch_resources<T: ChargedBytes, R, E>(
                 batch.len(),
             )?)
         })
-        .ok_or(LeaseDenial::ChargedBytesOverflow)?;
+        .ok_or_else(LeaseDenial::charged_bytes_overflow)?;
     let reservation = lease.reserve_retained_memory(memory_bytes)?;
     let limits = RunLimits::for_run(Some(lease), matches!(backend, BackendKind::Serial));
     let context = PreparedMeterContext::capture(&limits);

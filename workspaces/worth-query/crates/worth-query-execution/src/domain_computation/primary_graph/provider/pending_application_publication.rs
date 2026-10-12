@@ -358,7 +358,10 @@ fn publish_with_snapshot(
     let owner = &provider.graph.source_owner.invalidation_owner;
     let displaced = recorded.and_then(|recorded| recorded.displaced);
     match (superseded, displaced) {
-        (Some(superseded), displaced) => superseded.retire(displaced, owner),
+        (Some(superseded), displaced) => {
+            // Committed discovery cannot refuse and orphan the displaced settlement.
+            superseded.retire(displaced, owner);
+        }
         (None, Some(displaced)) => {
             drop(owner.retire_released([displaced], &mut owner.edit_admission()));
         }

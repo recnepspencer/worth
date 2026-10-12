@@ -7,7 +7,8 @@ use crate::domain_computation::primary_graph::product_operation::SharedSelectedP
 use super::super::*;
 
 /// What one pass over a row's own stages reached.
-pub(super) enum OwnStages<Query, Value> {
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
+enum OwnStages<Query, Value> {
     /// Settled, or waiting on something outside this call.
     Answer(WorthQueryOutputDemandAdvance),
     /// This call published the row's checkpoint or moved it a stage.
@@ -20,19 +21,19 @@ pub(super) enum OwnStages<Query, Value> {
 /// Both entries drive a row's own stages in one call. A required wave does
 /// so only with the same owner-issued Product it used for disclosure.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
-enum ScheduleProgression<'selection, 'runtime, Schema>
+enum ScheduleProgression<'selection, 'runtime, 'predecessors, Schema>
 where
     Schema: ApplicationSchema,
 {
     Ordinary,
     Selected {
         shared: &'selection SharedSelectedProductOperation<'runtime, Schema>,
-        matched_predecessors: Option<MatchedRequiredPredecessors<'selection>>,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'predecessors>>,
         readiness: super::super::required_wave::performed::PublicationReadiness,
     },
 }
 
-impl<Schema> ScheduleProgression<'_, '_, Schema>
+impl<Schema> ScheduleProgression<'_, '_, '_, Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -42,7 +43,8 @@ where
 }
 
 /// Only a performed publication minted during this pass can permit its own reobservation.
-pub(super) enum CheckpointProgress {
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
+enum CheckpointProgress {
     Advanced,
     Published(OwnPublication),
 }

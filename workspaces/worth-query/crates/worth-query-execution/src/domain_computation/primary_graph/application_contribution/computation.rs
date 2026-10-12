@@ -6,6 +6,8 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
+/// Prepared values and the transported owner are the handler author's own data.
+/// An author-held runtime handle used from compute follows the worker reentry rule.
 pub trait WorthQueryManagedComputationPrepared: Send + 'static {
     fn retained_bytes(&self) -> usize;
 }
@@ -20,7 +22,7 @@ where
     type Prepared: WorthQueryManagedComputationPrepared;
     type Computed: Send + 'static;
     type Output;
-    type Stopped;
+    type Stopped: Send + 'static;
 
     fn prepare(
         &self,
@@ -39,7 +41,15 @@ where
 }
 
 mod checkpoint;
+mod member_execution;
+pub(in crate::domain_computation::primary_graph) mod nested_failure;
+pub(in crate::domain_computation::primary_graph) mod worker_custody;
+pub use member_execution::WorthQueryMemberExecution;
+mod decision_plan;
 mod denial;
+mod preparation_loans;
+pub(in crate::domain_computation::primary_graph) mod prepared_request;
+pub(in crate::domain_computation::primary_graph) mod wave_dispatch;
 
 use checkpoint::CheckpointWork;
 pub use checkpoint::{
@@ -135,11 +145,39 @@ where
         WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
         WorthQueryManagedComputationDenial<Owner::Stopped>,
     > {
+        self.compute_with_charge(execution, None)
+    }
+
+    fn compute_for_member(
+        self,
+        member: WorthQueryMemberExecution<'_>,
+    ) -> Result<
+        WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
+        WorthQueryManagedComputationDenial<Owner::Stopped>,
+    > {
+        member.compute(|execution, charge, _transport| self.compute_with_charge(execution, charge))
+    }
+
+    fn compute_with_charge<'a>(
+        self,
+        execution: WorthQueryManagedComputationExecution<'a>,
+        mut charge: Option<&'a mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+    ) -> Result<
+        WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
+        WorthQueryManagedComputationDenial<Owner::Stopped>,
+    > {
+        let mut delegated = |units| match &mut charge {
+            Some(charge) => charge(units),
+            None => Ok(()),
+        };
         let mut checkpoint = WorthQueryManagedComputationCheckpoint {
             work: CheckpointWork::Declared {
                 remaining: Computation::RESOURCES.maximum_work(),
+                charge: Some(&mut delegated),
             },
             execution: &execution,
+            #[cfg(test)]
+            native: None,
         };
         let computed = self
             .installed

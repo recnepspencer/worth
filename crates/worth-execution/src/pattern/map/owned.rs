@@ -59,6 +59,23 @@ impl<T: Send + ChargedBytes, K> ExecutionMap<T, K> {
         self.run_owned_with_backend_taking(lease, backend_for(lease), Some(inputs), kernel)
     }
 
+    /// Sealed controlled dispatch; recorded ranks are actual queue acquisitions.
+    pub fn run_owned_perturbed_for_test<R, E, F>(
+        self,
+        lease: Option<&ExecutionResourceLease<'_>>,
+        seed: u64,
+        kernel: F,
+    ) -> (MapOutcome<R, E>, Vec<usize>)
+    where
+        R: Send + ChargedBytes,
+        E: Send + ChargedBytes,
+        F: Fn(T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
+    {
+        let (outcome, order) =
+            crate::backend::run_owned_batch_perturbed_for_test(lease, self.batch, seed, &kernel);
+        (outcome.into(), order)
+    }
+
     pub(crate) fn run_owned_with_backend_taking<R, E, F>(
         self,
         lease: Option<&ExecutionResourceLease<'_>>,

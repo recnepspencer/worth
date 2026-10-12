@@ -19,6 +19,16 @@ pub struct MemoryLimitDenial {
     pub level: MemoryLimitLevel,
 }
 
+impl MemoryLimitDenial {
+    pub(crate) fn refused(requested: u64, admitted: u64, level: MemoryLimitLevel) -> Self {
+        crate::backend::request_refusal(Self {
+            requested,
+            admitted,
+            level,
+        })
+    }
+}
+
 /// Which limit refused a memory reservation. Limits are checked innermost
 /// first, so a charge over its own policy reads the same however much other
 /// requests hold, and only the process's refusal can clear when they release.
@@ -83,6 +93,15 @@ enum Held {
 }
 
 impl SerialMemoryBudget {
+    /// Bytes currently held against this budget's own policy, including descendants.
+    /// This observation grants no reservation or admission authority.
+    pub fn charged_memory_bytes(&self) -> u64 {
+        *self.ledgers[0]
+            .charged
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
     pub fn limit(&self) -> u64 {
         self.ledgers[0].ceiling
     }
@@ -160,13 +179,13 @@ impl SerialMemoryBudget {
                 .unwrap();
             let admitted = ledger.ceiling.saturating_sub(*charge.1 - from);
             if to > admitted {
-                return Err(MemoryLimitDenial {
-                    requested: to,
+                return Err(MemoryLimitDenial::refused(
+                    to,
                     admitted,
-                    level: MemoryLimitLevel::Policy {
+                    MemoryLimitLevel::Policy {
                         ancestor: ancestor as u32,
                     },
-                });
+                ));
             }
         }
         for (_, charge) in &mut charges {
@@ -196,7 +215,7 @@ impl ExecutionMemoryReservation {
                 .map_err(LeaseDenial::MemoryExhausted);
         }
         crate::backend::active_serial_memory()
-            .ok_or(LeaseDenial::NoActiveExecutionScope)?
+            .ok_or_else(|| LeaseDenial::refused(LeaseDenial::NoActiveExecutionScope))?
             .reserve(bytes)
             .map_err(LeaseDenial::MemoryExhausted)
     }
@@ -239,7 +258,7 @@ impl ExecutionMemoryReservation {
                 *held = bytes;
                 Ok(())
             }
-            _ => Err(LeaseDenial::UnrelatedNestedLease),
+            _ => Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease)),
         }
     }
 

@@ -6,7 +6,7 @@ use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
 use super::drive::drive_required_wave;
-use super::queued::RequiredQueueFrames;
+use super::queued::QueuedRequiredRoots;
 use super::*;
 
 #[allow(clippy::too_many_arguments)]
@@ -20,7 +20,7 @@ pub(in super::super) fn advance_requested_output<Schema, Family>(
     branch: WorthQueryProductBranch,
     authority: &super::super::super::super::WorthQueryProducerCommitAuthority,
     stop: &mut WorthQueryOutputDemandDenial,
-    performed: &mut performed::PerformedMembers,
+    performed: &std::cell::RefCell<performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -70,14 +70,23 @@ where
             return Ok(None);
         }
     };
-    let wave = RequiredWaveSelection {
+    let head = runtime.output_demands.publication_head_selection(
+        shared
+            .selected()
+            .product()
+            .observation()
+            .lifecycle_incarnation(),
+        admission,
+    )?;
+    let wave = RequiredWaveSelection::from_basis(
         shared,
         positioned,
         anchor_ready,
         branch,
-        target: RequiredWaveTarget::Requested,
-    };
-    let mut queue = RequiredQueueFrames::new();
+        RequiredWaveTarget::Requested,
+        head,
+    );
+    let mut queue = QueuedRequiredRoots::new();
     let mut frame_custody = RequiredContinuations::default();
     // This target can certify only the requested chain. It never discharges or
     // promotes the parent's Interest; its successors stay in that parent's custody.

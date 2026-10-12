@@ -40,13 +40,16 @@ impl Example for Warehouse {
     fn install(setup: &mut owner::Setup<'_>) -> owner::Installed {
         let installed = inventory::install_inventory::<S, F, A, Op>(setup)?;
         Ok(RegionTotalsHandler::running(move |reader, _| {
-            let (total, _) = inventory::run_inventory::<S, F, A, Op, B>(
+            inventory::run_inventory::<S, F, A, Op, B, _, _>(
                 &installed,
                 reader,
                 &inventory::sample_input(),
+                |result| {
+                    let (total, _) = result.expect("the warehouse example completes");
+                    RESULTS.with(|results| results.borrow_mut().push(Reduced::Inventory(total)));
+                    worth_query_host::facade::primary_graph::HandlerResult::Completed(())
+                },
             )
-            .expect("the warehouse example completes");
-            RESULTS.with(|results| results.borrow_mut().push(Reduced::Inventory(total)));
         }))
     }
 }
@@ -60,13 +63,16 @@ impl Example for Telemetry {
     fn install(setup: &mut owner::Setup<'_>) -> owner::Installed {
         let installed = telemetry::install_peak::<S, F, A, Op>(setup)?;
         Ok(RegionTotalsHandler::running(move |reader, _| {
-            let (peak, _) = telemetry::run_peak::<S, F, A, Op, B>(
+            telemetry::run_peak::<S, F, A, Op, B, _, _>(
                 &installed,
                 reader,
                 &telemetry::sample_input(),
+                |result| {
+                    let (peak, _) = result.expect("the telemetry example completes");
+                    RESULTS.with(|results| results.borrow_mut().push(Reduced::Telemetry(peak)));
+                    worth_query_host::facade::primary_graph::HandlerResult::Completed(())
+                },
             )
-            .expect("the telemetry example completes");
-            RESULTS.with(|results| results.borrow_mut().push(Reduced::Telemetry(peak)));
         }))
     }
 }

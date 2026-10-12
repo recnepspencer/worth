@@ -92,23 +92,23 @@ pub use super::application_contribution::{
     WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationDenial,
     WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption,
     WorthQueryManagedComputationOwner, WorthQueryManagedComputationPrepared,
-    WorthQueryManagedComputationResourceDenial, WorthQueryMemoryLimitLevel,
-    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadinessContractBuilder,
-    WorthQueryOutputReadinessContractDenial, WorthQueryPartitionedComputationDenial,
-    WorthQueryPartitionedComputationOwner, WorthQueryPreparedManagedComputation,
-    WorthQueryPreparedPartitionedComputation, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQueryReductionInputDenial,
-    WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
-    WorthQueryWorkflowAssessmentPosture,
+    WorthQueryManagedComputationResourceDenial, WorthQueryMemberExecution,
+    WorthQueryMemoryLimitLevel, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
+    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
+    WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
+    WorthQueryPreparedManagedComputation, WorthQueryPreparedPartitionedComputation,
+    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQueryReductionInputDenial, WorthQuerySelectedApplicationProducer,
+    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     MutationHandlerExecutionDenial, OperationHandler, WorthQueryCompletedMutationCandidate,
-    WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
-    WorthQueryMutationHandlerWork,
+    WorthQueryDecisionPlan, WorthQueryMutationHandlerExecutionReport,
+    WorthQueryMutationHandlerProjectionWork, WorthQueryMutationHandlerWork,
 };
 pub use super::application_output_demand::{
     required_custody_layout_for_test, required_handoff_custody_bytes_for_test,
@@ -364,7 +364,10 @@ pub use crate::domain_computation::{
 pub use super::provider::relational_execution_denial::relational_execution_kind;
 
 pub use super::application_contribution::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
 };
 pub use crate::domain_computation::primary_graph::application_query::WorthQueryDerivedPairReadPlans;
 pub use worth_execution::ExecutionRequest;

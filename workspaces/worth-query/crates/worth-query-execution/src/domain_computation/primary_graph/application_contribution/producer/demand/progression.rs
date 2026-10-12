@@ -14,6 +14,7 @@ use super::{
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+pub(in crate::domain_computation::primary_graph) use required_wave::{CurrentBasis, CurrentProof};
 mod admission;
 mod caller_custody;
 mod caller_pass;
@@ -22,6 +23,7 @@ mod refresh;
 mod rejoin;
 mod required_fresh;
 mod required_wave;
+pub(super) use required_wave::admission_denial;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::{DecisionInput, PerformedMembers, SelectedDecisionInput};
 mod retained_read;
 pub(in crate::domain_computation::primary_graph) use required_wave::{
@@ -152,7 +154,7 @@ where
         delivery_branch: crate::basis::WorthQueryProductBranch,
         commit_authority: WorthQueryProducerCommitAuthority,
         admission: &mut InvalidationEditAdmission,
-        performed: &mut PerformedMembers,
+        performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -242,7 +244,7 @@ where
         advance: impl FnOnce(
             &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
             &mut InvalidationEditAdmission,
-            &mut PerformedMembers,
+            &std::cell::RefCell<PerformedMembers>,
         )
             -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
@@ -250,8 +252,8 @@ where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         let mut admission = self.demand_request_admission();
-        let mut performed = PerformedMembers::start();
-        let stop = match advance(demand, &mut admission, &mut performed) {
+        let performed = std::cell::RefCell::new(PerformedMembers::start());
+        let stop = match advance(demand, &mut admission, &performed) {
             Ok(progress) => {
                 demand.settled |= matches!(progress, WorthQueryOutputDemandAdvance::Settled(_));
                 caller_pass_observation::observe_request_work(&admission);
@@ -299,7 +301,7 @@ where
         >,
         commit_authority: WorthQueryProducerCommitAuthority,
         request_admission: &mut InvalidationEditAdmission,
-        performed: &mut PerformedMembers,
+        performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,

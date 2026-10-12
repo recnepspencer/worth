@@ -1,25 +1,34 @@
 //! Producer input preparation consumed by fresh execution or stable publication.
 
+mod stable_apply;
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_contribution::InstalledProducerEdition,
     application_query::PreparedObservedSourceExpectation,
     output_lineage::{
-        prepare_stable_address, InputCutoffDecision, InputCutoffVerificationStop,
+        prepare_stable_address, InputCutoffVerificationStop, OwnedInputCutoffDecision,
         PreparedDecisionReuseContext, PreparedInputCutoffBasis, PreparedInputReuseKey,
         PublishedStableLineage,
     },
     ComputationPrior, WorthQueryAdmittedApplicationOperation, WorthQuerySelectedProductOperation,
 };
 
-pub(super) enum ProducerInputProgression {
+type StablePublication<'owner, Schema, OperationType, Input, Scope> = Box<
+    dyn FnOnce(
+            &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
+            &mut InvalidationEditAdmission,
+        ) -> Result<PublishedStableLineage, ProducerExecutionStop>
+        + 'owner,
+>;
+
+pub(super) enum ProducerInputProgression<'owner, Schema, OperationType, Input, Scope> {
     FreshPrepared {
         required_output: RequiredOutputDemandContext,
         source: PreparedObservedSourceExpectation,
         key: Option<PreparedInputReuseKey>,
         context: Option<PreparedDecisionReuseContext>,
     },
-    StablePublished(PublishedStableLineage),
+    StablePrepared(StablePublication<'owner, Schema, OperationType, Input, Scope>),
 }
 
 /// An exact selection whose producer declares no Preserve posture reuses the
@@ -27,7 +36,7 @@ pub(super) enum ProducerInputProgression {
 /// producer never executes over a live output.
 /// A producer that retains a partitioned computation hands its run what the
 /// selected record retained, or why it has nothing.
-fn fresh(
+fn fresh<'owner, Schema, OperationType, Input, Scope>(
     mut required_output: RequiredOutputDemandContext,
     source: PreparedObservedSourceExpectation,
     key: Option<PreparedInputReuseKey>,
@@ -35,7 +44,10 @@ fn fresh(
     prior: Option<ComputationPrior>,
     producer: &'static str,
     reason: &'static str,
-) -> Result<ProducerInputProgression, ProducerExecutionStop> {
+) -> Result<
+    ProducerInputProgression<'owner, Schema, OperationType, Input, Scope>,
+    ProducerExecutionStop,
+> {
     if required_output.reuses_live_output_only() {
         return Err(ProducerExecutionStop::LiveOutputNotReused { producer, reason });
     }
@@ -53,10 +65,10 @@ fn fresh(
 /// Eligibility precedes lineage storage, registry claims, and source-image
 /// construction. The Fresh branch returns the original preparation custody;
 /// no input/context proof or source fact set is reconstructed on fallback.
-pub(super) fn advance_input_cutoff<Schema, Binding, OperationType, Input, Scope>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+pub(super) fn advance_input_cutoff<'owner, Schema, Binding, OperationType, Input, Scope>(
+    phase: &'owner WorthQueryAdvancementPhase<'owner>,
+    runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    selected: &'owner WorthQuerySelectedProductOperation<'_, Schema>,
     operation: &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
     source: PreparedObservedSourceExpectation,
     required_output: RequiredOutputDemandContext,
@@ -67,12 +79,23 @@ pub(super) fn advance_input_cutoff<Schema, Binding, OperationType, Input, Scope>
     edition: InstalledProducerEdition,
     admission: &mut InvalidationEditAdmission,
     currentness: &mut InvalidationEditAdmission,
-) -> Result<ProducerInputProgression, ProducerExecutionStop>
+) -> Result<
+    ProducerInputProgression<'owner, Schema, OperationType, Input, Scope>,
+    ProducerExecutionStop,
+>
 where
     Schema: ApplicationSchema + 'static,
     Binding: WorthQueryApplicationProducerBinding<Schema>,
 {
     let scope = operation.operation_scope_binding();
+    let execution = phase
+        .execution_request_for(&runtime.product_runtime)
+        .map_err(|cause| {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                "advancement phase",
+            )
+        })?;
     let observation = selected.product().observation();
     let handle = &runtime.primary_provider.graph;
     let source_owner = &handle.source_owner.invalidation_owner;
@@ -174,7 +197,7 @@ where
     // The Native owner authenticates and funds the exact issued handle once.
     // Verification consumes this paired proof instead of resolving it again.
     let basis = handle
-        .with_runtime(execution, |relational| {
+        .with_runtime(&execution, |relational| {
             PreparedInputCutoffBasis::prepare(
                 relational,
                 selected.application_basis().snapshot_handle(),
@@ -183,14 +206,14 @@ where
         })
         .map_err(cutoff_basis_denial)?;
     let decision = handle
-        .with_runtime(execution, |relational| {
-            candidate.verify_for_reuse(
-                execution,
+        .with_runtime(&execution, |relational| {
+            candidate.verify_for_reuse_owned(
+                &execution,
                 key,
                 context,
                 matched_predecessors,
                 relational,
-                &basis,
+                basis,
                 source_owner,
                 admission,
                 currentness,
@@ -198,7 +221,7 @@ where
         })
         .map_err(cutoff_denial)?;
     let verified = match decision {
-        InputCutoffDecision::Fresh { key, context } => {
+        OwnedInputCutoffDecision::Fresh { key, context } => {
             return fresh(
                 required_output,
                 source,
@@ -209,65 +232,59 @@ where
                 "prior input cutoff verification requires fresh execution",
             );
         }
-        InputCutoffDecision::Reuse(verified) => verified,
+        OwnedInputCutoffDecision::Reuse(verified) => verified,
     };
     let fresh = source
         .consume_stable(operation)
         .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let lane = runtime
-        .primary_provider
-        .admitted_application_branch_commit_lane(observation, admission)
-        .map_err(|stop| {
-            use crate::domain_computation::primary_graph::provider::WorthQueryBranchCommitLaneDenial as Stop;
-            match stop {
-                Stop::Preparation(stop) => cutoff_admission_denial(stop),
-                Stop::RetainedCapacityExhausted { .. } | Stop::CapacityCounterOverflow => denial(
-                    WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                    "producer input cutoff branch coordination",
-                ).with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable),
-            }
-        })?;
-    let coordination = lane.enter();
-    let address = prepare_stable_address::<Operation<Schema, Binding>>(
-        &handle.output_lineage,
-        verified,
-        scope,
-        observation,
-        &coordination,
-        admission,
-    )?;
-    let publication = address.prepare_record(fresh, operation, resources, admission)?;
-    // Registry preparation is outside both lineage and Product guards.
-    let mut prerequisites = required_output.prepare_prerequisites(
-        publication.consumed_outputs().iter(),
-        source_owner,
-        admission,
-    )?;
-    prerequisites.reserve_identity(publication.identity(), admission)?;
-    let registration = publication.prepare_current_registration(
-        source_owner,
-        prerequisites.work_membership(),
-        admission,
-    )
-        .map_err(|stop| match stop {
-            crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop) => cutoff_admission_denial(stop),
-            _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source changed during preparation"),
-        })?;
-    let displaced = publication.displaced_settlement();
-    let published = publication.publish::<Operation<Schema, Binding>, _, _, _, _>(
-        operation,
-        observation,
-        &runtime.product_runtime.owner.observation_port(),
-        registration,
-        admission,
-    ).map_err(|stop| match stop {
-        crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
-        crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),
-    })?;
-    prerequisites
-        .publish(Arc::clone(published.exact_settlement()))
-        .retire(displaced, source_owner);
-    Ok(ProducerInputProgression::StablePublished(published))
+    Ok(ProducerInputProgression::StablePrepared(Box::new(
+        move |operation, admission| {
+            // Completion uses the current head after earlier canonical slots
+            // published. Recompare prepared facts; do not rerun a handler read.
+            let current = runtime
+                .on_branch(selected.product().product_branch())
+                .select(phase)
+                .map_err(|stop| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::ProductSelection(stop),
+                        "stable publication current Product",
+                    )
+                })?;
+            let basis = handle
+                .with_runtime(&execution, |relational| {
+                    PreparedInputCutoffBasis::prepare(
+                        relational,
+                        current.application_basis().snapshot_handle(),
+                        admission,
+                    )
+                })
+                .map_err(cutoff_basis_denial)?;
+            let verified = handle
+                .with_runtime(&execution, |relational| {
+                    verified.recompare_for_publication(
+                        &execution,
+                        relational,
+                        basis,
+                        source_owner,
+                        fresh.source_facts(),
+                        admission,
+                    )
+                })
+                .map_err(cutoff_denial)?;
+            verified.with_verified(|verified| {
+                stable_apply::publish::<Schema, Binding, _, _, _>(
+                    runtime,
+                    current.product().observation(),
+                    operation,
+                    fresh,
+                    verified,
+                    required_output,
+                    resources,
+                    admission,
+                )
+            })
+        },
+    )))
 }
 
 /// Basis preparation may refuse its first claim, so no diagnostic allocation

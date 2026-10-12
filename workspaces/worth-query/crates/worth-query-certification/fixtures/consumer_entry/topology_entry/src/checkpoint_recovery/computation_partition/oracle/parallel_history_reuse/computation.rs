@@ -2,9 +2,21 @@
 use super::*;
 use crate::checkpoint_recovery::parallel_history::reuse_cases::SHARED_WORK;
 use worth_execution::PartitionItemId;
-pub(super) struct HistoryOwner;
-impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFeature, OracleTotals>
+pub(super) struct HistoryOwner {
+    pub steps: bool,
+}
+impl<C> WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFeature, C>
     for HistoryOwner
+where
+    C: ApplicationManagedComputation<
+        CheckpointSchema,
+        PlanarFinalOutputFeature,
+        Input = RegionEntries,
+        Output = RegionArtifact,
+        Partition = RegionKey,
+        Reuse = NoWarmStart,
+        Stopped = RegionStopped,
+    >,
 {
     type Operation = TotalRegionOutput;
     type Item = Entry;
@@ -62,7 +74,17 @@ impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFe
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
         KERNELS.fetch_add(1, Ordering::Relaxed);
-        owner::total_region(partition.key().0, partition.gathered(), checkpoint)
+        if !self.steps {
+            return owner::total_region(partition.key().0, partition.gathered(), checkpoint);
+        }
+        let mut total = -0.0;
+        for entry in partition.gathered() {
+            for _ in 0..entry.work {
+                checkpoint.advance(1)?;
+            }
+            total += entry.value;
+        }
+        Ok(total)
     }
     fn reducer(&self) -> WorthQueryDeterministicReducer<f64> {
         WorthQueryDeterministicReducer::canonical(|| -0.0, tree_count::sum)

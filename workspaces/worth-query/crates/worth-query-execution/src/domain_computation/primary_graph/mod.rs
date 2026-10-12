@@ -152,7 +152,9 @@ pub(in crate::domain_computation) use application_contribution::SealedComputatio
 pub(in crate::domain_computation) use application_contribution::observe_discarded;
 
 #[cfg(test)]
-pub(crate) use application_contribution::{with_test_advancement, TestHostRequest};
+pub(crate) use application_contribution::{
+    drain_test_advancement_observations, with_test_advancement, TestHostRequest,
+};
 
 pub use application_contribution::with_bootstrap_advancement;
 

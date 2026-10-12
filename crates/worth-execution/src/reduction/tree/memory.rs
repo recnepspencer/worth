@@ -10,6 +10,24 @@ use super::{
     Link, Node, ReductionTree,
 };
 
+/// Why an existing partition's edit memory bound cannot be computed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReductionEditMemoryBoundError {
+    /// The tree has no partition with this identity; no arithmetic was attempted.
+    UnknownIdentity(PartitionIdentity),
+    /// The edit's byte bound overflowed.
+    Overflow,
+}
+
+/// Why a new partition's insert memory bound cannot be computed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReductionInsertMemoryBoundError {
+    /// The tree already holds this identity; no arithmetic was attempted.
+    AlreadyPresent(PartitionIdentity),
+    /// The insert's byte bound overflowed.
+    Overflow,
+}
+
 impl<T: ChargedBytes, F> ChargedBytes for ReductionTree<T, F> {
     fn additional_charged_bytes(&self) -> u64 {
         self.root
@@ -87,38 +105,47 @@ impl<T, F> ReductionTree<T, F> {
     }
 
     /// Additional edit scratch beyond the retained tree and incoming value.
+    /// Returns `UnknownIdentity` for absence or `Overflow` for arithmetic overflow.
     pub fn checked_update_memory_bound(
         &self,
         partition: PartitionIdentity,
         max_value_bytes: u64,
-    ) -> Option<u64> {
+    ) -> Result<u64, ReductionEditMemoryBoundError> {
         let (depth, found) = search_depth(&self.root, partition);
-        found
-            .then(|| path_ceiling::<T>(depth, max_value_bytes))
-            .flatten()
+        if !found {
+            return Err(ReductionEditMemoryBoundError::UnknownIdentity(partition));
+        }
+        path_ceiling::<T>(depth, max_value_bytes).ok_or(ReductionEditMemoryBoundError::Overflow)
     }
 
     /// Additional edit scratch beyond the retained tree and incoming value.
+    /// Returns `AlreadyPresent` for presence or `Overflow` for arithmetic overflow.
     pub fn checked_insert_memory_bound(
         &self,
         partition: PartitionIdentity,
         max_value_bytes: u64,
-    ) -> Option<u64> {
+    ) -> Result<u64, ReductionInsertMemoryBoundError> {
         let (depth, found) = search_depth(&self.root, partition);
-        (!found)
-            .then(|| path_ceiling::<T>(depth + 1, max_value_bytes))
-            .flatten()
+        if found {
+            return Err(ReductionInsertMemoryBoundError::AlreadyPresent(partition));
+        }
+        let depth = depth
+            .checked_add(1)
+            .ok_or(ReductionInsertMemoryBoundError::Overflow)?;
+        path_ceiling::<T>(depth, max_value_bytes).ok_or(ReductionInsertMemoryBoundError::Overflow)
     }
 
     /// Additional edit scratch beyond the retained tree. Includes the
     /// Cartesian merge path of the deleted node's children.
+    /// Returns `UnknownIdentity` for absence or `Overflow` for arithmetic overflow.
     pub fn checked_delete_memory_bound(
         &self,
         partition: PartitionIdentity,
         max_value_bytes: u64,
-    ) -> Option<u64> {
-        deletion_depth(&self.root, partition)
-            .and_then(|depth| path_ceiling::<T>(depth, max_value_bytes))
+    ) -> Result<u64, ReductionEditMemoryBoundError> {
+        let depth = deletion_depth(&self.root, partition)
+            .ok_or(ReductionEditMemoryBoundError::UnknownIdentity(partition))?;
+        path_ceiling::<T>(depth, max_value_bytes).ok_or(ReductionEditMemoryBoundError::Overflow)
     }
 }
 

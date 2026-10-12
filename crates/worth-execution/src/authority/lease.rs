@@ -19,12 +19,15 @@ static PROCESS_AUTHORITY: OnceLock<()> = OnceLock::new();
 static CONSTRUCTION_LOCK: Mutex<()> = Mutex::new(());
 mod array_backing;
 mod byte_backing;
+mod diagnostic;
 mod fixed_backing;
 mod limits;
 mod memory;
+mod refusal;
 mod reservation;
 mod retained;
 mod room;
+mod serial_authority;
 mod worker_context;
 mod worker_width;
 pub use array_backing::{ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter};
@@ -101,7 +104,7 @@ pub struct ExecutionAuthority {
 #[derive(Debug)]
 struct AuthorityInner {
     config: ExecutionAuthorityConfig,
-    pool: Option<ThreadPool>,
+    pool: Option<Arc<ThreadPool>>,
     equivalences: EquivalenceRegistry,
     ledger: Mutex<Ledger>,
 }
@@ -166,13 +169,13 @@ impl ExecutionAuthority {
         let pool = if !crate::backend::HAS_OS_THREADS {
             None
         } else {
-            Some(
+            Some(Arc::new(
                 ThreadPoolBuilder::new()
                     .num_threads(config.max_workers.get())
                     .thread_name(|index| format!("worth-execution-{index}"))
                     .build()
                     .map_err(|error| ConstructionDenial::PoolConstruction(error.to_string()))?,
-            )
+            ))
         };
         let authority = Self {
             inner: Arc::new(AuthorityInner {
@@ -220,7 +223,7 @@ impl ExecutionAuthority {
         request: LeaseRequest,
     ) -> Result<ExecutionResourceLease<'_>, LeaseDenial> {
         self.admits_policy(&request.policy)
-            .map_err(LeaseDenial::from)?;
+            .map_err(|denial| LeaseDenial::refused(denial.into()))?;
         let budget = request.policy.budget();
         let id = self.next_id();
         Ok(ExecutionResourceLease {
@@ -284,7 +287,7 @@ impl<'a> ExecutionResourceLease<'a> {
             Some((owner, active_node)) if owner == identity => {
                 let lineage = self.lineage();
                 let Some(position) = lineage.iter().position(|node| node.id == active_node) else {
-                    return Err(LeaseDenial::UnrelatedNestedLease);
+                    return Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease));
                 };
                 let worker_nodes = lineage[..position]
                     .iter()

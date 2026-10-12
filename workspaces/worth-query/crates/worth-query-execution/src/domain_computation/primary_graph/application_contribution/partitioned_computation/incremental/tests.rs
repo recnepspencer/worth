@@ -72,6 +72,8 @@ struct Owner {
     bump: Mutex<u64>,
     /// The work of each kernel, odd parity first.
     work: Mutex<[usize; 2]>,
+    steps: Mutex<Option<[Vec<usize>; 2]>>,
+    nested: std::sync::atomic::AtomicBool,
     gathered: Mutex<Vec<u64>>,
     calls: Mutex<[usize; 4]>,
 }
@@ -134,8 +136,54 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<u64, WorthQueryManagedComputationDenial<u32>> {
         self.calls.lock().unwrap()[3] += 1;
+        if self.nested.load(std::sync::atomic::Ordering::Relaxed) {
+            let map = worth_execution::ExecutionMap::<_, u64>::from_keyless_partitions(
+                std::collections::BTreeMap::from([
+                    (
+                        worth_foundational::PartitionIdentity::new(1),
+                        worth_execution::KeylessPartition {
+                            value: 2_u64,
+                            kernel_scratch_bytes: 0,
+                            max_result_bytes: 0,
+                        },
+                    ),
+                    (
+                        worth_foundational::PartitionIdentity::new(2),
+                        worth_execution::KeylessPartition {
+                            value: 3_u64,
+                            kernel_scratch_bytes: 0,
+                            max_result_bytes: 0,
+                        },
+                    ),
+                ]),
+            )
+            .unwrap();
+            assert!(
+                matches!(
+                    map.run(
+                        Some(
+                            checkpoint
+                                .native_lease_for_test()
+                                .expect("the kernel lends its actual leased backing")
+                        ),
+                        |units, context| {
+                            context.checkpoint(*units)?;
+                            Ok::<_, worth_execution::MapKernelFailure<()>>(*units)
+                        }
+                    ),
+                    worth_execution::MapOutcome::Complete { .. }
+                ),
+                "the nested public map computes inside its parent's meter"
+            );
+        }
         let work = self.work.lock().unwrap()[usize::from(partition.key().0 == 0)];
-        checkpoint.advance(work)?;
+        if let Some(steps) = &*self.steps.lock().unwrap() {
+            for step in &steps[usize::from(partition.key().0 == 0)] {
+                checkpoint.advance(*step)?;
+            }
+        } else {
+            checkpoint.advance(work)?;
+        }
         Ok(*partition.gathered())
     }
 
@@ -159,6 +207,8 @@ fn installed_over(modulus: u64, status: StatusRead, reducer: fn(&u64, &u64) -> u
         reducer,
         bump: Mutex::new(0),
         work: Mutex::new([1, 1]),
+        steps: Mutex::new(None),
+        nested: Default::default(),
         gathered: Mutex::default(),
         calls: Mutex::default(),
     };
@@ -177,6 +227,7 @@ fn edition() -> InstalledProducerEdition {
 /// parities it gathered, and the run seal kept, or the seal's refusal.
 struct Attempt {
     outcome: Outcome,
+    bill: ExecutionReport,
     /// The work the projection's reader charged.
     work: crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork,
     runs: Vec<(Run, Option<ExecutionReport>)>,
@@ -294,12 +345,14 @@ fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
     first
 }
 
+mod advancement_charge;
 mod carrying;
 mod certified;
 mod collision;
 mod digests;
 mod installation;
 mod interruption;
+mod kernel_receipt;
 mod request_memory;
 mod reroute;
 mod tree_memory;

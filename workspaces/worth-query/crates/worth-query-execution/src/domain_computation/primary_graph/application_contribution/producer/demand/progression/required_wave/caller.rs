@@ -5,7 +5,7 @@ use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
 use super::drive::drive_required_wave;
-use super::queued::RequiredQueueFrames;
+use super::queued::QueuedRequiredRoots;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
@@ -30,7 +30,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     request_scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     commit_authority: &WorthQueryProducerCommitAuthority,
-    performed: &mut performed::PerformedMembers,
+    performed: &std::cell::RefCell<performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
@@ -157,7 +157,7 @@ where
             ) => return Ok(None),
         }
     }
-    let mut queue = RequiredQueueFrames::new();
+    let mut queue = QueuedRequiredRoots::new();
     // A queue frame refreshes rows for owners outside this request. Its
     // unfinished successors go to registry custody when the wave ends.
     let mut frame_custody = RequiredContinuations::default();
@@ -194,8 +194,12 @@ pub(super) fn finish_current_caller<Schema, Family>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     caller: CurrentCaller<'_>,
+    proof: performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
     admission: &mut InvalidationEditAdmission,
-) -> Result<bool, WorthQueryOutputDemandDenial>
+) -> Result<
+    Option<performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>>,
+    WorthQueryOutputDemandDenial,
+>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
@@ -234,7 +238,7 @@ where
         successor.producer_contacts_in_this_demand = current_contacts;
         *demand = successor;
     } else if !caller_current {
-        return Ok(false);
+        return Ok(None);
     }
     let interest = demand
         .interest
@@ -244,5 +248,5 @@ where
         .output_demands
         .finish_settlement_admitted(interest, selected, admission)?;
     drop(demand.required_continuations.take_all());
-    Ok(true)
+    Ok(Some(proof))
 }

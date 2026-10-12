@@ -1,6 +1,31 @@
 //! An admitted computation and the projection custody it can seal.
 use super::*;
 
+pub(super) fn attempt_billed<Tested, Owned>(
+    world: &AuthorizationWorld,
+    installed: &WorthQueryInstalledPartitionedComputation<Schema, Feature, Tested, Owned>,
+    prior: Option<ComputationPrior>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    placement: RuntimeWorldExecutionPlacement<'_>,
+    ceiling: Option<u64>,
+) -> Attempt
+where
+    Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
+    Owned: TestOwner<Tested>,
+{
+    with_admitted_attempt_placed(
+        world,
+        installed,
+        prior,
+        request,
+        placement,
+        |_| {},
+        |phase| admit(world, request, phase),
+        ceiling,
+        None,
+    )
+}
+
 /// [`attempt_in`] with the request's execution opened under `placement`.
 pub(super) fn attempt_placed<Tested, Owned>(
     world: &AuthorizationWorld,
@@ -37,6 +62,8 @@ where
         placement,
         before_computation,
         |phase| admit(world, request, phase),
+        None,
+        None,
     )
 }
 
@@ -72,6 +99,8 @@ where
         placement,
         before_computation,
         |_| admission,
+        None,
+        None,
     )
 }
 
@@ -111,6 +140,8 @@ fn with_admitted_attempt_placed<Tested, Owned>(
     admit: impl FnOnce(
         &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Admission,
+    ceiling: Option<u64>,
+    kernel_receipts: Option<Arc<Mutex<Vec<(u64, u64)>>>>,
 ) -> Attempt
 where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
@@ -130,6 +161,7 @@ where
             ComputationPrior::hand_in_test(prior);
             SealedComputationRun::keep_in_test(None);
             let mut outcome = None;
+            let mut bill = None;
             let completed = world.invariant.project_admitted_operation(
                 &phase_custody.phase_for_application(&world.application),
                 &admission,
@@ -139,9 +171,31 @@ where
                             .execution_for(&world.application.product_runtime)
                             .expect("the fixture phase belongs to its installed world");
                         before_computation(execution);
-                        let computed = installed
-                            .prepare_through(reader, execution, root)?
-                            .compute(WorthQueryManagedComputationExecution::new(execution))?;
+                        let prepared = installed.prepare_through(reader, execution, root)?;
+                        let prepared = if let Some(receipts) = &kernel_receipts {
+                            let receipts = Arc::clone(receipts);
+                            prepared.observe_kernel_cost_for_test(move |work, span| {
+                                receipts.lock().unwrap().push((work, span));
+                            })
+                        } else {
+                            prepared
+                        };
+                        let compute = || {
+                            prepared.compute(WorthQueryManagedComputationExecution::new(execution))
+                        };
+                        let computed = if let Some(ceiling) = ceiling {
+                            let (computed, report) = execution
+                                .execution_request()
+                                .unwrap()
+                                .run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| {
+                                    compute()
+                                })
+                                .unwrap();
+                            bill = Some(report);
+                            computed
+                        } else {
+                            compute()
+                        }?;
                         let charged = computed.charged_work();
                         Ok((computed.complete()?, charged))
                     })());
@@ -195,6 +249,14 @@ where
             gathered.sort_unstable();
             observed = Some(Attempt {
                 outcome,
+                bill: bill.unwrap_or_else(|| {
+                    ExecutionReport::new(
+                        worth_foundational::ExecutionPosture::Serial,
+                        0,
+                        0,
+                        Default::default(),
+                    )
+                }),
                 work,
                 runs: runs(),
                 tree_runs: tree_runs(),
@@ -222,4 +284,27 @@ where
         );
     }
     attempt
+}
+
+/// One billed attempt with its receiver-owned kernel completion receipt.
+pub(super) fn attempt_billed_with_receipts(
+    world: &AuthorizationWorld,
+    installed: &Installed,
+    prior: Option<ComputationPrior>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    placement: RuntimeWorldExecutionPlacement<'_>,
+    ceiling: u64,
+    receipts: Arc<Mutex<Vec<(u64, u64)>>>,
+) -> Attempt {
+    with_admitted_attempt_placed(
+        world,
+        installed,
+        prior,
+        request,
+        placement,
+        |_| {},
+        |phase| admit(world, request, phase),
+        Some(ceiling),
+        Some(receipts),
+    )
 }

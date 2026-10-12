@@ -17,14 +17,58 @@ use crate::domain_computation::primary_graph::{
 /// Prepared before Running and consumed by exactly one execution outcome.
 pub(in crate::domain_computation::primary_graph) struct PreparedSelectedExecutionFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,
-    interest: &'a WorthQueryOutputDemandInterest,
+    key: Arc<super::super::WorthQueryOutputDemandKey>,
     member: Arc<RequiredWorkMembership>,
+    publication_head: Arc<std::sync::atomic::AtomicUsize>,
+}
+
+/// Holds only this invocation's Running claim. Abandoning a prepared suffix
+/// releases it back to Scheduled before its last Interest can be destroyed.
+pub(in crate::domain_computation::primary_graph) struct RunningSelectedExecution<'a> {
+    finish: Option<PreparedSelectedExecutionFinish<'a>>,
+}
+impl<'a> RunningSelectedExecution<'a> {
+    pub(in crate::domain_computation::primary_graph) fn new(
+        finish: PreparedSelectedExecutionFinish<'a>,
+    ) -> Self {
+        Self {
+            finish: Some(finish),
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn relinquish(mut self) {
+        self.finish.take().expect("one Running finish").relinquish();
+    }
+    pub(in crate::domain_computation::primary_graph) fn publish(
+        mut self,
+        checkpoint: WorthQueryOutputCheckpoint,
+    ) -> Result<(), (WorthQueryOutputDemandDenial, WorthQueryOutputCheckpoint)> {
+        self.finish
+            .take()
+            .expect("one Running finish")
+            .publish(checkpoint)
+    }
+    pub(in crate::domain_computation::primary_graph) fn failure(
+        mut self,
+        denial: &mut WorthQueryOutputDemandDenial,
+    ) {
+        self.finish
+            .take()
+            .expect("one Running finish")
+            .failure(denial);
+    }
+}
+impl Drop for RunningSelectedExecution<'_> {
+    fn drop(&mut self) {
+        if let Some(finish) = self.finish.take() {
+            finish.relinquish();
+        }
+    }
 }
 
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn prepare_selected_execution_finish<'a>(
         &'a self,
-        interest: &'a WorthQueryOutputDemandInterest,
+        interest: &WorthQueryOutputDemandInterest,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedSelectedExecutionFinish<'a>, WorthQueryOutputDemandDenial> {
         // The existing ordered lookup owner may allocate one subject of at
@@ -40,7 +84,7 @@ impl WorthQueryOutputDemandRegistry {
         // checkpoint/state move, an empty retained denial, and an Arc key
         // retain for deferred terminal cleanup. Its variable diagnostic
         // stays with the immediate caller.
-        let fixed = 2 * std::mem::size_of::<PreparedSelectedExecutionFinish<'_>>()
+        let fixed = 2 * std::mem::size_of::<RunningSelectedExecution<'_>>()
             + 2 * std::mem::size_of::<DemandState>()
             + std::mem::size_of::<WorthQueryOutputProgress>()
             + std::mem::size_of::<WorthQueryOutputDemandDenial>()
@@ -75,10 +119,14 @@ impl WorthQueryOutputDemandRegistry {
             .as_ref()
             .cloned()
             .ok_or_else(empty_work_denial)?;
+        let publication_head = state
+            .records
+            .publication_counter(record.product_occurrence, admission)?;
         Ok(PreparedSelectedExecutionFinish {
             registry: self,
-            interest,
+            key: Arc::clone(member.key_arc()),
             member,
+            publication_head,
         })
     }
 }
@@ -90,17 +138,18 @@ impl PreparedSelectedExecutionFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+        let mut record = state
             .records
-            .get_mut(&self.interest.key)
+            .get_mut(self.key.as_ref())
             .expect("the selected executor retains its Interest");
         if record
             .work_membership
             .as_ref()
             .is_some_and(|member| Arc::ptr_eq(member, &self.member))
         {
-            relinquish_record(record);
+            relinquish_record(&mut record);
         }
+        record.finish();
         drop(state);
         // The retained member is destroyed after the registry guard.
         drop(self);
@@ -117,7 +166,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(record) = state.records.get_mut(&self.interest.key) else {
+        let Some(mut record) = state.records.get_mut(self.key.as_ref()) else {
             return Err((
                 empty_denial(WorthQueryOutputDemandDenialKind::Closed),
                 checkpoint,
@@ -135,12 +184,14 @@ impl PreparedSelectedExecutionFinish<'_> {
             };
             return Err((denial, checkpoint));
         }
-        let (output, retired_observation) =
+        let (mut output, retired_observation) =
             WorthQueryOutputProgress::new_with_detached_observation(checkpoint);
+        output.bind_publication_head(self.publication_head);
         record.state = DemandState::Output(output);
         let retired_source = record.performed_source.take();
         record.successor_of = None;
         record.wake.notify();
+        record.finish();
         drop(state);
         drop(retired_source);
         drop(retired_observation);
@@ -166,7 +217,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(record) = state.records.get_mut(&self.interest.key) else {
+        let Some(mut record) = state.records.get_mut(self.key.as_ref()) else {
             return;
         };
         if !record
@@ -186,6 +237,7 @@ impl PreparedSelectedExecutionFinish<'_> {
             (bytes, std::mem::take(&mut record.performed_obligations))
         };
         record.wake.notify();
+        record.finish();
         if !rescheduled {
             state.defer_terminal_cleanup(self.member.key_arc(), 0);
         }

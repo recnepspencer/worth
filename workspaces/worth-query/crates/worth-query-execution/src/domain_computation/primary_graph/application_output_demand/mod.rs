@@ -1,8 +1,15 @@
 pub(in crate::domain_computation::primary_graph) use registry::ConsumerCustody;
+pub(in crate::domain_computation::primary_graph) use registry::RunningSelectedExecution;
+pub(in crate::domain_computation::primary_graph) use registry::{
+    LivePublicationHead, PublicationHeadSelection,
+};
 mod currentness;
 mod readiness_delivery;
 mod recovered_outputs;
 mod registry;
+pub(in crate::domain_computation::primary_graph) use registry::{
+    AdmittedRequiredWave, PreparedRequiredInputs,
+};
 mod settlement;
 
 pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;
@@ -12,6 +19,7 @@ pub(in crate::domain_computation::primary_graph) use registry::PendingUpstream;
 pub(in crate::domain_computation::primary_graph) use registry::PreparedPrerequisiteClaims;
 pub(in crate::domain_computation::primary_graph) use registry::ReplacedRequiredWorkHint;
 pub(in crate::domain_computation::primary_graph) use registry::RequestedOutputReadClaims;
+pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkClaim;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use registry::RetainedOutputReadmissionSource;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedOutputAdmission;

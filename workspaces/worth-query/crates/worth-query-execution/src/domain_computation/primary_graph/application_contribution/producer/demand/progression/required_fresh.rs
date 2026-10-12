@@ -25,20 +25,16 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    /// Continue one admitted required successor without losing its source
-    /// disclosure or real Interest on a post-admission refusal.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn continue_required_fresh<
-        Family,
-    >(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &WorthQueryAdvancementPhase<'_>,
+    /// Preparation retains the real typed successor until canonical apply.
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn prepare_required_fresh<'owner, Family>(
+        &'owner self,
+        phase: &'owner WorthQueryAdvancementPhase<'owner>,
         fresh: FreshOutputDisclosure<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
         readiness: required_wave::performed::FreshReadiness,
-        shared: &SharedSelectedProductOperation<'_, Schema>,
+        shared: &'owner SharedSelectedProductOperation<'_, Schema>,
         claim: SelectedRequiredRefreshClaim,
         installed: &super::super::super::registry::InstalledProducerProvider<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -46,8 +42,8 @@ where
         delivery_branch: crate::basis::WorthQueryProductBranch,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
         admission: &mut InvalidationEditAdmission,
-        performed: &mut PerformedMembers,
-    ) -> Result<RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>
+        performed: &'owner std::cell::RefCell<PerformedMembers>,
+    ) -> Result<crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan<'owner, RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema> + 'static,
         FamilySourceValue<Schema, Family>:
@@ -58,6 +54,14 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
         WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
     {
+        let execution = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "advancement phase",
+                )
+            })?;
         let mut slot = PreparedRequiredFreshSlot::<Schema, Family>::prepare(
             &self.output_demands,
             claim,
@@ -65,7 +69,7 @@ where
             admission,
         )?;
         let mut successor = self.admit_required_fresh_successor::<Family>(
-            execution,
+            &execution,
             &fresh,
             shared,
             slot.claim(),
@@ -74,16 +78,18 @@ where
         // The mode was prepared from this exact claim before registration. It
         // must be on the real admitted demand before any scheduling or effect.
         slot.bind_admitted(&mut successor);
-        let transfer = performed
-            .attach_successor(
-                readiness,
-                successor
-                    .interest
-                    .as_ref()
-                    .expect("admitted required successor retains its issued Interest")
-                    .key(),
-                admission,
-            )
+        let transfer = performed.borrow_mut().attach_successor(
+            readiness,
+            successor
+                .interest
+                .as_ref()
+                .expect("admitted successor keeps its Interest")
+                .key(),
+            admission,
+        );
+        // The registry's custody handoff precedes the selected read: a Stable
+        // join must observe the same predecessor ownership on every exit.
+        let outcome = transfer
             .and_then(|readiness| {
                 self.output_demands
                     .finish_replaced_interest(
@@ -91,14 +97,13 @@ where
                         successor
                             .interest
                             .as_ref()
-                            .expect("admitted required successor retains its issued Interest"),
+                            .expect("an admitted successor has its issued Interest"),
                         Family::IDENTITY,
                         admission,
                     )
                     .map(|()| readiness)
-            });
-        let outcome = match transfer {
-            Ok(readiness) => {
+            })
+            .and_then(|readiness| {
                 match u64::try_from(std::mem::size_of::<
                     super::super::super::WorthQueryProducerCommitAuthority,
                 >())
@@ -116,39 +121,51 @@ where
                             admission,
                         )
                         .and_then(|fresh| {
-                            self.advance_validated_required_fresh_on_selected(
-                                execution,
-                                phase,
-                                readiness,
-                                &mut successor,
-                                principal,
-                                request_scope,
-                                delivery_branch,
-                                ValidatedOutputDisclosure::Fresh(fresh),
-                                successor_entry.as_ref(),
-                                mode,
-                                shared,
-                                matched_predecessors,
-                                admission,
-                                performed,
-                            )
+                            self.prepare_validated_output_demand_with_schedule(
+                        phase,
+                        &mut successor,
+                        principal,
+                        request_scope,
+                        delivery_branch,
+                        ValidatedOutputDisclosure::Fresh(fresh),
+                        successor_entry.as_ref(),
+                        mode,
+                        super::validated::schedule_progression::ScheduleProgression::Selected {
+                            shared,
+                            matched_predecessors,
+                            readiness,
+                        },
+                        admission,
+                        performed,
+                    )
                         })
                     }
                     None => Err(work_denial()),
                 }
+            });
+        use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
+        let plan = match outcome {
+            Ok(super::validated::ExecutionPreparation::Planned(plan)) => plan,
+            Ok(super::validated::ExecutionPreparation::Reached(_)) => OwnerPlan::immediate(Ok(
+                super::validated::schedule_progression::CheckpointProgress::Advanced,
+            )),
+            Err(stop) => {
+                OwnerPlan::immediate(Err(super::validated::CompletionRefusal::denied(stop)))
             }
-            Err(denial) => Err(denial),
         };
-        if let Err(stop) = &outcome {
-            crate::domain_computation::primary_graph::application_output_demand::observe_required_refresh_stop(successor.observed_source.source_root(),stop.kind());
-        }
-        Ok(slot.finish(
-            successor,
-            match outcome {
+        Ok(plan.complete_with((slot, successor), move |completion, admission| {
+            let (completed, (slot, mut successor)) = completion.finish(admission);
+            let outcome = match completed {
                 Ok(_) => RequiredFreshOutcome::Advanced,
-                Err(denial) => RequiredFreshOutcome::Refused(denial),
-            },
-        ))
+                Err(refusal) => {
+                    successor.unpublished_selected_checkpoint = refusal.checkpoint;
+
+                    crate::domain_computation::primary_graph::application_output_demand::observe_required_refresh_stop(successor.observed_source.source_root(), refusal.denial.kind());
+                    RequiredFreshOutcome::Refused(refusal.denial)
+                }
+            };
+            Ok(slot.finish(successor, outcome))
+        }))
     }
 
     /// This returns a real admitted demand and its interest. The caller keeps

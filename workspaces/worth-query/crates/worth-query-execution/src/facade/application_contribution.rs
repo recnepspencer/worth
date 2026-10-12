@@ -48,3 +48,5 @@ pub use worth_query_declaration::facade::application_schema::ApplicationSchemaCo
 pub use crate::domain_computation::primary_graph::with_bootstrap_advancement;
 
 pub use crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase;
+
+pub use crate::domain_computation::primary_graph::WorthQueryMemberExecution;

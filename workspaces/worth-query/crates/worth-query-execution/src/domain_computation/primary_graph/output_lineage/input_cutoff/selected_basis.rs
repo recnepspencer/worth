@@ -19,6 +19,9 @@ pub(in crate::domain_computation::primary_graph) struct PreparedInputCutoffBasis
 }
 
 impl<'snapshot> PreparedInputCutoffBasis<'snapshot> {
+    pub(super) fn into_positioned(self) -> PositionedRelationalSnapshot {
+        self.positioned
+    }
     pub(in crate::domain_computation::primary_graph) fn prepare(
         runtime: &RelationalRuntime,
         snapshot: &'snapshot SnapshotHandle,

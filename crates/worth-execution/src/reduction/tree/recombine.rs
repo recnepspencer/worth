@@ -47,7 +47,7 @@ where
         (self.before_combine)().map_err(ReductionRunStop::Hook)?;
         self.metrics
             .record_visit()
-            .map_err(|_| ReductionRunStop::WorkCounterOverflow)
+            .map_err(|_| ReductionRunStop::work_counter_overflow())
     }
 
     /// A full tree has independent child subtrees even when this backend
@@ -84,7 +84,7 @@ where
         (self.before_combine)().map_err(ReductionRunStop::Hook)?;
         self.metrics
             .record_combine()
-            .map_err(|_| ReductionRunStop::WorkCounterOverflow)?;
+            .map_err(|_| ReductionRunStop::work_counter_overflow())?;
         let value = catch_unwind(AssertUnwindSafe(|| (self.combine)(left, right)))
             .map_err(|_| ReductionRunStop::Panic)?;
         self.validate(&value)?;
@@ -105,7 +105,7 @@ where
         let aggregate = self.call(&middle, right_aggregate)?;
         self.metrics
             .record_node()
-            .map_err(|_| ReductionRunStop::WorkCounterOverflow)?;
+            .map_err(|_| ReductionRunStop::work_counter_overflow())?;
         make_node(identity, value, aggregate, left, right)
     }
 
@@ -129,6 +129,12 @@ fn make_node<T: ChargedBytes, E>(
 ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
     let retained_bytes = node_bytes(&value, &aggregate, &left, &right)
         .ok_or(ReductionRunStop::ResultCapacityExceeded)?;
+    let full_subtree_span = left
+        .as_ref()
+        .map_or(0, |node| node.full_subtree_span)
+        .max(right.as_ref().map_or(0, |node| node.full_subtree_span))
+        .checked_add(4)
+        .ok_or_else(ReductionRunStop::work_counter_overflow)?;
     Ok(Arc::new(Node {
         identity,
         value,
@@ -136,6 +142,7 @@ fn make_node<T: ChargedBytes, E>(
         left,
         right,
         retained_bytes,
+        full_subtree_span,
     }))
 }
 

@@ -23,6 +23,17 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 }
 
 impl ProducerExecutionStop {
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn into_output_denial(
+        self,
+    ) -> WorthQueryOutputDemandDenial {
+        match self {
+            Self::RequestAdmissionDenied(rejection) => rejection.into_denial(),
+            Self::ExecutionStopped(denial) => denial,
+            Self::LiveOutputNotReused { producer, reason } => {
+                Self::live_output_not_reused(producer, reason)
+            }
+        }
+    }
     /// The typed refusal of a caller whose exact producer is not applicable
     /// to the live output it was selected for.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn live_output_not_reused(

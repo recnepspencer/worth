@@ -64,19 +64,8 @@ impl<T: Send + ChargedBytes> InputMode for OwnedInputs<T> {
         seed: Option<u64>,
         execute: &(impl Fn((usize, Self::Item)) + Sync),
     ) -> usize {
-        let order = seed.map(|seed| {
-            let mut order: Vec<_> = (0..self.0.len()).collect();
-            perturbation::permute(order.len(), seed, |a, b| {
-                order.swap(a, b);
-                self.0.swap(a, b);
-            });
-            order
-        });
         let count = self.0.len();
-        let tasks = OwnedTasks {
-            values: std::mem::take(&mut self.0).into_iter().enumerate(),
-            order,
-        };
+        let tasks = self.tasks(seed);
         if parallel {
             native::run_tasks(lease.expect("native requires lease"), count, tasks, execute)
         } else {
@@ -120,3 +109,26 @@ impl<T> Drop for OwnedTasks<T> {
         }
     }
 }
+
+impl<T> OwnedInputs<T> {
+    fn tasks(&mut self, seed: Option<u64>) -> impl Iterator<Item = (usize, T)> + Send
+    where
+        T: Send,
+    {
+        let order = seed.map(|seed| {
+            let mut order: Vec<_> = (0..self.0.len()).collect();
+            perturbation::permute(order.len(), seed, |a, b| {
+                order.swap(a, b);
+                self.0.swap(a, b);
+            });
+            order
+        });
+        OwnedTasks {
+            values: std::mem::take(&mut self.0).into_iter().enumerate(),
+            order,
+        }
+    }
+}
+
+mod traced_for_test;
+pub(super) use traced_for_test::TracedOwnedInputsForTest;

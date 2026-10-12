@@ -13,6 +13,7 @@ type FamilySourceValue<Schema, Family> =
 type FamilySourceQuery<Schema, Family> =
     <FamilySource<Schema, Family> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query;
 
+pub(in crate::domain_computation::primary_graph) use progression::{CurrentBasis, CurrentProof};
 mod bridge_denial;
 mod checkpoint_delivery;
 mod denial_diagnostic;

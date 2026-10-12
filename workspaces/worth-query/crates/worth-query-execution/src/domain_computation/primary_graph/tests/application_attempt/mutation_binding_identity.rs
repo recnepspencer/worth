@@ -194,7 +194,7 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
             let phase = &active_phase;
             world
                 .application
-                .execute_mutation_handler_observing_contact::<ProgramRequiredSiblingBinding>(
+                .execute_mutation_handler_report_observing_contact::<ProgramRequiredSiblingBinding>(
                     phase,
                     &identities,
                     principal.principal_identity(),
@@ -202,6 +202,7 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
                     || contacts += 1,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
+                .into_outcome()
         })
         .expect("fixture owner admits its advancement");
     assert!(
@@ -277,7 +278,7 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
                 let phase = &active_phase;
                 world
                     .application
-                    .execute_mutation_handler_observing_contact::<ProgramRequiredMutationBinding>(
+                    .execute_mutation_handler_report_observing_contact::<ProgramRequiredMutationBinding>(
                         phase,
                         &identities,
                         principal.principal_identity(),
@@ -285,6 +286,7 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
                         || contacts += 1,
                         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                     )
+                    .into_outcome()
             })
             .expect("fixture owner admits its advancement");
         assert_eq!(contacts, 1, "the real decide boundary ran for {status}");

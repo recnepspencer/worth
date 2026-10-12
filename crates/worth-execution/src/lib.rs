@@ -29,6 +29,7 @@ pub use oracle::{compare_canonical_values, CanonicalBits};
 
 #[cfg(test)]
 mod tests;
+pub use backend::{ExecutionOwnerContext, NestedComputationStop};
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,
     KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId,
@@ -45,8 +46,8 @@ pub use pattern::{
     RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome, WorkCeilingDenial,
 };
 pub use reduction::{
-    ReductionDenial, ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop,
-    ReductionTree,
+    ReductionDenial, ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError,
+    ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop, ReductionTree,
 };
 pub use report::ChargedBytes;
 

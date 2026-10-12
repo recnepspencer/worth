@@ -101,8 +101,11 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         Kernel: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
         Combine: Fn(&R, &R) -> R + Sync,
     {
-        let Some(lease) = lease else {
+        let Some(parallel_lease) =
+            lease.filter(|lease| lease.resolved_posture() == ExecutionPosture::Automatic)
+        else {
             return self.run_reduce_serial(
+                lease,
                 kernel,
                 identity,
                 combine,
@@ -112,19 +115,14 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                 tree,
             );
         };
-        let backend = if lease.resolved_posture() == ExecutionPosture::Automatic {
-            BackendKind::Native
-        } else {
-            BackendKind::Serial
-        };
         self.run_reduce_leased(
-            lease,
+            parallel_lease,
             kernel,
             identity,
             combine,
             max_value_bytes,
             reducer_storage_bytes,
-            backend,
+            BackendKind::Native,
             true,
             None,
             inputs,

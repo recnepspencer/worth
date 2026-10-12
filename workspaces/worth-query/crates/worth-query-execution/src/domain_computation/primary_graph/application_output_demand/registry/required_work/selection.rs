@@ -1,3 +1,5 @@
+mod claimed_selection;
+mod declared_predecessors;
 use super::super::{
     DemandRegistryState, DemandState, ReadyCompletion, WorthQueryOutputAdvancement,
     WorthQueryOutputCheckpoint,
@@ -41,7 +43,7 @@ impl WorthQueryOutputDemandRegistry {
             return Ok(None);
         };
         let required = record.is_required()
-            || super::super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+            || super::super::refreshed_rejoin::awaited_by_stale_owner(
                 &state.records,
                 selected.key(),
                 admission,
@@ -58,7 +60,7 @@ impl WorthQueryOutputDemandRegistry {
         let DemandState::Output(output) = &record.state else {
             return Ok(None);
         };
-        if !matches!(output.advancement, WorthQueryOutputAdvancement::Idle) {
+        if !matches!(output.advancement(), WorthQueryOutputAdvancement::Idle) {
             return Ok(None);
         }
         let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {
@@ -154,7 +156,10 @@ impl WorthQueryOutputDemandRegistry {
             let selected = match queue.pop() {
                 RequiredWorkPop::Empty => return Ok(None),
                 RequiredWorkPop::Stale => continue,
-                RequiredWorkPop::Selected(selected) => selected,
+                RequiredWorkPop::Claimed(claim) => match claim.select_without_advance() {
+                    Some(selected) => selected,
+                    None => continue,
+                },
             };
             let live = {
                 let state = self
@@ -165,7 +170,7 @@ impl WorthQueryOutputDemandRegistry {
                 charge_required_key_lookup(&state, selected.key(), admission)?;
                 let live = if let Some(record) = state.records.get(selected.key()) {
                     (record.is_required()
-                        || super::super::refreshed_rejoin::awaited_by_stale_owner_admitted(
+                        || super::super::refreshed_rejoin::awaited_by_stale_owner(
                             &state.records,
                             selected.key(),
                             admission,
@@ -190,108 +195,6 @@ impl WorthQueryOutputDemandRegistry {
             }
             drop(selected);
         }
-    }
-
-    /// Select one required cue for the already admitted Product and its exact
-    /// native branch. A foreign-cell hint stays queued; a later hint for this
-    /// cell cannot be hidden behind it.
-    pub(in crate::domain_computation::primary_graph) fn next_required_work_for_selected(
-        &self,
-        product: &crate::basis::WorthQueryProductObservationLease,
-        selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
-        source_owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<Option<SelectedRequiredWork>, WorthQueryOutputDemandDenial> {
-        let basis = product.relational_basis_descriptor();
-        let branch_work = selected
-            .branch_id()
-            .0
-            .len()
-            .checked_add(4)
-            .ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(branch_work).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
-        if basis.runtime_instance_id() != selected.runtime_instance_id()
-            || basis.branch_id() != selected.branch_id()
-            || basis.root_identity() != selected.root_id()
-        {
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                "selected required-work Product differs from its native root",
-            ));
-        }
-        admission
-            .charge_external_work(2)
-            .map_err(|_| work_denial())?;
-        self.drain_terminal_cleanup_admitted(source_owner, admission)?;
-        let queue = {
-            let state = self
-                .state
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            state.required_work_queue.clone()
-        };
-        let Some(queue) = queue else {
-            return Ok(None);
-        };
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
-        let queued = queue.queued_count();
-        for _ in 0..queued {
-            admission
-                .charge_external_work(6)
-                .map_err(|_| work_denial())?;
-            let mut work = match queue.pop() {
-                RequiredWorkPop::Empty => return Ok(None),
-                RequiredWorkPop::Stale => continue,
-                RequiredWorkPop::Selected(work) => work,
-            };
-            let membership = {
-                let state = self
-                    .state
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                state.charge_record_lookup(work.key(), admission)?;
-                charge_required_key_lookup(&state, work.key(), admission)?;
-                admission
-                    .charge_external_work(5)
-                    .map_err(|_| work_denial())?;
-                let occurrence = match state.records.get(work.key()) {
-                    Some(record)
-                        if (record.is_required()
-                            || super::super::refreshed_rejoin::awaited_by_stale_owner_admitted(
-                                &state.records,
-                                work.key(),
-                                admission,
-                            )?)
-                            && record
-                                .work_membership
-                                .as_ref()
-                                .is_some_and(|member| Arc::ptr_eq(member, &work.membership))
-                            && state.required_keys.contains(work.key()) =>
-                    {
-                        Some(record.product_occurrence)
-                    }
-                    _ => None,
-                };
-                if occurrence.is_none() {
-                    work.membership.set_required(false);
-                }
-                occurrence
-            };
-            let Some(occurrence) = membership else {
-                continue;
-            };
-            if occurrence != product.observation().lifecycle_incarnation() {
-                continue;
-            }
-            if work.for_selected_branch(selected.branch_id(), admission)? {
-                return Ok(Some(work));
-            }
-        }
-        Ok(None)
     }
 }
 
@@ -350,20 +253,4 @@ pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         "selected required-work lookup exceeds request work",
     )
-}
-
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
-    #[doc(hidden)]
-    pub fn queued_required_work_for_test(&self) -> usize {
-        let queue = self
-            .output_demands
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .required_work_queue
-            .clone();
-        queue.map_or(0, |queue| queue.queued_count())
-    }
 }

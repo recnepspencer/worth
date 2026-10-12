@@ -302,8 +302,8 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                     resources.retained_capacity_bytes(),
                     main_hint + fork_hint * (allowed_hints - 1)
                 );
-                let selected_main = registry
-                    .next_required_work_for_selected(
+                let mut selected_main = registry
+                    .next_required_claim_for_selected(
                         product.read_lease_ref(),
                         &main_root,
                         owner,
@@ -311,11 +311,12 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                     )
                     .unwrap()
                     .expect("main-cell hint remains selectable behind fork-cell hint");
+                let selected_main = registry.select_required_claim(&mut selected_main, &main_root, &mut owner.edit_admission()).unwrap().expect("the inspected main-branch claim selects its current cause");
                 assert!(matches!(
                     selected_main.kind(),
                     SelectedRequiredWorkKind::Native { branch, .. } if branch.branch_id() == &main
                 ));
-                assert!(selected_main.acknowledge().is_some());
+                assert!(selected_main.acknowledge_fixture().is_some());
                 port.remove_required(&registration).unwrap();
             });
                     assert_eq!(
@@ -342,7 +343,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                             SelectedRequiredWorkKind::Native { branch, .. }
                                 if branch.branch_id() == &BranchId("hint-fork".to_owned())
                         ));
-                        assert!(first.acknowledge().is_some());
+                        assert!(first.acknowledge_fixture().is_some());
                         assert_eq!(
                             resources.retained_capacity_bytes(),
                             RequiredWorkMembership::native_branch_retained_bytes("hint-fork".len())
@@ -360,7 +361,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                         initial.kind(),
                         SelectedRequiredWorkKind::UnresolvedInitial
                     ));
-                    assert!(initial.acknowledge().is_some());
+                    assert!(initial.acknowledge_fixture().is_some());
                     assert!(registry
                         .next_required_work(owner, &mut owner.edit_admission())
                         .unwrap()

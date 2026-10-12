@@ -1,7 +1,9 @@
 //! A published output survives the ordinary retirement of its cached Ready row.
 use super::*;
+#[path = "cached_locator_checkpoint/custody_model.rs"]
 mod custody_model;
 use worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile;
+#[path = "cached_locator_checkpoint/custody_observation.rs"]
 mod custody_observation;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryOutputSettlementPosture,
@@ -34,6 +36,7 @@ fn a_reclaimed_ready_keeps_its_native_prior_locator_across_checkpoint() {
     .require_hit("cached pair checkpoint");
 }
 
+#[path = "cached_locator_checkpoint/capacity_workloads.rs"]
 mod capacity_workloads;
 use capacity_workloads::{run_pair, run_root};
 

@@ -1,10 +1,12 @@
 mod composition;
-mod computation;
+pub(in crate::domain_computation::primary_graph) mod computation;
 mod conditional;
 mod contracts;
 mod execution_denial;
 mod partitioned_computation;
 mod producer;
+pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
+pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
 mod request_execution;
 mod setup;
 
@@ -18,7 +20,7 @@ pub use computation::{
     WorthQueryManagedComputationDenial, WorthQueryManagedComputationExecution,
     WorthQueryManagedComputationInterruption, WorthQueryManagedComputationOwner,
     WorthQueryManagedComputationPrepared, WorthQueryManagedComputationResourceDenial,
-    WorthQueryMemoryLimitLevel, WorthQueryPreparedManagedComputation,
+    WorthQueryMemberExecution, WorthQueryMemoryLimitLevel, WorthQueryPreparedManagedComputation,
 };
 pub use conditional::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
@@ -97,12 +99,19 @@ pub(in crate::domain_computation::primary_graph) use request_execution::{
 };
 
 pub use request_execution::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
 };
 
 #[cfg(test)]
-pub(crate) use request_execution::{with_test_advancement, TestHostRequest};
+pub(crate) use request_execution::{
+    drain_test_advancement_observations, with_test_advancement, TestHostRequest,
+};
 
 pub use request_execution::with_bootstrap_advancement;
 
 pub use request_execution::WorthQueryBootstrapAdvancementPhase;
+
+pub(in crate::domain_computation::primary_graph) use request_execution::advancement::observation::application::record_commit as record_advancement_commit;

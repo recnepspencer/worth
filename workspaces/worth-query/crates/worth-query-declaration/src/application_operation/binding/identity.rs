@@ -57,7 +57,7 @@ pub use partition::{
 };
 pub use request::{
     ApplicationMutationIdentities, ApplicationMutationIdentityAdmittedDenial,
-    ApplicationMutationIdentityDenial,
+    ApplicationMutationIdentityDenial, ApplicationOwnedMutationIdentities,
 };
 pub use work::ApplicationCanonicalWork;
 

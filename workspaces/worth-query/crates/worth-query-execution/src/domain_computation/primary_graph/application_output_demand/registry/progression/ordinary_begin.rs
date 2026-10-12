@@ -14,11 +14,11 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+        let mut record = state
             .records
             .get_mut(&interest.key)
             .expect("live demand interest retains its owner record");
-        begin_record(record, CLAIM_OVERFLOW)
+        begin_record(&mut record, CLAIM_OVERFLOW)
     }
 
     /// Claim the next checkpoint stage of a published output, or read its
@@ -32,11 +32,12 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        match state.records.get_mut(&interest.key) {
-            Some(record) if matches!(record.state, DemandState::Output(_)) => {
-                begin_record(record, CLAIM_OVERFLOW)
+        let result = match state.records.get_mut(&interest.key) {
+            Some(mut record) if matches!(record.state, DemandState::Output(_)) => {
+                begin_record(&mut record, CLAIM_OVERFLOW)
             }
             _ => WorthQueryOutputDemandAdvanceAdmission::Pending,
-        }
+        };
+        result
     }
 }

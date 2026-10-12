@@ -519,7 +519,10 @@ use worth_query_host::facade::{
         application_operation::ApplicationMutationBinding, application_program::*,
         application_schema::ApplicationSchema,
     },
-    primary_graph::{DecisionReader, WorthQueryPrimaryGraphInstallationDenial},
+    primary_graph::{
+        DecisionReader, HandlerResult, WorthQueryDecisionPlan,
+        WorthQueryPrimaryGraphInstallationDenial,
+    },
 };
 
 #[derive(Clone, Serialize)]
@@ -673,7 +676,7 @@ where
     setup.partitioned_computation::<F, InventoryTotal<A>, _>(InventoryOwner(PhantomData))
 }
 
-pub fn run_inventory<S, F, A, Op, B>(
+pub fn run_inventory<S, F, A, Op, B, Value: 'static, Domain: 'static>(
     installed: &WorthQueryInstalledPartitionedComputation<
         S,
         F,
@@ -682,7 +685,11 @@ pub fn run_inventory<S, F, A, Op, B>(
     >,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<InventoryLine>,
-) -> Result<(f64, u64), WorthQueryPartitionedComputationDenial<u32>>
+    complete: impl FnOnce(
+            Result<(f64, u64), WorthQueryPartitionedComputationDenial<u32>>,
+        ) -> HandlerResult<Value, Domain>
+        + 'static,
+) -> WorthQueryDecisionPlan<Value, Domain>
 where
     S: ApplicationSchema,
     F: ApplicationFeature<S>,
@@ -690,11 +697,15 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    let computed = installed
-        .prepare(reader, input)?
-        .compute(reader.managed_computation_execution())?;
-    let charged_work = computed.charged_work();
-    Ok((computed.complete()?, charged_work))
+    match installed.prepare(reader, input) {
+        Ok(prepared) => prepared.into_decision_plan(move |computed| {
+            complete(computed.and_then(|computed| {
+                let charged_work = computed.charged_work();
+                computed.complete().map(|value| (value, charged_work))
+            }))
+        }),
+        Err(denial) => WorthQueryDecisionPlan::immediate(complete(Err(denial))),
+    }
 }
 ```
 
@@ -764,7 +775,10 @@ use worth_query_host::facade::{
         application_operation::ApplicationMutationBinding, application_program::*,
         application_schema::ApplicationSchema,
     },
-    primary_graph::{DecisionReader, WorthQueryPrimaryGraphInstallationDenial},
+    primary_graph::{
+        DecisionReader, HandlerResult, WorthQueryDecisionPlan,
+        WorthQueryPrimaryGraphInstallationDenial,
+    },
 };
 
 #[derive(Clone, Serialize)]
@@ -917,11 +931,15 @@ where
     setup.partitioned_computation::<F, PeakReading<A>, _>(PeakOwner(PhantomData))
 }
 
-pub fn run_peak<S, F, A, Op, B>(
+pub fn run_peak<S, F, A, Op, B, Value: 'static, Domain: 'static>(
     installed: &WorthQueryInstalledPartitionedComputation<S, F, PeakReading<A>, PeakOwner<Op>>,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<Reading>,
-) -> Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>
+    complete: impl FnOnce(
+            Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
+        ) -> HandlerResult<Value, Domain>
+        + 'static,
+) -> WorthQueryDecisionPlan<Value, Domain>
 where
     S: ApplicationSchema,
     F: ApplicationFeature<S>,
@@ -929,11 +947,15 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    let computed = installed
-        .prepare(reader, input)?
-        .compute(reader.managed_computation_execution())?;
-    let charged_work = computed.charged_work();
-    Ok((computed.complete()?, charged_work))
+    match installed.prepare(reader, input) {
+        Ok(prepared) => prepared.into_decision_plan(move |computed| {
+            complete(computed.and_then(|computed| {
+                let charged_work = computed.charged_work();
+                computed.complete().map(|value| (value, charged_work))
+            }))
+        }),
+        Err(denial) => WorthQueryDecisionPlan::immediate(complete(Err(denial))),
+    }
 }
 ```
 
@@ -1131,10 +1153,10 @@ preparation, recovery, seeding, and publication. Its memory and aggregate work
 limits apply in serial placement as well as leased placement. Internal phases
 borrow custody; staged products carry facts and never retain the request.
 
-Reentering an executing public door on the same thread as an active host
-callback is refused with `ExecutionRequest(NestedOpening)`. An unrelated
+Reentering an executing public door from an active host callback or its
+descendant worker is refused with `ExecutionRequest(NestedOpening)`. An unrelated
 execution lease remains the separate `Resource(NestedLeaseMisuse)` cause.
-Another thread's public call owns its own request. Borrow the callback's phase
+An unrelated thread's public call owns its own request. Borrow the callback's phase
 for internal execution rather than opening another budget. A request
 already canceled or past its deadline is refused at request admission as
 `ExecutionRequest(Interrupted(Cancelled))` or

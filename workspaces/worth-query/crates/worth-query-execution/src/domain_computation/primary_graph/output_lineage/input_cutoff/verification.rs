@@ -1,5 +1,8 @@
 //! Exact prior-output checks before a producer may omit its handler.
 
+mod owned;
+pub(in crate::domain_computation::primary_graph) use owned::OwnedInputCutoffDecision;
+
 use worth_relational::facade::{
     mvcc::CompanionPreflightStop,
     runtime::{PositionedRelationalSnapshot, RelationalRuntime},

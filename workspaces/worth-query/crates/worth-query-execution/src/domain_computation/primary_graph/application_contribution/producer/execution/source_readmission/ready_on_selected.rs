@@ -25,6 +25,7 @@ type BoundResult<Schema, Binding> = <<SourceBinding<Schema, Binding> as Applicat
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::execution) fn certify_ready_on_selected_with_disclosure<
     'basis,
+    Outcome,
     Schema,
     Binding,
 >(
@@ -55,18 +56,16 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         >,
         Option<MatchedRequiredPredecessors<'_>>,
         &mut InvalidationEditAdmission,
-    ) -> Result<
-        super::super::required_cue::RequiredCueProgress<'basis, Schema>,
-        ProducerExecutionStop,
-    >,
-) -> Result<super::super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
+    ) -> Result<Outcome, ProducerExecutionStop>,
+) -> Result<Outcome, ProducerExecutionStop>
 where
     Schema: ApplicationSchema + 'static,
+    Outcome: From<super::super::required_cue::ReadyInspection<'basis>>,
     Binding: WorthQueryApplicationProducerBinding<Schema>,
     SourceValue<Schema, Binding>:
         WorthQueryApplicationProjection<Schema, SourceQuery<Schema, Binding>>,
 {
-    use super::super::required_cue::RequiredCueProgress;
+    use super::super::required_cue::ReadyInspection;
     // The installed executor owns this exact source Query binding from cold
     // contribution setup. Its schema affinity is rechecked here before the
     // prepared permission uses the caller's selected Product.
@@ -193,7 +192,7 @@ where
                             producer_contacts_in_this_demand,
                             admission,
                         )?;
-                        Ok(RequiredCueProgress::Current(settled))
+                        Ok(ReadyInspection::Current(settled).into())
                     }
                     CurrentAcceptedResult::PendingExact(mut pending) => {
                         if let Some(resolved) = resolved {
@@ -253,12 +252,12 @@ where
                                 CurrentAcceptedStop::Closure(stop),
                             ))?;
                         Ok(match rebound {
-                            Some(pending) => RequiredCueProgress::PendingExact(pending),
-                            None => RequiredCueProgress::PendingUnresolved,
-                        })
+                            Some(pending) => ReadyInspection::PendingExact(pending),
+                            None => ReadyInspection::PendingUnresolved,
+                        }.into())
                     }
                     CurrentAcceptedResult::PendingUnresolved =>
-                        Ok(RequiredCueProgress::PendingUnresolved),
+                        Ok(ReadyInspection::PendingUnresolved.into()),
                     CurrentAcceptedResult::NeedsDisclosure => {
                         drop(sealed);
                         on_disclosure(permission, None, admission)

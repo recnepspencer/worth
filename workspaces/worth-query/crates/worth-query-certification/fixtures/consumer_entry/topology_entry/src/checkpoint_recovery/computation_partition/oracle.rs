@@ -25,9 +25,10 @@ use super::entry_edit::{EntryEdit, EntryEditBinding, EntryEditHandler};
 use super::facts::{self, Entry, EntryData, Graph, InputDenial, Reader, RegionEntry, Set};
 use super::output_producer::{
     RegionOutputDemand, RegionOutputProducer, RegionOutputProvider, RegionOutputReadiness,
+    DECISION_FACT_BUDGET,
 };
 use super::region_output::{
-    RegionOutputBinding, RegionOutputHandler, TotalRegionOutput, DECISION_FACT_BUDGET, LARGEST_SET,
+    RegionOutputBinding, RegionOutputHandler, TotalRegionOutput, LARGEST_SET,
 };
 use super::*;
 
@@ -36,6 +37,7 @@ mod advancement_custody;
 mod counts;
 mod courtroom;
 mod cutoff;
+mod decision_plan;
 mod handler_absence;
 mod installation;
 mod republication;

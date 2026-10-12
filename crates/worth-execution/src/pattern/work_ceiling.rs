@@ -28,6 +28,54 @@ pub enum WorkCeilingDenial {
 }
 
 impl ExecutionWorkCeiling {
+    /// The framework objects held by a zero-payload one-stage scope.
+    #[doc(hidden)]
+    pub fn scope_memory_bound_for_test(
+        lease: Option<&ExecutionResourceLease<'_>>,
+        serial: Option<&SerialRequest>,
+    ) -> Option<u64> {
+        crate::backend::RunLimits::for_run(lease, false)
+            .within_serial(serial)
+            .framework_context_bytes(1, 1)
+    }
+
+    /// Run one dependent stage, lending its checked checkpoint to the stage
+    /// owner. Descendant reports and the owner's admitted cost settle together.
+    pub fn run_with_checkpoint<R>(
+        self,
+        lease: Option<&ExecutionResourceLease<'_>>,
+        serial: Option<&SerialRequest>,
+        computation: impl FnOnce(&mut crate::MapKernelContext<'_, '_>) -> R,
+    ) -> Result<(R, ExecutionReport), WorkCeilingDenial> {
+        let mut value = None;
+        let outcome = run_scope_within::<(), (), _>(lease, 0, 0, true, self.0, serial, |context| {
+            value = Some(computation(context));
+            Ok(())
+        });
+        match (value, outcome.result) {
+            (Some(value), _) => Ok((value, outcome.report)),
+            (None, Err(ScopeStop::Admission(denial))) => Err(WorkCeilingDenial::Admission(denial)),
+            (None, Err(ScopeStop::Failure(KernelFailure::Stop(stop)))) => {
+                Err(WorkCeilingDenial::Stopped(stop))
+            }
+            (None, _) => Err(WorkCeilingDenial::Panicked),
+        }
+    }
+
+    /// Runs a sealed diagnostic on its own meter, memory and worker-slot ledger,
+    /// preserving admitted width and sharing the physical pool and cancellation/deadline lineage. Its caller drops
+    /// the diagnostic bill and returns any request stop with its true cause.
+    pub fn run_detached_for_test<R>(
+        self,
+        lease: &ExecutionResourceLease<'_>,
+        computation: impl FnOnce(&ExecutionResourceLease<'_>) -> R,
+    ) -> Result<(R, ExecutionReport), WorkCeilingDenial> {
+        let resources = lease.diagnostic_resources_for_test();
+        let diagnostic = resources.lease_for_test();
+        let _detached = crate::backend::detach_meter_for_test();
+        self.run(&diagnostic, || computation(&diagnostic))
+    }
+
     pub const fn new(work_units: u64) -> Self {
         Self(work_units)
     }

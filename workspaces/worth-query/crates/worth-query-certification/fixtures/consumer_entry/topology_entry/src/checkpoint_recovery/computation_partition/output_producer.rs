@@ -2,6 +2,13 @@
 //! region output operation over the set the scope's ordinate names, first to
 //! create the output and then to keep it.
 
+const DECISION_FACTS_PER_ENTRY: usize = 8;
+/// The scope, the set, its weight and the entry an armed decision writes.
+const DECISION_FACTS_BESIDE_ENTRIES: usize = 32;
+/// The facts the largest set's decision may read.
+pub(super) const DECISION_FACT_BUDGET: usize =
+    DECISION_FACTS_PER_ENTRY * LARGEST_SET + DECISION_FACTS_BESIDE_ENTRIES;
+
 use std::marker::PhantomData;
 
 use worth_query_consumer_values::PositiveLength;
@@ -18,7 +25,9 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryConditionalRuntimeInstallationDenial,
 };
 
-use super::region_output::{RegionOutputBinding, RegionOutputInput, TotalRegionOutput};
+use super::region_output::{
+    RegionOutputBinding, RegionOutputInput, TotalRegionOutput, LARGEST_SET,
+};
 use super::*;
 
 const APPLICABILITY: &[WorthQueryProducerApplicability] = &[
@@ -114,10 +123,7 @@ impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
         if MODE == 1 {
             // The wide-key decision may disclose every declared Native fact.
             // Reserve its finite projection bound, including own-write rebasing.
-            WorthQueryProducerDemandResources::new(
-                4096,
-                super::region_output::DECISION_FACT_BUDGET * 512,
-            )
+            WorthQueryProducerDemandResources::new(4096, DECISION_FACT_BUDGET * 512)
         } else {
             planar_producer_resources()
         }

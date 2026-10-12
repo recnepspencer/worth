@@ -1,3 +1,4 @@
+use super::super::WorthQueryOutputCheckpoint;
 use super::closed_retirement::ready;
 use super::*;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
@@ -145,6 +146,19 @@ fn a_walk_the_request_cannot_pay_for_establishes_nothing() {
 
 #[test]
 fn closed_cached_population_does_not_make_a_lone_caller_retry_on_walk_exhaustion() {
+    // The row-custody question reads Ready state, not a publication's payload.
+    // Declare one genuine immutable answer; every cached row retains it.
+    let DemandState::Output(mut answer) = ready() else {
+        panic!("the fixture declares a Ready answer")
+    };
+    let Some(WorthQueryOutputCheckpoint::Ready(completion)) = answer.checkpoint.take() else {
+        panic!("the fixture's answer is delivered")
+    };
+    let cached_answer = || {
+        DemandState::Output(super::super::WorthQueryOutputProgress::new(
+            WorthQueryOutputCheckpoint::Ready(completion.clone()),
+        ))
+    };
     for unrelated in [0, 1_000] {
         let registry = WorthQueryOutputDemandRegistry::default();
         let caller = key_with_identity("caller", 5, 2, 50);
@@ -152,13 +166,13 @@ fn closed_cached_population_does_not_make_a_lone_caller_retry_on_walk_exhaustion
             let mut state = registry.state.lock().unwrap();
             state
                 .records
-                .insert(caller.clone(), record(occurrence(), ready(), 1));
+                .insert(caller.clone(), record(occurrence(), cached_answer(), 1));
             for number in 0..unrelated {
                 let cached =
                     key_with_identity(&format!("cached-{number}"), 5, 3, number as u64 + 70);
                 state
                     .records
-                    .insert(cached, record(occurrence(), ready(), 0));
+                    .insert(cached, record(occurrence(), cached_answer(), 0));
             }
         }
         assert_eq!(
