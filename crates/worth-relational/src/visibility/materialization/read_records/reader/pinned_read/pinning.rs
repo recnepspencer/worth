@@ -12,17 +12,43 @@ impl VisibilityReadContext<'_> {
         selected_indexes: &[DerivedIndexId],
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalPinnedRead, RelationalPinnedReadAdmissionDenial> {
+        self.pin_read_capability_checked(
+            handle,
+            selected_indexes,
+            request,
+            |_| Ok(()),
+            std::convert::identity,
+        )
+    }
+
+    /// Validate each semantic definition before touching its generation payload.
+    pub(crate) fn pin_read_capability_checked<E>(
+        &self,
+        handle: &SnapshotHandle,
+        selected_indexes: &[DerivedIndexId],
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        validate: impl Fn(&crate::indexes::data::DerivedIndexDefinition) -> Result<(), E>,
+        denied: impl Fn(RelationalPinnedReadAdmissionDenial) -> E,
+    ) -> Result<RelationalPinnedRead, E> {
         use RelationalPinnedReadAdmissionDenial as Denial;
-        request.check_live().map_err(Denial::Request)?;
+        request
+            .check_live()
+            .map_err(|stop| denied(Denial::Request(stop)))?;
         let snapshot = self
             .resolved_snapshot_handle(handle)
-            .ok_or(Denial::SnapshotUnavailable)?;
+            .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
         let context = self
             .query_plan_context(&snapshot)
-            .ok_or(Denial::SnapshotUnavailable)?;
-        let basis =
-            resolve_snapshot_basis(self.runtime, &snapshot).ok_or(Denial::SnapshotUnavailable)?;
-        let indexes = self.pin_indexes(&basis, context.schema_version, selected_indexes)?;
+            .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
+        let basis = resolve_snapshot_basis(self.runtime, &snapshot)
+            .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
+        let indexes = self.pin_indexes(
+            &basis,
+            context.schema_version,
+            selected_indexes,
+            validate,
+            &denied,
+        )?;
         // StringInterner's im maps clone shared nodes, never their entries.
         let symbols = self.runtime.services.symbols.interner_snapshot();
         Ok(RelationalPinnedRead {
@@ -45,14 +71,33 @@ impl VisibilityReadContext<'_> {
         selected_indexes: &[DerivedIndexId],
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalPinnedRead<()>, RelationalPinnedReadAdmissionDenial> {
+        self.pin_view_read_capability_checked(
+            view,
+            selected_indexes,
+            request,
+            |_| Ok(()),
+            std::convert::identity,
+        )
+    }
+
+    pub(crate) fn pin_view_read_capability_checked<E>(
+        &self,
+        view: &crate::runtime::VisibilityProjectionView,
+        selected_indexes: &[DerivedIndexId],
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        validate: impl Fn(&crate::indexes::data::DerivedIndexDefinition) -> Result<(), E>,
+        denied: impl Fn(RelationalPinnedReadAdmissionDenial) -> E,
+    ) -> Result<RelationalPinnedRead<()>, E> {
         use RelationalPinnedReadAdmissionDenial as Denial;
-        request.check_live().map_err(Denial::Request)?;
+        request
+            .check_live()
+            .map_err(|stop| denied(Denial::Request(stop)))?;
         if !view.is_from_runtime(self.runtime) {
-            return Err(Denial::SnapshotUnavailable);
+            return Err(denied(Denial::SnapshotUnavailable));
         }
         let basis = view
             .retain_exact_basis()
-            .ok_or(Denial::SnapshotUnavailable)?;
+            .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
         let (schema_version, descriptor_semantics_version, evidence_basis) =
             super::super::snapshot_reads::query_schema_context_for_root(basis.root());
         let context = QueryPlanContextId {
@@ -65,7 +110,8 @@ impl VisibilityReadContext<'_> {
             descriptor_semantics_version,
             evidence_basis,
         };
-        let indexes = self.pin_indexes(&basis, schema_version, selected_indexes)?;
+        let indexes =
+            self.pin_indexes(&basis, schema_version, selected_indexes, validate, denied)?;
         let (current_version, instrumentation, symbols) = view.retain_pinning_metadata();
         Ok(RelationalPinnedRead {
             current_version,
@@ -78,12 +124,14 @@ impl VisibilityReadContext<'_> {
         })
     }
 
-    fn pin_indexes(
+    fn pin_indexes<E>(
         &self,
         basis: &VisibilitySnapshotBasis,
         schema: crate::schema::data::SchemaVersionId,
         selected_indexes: &[DerivedIndexId],
-    ) -> Result<BTreeMap<DerivedIndexId, PinnedIndex>, RelationalPinnedReadAdmissionDenial> {
+        validate: impl Fn(&crate::indexes::data::DerivedIndexDefinition) -> Result<(), E>,
+        denied: impl Fn(RelationalPinnedReadAdmissionDenial) -> E,
+    ) -> Result<BTreeMap<DerivedIndexId, PinnedIndex>, E> {
         use RelationalPinnedReadAdmissionDenial as Denial;
         let mut indexes = BTreeMap::new();
         for &index in selected_indexes {
@@ -91,7 +139,8 @@ impl VisibilityReadContext<'_> {
                 .runtime
                 .indexes
                 .definition(index)
-                .ok_or(Denial::IndexNotInstalled(index))?;
+                .ok_or_else(|| denied(Denial::IndexNotInstalled(index)))?;
+            validate(&definition)?;
             let generation = self.runtime.indexes.exact_generation(
                 index,
                 definition.branch_scoped.then_some(basis.branch_id()),

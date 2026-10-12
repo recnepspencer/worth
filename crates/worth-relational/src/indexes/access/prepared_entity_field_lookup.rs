@@ -194,6 +194,16 @@ impl crate::visibility::materialization::read_records::ProjectionRecordSource
 }
 
 impl PreparedEntityFieldLookup {
+    pub(crate) fn validate_definition(
+        definition: &DerivedIndexDefinition,
+        locator: &AspectFieldLocator,
+    ) -> Result<(), BoundedEntityFieldLookupDenial> {
+        if !matches!(&definition.kind, DerivedIndexKind::EntityField { field_locator } if field_locator == locator)
+        {
+            return Err(denied(Denial::WrongIndexKind, definition.index_id));
+        }
+        Ok(())
+    }
     pub(crate) fn pin(
         runtime_identity: u64,
         basis: VisibilitySnapshotBasis,
@@ -204,10 +214,7 @@ impl PreparedEntityFieldLookup {
         generation: impl FnOnce(&DerivedIndexDefinition) -> Option<Arc<DerivedIndexGeneration>>,
     ) -> Result<Self, BoundedEntityFieldLookupDenial> {
         let index = definition.index_id;
-        if !matches!(&definition.kind, DerivedIndexKind::EntityField { field_locator } if field_locator == locator)
-        {
-            return Err(denied(Denial::WrongIndexKind, index));
-        }
+        Self::validate_definition(&definition, locator)?;
         let generation = generation(&definition)
             .ok_or_else(|| denied(Denial::ExactGenerationUnavailable, index))?;
         if !matches!(generation.entries, DerivedIndexEntries::EntityField(_)) {

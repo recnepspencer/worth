@@ -26,10 +26,24 @@ impl IndexAccess<'_> {
                 &request,
             )
         })?;
-        let pinned = runtime
-            .read_truth()
-            .pin_read_capability(&snapshot, &[request.index_id()], execution)
-            .map_err(|stop| {
+        let pinned = runtime.read_truth().pin_read_capability_checked(
+            &snapshot,
+            &[request.index_id()],
+            execution,
+            |definition| {
+                if matches!(
+                    definition.kind,
+                    crate::indexes::data::DerivedIndexKind::RelationJoin(_)
+                ) {
+                    Ok(())
+                } else {
+                    Err(denial(
+                        BoundedRelationJoinLookupDenialKind::CorruptIndexEntries,
+                        &request,
+                    ))
+                }
+            },
+            |stop| {
                 use crate::runtime::RelationalPinnedReadAdmissionDenial as Pin;
                 let kind = match stop {
                     Pin::Request(stop) => BoundedRelationJoinLookupDenialKind::Execution(
@@ -43,7 +57,8 @@ impl IndexAccess<'_> {
                     }
                 };
                 denial(kind, &request)
-            })?;
+            },
+        )?;
         pinned.lookup_pinned_relation_join(request, parity_mode, execution)
     }
 }

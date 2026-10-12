@@ -23,11 +23,12 @@ impl IndexAccess<'_> {
         if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
             return Err(denied(Denial::SnapshotUnavailable, index));
         }
-        let pinned = self
-            .runtime
-            .read_truth()
-            .pin_view_read_capability(view, &[index], execution)
-            .map_err(|stop| {
+        let pinned = self.runtime.read_truth().pin_view_read_capability_checked(
+            view,
+            &[index],
+            execution,
+            |definition| PreparedEntityFieldLookup::validate_definition(definition, locator),
+            |stop| {
                 use crate::runtime::RelationalPinnedReadAdmissionDenial as Pin;
                 let kind = match stop {
                     Pin::Request(stop) => {
@@ -37,7 +38,8 @@ impl IndexAccess<'_> {
                     Pin::IndexNotInstalled(_) => Denial::IndexNotInstalled,
                 };
                 denied(kind, index)
-            })?;
+            },
+        )?;
         pinned.prepare_entity_field_lookup(index, kind, locator, execution)
     }
 

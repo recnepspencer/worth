@@ -67,6 +67,7 @@ fn runtime_read_law_view_input_stops_and_refuses_by_value() {
             FieldDenial::new(FieldKind::Execution(cause), world.index)
         );
     });
+    let before = world.runtime.index_access().generation_selection_counters();
     let denied = world
         .runtime
         .index_access()
@@ -76,6 +77,10 @@ fn runtime_read_law_view_input_stops_and_refuses_by_value() {
     assert_eq!(
         denied,
         FieldDenial::new(FieldKind::WrongIndexKind, world.index)
+    );
+    assert_eq!(
+        world.runtime.index_access().generation_selection_counters(),
+        before
     );
 }
 #[test]
@@ -153,8 +158,13 @@ fn runtime_read_law_relation_join_stops_and_refuses_by_value() {
             JoinDenial::new(JoinKind::Execution(cause), world.index)
         )
     });
+    let before = world.runtime.index_access().generation_selection_counters();
     assert_eq!(
         lookup(&setup).unwrap_err(),
         JoinDenial::new(JoinKind::CorruptIndexEntries, world.index)
+    );
+    assert_eq!(
+        world.runtime.index_access().generation_selection_counters(),
+        before
     );
 }
