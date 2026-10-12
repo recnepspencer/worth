@@ -247,7 +247,7 @@ impl WorthQueryOperationAuthorizationDenialIdentity {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOperationAuthorizationDenial {
     identity: Option<WorthQueryOperationAuthorizationDenialIdentity>,
-    kind: WorthQueryOperationAuthorizationDenialKind,
+    kind: Box<WorthQueryOperationAuthorizationDenialKind>,
     causes: Vec<WorthQueryOperationAuthorizationDenialKind>,
     explanation_cause: Option<WorthQueryApplicationAuthorizationExplanationCause>,
     subject: String,
@@ -260,7 +260,7 @@ impl WorthQueryOperationAuthorizationDenial {
     ) -> Self {
         Self {
             identity: WorthQueryOperationAuthorizationDenialIdentity::mint(),
-            kind,
+            kind: Box::new(kind),
             causes: vec![kind],
             explanation_cause: WorthQueryApplicationAuthorizationExplanationCause::from_denial_kind(
                 kind,
@@ -280,7 +280,7 @@ impl WorthQueryOperationAuthorizationDenial {
         let kind = causes[0];
         Self {
             identity: WorthQueryOperationAuthorizationDenialIdentity::mint(),
-            kind,
+            kind: Box::new(kind),
             causes,
             explanation_cause: WorthQueryApplicationAuthorizationExplanationCause::from_denial_kind(
                 kind,
@@ -297,7 +297,7 @@ impl WorthQueryOperationAuthorizationDenial {
     }
 
     pub const fn kind(&self) -> WorthQueryOperationAuthorizationDenialKind {
-        self.kind
+        *self.kind
     }
 
     pub const fn identity(&self) -> Option<WorthQueryOperationAuthorizationDenialIdentity> {
