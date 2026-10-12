@@ -66,7 +66,21 @@ impl WorthQueryPrimaryGraphProvider {
             self.fault_port.candidate_staged_for_validation();
             Ok::<_, WorthQueryInvariantExecutionFailure>(transaction.validate(execution, runtime))
         });
-        let candidate = candidate?.map_err(map_validation_failure)?;
+        let candidate = candidate?.map_err(|failure| {
+            // The stage consult can notice the same caller interruption before
+            // native validation reaches its operation-control safe point.
+            if matches!(
+                failure,
+                worth_relational::facade::mvcc::TransactionCommitError::Execution { .. }
+            ) {
+                if let Some(interruption) = control.relational().interruption() {
+                    return super::super::invariant_execution_failure::request_interruption(
+                        interruption,
+                    );
+                }
+            }
+            map_validation_failure(failure)
+        })?;
         validate_owner_evidence(candidate.invariant_evidence(), branch)?;
         Ok(candidate)
     }

@@ -224,7 +224,7 @@ fn provider_failure(detail: impl Into<std::sync::Arc<str>>) -> WorthQueryInvaria
     )
 }
 
-fn request_interruption(
+pub(super) fn request_interruption(
     reason: worth_relational::facade::mvcc::RelationalOperationInterruption,
 ) -> WorthQueryInvariantExecutionFailure {
     WorthQueryInvariantExecutionFailure::new(
