@@ -1428,19 +1428,22 @@ One `advance` can process the caller's dependency chain and other queued
 required outputs in several waves. The required-set owner admits a wave only
 against a basis where its consumed upstream outputs have committed. Compute
 steps of independent members can overlap; completion, commits, and publications
-follow canonical producer and source keys. Every wave and nested computation
+follow canonical keys that order by producer identity, then by observed source
+epoch. Every wave and nested computation
 shares this call's request bounds. Match the typed stop rather than treating
 work exhaustion, memory refusal, cancellation, deadline, panic, or a domain
 denial as interchangeable. Earlier performed effects remain recoverable; no
-member beyond a stopping boundary is published. A queued stopped member does
+member beyond the applied prefix is published. A queued stopped member does
 not prevent unrelated required work from advancing.
 An owner-completion failure does not refund compute already settled, even if
 that failure is earlier than the compute stop. Treat the applied prefix and
 charged compute prefix as different boundaries.
 
 Closing a continuation releases its interest, while other holders can keep an
-output required. Drop performs bounded local cleanup and leaves remaining debt
-for funded admissions; it does not scan the registry for claimants. Readers
+output required. Drop does a fixed, small amount of cleanup, charges no work,
+starts no computation, and never searches the registry. It may hand on at most
+one existing closed-leaf claim; remaining cleanup stays recorded for a later
+funded call. Readers
 still see the effective successor of a deferred claim. The advancement's
 execution accounting covers all waves, including a failed call; ordinary output
 progress remains `Pending` or `Settled`, with failures returned as typed denials.

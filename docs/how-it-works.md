@@ -967,8 +967,9 @@ runtime below works under that request.
 **Pinned read.** A read selects and retains one exact immutable source root.
 Later branch movement cannot change that read's rows. Releasing its read hold
 ends that access; a later read must select a basis again. A pin establishes
-snapshot stability, not present currentness or permission to write, and does
-not by itself make native reads concurrent. Commit validation still compares
+snapshot stability, not present currentness or permission to write.
+A pin does not make reads concurrent: reads of one installed source still run
+one at a time. Commit validation still compares
 the selected basis and the attempt's consumed facts before any effect.
 
 Admission checks capacity before dispatching kernels. A memory refusal means
@@ -1007,10 +1008,9 @@ also contribute their own charged costs. The execution layer exposes work and
 span in its execution report. A managed partitioned computation exposes
 charged work; its application-facing result does not expose span.
 An advancement has one report, across all its waves, including a failed
-advancement. Admission refusal contributes zero work and span. The installed
-test observer can inspect these reports and the actual commit and publication
-order; an ordinary `advance` returns output progress or its typed denial,
-not a second cost-report result.
+advancement. Admission refusal contributes zero work and span.
+`advance` returns `Pending`, `Settled`, or a typed denial; it does not return
+the report.
 
 **Partitioned managed computation.** A *partitioned managed computation*
 splits one input into partitions, computes each partition on its own, and
@@ -1064,7 +1064,8 @@ every cause. Reuse requires the [owner's purity contract](build-an-application.m
 **Parallel advancement.** One caller-pumped `advance` can run several waves
 of required outputs. The required-set owner admits each wave against its
 selected source basis: a member's consumed upstream outputs must already be
-committed on that basis. Being at the same dependency depth is insufficient.
+committed on that basis. Members at the same dependency depth do not form a
+wave unless each one's upstream outputs are committed on that basis.
 After a commit moves the basis, readiness is checked on the new basis before
 another wave is dispatched. The call keeps one bounded request for all waves;
 each member's nested computation shares its remaining work and resource bounds.
@@ -1072,31 +1073,34 @@ each member's nested computation shares its remaining work and resource bounds.
 Preparation reads declared facts on the owner thread and produces inert compute
 inputs. Independent members' compute steps can run concurrently. Completion,
 candidate authoring, commits, and publications run on the owner in canonical
-key order, never worker completion order. The member key orders producer
-identity and then source occurrence; partition kernels within a member use
+key order, never worker completion order. The member key orders by producer
+identity, then by observed source epoch; partition kernels within a member use
 their own canonical partition identities. A handler that has no compute step
 continues to return its immediate decision without an application change.
 
-For a stopping wave, the least canonical stopping member decides the reported
-failure. Application keeps only the accepted prefix: no member after that
-boundary is committed or published. A compute request stop charges only its
+A wave stops at a request-wide stop or at a failure of the caller's own member.
+The least canonical such member decides the reported failure, and no member
+after it is committed or published. A failure of another queued member is held
+with that member; its siblings in the wave still commit and publish.
+Application keeps only the applied prefix. A compute request stop charges only its
 canonical compute prefix. An earlier owner-completion failure can be reported
 instead, but does not refund computation already settled, including work past
 that earlier member. The applied prefix and the charged compute prefix are
 therefore distinct. Earlier performed effects remain performed and retain their
 recovery obligations. A queued member's domain refusal can be held while other
-required work progresses; it does not occupy the runnable head forever. A
+required work progresses; the held member leaves the runnable queue for the
+rest of this call and is requeued when the call ends. A
 request-wide stop ends this call with its distinct cause. With sufficient
 memory and no live interruption, serial and parallel placement produce the
-same result, accepted order, and charged work. Live cancellation or a deadline
+same result, applied order, and charged work. Live cancellation or a deadline
 can change the reached prefix, but never allow publication beyond its boundary.
 
 Closing a demand releases that holder's interest; another holder can keep the
-output required. Drop performs bounded local cleanup without a registry-wide
-claimant pass. It can release up to two closed rows' existing edges, including
-a closed leaf's claim transfer. Remaining claim-transfer and custody debt stays
-noted for a funded admission. A reader sees the claim at its effective successor
-even before the physical transfer; deferral does not weaken currentness.
+output required. Drop has no request budget: it does a fixed, small amount of
+cleanup, charges no work, starts no computation, and never searches the registry.
+It may hand on at most one existing closed-leaf claim. Cleanup it cannot finish
+stays recorded for a later funded call. A reader already sees the successor
+output before that cleanup runs; deferral does not weaken currentness.
 
 **Per-partition reuse.** A *producer* is an installed binding between an
 output and the operation that produces it. When a producer's handler runs a
@@ -1203,7 +1207,7 @@ takes every stage through three phases that its types keep apart.
   prefix through the least failure across all three phases. A failing
   application keeps the partial owner effects it made. Computation is
   charged for the canonical prefix through its least failure, and a later
-  application failure does not refund it.
+  owner-completion failure does not refund it.
 - **Purity.** Prepare and compute must be pure functions of the values they
   are given: no clock, no static or global state, no environment, no
   interior-mutable state shared with the owner or another stage, and no
@@ -1245,7 +1249,7 @@ count.
 | Query: partitioned computation | Partition kernels (`compute_partition`). | Naming, keying, gathering, and completing run on the calling thread. Results settle in partition identity order. |
 | Query: workflow frontier | The compute steps of a frontier's stages. | Prepare and apply run on the owner in canonical stage order. |
 | Query: derived collections | Rebuilding a derived collection dispatches one partition per unique root through a map. | The map supplies canonical order, charging, and one execution authority. It does not make native reads concurrent: reads serialize at the Relational owner. Projection and link checks run on the calling thread in entity identity order. Only the canonical completed prefix reaches the owner, and retention changes only on success. |
-| Query: advancement | Compute steps of independently admitted required members, under one request across all waves. | The required-set owner checks upstream commitment against the selected basis. Owner preparation, completion, commits, and publications follow canonical member order; a stopping boundary discards its application suffix without refunding compute already settled. |
+| Query: advancement | Compute steps of independently admitted required members, under one request across all waves. | The required-set owner checks upstream commitment against the selected basis. Owner preparation, completion, commits, and publications follow canonical member order; an owner-completion failure ends the applied prefix without refunding compute already settled. |
 
 Sessions, runs, subscriptions, continuations, leases, checkpoints, recovery
 handles, and admitted capacity are *managed resources*. Close them explicitly.

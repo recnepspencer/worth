@@ -600,8 +600,8 @@ explained). Rust names are given where a type embodies the term.
 
 **Work**
 : Charged operation units accumulated in canonical settlement order. Failed
-  computation charges its accepted canonical compute prefix. A later owner
-  application failure can discard results without refunding compute already
+  computation charges its canonical compute prefix. An owner-completion failure
+  discards results without refunding compute already
   settled; the applied prefix can be shorter than the charged compute prefix.
   Work is not elapsed time or total process memory.
 
@@ -626,7 +626,7 @@ explained). Rust names are given where a type embodies the term.
 : A declared set of independent stages in an installed domain operation's
   staged run. Preparation fixes each stage's facts on the owner; compute takes
   only its inert task; application returns to the owner in canonical stage
-  order. The least stopping stage bounds the applied prefix. A later apply
+  order. The least failing stage bounds the applied prefix. An owner-completion
   failure does not refund compute work already settled. This frontier is
   separate from a required wave and from application workflow control steps.
   **See** [How WORTH Works §9.9](how-it-works.md#99-resources-execution-and-cost).
