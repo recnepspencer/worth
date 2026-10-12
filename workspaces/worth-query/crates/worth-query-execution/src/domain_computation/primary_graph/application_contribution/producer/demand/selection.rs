@@ -1,12 +1,12 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationBasisSelectionIdentity, WorthQueryPrimaryGraphApplicationRuntime,
     output_lineage::invalidation::InvalidationEditAdmission,
     output_reuse::{
-        compare_retained_output_dependencies, compare_retained_output_witness,
-        require_installed_output_dependencies, retained_output_settlement_is_verified,
-        OutputDependencySelection,
+        OutputDependencySelection, compare_retained_output_dependencies,
+        compare_retained_output_witness, require_installed_output_dependencies,
+        retained_output_settlement_is_verified,
     },
-    WorthQueryApplicationBasisSelectionIdentity, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 type SelectedWithEntry<'a, Schema> = (
@@ -155,10 +155,7 @@ where
                     .map_err(|cause| match cause {
                         cause
                         @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
-                            return WorthQueryOutputDemandDenial::product_selection(
-                                cause,
-                                Family::IDENTITY,
-                            );
+                            WorthQueryOutputDemandDenial::product_selection(cause, Family::IDENTITY)
                         }
                         crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
                             WorthQueryOutputDemandDenial::new(

@@ -72,6 +72,36 @@ pub fn with_request_consult_observer_for_test<R>(
     drop(restore);
     (result, count)
 }
+
+pub(crate) fn charged_prefix(required: impl FnOnce() -> u64) {
+    if !is_installed() {
+        return;
+    }
+    PROBE.with(|p| {
+        if let Some(probe) = p.borrow_mut().as_mut() {
+            probe.charges.push((probe.count, required()));
+        }
+    });
+}
+
+pub(crate) fn stopped(checkpoint: Option<(usize, bool)>) {
+    PROBE.with(|p| {
+        if let Some(probe) = p.borrow_mut().as_mut() {
+            let origin = match checkpoint {
+                Some((identity, true)) => {
+                    probe.checkpoint_stops.get(&identity).copied().unwrap_or(0)
+                }
+                Some((identity, false)) => {
+                    probe.checkpoint_stops.insert(identity, probe.count);
+                    probe.count
+                }
+                None => probe.count,
+            };
+            probe.stop_origins.push((probe.count, origin));
+        }
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,33 +145,4 @@ mod tests {
         );
         assert_eq!(count, 2);
     }
-}
-
-pub(crate) fn charged_prefix(required: impl FnOnce() -> u64) {
-    if !is_installed() {
-        return;
-    }
-    PROBE.with(|p| {
-        if let Some(probe) = p.borrow_mut().as_mut() {
-            probe.charges.push((probe.count, required()));
-        }
-    });
-}
-
-pub(crate) fn stopped(checkpoint: Option<(usize, bool)>) {
-    PROBE.with(|p| {
-        if let Some(probe) = p.borrow_mut().as_mut() {
-            let origin = match checkpoint {
-                Some((identity, true)) => {
-                    probe.checkpoint_stops.get(&identity).copied().unwrap_or(0)
-                }
-                Some((identity, false)) => {
-                    probe.checkpoint_stops.insert(identity, probe.count);
-                    probe.count
-                }
-                None => probe.count,
-            };
-            probe.stop_origins.push((probe.count, origin));
-        }
-    });
 }
