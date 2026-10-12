@@ -383,3 +383,12 @@ fn macro_frames_resolve_alias_mentions_and_carry_nested_group_marks() {
         assert_raw_kind_diagnostics(source, 1);
     }
 }
+
+#[test]
+fn groups_under_an_open_angle_keep_the_syntax_visitors_refusals() {
+    let counts = [
+        "fn f() { tokens!(a < b; { type K = ExecutionAllocationDenialKind; }); }",
+        "fn f() { tokens!(a < b; { impl LocalTrait for ExecutionAllocationDenialKind { fn stopped(self) -> bool { matches!(self, Self::Cancelled) } } }); }",
+    ].map(|source| check_graphs("crates/consumer", &[graph(source)]).len());
+    assert_eq!(counts, [1, 1]);
+}

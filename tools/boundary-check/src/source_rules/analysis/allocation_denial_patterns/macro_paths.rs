@@ -16,10 +16,11 @@ struct Body {
     path: syn::Path,
     path_mark: Option<Span>,
     within_angle: bool,
+    mark_only: bool,
 }
 
 impl Body {
-    fn new(tokens: Vec<TokenTree>, within_angle: bool) -> Self {
+    fn new(tokens: Vec<TokenTree>, within_angle: bool, mark_only: bool) -> Self {
         Self {
             tokens,
             index: 0,
@@ -30,6 +31,7 @@ impl Body {
             },
             path_mark: None,
             within_angle,
+            mark_only,
         }
     }
 
@@ -45,7 +47,7 @@ impl Body {
 }
 
 pub(super) fn scan(tokens: &[TokenTree], mut observe: impl FnMut(Fragment<'_>) -> bool) -> usize {
-    let mut bodies = vec![Body::new(tokens.to_vec(), false)];
+    let mut bodies = vec![Body::new(tokens.to_vec(), false, false)];
     let mut operations = 0;
     while let Some(body) = bodies.last_mut() {
         if body.index == body.tokens.len() {
@@ -77,7 +79,7 @@ pub(super) fn scan(tokens: &[TokenTree], mut observe: impl FnMut(Fragment<'_>) -
                     body.path_mark = body.path_mark.or(Some(name.span()));
                 }
                 body.mark(body.path_mark);
-                if member(&body.tokens, index + 1) {
+                if !body.mark_only && member(&body.tokens, index + 1) {
                     if let Some(mark) = body.path_mark {
                         observe(Fragment::Read(mark));
                     }
@@ -93,7 +95,7 @@ pub(super) fn scan(tokens: &[TokenTree], mut observe: impl FnMut(Fragment<'_>) -
                     operations += 1;
                     let mark = body.frames.pop().unwrap();
                     body.mark(mark);
-                    if member(&body.tokens, index + 1) {
+                    if !body.mark_only && member(&body.tokens, index + 1) {
                         if let Some(mark) = mark {
                             observe(Fragment::Read(mark));
                         }
@@ -104,11 +106,18 @@ pub(super) fn scan(tokens: &[TokenTree], mut observe: impl FnMut(Fragment<'_>) -
             TokenTree::Group(group) => {
                 body.clear_path();
                 let within_angle = body.within_angle || body.frames.len() > 1;
-                // Complete Rust syntax keeps its existing scope-aware visitor.
-                // A DSL group is entered here once, never sent back to scan.
+                // Offer groups to the syntax visitor at every frame depth.
+                // Owned groups under angles still supply marks, but the visitor
+                // already owns their reads and all descendant syntax visits.
                 let tokens = group.stream();
-                if within_angle || !observe(Fragment::Items(tokens.clone())) {
-                    bodies.push(Body::new(tokens.into_iter().collect(), within_angle));
+                let owned = !body.mark_only && observe(Fragment::Items(tokens.clone()));
+                let mark_only = body.mark_only || owned;
+                if within_angle || !owned {
+                    bodies.push(Body::new(
+                        tokens.into_iter().collect(),
+                        within_angle,
+                        mark_only,
+                    ));
                 }
             }
             TokenTree::Punct(p) if p.as_char() == ':' => {}
@@ -171,5 +180,35 @@ mod tests {
             assert_eq!(large.0, 2 * small.0, "{fragment}");
             assert_eq!((small.1, large.1), (16, 32), "{fragment}");
         }
+    }
+
+    #[test]
+    fn owned_groups_supply_marks_without_repeating_reads_or_syntax_visits() {
+        let count = |n| {
+            let tokens = "<fn((ExecutionAllocationDenialKind::Cancelled)) as Id>::Out,"
+                .repeat(n)
+                .parse::<proc_macro2::TokenStream>()
+                .unwrap();
+            let tokens: Vec<_> = tokens.into_iter().collect();
+            let mut reads = 0;
+            let mut syntax_visits = 0;
+            let work = scan(&tokens, |fragment| match fragment {
+                Fragment::Mention(path) => path.segments.last().is_some_and(|s| s.ident == RAW),
+                Fragment::Read(_) => {
+                    reads += 1;
+                    false
+                }
+                Fragment::Items(_) => {
+                    syntax_visits += 1;
+                    true
+                }
+            });
+            (work, reads, syntax_visits)
+        };
+        let small = count(16);
+        let large = count(32);
+        assert_eq!(large.0, 2 * small.0);
+        assert_eq!((small.1, large.1), (16, 32));
+        assert_eq!((small.2, large.2), (16, 32));
     }
 }
