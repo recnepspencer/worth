@@ -12,10 +12,15 @@ use fixture::{
 
 #[test]
 fn direct_access_indexes_display_and_derived_values_across_committed_rows() {
-    let mut workspace = collection_workspace("installed-native-multi-key");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = collection_workspace(request_execution, "installed-native-multi-key");
     for value in ["alpha", "beta", "gamma"] {
         workspace
-            .insert("Vertex", |mutation| mutation.aspect("identity.id", value))
+            .insert(request_execution, "Vertex", |mutation| {
+                mutation.aspect("identity.id", value)
+            })
             .unwrap();
     }
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
@@ -85,7 +90,11 @@ fn direct_access_indexes_display_and_derived_values_across_committed_rows() {
 
 #[test]
 fn request_builder_denials_retain_contract_and_requested_field_context() {
-    let workspace = workspace("installed-native-request-denials", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace =
+        workspace(request_execution, "installed-native-request-denials", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -158,9 +167,13 @@ fn request_builder_denials_retain_contract_and_requested_field_context() {
 
 #[test]
 fn capability_denial_retains_exact_native_source_and_projection_context() {
-    let mut workspace = workspace("installed-native-denial-context", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workspace(request_execution, "installed-native-denial-context", false).unwrap();
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "authoritative-row")
         })
         .unwrap();

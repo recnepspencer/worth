@@ -100,6 +100,7 @@ impl
 }
 
 pub(crate) fn conditional_resource_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
     installation: ConditionalInstallation,
@@ -108,7 +109,7 @@ pub(crate) fn conditional_resource_workspace(
 ) -> Result<runtime::WorthQueryWorkspace, runtime::WorthQueryRuntimeError> {
     let dependency_contract = node.dependencies()[0].contract().clone();
     let package = conditional_resource_package(&node);
-    let installation = installation.prepare_public();
+    let installation = installation.prepare_public(request_execution);
     let builder = runtime::WorthQueryRuntime::builder(public_product_world_resources())
         .domain_package(package)
         .expect("conditional resource package should admit")
@@ -143,7 +144,7 @@ pub(crate) fn conditional_resource_workspace(
             crate::support::public_bridge_runtime::public_graph_support_profile(),
         )
         .build_backend_from_parts()
-        .build()?
+        .build(request_execution)?
         .workspace(name)
 }
 

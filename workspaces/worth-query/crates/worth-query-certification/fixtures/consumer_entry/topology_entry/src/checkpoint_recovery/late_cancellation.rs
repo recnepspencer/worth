@@ -34,7 +34,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
         )
         .expect("a real source suffix changes before cutoff preparation");
     drop(successor);
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let output_before = request
         .query(PlanarOutputRead {
             body_key: "anchor-a".to_owned(),
@@ -57,7 +57,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
                     Ok(WorthQueryApplicationOutputDemandProgress::Pending) => {
                         std::thread::yield_now()
                     }
-                    terminal => return terminal,
+                    terminal => return terminal.map_err(Box::new),
                 }
             }
             panic!("the bounded progression never reached its final guard");
@@ -66,7 +66,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
         let reached = pause.wait_until_reader_contended(Duration::from_secs(5));
         cancellation.cancel();
         pause.release();
-        let terminal = advancing.join().unwrap();
+        let terminal = advancing.join().unwrap().map_err(|denial| *denial);
         assert!(
             reached,
             "final Product-read rendezvous did not occur after preparation"
@@ -81,7 +81,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
     });
     drop(pause);
     drop(demand);
-    let after = request.retain_read().unwrap();
+    let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     assert_eq!(before.selected_commit(), after.selected_commit());
     let output_after = request
         .query(PlanarOutputRead {

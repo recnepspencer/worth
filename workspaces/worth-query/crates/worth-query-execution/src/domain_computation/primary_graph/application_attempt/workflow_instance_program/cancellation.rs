@@ -66,6 +66,7 @@ where
         Spec,
     >(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
         cancel_key_identity: [u8; 32],
@@ -102,8 +103,9 @@ where
         let snapshot = self.lease.snapshot();
         // The exact replay resolves before the definition is read; any other
         // request for an ended instance is refused by name.
-        let recorded = self.lease.handle().with_runtime(|runtime| {
+        let recorded = self.lease.handle().with_runtime(execution, |runtime| {
             let recorded = recorded::observe_recorded_cancellation(
+                execution,
                 runtime,
                 snapshot,
                 &layout,
@@ -113,7 +115,7 @@ where
                 installed.resources().history_reconstruction_budget(),
             )?;
             if recorded.is_none() {
-                deny_ended(runtime, snapshot, &layout, instance.entity_id())?;
+                deny_ended(execution, runtime, snapshot, &layout, instance.entity_id())?;
             }
             Ok::<_, WorthQueryApplicationAttemptDenial>(recorded)
         })?;
@@ -127,7 +129,9 @@ where
                 performed,
                 facts,
             },
-            None => self.close_live_workflow_instance(installed, &layout, &instance, &identity)?,
+            None => self.close_live_workflow_instance(
+                execution, installed, &layout, &instance, &identity,
+            )?,
         };
         check_request_live(
             self.admission.publication_request(),

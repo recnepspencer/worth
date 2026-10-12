@@ -44,6 +44,15 @@ where
     Binding::Input: Clone + Send + Sync + 'static,
     Owner: WorthQueryProgramOwner<Schema> + ?Sized,
 {
+    let execution = match phase.execution_request_for(&owner.owned_runtime().product_runtime) {
+        Ok(execution) => execution,
+        Err(cause) => {
+            return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                cause,
+            )
+            .into_commit_outcome()
+        }
+    };
     let binding = TypeId::of::<Binding>();
     if !owner.owns_action(binding.into_external())
         || owner.owns_output_source(binding.into_external())
@@ -64,6 +73,7 @@ where
         Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
     };
     runtime.compare_and_commit_application_for_program_action(
+        &execution,
         phase,
         &presented,
         program,

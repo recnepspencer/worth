@@ -1,3 +1,5 @@
+#[path = "concurrent_hostile_matrix_fixture/preview_observation.rs"]
+mod preview_observation;
 use std::sync::{mpsc, Arc, Barrier};
 use std::thread;
 
@@ -32,62 +34,21 @@ struct ConcurrentMatrixRun {
     raw_digest: String,
 }
 
-pub(in crate::runtime::tests) fn execute_phase_sixteen_concurrent_hostile_matrix(
-) -> WorthQueryConcurrentHostileMatrixArtifact {
-    let primary = run_phase_sixteen_matrix("primary");
-    let serialized_replay = run_phase_sixteen_serialized_replay("serialized-replay");
-    let repeated =
-        run_phase_sixteen_matrix_with_interleaving("repeated", SubmitterInterleaving::Descending);
-    let artifact_replay_equal = primary.raw_digest == serialized_replay.raw_digest;
-    let repeated_run_equal = primary.raw_digest == repeated.raw_digest;
-    WorthQueryConcurrentHostileMatrixArtifact::certify(
-        primary.topology,
-        primary.receipt_digests,
-        primary.reader_result_digests,
-        primary.published_artifact_digests,
-        primary.preview_closeout_digests,
-        primary.branch_basis_digests,
-        primary.replay_digest,
-        primary.counters,
-        artifact_replay_equal,
-        repeated_run_equal,
-        true,
-    )
-}
+#[path = "concurrent_hostile_matrix_fixture/execute_phase_sixteen_concurrent_hostile_matrix.rs"]
+mod execute_phase_sixteen_concurrent_hostile_matrix;
+pub(in crate::runtime::tests) use execute_phase_sixteen_concurrent_hostile_matrix::execute_phase_sixteen_concurrent_hostile_matrix;
 
-fn run_phase_sixteen_matrix(label: &'static str) -> ConcurrentMatrixRun {
-    run_phase_sixteen_matrix_with_interleaving(label, SubmitterInterleaving::Ascending)
-}
+#[path = "concurrent_hostile_matrix_fixture/run_phase_sixteen_matrix.rs"]
+mod run_phase_sixteen_matrix;
+use run_phase_sixteen_matrix::run_phase_sixteen_matrix;
 
-fn run_phase_sixteen_matrix_with_interleaving(
-    label: &'static str,
-    interleaving: SubmitterInterleaving,
-) -> ConcurrentMatrixRun {
-    let mut state = ConcurrentMatrixState::new(label);
-    state.capture_unpublished_posture();
-    state.record_branch_basis("phase16-branch-a");
-    state.record_preview_discard();
-    state.execute_concurrent_reader_and_submitter_matrix(interleaving);
-    state.reconsume_published_artifacts();
-    state.record_preview_promotion();
-    state.record_branch_basis("phase16-branch-b");
-    state.finish()
-}
+#[path = "concurrent_hostile_matrix_fixture/run_phase_sixteen_matrix_with_interleaving.rs"]
+mod run_phase_sixteen_matrix_with_interleaving;
+use run_phase_sixteen_matrix_with_interleaving::run_phase_sixteen_matrix_with_interleaving;
 
-fn run_phase_sixteen_serialized_replay(label: &'static str) -> ConcurrentMatrixRun {
-    let mut state = ConcurrentMatrixState::new(label);
-    state.capture_unpublished_posture();
-    state.record_branch_basis("phase16-branch-a");
-    state.record_preview_discard();
-    state.execute_serialized_reader_matrix();
-    for submission in planned_phase_sixteen_submissions() {
-        state.submit_planned(submission);
-    }
-    state.reconsume_published_artifacts();
-    state.record_preview_promotion();
-    state.record_branch_basis("phase16-branch-b");
-    state.finish()
-}
+#[path = "concurrent_hostile_matrix_fixture/run_phase_sixteen_serialized_replay.rs"]
+mod run_phase_sixteen_serialized_replay;
+use run_phase_sixteen_serialized_replay::run_phase_sixteen_serialized_replay;
 
 struct ConcurrentMatrixState {
     workspace: WorthQueryWorkspace,
@@ -103,15 +64,24 @@ struct ConcurrentMatrixState {
 }
 
 impl ConcurrentMatrixState {
-    fn new(_label: &'static str) -> Self {
-        let mut workspace = stateful_bridge_task_runtime()
+    fn new(
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _label: &'static str,
+    ) -> Self {
+        let mut workspace = stateful_bridge_task_runtime(request_execution)
             .workspace("runtime.phase16.concurrent-hostile")
             .expect("workspace should build");
         let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-            .live_view_request("tasks.phase16", task_live_request(), task_schema())
+            .live_view_request(
+                request_execution,
+                "tasks.phase16",
+                task_live_request(),
+                task_schema(),
+            )
             .expect("live view should declare");
         let derived = workspace
             .computed_view(
+                request_execution,
                 crate::program::WorthQueryDerivedView::new(
                     "derived.phase16",
                     [test_aspect_touch("title.value")],
@@ -134,10 +104,13 @@ impl ConcurrentMatrixState {
         }
     }
 
-    fn capture_unpublished_posture(&mut self) {
+    fn capture_unpublished_posture(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
         let artifact = self
             .workspace
-            .shared_read_context()
+            .shared_read_context(request_execution)
             .expect("shared read context should mint")
             .published_derived_artifact(&self.derived)
             .expect("unpublished artifact should mint");
@@ -149,6 +122,7 @@ impl ConcurrentMatrixState {
 
     fn execute_concurrent_reader_and_submitter_matrix(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         interleaving: SubmitterInterleaving,
     ) {
         let intake = WorthQueryConcurrentSubmissionIntake::new();
@@ -159,7 +133,7 @@ impl ConcurrentMatrixState {
         let contexts = (0..PHASE_SIXTEEN_READERS)
             .map(|_| {
                 self.workspace
-                    .shared_read_context()
+                    .shared_read_context(request_execution)
                     .expect("shared read context should mint")
                     .published_derived_artifact(&self.derived)
                     .expect("reader artifact should mint")
@@ -206,15 +180,18 @@ impl ConcurrentMatrixState {
         );
         self.reader_result_digests.append(&mut reader_results.1);
         for record in intake.drain_ordered() {
-            self.submit_concurrent_record(record);
+            self.submit_concurrent_record(request_execution, record);
         }
     }
 
-    fn execute_serialized_reader_matrix(&mut self) {
+    fn execute_serialized_reader_matrix(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
         for _ in 0..PHASE_SIXTEEN_READERS {
             let artifact = self
                 .workspace
-                .shared_read_context()
+                .shared_read_context(request_execution)
                 .expect("shared read context should mint")
                 .published_derived_artifact(&self.derived)
                 .expect("serialized reader artifact should mint");
@@ -223,14 +200,22 @@ impl ConcurrentMatrixState {
         }
     }
 
-    fn submit_planned(&mut self, submission: PlannedSubmission) {
-        self.submit_command(hostile_insert_task_command(
-            &submission.identity,
-            &submission.title,
-        ));
+    fn submit_planned(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        submission: PlannedSubmission,
+    ) {
+        self.submit_command(
+            request_execution,
+            hostile_insert_task_command(&submission.identity, &submission.title),
+        );
     }
 
-    fn submit_concurrent_record(&mut self, record: WorthQueryConcurrentSubmissionRecord) {
+    fn submit_concurrent_record(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        record: WorthQueryConcurrentSubmissionRecord,
+    ) {
         assert!(
             record.submitter_thread_ordinal() < PHASE_SIXTEEN_SUBMITTERS,
             "submitter ordinal should be part of the declared topology"
@@ -240,22 +225,26 @@ impl ConcurrentMatrixState {
                 < PHASE_SIXTEEN_SUBMITTERS * PHASE_SIXTEEN_SUBMISSION_ROUNDS,
             "submission ordinal should be part of the declared topology"
         );
-        self.submit_command(record.into_command());
+        self.submit_command(request_execution, record.into_command());
     }
 
-    fn submit_command(&mut self, command: WorthQueryWriteCommand) {
+    fn submit_command(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        command: WorthQueryWriteCommand,
+    ) {
         let receipt = self
             .workspace
             .submissions()
             .expect("submission lane should mint")
-            .submit(command)
+            .submit(request_execution, command)
             .expect("submission should succeed");
         self.receipt_digests
             .push(hostile_write_receipt_digest(&receipt));
         self.receipts.push(receipt);
         let artifact = self
             .workspace
-            .shared_read_context()
+            .shared_read_context(request_execution)
             .expect("shared read context should mint")
             .published_derived_artifact(&self.derived)
             .expect("published artifact should mint");
@@ -284,66 +273,23 @@ impl ConcurrentMatrixState {
             ));
     }
 
-    fn record_preview_discard(&mut self) {
-        let discarded = {
-            let mut preview = self
-                .workspace
-                .preview(test_session_label("phase16-preview-discard"))
-                .expect("preview should admit");
-            preview
-                .insert("Task", |task| {
-                    task.set_aspect(
-                        test_aspect_touch("identity.id"),
-                        test_authored_string_aspect_value("phase16-preview-discard"),
-                    )
-                    .set_aspect(
-                        test_aspect_touch("title.value"),
-                        test_authored_string_aspect_value("Preview Discard"),
-                    )
-                })
-                .expect("preview insert should stage");
-            preview.discard()
-        };
-        self.delivery_residue_count += hostile_preview_delivery_residue_count(&discarded);
-        self.preview_closeout_digests
-            .push(hostile_preview_closeout_digest(&discarded));
-    }
-
-    fn record_preview_promotion(&mut self) {
-        let promoted = {
-            let mut preview = self
-                .workspace
-                .preview(test_session_label("phase16-preview-promote"))
-                .expect("preview should admit");
-            preview
-                .insert("Task", |task| {
-                    task.set_aspect(
-                        test_aspect_touch("identity.id"),
-                        test_authored_string_aspect_value("phase16-preview-promote"),
-                    )
-                    .set_aspect(
-                        test_aspect_touch("title.value"),
-                        test_authored_string_aspect_value("Preview Promote"),
-                    )
-                })
-                .expect("preview insert should stage");
-            preview.promote().expect("preview should promote")
-        };
-        self.delivery_residue_count += hostile_preview_delivery_residue_count(&promoted);
-        self.preview_closeout_digests
-            .push(hostile_preview_closeout_digest(&promoted));
-    }
-
-    fn record_branch_basis(&mut self, label: &'static str) {
+    fn record_branch_basis(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        label: &'static str,
+    ) {
         let branch = self
             .workspace
-            .branch(test_session_label(label))
+            .branch(request_execution, test_session_label(label))
             .expect("branch should admit");
         self.branch_basis_digests
             .push(hostile_branch_basis_digest(&branch));
     }
 
-    fn finish(mut self) -> ConcurrentMatrixRun {
+    fn finish(
+        mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> ConcurrentMatrixRun {
         let first = self.receipts.first().expect("first receipt should exist");
         let last = self.receipts.last().expect("last receipt should exist");
         let segment = WorthQueryJournalSegmentIdentity::between(
@@ -353,7 +299,10 @@ impl ConcurrentMatrixState {
         .expect("committed segment should build");
         let outcome = self
             .workspace
-            .replay_journal_segment(WorthQueryJournalReplayRequest::new(segment))
+            .replay_journal_segment(
+                request_execution,
+                WorthQueryJournalReplayRequest::new(segment),
+            )
             .expect("replay should succeed");
         let replay_digest = outcome.outcome_digest().to_string();
         self.last_artifact = None;

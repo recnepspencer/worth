@@ -10,8 +10,11 @@ use crate::runtime::tests::support::{
 
 #[test]
 fn managed_live_observation_tracks_delivery_without_exposing_lifecycle_authority() {
-    let mut workspace = task_workspace("managed-live-observation");
-    let handle = open_task_resource(&mut workspace, "tasks.observed");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution, "managed-live-observation");
+    let handle = open_task_resource(request_execution, &mut workspace, "tasks.observed");
     let opened = handle
         .observe(&mut workspace)
         .expect("opened managed resource should be observable");
@@ -23,7 +26,7 @@ fn managed_live_observation_tracks_delivery_without_exposing_lifecycle_authority
     assert_eq!(opened.last_delivery_sequence(), None);
 
     workspace
-        .write(task_insert("Observed"))
+        .write(request_execution, task_insert("Observed"))
         .expect("relevant write should route to observed resource");
     let delivered = handle
         .observe(&mut workspace)
@@ -44,25 +47,35 @@ fn managed_live_observation_tracks_delivery_without_exposing_lifecycle_authority
 
 #[test]
 fn abandoned_handle_is_retried_before_write_and_cannot_receive_delivery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declared = Rc::new(Cell::new(0));
     let closed_count = Rc::new(Cell::new(0));
     let close_denied = Rc::new(Cell::new(true));
     let attempted_writes = Rc::new(Cell::new(0));
-    let mut workspace =
-        lifecycle_workspace(&declared, &closed_count, &close_denied, &attempted_writes);
-    let handle = open_task_resource(&mut workspace, "tasks.abandoned");
+    let mut workspace = lifecycle_workspace(
+        request_execution,
+        &declared,
+        &closed_count,
+        &close_denied,
+        &attempted_writes,
+    );
+    let handle = open_task_resource(request_execution, &mut workspace, "tasks.abandoned");
     drop(handle);
 
     assert!(workspace
         .resolve_live_artifact_target("tasks.abandoned")
         .is_err());
-    assert!(workspace.write(task_insert("Denied cleanup")).is_err());
+    assert!(workspace
+        .write(request_execution, task_insert("Denied cleanup"))
+        .is_err());
     assert_eq!(closed_count.get(), 0);
     assert_eq!(attempted_writes.get(), 0);
 
     close_denied.set(false);
     let receipt = workspace
-        .write(task_insert("After cleanup"))
+        .write(request_execution, task_insert("After cleanup"))
         .expect("write should retry and complete abandoned-resource cleanup first");
     assert_eq!(closed_count.get(), 1);
     assert_eq!(attempted_writes.get(), 1);
@@ -70,7 +83,7 @@ fn abandoned_handle_is_retried_before_write_and_cannot_receive_delivery() {
         .terminal_affected_live_view_ids_projection()
         .is_empty());
 
-    let replacement = open_task_resource(&mut workspace, "tasks.abandoned");
+    let replacement = open_task_resource(request_execution, &mut workspace, "tasks.abandoned");
     assert_eq!(declared.get(), 2);
     assert!(closed(replacement.close(&mut workspace)).lane_terminal());
     assert_eq!(closed_count.get(), 2);
@@ -78,13 +91,21 @@ fn abandoned_handle_is_retried_before_write_and_cannot_receive_delivery() {
 
 #[test]
 fn runtime_shutdown_closes_live_resources_even_when_handles_still_exist() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declared = Rc::new(Cell::new(0));
     let closed_count = Rc::new(Cell::new(0));
     let close_denied = Rc::new(Cell::new(false));
     let attempted_writes = Rc::new(Cell::new(0));
-    let mut workspace =
-        lifecycle_workspace(&declared, &closed_count, &close_denied, &attempted_writes);
-    let handle = open_task_resource(&mut workspace, "tasks.runtime-shutdown");
+    let mut workspace = lifecycle_workspace(
+        request_execution,
+        &declared,
+        &closed_count,
+        &close_denied,
+        &attempted_writes,
+    );
+    let handle = open_task_resource(request_execution, &mut workspace, "tasks.runtime-shutdown");
 
     drop(workspace);
     assert_eq!(closed_count.get(), 1);
@@ -93,6 +114,7 @@ fn runtime_shutdown_closes_live_resources_even_when_handles_still_exist() {
 }
 
 fn lifecycle_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     declared: &Rc<Cell<usize>>,
     closed: &Rc<Cell<usize>>,
     close_denied: &Rc<Cell<bool>>,
@@ -108,7 +130,7 @@ fn lifecycle_workspace(
             attempted_writes: Rc::clone(attempted_writes),
         })
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("lifecycle-counting runtime should build")
         .workspace("managed-live-lifecycle")
         .expect("lifecycle-counting workspace should open")

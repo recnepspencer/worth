@@ -136,6 +136,7 @@ pub(super) struct PlanningExecutor;
 impl CommitStrategyExecutor for PlanningExecutor {
     fn execute(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &CanonicalStrategyCommitRequest,
         _observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
@@ -149,6 +150,7 @@ pub(super) struct DeterministicFailureExecutor;
 impl CommitStrategyExecutor for DeterministicFailureExecutor {
     fn execute(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
         _observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
@@ -206,6 +208,7 @@ pub(super) fn persisted_intent_runtime_with_failing_executor(
 }
 
 pub(crate) fn execute_persisted_intent_strategy_commit(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     entity: EntityId,
 ) -> crate::facade::transactions::CommitResult {
@@ -236,7 +239,7 @@ pub(crate) fn execute_persisted_intent_strategy_commit(
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let (transaction_validation_input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(runtime, None);
@@ -244,10 +247,10 @@ pub(crate) fn execute_persisted_intent_strategy_commit(
         .lower_execution_with_input(runtime, &request, &execution, transaction_validation_input)
         .expect("lowered strategy plan");
     let validated = authority
-        .validate_lowered_plan(runtime, lowered)
+        .validate_lowered_plan(request_execution, runtime, lowered)
         .expect("validated strategy plan");
     authority
-        .execute_validated_commit(runtime, validated)
+        .execute_validated_commit(request_execution, runtime, validated)
         .expect("validated strategy commit")
 }
 
@@ -331,4 +334,22 @@ pub(super) fn execution_draft(request: &CanonicalStrategyCommitRequest) -> Strat
         execution_result(request),
         StrategyExecutionSummary::default(),
     )
+}
+
+pub(crate) fn lowered_commit_fixture() -> (
+    crate::runtime::RelationalRuntime,
+    crate::commit_strategies::data::LoweredStrategyCommitPlan,
+) {
+    let runtime = RelationalRuntimeBuilder::new()
+        .schema_registry(strategy_schema_registry())
+        .commit_strategy(strategy_registration())
+        .build();
+    let request = canonical_request();
+    let draft = execution_draft(&request);
+    let (input, mut authority) =
+        crate::tests::support::test_owner_strategy_authority(&runtime, None);
+    let lowered = authority
+        .lower_execution_with_input(&runtime, &request, &draft, input)
+        .unwrap();
+    (runtime, lowered)
 }

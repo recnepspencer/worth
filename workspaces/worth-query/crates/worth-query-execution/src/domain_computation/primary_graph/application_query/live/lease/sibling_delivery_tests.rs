@@ -17,14 +17,20 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
-        .selected_product()
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let source = world
         .application
         .product_runtime()
@@ -56,14 +62,20 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let sibling = created.branch_identity().clone();
 
     let source_account = world
-        .selected_product()
-        .resolve_entity(
-            AccountIdentity::reference(),
-            "account-1".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_entity(
+                    &phase,
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let source_query = world
         .application
         .installed_schema()
@@ -71,9 +83,9 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         .unwrap();
     let mut source_live = world
         .application
-        .with_application_advancement(&request, |phase| {
+        .with_host_advancement(|phase| {
             world
-        .selected_product()
+        .selected_product(&(phase).test_host_request(), )
         .open_application_query_live::<
             LiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -83,8 +95,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
             Account,
             Activity,
             LiveAccountActivityCause,
-        >(
- &phase,
+        >(&phase,
             source_query,
             &principal,
             source_account,
@@ -93,19 +104,26 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         )
         .unwrap()
         })
-        .unwrap();
+        .expect("the fixture read owns its installed host call");
 
     let sibling_account = world
         .application
-        .select_product_branch(&sibling)
-        .unwrap()
-        .resolve_entity(
-            AccountIdentity::reference(),
-            "account-1".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(&host_custody.borrowed_request_for_test(), &sibling)
+                .unwrap()
+                .resolve_entity(
+                    &phase,
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let sibling_query = world
         .application
         .installed_schema()
@@ -113,10 +131,11 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         .unwrap();
     let mut sibling_live = world
         .application
-        .with_application_advancement(&request, |phase| {
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
             world
         .application
-        .select_product_branch(&sibling)
+        .select_product_branch(&host_custody.borrowed_request_for_test(), &sibling)
         .unwrap()
         .open_application_query_live::<
             LiveAccountActivityQuery,
@@ -127,8 +146,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
             Account,
             Activity,
             LiveAccountActivityCause,
-        >(
- &phase,
+        >(&phase,
             sibling_query,
             &principal,
             sibling_account,
@@ -137,16 +155,23 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         )
         .unwrap()
         })
-        .unwrap();
+        .expect("the fixture read owns its installed host call");
 
     let committed =
         commit_live_activity_on_product(&world, &sibling, &principal, &request, "sibling", 229, 93);
-    assert!(matches!(
-        source_live.next(&principal, &request),
-        WorthQueryApplicationLiveOutcome::Pending
-    ));
-    let WorthQueryApplicationLiveOutcome::Delivered(update) =
-        sibling_live.next(&principal, &request)
+    world
+        .application
+        .with_host_advancement(|phase| {
+            assert!(matches!(
+                source_live.next(&phase, &principal, &request),
+                WorthQueryApplicationLiveOutcome::Pending
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
+    let WorthQueryApplicationLiveOutcome::Delivered(update) = world
+        .application
+        .with_host_advancement(|phase| sibling_live.next(&phase, &principal, &request))
+        .expect("the fixture read owns its installed host call")
     else {
         panic!("the sibling live partition must receive its own commit")
     };

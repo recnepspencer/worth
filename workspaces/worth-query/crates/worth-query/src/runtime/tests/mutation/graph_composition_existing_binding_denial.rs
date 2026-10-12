@@ -1,16 +1,22 @@
 use super::super::support::*;
 
-fn task_relation_runtime() -> WorthQueryRuntime {
-    stateful_bridge_task_relation_runtime()
+fn task_relation_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_task_relation_runtime(request_execution)
 }
 
 #[test]
 fn compose_graph_denies_existing_target_collection_mismatch_typed_and_early() {
-    let mut workspace = task_relation_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_relation_runtime(request_execution)
         .workspace("tasks.graph-composition-existing-target-collection-mismatch")
         .expect("runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
         .live_view(
+            request_execution,
             "tasks.graph-composition-existing-target-collection-mismatch-relations",
             |q| {
                 q.from("TaskRelation")
@@ -27,7 +33,7 @@ fn compose_graph_denies_existing_target_collection_mismatch_typed_and_early() {
         )
         .expect("relation live view should declare");
     let relation_seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -56,7 +62,7 @@ fn compose_graph_denies_existing_target_collection_mismatch_typed_and_early() {
         .expect("binding should build");
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             graph.update_existing(binding, |relation| {
                 relation.set_aspect(
                     test_aspect_touch("status.value"),
@@ -98,7 +104,10 @@ fn compose_graph_denies_existing_target_collection_mismatch_typed_and_early() {
 
 #[test]
 fn compose_graph_denies_existing_target_missing_row_typed_and_early() {
-    let mut workspace = task_relation_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_relation_runtime(request_execution)
         .workspace("tasks.graph-composition-existing-target-missing")
         .expect("runtime should open a named workspace");
     let binding = workspace
@@ -114,7 +123,7 @@ fn compose_graph_denies_existing_target_missing_row_typed_and_early() {
         .expect("binding should build");
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             graph.delete_existing(binding, |delete| {
                 delete.touches(test_aspect_touches(["kind.value", "status.value"]))
             })?;

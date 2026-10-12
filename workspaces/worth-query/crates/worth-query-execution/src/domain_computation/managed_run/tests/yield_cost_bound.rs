@@ -1,3 +1,5 @@
+mod expected_counters;
+use expected_counters::expected_direct_yield_counters;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -188,7 +190,7 @@ fn workflow_yield_transition_allocation_is_unrelated_authority_invariant() {
 }
 
 fn execute_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> YieldCostEvidence {
@@ -215,7 +217,7 @@ mod allocation_measurement;
 use allocation_measurement::{measured_target, measured_workflow_target};
 
 fn prepared_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     unrelated_width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -248,25 +250,33 @@ fn prepared_target(
         },
         resource_request,
     );
-    let active = running
-        .begin_graph_execution(
-            execution,
+    let active = {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_graph_execution(
+            &installed_fixture_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
                 "yield-cost-slope",
             ),
         )
-        .expect("yield cost provider should begin");
-    let paused = match active.advance(execution) {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("yield cost provider did not pause"),
+    }
+    .expect("yield cost provider should begin");
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("yield cost provider did not pause"),
+        }
     };
     (paused, unrelated, suspension_count, retained_probe_count)
 }
 
 fn prepared_workflow_target(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     unrelated_width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
@@ -328,9 +338,10 @@ fn prepared_workflow_target(
         resources,
         resource_request,
     );
+    let installed_fixture_phase = running.fixture_phase(execution);
     let active = running
         .begin_stage_graph_execution(
-            execution,
+            &installed_fixture_phase,
             "stage",
             &graph,
             WorthQueryManagedGraphCallRequest::new(
@@ -339,7 +350,7 @@ fn prepared_workflow_target(
             ),
         )
         .expect("workflow yield cost provider should begin");
-    let paused = match active.advance(execution) {
+    let paused = match active.advance(&installed_fixture_phase) {
         WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("workflow yield cost provider did not pause"),
     };
@@ -359,27 +370,6 @@ fn step_failure(
     denial: crate::domain_computation::WorthQueryGraphProviderStepDenial,
 ) -> WorthQueryGraphProviderFailure {
     WorthQueryGraphProviderFailure::new(denial.detail())
-}
-
-fn expected_direct_yield_counters() -> crate::domain_computation::WorthQueryYieldTransitionCounters
-{
-    let mut counters = crate::domain_computation::WorthQueryYieldTransitionCounters::default();
-    counters.classified_eligibility();
-    counters.attempted_bridge_finalization();
-    counters.attempted_checkpoint_suspension();
-    counters.observed_checkpoint_retained_bytes(1);
-    counters.validated_retained_resources();
-    counters.minted_yielded_capability();
-    counters
-}
-
-fn expected_workflow_yield_counters() -> crate::domain_computation::WorthQueryYieldTransitionCounters
-{
-    let mut counters = expected_direct_yield_counters();
-    counters.observed_artifact_registry();
-    counters.observed_artifact_registry();
-    counters.validated_retained_resources();
-    counters
 }
 
 #[path = "yield_cost_bound/isolated_workflow_yield_transition_allocation_slope_probe.rs"]

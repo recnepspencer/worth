@@ -16,7 +16,7 @@ pub(super) fn validate_proposed_state(
     proposed: &crate::runtime::WorkingState,
     proposed_version: VersionId,
     proposal_identity: Option<&super::proposal_identity::RelationalMutationProposalIdentity>,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<(InvariantExecutionResult, InvariantExecutionResult), TransactionCommitError> {
     let mutation_sensitive = runtime
@@ -27,7 +27,7 @@ pub(super) fn validate_proposed_state(
             proposed_version,
             &prepared.merged_plan,
             proposal_identity,
-            lease,
+            execution,
             control,
         )?;
     let publication = runtime
@@ -38,7 +38,7 @@ pub(super) fn validate_proposed_state(
             proposed_version,
             &prepared.merged_plan,
             proposal_identity,
-            lease,
+            execution,
             control,
         )?;
     Ok((mutation_sensitive, publication))

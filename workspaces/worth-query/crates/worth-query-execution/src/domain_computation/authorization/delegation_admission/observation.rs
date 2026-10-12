@@ -36,6 +36,7 @@ use crate::domain_computation::authorization::{
 };
 
 pub(super) fn observe_lineage(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     observation: &WorthQueryBoundCapabilityObservation<'_>,
     leaf_grant: worth_relational::facade::identity::EntityId,
     leaf_policy: WorthQueryAuthorizationDecisionFact,
@@ -52,9 +53,10 @@ pub(super) fn observe_lineage(
         let status_revision = observation
             .relational
             .read_truth()
-            .project_snapshot(observation.snapshot)
+            .project_snapshot(observation.snapshot, execution)
             .and_then(|view| {
                 view.entity_field_revision(
+                    execution,
                     current_grant,
                     &worth_foundational::facade::AspectFieldLocator::new(
                         worth_foundational::facade::LocatorAuthority::Authoritative,
@@ -76,6 +78,7 @@ pub(super) fn observe_lineage(
                 )
             })?;
         let observed = discovery::observe_parent(
+            execution,
             observation.relational,
             observation.snapshot.clone(),
             installed,
@@ -85,6 +88,7 @@ pub(super) fn observe_lineage(
         let Some(parent_grant) = observed.parent else {
             let mut decision = current_policy.with_delegation(
                 WorthQueryDelegationDecisionFact::root(
+                    execution,
                     observation.relational,
                     observed.evidence,
                     status_revision,
@@ -99,6 +103,7 @@ pub(super) fn observe_lineage(
             while let Some(frame) = frames.pop() {
                 decision = frame.child_policy.with_delegation(
                     WorthQueryDelegationDecisionFact::delegated(
+                        execution,
                         observation.relational,
                         frame.grantor,
                         frame.parent_grant,
@@ -129,6 +134,7 @@ pub(super) fn observe_lineage(
             installed.contract().name(),
         )?;
         let transition = transition::observe_transition(
+            execution,
             observation.relational,
             observation.snapshot.clone(),
             installed,
@@ -138,7 +144,13 @@ pub(super) fn observe_lineage(
             parent_grant,
         )?;
         let parent_request = request.for_delegation_parent(&transition);
-        let parent = observe_policy(observation, posture, &parent_request, Some(parent_grant))?;
+        let parent = observe_policy(
+            execution,
+            observation,
+            posture,
+            &parent_request,
+            Some(parent_grant),
+        )?;
         let parent_policy = parent.into_decision_for_grant(parent_grant).map_err(|()| {
             denial(
                 WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
@@ -160,6 +172,7 @@ pub(super) fn observe_lineage(
 }
 
 pub(super) fn observe_policy(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     observation: &WorthQueryBoundCapabilityObservation<'_>,
     posture: WorthQueryCapabilityObservationPosture,
     request: &WorthQueryRetainedCapabilityRequest,
@@ -169,6 +182,7 @@ pub(super) fn observe_policy(
     match posture {
         WorthQueryCapabilityObservationPosture::Active => {
             super::super::capability_observation::observe_capability_policy(
+                execution,
                 WorthQueryCapabilityObservationPermit::new(),
                 observation.session_identity,
                 observation.relational,
@@ -182,6 +196,7 @@ pub(super) fn observe_policy(
         }
         WorthQueryCapabilityObservationPosture::UpperBound => {
             super::super::capability_observation::observe_upper_bound_policy(
+                execution,
                 WorthQueryCapabilityObservationPermit::new(),
                 observation.session_identity,
                 observation.relational,

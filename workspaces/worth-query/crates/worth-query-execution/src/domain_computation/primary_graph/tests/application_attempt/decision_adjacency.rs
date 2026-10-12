@@ -17,83 +17,14 @@ use crate::domain_computation::primary_graph::{
     WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryPrincipalResolutionMode,
 };
 
-#[test]
-fn an_edge_entering_an_observed_empty_adjacency_stales_the_attempt() {
-    let world = installed_authorization_world(false);
-    let request = live_scope();
-    let actor = authenticated(&world, "alice", &request);
-    let principal = resolved_principal(&world, 1, &request);
-    let account = resolved_account(&world, "open", &request);
-    let losing = link_program(
-        &world, &actor, &principal, &account, &request, "open", "losing",
-    );
-    let winner = link_program(
-        &world, &actor, &principal, &account, &request, "open", "winner",
-    );
+#[path = "decision_adjacency/an_edge_entering_an_observed_empty_adjacency_stales_the_attempt.rs"]
+mod an_edge_entering_an_observed_empty_adjacency_stales_the_attempt;
 
-    assert!(matches!(
-        world.application.compare_and_commit_application(
-            winner,
-            idempotency(31, 31),
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
-        ),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
-    let outcome = world.application.compare_and_commit_application(
-        losing,
-        idempotency(32, 32),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    assert_changed_decision(outcome, "the edge entering the sealed empty adjacency");
-}
+#[path = "decision_adjacency/sealed_adjacency_membership_supplies_exact_unlink_evidence.rs"]
+mod sealed_adjacency_membership_supplies_exact_unlink_evidence;
 
-#[test]
-fn sealed_adjacency_membership_supplies_exact_unlink_evidence() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let actor = authenticated(&world, "alice", &request);
-    let principal = resolved_principal(&world, 1, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program = unlink_program(&world, &actor, &principal, &account, &request);
-
-    let WorthQueryApplicationCommitOutcome::Committed(_) =
-        world.application.compare_and_commit_application(
-            program,
-            idempotency(35, 35),
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-    else {
-        panic!("the exact relation carried by adjacency evidence must be unlinkable");
-    };
-    assert_membership_absent(&world, &actor, &principal, &account, &request, "open");
-}
-
-#[test]
-fn removing_an_observed_present_relation_stales_a_competing_program() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let actor = authenticated(&world, "alice", &request);
-    let principal = resolved_principal(&world, 1, &request);
-    let account = resolved_account(&world, "open", &request);
-    let winner = unlink_program(&world, &actor, &principal, &account, &request);
-    let loser = unlink_program(&world, &actor, &principal, &account, &request);
-
-    assert!(matches!(
-        world.application.compare_and_commit_application(
-            winner,
-            idempotency(36, 36),
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
-        ),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
-    let outcome = world.application.compare_and_commit_application(
-        loser,
-        idempotency(37, 37),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    assert_changed_decision(outcome, "removing the retained relation");
-    assert_membership_absent(&world, &actor, &principal, &account, &request, "open");
-}
+#[path = "decision_adjacency/removing_an_observed_present_relation_stales_a_competing_program.rs"]
+mod removing_an_observed_present_relation_stales_a_competing_program;
 
 fn assert_changed_decision(outcome: WorthQueryApplicationCommitOutcome, cause: &str) {
     let WorthQueryApplicationCommitOutcome::Stale(stale) = outcome else {
@@ -102,56 +33,12 @@ fn assert_changed_decision(outcome: WorthQueryApplicationCommitOutcome, cause: &
     assert!(stale.stale_fact_count() > 0);
 }
 
-#[test]
-fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let actor = authenticated(&world, "alice", &request);
-    let principal = resolved_principal(&world, 1, &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(ChangeOwnershipOperation::reference())
-        .unwrap();
-    let admission = world
-        .selected_product()
-        .authorize_operation(&actor, &principal, &operation, Default::default(), &request)
-        .unwrap();
-    let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, principal| {
-                reader
-                    .relations_from(AccountOwner::reference(), principal)
-                    .unwrap();
-                let account = reader
-                    .resolve_entity(AccountStatus::reference(), "open".to_string())
-                    .unwrap();
-                reader
-                    .require_decision_field(&account, AccountStatus::reference())
-                    .unwrap();
-            },
-            AllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
-    let reads = world
-        .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            AllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    reads
-        .complete_projected_dependencies(
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("completion must re-observe only the explicitly sealed status dependency");
-}
+#[path = "decision_adjacency/capability_relation_traversal_does_not_enter_sealed_decision_dep.rs"]
+mod capability_relation_traversal_does_not_enter_sealed_decision_dep;
 
 fn authenticated(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &super::super::fixture::AuthorizationWorld,
     subject: &str,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -159,9 +46,13 @@ fn authenticated(
     let external = world.authenticate(subject, Duration::from_secs(60), request);
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
+            phase_custody,
             &world.binding,
             &external,
             request,
@@ -171,15 +62,21 @@ fn authenticated(
 }
 
 fn resolved_principal(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &super::super::fixture::AuthorizationWorld,
     identity: u64,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Principal> {
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            phase_custody,
             PrincipalIdentityField::reference(),
             identity,
             request,
@@ -189,6 +86,7 @@ fn resolved_principal(
 }
 
 fn link_program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &super::super::fixture::AuthorizationWorld,
     actor: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     principal: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Principal>,
@@ -211,12 +109,20 @@ fn link_program(
         .installed_operation(ChangeOwnershipOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(actor, principal, &operation, Default::default(), request)
+        .selected_product(&(phase_custody).test_host_request())
+        .authorize_operation(
+            phase_custody,
+            actor,
+            principal,
+            &operation,
+            Default::default(),
+            request,
+        )
         .unwrap();
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |reader, principal| {
                 reader
@@ -236,6 +142,7 @@ fn link_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             projection,
             AllocationPolicy::SystemAllocation,
@@ -243,6 +150,7 @@ fn link_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
@@ -261,6 +169,7 @@ fn link_program(
 }
 
 fn assert_membership_absent(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &super::super::fixture::AuthorizationWorld,
     actor: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     principal: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Principal>,
@@ -277,12 +186,20 @@ fn assert_membership_absent(
         .installed_operation(ChangeOwnershipOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(actor, principal, &operation, Default::default(), request)
+        .selected_product(&(phase_custody).test_host_request())
+        .authorize_operation(
+            phase_custody,
+            actor,
+            principal,
+            &operation,
+            Default::default(),
+            request,
+        )
         .unwrap();
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |reader, principal| {
                 reader
@@ -302,12 +219,14 @@ fn assert_membership_absent(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             projection,
             AllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
@@ -332,6 +251,7 @@ fn assert_membership_absent(
 }
 
 fn unlink_program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &super::super::fixture::AuthorizationWorld,
     actor: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     principal: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Principal>,
@@ -352,12 +272,20 @@ fn unlink_program(
         .installed_operation(ChangeOwnershipOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(actor, principal, &operation, Default::default(), request)
+        .selected_product(&(phase_custody).test_host_request())
+        .authorize_operation(
+            phase_custody,
+            actor,
+            principal,
+            &operation,
+            Default::default(),
+            request,
+        )
         .unwrap();
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |reader, principal| {
                 reader
@@ -371,12 +299,14 @@ fn unlink_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             projection,
             AllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();

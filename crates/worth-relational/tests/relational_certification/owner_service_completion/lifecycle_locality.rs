@@ -12,7 +12,10 @@ const LOCALITY_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[test]
 fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
-    let (runtime, services, parked_identity) = committed_fork("parked-lifecycle");
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, services, parked_identity) = committed_fork(execution, "parked-lifecycle");
     let parked_basis = services
         .basis_port()
         .admit_branch_basis(&parked_identity)
@@ -36,15 +39,17 @@ fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
         .expect("the locality batch remains within its declared budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("the controlled transaction prepares canonically");
 
     let publication_port = services.publication_port();
-    let publication_worker =
-        std::thread::spawn(move || publication_port.compare_and_publish(candidate));
+    let publication_worker = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            publication_port.compare_and_publish(execution, candidate)
+        }
+    });
     assert_pause_reached(Arc::clone(&reached), Arc::clone(&release));
 
     let waits_before = coordination_waits(&runtime, &parked_identity);

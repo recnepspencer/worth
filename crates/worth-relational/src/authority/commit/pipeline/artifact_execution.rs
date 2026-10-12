@@ -67,10 +67,12 @@ impl AssembledCommitExecution {
 }
 
 pub(super) fn assemble_commit_artifacts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     validated: SnapshotValidatedCommitExecution,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<AssembledCommitExecution, crate::transactions::data::TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Artifact)?;
+    let lease = super::request_lease(execution);
     let (
         mut admitted,
         selected_branch_state,

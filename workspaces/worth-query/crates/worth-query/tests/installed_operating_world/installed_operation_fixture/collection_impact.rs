@@ -83,6 +83,7 @@ impl domain::WorthQueryDomainOperationExecutor<GeometryDomain, ImpactCollectionR
 }
 
 pub(crate) fn impact_collection_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -99,10 +100,11 @@ pub(crate) fn impact_collection_workspace(
             ReadFamily,
             ImpactCollectionExecutor::identity_ordered(),
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 pub(crate) fn impact_collection_invalidation_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -134,7 +136,7 @@ pub(crate) fn impact_collection_invalidation_workspace(
         ReadFamily,
         ImpactCollectionExecutor::routing_ordered(),
     )
-    .workspace(name)
+    .workspace(request_execution, name)
 }
 
 fn plain_collection_package() -> domain::WorthQueryDomainPackage<GeometryDomain> {

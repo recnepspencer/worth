@@ -10,10 +10,13 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
 fn production_write_footprints_report_exact_records_and_local_publication_cost() {
-    let small_copy = single_record_copy_cost(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let small_copy = single_record_copy_cost(execution, SupplyChainScale::court());
     let scale = SupplyChainScale::standard();
-    let (world, expected) = certified_supply_chain_world(scale);
-    assert_oracle_matches(&world, &expected);
+    let (world, expected) = certified_supply_chain_world(execution, scale);
+    assert_oracle_matches(execution, &world, &expected);
     let mut physical_costs = Vec::new();
     for footprint in [1, 64, 4_096] {
         let branch = BranchId(format!("footprint-{footprint}"));
@@ -34,7 +37,7 @@ fn production_write_footprints_report_exact_records_and_local_publication_cost()
             .map(|allocation| allocation.locator())
             .collect();
         let batch = lower_cargo_footprint_batch(&world.handles, scale, footprint);
-        let committed = commit_branch_batch_with_result(&world.runtime, branch, batch);
+        let committed = commit_branch_batch_with_result(execution, &world.runtime, branch, batch);
         assert_eq!(
             committed.publication_summary().unwrap().patch_record_count,
             footprint
@@ -97,9 +100,12 @@ fn production_write_footprints_report_exact_records_and_local_publication_cost()
     );
 }
 
-fn single_record_copy_cost(scale: SupplyChainScale) -> u64 {
-    let (world, expected) = certified_supply_chain_world(scale);
-    assert_oracle_matches(&world, &expected);
+fn single_record_copy_cost(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    scale: SupplyChainScale,
+) -> u64 {
+    let (world, expected) = certified_supply_chain_world(execution, scale);
+    assert_oracle_matches(execution, &world, &expected);
     let branch = BranchId("single-record-copy".to_owned());
     let (_, source) = world
         .runtime
@@ -109,7 +115,7 @@ fn single_record_copy_cost(scale: SupplyChainScale) -> u64 {
     let identity = world.runtime.branch_identity(&branch).unwrap();
     let scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
     let batch = lower_cargo_footprint_batch(&world.handles, scale, 1);
-    let committed = commit_branch_batch_with_result(&world.runtime, branch, batch);
+    let committed = commit_branch_batch_with_result(execution, &world.runtime, branch, batch);
     assert_eq!(
         committed.publication_summary().unwrap().patch_record_count,
         1
@@ -131,23 +137,32 @@ fn single_record_copy_cost(scale: SupplyChainScale) -> u64 {
 
 #[test]
 fn selected_publication_cost_is_flat_through_ordinary_retained_histories() {
-    assert_flat_history_samples(&[1, 64, 1_024]);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_flat_history_samples(execution, &[1, 64, 1_024]);
 }
 
 #[test]
 #[ignore = "scheduled retained-root ceiling"]
 fn selected_publication_cost_is_flat_through_documented_retention_ceiling() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     // The owner caps all simultaneously retained retired roots at 4,096, and
     // the fresh Court world honestly consumes part of that shared capacity.
     // The largest repeatable integer-ratio fixture is therefore 1/63/3,969;
     // it preserves a geometric slope without bypassing owner backpressure.
-    assert_flat_history_samples(&[1, 63, 3_969]);
+    assert_flat_history_samples(execution, &[1, 63, 3_969]);
 }
 
-fn assert_flat_history_samples(history_lengths: &[usize]) {
+fn assert_flat_history_samples(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    history_lengths: &[usize],
+) {
     let mut samples = Vec::new();
     for &history_len in history_lengths {
-        let (mut world, _) = certified_supply_chain_world(SupplyChainScale::court());
+        let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
         let scale = SupplyChainScale::court();
         let branch = BranchId(format!("history-{history_len}"));
         let (_, source) = world
@@ -156,7 +171,8 @@ fn assert_flat_history_samples(history_lengths: &[usize]) {
             .unwrap();
         world.runtime.fork_branch(branch.clone(), source).unwrap();
         let first_batch = lower_cargo_footprint_batch(&world.handles, scale, 1);
-        let first = commit_branch_batch_with_result(&world.runtime, branch.clone(), first_batch);
+        let first =
+            commit_branch_batch_with_result(execution, &world.runtime, branch.clone(), first_batch);
         world
             .runtime
             .snapshots()
@@ -167,6 +183,7 @@ fn assert_flat_history_samples(history_lengths: &[usize]) {
         let mut retained_bases = vec![world.runtime.retain_component_basis(&first_basis).unwrap()];
         for sequence in 1..history_len {
             let committed = commit_branch_batch_with_result(
+                execution,
                 &world.runtime,
                 branch.clone(),
                 WorkerIntentBatch::new(format!("retained-history-{sequence}")),
@@ -182,7 +199,8 @@ fn assert_flat_history_samples(history_lengths: &[usize]) {
         assert_eq!(retained_bases.len(), history_len);
         let scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
         let final_batch = lower_cargo_footprint_batch(&world.handles, scale, 64);
-        let final_commit = commit_branch_batch_with_result(&world.runtime, branch, final_batch);
+        let final_commit =
+            commit_branch_batch_with_result(execution, &world.runtime, branch, final_batch);
         let retained = world.runtime.run_branch_root_reclamation_pass();
         assert!(retained.roots_still_retained() >= history_len as u64);
         let delta = world

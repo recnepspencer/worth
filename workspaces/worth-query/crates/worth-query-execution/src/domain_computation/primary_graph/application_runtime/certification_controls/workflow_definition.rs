@@ -15,18 +15,24 @@ where
     #[doc(hidden)]
     pub fn workflow_definition_revisions_for_test(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
-    ) -> (Option<AspectValue>, Option<AspectValue>) {
+    ) -> Result<
+        (Option<AspectValue>, Option<AspectValue>),
+        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    > {
+        let execution = phase.execution_request_for(&self.product_runtime)?;
         let selected = self
             .on_branch(definition.branch())
-            .select()
+            .select(phase)
             .expect("the definition branch remains admitted");
         let observation = selected.product().relational_basis().observation();
-        self.runtime
+        Ok(self
+            .runtime
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle()
-            .with_query_runtime_mut(|runtime, layout| {
+            .with_query_runtime_mut(&execution, |runtime, layout| {
                 let snapshot = runtime
                     .snapshots()
                     .snapshot_for_observation(&observation)
@@ -35,6 +41,7 @@ where
                 let read = |locator| {
                     observe_field_value(
                         runtime,
+                        &execution,
                         &snapshot,
                         definition.entity_id(),
                         definition_layout.entity_kind,
@@ -47,6 +54,6 @@ where
                 );
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
                 revisions
-            })
+            }))
     }
 }

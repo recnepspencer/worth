@@ -13,6 +13,7 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
     /// recursive owner and cannot yield Current here.
     pub(in crate::domain_computation) fn conventional_decisions_current_admitted(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
@@ -27,7 +28,7 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
                 admission.charge_external_work(visits)?;
                 for decision in decisions {
                     if !decision.remains_conventional_current_admitted(
-                        runtime, snapshot, bridge, admission,
+                        execution, runtime, snapshot, bridge, admission,
                     )? {
                         return Ok(false);
                     }

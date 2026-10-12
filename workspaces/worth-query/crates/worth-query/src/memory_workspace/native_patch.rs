@@ -102,13 +102,19 @@ impl WorthQueryMemoryWorkspace {
 
     pub(crate) fn insert_portable_patch(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         patch: &PortableRecordAspectPatch,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
-        self.insert_portable_patch_with_touches(patch, touches_from_portable_patch(patch))
+        self.insert_portable_patch_with_touches(
+            request_execution,
+            patch,
+            touches_from_portable_patch(patch),
+        )
     }
 
     pub(super) fn insert_portable_patch_with_touches(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         patch: &PortableRecordAspectPatch,
         touches: Vec<WorthQueryAspectTouch>,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
@@ -121,15 +127,22 @@ impl WorthQueryMemoryWorkspace {
                 client_key,
                 aspect_patch: patch.clone(),
             }));
-        self.commit_portable_patch(intent, WorthQueryMutationKind::Created, touches)
+        self.commit_portable_patch(
+            request_execution,
+            intent,
+            WorthQueryMutationKind::Created,
+            touches,
+        )
     }
 
     pub(crate) fn update_portable_patch(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_identity: WorthQueryEntityIdentity,
         patch: &PortableRecordAspectPatch,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         self.update_portable_patch_with_touches(
+            execution,
             entity_identity,
             patch,
             touches_from_portable_patch(patch),
@@ -138,28 +151,31 @@ impl WorthQueryMemoryWorkspace {
 
     pub(super) fn update_portable_patch_with_touches(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_identity: WorthQueryEntityIdentity,
         patch: &PortableRecordAspectPatch,
         touches: Vec<WorthQueryAspectTouch>,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         let entity_id = super::runtime_identity::entity_id_from_identity(entity_identity)?;
-        self.ensure_entity_exists(entity_id)?;
+        self.ensure_entity_exists(execution, entity_id)?;
         let intent = MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(
             ApplyEntityAspectPatchIntent {
                 entity_id,
                 aspect_patch: patch.clone(),
             },
         ));
-        self.commit_portable_patch(intent, WorthQueryMutationKind::Updated, touches)
+        self.commit_portable_patch(execution, intent, WorthQueryMutationKind::Updated, touches)
     }
 
     fn commit_portable_patch(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         intent: MutationIntent,
         mutation_kind: WorthQueryMutationKind,
         touches: Vec<WorthQueryAspectTouch>,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         let (result, snapshot) = self.commit_batch(
+            request_execution,
             WorkerIntentBatch::new("query-memory-native-aspect-patch").push(intent),
         )?;
         let receipt = self.receipt_from_commit(result, snapshot, mutation_kind, touches);

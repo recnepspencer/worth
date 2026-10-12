@@ -22,7 +22,11 @@ impl WorthQueryHistoricalRequest {
     /// real historical materialization: the exact retained snapshot captured
     /// by the context. Other paths remain explicit typed stops for store-backed
     /// implementations to satisfy later through the same request contract.
-    pub fn run(self, workspace: &mut WorthQueryWorkspace) -> WorthQueryHistoricalOutcome {
+    pub fn run(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryHistoricalOutcome {
         let counters = WorthQueryHistoricalJourneyCounters::begin();
         if self.declaration.path != WorthQueryHistoricalPathKind::RetainedSnapshot {
             return stopped(
@@ -34,7 +38,9 @@ impl WorthQueryHistoricalRequest {
         }
         let counters = counters.admit_path();
         if self.context.workspace_name() != workspace.name()
-            || !self.context.admits_snapshot(&workspace.snapshot_identity())
+            || !self
+                .context
+                .admits_snapshot(&workspace.snapshot_identity_with_request(execution))
         {
             return stopped(
                 WorthQueryHistoricalStopSource::StaleContext,
@@ -109,7 +115,11 @@ impl WorthQueryHistoricalRequest {
         };
 
         let counters = counters.execute();
-        match workspace.execute_declared_read_graph_in_basis_context(graph, &basis_context) {
+        match workspace.execute_declared_read_graph_in_basis_context(
+            execution,
+            graph,
+            &basis_context,
+        ) {
             Ok(result) => {
                 WorthQueryHistoricalOutcome::Completed(WorthQueryHistoricalCompletion::new(
                     result,

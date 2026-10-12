@@ -2,30 +2,37 @@ use super::*;
 
 #[test]
 fn update_existing_verified_denies_mismatch_typed_and_leaves_truth_unchanged() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.update-existing-verified-mismatch")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.update-existing-verified-mismatch-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-update-existing-verified-mismatch-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.update-existing-verified-mismatch-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-update-existing-verified-mismatch-table")
+            },
+        )
         .expect("live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -54,6 +61,7 @@ fn update_existing_verified_denies_mismatch_typed_and_leaves_truth_unchanged() {
 
     let error = workspace
         .update_existing_verified(
+            request_execution,
             binding.clone(),
             |task| {
                 task.set_aspect(
@@ -92,7 +100,11 @@ fn update_existing_verified_denies_mismatch_typed_and_leaves_truth_unchanged() {
     }
 
     let probe = workspace
-        .probe_existing(binding, test_aspect_touches(["status.value"]))
+        .probe_existing(
+            request_execution,
+            binding,
+            test_aspect_touches(["status.value"]),
+        )
         .expect("probe should still succeed after denied update");
     assert_eq!(
         probe
@@ -105,11 +117,17 @@ fn update_existing_verified_denies_mismatch_typed_and_leaves_truth_unchanged() {
 
 #[test]
 fn update_existing_verified_denies_unsupported_backend_typed_and_early() {
-    let runtime = bridge_runtime_with_support(WorthQueryRuntimeSupportProfile::bridge_backed(
-        "test-subscription-activation",
-        "test-preview-basis",
-        "test-inspector-evidence",
-    ));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = bridge_runtime_with_support(
+        request_execution,
+        WorthQueryRuntimeSupportProfile::bridge_backed(
+            "test-subscription-activation",
+            "test-preview-basis",
+            "test-inspector-evidence",
+        ),
+    );
     let mut workspace = runtime
         .workspace("tasks.update-existing-verified-unsupported")
         .expect("workspace should open");
@@ -124,6 +142,7 @@ fn update_existing_verified_denies_unsupported_backend_typed_and_early() {
 
     let error = workspace
         .update_existing_verified(
+            request_execution,
             binding,
             |task| {
                 task.set_aspect(

@@ -4,11 +4,15 @@ use worth_execution::ExecutionAllocationPolicy as Allocation;
 
 #[test]
 fn relation_integrity_commit_boundary_rejects_endpoint_delete_with_live_relations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = endpoint_deletion_runtime(
         crate::schema::data::EndpointDeletionIntegrityMode::RejectDeleteWithLiveRelations,
         CascadeDeletePolicy::RetainDanglingForAudit,
     );
-    let (source, _target, _relation) = create_endpoint_deletion_relation_fixture(&runtime, "live");
+    let (source, _target, _relation) =
+        create_endpoint_deletion_relation_fixture(execution, &runtime, "live");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -19,9 +23,7 @@ fn relation_integrity_commit_boundary_rejects_endpoint_delete_with_live_relation
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(&runtime, Allocation::SystemAllocation)
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(
@@ -61,11 +63,15 @@ fn relation_integrity_commit_boundary_rejects_endpoint_delete_with_live_relation
 #[test]
 fn relation_integrity_commit_boundary_rejects_replace_when_retained_relation_keeps_live_endpoint_dependency(
 ) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = endpoint_deletion_runtime(
         crate::schema::data::EndpointDeletionIntegrityMode::RejectDeleteWithLiveRelations,
         CascadeDeletePolicy::RetainDanglingForAudit,
     );
-    let (source, _target, _relation) = create_endpoint_deletion_relation_fixture(&runtime, "live");
+    let (source, _target, _relation) =
+        create_endpoint_deletion_relation_fixture(execution, &runtime, "live");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -84,9 +90,7 @@ fn relation_integrity_commit_boundary_rejects_replace_when_retained_relation_kee
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(&runtime, Allocation::SystemAllocation)
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(
@@ -102,11 +106,15 @@ fn relation_integrity_commit_boundary_rejects_replace_when_retained_relation_kee
 #[test]
 fn relation_integrity_commit_boundary_requires_relation_deletion_in_same_commit_under_retain_policy(
 ) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = endpoint_deletion_runtime(
         crate::schema::data::EndpointDeletionIntegrityMode::RequireRelationDeletionInSameCommit,
         CascadeDeletePolicy::RetainDanglingForAudit,
     );
-    let (source, _target, _relation) = create_endpoint_deletion_relation_fixture(&runtime, "live");
+    let (source, _target, _relation) =
+        create_endpoint_deletion_relation_fixture(execution, &runtime, "live");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -117,9 +125,7 @@ fn relation_integrity_commit_boundary_requires_relation_deletion_in_same_commit_
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(&runtime, Allocation::SystemAllocation)
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(
@@ -137,16 +143,20 @@ fn relation_integrity_commit_boundary_requires_relation_deletion_in_same_commit_
 #[test]
 fn relation_integrity_commit_boundary_allows_relation_deletion_in_same_commit_under_cascade_policy()
 {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = endpoint_deletion_runtime(
         crate::schema::data::EndpointDeletionIntegrityMode::RequireRelationDeletionInSameCommit,
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
-    let (source, _target, relation) = create_endpoint_deletion_relation_fixture(&runtime, "live");
+    let (source, _target, relation) =
+        create_endpoint_deletion_relation_fixture(execution, &runtime, "live");
 
-    let deleted = delete_entity(&runtime, source);
+    let deleted = delete_entity(execution, &runtime, source);
     let read = runtime
         .read_truth()
-        .read_snapshot(&deleted.snapshot)
+        .read_snapshot(&deleted.snapshot, execution)
         .unwrap();
 
     assert!(read.get_relation(relation).is_none());
@@ -154,16 +164,20 @@ fn relation_integrity_commit_boundary_allows_relation_deletion_in_same_commit_un
 
 #[test]
 fn relation_integrity_commit_boundary_allows_relation_retirement_when_policy_retains_for_audit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = endpoint_deletion_runtime(
         crate::schema::data::EndpointDeletionIntegrityMode::RequireRelationRetirement,
         CascadeDeletePolicy::RetainDanglingForAudit,
     );
-    let (source, _target, relation) = create_endpoint_deletion_relation_fixture(&runtime, "live");
+    let (source, _target, relation) =
+        create_endpoint_deletion_relation_fixture(execution, &runtime, "live");
 
-    let deleted = delete_entity(&runtime, source);
+    let deleted = delete_entity(execution, &runtime, source);
     let read = runtime
         .read_truth()
-        .read_snapshot(&deleted.snapshot)
+        .read_snapshot(&deleted.snapshot, execution)
         .unwrap();
     let relation = read.get_relation(relation).unwrap();
 
@@ -175,18 +189,22 @@ fn relation_integrity_commit_boundary_allows_relation_retirement_when_policy_ret
 
 #[test]
 fn historical_relation_lifecycle_does_not_reveal_future_audit_retention_after_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = endpoint_deletion_runtime(
         crate::schema::data::EndpointDeletionIntegrityMode::RequireRelationRetirement,
         CascadeDeletePolicy::RetainDanglingForAudit,
     );
     let (source, _target, relation) =
-        create_endpoint_deletion_relation_fixture(&runtime, "historical-lifecycle");
+        create_endpoint_deletion_relation_fixture(execution, &runtime, "historical-lifecycle");
     let live_version = runtime.current_version_id();
-    let retired = delete_entity(&runtime, source);
-    create_entity(&runtime, "after-audit-retirement");
+    let retired = delete_entity(execution, &runtime, source);
+    create_entity(execution, &runtime, "after-audit-retirement");
     let post_retirement_version = runtime.current_version_id();
 
     assert_relation_lifecycle_at_version(
+        execution,
         &runtime,
         relation,
         live_version,
@@ -194,6 +212,7 @@ fn historical_relation_lifecycle_does_not_reveal_future_audit_retention_after_re
         None,
     );
     assert_relation_lifecycle_at_version(
+        execution,
         &runtime,
         relation,
         retired.version_id,
@@ -201,6 +220,7 @@ fn historical_relation_lifecycle_does_not_reveal_future_audit_retention_after_re
         Some(retired.version_id),
     );
     assert_relation_lifecycle_at_version(
+        execution,
         &runtime,
         relation,
         post_retirement_version,
@@ -208,13 +228,14 @@ fn historical_relation_lifecycle_does_not_reveal_future_audit_retention_after_re
         Some(retired.version_id),
     );
 
-    let (_, recovered) = checkpoint_and_recover_with(&runtime, || {
+    let (_, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         endpoint_deletion_runtime(
             crate::schema::data::EndpointDeletionIntegrityMode::RequireRelationRetirement,
             CascadeDeletePolicy::RetainDanglingForAudit,
         )
     });
     assert_relation_lifecycle_at_version(
+        execution,
         &recovered,
         relation,
         live_version,
@@ -222,6 +243,7 @@ fn historical_relation_lifecycle_does_not_reveal_future_audit_retention_after_re
         None,
     );
     assert_relation_lifecycle_at_version(
+        execution,
         &recovered,
         relation,
         retired.version_id,
@@ -229,6 +251,7 @@ fn historical_relation_lifecycle_does_not_reveal_future_audit_retention_after_re
         Some(retired.version_id),
     );
     assert_relation_lifecycle_at_version(
+        execution,
         &recovered,
         relation,
         post_retirement_version,
@@ -238,13 +261,14 @@ fn historical_relation_lifecycle_does_not_reveal_future_audit_retention_after_re
 }
 
 fn assert_relation_lifecycle_at_version(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     relation: crate::identity::data::RelationId,
     version: crate::identity::data::VersionId,
     lifecycle: RecordLifecycleState,
     retired_at: Option<crate::identity::data::VersionId>,
 ) {
-    let view = runtime.read_truth().read_version(version);
+    let view = runtime.read_truth().read_version(execution, version);
     let record = view
         .get_relation(relation)
         .expect("audit-retained relation remains materialized");
@@ -254,11 +278,15 @@ fn assert_relation_lifecycle_at_version(
 
 #[test]
 fn relation_integrity_commit_boundary_rejects_relation_retirement_under_cascade_policy() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = endpoint_deletion_runtime(
         crate::schema::data::EndpointDeletionIntegrityMode::RequireRelationRetirement,
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
-    let (source, _target, _relation) = create_endpoint_deletion_relation_fixture(&runtime, "live");
+    let (source, _target, _relation) =
+        create_endpoint_deletion_relation_fixture(execution, &runtime, "live");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -269,9 +297,7 @@ fn relation_integrity_commit_boundary_rejects_relation_retirement_under_cascade_
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(&runtime, Allocation::SystemAllocation)
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(
@@ -288,17 +314,21 @@ fn relation_integrity_commit_boundary_rejects_relation_retirement_under_cascade_
 
 #[test]
 fn relation_integrity_commit_boundary_allows_opposite_endpoint_delete_after_relation_retirement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = endpoint_deletion_runtime(
         crate::schema::data::EndpointDeletionIntegrityMode::RequireRelationRetirement,
         CascadeDeletePolicy::RetainDanglingForAudit,
     );
-    let (source, target, relation) = create_endpoint_deletion_relation_fixture(&runtime, "live");
+    let (source, target, relation) =
+        create_endpoint_deletion_relation_fixture(execution, &runtime, "live");
 
-    delete_entity(&runtime, source);
-    let deleted_target = delete_entity(&runtime, target);
+    delete_entity(execution, &runtime, source);
+    let deleted_target = delete_entity(execution, &runtime, target);
     let read = runtime
         .read_truth()
-        .read_snapshot(&deleted_target.snapshot)
+        .read_snapshot(&deleted_target.snapshot, execution)
         .unwrap();
     let relation = read.get_relation(relation).unwrap();
 
@@ -308,88 +338,5 @@ fn relation_integrity_commit_boundary_allows_opposite_endpoint_delete_after_rela
     );
 }
 
-#[test]
-fn relation_integrity_endpoint_deletion_history_stays_branch_local_under_divergence() {
-    let runtime = endpoint_deletion_runtime(
-        crate::schema::data::EndpointDeletionIntegrityMode::RequireRelationRetirement,
-        CascadeDeletePolicy::RetainDanglingForAudit,
-    );
-    let (source, target, relation) = create_endpoint_deletion_relation_fixture(&runtime, "live");
-
-    runtime
-        .history_authority()
-        .fork_branch_from(
-            BranchId("feature".to_string()),
-            &BranchId("main".to_string()),
-        )
-        .unwrap();
-
-    let main_delete = delete_entity(&runtime, source);
-    let _feature_update = update_entity_on_branch(
-        &runtime,
-        target,
-        "feature-target",
-        BranchId("feature".to_string()),
-    );
-
-    let main_digest = relation_aspect_history_digest_on_branch(
-        &runtime,
-        &BranchId("main".to_string()),
-        relation,
-        None,
-    );
-    let feature_digest = relation_aspect_history_digest_on_branch(
-        &runtime,
-        &BranchId("feature".to_string()),
-        relation,
-        None,
-    );
-    let main_head_version = runtime
-        .history()
-        .branch_head(&BranchId("main".to_string()))
-        .unwrap()
-        .version_id;
-    let feature_head_version = runtime
-        .history()
-        .branch_head(&BranchId("feature".to_string()))
-        .unwrap()
-        .version_id;
-    let main_inspection = runtime.inspect_what_happened().inspect_historical_record(
-        &BranchId("main".to_string()),
-        main_head_version,
-        RecordRef::Relation(relation),
-        crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
-    );
-    let feature_inspection = runtime.inspect_what_happened().inspect_historical_record(
-        &BranchId("feature".to_string()),
-        feature_head_version,
-        RecordRef::Relation(relation),
-        crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
-    );
-
-    assert_eq!(main_delete.version_id, main_head_version);
-    assert_eq!(main_digest.entry_count, 2);
-    assert!(feature_digest.entry_count < main_digest.entry_count);
-    assert_eq!(
-        main_inspection
-            .aspect_history_observation
-            .as_ref()
-            .map(|observation| observation.query_result.trace.branch_id.clone()),
-        Some(BranchId("main".to_string()))
-    );
-    assert_eq!(
-        feature_inspection
-            .aspect_history_observation
-            .as_ref()
-            .map(|observation| observation.query_result.trace.branch_id.clone()),
-        Some(BranchId("feature".to_string()))
-    );
-    let main_read = runtime
-        .read_truth()
-        .read_snapshot(&main_delete.snapshot)
-        .unwrap();
-    assert_eq!(
-        main_read.get_relation(relation).unwrap().lifecycle,
-        RecordLifecycleState::RetainedDanglingForAudit
-    );
-}
+#[path = "endpoint_deletion/branch_local_history.rs"]
+mod branch_local_history;

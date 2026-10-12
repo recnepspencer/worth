@@ -16,6 +16,9 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationProductBranch
 
 #[test]
 fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let root = world.application.current_world();
     let source = world
@@ -49,11 +52,16 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
 
     let error = world
         .application
-        .branches()
-        .fork(root)
-        .components(|components| components.fork_relational().fork_signal())
-        .create()
-        .expect_err("the occupied Signal sibling must retain the real Relational fork");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(root)
+                .components(|components| components.fork_relational().fork_signal())
+                .create(&phase)
+                .expect_err("the occupied Signal sibling must retain the real Relational fork")
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryProductBranchCreateError::ProductUnpublished(recovery) = error else {
         panic!("the public builder must preserve Query-owned recovery custody: {error:?}");
     };
@@ -102,7 +110,7 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
 
     let graph = world.application.runtime.primary_graph().unwrap();
     let integration = graph.integration_handle();
-    let active_transaction = integration.with_runtime(|runtime| {
+    let active_transaction = integration.with_runtime(request_execution, |runtime| {
         let identity = runtime
             .branch_identity(&worth_relational::facade::history::BranchId(
                 "query-product-1-relational".to_owned(),
@@ -154,9 +162,14 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
     drop(occupied);
     let close = world
         .application
-        .on_branch(occupied_branch)
-        .close()
-        .expect("the collision fixture product branch remains explicitly closable");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(occupied_branch)
+                .close(&phase)
+                .expect("the collision fixture product branch remains explicitly closable")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(close.retired_component_count(), 1);
     assert!(close.is_complete());
 }
@@ -166,11 +179,16 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
     let world = installed_authorization_world(true);
     let branch = world
         .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the forked product must publish");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(world.application.current_world())
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+                .expect("the forked product must publish")
+        })
+        .expect("the fixture read owns its installed host call");
     let mut held = Vec::new();
     while let Ok(reservation) = world
         .application
@@ -180,25 +198,40 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
         held.push(reservation);
     }
 
-    assert!(matches!(
-        world.application.on_branch(branch).close(),
-        Err(WorthQueryApplicationProductBranchCloseDenial::Product(
-            WorthQueryProductBranchCloseDenial::CleanupCapacityExhausted
-        ))
-    ));
+    world
+        .application
+        .with_host_advancement(|phase| {
+            assert!(matches!(
+                world.application.on_branch(branch).close(&phase,),
+                Err(WorthQueryApplicationProductBranchCloseDenial::Product(
+                    WorthQueryProductBranchCloseDenial::CleanupCapacityExhausted
+                ))
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
     let selected = world
         .application
-        .on_branch(branch)
-        .select()
-        .expect("capacity denial must leave the World occurrence active");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&phase)
+                .expect("capacity denial must leave the World occurrence active")
+        })
+        .expect("the fixture read owns its installed host call");
     drop(selected);
     drop(held);
-    assert!(world
+    world
         .application
-        .on_branch(branch)
-        .close()
-        .expect("released cleanup capacity permits the original close")
-        .is_complete());
+        .with_host_advancement(|phase| {
+            assert!(world
+                .application
+                .on_branch(branch)
+                .close(&phase,)
+                .expect("released cleanup capacity permits the original close")
+                .is_complete())
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
@@ -206,26 +239,41 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
     let world = installed_authorization_world(true);
     let branch = world
         .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the forked product must publish");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(world.application.current_world())
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+                .expect("the forked product must publish")
+        })
+        .expect("the fixture read owns its installed host call");
     world
         .application
         .product_runtime
         .replace_owner_cleanup_after_install_hook(Some(Box::new(|| {
             panic!("injected unwind after retirement cleanup installation")
         })));
-    let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let _ = world.application.on_branch(branch).close();
-    }));
+    let unwind = world
+        .application
+        .with_host_advancement(|phase| {
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let _ = world.application.on_branch(branch).close(&phase);
+            }))
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(unwind.is_err());
     world
         .application
         .product_runtime
         .replace_owner_cleanup_after_install_hook(None);
-    assert!(world.application.on_branch(branch).select().is_err());
+    world
+        .application
+        .with_host_advancement(|phase| {
+            assert!(world.application.on_branch(branch).select(&phase,).is_err())
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(
         world
             .application
@@ -251,20 +299,30 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
     let world = installed_authorization_world(true);
     let branch = world
         .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.fork_relational().fork_signal())
-        .create()
-        .expect("the two-component product must publish");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(world.application.current_world())
+                .components(|components| components.fork_relational().fork_signal())
+                .create(&phase)
+                .expect("the two-component product must publish")
+        })
+        .expect("the fixture read owns its installed host call");
     world
         .application
         .product_runtime
         .replace_owner_cleanup_after_component_progress_hook(Some(Box::new(|| {
             panic!("injected unwind after one owner retirement")
         })));
-    let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let _ = world.application.on_branch(branch).close();
-    }));
+    let unwind = world
+        .application
+        .with_host_advancement(|phase| {
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let _ = world.application.on_branch(branch).close(&phase);
+            }))
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(unwind.is_err());
     world
         .application

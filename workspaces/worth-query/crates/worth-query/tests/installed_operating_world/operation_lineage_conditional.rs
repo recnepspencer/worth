@@ -8,7 +8,11 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn conditional_no_change_or_deferral_cannot_claim_fresh_lineage() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = reverted_conditional_lineage_workflow_workspace(
+        request_execution,
         "conditional-lineage-reverted",
         stage_node(),
     )

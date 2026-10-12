@@ -21,7 +21,10 @@ fn a_stale_handle_rejoins_the_stable_rows_current_source_without_reading_it_agai
         .execute()
         .unwrap();
     let root = selected.observed_sources()[0].root_entity_for_test();
-    let head = request.retain_read().unwrap().selected_commit().clone();
+    let head = crate::checkpoint_recovery::support::retain_read(&application, &request)
+        .unwrap()
+        .selected_commit()
+        .clone();
     let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
     let contacts = application.producer_contacts_at_root_on_this_thread_for_test(root);
     let result = settled_in_one_advance!(

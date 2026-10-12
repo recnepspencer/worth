@@ -1,3 +1,4 @@
+mod publication;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::RelationalRematerializationCompletion;
 use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
@@ -122,6 +123,15 @@ where
     {
         let mut retained = Some(completed);
         let result = self.with_application_advancement(request, |phase| {
+            let execution = match phase.execution_request_for(&self.product_runtime) {
+                Ok(execution) => execution,
+                Err(cause) => {
+                    return Err(restoration_failure(
+                        retained.take().expect("one refused restoration").suspended,
+                        WorthQueryGeneratedOutputRestorationFailureCause::advancement(cause.into()),
+                    ))
+                }
+            };
             let phase = &phase;
             let completed = retained.take().expect("one admitted restoration");
 
@@ -190,17 +200,21 @@ where
                 correspondence,
                 producer,
             } = suspended;
-            let prepared = self.primary_provider.graph.with_runtime(|runtime| {
-                runtime
-                    .owner_component_services()
-                    .materialization_port()
-                    .prepare_generated_rematerialization(
-                        publication.observation().basis().relational_basis(),
-                        custody,
-                        entities,
-                        relations,
-                    )
-            });
+            let prepared = self
+                .primary_provider
+                .graph
+                .with_runtime(&execution, |runtime| {
+                    runtime
+                        .owner_component_services()
+                        .materialization_port()
+                        .prepare_generated_rematerialization(
+                            &execution,
+                            publication.observation().basis().relational_basis(),
+                            custody,
+                            entities,
+                            relations,
+                        )
+                });
             let prepared = match prepared {
                 Ok(prepared) => prepared,
                 Err(failure) => {
@@ -240,6 +254,7 @@ where
                 ));
             }
             self.publish_restoration(
+                &execution,
                 phase,
                 publication,
                 branch,
@@ -256,93 +271,6 @@ where
                 retained.expect("refusal precedes admission").suspended,
                 WorthQueryGeneratedOutputRestorationFailureCause::advancement(cause),
             )),
-        }
-    }
-
-    fn publish_restoration(
-        &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        publication: WorthQueryProductPublicationBinding,
-        branch: crate::basis::WorthQueryProductBranch,
-        correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
-        producer: super::ProducerQualification,
-        candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
-        completion: RelationalRematerializationCompletion,
-        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    ) -> Result<WorthQueryRestoredGeneratedOutput, WorthQueryGeneratedOutputRestorationFailure>
-    {
-        let prepared = match publication.prepare_relational_candidate(candidate, request, true) {
-            Ok(prepared) => prepared,
-            Err(no_effect) => {
-                return Err(restoration_failure(
-                    suspended_from_completion(
-                        publication,
-                        branch,
-                        correspondence,
-                        producer,
-                        completion,
-                    ),
-                    WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect(
-                        WorthQueryGeneratedOutputPublicationNoEffect::from_world(no_effect),
-                    ),
-                ));
-            }
-        };
-        match prepared.execute(
-            phase
-                .execution_request_for(&self.product_runtime)
-                .expect("private progression uses its admitted runtime phase"),
-        ) {
-            RuntimeWorldPublicationOutcome::Performed(performed) => {
-                let commit = performed
-                    .component_results()
-                    .relational_commit_result()
-                    .cloned()
-                    .expect("a relational-only publication returns its relational result");
-                let mut consumed = performed.consume();
-                let observation = consumed
-                    .take_successor_observation()
-                    .expect("the requested restoration successor is retained");
-                let restored = completion
-                    .complete(commit)
-                    .expect("World returns the exact prepared relational restoration result");
-                self.record_restored_generated_output(&observation, correspondence, producer);
-                Ok(WorthQueryRestoredGeneratedOutput {
-                    branch,
-                    commit: WorthQueryGeneratedOutputRestorationReceipt::new(
-                        restored.commit.clone(),
-                    ),
-                })
-            }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Err(restoration_failure(
-                suspended_from_completion(
-                    publication,
-                    branch,
-                    correspondence,
-                    producer,
-                    completion,
-                ),
-                WorthQueryGeneratedOutputRestorationFailureCause::PublicationNoEffect(
-                    WorthQueryGeneratedOutputPublicationNoEffect::from_world(no_effect),
-                ),
-            )),
-            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
-                let product = self.unpublished_materialization_from_binding(effects, &publication);
-                Err(
-                    WorthQueryGeneratedOutputRestorationFailure::ProductUnpublished(
-                        WorthQueryUnpublishedGeneratedOutputRestoration {
-                            product,
-                            retry: recovery::RestorationRetry {
-                                publication,
-                                branch,
-                                correspondence,
-                                producer,
-                                completion,
-                            },
-                        },
-                    ),
-                )
-            }
         }
     }
 

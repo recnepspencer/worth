@@ -48,10 +48,12 @@ impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
 {
     fn source_program(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &crate::basis::WorthQueryProductBranchLease,
     ) -> Option<worth_query_declaration::facade::application_program::ApplicationProgramRevision>
     {
         crate::domain_computation::primary_graph::product_activation::inspect_selected_program(
+            execution,
             self,
             source.relational_basis(),
         )

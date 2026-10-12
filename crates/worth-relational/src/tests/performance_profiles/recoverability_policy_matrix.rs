@@ -3,6 +3,8 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_recoverability_policy_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let suite = "recoverability_policy_matrix";
 
     let geometry_policy_samples = capture_perf_samples(
@@ -14,17 +16,30 @@ fn perf_recoverability_policy_matrix() {
             );
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
 
-            let source = create_entity_outcome(&runtime, "policy-geometry-source");
-            let middle = create_entity_outcome(&runtime, "policy-geometry-middle");
-            let target = create_entity_outcome(&runtime, "policy-geometry-target");
+            let source = create_entity_outcome(execution, &runtime, "policy-geometry-source");
+            let middle = create_entity_outcome(execution, &runtime, "policy-geometry-middle");
+            let target = create_entity_outcome(execution, &runtime, "policy-geometry-target");
             let source_entity = changed_entities(&source)[0];
             let middle_entity = changed_entities(&middle)[0];
             let target_entity = changed_entities(&target)[0];
-            create_relation_outcome(&runtime, source_entity, middle_entity, "policy-link-a");
-            create_relation_outcome(&runtime, middle_entity, target_entity, "policy-link-b");
+            create_relation_outcome(
+                execution,
+                &runtime,
+                source_entity,
+                middle_entity,
+                "policy-link-a",
+            );
+            create_relation_outcome(
+                execution,
+                &runtime,
+                middle_entity,
+                target_entity,
+                "policy-link-b",
+            );
 
             let hot_commit_started_at = Instant::now();
-            let hot_commit = update_entity(&runtime, middle_entity, "policy-middle-updated");
+            let hot_commit =
+                update_entity(execution, &runtime, middle_entity, "policy-middle-updated");
             let hot_commit_micros = hot_commit_started_at.elapsed().as_micros();
             let hot_bundle = runtime
                 .publication()
@@ -45,17 +60,21 @@ fn perf_recoverability_policy_matrix() {
             );
             recovered
                 .durability_recovery()
-                .recover(plan)
+                .recover(execution, plan)
                 .expect("policy geometry recovery");
             let replay_started_at = Instant::now();
             let replay = recovered
                 .replay_authority()
-                .replay_commit(RelationalReplayRequest {
-                    commit_id: hot_commit.commit.commit_id,
-                    branch_id: BranchId("main".to_string()),
-                    execution_mode: ReplayExecutionMode::SerialDeterministic,
-                    verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-                });
+                .replay_commit(
+                    RelationalReplayRequest {
+                        commit_id: hot_commit.commit.commit_id,
+                        branch_id: BranchId("main".to_string()),
+                        execution_mode: ReplayExecutionMode::SerialDeterministic,
+                        verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+                    },
+                    execution,
+                )
+                .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
             let recovered_envelope = recovered
                 .replay()
@@ -130,10 +149,16 @@ fn perf_recoverability_policy_matrix() {
                 profile.max_entries_per_artifact = 0;
             });
 
-            let source = create_entity_in_partition(&runtime, "policy-chip-source", PartitionId(7));
+            let source = create_entity_in_partition(
+                execution,
+                &runtime,
+                "policy-chip-source",
+                PartitionId(7),
+            );
             let sinks = (0..4)
                 .map(|index| {
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("policy-chip-sink-{index}"),
                         PartitionId(11 + index as u32),
@@ -142,6 +167,7 @@ fn perf_recoverability_policy_matrix() {
                 .collect::<Vec<_>>();
             for (index, sink) in sinks.iter().enumerate() {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     source,
                     *sink,
@@ -151,7 +177,7 @@ fn perf_recoverability_policy_matrix() {
             }
 
             let hot_commit_started_at = Instant::now();
-            let hot_commit = update_entity(&runtime, source, "policy-chip-updated");
+            let hot_commit = update_entity(execution, &runtime, source, "policy-chip-updated");
             let hot_commit_micros = hot_commit_started_at.elapsed().as_micros();
             let latest_commit = runtime
                 .history()
@@ -187,17 +213,21 @@ fn perf_recoverability_policy_matrix() {
             );
             recovered
                 .durability_recovery()
-                .recover(plan)
+                .recover(execution, plan)
                 .expect("policy chip recovery");
             let replay_started_at = Instant::now();
             let replay = recovered
                 .replay_authority()
-                .replay_commit(RelationalReplayRequest {
-                    commit_id: hot_commit.commit.commit_id,
-                    branch_id: BranchId("main".to_string()),
-                    execution_mode: ReplayExecutionMode::SerialDeterministic,
-                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                });
+                .replay_commit(
+                    RelationalReplayRequest {
+                        commit_id: hot_commit.commit.commit_id,
+                        branch_id: BranchId("main".to_string()),
+                        execution_mode: ReplayExecutionMode::SerialDeterministic,
+                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                    },
+                    execution,
+                )
+                .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
             let recovered_commit = recovered
                 .history()

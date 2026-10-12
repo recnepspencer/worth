@@ -52,7 +52,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     };
     let key = 10_062;
     reset_planar_source_adjustment_contacts(&intent);
-    world.application.fail_next_durable_append_for_test();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            world.application.fail_next_durable_append_for_test(
+                &phase
+                    .execution_request_for(world.application.product_runtime())
+                    .expect("matching installed phase"),
+            )
+        })
+        .expect("fixture control owns its host call");
     let outcome = request
         .mutate(intent.clone())
         .expect_source(source.clone())

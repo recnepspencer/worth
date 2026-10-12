@@ -15,6 +15,7 @@ pub(super) fn replicas_canonical_bytes(
 }
 
 pub(super) fn visible_truth_for_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: &BranchId,
     entity: crate::facade::identity::EntityId,
@@ -22,7 +23,7 @@ pub(super) fn visible_truth_for_branch(
     let snapshot = crate::tests::support::snapshot_for_owner_branch(runtime, branch_id);
     let read = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("owner-admitted branch snapshot remains readable");
     let record = read
         .get_entity(entity)

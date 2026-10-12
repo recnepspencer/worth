@@ -9,6 +9,9 @@ use super::execution::denied_execution;
 
 #[test]
 fn dishonest_counter_search_and_loss_material_fail_receipt_admission_exactly() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let cases = [
         (
             "domain-evidence-missing-counter",
@@ -103,7 +106,7 @@ fn dishonest_counter_search_and_loss_material_fail_receipt_admission_exactly() {
     ];
 
     for (name, scenario, expected) in cases {
-        let denial = denied_execution(name, scenario);
+        let denial = denied_execution(request_execution, name, scenario);
         assert_eq!(
             denial.kind(),
             &domain::WorthQueryBoundExecutionDenialKind::DomainEvidence(expected),
@@ -118,7 +121,11 @@ fn dishonest_counter_search_and_loss_material_fail_receipt_admission_exactly() {
 
 #[test]
 fn claimed_output_mismatch_denies_before_a_direct_receipt_exists() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = evidence_workspace(
+        request_execution,
         "domain-evidence-output-occurrence-mismatch-exact",
         EvidenceScenario::OutputOccurrenceMismatch,
         domain::WorthQueryArtifactRedactionPosture::NotRequired,

@@ -14,18 +14,23 @@ use super::InspectionAccess;
 impl<'runtime> InspectionAccess<'runtime> {
     pub(crate) fn read_view_for_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
     ) -> Option<RelationalReadView> {
         match scope {
             InspectionScope::Current => Some(
                 self.runtime
                     .read_truth()
-                    .read_version(self.runtime.current_version_id()),
+                    .read_version(execution, self.runtime.current_version_id()),
             ),
-            InspectionScope::Version(version_id) => {
-                Some(self.runtime.read_truth().read_version(*version_id))
+            InspectionScope::Version(version_id) => Some(
+                self.runtime
+                    .read_truth()
+                    .read_version(execution, *version_id),
+            ),
+            InspectionScope::Snapshot(handle) => {
+                self.runtime.read_truth().read_snapshot(handle, execution)
             }
-            InspectionScope::Snapshot(handle) => self.runtime.read_truth().read_snapshot(handle),
         }
     }
 

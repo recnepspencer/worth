@@ -26,8 +26,11 @@ fn budget() -> CompanionPreflightBudget {
 
 #[test]
 fn head_cell_uses_the_new_head_after_an_unindexed_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "head-cell-baseline");
+    create_entity(execution, &runtime, "head-cell-baseline");
     let old_handle = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let old = runtime
         .read_truth()
@@ -39,7 +42,7 @@ fn head_cell_uses_the_new_head_after_an_unindexed_publication() {
         .unwrap()
         .activate(Arc::new(UnindexedCompanion), budget())
         .unwrap();
-    let committed = create_entity_outcome(&runtime, "unindexed-publication");
+    let committed = create_entity_outcome(execution, &runtime, "unindexed-publication");
     let head = runtime
         .read_truth()
         .positioned_snapshot(&committed.snapshot)
@@ -86,16 +89,22 @@ impl RelationalPublicationCompanion for HeldPreparedCompanion {
 
 #[test]
 fn head_cell_declines_a_prepared_runtime_publication_without_installing() {
-    contention(false);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    contention(execution, false);
 }
 #[test]
 fn head_cell_declines_an_independently_owned_publication_port_without_installing() {
-    contention(true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    contention(execution, true);
 }
 
-fn contention(independent_port: bool) {
+fn contention(execution: &worth_execution::ExecutionRequest<'_, '_>, independent_port: bool) {
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "head-cell-contention-baseline");
+    create_entity(execution, &runtime, "head-cell-contention-baseline");
     let old_handle = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let (prepared, observe_prepared) = mpsc::channel();
     let (release, observe_release) = mpsc::channel();
@@ -119,7 +128,7 @@ fn contention(independent_port: bool) {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let port = runtime.publication_port();
     let drops = Arc::new(AtomicUsize::new(0));
@@ -130,13 +139,15 @@ fn contention(independent_port: bool) {
         let publisher = threads.spawn(|| {
             if independent_port {
                 let RelationalPublicationOutcome::Performed(performed) =
-                    port.compare_and_publish(candidate)
+                    port.compare_and_publish(execution, candidate)
                 else {
                     panic!("held independent publication performs");
                 };
                 runtime.settle_performed_publication(performed).unwrap()
             } else {
-                runtime.publish_prepared_candidate(candidate).unwrap()
+                runtime
+                    .publish_prepared_candidate(execution, candidate)
+                    .unwrap()
             }
         });
         observe_prepared.recv().unwrap();
@@ -173,8 +184,11 @@ fn contention(independent_port: bool) {
 
 #[test]
 fn a_panicking_head_install_cannot_poison_source_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "panic-install-baseline");
+    create_entity(execution, &runtime, "panic-install-baseline");
     let registration = runtime
         .publication_companion_port()
         .begin_required_registration()
@@ -201,7 +215,7 @@ fn a_panicking_head_install_cannot_poison_source_publication() {
         1,
         "failed install retains no initial payload"
     );
-    let committed = create_entity_outcome(&runtime, "after-panicking-install");
+    let committed = create_entity_outcome(execution, &runtime, "after-panicking-install");
     release_test_commit_snapshot(&runtime, &committed);
     let cell = registration
         .with_branch_cell_at_head(

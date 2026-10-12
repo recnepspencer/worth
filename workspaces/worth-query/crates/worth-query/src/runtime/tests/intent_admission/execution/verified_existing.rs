@@ -1,11 +1,12 @@
 use super::*;
 
 fn seeded_existing_binding(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     workspace_name: &str,
 ) -> WorthQueryExistingTruthTargetBinding {
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value(format!("{workspace_name}-task")),
@@ -35,14 +36,18 @@ fn seeded_existing_binding(
 
 #[test]
 fn workspace_verify_existing_delegates_to_authoritative_mutation_intent_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     const WORKSPACE_NAME: &str = "intent-admission-verify-existing";
 
-    let mut delegated_workspace = stateful_bridge_task_runtime()
+    let mut delegated_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-verify-existing-delegated")
         .expect("workspace should open");
-    let delegated_binding = seeded_existing_binding(&mut delegated_workspace, WORKSPACE_NAME);
+    let delegated_binding =
+        seeded_existing_binding(request_execution, &mut delegated_workspace, WORKSPACE_NAME);
     let delegated = delegated_workspace
-        .verify_existing(delegated_binding, |task| {
+        .verify_existing(request_execution, delegated_binding, |task| {
             task.set_aspect(
                 test_aspect_touch("status.value"),
                 test_authored_string_aspect_value("open"),
@@ -50,10 +55,11 @@ fn workspace_verify_existing_delegates_to_authoritative_mutation_intent_executio
         })
         .expect("legacy verify_existing should execute");
 
-    let mut canonical_workspace = stateful_bridge_task_runtime()
+    let mut canonical_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-verify-existing-canonical")
         .expect("workspace should open");
-    let canonical_binding = seeded_existing_binding(&mut canonical_workspace, WORKSPACE_NAME);
+    let canonical_binding =
+        seeded_existing_binding(request_execution, &mut canonical_workspace, WORKSPACE_NAME);
     let command = WorthQueryAspectMutationBuilder::new()
         .set_aspect(
             test_aspect_touch("status.value"),
@@ -63,7 +69,7 @@ fn workspace_verify_existing_delegates_to_authoritative_mutation_intent_executio
         .expect("verify command should build");
     let canonical = canonical_workspace
         .write_intent(command)
-        .execute()
+        .execute(request_execution)
         .expect("canonical write intent should execute");
     let delegated_assumptions = delegated
         .verified_assumption_set()
@@ -83,14 +89,19 @@ fn workspace_verify_existing_delegates_to_authoritative_mutation_intent_executio
 
 #[test]
 fn workspace_update_existing_verified_delegates_to_authoritative_mutation_intent_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     const WORKSPACE_NAME: &str = "intent-admission-update-existing-verified";
 
-    let mut delegated_workspace = stateful_bridge_task_runtime()
+    let mut delegated_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-update-existing-verified-delegated")
         .expect("workspace should open");
-    let delegated_binding = seeded_existing_binding(&mut delegated_workspace, WORKSPACE_NAME);
+    let delegated_binding =
+        seeded_existing_binding(request_execution, &mut delegated_workspace, WORKSPACE_NAME);
     let delegated = delegated_workspace
         .update_existing_verified(
+            request_execution,
             delegated_binding.clone(),
             |task| {
                 task.set_aspect(
@@ -108,15 +119,17 @@ fn workspace_update_existing_verified_delegates_to_authoritative_mutation_intent
         .expect("legacy verified update should execute");
     let delegated_probe = delegated_workspace
         .probe_existing(
+            request_execution,
             delegated_binding,
             test_aspect_touches(["status.value", "title.value", "identity.id"]),
         )
         .expect("delegated post-update probe should execute");
 
-    let mut canonical_workspace = stateful_bridge_task_runtime()
+    let mut canonical_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-update-existing-verified-canonical")
         .expect("workspace should open");
-    let canonical_binding = seeded_existing_binding(&mut canonical_workspace, WORKSPACE_NAME);
+    let canonical_binding =
+        seeded_existing_binding(request_execution, &mut canonical_workspace, WORKSPACE_NAME);
     let asserted_aspects = WorthQueryAspectMutationBuilder::new()
         .set_aspect(
             test_aspect_touch("status.value"),
@@ -133,10 +146,11 @@ fn workspace_update_existing_verified_delegates_to_authoritative_mutation_intent
         .expect("verified update command should build");
     let canonical = canonical_workspace
         .write_intent(command)
-        .execute()
+        .execute(request_execution)
         .expect("canonical write intent should execute");
     let canonical_probe = canonical_workspace
         .probe_existing(
+            request_execution,
             canonical_binding,
             test_aspect_touches(["status.value", "title.value", "identity.id"]),
         )
@@ -177,14 +191,19 @@ fn workspace_update_existing_verified_delegates_to_authoritative_mutation_intent
 
 #[test]
 fn workspace_delete_existing_verified_delegates_to_authoritative_mutation_intent_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     const WORKSPACE_NAME: &str = "intent-admission-delete-existing-verified";
 
-    let mut delegated_workspace = stateful_bridge_task_runtime()
+    let mut delegated_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-delete-existing-verified-delegated")
         .expect("workspace should open");
-    let delegated_binding = seeded_existing_binding(&mut delegated_workspace, WORKSPACE_NAME);
+    let delegated_binding =
+        seeded_existing_binding(request_execution, &mut delegated_workspace, WORKSPACE_NAME);
     let delegated = delegated_workspace
         .delete_existing_verified(
+            request_execution,
             delegated_binding.clone(),
             |task| {
                 task.set_aspect(
@@ -196,10 +215,11 @@ fn workspace_delete_existing_verified_delegates_to_authoritative_mutation_intent
         )
         .expect("legacy verified delete should execute");
 
-    let mut canonical_workspace = stateful_bridge_task_runtime()
+    let mut canonical_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-delete-existing-verified-canonical")
         .expect("workspace should open");
-    let canonical_binding = seeded_existing_binding(&mut canonical_workspace, WORKSPACE_NAME);
+    let canonical_binding =
+        seeded_existing_binding(request_execution, &mut canonical_workspace, WORKSPACE_NAME);
     let asserted_aspects = WorthQueryAspectMutationBuilder::new()
         .set_aspect(
             test_aspect_touch("title.value"),
@@ -213,7 +233,7 @@ fn workspace_delete_existing_verified_delegates_to_authoritative_mutation_intent
         .expect("verified delete command should build");
     let canonical = canonical_workspace
         .write_intent(command)
-        .execute()
+        .execute(request_execution)
         .expect("canonical write intent should execute");
     let delegated_assumptions = delegated
         .verified_assumption_set()

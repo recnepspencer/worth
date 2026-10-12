@@ -26,6 +26,9 @@ const GRAPH_PROBE_ID: &str = "phase5.common.graph-composition";
 
 #[test]
 fn standard_runtime_public_graph_admission_is_touched_and_not_ordinary_commit_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::standard())
         .expect("Standard Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
@@ -44,6 +47,7 @@ fn standard_runtime_public_graph_admission_is_touched_and_not_ordinary_commit_wo
     let graph_evaluation_calls = graph_probe.evaluation_calls.clone();
     let world =
         compile_supply_chain_baseline_with_budget_and_invariant_catalog_and_custom_invariants(
+            execution,
             program,
             20_000,
             InvariantCatalog::default(),
@@ -62,7 +66,7 @@ fn standard_runtime_public_graph_admission_is_touched_and_not_ordinary_commit_wo
     assert_eq!(graph_evaluation_calls.load(Ordering::Relaxed), 0);
 
     let branch = BranchId("main".to_owned());
-    let graph_execution = graph_execution(&world.runtime, &branch);
+    let graph_execution = graph_execution(execution, &world.runtime, &branch);
     assert_eq!(
         graph_execution.metadata().max_cost(),
         InvariantCostClass::Touched
@@ -77,6 +81,9 @@ fn standard_runtime_public_graph_admission_is_touched_and_not_ordinary_commit_wo
 
 #[test]
 fn graph_planning_uses_child_basis_after_main_diverges_and_rejects_stale_binding() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
         .expect("Court Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
@@ -85,6 +92,7 @@ fn graph_planning_uses_child_basis_after_main_diverges_and_rejects_stale_binding
     let selected_state_expectation = selected_state_probe.expectation.clone();
     let world =
         compile_supply_chain_baseline_with_budget_and_invariant_catalog_and_custom_invariants(
+            execution,
             program,
             20_000,
             InvariantCatalog::default(),
@@ -99,13 +107,13 @@ fn graph_planning_uses_child_basis_after_main_diverges_and_rejects_stale_binding
     let child_version =
         snapshot_for_supply_chain_identity(&world.runtime, &child_identity).version_id();
 
-    let main_only_entity = commit_graph_entity(&world.runtime, &main, "main-divergence");
+    let main_only_entity = commit_graph_entity(execution, &world.runtime, &main, "main-divergence");
     selected_state_expectation.forbid(main_only_entity);
     let main_identity = world.runtime.main_branch_identity();
     let main_version =
         snapshot_for_supply_chain_identity(&world.runtime, &main_identity).version_id();
-    let main_execution = graph_execution(&world.runtime, &main);
-    let child_execution = graph_execution(&world.runtime, &child);
+    let main_execution = graph_execution(execution, &world.runtime, &main);
+    let child_execution = graph_execution(execution, &world.runtime, &child);
     assert_ne!(main_version, child_version);
     assert!(matches!(
         custom_rule_verdict(&main_execution, RULE_ID),
@@ -121,13 +129,17 @@ fn graph_planning_uses_child_basis_after_main_diverges_and_rejects_stale_binding
         child_version
     );
 
-    assert_graph_binding_stales_after_child_diverges(&world.runtime, &child);
+    assert_graph_binding_stales_after_child_diverges(execution, &world.runtime, &child);
 }
 
-fn assert_graph_binding_stales_after_child_diverges(runtime: &RelationalRuntime, child: &BranchId) {
+fn assert_graph_binding_stales_after_child_diverges(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    child: &BranchId,
+) {
     let child_identity = runtime.branch_identity(child).unwrap();
     let stale_options = runtime.admit_branch_basis(&child_identity).unwrap();
-    commit_graph_entity(runtime, child, "child-divergence");
+    commit_graph_entity(execution, runtime, child, "child-divergence");
     let denied = runtime
         .begin_branch_transaction(
             &stale_options,
@@ -198,7 +210,11 @@ fn custom_rule_verdict<'a>(
         .verdict
 }
 
-fn graph_execution(runtime: &RelationalRuntime, branch: &BranchId) -> InvariantExecutionResult {
+fn graph_execution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &BranchId,
+) -> InvariantExecutionResult {
     let identity = runtime
         .branch_identity(branch)
         .expect("branch identity is owner-issued");
@@ -218,11 +234,12 @@ fn graph_execution(runtime: &RelationalRuntime, branch: &BranchId) -> InvariantE
         )
         .unwrap();
     transaction
-        .graph_composition_plan(runtime)
+        .graph_composition_plan(execution, runtime)
         .expect("the Standard graph plan is branch-bound and owner-prepared")
 }
 
 fn commit_graph_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &BranchId,
     client_key: &str,
@@ -242,10 +259,7 @@ fn commit_graph_entity(
         )
         .unwrap();
     let commit = transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("branch divergence commits");
     commit
         .changed_records

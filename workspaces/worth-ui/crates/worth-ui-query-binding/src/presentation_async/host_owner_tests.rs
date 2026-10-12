@@ -4,6 +4,8 @@ use crate::presentation_async::{
     WorthUiPresentationPinBasis, WorthUiPresentationRequestBasisInput,
 };
 
+#[path = "host_owner_tests/refused_opening.rs"]
+mod refused_opening;
 #[path = "host_owner_tests/superseded_retry.rs"]
 mod superseded_retry;
 

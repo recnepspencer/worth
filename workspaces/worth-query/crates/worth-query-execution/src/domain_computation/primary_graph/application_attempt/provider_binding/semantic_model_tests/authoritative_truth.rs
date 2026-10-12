@@ -26,12 +26,14 @@ pub(super) struct CommittedObservationWorld {
 }
 
 pub(super) fn compile_committed_observations(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     alpha: &AspectFieldLocator,
     beta: &AspectFieldLocator,
 ) -> CommittedObservationWorld {
     let mut runtime = schema::fixture_runtime();
-    let entities = commit_entities(&mut runtime, alpha, beta);
+    let entities = commit_entities(execution, &mut runtime, alpha, beta);
     let decoy_relation = commit_relation(
+        execution,
         &mut runtime,
         RelationSeed {
             batch: "provider-effect-decoy-relation",
@@ -41,6 +43,7 @@ pub(super) fn compile_committed_observations(
         },
     );
     let relation_commit = commit_relation(
+        execution,
         &mut runtime,
         RelationSeed {
             batch: "provider-effect-observed-relation",
@@ -63,7 +66,13 @@ pub(super) fn compile_committed_observations(
         decoy_relation: created_relation(&decoy_relation),
     };
     let locators = ObservedLocators { alpha, beta };
-    let facts = observed_facts(&runtime, &relation_commit.snapshot, axes, locators);
+    let facts = observed_facts(
+        execution,
+        &runtime,
+        &relation_commit.snapshot,
+        axes,
+        locators,
+    );
     crate::relational_snapshot_release::release_query_snapshot(
         &mut runtime,
         &relation_commit.snapshot,
@@ -96,6 +105,7 @@ fn created_relation(
 }
 
 fn commit_entities(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     alpha: &AspectFieldLocator,
     beta: &AspectFieldLocator,
@@ -109,6 +119,7 @@ fn commit_entities(
     let decoy_from = created(13, "decoy-relation-from");
     let decoy_to = created(14, "decoy-relation-to");
     let committed = commit(
+        execution,
         runtime,
         "provider-effect-observed-entities",
         [
@@ -163,10 +174,12 @@ fn issued_entity(
 }
 
 fn commit_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     seed: RelationSeed<'_>,
 ) -> worth_relational::facade::transactions::CommitResult {
     commit(
+        execution,
         runtime,
         seed.batch,
         [MutationIntent::Create(CreateIntent::Relation(
@@ -190,6 +203,7 @@ struct RelationSeed<'a> {
 }
 
 fn commit<const N: usize>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     name: &str,
     intents: [MutationIntent; N],
@@ -214,10 +228,7 @@ fn commit<const N: usize>(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("fixture truth commits")
 }
 
@@ -240,16 +251,29 @@ struct ObservedLocators<'a> {
 }
 
 fn observed_facts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     axes: ObservedAxes,
     locators: ObservedLocators<'_>,
 ) -> Vec<WorthQueryApplicationObservedFact> {
     let facts = vec![
-        field_fact(runtime, snapshot, axes.decoy_update, locators.alpha),
-        field_fact(runtime, snapshot, axes.decoy_update, locators.beta),
-        field_fact(runtime, snapshot, axes.update, locators.alpha),
-        field_fact(runtime, snapshot, axes.update, locators.beta),
+        field_fact(
+            execution,
+            runtime,
+            snapshot,
+            axes.decoy_update,
+            locators.alpha,
+        ),
+        field_fact(
+            execution,
+            runtime,
+            snapshot,
+            axes.decoy_update,
+            locators.beta,
+        ),
+        field_fact(execution, runtime, snapshot, axes.update, locators.alpha),
+        field_fact(execution, runtime, snapshot, axes.update, locators.beta),
         WorthQueryApplicationObservedFact::Entity {
             entity_id: axes.decoy_deleted,
             kind: KindId::new(12),
@@ -259,6 +283,7 @@ fn observed_facts(
             kind: KindId::new(12),
         },
         relation_fact(
+            execution,
             runtime,
             snapshot,
             RelationObservation {
@@ -268,6 +293,7 @@ fn observed_facts(
             },
         ),
         relation_fact(
+            execution,
             runtime,
             snapshot,
             RelationObservation {
@@ -279,17 +305,19 @@ fn observed_facts(
     ];
     assert!(facts
         .iter()
-        .all(|fact| fact.remains_equal_in(runtime, snapshot)));
+        .all(|fact| fact.remains_equal_in(runtime, execution, snapshot).unwrap()));
     facts
 }
 
 fn relation_fact(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     observation: RelationObservation,
 ) -> WorthQueryApplicationObservedFact {
     let matching_relations = exact_relations(
         runtime,
+        execution,
         snapshot,
         KindId::new(31),
         observation.from,
@@ -312,6 +340,7 @@ struct RelationObservation {
 }
 
 fn field_fact(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: EntityId,
@@ -321,8 +350,15 @@ fn field_fact(
         entity_id: entity,
         kind: KindId::new(11),
         locator: locator.clone(),
-        value: observe_field_value(runtime, snapshot, entity, KindId::new(11), locator)
-            .expect("committed field observation succeeds"),
+        value: observe_field_value(
+            runtime,
+            execution,
+            snapshot,
+            entity,
+            KindId::new(11),
+            locator,
+        )
+        .expect("committed field observation succeeds"),
     }
 }
 

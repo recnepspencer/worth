@@ -19,6 +19,13 @@ where
         Family::Entity: OperationReads<Binding::Operation>,
         Action: WorthQueryApplicationOutputAction,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
         self.reader
             .prior_output_member::<PriorBinding, Family, Action>(suffix)
             .map_err(HandlerExecutionDenial::new)
@@ -40,6 +47,13 @@ where
         Family::Entity: OperationReads<Binding::Operation>,
         Action: WorthQueryApplicationOutputAction,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
         self.reader
             .prior_output_member_if_present::<PriorBinding, Family, Action>(suffix)
             .map_err(HandlerExecutionDenial::new)

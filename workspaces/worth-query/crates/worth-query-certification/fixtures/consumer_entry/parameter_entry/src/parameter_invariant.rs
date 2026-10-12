@@ -8,11 +8,11 @@ use worth_query_decl::facade::application_schema::{
     ApplicationInvariantScopeTarget, RelationalInvariantWorkBudget,
 };
 use worth_query_host::facade::application_invariants::{
-    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
-    WorthQueryApplicationInvariantExecutionError, WorthQueryApplicationInvariantFieldBinding,
-    WorthQueryApplicationInvariantPreparationError, WorthQueryApplicationInvariantRule,
-    WorthQueryApplicationInvariantSchemaResolver, WorthQueryApplicationInvariantScopePlanner,
-    WorthQueryApplicationInvariantVerdict,
+    CustomInvariantLeaseBudget, WorthQueryApplicationInvariantContext,
+    WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantExecutionError,
+    WorthQueryApplicationInvariantFieldBinding, WorthQueryApplicationInvariantPreparationError,
+    WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantSchemaResolver,
+    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantVerdict,
 };
 
 use super::{Count, Parameter, ParameterSchemaBinding};
@@ -71,14 +71,32 @@ impl<Schema: ParameterSchemaBinding> WorthQueryApplicationInvariantRule<Schema>
 {
     type Scope = Vec<WorthQueryApplicationInvariantEntity<Schema, Parameter>>;
 
+    fn supports_checked_preparation(&self) -> bool {
+        true
+    }
+    fn prepare_scope_checked(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+        Some(self.prepare_under(planner, Some(budget)))
+    }
+    fn evaluate_checked(
+        &self,
+        context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
+        scope: &Self::Scope,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<
+        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+    > {
+        Some(self.evaluate_under(context, scope, Some(budget)))
+    }
+
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
-        planner
-            .proposed()
-            .touched_entities(&self.count)
-            .map_err(|error| WorthQueryApplicationInvariantPreparationError::new(error.to_string()))
+        self.prepare_under(planner, None)
     }
 
     fn evaluate(
@@ -87,7 +105,47 @@ impl<Schema: ParameterSchemaBinding> WorthQueryApplicationInvariantRule<Schema>
         scope: &Self::Scope,
     ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
     {
+        self.evaluate_under(context, scope, None)
+    }
+}
+
+impl<Schema: ParameterSchemaBinding> PositiveParameterCountRule<Schema> {
+    fn prepare_under(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
+        budget: Option<&dyn CustomInvariantLeaseBudget>,
+    ) -> Result<
+        <Self as WorthQueryApplicationInvariantRule<Schema>>::Scope,
+        WorthQueryApplicationInvariantPreparationError,
+    > {
+        if budget.is_some_and(|budget| !budget.checkpoint(0)) {
+            return Err(WorthQueryApplicationInvariantPreparationError::new(
+                "caller stopped",
+            ));
+        }
+        planner
+            .proposed()
+            .touched_entities(&self.count)
+            .map_err(|error| WorthQueryApplicationInvariantPreparationError::new(error.to_string()))
+    }
+    fn evaluate_under(
+        &self,
+        context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
+        scope: &<Self as WorthQueryApplicationInvariantRule<Schema>>::Scope,
+        budget: Option<&dyn CustomInvariantLeaseBudget>,
+    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
+    {
+        if budget.is_some_and(|budget| !budget.checkpoint(0)) {
+            return Err(WorthQueryApplicationInvariantExecutionError::new(
+                "caller stopped",
+            ));
+        }
         for entity in scope {
+            if budget.is_some_and(|budget| !budget.checkpoint(1)) {
+                return Err(WorthQueryApplicationInvariantExecutionError::new(
+                    "caller stopped",
+                ));
+            }
             let count = context
                 .proposed()
                 .field(&self.count, entity)
@@ -104,3 +162,6 @@ impl<Schema: ParameterSchemaBinding> WorthQueryApplicationInvariantRule<Schema>
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }
 }
+
+#[cfg(test)]
+mod lease_tests;

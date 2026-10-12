@@ -73,7 +73,10 @@ fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
             },
             resource_request,
         );
-        let first = expect_chunk(active.advance(execution));
+        let first = expect_chunk({
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        });
         assert_eq!(first.queue_depth(), 1);
         assert_eq!(first.queue_capacity(), 8);
         assert_eq!(advances.load(Ordering::Relaxed), 1);
@@ -82,7 +85,10 @@ fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
             WorthQueryDirectGraphStepOutcome::Continue(active) => active,
             _ => panic!("consuming the first chunk did not release the next step"),
         };
-        let second = expect_chunk(active.advance(execution));
+        let second = expect_chunk({
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        });
         assert_eq!(advances.load(Ordering::Relaxed), 2);
         let completion = match second.acknowledge() {
             WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
@@ -117,16 +123,17 @@ fn stalled_consumer_cancellation_releases_the_chunk_before_terminal_cleanup() {
         let execution = phase;
 
         let advances = Arc::new(AtomicUsize::new(0));
-        let pending = expect_chunk(
-            start_projection(
+        let pending = expect_chunk({
+            let fixture_state = start_projection(
                 execution,
                 MultiChunkProvider {
                     advances: Arc::clone(&advances),
                 },
                 resource_request,
-            )
-            .advance(execution),
-        );
+            );
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            fixture_state.advance(&installed_fixture_phase)
+        });
         pending
         .request_cancellation(
             worth_runtime_bridge::facade::BridgeManagedExecutionCancellationReason::HostRequested,
@@ -156,16 +163,17 @@ fn foreign_consumer_failure_preserves_queue_occupancy_for_owner_cleanup() {
         let phase = &active_phase;
         let execution = phase;
 
-        let pending = expect_chunk(
-            start_projection(
+        let pending = expect_chunk({
+            let fixture_state = start_projection(
                 execution,
                 MultiChunkProvider {
                     advances: Arc::new(AtomicUsize::new(0)),
                 },
                 resource_request,
-            )
-            .advance(execution),
-        );
+            );
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            fixture_state.advance(&installed_fixture_phase)
+        });
         let terminal = std::thread::spawn(move || match pending.acknowledge() {
             WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("foreign consumer should fail its Signal safe-point observation"),
@@ -209,9 +217,11 @@ fn exact_capacity_chunk_drains_before_completion() {
             },
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Project,
@@ -219,7 +229,7 @@ fn exact_capacity_chunk_drains_before_completion() {
                 ),
             )
             .expect("wide provider should start");
-        let pending = expect_chunk(active.advance(execution));
+        let pending = expect_chunk(active.advance(&installed_running_phase));
         assert_eq!(pending.queue_depth(), 8);
         assert_eq!(pending.queue_capacity(), 8);
         let completion = match pending.acknowledge() {
@@ -305,16 +315,17 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
         let execution = phase;
 
         let advances = Arc::new(AtomicUsize::new(0));
-        let pending = expect_chunk(
-            start_projection(
+        let pending = expect_chunk({
+            let fixture_state = start_projection(
                 execution,
                 MultiChunkProvider {
                     advances: Arc::clone(&advances),
                 },
                 resource_request,
-            )
-            .advance(execution),
-        );
+            );
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            fixture_state.advance(&installed_fixture_phase)
+        });
         let terminal = match pending.abandon() {
             WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("pending-chunk abandonment did not terminalize"),
@@ -324,16 +335,17 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
         assert!(terminal.provider_work().peak_retained_bytes() > 0);
         assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
 
-        let pending = expect_chunk(
-            start_projection(
+        let pending = expect_chunk({
+            let fixture_state = start_projection(
                 execution,
                 MultiChunkProvider {
                     advances: Arc::new(AtomicUsize::new(0)),
                 },
                 resource_request,
-            )
-            .advance(execution),
-        );
+            );
+            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            fixture_state.advance(&installed_fixture_phase)
+        });
         let paused = match pending.acknowledge() {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("first chunk acknowledgement did not reach a paused safe point"),
@@ -348,7 +360,7 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
 }
 
 fn start_projection(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: MultiChunkProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -358,9 +370,11 @@ fn start_projection(
         provider,
         resource_request,
     );
+    let installed_running_phase = execution.phase_for_direct(&running);
+
     running
         .begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Project,

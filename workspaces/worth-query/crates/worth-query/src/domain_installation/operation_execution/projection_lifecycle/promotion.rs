@@ -23,6 +23,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
 {
     pub fn promote(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
         let owner = workspace.advancement_owner();
@@ -31,7 +32,8 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
             let current = retained
                 .take()
                 .expect("host call retains its projection before admission");
-            current.promote_in_advancement(
+            current.promote_with_request(
+                request_execution,
                 phase
                     .execution_request_for(&owner)
                     .expect("the opener lent this owner its phase"),
@@ -55,8 +57,33 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
         }
     }
 
-    fn promote_in_advancement(
+    /// Promotes within the caller's host phase without opening another request.
+    pub fn promote_in_advancement(
         self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
+        let execution = match phase.execution_request_for(&workspace.advancement_owner()) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return WorthQueryProjectionPromotionOutcome::Denied(
+                    WorthQueryProjectionPromotionStop::new(
+                        self,
+                        WorthQueryProjectionPromotionDenialKind::ExecutionRequest(cause.into()),
+                        "projection advancement belongs to another installed runtime",
+                        Default::default(),
+                    ),
+                )
+            }
+        };
+        self.promote_with_request(&execution, execution, workspace)
+    }
+
+    fn promote_with_request(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
@@ -68,11 +95,12 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
             WorthQueryConditionalPromotionOutcome::Ready(ready) => ready,
             WorthQueryConditionalPromotionOutcome::Stopped(outcome) => return *outcome,
         };
-        open_managed_live_projection(ready, workspace)
+        open_managed_live_projection(request_execution, ready, workspace)
     }
 }
 
 fn open_managed_live_projection<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ready: Box<WorthQueryProjectionReadyToOpen<D, O, F, L>>,
     workspace: &mut WorthQueryWorkspace,
 ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
@@ -85,7 +113,7 @@ fn open_managed_live_projection<D: 'static, O: 'static, F: 'static, L: BasisOper
         resource_name,
         conditional_provenance,
     } = *ready;
-    match open_lifecycle_read(resource_name.clone(), read, workspace) {
+    match open_lifecycle_read(request_execution, resource_name.clone(), read, workspace) {
         WorthQueryLiveOpenOutcome::Opened(completion) => {
             retain_journey_counters(&mut counters, completion.journey_counters());
             let read_context_identity = completion.context_receipt().digest().to_string();
@@ -143,11 +171,12 @@ fn open_managed_live_projection<D: 'static, O: 'static, F: 'static, L: BasisOper
 }
 
 pub(super) fn open_lifecycle_read(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     resource_name: String,
     read: crate::ordinary::read::WorthQueryReadDeclaration,
     workspace: &mut WorthQueryWorkspace,
 ) -> WorthQueryLiveOpenOutcome {
-    open_installed_read_live(resource_name, read, workspace)
+    open_installed_read_live(request_execution, resource_name, read, workspace)
 }
 
 pub(super) fn retain_journey_counters(

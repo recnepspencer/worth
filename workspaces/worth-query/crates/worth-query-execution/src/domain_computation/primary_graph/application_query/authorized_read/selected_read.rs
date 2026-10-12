@@ -46,6 +46,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn execute_s
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     plan: &mut WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -79,6 +80,7 @@ where
     };
     let security = application
         .admit_matching_head_query_prepared_read_security_basis(
+            execution,
             &plan.security_product,
             &plan.basis,
             prepared,
@@ -87,6 +89,7 @@ where
         .map_err(SelectedAuthorizedReadStop::Security)?
         .ok_or(SelectedAuthorizedReadStop::StaleSecurity)?;
     let ((raw, authorization_work, reservation), proof) = execute_graph_read_with_snapshot(
+        execution,
         &plan.graph_work,
         &plan.basis,
         security.snapshot_handle(),
@@ -94,6 +97,7 @@ where
         (),
         |runtime, layout, security, ()| {
             validate_selected_authorization_currentness(
+                execution,
                 application,
                 runtime,
                 security,
@@ -113,6 +117,7 @@ where
                 .map_err(SelectedAuthorizedReadStop::Admission)?;
             let raw = match read_bounded_root_rows(
                 runtime,
+                execution,
                 layout,
                 plan,
                 result_buffer,

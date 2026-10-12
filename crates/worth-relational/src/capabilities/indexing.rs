@@ -4,18 +4,31 @@ use crate::replay::data::ReplaySnapshotSurface;
 use crate::runtime::RelationalRuntime;
 
 pub(crate) trait ReplayRead {
-    fn replay_snapshot_surface_at_version(&self, version_id: VersionId) -> ReplaySnapshotSurface;
+    fn replay_snapshot_surface_at_version(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        version_id: VersionId,
+    ) -> Result<ReplaySnapshotSurface, crate::execution::RelationalExecutionDenialCause>;
     fn index_generations_at_version(&self, version_id: VersionId) -> Vec<DerivedIndexGeneration>;
 }
 
 impl ReplayRead for RelationalRuntime {
-    fn replay_snapshot_surface_at_version(&self, version_id: VersionId) -> ReplaySnapshotSurface {
-        let projection = self.read_truth().project_historical_version(version_id);
-        ReplaySnapshotSurface {
+    fn replay_snapshot_surface_at_version(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        version_id: VersionId,
+    ) -> Result<ReplaySnapshotSurface, crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)?;
+        let projection = self
+            .read_truth()
+            .project_historical_version(execution, version_id);
+        let surface = ReplaySnapshotSurface {
             version_id,
-            entities: projection.all_authoritative_entity_records(),
-            relations: projection.all_authoritative_relation_records(),
-        }
+            entities: projection.all_authoritative_entity_records(execution),
+            relations: projection.all_authoritative_relation_records(execution),
+        };
+        crate::execution::check_request(execution)?;
+        Ok(surface)
     }
 
     fn index_generations_at_version(&self, version_id: VersionId) -> Vec<DerivedIndexGeneration> {

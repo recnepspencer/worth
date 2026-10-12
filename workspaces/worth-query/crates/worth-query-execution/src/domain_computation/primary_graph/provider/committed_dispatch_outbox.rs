@@ -53,6 +53,7 @@ struct WorthQueryCommittedDispatchOutboxOwnerObservation {
 /// Why Query could not establish an authoritative committed outbox row.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCommittedDispatchOutboxReadDenial {
+    ForeignPhase,
     ForeignRuntime,
     Missing,
     AmbiguousCorrelation,
@@ -169,12 +170,14 @@ impl WorthQueryCommittedDispatchOutboxOwnerObservation {
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn committed_dispatch_outbox(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
         let Some(binding) = receipt.committed_dispatch_outbox() else {
             return Ok(None);
         };
         self.observe_expected(
+            execution,
             binding,
             receipt.commit_reference(),
             receipt.provider_runtime_instance_id(),
@@ -190,10 +193,12 @@ impl WorthQueryPrimaryGraphProvider {
 
     pub(in crate::domain_computation::primary_graph) fn committed_dispatch_outbox_for_binding(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleBinding,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
         let committed = binding.committed_dispatch_outbox().ok_or(Denial::Missing)?;
         self.observe_expected(
+            execution,
             committed,
             binding.commit_reference(),
             binding.runtime_instance_id(),
@@ -208,6 +213,7 @@ impl WorthQueryPrimaryGraphProvider {
 
     fn observe_expected(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &super::WorthQueryCommittedDispatchOutboxBinding,
         expected_commit: &worth_relational::facade::history::RelationalCommitReceipt,
         expected_runtime: u64,
@@ -220,7 +226,7 @@ impl WorthQueryPrimaryGraphProvider {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .acquire(expected_commit.commit_id)
             .ok_or(Denial::ExactCommitUnavailable)?;
-        self.graph.with_runtime_mut(|runtime| {
+        self.graph.with_runtime_mut(execution, |runtime| {
             crate::domain_computation::execution_runtime::product_world::record_installed_source_read_for_test();
             CommittedOutboxRead {
                 runtime,
@@ -230,7 +236,7 @@ impl WorthQueryPrimaryGraphProvider {
                 expected_runtime,
                 retained_basis: &retained_basis,
             }
-            .resolve()
+            .resolve(execution, )
         })
     }
 }
@@ -263,108 +269,37 @@ where
     /// re-reads that candidate from the exact retained Relational commit.
     pub(in crate::domain_computation) fn observe_committed_dispatch_outbox_for_correlation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
         self.primary_provider
-            .committed_dispatch_outbox_for_correlation(correlation)
+            .committed_dispatch_outbox_for_correlation(execution, correlation)
     }
 
     /// Reads this receipt's outbox from a fresh provider-owned Relational view.
     pub fn observe_committed_dispatch_outbox(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
-        self.primary_provider.committed_dispatch_outbox(receipt)
+        let phase_request = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|_| Denial::ForeignPhase)?;
+        self.observe_committed_dispatch_outbox_with_request(&phase_request, receipt)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn observe_committed_dispatch_outbox_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        receipt: &WorthQueryApplicationCommitReceipt,
+    ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
+        self.primary_provider
+            .committed_dispatch_outbox(execution, receipt)
     }
 }
 
-struct CommittedOutboxRead<'a> {
-    runtime: &'a mut worth_relational::facade::runtime::RelationalRuntime,
-    layout: &'a WorthQueryDispatchOutboxLayout,
-    binding: &'a super::WorthQueryCommittedDispatchOutboxBinding,
-    expected_commit: &'a worth_relational::facade::history::RelationalCommitReceipt,
-    expected_runtime: u64,
-    retained_basis: &'a super::WorthQueryRetainedApplicationCommitBasis,
-}
-
-impl CommittedOutboxRead<'_> {
-    fn resolve(&mut self) -> Result<WorthQueryCommittedDispatchOutboxOwnerObservation, Denial> {
-        let RecordRef::Entity(entity_id) = self.binding.record_ref() else {
-            return Err(Denial::NotAuthoritative);
-        };
-        let entity_id = *entity_id;
-        let (created_at, values, owner_work) = self.read_record(entity_id)?;
-        let record = restore_record(values)?;
-        if !record.same_persisted_fields(self.binding.record()) {
-            return Err(Denial::RecordMismatch);
-        }
-        let committed = self
-            .runtime
-            .history()
-            .historical_committed_version(created_at)
-            .ok_or(Denial::NotAuthoritative)?;
-        if committed.commit() != self.expected_commit {
-            return Err(Denial::CommitMismatch);
-        }
-        Ok(WorthQueryCommittedDispatchOutboxOwnerObservation::seal(
-            self.binding.record().clone(),
-            committed.commit().clone(),
-            RecordRef::Entity(entity_id),
-            self.expected_runtime,
-            WorthQueryCommittedDispatchOutboxReadWork::from_owner(owner_work),
-        ))
-    }
-
-    fn read_record(
-        &mut self,
-        entity_id: worth_relational::facade::identity::EntityId,
-    ) -> Result<
-        (
-            worth_relational::facade::identity::VersionId,
-            Vec<AspectValue>,
-            worth_relational::facade::runtime::RelationalRetainedCommitProjectionWork,
-        ),
-        Denial,
-    > {
-        let fields = required_fields(self.layout)?;
-        let aspect = self
-            .layout
-            .correlation_locator
-            .aspect()
-            .aspect_key()
-            .clone();
-        let scope =
-            ProjectionAspectScope::from_requirements([ProjectionAspectRequirement::fields(
-                aspect.clone(),
-                fields.clone(),
-            )]);
-        let projection = self
-            .runtime
-            .snapshots()
-            .project_retained_entity_for_commit(
-                self.expected_runtime,
-                self.expected_commit,
-                self.retained_basis.lease(),
-                entity_id,
-                self.layout.entity_kind,
-                scope,
-                |record| {
-                    Some(
-                        fields
-                            .iter()
-                            .map(|field| record.aspect_field_value(&aspect, field).cloned())
-                            .collect::<Option<Vec<_>>>()
-                            .map(|values| (record.created_at_version(), values))
-                            .ok_or(Denial::NotAuthoritative),
-                    )
-                },
-            )
-            .map_err(map_retained_snapshot_denial)?;
-        let (projected, work) = projection.into_parts();
-        let (created_at, values) = projected.ok_or(Denial::Missing)??;
-        Ok((created_at, values, work))
-    }
-}
+mod record_read;
+use record_read::CommittedOutboxRead;
 
 #[cfg(test)]
 #[path = "committed_dispatch_outbox_tests.rs"]

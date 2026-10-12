@@ -16,8 +16,11 @@ use crate::runtime::WorthQueryAdmittedIntentPlan;
 
 #[test]
 fn common_aftermath_contract_lane_matches_proof_lane_materialization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let plan = admitted_projection_consumption_plan();
-    let installation = install_domain_capability_certification();
+    let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let target = domain
         .admitted_plan_target(&plan)
@@ -52,8 +55,11 @@ fn common_aftermath_contract_lane_matches_proof_lane_materialization() {
 
 #[test]
 fn common_aftermath_review_lane_matches_proof_lane_materialization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let plan = admitted_projection_consumption_plan();
-    let installation = install_domain_capability_certification();
+    let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
     let target = domain
         .admitted_plan_target(&plan)
@@ -81,9 +87,12 @@ fn common_aftermath_review_lane_matches_proof_lane_materialization() {
 
 #[test]
 fn common_aftermath_support_and_eligibility_lanes_preserve_warning_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let plan = admitted_projection_consumption_plan();
 
-    let support = install_domain_capability_certification()
+    let support = install_domain_capability_certification(request_execution)
         .contributions()
         .for_admitted_intent_plan(&plan)
         .expect("installed contribution authority must remain current")
@@ -106,7 +115,7 @@ fn common_aftermath_support_and_eligibility_lanes_preserve_warning_truth() {
         .materialize_support_report()
         .expect("aftermath support lane should materialize");
 
-    let eligibility = install_domain_capability_certification()
+    let eligibility = install_domain_capability_certification(request_execution)
         .contributions()
         .for_admitted_intent_plan(&plan)
         .expect("installed contribution authority must remain current")
@@ -148,9 +157,12 @@ fn common_aftermath_support_and_eligibility_lanes_preserve_warning_truth() {
 
 #[test]
 fn checked_aftermath_lane_preserves_denied_metadata() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let plan = admitted_projection_consumption_plan();
 
-    let checked = install_domain_capability_certification()
+    let checked = install_domain_capability_certification(request_execution)
         .contributions()
         .for_admitted_intent_plan(&plan)
         .expect("installed contribution authority must remain current")

@@ -7,24 +7,39 @@ pub(super) fn measure(budget: usize) -> Attempt {
     let request = application.request(&principal, &scope);
     let (a, b, mut c) = setup_chain!(application, request);
     change_root_input!(request, application, 2, 0x9176_4080_u64);
-    let source_commit = request.retain_read().unwrap().selected_commit().clone();
+    let source_commit = crate::checkpoint_recovery::support::retain_read(&application, &request)
+        .unwrap()
+        .selected_commit()
+        .clone();
     drop((a, b));
     match c.advance(&request) {
         Ok(_) => Attempt::Above("last consumer refresh admitted"),
         Err(WorthQueryApplicationOutputDemandDenial::Demand(denial))
             if denial.kind() == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded =>
         {
-            if request.retain_read().unwrap().selected_commit() == &source_commit {
+            if crate::checkpoint_recovery::support::retain_read(&application, &request)
+                .unwrap()
+                .selected_commit()
+                == &source_commit
+            {
                 Attempt::Below("refused before first upstream publication")
             } else {
-                let published = request.retain_read().unwrap().selected_commit().clone();
+                let published =
+                    crate::checkpoint_recovery::support::retain_read(&application, &request)
+                        .unwrap()
+                        .selected_commit()
+                        .clone();
                 match c.advance(&request) {
                     Ok(_) => Attempt::Above("later consumer refresh admitted"),
                     Err(WorthQueryApplicationOutputDemandDenial::Demand(next))
                         if next.kind()
                             == WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded =>
                     {
-                        if request.retain_read().unwrap().selected_commit() == &published {
+                        if crate::checkpoint_recovery::support::retain_read(&application, &request)
+                            .unwrap()
+                            .selected_commit()
+                            == &published
+                        {
                             Attempt::Hit
                         } else {
                             Attempt::Above("later upstream publication admitted")

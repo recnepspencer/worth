@@ -57,11 +57,15 @@ fn retirement_denies_a_foreign_runtime_authority_or_branch_and_keeps_the_definit
 
     let main = runtime.current_world();
     let sibling = runtime
-        .branches()
-        .fork(main)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the sibling branch publishes");
+        .with_host_advancement(|host_phase| {
+            runtime
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the sibling branch publishes")
+        })
+        .expect("installed host call opens");
     let foreign_branch = runtime
         .request(&principal, &scope)
         .on_branch(sibling)

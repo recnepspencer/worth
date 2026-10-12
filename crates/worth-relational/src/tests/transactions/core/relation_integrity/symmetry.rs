@@ -2,6 +2,9 @@ use crate::tests::support::*;
 
 #[test]
 fn relation_integrity_commit_boundary_requires_paired_inverse_edge() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -35,8 +38,8 @@ fn relation_integrity_commit_boundary_requires_paired_inverse_edge() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -54,12 +57,7 @@ fn relation_integrity_commit_boundary_requires_paired_inverse_edge() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationSymmetryViolation);
@@ -99,6 +97,9 @@ fn relation_integrity_commit_boundary_requires_paired_inverse_edge() {
 
 #[test]
 fn relation_integrity_commit_boundary_requires_canonical_undirected_ordering() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -132,8 +133,8 @@ fn relation_integrity_commit_boundary_requires_canonical_undirected_ordering() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build();
-    let first = create_entity(&runtime, "first");
-    let second = create_entity(&runtime, "second");
+    let first = create_entity(execution, &runtime, "first");
+    let second = create_entity(execution, &runtime, "second");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -151,12 +152,7 @@ fn relation_integrity_commit_boundary_requires_canonical_undirected_ordering() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationSymmetryViolation);
@@ -167,6 +163,9 @@ fn relation_integrity_commit_boundary_requires_canonical_undirected_ordering() {
 
 #[test]
 fn relation_integrity_commit_boundary_prohibits_inverse_duplication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -200,10 +199,10 @@ fn relation_integrity_commit_boundary_prohibits_inverse_duplication() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
 
-    create_relation(&runtime, source, target, "forward");
+    create_relation(execution, &runtime, source, target, "forward");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -221,12 +220,7 @@ fn relation_integrity_commit_boundary_prohibits_inverse_duplication() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationSymmetryViolation);
@@ -237,6 +231,9 @@ fn relation_integrity_commit_boundary_prohibits_inverse_duplication() {
 
 #[test]
 fn relation_integrity_commit_boundary_requires_paired_twin_edge() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -270,8 +267,8 @@ fn relation_integrity_commit_boundary_requires_paired_twin_edge() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -289,12 +286,7 @@ fn relation_integrity_commit_boundary_requires_paired_twin_edge() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationSymmetryViolation);

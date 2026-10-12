@@ -64,6 +64,7 @@ pub(crate) fn seeded_builder(
 }
 
 pub(crate) fn standalone(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     dependency: domain::WorthQuerySemanticTruthDependency,
 ) -> (
     worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner,
@@ -71,7 +72,7 @@ pub(crate) fn standalone(
 ) {
     let (schema, rows) = schema_and_rows([dependency]);
     schema
-        .seeded_relational_source(identity_touch(), rows)
+        .seeded_relational_source(request_execution, identity_touch(), rows)
         .unwrap()
 }
 

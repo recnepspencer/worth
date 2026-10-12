@@ -9,15 +9,18 @@ use crate::tests::support::*;
 
 #[test]
 fn complexity_budget_graph_summary_reports_explicit_inspection_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let _relation = create_relation(&runtime, left, right, "rel");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let _relation = create_relation(execution, &runtime, left, right, "rel");
 
     runtime.performance_access().reset_counters();
-    let summary = runtime
-        .inspect_what_happened()
-        .graph_summary(&GraphInspectionRequest {
+    let summary = runtime.inspect_what_happened().graph_summary(
+        execution,
+        &GraphInspectionRequest {
             scope: InspectionScope::Current,
             partition_scope: None,
             relation_kind_scope: None,
@@ -27,7 +30,8 @@ fn complexity_budget_graph_summary_reports_explicit_inspection_work() {
                 max_relations: 32,
                 max_work_units: 128,
             },
-        });
+        },
+    );
     let counters = runtime.performance_access().counters();
 
     assert_eq!(summary.entity_count, 2);
@@ -55,12 +59,16 @@ fn complexity_budget_graph_summary_reports_explicit_inspection_work() {
 
 #[test]
 fn complexity_budget_structural_identity_distinguishes_direct_lookup_from_broad_query() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "alpha");
-    let _other = create_entity(&runtime, "beta");
+    let entity = create_entity(execution, &runtime, "alpha");
+    let _other = create_entity(execution, &runtime, "beta");
 
     runtime.performance_access().reset_counters();
     let direct = runtime.inspect_what_happened().structural_identity(
+        execution,
         InspectionScope::Current,
         crate::facade::transactions::RecordRef::Entity(entity),
     );
@@ -76,6 +84,7 @@ fn complexity_budget_structural_identity_distinguishes_direct_lookup_from_broad_
 
     runtime.performance_access().reset_counters();
     let broad = runtime.inspect_what_happened().query_structural_identity(
+        execution,
         &StructuralIdentityQueryRequest {
             scope: InspectionScope::Current,
             partition_scope: None,
@@ -92,20 +101,24 @@ fn complexity_budget_structural_identity_distinguishes_direct_lookup_from_broad_
 
 #[test]
 fn complexity_budget_kind_summary_reports_request_shaped_scope() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let _left_a = create_entity_in_partition(&runtime, "left-a", PartitionId(7));
-    let _left_b = create_entity_in_partition(&runtime, "left-b", PartitionId(7));
-    let _right = create_entity_in_partition(&runtime, "right", PartitionId(11));
+    let _left_a = create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
+    let _left_b = create_entity_in_partition(execution, &runtime, "left-b", PartitionId(7));
+    let _right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
 
     runtime.performance_access().reset_counters();
-    let summary = runtime
-        .inspect_what_happened()
-        .kind_summary(&KindInspectionRequest {
+    let summary = runtime.inspect_what_happened().kind_summary(
+        execution,
+        &KindInspectionRequest {
             scope: InspectionScope::Current,
             partition_scope: Some(vec![PartitionId(7)]),
             kind_id: KindId(1),
             record_class: InspectionRecordClass::Entity,
-        });
+        },
+    );
     let counters = runtime.performance_access().counters();
 
     assert_eq!(summary.count, 2);
@@ -120,29 +133,32 @@ fn complexity_budget_kind_summary_reports_request_shaped_scope() {
 
 #[test]
 fn complexity_budget_connectivity_summary_reports_broad_traversal_work_explicitly() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let isolated = create_entity(&runtime, "isolated");
-    let _relation = create_relation(&runtime, left, right, "rel");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let isolated = create_entity(execution, &runtime, "isolated");
+    let _relation = create_relation(execution, &runtime, left, right, "rel");
 
     runtime.performance_access().reset_counters();
-    let summary =
-        runtime
-            .inspect_what_happened()
-            .connectivity_summary(&ConnectivityInspectionRequest {
-                scope: InspectionScope::Current,
-                partition_scope: None,
-                relation_kind_scope: None,
-                include_members: false,
-                budget: crate::facade::inspection::ConnectivityInspectionBudget {
-                    max_entities: 32,
-                    max_relations: 32,
-                    max_frontier: 32,
-                    max_components: 32,
-                    max_work_units: 256,
-                },
-            });
+    let summary = runtime.inspect_what_happened().connectivity_summary(
+        execution,
+        &ConnectivityInspectionRequest {
+            scope: InspectionScope::Current,
+            partition_scope: None,
+            relation_kind_scope: None,
+            include_members: false,
+            budget: crate::facade::inspection::ConnectivityInspectionBudget {
+                max_entities: 32,
+                max_relations: 32,
+                max_frontier: 32,
+                max_components: 32,
+                max_work_units: 256,
+            },
+        },
+    );
     let counters = runtime.performance_access().counters();
 
     assert_eq!(summary.component_count, 2);
@@ -180,10 +196,13 @@ fn complexity_budget_connectivity_summary_reports_broad_traversal_work_explicitl
 
 #[test]
 fn complexity_budget_retention_summary_reports_bounded_slot_scans() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let _relation = create_relation(&runtime, left, right, "rel");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let _relation = create_relation(execution, &runtime, left, right, "rel");
 
     runtime.performance_access().reset_counters();
     let summary = runtime
@@ -206,15 +225,19 @@ fn complexity_budget_retention_summary_reports_bounded_slot_scans() {
 
 #[test]
 fn complexity_budget_neighbor_inspection_uses_adjacency_not_relation_materialization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation = create_relation(&runtime, source, target, "rel");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation = create_relation(execution, &runtime, source, target, "rel");
 
     runtime.performance_access().reset_counters();
-    let neighbors = runtime
-        .inspect_what_happened()
-        .neighbors(InspectionScope::Current, source);
+    let neighbors =
+        runtime
+            .inspect_what_happened()
+            .neighbors(execution, InspectionScope::Current, source);
     let counters = runtime.performance_access().counters();
 
     assert_eq!(neighbors.outgoing_relation_ids, vec![relation]);
@@ -228,9 +251,12 @@ fn complexity_budget_neighbor_inspection_uses_adjacency_not_relation_materializa
 
 #[test]
 fn complexity_budget_commit_inspection_reads_are_index_explicit_and_bounded() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let _first = create_entity(&runtime, "first");
-    let _second = create_entity(&runtime, "second");
+    let _first = create_entity(execution, &runtime, "first");
+    let _second = create_entity(execution, &runtime, "second");
     let latest_commit = runtime
         .history()
         .latest_commit()

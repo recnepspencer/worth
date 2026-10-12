@@ -92,9 +92,12 @@ impl WorthUiOperationLiveTestFixture {
             builder = builder.fail_next_live_closes(config.failed_closes);
         }
         let builder = crate::install_worth_ui_test_operation_executors(builder);
-        let mut workspace = builder
-            .workspace(config.label)
-            .expect("operation-live fixture workspace");
+        let mut workspace =
+            crate::certification::request_custody::with_bootstrap_request(|execution| {
+                builder
+                    .workspace(execution, config.label)
+                    .expect("operation-live fixture workspace")
+            });
         let entities = config
             .identities
             .iter()
@@ -167,10 +170,17 @@ impl WorthUiOperationLiveTestFixture {
             .expect("named fixture measurement exists")
             .clone();
         self.workspace
-            .update(entity, |measurement| {
-                measurement.set_aspect(aspect_touch("measurement.value"), native_measurement(value))
+            .with_execution_request_mut(|execution, workspace| {
+                workspace
+                    .update(execution, entity, |measurement| {
+                        measurement.set_aspect(
+                            aspect_touch("measurement.value"),
+                            native_measurement(value),
+                        )
+                    })
+                    .expect("operation-live fixture update")
             })
-            .expect("operation-live fixture update");
+            .expect("workspace host call opens");
     }
 
     pub fn insert_named_measurement(&mut self, identity: &str) {
@@ -188,8 +198,12 @@ impl WorthUiOperationLiveTestFixture {
             .remove(identity)
             .expect("removed fixture measurement exists");
         self.workspace
-            .delete(entity)
-            .expect("operation-live fixture deletion");
+            .with_execution_request_mut(|execution, workspace| {
+                workspace
+                    .delete(execution, entity)
+                    .expect("operation-live fixture deletion")
+            })
+            .expect("workspace host call opens");
     }
 
     pub fn rename_measurement(&mut self, from: &str, to: &str) {
@@ -198,13 +212,17 @@ impl WorthUiOperationLiveTestFixture {
             .remove(from)
             .expect("renamed fixture measurement exists");
         self.workspace
-            .update(entity.clone(), |measurement| {
-                measurement.set_aspect(
-                    aspect_touch("identity.id"),
-                    WorthQueryAuthoredAspectValue::string(to),
-                )
+            .with_execution_request_mut(|execution, workspace| {
+                workspace
+                    .update(execution, entity.clone(), |measurement| {
+                        measurement.set_aspect(
+                            aspect_touch("identity.id"),
+                            WorthQueryAuthoredAspectValue::string(to),
+                        )
+                    })
+                    .expect("operation-live fixture rename")
             })
-            .expect("operation-live fixture rename");
+            .expect("workspace host call opens");
         assert!(
             self.entities.insert(to.to_owned(), entity).is_none(),
             "fixture rename target must be unique"
@@ -275,18 +293,22 @@ fn insert_measurement(
     value: f32,
 ) -> WorthQueryEntityIdentity {
     workspace
-        .insert("WorthUiMeasurement", |measurement| {
-            measurement
-                .set_aspect(
-                    aspect_touch("identity.id"),
-                    WorthQueryAuthoredAspectValue::string(identity),
-                )
-                .set_aspect(aspect_touch("measurement.value"), native_measurement(value))
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .insert(execution, "WorthUiMeasurement", |measurement| {
+                    measurement
+                        .set_aspect(
+                            aspect_touch("identity.id"),
+                            WorthQueryAuthoredAspectValue::string(identity),
+                        )
+                        .set_aspect(aspect_touch("measurement.value"), native_measurement(value))
+                })
+                .expect("operation-live fixture insertion")
+                .deltas()[0]
+                .entity_identity()
+                .clone()
         })
-        .expect("operation-live fixture insertion")
-        .deltas()[0]
-        .entity_identity()
-        .clone()
+        .expect("workspace host call opens")
 }
 
 fn aspect_touch(path: &str) -> WorthQueryAspectTouch {

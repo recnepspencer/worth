@@ -61,10 +61,12 @@ impl WorthQueryApplicationObservedFact {
     pub(in crate::domain_computation::primary_graph) fn source_currentness_in(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop>
     {
+        check_request(execution)?;
         // Decision facts are value observations, not native revisions.
         // Output lineage must first rebase them at the committed snapshot.
         if matches!(self, Self::Field { .. } | Self::AbsentField { .. }) {
@@ -81,6 +83,7 @@ impl WorthQueryApplicationObservedFact {
             let comparison = super::indexed_entity_selection::currentness_with_remaining(
                 self,
                 runtime,
+                execution,
                 snapshot,
                 &mut remaining,
             );
@@ -88,6 +91,7 @@ impl WorthQueryApplicationObservedFact {
                 u64::try_from(reserved_work - remaining)
                     .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
             )?;
+            check_request(execution)?;
             return match comparison {
                 Ok(equal) => Ok(Ok(FactMovement::from_equal(equal))),
                 Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
@@ -96,7 +100,9 @@ impl WorthQueryApplicationObservedFact {
                 Err(failure) => Ok(Err(failure)),
             };
         }
-        match self.comparison(runtime, snapshot, reserved_work) {
+        let comparison = self.comparison(runtime, execution, snapshot, reserved_work);
+        check_request(execution)?;
+        match comparison {
             Ok((equal, work)) => {
                 reserved.settle(
                     u64::try_from(work).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
@@ -118,6 +124,7 @@ impl WorthQueryApplicationObservedFact {
     pub(in crate::domain_computation::primary_graph) fn source_currentness_within(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         maximum_work: usize,
     ) -> Result<(FactMovement, usize), WorthQuerySourceCurrentnessFailure> {
@@ -129,7 +136,7 @@ impl WorthQueryApplicationObservedFact {
             },
         );
         let movement = self
-            .source_currentness_in(runtime, snapshot, &mut admission)
+            .source_currentness_in(runtime, execution, snapshot, &mut admission)
             .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)??;
         let work = usize::try_from(admission.charged_work())
             .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
@@ -152,6 +159,20 @@ fn comparison_work_failure(
     } else {
         Ok(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
     }
+}
+
+fn check_request(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), CompanionPreflightStop> {
+    if let Some(event) =
+        worth_relational::facade::mvcc::RelationalInterruptionEvent::observe_request(
+            execution,
+            worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
+        )
+    {
+        return Err(CompanionPreflightStop::Interrupted(event));
+    }
+    Ok(())
 }
 
 #[cfg(test)]

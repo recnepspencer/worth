@@ -64,6 +64,7 @@ impl BankCommittedDispatchOutboxObservation {
 /// exact version is gone ask the caller for different next steps.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommittedDispatchOutboxReadDenial {
+    ForeignPhase,
     ForeignRuntime,
     Missing,
     /// More than one committed effect claims the correlation.
@@ -91,12 +92,13 @@ impl BankIdentityRuntime {
     /// Reads a committed effect from a fresh Query-provider owner view.
     pub fn observe_committed_dispatch_outbox(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         receipt: &BankCommitReceipt,
     ) -> Result<Option<BankCommittedDispatchOutboxObservation>, BankCommittedDispatchOutboxReadDenial>
     {
         receipt
             .recovery_evidence()
-            .observe_dispatch_outbox(self.application_runtime())
+            .observe_dispatch_outbox(phase, self.application_runtime())
             .map(|observation| {
                 observation.map(|query| BankCommittedDispatchOutboxObservation { query })
             })
@@ -107,6 +109,7 @@ impl BankIdentityRuntime {
 impl From<QueryDenial> for BankCommittedDispatchOutboxReadDenial {
     fn from(denial: QueryDenial) -> Self {
         match denial {
+            QueryDenial::ForeignPhase => Self::ForeignPhase,
             QueryDenial::ForeignRuntime => Self::ForeignRuntime,
             QueryDenial::Missing => Self::Missing,
             QueryDenial::AmbiguousCorrelation => Self::AmbiguousCorrelation,

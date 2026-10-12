@@ -107,12 +107,14 @@ impl std::fmt::Debug for WorthUiOperationLiveOpenError {
 }
 
 pub(crate) fn open_operation_live_resource(
+    phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     reference: WorthUiInstalledQueryBindingReference,
     request: WorthUiOperationLiveOpenRequest,
     workspace: &mut runtime::WorthQueryWorkspace,
 ) -> Result<WorthUiOperationLiveResource, WorthUiOperationLiveOpenError> {
-    let settled = settle_once(&reference, request.requirements, workspace)?;
+    let settled = settle_in_advancement(phase, &reference, request.requirements, workspace)?;
     WorthUiOperationLiveResource::open(
+        phase,
         WorthUiOperationLiveSources {
             installed_reference: reference,
             settlement: settled,
@@ -123,7 +125,25 @@ pub(crate) fn open_operation_live_resource(
     )
 }
 
+#[cfg(any(test, feature = "certification-construction"))]
 pub(crate) fn settle_once(
+    reference: &WorthUiInstalledQueryBindingReference,
+    requirements: WorthUiQueryConsumerRequirements,
+    workspace: &mut runtime::WorthQueryWorkspace,
+) -> Result<WorthUiOperationLiveSettlement, WorthUiOperationLiveOpenError> {
+    workspace
+        .with_advancement_mut(|phase, workspace| {
+            settle_in_advancement(&phase, reference, requirements, workspace)
+        })
+        .unwrap_or_else(|cause| {
+            Err(WorthUiOperationLiveOpenError::Execution(Box::new(
+                operation::WorthQueryBoundExecutionDenial::from_advancement_denial(cause),
+            )))
+        })
+}
+
+fn settle_in_advancement(
+    phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     reference: &WorthUiInstalledQueryBindingReference,
     requirements: WorthUiQueryConsumerRequirements,
     workspace: &mut runtime::WorthQueryWorkspace,
@@ -143,18 +163,19 @@ pub(crate) fn settle_once(
     ))
     .into_result()
     .map_err(|stop| WorthUiOperationLiveOpenError::ResourceAdmission(Box::new(stop)))?;
-    let executed = match installed::transition::execution(admitted.execute(workspace)) {
-        installed::transition::WorthQueryExecutionTransition::Executed(executed) => executed,
-        installed::transition::WorthQueryExecutionTransition::Deferred(deferred) => {
-            return Err(WorthUiOperationLiveOpenError::Deferred(Box::new(deferred)));
-        }
-        installed::transition::WorthQueryExecutionTransition::Denied(stop)
-        | installed::transition::WorthQueryExecutionTransition::Stale(stop)
-        | installed::transition::WorthQueryExecutionTransition::RebindRequired(stop)
-        | installed::transition::WorthQueryExecutionTransition::Failed(stop) => {
-            return Err(WorthUiOperationLiveOpenError::Execution(Box::new(stop)));
-        }
-    };
+    let executed =
+        match installed::transition::execution(admitted.execute_in_advancement(phase, workspace)) {
+            installed::transition::WorthQueryExecutionTransition::Executed(executed) => executed,
+            installed::transition::WorthQueryExecutionTransition::Deferred(deferred) => {
+                return Err(WorthUiOperationLiveOpenError::Deferred(Box::new(deferred)));
+            }
+            installed::transition::WorthQueryExecutionTransition::Denied(stop)
+            | installed::transition::WorthQueryExecutionTransition::Stale(stop)
+            | installed::transition::WorthQueryExecutionTransition::RebindRequired(stop)
+            | installed::transition::WorthQueryExecutionTransition::Failed(stop) => {
+                return Err(WorthUiOperationLiveOpenError::Execution(Box::new(stop)));
+            }
+        };
     let published = match installed::transition::publication(executed.publish()) {
         installed::transition::WorthQueryPublicationTransition::Published(value) => value,
         installed::transition::WorthQueryPublicationTransition::Denied(stop)

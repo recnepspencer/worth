@@ -128,10 +128,11 @@ fn yielded_cleanup_maps_double_artifact_release_panic_into_recovery_evidence() {
         let execution = phase;
 
         let world = double_panicking_yield_world("yielded-artifact-double-panic", resource_request);
-        let active = world
-            .running
-            .begin_stage_graph_execution(
-                execution,
+        let active = {
+            let fixture_target = world.running;
+            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            fixture_target.begin_stage_graph_execution(
+                &installed_fixture_phase,
                 "producer",
                 &world.graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -139,10 +140,18 @@ fn yielded_cleanup_maps_double_artifact_release_panic_into_recovery_evidence() {
                     "yielded-artifact-double-panic",
                 ),
             )
-            .expect("double-panic yield provider should begin");
-        let paused = match active.advance(execution) {
-            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-            _ => panic!("double-panic yield provider did not expose its safe point"),
+        }
+        .expect("double-panic yield provider should begin");
+        let paused = {
+            let fixture_phase_result = {
+                let fixture_target = active;
+                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                fixture_target.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+                _ => panic!("double-panic yield provider did not expose its safe point"),
+            }
         };
         let yielded = match paused.yield_run() {
             crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
@@ -221,7 +230,7 @@ fn double_panicking_artifact_world(
     let attempt = runtime
         .start_workflow_resource_attempt(&operation, resources)
         .expect("double-panic workflow should reserve");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_workflow(&operation, attempt, lower.read_request(), resource_request)

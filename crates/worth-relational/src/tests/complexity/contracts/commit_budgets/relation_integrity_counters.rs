@@ -2,11 +2,14 @@ use super::*;
 
 #[test]
 fn complexity_budget_relation_integrity_skips_entity_only_mutation_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = relation_integrity_cardinality_runtime();
-    let entity = create_entity(&runtime, "entity-only");
+    let entity = create_entity(execution, &runtime, "entity-only");
 
     runtime.performance_access().reset_counters();
-    let _ = update_entity(&runtime, entity, "entity-only-updated");
+    let _ = update_entity(execution, &runtime, entity, "entity-only-updated");
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.relation_integrity_contracts_evaluated, 0);
@@ -19,14 +22,18 @@ fn complexity_budget_relation_integrity_skips_entity_only_mutation_work() {
 
 #[test]
 fn complexity_budget_relation_integrity_uniqueness_uses_adjacency_local_candidates() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = relation_integrity_uniqueness_runtime();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let _existing = create_relation(&runtime, source, target, "existing");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let _existing = create_relation(execution, &runtime, source, target, "existing");
     for index in 0..10 {
-        let other_source = create_entity(&runtime, &format!("other-source-{index}"));
-        let other_target = create_entity(&runtime, &format!("other-target-{index}"));
+        let other_source = create_entity(execution, &runtime, &format!("other-source-{index}"));
+        let other_target = create_entity(execution, &runtime, &format!("other-target-{index}"));
         let _ = create_relation(
+            execution,
             &runtime,
             other_source,
             other_target,
@@ -50,12 +57,7 @@ fn complexity_budget_relation_integrity_uniqueness_uses_adjacency_local_candidat
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(
@@ -70,9 +72,12 @@ fn complexity_budget_relation_integrity_uniqueness_uses_adjacency_local_candidat
 
 #[test]
 fn complexity_budget_relation_integrity_symmetry_checks_only_touched_pairs() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = relation_integrity_symmetry_runtime();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
 
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -90,12 +95,7 @@ fn complexity_budget_relation_integrity_symmetry_checks_only_touched_pairs() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(
@@ -110,8 +110,12 @@ fn complexity_budget_relation_integrity_symmetry_checks_only_touched_pairs() {
 
 #[test]
 fn complexity_budget_relation_integrity_endpoint_deletion_checks_only_deleted_endpoints() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = relation_integrity_endpoint_deletion_runtime();
-    let (source, _target, _relation) = create_endpoint_deletion_relation_fixture(&runtime, "live");
+    let (source, _target, _relation) =
+        create_endpoint_deletion_relation_fixture(execution, &runtime, "live");
 
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -122,12 +126,7 @@ fn complexity_budget_relation_integrity_endpoint_deletion_checks_only_deleted_en
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert!(matches!(
@@ -142,10 +141,13 @@ fn complexity_budget_relation_integrity_endpoint_deletion_checks_only_deleted_en
 
 #[test]
 fn complexity_budget_relation_integrity_reuses_touched_scope_across_multiple_contracts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = relation_integrity_multi_contract_runtime();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let _existing = create_relation(&runtime, source, target, "existing");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let _existing = create_relation(execution, &runtime, source, target, "existing");
 
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -163,12 +165,7 @@ fn complexity_budget_relation_integrity_reuses_touched_scope_across_multiple_con
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let _error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let _error = txn.commit(execution, &runtime).unwrap_err();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.relation_integrity_contracts_evaluated, 3);
@@ -181,13 +178,19 @@ fn complexity_budget_relation_integrity_reuses_touched_scope_across_multiple_con
 
 #[test]
 fn complexity_budget_relation_integrity_minimum_certification_reports_snapshot_breadth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = relation_integrity_minimum_certification_runtime();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    create_relation(&runtime, source, target, "single");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    create_relation(execution, &runtime, source, target, "single");
 
     runtime.performance_access().reset_counters();
-    let result = runtime.validation().certification_state();
+    let result = runtime
+        .validation()
+        .certification_state(execution)
+        .expect("invariant fixture request");
     let counters = runtime.performance_access().counters();
 
     assert!(result.summary().publication_failure().is_some());

@@ -86,6 +86,7 @@ impl WorthQueryOutputDemandSettlement {
     }
 
     pub(in crate::domain_computation::primary_graph) fn from_commit<Schema>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         receipt: &WorthQueryApplicationCommitReceipt,
         readiness_delivery: &WorthQueryOutputReadinessDeliveryEvidence,
@@ -102,8 +103,8 @@ impl WorthQueryOutputDemandSettlement {
             } else {
                 None
             };
-        let observation =
-            reacquire_current_committed_output(runtime, receipt)?.ok_or_else(|| {
+        let observation = reacquire_current_committed_output(execution, runtime, receipt)?
+            .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::Superseded,
                     "authoritative output is no longer current in its product occurrence",
@@ -265,6 +266,7 @@ where
 {
     pub fn select_output_demand_settlement(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         settlement: &WorthQueryOutputDemandSettlement,
     ) -> Result<WorthQuerySelectedProductOperation<'_, Schema>, WorthQueryOutputDemandDenial> {
         if settlement.runtime_authority != self.runtime.authority_identity().as_u64()
@@ -275,7 +277,7 @@ where
                 "output settlement belongs to another application runtime",
             ));
         }
-        self.select_application_read_observation(&settlement.observation)
+        self.select_application_read_observation_with_request(execution, &settlement.observation)
             .map_err(|error| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -286,6 +288,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn current_output_source_facts(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         settlement: &WorthQueryOutputDemandSettlement,
     ) -> Result<
         crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
@@ -304,17 +307,16 @@ where
             ));
         }
         let selected = match settlement.application_commit_receipt() {
-            Some(receipt) => {
-                self.on_branch(receipt.product_branch())
-                    .select()
-                    .map_err(|error| {
-                        WorthQueryOutputDemandDenial::product_selection(
-                            error,
-                            "settled output currentness could not select its product occurrence",
-                        )
-                    })?
-            }
-            None => self.select_output_demand_settlement(settlement)?,
+            Some(receipt) => self
+                .on_branch(receipt.product_branch())
+                .select_with_request(execution)
+                .map_err(|error| {
+                    WorthQueryOutputDemandDenial::product_selection(
+                        error,
+                        "settled output currentness could not select its product occurrence",
+                    )
+                })?,
+            None => self.select_output_demand_settlement(execution, settlement)?,
         };
         let lineage = self
             .primary_provider

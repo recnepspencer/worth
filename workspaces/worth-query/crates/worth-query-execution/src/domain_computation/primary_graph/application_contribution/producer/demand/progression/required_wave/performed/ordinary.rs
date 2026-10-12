@@ -18,22 +18,27 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 impl<Schema: ApplicationSchema + 'static> DecisionInput<'_, '_, '_, Schema> {
     pub(super) fn changed(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         input: &AcceptedCurrentCandidate,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, ProducerExecutionStop> {
         match self {
-            Self::Selected(selected) => selected.changed(input, admission),
+            Self::Selected(selected) => selected.changed(request_execution, input, admission),
             Self::Ordinary { runtime, branch } => {
                 // Only a performed member with captured input needs a comparison.
                 // A first attempt never buys a redundant selected observation.
-                let (shared, positioned) =
-                    super::super::selection::select_required_basis(runtime, *branch, admission)?;
+                let (shared, positioned) = super::super::selection::select_required_basis(
+                    request_execution,
+                    runtime,
+                    *branch,
+                    admission,
+                )?;
                 SelectedDecisionInput {
                     shared: &shared,
                     positioned: &positioned,
                     runtime,
                 }
-                .changed(input, admission)
+                .changed(request_execution, input, admission)
             }
         }
     }
@@ -80,6 +85,7 @@ impl PerformedMembers {
         Schema: ApplicationSchema + 'static,
     >(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         key: &WorthQueryOutputDemandKey,
         source: WorthQueryObservedSourceEpoch,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -87,6 +93,7 @@ impl PerformedMembers {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<PublicationReadiness>, WorthQueryOutputDemandDenial> {
         self.fresh(
+            request_execution,
             key,
             source,
             &DecisionInput::Ordinary { runtime, branch },

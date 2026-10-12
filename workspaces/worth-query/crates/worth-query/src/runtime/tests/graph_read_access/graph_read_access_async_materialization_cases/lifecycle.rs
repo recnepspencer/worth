@@ -9,8 +9,13 @@ use crate::runtime::tests::graph_read_access::support::graph_read_access::async_
 
 #[test]
 fn materialization_job_exposes_progress_and_replay_stable_completion_receipt() {
-    let mut workspace =
-        async_materialization_workspace("graph-read-access.async-materialization.complete");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = async_materialization_workspace(
+        request_execution,
+        "graph-read-access.async-materialization.complete",
+    );
     let family = async_required_graph_read_family(&mut workspace, "async-complete");
     let admission = workspace
         .read_family_intent(&family)
@@ -37,7 +42,7 @@ fn materialization_job_exposes_progress_and_replay_stable_completion_receipt() {
 
     let job = workspace
         .graph_read_materializations()
-        .admit(request)
+        .admit(request_execution, request)
         .expect("request should admit")
         .start()
         .expect("job should start");
@@ -45,7 +50,7 @@ fn materialization_job_exposes_progress_and_replay_stable_completion_receipt() {
     let receipt = job.complete();
     let repeated_receipt = workspace
         .graph_read_materializations()
-        .admit(repeated_request)
+        .admit(request_execution, repeated_request)
         .expect("repeated request should admit")
         .start()
         .expect("repeated job should start")
@@ -53,6 +58,7 @@ fn materialization_job_exposes_progress_and_replay_stable_completion_receipt() {
     let divergent_policy_receipt = workspace
         .graph_read_materializations()
         .admit(
+            request_execution,
             WorthQueryGraphReadMaterializationRequest::from_required_admission(
                 &admission,
                 WorthQueryGraphReadMaterializationPolicy::bounded()
@@ -91,8 +97,13 @@ fn materialization_job_exposes_progress_and_replay_stable_completion_receipt() {
 
 #[test]
 fn completed_materialization_exposes_artifact_rows_bound_to_receipt() {
-    let mut workspace =
-        async_materialization_workspace("graph-read-access.async-materialization.artifact");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = async_materialization_workspace(
+        request_execution,
+        "graph-read-access.async-materialization.artifact",
+    );
     let family = async_required_graph_read_family(&mut workspace, "async-artifact");
     let admission = workspace
         .read_family_intent(&family)
@@ -110,7 +121,7 @@ fn completed_materialization_exposes_artifact_rows_bound_to_receipt() {
     .expect("request should derive");
     let artifact = workspace
         .graph_read_materializations()
-        .admit(request)
+        .admit(request_execution, request)
         .expect("request should admit")
         .start()
         .expect("job should start")
@@ -140,8 +151,13 @@ fn completed_materialization_exposes_artifact_rows_bound_to_receipt() {
 
 #[test]
 fn cancelling_materialization_releases_allocated_frontier_resources() {
-    let mut workspace =
-        async_materialization_workspace("graph-read-access.async-materialization.cancel");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = async_materialization_workspace(
+        request_execution,
+        "graph-read-access.async-materialization.cancel",
+    );
     let family = async_required_graph_read_family(&mut workspace, "async-cancel");
     let admission = workspace
         .read_family_intent(&family)
@@ -157,7 +173,7 @@ fn cancelling_materialization_releases_allocated_frontier_resources() {
     .expect("request should derive");
     let mut job = workspace
         .graph_read_materializations()
-        .admit(request)
+        .admit(request_execution, request)
         .expect("request should admit")
         .start()
         .expect("job should start");
@@ -189,8 +205,13 @@ fn cancelling_materialization_releases_allocated_frontier_resources() {
 
 #[test]
 fn indeterminate_materialization_exposes_recovery_handle_from_checkpoint() {
-    let mut workspace =
-        async_materialization_workspace("graph-read-access.async-materialization.recovery");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = async_materialization_workspace(
+        request_execution,
+        "graph-read-access.async-materialization.recovery",
+    );
     let family = async_required_graph_read_family(&mut workspace, "async-recovery");
     let admission = workspace
         .read_family_intent(&family)
@@ -206,7 +227,7 @@ fn indeterminate_materialization_exposes_recovery_handle_from_checkpoint() {
     .expect("request should derive");
     let mut job = workspace
         .graph_read_materializations()
-        .admit(request)
+        .admit(request_execution, request)
         .expect("request should admit")
         .start()
         .expect("job should start");
@@ -222,8 +243,13 @@ fn indeterminate_materialization_exposes_recovery_handle_from_checkpoint() {
 
 #[test]
 fn materialization_resource_limit_stop_is_typed_and_checkpoint_bound() {
-    let mut workspace =
-        async_materialization_workspace("graph-read-access.async-materialization.resource-limit");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = async_materialization_workspace(
+        request_execution,
+        "graph-read-access.async-materialization.resource-limit",
+    );
     let family = async_required_graph_read_family(&mut workspace, "async-resource-limit");
     let admission = workspace
         .read_family_intent(&family)
@@ -240,7 +266,7 @@ fn materialization_resource_limit_stop_is_typed_and_checkpoint_bound() {
     let estimated_resident_bytes = request.estimated_resident_bytes();
     let limit = workspace
         .graph_read_materializations()
-        .admit(request)
+        .admit(request_execution, request)
         .expect("request should admit")
         .start()
         .expect("job should start")

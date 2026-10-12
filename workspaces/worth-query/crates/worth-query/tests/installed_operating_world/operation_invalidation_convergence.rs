@@ -8,10 +8,15 @@ use super::operation_lineage::{bind, intent};
 
 #[test]
 fn cert_reexecution_and_live_maintenance_converge_without_replay_authority_promotion() {
-    let mut workspace = lineage_invalidation_workspace("invalidation-replay-convergence").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        lineage_invalidation_workspace(request_execution, "invalidation-replay-convergence")
+            .unwrap();
     let live = match settle_native(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("lineage projection did not promote"),

@@ -38,15 +38,27 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         )
         .unwrap();
     let request = request_scope();
-    let selected = fixture.runtime.select_current_product().unwrap();
+    let selected =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.select_current_product(phase)
+        })
+        .unwrap();
 
     let wrong_purpose = EstateAction::ViewRestrictedEstate {
         estate: ESTATE,
         field: RestrictedBankField::CustomerIdentity,
         purpose: EstateCapabilityPurpose::LegalCompliance,
     };
-    let wrong_purpose_denial = selected
-        .admit_capability_access(principal.query(), &capability, wrong_purpose, &request)
+    let wrong_purpose_denial =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            selected.admit_capability_access(
+                phase,
+                principal.query(),
+                &capability,
+                wrong_purpose,
+                &request,
+            )
+        })
         .err()
         .expect("the wrong purpose must deny");
     assert_eq!(
@@ -64,11 +76,18 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         purpose: EstateCapabilityPurpose::EstateAdministration,
     };
     assert_eq!(
-        selected
-            .admit_capability_access(principal.query(), &capability, wrong_field, &request)
-            .err()
-            .expect("the wrong field must deny")
-            .kind(),
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            selected.admit_capability_access(
+                phase,
+                principal.query(),
+                &capability,
+                wrong_field,
+                &request,
+            )
+        })
+        .err()
+        .expect("the wrong field must deny")
+        .kind(),
         WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
     );
     let missing_resource = EstateAction::ViewRestrictedEstate {
@@ -77,16 +96,24 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         purpose: EstateCapabilityPurpose::EstateAdministration,
     };
     assert_eq!(
-        selected
-            .admit_capability_access(principal.query(), &capability, missing_resource, &request)
-            .err()
-            .expect("the missing resource must deny")
-            .kind(),
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            selected.admit_capability_access(
+                phase,
+                principal.query(),
+                &capability,
+                missing_resource,
+                &request,
+            )
+        })
+        .err()
+        .expect("the missing resource must deny")
+        .kind(),
         WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected
     );
     assert_eq!(
-        selected
-            .admit_capability_access(
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            selected.admit_capability_access(
+                phase,
                 principal.query(),
                 &capability,
                 EstateAction::FreezeAccount {
@@ -95,9 +122,10 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
                 },
                 &request,
             )
-            .err()
-            .expect("the wrong action variant must deny")
-            .kind(),
+        })
+        .err()
+        .expect("the wrong action variant must deny")
+        .kind(),
         WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected
     );
 }
@@ -124,20 +152,27 @@ fn separation_of_duty_is_anchored_to_the_exact_action_authority() {
             RecognizeEstateExecutorOperation::reference(),
         )
         .unwrap();
-    let selected = fixture.runtime.select_current_product().unwrap();
+    let selected =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.select_current_product(phase)
+        })
+        .unwrap();
 
     let self_recognition = EstateAction::RecognizeExecutor {
         estate: ESTATE,
         executor: EXECUTOR,
         authority: AUTHORITY,
     };
-    let self_recognition_denial = selected
-        .admit_capability_access(
-            principal.query(),
-            &capability,
-            self_recognition,
-            &request_scope(),
-        )
+    let self_recognition_denial =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            selected.admit_capability_access(
+                phase,
+                principal.query(),
+                &capability,
+                self_recognition,
+                &request_scope(),
+            )
+        })
         .err()
         .expect("the selected self-held authority must deny");
     assert_eq!(
@@ -155,14 +190,16 @@ fn separation_of_duty_is_anchored_to_the_exact_action_authority() {
         executor: EXECUTOR,
         authority: OTHER_AUTHORITY,
     };
-    selected
-        .admit_capability_access(
+    crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+        selected.admit_capability_access(
+            phase,
             principal.query(),
             &capability,
             other_authority,
             &request_scope(),
         )
-        .expect("an unrelated self-held authority must not poison the selected action");
+    })
+    .expect("an unrelated self-held authority must not poison the selected action");
 }
 
 #[test]
@@ -187,16 +224,20 @@ fn installed_capability_authority_is_runtime_affine() {
         )
         .unwrap();
     let principal = target.authenticate();
-    let denial = target
-        .runtime
-        .select_current_product()
-        .unwrap()
-        .admit_capability_access(
-            principal.query(),
-            &capability,
-            view_action(),
-            &request_scope(),
-        )
+    let denial =
+        crate::test_host_policy::with_phase(target.runtime.application_runtime(), |phase| {
+            target
+                .runtime
+                .select_current_product(phase)
+                .unwrap()
+                .admit_capability_access(
+                    phase,
+                    principal.query(),
+                    &capability,
+                    view_action(),
+                    &request_scope(),
+                )
+        })
         .err()
         .expect("a foreign installed capability must deny");
     assert!(matches!(
@@ -221,17 +262,28 @@ fn assert_wrong_account_denied() {
             FreezeEstateAccountOperation::reference(),
         )
         .unwrap();
-    let selected = fixture.runtime.select_current_product().unwrap();
+    let selected =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.select_current_product(phase)
+        })
+        .unwrap();
     let action = EstateAction::FreezeAccount {
         estate: ESTATE,
         account: OTHER_ACCOUNT,
     };
     assert_eq!(
-        selected
-            .admit_capability_access(principal.query(), &capability, action, &request_scope())
-            .err()
-            .expect("the wrong related account must deny")
-            .kind(),
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            selected.admit_capability_access(
+                phase,
+                principal.query(),
+                &capability,
+                action,
+                &request_scope(),
+            )
+        })
+        .err()
+        .expect("the wrong related account must deny")
+        .kind(),
         WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
     );
 }
@@ -251,7 +303,11 @@ fn assert_amount_over_ceiling_denied() {
             DisburseEstateOperation::reference(),
         )
         .unwrap();
-    let selected = fixture.runtime.select_current_product().unwrap();
+    let selected =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.select_current_product(phase)
+        })
+        .unwrap();
     let amount = Money::<USD>::from_minor(1_001).unwrap();
     let action = EstateAction::DisburseEstate(EstateDisbursement {
         estate: ESTATE,
@@ -271,11 +327,18 @@ fn assert_amount_over_ceiling_denied() {
         ],
     });
     assert_eq!(
-        selected
-            .admit_capability_access(principal.query(), &capability, action, &request_scope())
-            .err()
-            .expect("an amount over the grant ceiling must deny")
-            .kind(),
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            selected.admit_capability_access(
+                phase,
+                principal.query(),
+                &capability,
+                action,
+                &request_scope(),
+            )
+        })
+        .err()
+        .expect("an amount over the grant ceiling must deny")
+        .kind(),
         WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
     );
 }

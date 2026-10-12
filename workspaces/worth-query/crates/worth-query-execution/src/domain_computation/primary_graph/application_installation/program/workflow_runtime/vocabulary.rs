@@ -76,12 +76,26 @@ where
     /// binds before it selects. Whatever later selects rechecks the revision.
     pub fn workflow_spec_on(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
-    ) -> &'vocabulary WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec> {
-        match self.runtime.on_branch(branch).select() {
-            Ok(selected) => self.workflow_spec_for(&selected),
-            Err(_) => self.initial,
-        }
+    ) -> Result<
+        &'vocabulary WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        crate::basis::WorthQueryProductBranchAdmissionDenial,
+    > {
+        let phase_request = phase
+            .execution_request_for(&self.runtime.product_runtime)
+            .map_err(|_| crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignPhase)?;
+        let execution = &phase_request;
+        Ok(
+            match self
+                .runtime
+                .on_branch(branch)
+                .select_with_request(execution)
+            {
+                Ok(selected) => self.workflow_spec_for(&selected),
+                Err(_) => self.initial,
+            },
+        )
     }
 
     pub const fn authentication_owner(

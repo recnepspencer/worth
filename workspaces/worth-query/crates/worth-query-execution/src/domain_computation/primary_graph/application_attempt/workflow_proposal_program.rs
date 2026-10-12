@@ -50,6 +50,7 @@ where
 {
     pub(in crate::domain_computation::primary_graph) fn materialize_workflow_proposal<Spec>(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: super::PublishedWorkflowInstanceRef,
         input_identity: [u8; 32],
@@ -79,6 +80,7 @@ where
             instance.definition_content_identity().clone(),
         );
         let (mut compiled, mut facts) = reconstruct_compiled_definition(
+            execution,
             self.lease.handle(),
             self.lease.snapshot(),
             &layout,
@@ -97,8 +99,9 @@ where
                 .maximum_retained_transitions_per_instance(),
         )
         .unwrap_or(usize::MAX);
-        let mut observed = self.lease.handle().with_runtime(|runtime| {
+        let mut observed = self.lease.handle().with_runtime(execution, |runtime| {
             super::workflow_instance_observation::observe_workflow_instance(
+                execution,
                 self.lease.handle(),
                 runtime,
                 self.lease.snapshot(),
@@ -116,7 +119,7 @@ where
             return Err(denial("workflow proposal instance is already settled"));
         };
         let allowance = observed.ensure_step_left()?;
-        self.bind_workflow_deadline(clock, &layout, instance.entity_id())?;
+        self.bind_workflow_deadline(execution, clock, &layout, instance.entity_id())?;
         let selection = select_proposal_transition(
             &compiled,
             instance.entity_id(),
@@ -130,8 +133,8 @@ where
                 if error.kind()
                     == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported =>
             {
-                self.lease.handle().with_runtime(|runtime| {
-                    observed.ensure_history(
+                self.lease.handle().with_runtime(execution, |runtime| {
+                    observed.ensure_history(execution,
                         self.lease.handle(),
                         runtime,
                         self.lease.snapshot(),
@@ -141,7 +144,7 @@ where
                         &compiled,
                     )
                 })?;
-                self.recover_proposal_replay(
+                self.recover_proposal_replay(execution,
                     &layout,
                     &compiled,
                     &observed,
@@ -251,6 +254,7 @@ where
     #[allow(clippy::too_many_arguments)]
     fn recover_proposal_replay(
         &self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
         compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
         observed: &super::workflow_instance_observation::ObservedWorkflowInstance,
@@ -299,8 +303,9 @@ where
                 selected.node_path(),
                 self.proposal_coverages(compiled, selected.node())?,
             );
-            let proposal_facts = self.lease.handle().with_runtime(|runtime| {
+            let proposal_facts = self.lease.handle().with_runtime(execution, |runtime| {
                 observe_workflow_proposal(
+                    execution,
                     runtime,
                     self.lease.snapshot(),
                     layout,

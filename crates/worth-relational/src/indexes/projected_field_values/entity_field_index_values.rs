@@ -18,12 +18,13 @@ use super::field_projection_scope::{
 use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_entity_aspect_field_index(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     field_locator: &AspectFieldLocator,
 ) -> BTreeMap<AuthoritativeFieldComparisonKey, Vec<EntityId>> {
     let mut entries = BTreeMap::new();
     for scope in entity_index_projection_scopes(projection, field_locator) {
-        projection.for_each_entity(scope.kind_id(), |record| {
+        projection.for_each_entity(execution, scope.kind_id(), |record| {
             if let Some(key) = entity_query_locus_comparison_key(record, field_locator) {
                 entries
                     .entry(key)
@@ -36,6 +37,7 @@ pub(in crate::indexes) fn build_entity_aspect_field_index(
 }
 
 pub(in crate::indexes) fn build_entity_aspect_field_index_checked(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     field_locator: &AspectFieldLocator,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
@@ -48,6 +50,7 @@ pub(in crate::indexes) fn build_entity_aspect_field_index_checked(
                 continue;
             }
             projection.try_for_each_entity(
+                request_execution,
                 plan.kind_id,
                 |bytes| {
                     budget.borrow_mut().checkpoint(1)?;
@@ -92,12 +95,13 @@ pub(in crate::indexes) fn entity_aspect_field_index_entry(
 }
 
 pub(in crate::indexes) fn entity_aspect_field_ordering_value(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     entity_id: EntityId,
     field_locator: &AspectFieldLocator,
 ) -> Option<worth_foundational::facade::AspectValue> {
     projection
-        .with_entity(entity_id, |record| {
+        .with_entity(execution, entity_id, |record| {
             source_entity_index_projection_scope_for_kind(
                 projection,
                 record.kind.kind_id,

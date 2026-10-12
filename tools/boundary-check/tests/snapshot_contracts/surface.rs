@@ -29,6 +29,11 @@ impl Repository {
             "snapshot-surface-{}-{id}-{sequence}",
             std::process::id()
         ));
+        write(
+            &root,
+            ".boundary-check-mock-root",
+            "Declared boundary-check mock root.\n",
+        );
         write(&root, "Cargo.toml", ROOT_MANIFEST);
         write(&root, "plans/worthy/NAMING.md", "fixture\n");
         write(

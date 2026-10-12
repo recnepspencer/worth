@@ -27,6 +27,7 @@ impl WorthQueryAuthorizationDecisionFact {
     /// produce a fresh verdict without that owner's admitted recursion.
     pub(in crate::domain_computation) fn remains_conventional_current_admitted(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
@@ -58,6 +59,7 @@ impl WorthQueryAuthorizationDecisionFact {
             &self.relational,
             snapshot,
             &mut CurrentnessAdmission(admission),
+            execution,
         ) {
             Ok(freshness) => freshness,
             Err(RelationalAuthorizationBudgetedObservationStop::Admission(stop)) => {

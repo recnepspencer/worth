@@ -22,10 +22,15 @@ fn plans(relational: bool, signal: bool, name: &str) -> ProductBranchCreationPla
 }
 #[test]
 fn reuse_fork_matrix_retirement_and_aba_preserve_exact_owner_bindings() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (relational, signal) in [(false, false), (true, false), (false, true), (true, true)] {
         let mut court = CompositeSupplyChainCourt::compile();
         let root = court.bootstrap();
-        let source_records = court.records.read(root.basis().relational_basis());
+        let source_records = court
+            .records
+            .read(request_execution, root.basis().relational_basis());
         let signal_port = court
             .signal
             .owner_component_services()
@@ -46,7 +51,9 @@ fn reuse_fork_matrix_retirement_and_aba_preserve_exact_owner_bindings() {
             panic!("healthy fork matrix")
         };
         assert_eq!(
-            court.records.read(child.basis().relational_basis()),
+            court
+                .records
+                .read(request_execution, child.basis().relational_basis()),
             source_records,
             "fork preserves semantic content"
         );

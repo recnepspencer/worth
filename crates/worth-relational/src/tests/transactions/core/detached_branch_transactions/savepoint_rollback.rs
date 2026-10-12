@@ -2,9 +2,12 @@ use super::*;
 
 #[test]
 fn savepoint_rollback_restores_overlay_footprint_and_cached_plan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let retained = create_entity(&runtime, "retained");
-    let rolled_back = create_entity(&runtime, "rolled-back");
+    let retained = create_entity(execution, &runtime, "retained");
+    let rolled_back = create_entity(execution, &runtime, "rolled-back");
     let (_, mut transaction) = begin_on(&runtime, "main");
     transaction
         .read_entity(retained)

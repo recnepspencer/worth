@@ -2,30 +2,37 @@ use super::*;
 
 #[test]
 fn batch_relation_updates_preserve_identity_binding_aggregate_digest() {
-    let mut workspace = task_relation_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_relation_runtime(request_execution)
         .workspace("tasks.batch-existing-relation-update")
         .expect("workspace should open");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.batch-existing-relation-update-table", |q| {
-            q.from("TaskRelation")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-batch-existing-relation-update-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.batch-existing-relation-update-table",
+            |q| {
+                q.from("TaskRelation")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-batch-existing-relation-update-table")
+            },
+        )
         .expect("relation live view should declare");
 
     let first = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -42,7 +49,7 @@ fn batch_relation_updates_preserve_identity_binding_aggregate_digest() {
         })
         .expect("first seed should execute");
     let second = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -83,7 +90,7 @@ fn batch_relation_updates_preserve_identity_binding_aggregate_digest() {
         .expect("second relation binding should build");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .update_existing(first_binding, |relation| {
                     relation.set_aspect(
@@ -111,7 +118,10 @@ fn batch_relation_updates_preserve_identity_binding_aggregate_digest() {
         .aggregate_existing_truth_binding_digest()
         .is_some());
 
-    match workspace.inspect(&receipt).expect("batch should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("batch should inspect")
+    {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             assert_eq!(
                 inspection

@@ -10,6 +10,7 @@ use super::{
 impl WorthQueryRuntime {
     pub fn declare_bridge_async_live_view<T>(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
         request: DeclarativeLiveQueryRequest,
         schema_view: QuerySchemaView,
@@ -32,6 +33,7 @@ impl WorthQueryRuntime {
                 ],
             );
         self.declare_bridge_async_live_view_with_selection(
+            request_execution,
             name,
             request,
             schema_view,
@@ -42,6 +44,7 @@ impl WorthQueryRuntime {
 
     pub fn declare_bridge_async_live_view_with_typed_identity<T>(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
         request: DeclarativeLiveQueryRequest,
         schema_view: QuerySchemaView,
@@ -60,6 +63,7 @@ impl WorthQueryRuntime {
                     .collect(),
             );
         self.declare_bridge_async_live_view_with_selection(
+            request_execution,
             name,
             request,
             schema_view,
@@ -70,6 +74,7 @@ impl WorthQueryRuntime {
 
     fn declare_bridge_async_live_view_with_selection<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
         request: DeclarativeLiveQueryRequest,
         schema_view: QuerySchemaView,
@@ -81,6 +86,7 @@ impl WorthQueryRuntime {
         let name = name.into();
         admit_live_view_declaration_receipt(&*self.backend, &name, &request, &schema_view)?;
         let activation = self.install_live_subscription_for_request(
+            execution,
             &name,
             &request,
             schema_view.clone(),

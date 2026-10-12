@@ -18,14 +18,14 @@ struct OrderingFixture {
 }
 
 impl OrderingFixture {
-    fn new() -> Self {
+    fn new(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Self {
         let runtime = persisted_runtime_with_index_field_aspects();
-        let parent = changed_entities(&create_entity_outcome(&runtime, "parent"))[0];
-        let alpha_one = changed_entities(&create_entity_outcome(&runtime, "alpha"))[0];
-        let beta = changed_entities(&create_entity_outcome(&runtime, "beta"))[0];
-        let alpha_two = changed_entities(&create_entity_outcome(&runtime, "alpha"))[0];
+        let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
+        let alpha_one = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
+        let beta = changed_entities(&create_entity_outcome(execution, &runtime, "beta"))[0];
+        let alpha_two = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
         for child in [beta, alpha_two, alpha_one] {
-            create_relation_outcome(&runtime, parent, child, "owns");
+            create_relation_outcome(execution, &runtime, parent, child, "owns");
         }
         let index = runtime.index_authority().register(DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
@@ -68,7 +68,11 @@ impl OrderingFixture {
         }
     }
 
-    fn assert_cold(&self, snapshot: &crate::snapshots::data::SnapshotHandle) {
+    fn assert_cold(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: &crate::snapshots::data::SnapshotHandle,
+    ) {
         let denial = self
             .runtime
             .index_access()
@@ -83,6 +87,7 @@ impl OrderingFixture {
                 )
                 .unwrap(),
                 BoundedIndexParityMode::Certification,
+                execution,
             )
             .unwrap_err();
         assert_eq!(
@@ -94,16 +99,21 @@ impl OrderingFixture {
 
 #[test]
 fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
-    let fixture = OrderingFixture::new();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = OrderingFixture::new(execution);
     let runtime = &fixture.runtime;
     let historical = fixture.basis();
     let historical_snapshot = runtime
         .snapshots()
         .snapshot_for_observation(&historical.observation())
         .unwrap();
-    let old = runtime
-        .index_authority()
-        .build_for_basis(fixture.request(&historical), &historical);
+    let old = runtime.index_authority().build_for_basis(
+        execution,
+        fixture.request(&historical),
+        &historical,
+    );
     assert!(old.failed_indexes.is_empty());
     let retained = runtime
         .index_access()
@@ -114,19 +124,22 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
     let (_, sibling_basis) = runtime
         .observe_branch(&runtime.branch_identity(&sibling).unwrap())
         .unwrap();
-    let sibling_build = runtime
-        .index_authority()
-        .build_for_basis(fixture.request(&sibling_basis), &sibling_basis);
+    let sibling_build = runtime.index_authority().build_for_basis(
+        execution,
+        fixture.request(&sibling_basis),
+        &sibling_basis,
+    );
     assert!(sibling_build.failed_indexes.is_empty());
-    create_entity_outcome(runtime, "unrelated-new-record");
+    create_entity_outcome(execution, runtime, "unrelated-new-record");
     let current = fixture.basis();
     let current_snapshot = runtime
         .snapshots()
         .snapshot_for_observation(&current.observation())
         .unwrap();
-    let built = runtime
-        .index_authority()
-        .build_for_basis(fixture.request(&current), &current);
+    let built =
+        runtime
+            .index_authority()
+            .build_for_basis(execution, fixture.request(&current), &current);
     assert!(built.failed_indexes.is_empty());
     let unrelated = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -138,9 +151,10 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
     });
     let mut unrelated_request = fixture.request(&current);
     unrelated_request.index_ids = vec![unrelated.index_id];
-    let unrelated_build = runtime
-        .index_authority()
-        .build_for_basis(unrelated_request, &current);
+    let unrelated_build =
+        runtime
+            .index_authority()
+            .build_for_basis(execution, unrelated_request, &current);
     let untouched = runtime
         .index_access()
         .latest_generation(unrelated.index_id, &BranchId("main".into()))
@@ -188,8 +202,8 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
             .latest_generation(fixture.index.index_id, &branch)
             .is_none());
     }
-    fixture.assert_cold(&historical_snapshot);
-    fixture.assert_cold(&current_snapshot);
+    fixture.assert_cold(execution, &historical_snapshot);
+    fixture.assert_cold(execution, &current_snapshot);
     let DerivedIndexEntries::RelatedEntityOrdering(entries) = &retained.entries else {
         panic!("ordering")
     };
@@ -208,6 +222,7 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
     let stopped = lease.controlled_child(cancellation.token(), None);
     cancellation.cancel();
     let refused = runtime.index_authority().build_for_basis_with_lease(
+        execution,
         fixture.request(&current),
         &current,
         &stopped,
@@ -221,9 +236,10 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
             crate::facade::indexes::RelationalExecutionDenialCause::Cancelled
         )
     );
-    fixture.assert_cold(&current_snapshot);
+    fixture.assert_cold(execution, &current_snapshot);
     assert_eq!(runtime.current_version_id(), before);
     let rebuilt = runtime.index_authority().build_for_basis_with_lease(
+        execution,
         fixture.request(&current),
         &current,
         &lease,
@@ -245,6 +261,7 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
             )
             .unwrap(),
             BoundedIndexParityMode::Certification,
+            execution,
         )
         .unwrap();
     assert_eq!(page.child_entity_ids(), fixture.expected);
@@ -263,6 +280,7 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
             .unwrap()
             .expect_generation(built.generations[0].generation_id),
             BoundedIndexParityMode::Production,
+            execution,
         )
         .unwrap_err();
     assert_eq!(
@@ -278,7 +296,10 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
 
 #[test]
 fn discard_requires_installed_definition_and_empty_discard_is_idempotent() {
-    let fixture = OrderingFixture::new();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = OrderingFixture::new(execution);
     let authority = fixture.runtime.index_authority();
     let missing = DerivedIndexId(fixture.index.index_id.0 + 1);
     assert_eq!(

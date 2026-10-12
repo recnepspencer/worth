@@ -1,13 +1,17 @@
 use super::*;
 
-pub(super) fn certify_branch_rollback_compile_step_window(suite: &'static str) {
+pub(super) fn certify_branch_rollback_compile_step_window(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let branch_rollback_compile_samples =
         capture_perf_samples(suite, "branch_rollback_compile_step_window", || {
             let feature_branch = BranchId("feature".to_string());
             let runtime =
                 runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
-            let source = create_entity_in_partition(&runtime, "rollback-driver", PartitionId(7));
+            let source =
+                create_entity_in_partition(execution, &runtime, "rollback-driver", PartitionId(7));
             let stable_targets = (0..8)
                 .map(|index| {
                     let partition_id = match index % 4 {
@@ -17,6 +21,7 @@ pub(super) fn certify_branch_rollback_compile_step_window(suite: &'static str) {
                         _ => PartitionId(19),
                     };
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("rollback-stable-sink-{index}"),
                         partition_id,
@@ -32,6 +37,7 @@ pub(super) fn certify_branch_rollback_compile_step_window(suite: &'static str) {
                         _ => PartitionId(41),
                     };
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("rollback-transient-sink-{index}"),
                         partition_id,
@@ -41,6 +47,7 @@ pub(super) fn certify_branch_rollback_compile_step_window(suite: &'static str) {
             create_branch_from_main(&runtime, "feature");
             for (index, target) in stable_targets.iter().enumerate() {
                 create_relation_in_partition_on_branch(
+                    execution,
                     &runtime,
                     source,
                     *target,
@@ -121,10 +128,7 @@ pub(super) fn certify_branch_rollback_compile_step_window(suite: &'static str) {
             .expect("test staging stays within configured resource budgets");
             let commit_started_at = Instant::now();
             let commit_outcome = txn
-                .commit(
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit(execution, &runtime)
                 .expect("chip branch step commit");
             let commit_micros = commit_started_at.elapsed().as_micros();
 

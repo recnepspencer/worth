@@ -161,8 +161,10 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         ready
             .rail
             .under(FaultScript::Succeed, Duration::from_millis(150));
-        let recovery = prepared
-            .safe_retry()
+        let recovery = vocabulary
+            .runtime()
+            .with_host_advancement(|phase| prepared.safe_retry(&phase))
+            .expect("fixture retry owns its host call")
             .expect("the retained real payment safely retries");
 
         let prepared = advance();

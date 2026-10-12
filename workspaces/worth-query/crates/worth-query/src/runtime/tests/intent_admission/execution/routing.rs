@@ -2,21 +2,25 @@ use super::*;
 
 #[test]
 fn workspace_probe_existing_delegates_to_routing_intent_execution() {
-    let mut delegated_workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut delegated_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-probe-delegated")
         .expect("workspace should open");
-    let delegated_binding = seeded_probe_binding(&mut delegated_workspace);
+    let delegated_binding = seeded_probe_binding(request_execution, &mut delegated_workspace);
     let delegated = delegated_workspace
         .probe_existing(
+            request_execution,
             delegated_binding,
             test_aspect_touches(["identity.id", "title.value"]),
         )
         .expect("legacy workspace probe should execute");
 
-    let mut canonical_workspace = stateful_bridge_task_runtime()
+    let mut canonical_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-probe-canonical")
         .expect("workspace should open");
-    let canonical_binding = seeded_probe_binding(&mut canonical_workspace);
+    let canonical_binding = seeded_probe_binding(request_execution, &mut canonical_workspace);
     let request = WorthQueryExistingTruthProbeRequest::new(
         canonical_binding,
         test_aspect_touches(["identity.id", "title.value"]),
@@ -24,7 +28,7 @@ fn workspace_probe_existing_delegates_to_routing_intent_execution() {
     .expect("probe request should build");
     let canonical = canonical_workspace
         .probe_existing_intent(request)
-        .execute()
+        .execute(request_execution)
         .expect("canonical probe intent should execute");
 
     assert_eq!(delegated, *canonical.probe());
@@ -52,10 +56,13 @@ fn workspace_probe_existing_delegates_to_routing_intent_execution() {
 
 #[test]
 fn runtime_probe_existing_delegates_to_canonical_routing_intent_execution() {
-    let mut delegated_workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut delegated_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-probe-runtime-delegated")
         .expect("workspace should open");
-    let delegated_binding = seeded_probe_binding(&mut delegated_workspace);
+    let delegated_binding = seeded_probe_binding(request_execution, &mut delegated_workspace);
     let delegated_request = WorthQueryExistingTruthProbeRequest::new(
         delegated_binding,
         test_aspect_touches(["identity.id", "title.value"]),
@@ -63,13 +70,13 @@ fn runtime_probe_existing_delegates_to_canonical_routing_intent_execution() {
     .expect("probe request should build");
     let delegated_runtime = delegated_workspace.into_runtime();
     let delegated = delegated_runtime
-        .probe_existing(delegated_request)
+        .probe_existing(request_execution, delegated_request)
         .expect("legacy runtime probe should execute");
 
-    let mut canonical_workspace = stateful_bridge_task_runtime()
+    let mut canonical_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("intent-admission-probe-runtime-canonical")
         .expect("workspace should open");
-    let canonical_binding = seeded_probe_binding(&mut canonical_workspace);
+    let canonical_binding = seeded_probe_binding(request_execution, &mut canonical_workspace);
     let canonical_request = WorthQueryExistingTruthProbeRequest::new(
         canonical_binding,
         test_aspect_touches(["identity.id", "title.value"]),
@@ -78,7 +85,7 @@ fn runtime_probe_existing_delegates_to_canonical_routing_intent_execution() {
     let canonical_runtime = canonical_workspace.into_runtime();
     let canonical = canonical_runtime
         .probe_existing_intent(canonical_request)
-        .execute()
+        .execute(request_execution)
         .expect("canonical probe intent should execute");
 
     assert_eq!(delegated, *canonical.probe());
@@ -89,10 +96,11 @@ fn runtime_probe_existing_delegates_to_canonical_routing_intent_execution() {
 }
 
 fn seeded_probe_binding(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
 ) -> WorthQueryExistingTruthTargetBinding {
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),

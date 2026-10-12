@@ -6,8 +6,12 @@ use crate::suite::installed_operation_fixture::{
 
 #[test]
 fn one_root_binds_real_construct_boolean_transform_and_cross_domain_operations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace =
-        operating_world_family_workspace("installed-public-facade-family-root").unwrap();
+        operating_world_family_workspace(request_execution, "installed-public-facade-family-root")
+            .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let root = workspace
         .observe_operating_world(workspace.current_world())

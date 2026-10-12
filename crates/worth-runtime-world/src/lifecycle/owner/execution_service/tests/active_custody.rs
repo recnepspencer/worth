@@ -49,11 +49,14 @@ fn active_custody_pre_effect_drop_releases_all_reservations() {
 
 #[test]
 fn active_custody_unbound_abandonment_keeps_exact_effects_without_acquiring_pins() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
     let baseline = owner.state.retention.active_component_obligation_count();
     let settlement = settled(execute_with_empty_signal(
         &owner,
-        prepare_both_owners(&fixture, &owner, &expected, "custody-both"),
+        prepare_both_owners(execution, &fixture, &owner, &expected, "custody-both"),
     ));
     let successor = settlement.successor_basis().unwrap().clone();
     let custody = register_settlement(settlement);
@@ -201,9 +204,18 @@ fn active_custody_concurrent_inspection_materializes_one_charged_record() {
 
 #[test]
 fn active_custody_identity_repair_settles_only_the_recorded_relational_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
-    let mut attempt =
-        prepare_relational(&fixture, &owner, &expected, "custody-identity-repair").into_attempt();
+    let mut attempt = prepare_relational(
+        execution,
+        &fixture,
+        &owner,
+        &expected,
+        "custody-identity-repair",
+    )
+    .into_attempt();
     attempt.begin_owner_execution();
     let candidate = attempt.take_relational_candidate().unwrap();
     let mut custody = register_attempt(attempt);
@@ -211,7 +223,7 @@ fn active_custody_identity_repair_settles_only_the_recorded_relational_commit() 
         .state
         .relational
         .publication_port()
-        .compare_and_publish(candidate)
+        .compare_and_publish(execution, candidate)
     {
         worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
             performed

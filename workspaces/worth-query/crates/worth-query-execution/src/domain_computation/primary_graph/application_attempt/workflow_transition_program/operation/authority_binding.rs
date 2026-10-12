@@ -25,9 +25,16 @@ impl<Schema, Operation, Input, Scope>
     #[doc(hidden)]
     pub fn bind_workflow_operation_authority(
         mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         authority: &WorkflowOperationAuthority,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
+        let phase_request = match phase.request_for_source(self.read_set.lease.handle().relational_runtime_instance_id()) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+        };
+        let execution = &phase_request;
+
         if self.read_set.workflow_authority_binding.is_some()
             || self.read_set.admission.operation() != authority.operation
             || self.read_set.admission.runtime_authority().as_u64() != authority.runtime_authority
@@ -36,18 +43,22 @@ impl<Schema, Operation, Input, Scope>
         {
             return Err(mismatch("workflow operation authority"));
         }
-        let current = self.read_set.lease.handle().with_runtime(|runtime| {
-            for fact in authority.facts() {
-                check_request_live(
-                    self.read_set.admission.publication_request(),
-                    "workflow operation authority",
-                )?;
-                if !fact.remains_equal_in(runtime, self.read_set.lease.snapshot()) {
-                    return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
+        let current = self
+            .read_set
+            .lease
+            .handle()
+            .with_runtime(execution, |runtime| {
+                for fact in authority.facts() {
+                    check_request_live(
+                        self.read_set.admission.publication_request(),
+                        "workflow operation authority",
+                    )?;
+                    if !fact.remains_equal_in(runtime, execution, self.read_set.lease.snapshot())? {
+                        return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
+                    }
                 }
-            }
-            Ok(true)
-        })?;
+                Ok(true)
+            })?;
         if !current {
             return Err(mismatch("workflow operation authority"));
         }

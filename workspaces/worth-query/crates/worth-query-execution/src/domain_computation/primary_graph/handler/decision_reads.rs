@@ -46,6 +46,13 @@ where
             ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
         Family::Entity: OperationReads<Binding::Operation>,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
         self.reader
             .current_output::<Family, Producer>(producer)
             .map_err(HandlerExecutionDenial::new)
@@ -66,6 +73,13 @@ where
         Role: WorthQueryApplicationOutputRole<Schema = Schema, Contract = PriorBinding::Output>,
         Role::Entity: OperationReads<Binding::Operation>,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
         self.reader
             .prior_output::<PriorBinding, Role>()
             .map_err(HandlerExecutionDenial::new)
@@ -83,6 +97,13 @@ where
         Role: WorthQueryApplicationOutputRole<Schema = Schema, Contract = PriorBinding::Output>,
         Role::Entity: OperationReads<Binding::Operation>,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
         self.reader
             .prior_output_if_present::<PriorBinding, Role>()
             .map_err(HandlerExecutionDenial::new)
@@ -132,6 +153,13 @@ where
             WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = PriorBinding::Output>,
         Family::Entity: OperationReads<Binding::Operation>,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
         self.reader
             .prior_output_family::<PriorBinding, Family>()
             .map_err(HandlerExecutionDenial::new)
@@ -151,6 +179,13 @@ where
             WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = PriorBinding::Output>,
         Family::Entity: OperationReads<Binding::Operation>,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
         self.reader
             .prior_output_family_if_present::<PriorBinding, Family>()
             .map_err(HandlerExecutionDenial::new)
@@ -168,6 +203,13 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
         self.reader
             .decision_field(identity, field)
             .map_err(HandlerExecutionDenial::new)
@@ -186,6 +228,12 @@ where
     where
         Relation: OperationReads<Binding::Operation>,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            WorthQueryInvariantProjectionTraversalDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)),
+                relation.name())
+        })?;
         self.reader.decision_relations_from(relation, source)
     }
 
@@ -202,6 +250,12 @@ where
     where
         Relation: OperationReads<Binding::Operation>,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            WorthQueryInvariantProjectionTraversalDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)),
+                relation.name())
+        })?;
         self.reader.decision_relations_to(relation, target)
     }
 

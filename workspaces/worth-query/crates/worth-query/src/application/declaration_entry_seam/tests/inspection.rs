@@ -11,8 +11,11 @@ use super::support::{
 
 #[test]
 fn wrong_handle_retained_artifacts_are_denied_before_inspection() {
-    let source = handle("source");
-    let target = handle("target");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let source = handle(request_execution, "source");
+    let target = handle(request_execution, "target");
     let envelope = bridge_signal_envelope(&source, "edge:42");
 
     let error = match target.inspect_declaration_entry(
@@ -28,7 +31,10 @@ fn wrong_handle_retained_artifacts_are_denied_before_inspection() {
 
 #[test]
 fn envelope_only_inspection_does_not_fake_lower_authority_posture() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let envelope = bridge_signal_envelope(&handle, "edge:42");
 
     let inspection = match handle.inspect_declaration_entry(
@@ -48,7 +54,10 @@ fn envelope_only_inspection_does_not_fake_lower_authority_posture() {
 
 #[test]
 fn signal_checked_inspection_exposes_signal_posture() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let envelope = bridge_signal_envelope(&handle, "edge:42");
     let checked = handle.signal_compatibility_checked(
         WorthQueryDeclarationSignalCompatibilityInput::enveloped(envelope),
@@ -66,7 +75,10 @@ fn signal_checked_inspection_exposes_signal_posture() {
 
 #[test]
 fn authority_rich_envelope_inspection_surfaces_authority_summaries_in_readiness() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let envelope = authority_rich_envelope(&handle, "edge:42");
 
     let inspection = match handle.inspect_declaration_entry(
@@ -140,7 +152,10 @@ fn authority_rich_envelope_inspection_surfaces_authority_summaries_in_readiness(
 
 #[test]
 fn relational_and_bridge_checked_inspection_expose_authority_specific_posture() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let relational = handle.route_relational_truth_checked(
         WorthQueryDeclarationRelationalRoutingInput::envelope_checked(
             crate::application::WorthQueryDeclarationEnvelopeChecked::Enveloped(
@@ -206,7 +221,10 @@ fn relational_and_bridge_checked_inspection_expose_authority_specific_posture() 
 
 #[test]
 fn denied_relational_inspection_keeps_unproven_authority_metadata_absent() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let envelope = bridge_signal_envelope(&handle, "edge:42");
     let checked = handle.route_relational_truth_checked(
         WorthQueryDeclarationRelationalRoutingInput::enveloped(envelope),
@@ -229,7 +247,10 @@ fn denied_relational_inspection_keeps_unproven_authority_metadata_absent() {
 
 #[test]
 fn denied_signal_inspection_keeps_unproven_execution_metadata_absent() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let progressed = handle
         .declare_review_and_progress(Input::<RelationalFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));

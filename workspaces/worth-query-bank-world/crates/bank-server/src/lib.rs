@@ -123,6 +123,8 @@ pub use world_seed::{BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankWorl
 mod approved_payment_workflow;
 
 #[cfg(test)]
+mod test_host_policy;
+#[cfg(test)]
 extern crate self as bank_server;
 #[cfg(test)]
 #[allow(

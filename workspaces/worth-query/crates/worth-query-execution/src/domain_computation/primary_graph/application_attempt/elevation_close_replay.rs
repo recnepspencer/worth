@@ -17,6 +17,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// returns `None` and the lane refuses it, typed, when it materializes.
     pub fn resolve_admitted_elevation_close_replay<Operation, Input, Scope>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
@@ -33,7 +34,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Ok(None);
         }
         let resolution = self
-            .resolve_admitted_application_idempotency(admission, idempotency)
+            .resolve_admitted_application_idempotency(phase, admission, idempotency)
             .map_err(|denial| {
                 let approved = admission
                     .take_elevation_close_binding()

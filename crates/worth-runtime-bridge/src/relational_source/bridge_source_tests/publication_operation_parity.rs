@@ -22,6 +22,7 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let execution = &resource_request;
 
     let note = optional_note_contract();
     let summary = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
@@ -74,12 +75,7 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let created = create
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = create.commit(execution, &runtime).unwrap();
     let entity = changed_entities(&created)[0];
     let created_commit = created.commit.commit_id;
 
@@ -109,12 +105,7 @@ fn real_whole_and_field_set_clear_operations_keep_their_exact_publication_meanin
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let updated = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let updated = transaction.commit(execution, &runtime).unwrap();
     let mut publications = bridge_envelopes_at_current_observation(
         runtime,
         [created_commit, updated.commit.commit_id],

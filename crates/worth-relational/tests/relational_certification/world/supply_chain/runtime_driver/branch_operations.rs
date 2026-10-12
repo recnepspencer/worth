@@ -7,8 +7,12 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 use worth_relational::facade::transactions::{CommitResult, WorkerIntentBatch};
 
-pub(crate) fn commit_main_batch(runtime: &RelationalRuntime, batch: WorkerIntentBatch) {
-    commit_branch_batch(runtime, BranchId("main".to_owned()), batch);
+pub(crate) fn commit_main_batch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    batch: WorkerIntentBatch,
+) {
+    commit_branch_batch(execution, runtime, BranchId("main".to_owned()), batch);
 }
 
 pub(crate) fn fork_supply_chain_branch_from_main(runtime: &RelationalRuntime, branch_id: BranchId) {
@@ -58,19 +62,22 @@ pub(crate) fn head_for_supply_chain_branch(
 }
 
 pub(crate) fn commit_branch_batch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: BranchId,
     batch: WorkerIntentBatch,
 ) {
-    let _ = commit_branch_batch_with_result(runtime, branch_id, batch);
+    let _ = commit_branch_batch_with_result(execution, runtime, branch_id, batch);
 }
 
 pub(crate) fn commit_branch_batch_with_result(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: BranchId,
     batch: WorkerIntentBatch,
 ) -> CommitResult {
     commit_batch_with_intent(
+        execution,
         runtime,
         branch_id,
         batch,
@@ -79,6 +86,7 @@ pub(crate) fn commit_branch_batch_with_result(
 }
 
 pub(crate) fn commit_supply_chain_delta(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     program: &CompiledSupplyChainProgram,
     branch_id: BranchId,
@@ -114,14 +122,12 @@ pub(crate) fn commit_supply_chain_delta(
         )
         .expect("Supply Chain mutation staging fits its configured transaction budget");
     transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("Supply Chain mutation commits through production publication")
 }
 
 fn commit_batch_with_intent(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: BranchId,
     batch: WorkerIntentBatch,
@@ -143,9 +149,6 @@ fn commit_batch_with_intent(
         )
         .expect("Supply Chain mutation staging fits its configured transaction budget");
     transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("Supply Chain mutation commits through production publication")
 }

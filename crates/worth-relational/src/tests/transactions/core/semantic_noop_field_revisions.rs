@@ -22,6 +22,9 @@ fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
 
 #[test]
 fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![entity_summary_struct_aspect(
             aspect_key("summary"),
@@ -31,14 +34,21 @@ fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
     }
     .build_runtime();
     let entity = super::struct_field_patch_authority::create_entity_with_summary_fields(
-        &runtime, "mixed", "same", "open", false, false,
+        execution, &runtime, "mixed", "same", "open", false, false,
     );
     let before = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let title = locator("summary", "title");
     let status = locator("summary", "status");
-    let before_view = runtime.read_truth().project_snapshot(&before).unwrap();
-    let title_before = before_view.entity_field_revision(entity, &title).unwrap();
-    let status_before = before_view.entity_field_revision(entity, &status).unwrap();
+    let before_view = runtime
+        .read_truth()
+        .project_snapshot(&before, execution)
+        .unwrap();
+    let title_before = before_view
+        .entity_field_revision(execution, entity, &title)
+        .unwrap();
+    let status_before = before_view
+        .entity_field_revision(execution, entity, &status)
+        .unwrap();
 
     let mut txn = test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -54,22 +64,17 @@ fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    let updated = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let updated = txn.commit(execution, &runtime).unwrap();
     let after_view = runtime
         .read_truth()
-        .project_snapshot(&updated.snapshot)
+        .project_snapshot(&updated.snapshot, execution)
         .unwrap();
     assert_eq!(
-        after_view.entity_field_revision(entity, &title),
+        after_view.entity_field_revision(execution, entity, &title),
         Some(title_before)
     );
     assert_ne!(
-        after_view.entity_field_revision(entity, &status),
+        after_view.entity_field_revision(execution, entity, &status),
         Some(status_before)
     );
     runtime.snapshots().release_snapshot(&before).unwrap();
@@ -78,24 +83,27 @@ fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
 
 #[test]
 fn scalar_equal_value_is_stable_but_return_to_original_value_revises() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "alpha");
+    let created = create_entity_outcome(execution, &runtime, "alpha");
     let entity = changed_entities(&created)[0];
     let name = locator("name", "name");
     let revision = |outcome: &crate::facade::transactions::CommitResult| {
         runtime
             .read_truth()
-            .project_snapshot(&outcome.snapshot)
+            .project_snapshot(&outcome.snapshot, execution)
             .unwrap()
-            .entity_field_revision(entity, &name)
+            .entity_field_revision(execution, entity, &name)
             .unwrap()
     };
     let original = revision(&created);
-    let changed = update_entity(&runtime, entity, "beta");
+    let changed = update_entity(execution, &runtime, entity, "beta");
     let changed_revision = revision(&changed);
-    let returned = update_entity(&runtime, entity, "alpha");
+    let returned = update_entity(execution, &runtime, entity, "alpha");
     let returned_revision = revision(&returned);
-    let equal = update_entity(&runtime, entity, "alpha");
+    let equal = update_entity(execution, &runtime, entity, "alpha");
     assert_ne!(original, changed_revision);
     assert_ne!(original, returned_revision);
     assert_ne!(changed_revision, returned_revision);
@@ -107,23 +115,26 @@ fn scalar_equal_value_is_stable_but_return_to_original_value_revises() {
 
 #[test]
 fn equal_scalar_patch_keeps_the_native_field_revision() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "equal-revision");
+    let created = create_entity_outcome(execution, &runtime, "equal-revision");
     let entity = changed_entities(&created)[0];
     let name = locator("name", "name");
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap()
-        .entity_field_revision(entity, &name);
+        .entity_field_revision(execution, entity, &name);
     assert!(before.is_some(), "creation must issue the native revision");
-    let equal = update_entity(&runtime, entity, "equal-revision");
+    let equal = update_entity(execution, &runtime, entity, "equal-revision");
     assert_eq!(
         runtime
             .read_truth()
-            .project_snapshot(&equal.snapshot)
+            .project_snapshot(&equal.snapshot, execution)
             .unwrap()
-            .entity_field_revision(entity, &name),
+            .entity_field_revision(execution, entity, &name),
         before,
         "equal canonical values must keep their native field revision"
     );
@@ -134,17 +145,20 @@ fn equal_scalar_patch_keeps_the_native_field_revision() {
 
 #[test]
 fn relation_equal_value_patch_preserves_native_field_revision() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation = create_relation(&runtime, source, target, "original");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation = create_relation(execution, &runtime, source, target, "original");
     let label = locator("label", "label");
     let before = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let original = runtime
         .read_truth()
-        .project_snapshot(&before)
+        .project_snapshot(&before, execution)
         .unwrap()
-        .relation_field_revision(relation, &label)
+        .relation_field_revision(execution, relation, &label)
         .unwrap();
     let contract = runtime
         .relation_aspect_plan(KindId(2))
@@ -173,27 +187,23 @@ fn relation_equal_value_patch_preserves_native_field_revision() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-        txn.commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
     let equal = commit("original");
     let equal_revision = runtime
         .read_truth()
-        .project_snapshot(&equal.snapshot)
+        .project_snapshot(&equal.snapshot, execution)
         .unwrap()
-        .relation_field_revision(relation, &label)
+        .relation_field_revision(execution, relation, &label)
         .unwrap();
     assert_eq!(equal_revision, original);
     let changed = commit("different");
     assert_ne!(
         runtime
             .read_truth()
-            .project_snapshot(&changed.snapshot)
+            .project_snapshot(&changed.snapshot, execution)
             .unwrap()
-            .relation_field_revision(relation, &label),
+            .relation_field_revision(execution, relation, &label),
         Some(original)
     );
     runtime.snapshots().release_snapshot(&before).unwrap();

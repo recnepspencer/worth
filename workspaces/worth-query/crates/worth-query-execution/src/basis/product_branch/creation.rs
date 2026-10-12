@@ -29,6 +29,7 @@ pub struct WorthQueryProductBranchFork<'runtime> {
 pub(crate) trait WorthQuerySourceProgramResolver {
     fn source_program(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &crate::basis::WorthQueryProductBranchLease,
     ) -> Option<ApplicationProgramRevision>;
 }
@@ -81,7 +82,16 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         self
     }
 
-    pub fn create(self) -> Result<WorthQueryProductBranch, WorthQueryProductBranchCreateError> {
+    pub fn create(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<WorthQueryProductBranch, WorthQueryProductBranchCreateError> {
+        let phase_request = phase.execution_request_for(self.runtime).map_err(|_| {
+            WorthQueryProductBranchCreateError::SourceAdmission(
+                super::WorthQueryProductBranchAdmissionDenial::ForeignPhase,
+            )
+        })?;
+        let execution = &phase_request;
         let Self {
             runtime,
             source,
@@ -137,8 +147,8 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         let source = runtime
             .admit_product_occurrence(source.occurrence())
             .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
-        let source_program =
-            source_program_resolver.and_then(|resolver| resolver.source_program(&source));
+        let source_program = source_program_resolver
+            .and_then(|resolver| resolver.source_program(execution, &source));
         let cancellation = RuntimeWorldCancellationSource::new();
         match runtime
             .create_product_branch(

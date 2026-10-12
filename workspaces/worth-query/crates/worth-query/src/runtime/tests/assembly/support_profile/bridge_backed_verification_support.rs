@@ -62,7 +62,10 @@ fn runtime_authoritative_mutation_support_exposes_bridge_backed_verification_row
 
 #[test]
 fn runtime_authoritative_mutation_closeout_carries_bridge_backed_verification_guidance() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.bridge-backed-verification-closeout")
         .expect("workspace should open");
     let closeout = workspace.public_authoritative_mutation_evidence_closeout();

@@ -45,6 +45,9 @@ fn name_patch_target() -> AspectFieldLocator {
 
 #[test]
 fn intent_reconciliation_strategy_emits_update_when_aspect_fields_differ() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = IntentReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(501),
     );
@@ -58,7 +61,7 @@ fn intent_reconciliation_strategy_emits_update_when_aspect_fields_differ() {
             &descriptor,
         ))
         .build();
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -80,7 +83,7 @@ fn intent_reconciliation_strategy_emits_update_when_aspect_fields_differ() {
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output = IntentReconciliationOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");
@@ -91,6 +94,9 @@ fn intent_reconciliation_strategy_emits_update_when_aspect_fields_differ() {
 
 #[test]
 fn intent_reconciliation_strategy_emits_noop_when_aspect_fields_match() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = IntentReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(502),
     );
@@ -104,8 +110,8 @@ fn intent_reconciliation_strategy_emits_noop_when_aspect_fields_match() {
             &descriptor,
         ))
         .build();
-    let entity = create_entity(&runtime, "before");
-    update_entity(&runtime, entity, "stable");
+    let entity = create_entity(request_execution, &runtime, "before");
+    update_entity(request_execution, &runtime, entity, "stable");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -127,7 +133,7 @@ fn intent_reconciliation_strategy_emits_noop_when_aspect_fields_match() {
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output = IntentReconciliationOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");
@@ -138,6 +144,9 @@ fn intent_reconciliation_strategy_emits_noop_when_aspect_fields_match() {
 
 #[test]
 fn intent_reconciliation_strategy_preserves_untouched_declared_fields() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = IntentReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(503),
     );
@@ -151,7 +160,7 @@ fn intent_reconciliation_strategy_preserves_untouched_declared_fields() {
             &descriptor,
         ))
         .build();
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -173,7 +182,7 @@ fn intent_reconciliation_strategy_preserves_untouched_declared_fields() {
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let intent = &execution.mutation_program().worker_batches()[0].intents[0];
     let updated_aspect_value = match intent {

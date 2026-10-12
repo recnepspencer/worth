@@ -19,123 +19,82 @@ use worth_relational::facade::{
     transactions::{DeleteEntityIntent, EntityMutationIntent, MutationIntent, WorkerIntentBatch},
 };
 
-#[test]
-fn own_retirement_preserves_each_read_locator_and_checkpoint_currentness() {
-    let world = installed_authorization_world(true);
-    let (entity, kind, facts) = reads(&world, "account-2");
-    let locators = facts.iter().map(Fact::locator_identity).collect::<Vec<_>>();
-    assert!(
-        rebase_current(&world, facts.clone(), &BTreeSet::from([entity])).is_none(),
-        "a selected retirement cannot replace reads while its actual record is live"
-    );
-    delete(&world, entity);
-    let retired = rebase_current(&world, facts.clone(), &BTreeSet::from([entity])).unwrap();
-    assert_eq!(
-        retired.len(),
-        facts.len(),
-        "every tracked read remains accounted for"
-    );
-    assert_eq!(
-        retired
-            .iter()
-            .map(Fact::locator_identity)
-            .collect::<Vec<_>>(),
-        locators
-    );
-    assert!(retired.iter().all(|fact| matches!(fact, Fact::RetiredOutputEntity { entity_id, kind: actual, .. } if *entity_id == entity && *actual == kind)));
-    assert!(selection(&world, &retired));
-    let encoded =
-        crate::domain_computation::primary_graph::application_checkpoint::encode_producer_facts(
-            &retired,
-        )
-        .unwrap();
-    let restored =
-        crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts(
-            &encoded,
-            None,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    assert_eq!(restored.as_ref(), retired.as_slice());
-    assert!(selection(&world, &restored));
-    let external = rebase_current(&world, facts, &BTreeSet::new()).unwrap();
-    assert!(!matches!(external[0], Fact::RetiredOutputEntity { .. }));
-    assert!(
-        !selection(&world, &external),
-        "an external input deleted without an owned retirement remains stale"
-    );
-    let Fact::RetiredOutputEntity {
-        created_at,
-        deleted_at,
-        read_locator,
-        ..
-    } = &retired[0]
-    else {
-        unreachable!()
-    };
-    for (changed_entity, changed_kind, changed_creation) in [
-        (
-            EntityId::new(
-                entity.partition_id,
-                entity.local_slot_value(),
-                entity.generation_value() + 1,
-            ),
-            kind,
-            *created_at,
-        ),
-        (entity, KindId::new(kind.as_u32() + 1), *created_at),
-        (
-            entity,
-            kind,
-            worth_relational::facade::identity::VersionId(created_at.as_u64() + 1),
-        ),
-        (reads(&world, "account-1").0, kind, *created_at),
-    ] {
-        assert!(!selection(
-            &world,
-            &[Fact::RetiredOutputEntity {
-                entity_id: changed_entity,
-                kind: changed_kind,
-                created_at: changed_creation,
-                deleted_at: *deleted_at,
-                read_locator: read_locator.clone(),
-            }]
-        ));
-    }
-    let mut changed_deletion = retired[0].clone();
-    if let Fact::RetiredOutputEntity { deleted_at, .. } = &mut changed_deletion {
-        *deleted_at = worth_relational::facade::identity::VersionId(deleted_at.as_u64() + 1);
-    }
-    assert!(!selection(&world, &[changed_deletion]));
-}
+mod own_retirement_preserves_each_read_locator_and_checkpoint_curren;
 
 #[test]
 fn external_deleted_input_and_live_adjacency_anchor_keep_their_own_comparison() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world = installed_authorization_world(true);
-    let (owned, _, own_reads) = reads(&world, "account-2");
-    let (external, _, external_reads) = reads(&world, "account-1");
-    delete(&world, owned);
-    let facts = [own_reads, external_reads.clone()].concat();
-    let rebased = rebase_current(&world, facts, &BTreeSet::from([owned])).unwrap();
-    assert_eq!(
-        &rebased[8..],
-        external_reads.as_slice(),
-        "external anchors and fields are not converted to retirement truth"
-    );
-    let native = normal_rebase(&world, rebased.clone());
-    assert!(selection(&world, &native));
-    delete(&world, external);
-    assert!(
-        !selection(&world, &native),
-        "an independent retirement of an external input invalidates the whole output"
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+
+            let (owned, _, own_reads) = reads(
+                &host_custody.phase_for_application(&world.application),
+                execution,
+                &world,
+                "account-2",
+            );
+            let (external, _, external_reads) = reads(
+                &host_custody.phase_for_application(&world.application),
+                execution,
+                &world,
+                "account-1",
+            );
+            delete(&host_custody.borrowed_request_for_test(), &world, owned);
+            let facts = [own_reads, external_reads.clone()].concat();
+            let rebased = rebase_current(
+                &host_custody.phase_for_application(&world.application),
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                facts,
+                &BTreeSet::from([owned]),
+            )
+            .unwrap();
+            assert_eq!(
+                &rebased[8..],
+                external_reads.as_slice(),
+                "external anchors and fields are not converted to retirement truth"
+            );
+            let native = normal_rebase(
+                &host_custody.phase_for_application(&world.application),
+                execution,
+                &world,
+                rebased.clone(),
+            );
+            assert!(selection(
+                &host_custody.phase_for_application(&world.application),
+                execution,
+                &world,
+                &native
+            ));
+            delete(&host_custody.borrowed_request_for_test(), &world, external);
+            assert!(
+                !selection(
+                    &host_custody.phase_for_application(&world.application),
+                    execution,
+                    &world,
+                    &native
+                ),
+                "an independent retirement of an external input invalidates the whole output"
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
-fn reads(world: &AuthorizationWorld, key: &str) -> (EntityId, KindId, Vec<Fact>) {
-    let selected = world.selected_product();
+fn reads(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    key: &str,
+) -> (EntityId, KindId, Vec<Fact>) {
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     let request = live_scope();
     let entity = selected
         .resolve_entity(
+            phase_custody,
             AccountIdentity::reference(),
             key.to_owned(),
             &request,
@@ -167,16 +126,18 @@ fn reads(world: &AuthorizationWorld, key: &str) -> (EntityId, KindId, Vec<Fact>)
         .relation(AccountAllActivity::reference().name())
         .unwrap()
         .kind;
-    let (aspect_revision, field_revision, adjacency_revision, relations) =
-        graph.integration_handle().with_runtime(|runtime| {
+    let (aspect_revision, field_revision, adjacency_revision, relations) = graph
+        .integration_handle()
+        .with_runtime(execution, |runtime| {
             let view = runtime
                 .read_truth()
-                .project_snapshot(selected.application_basis().snapshot_handle())
+                .project_snapshot(selected.application_basis().snapshot_handle(), execution)
                 .unwrap();
             (
-                view.entity_aspect_version(entity, locator.aspect().aspect_key()),
-                view.entity_field_revision(entity, &locator),
+                view.entity_aspect_version(execution, entity, locator.aspect().aspect_key()),
+                view.entity_field_revision(execution, entity, &locator),
                 view.bounded_adjacency_structural_revision(
+                    execution,
                     entity,
                     relation,
                     worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing,
@@ -186,12 +147,14 @@ fn reads(world: &AuthorizationWorld, key: &str) -> (EntityId, KindId, Vec<Fact>)
                 .revision(),
                 crate::domain_computation::primary_graph::application_attempt::observe_adjacency(
                     runtime,
+                    execution,
                     selected.application_basis().snapshot_handle(),
                     relation,
                     entity,
                     WorthQueryApplicationAdjacencyDirection::Outgoing,
                     16,
                 )
+                .unwrap()
                 .unwrap(),
             )
         });
@@ -262,8 +225,13 @@ fn reads(world: &AuthorizationWorld, key: &str) -> (EntityId, KindId, Vec<Fact>)
     (entity, kind, facts)
 }
 
-fn delete(world: &AuthorizationWorld, entity: EntityId) {
+fn delete(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    entity: EntityId,
+) {
     publish_relational_mutation(
+        execution,
         world,
         WorkerIntentBatch::new("owned-output-retirement").push(MutationIntent::Entity(
             EntityMutationIntent::Delete(DeleteEntityIntent { entity_id: entity }),
@@ -272,19 +240,22 @@ fn delete(world: &AuthorizationWorld, entity: EntityId) {
 }
 
 fn rebase_current(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     facts: Vec<Fact>,
     retired: &BTreeSet<EntityId>,
 ) -> Option<Vec<Fact>> {
-    let selected = world.selected_product();
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
         .runtime
         .primary_graph()
         .unwrap()
         .integration_handle()
-        .with_runtime(|runtime| {
+        .with_runtime(execution, |runtime| {
             rebase(
+                execution,
                 runtime,
                 selected.application_basis().snapshot_handle(),
                 facts,
@@ -293,16 +264,21 @@ fn rebase_current(
         })
 }
 
-fn normal_rebase(world: &AuthorizationWorld, facts: Vec<Fact>) -> std::sync::Arc<[Fact]> {
-    let selected = world.selected_product();
+fn normal_rebase(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    facts: Vec<Fact>,
+) -> std::sync::Arc<[Fact]> {
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
         .runtime
         .primary_graph()
         .unwrap()
         .integration_handle()
-        .with_runtime(|runtime| {
-            exact(super::super::rebase(
+        .with_runtime(execution, |runtime| {
+            exact(super::super::rebase(execution,
                 runtime,
                 selected.application_basis().snapshot_handle(),
                 super::super::PreparedSourceFactRebase::admit(facts, [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
@@ -332,17 +308,23 @@ fn admission(
     )
 }
 
-fn selection(world: &AuthorizationWorld, facts: &[Fact]) -> bool {
-    let selected = world.selected_product();
+fn selection(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    facts: &[Fact],
+) -> bool {
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
         .runtime
         .primary_graph()
         .unwrap()
         .integration_handle()
-        .with_runtime(|runtime| {
+        .with_runtime(execution, |runtime| {
             matches!(
                 compare_retained_output_dependencies(
+                    execution,
                     runtime,
                     selected.application_basis().snapshot_handle(),
                     true,

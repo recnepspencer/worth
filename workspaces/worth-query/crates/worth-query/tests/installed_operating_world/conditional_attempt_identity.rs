@@ -11,6 +11,9 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn conditional_authority_keeps_query_and_installation_runtime_owners_distinct() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _unrelated_installation_runtime =
         worth_query_installation::facade::WorthQueryInstallationRuntimeIdentity::fresh();
     let node = super::conditional_node_contract::node(
@@ -18,8 +21,12 @@ fn conditional_authority_keeps_query_and_installation_runtime_owners_distinct() 
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
-    let mut workspace =
-        conditional_controlled_workspace("independent-runtime-authorities", node).unwrap();
+    let mut workspace = conditional_controlled_workspace(
+        request_execution,
+        "independent-runtime-authorities",
+        node,
+    )
+    .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
 
     let executed = bind(&workspace, &installed)
@@ -41,6 +48,9 @@ fn conditional_authority_keeps_query_and_installation_runtime_owners_distinct() 
 
 #[test]
 fn fresh_bound_capabilities_mint_distinct_signal_attempt_identities() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let node = conditional_node_result(
         "distinct-direct-attempts",
@@ -55,6 +65,7 @@ fn fresh_bound_capabilities_mint_distinct_signal_attempt_identities() {
         worth_runtime_bridge::facade::BridgeConditionalProviderSet::new().trigger(RequestedTrigger);
     let versions = Arc::new(AtomicU64::new(0));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "distinct-direct-attempts",
         node,
         installation,
@@ -99,6 +110,9 @@ fn fresh_bound_capabilities_mint_distinct_signal_attempt_identities() {
 
 #[test]
 fn live_promotion_mints_a_fresh_signal_decision_after_settlement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let node = conditional_node_result(
         "promotion-fresh-decision",
@@ -113,6 +127,7 @@ fn live_promotion_mints_a_fresh_signal_decision_after_settlement() {
         worth_runtime_bridge::facade::BridgeConditionalProviderSet::new().trigger(RequestedTrigger);
     let versions = Arc::new(AtomicU64::new(0));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "promotion-fresh-decision",
         node,
         installation,
@@ -143,7 +158,10 @@ fn live_promotion_mints_a_fresh_signal_decision_after_settlement() {
         .settle()
         .unwrap();
 
-    let live = match settled.into_lifecycle().promote(&mut workspace) {
+    let live = match settled
+        .into_lifecycle()
+        .promote(request_execution, &mut workspace)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("conditional projection did not promote"),
     };
@@ -161,6 +179,9 @@ fn live_promotion_mints_a_fresh_signal_decision_after_settlement() {
 
 #[test]
 fn replacement_mints_a_fresh_signal_decision_for_the_successor() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let node = conditional_node_result(
         "replacement-fresh-decision",
@@ -175,6 +196,7 @@ fn replacement_mints_a_fresh_signal_decision_for_the_successor() {
         worth_runtime_bridge::facade::BridgeConditionalProviderSet::new().trigger(RequestedTrigger);
     let versions = Arc::new(AtomicU64::new(0));
     let mut workspace = conditional_workspace_with(
+        request_execution,
         "replacement-fresh-decision",
         node,
         installation,
@@ -183,7 +205,10 @@ fn replacement_mints_a_fresh_signal_decision_for_the_successor() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let first = settle_bound(bind(&workspace, &installed), &mut workspace);
-    let live = match first.into_lifecycle().promote(&mut workspace) {
+    let live = match first
+        .into_lifecycle()
+        .promote(request_execution, &mut workspace)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("conditional predecessor did not promote"),
     };
@@ -193,7 +218,7 @@ fn replacement_mints_a_fresh_signal_decision_for_the_successor() {
         .to_string();
     let candidate = settle_bound(bind(&workspace, &installed), &mut workspace).into_lifecycle();
     let witness = live.replacement_witness_for(&candidate).unwrap();
-    let replaced = match live.replace_with(candidate, witness, &mut workspace) {
+    let replaced = match live.replace_with(request_execution, candidate, witness, &mut workspace) {
         domain::WorthQueryProjectionReplacementOutcome::Replaced(replaced) => replaced,
         _ => panic!("conditional replacement did not converge"),
     };
@@ -217,13 +242,17 @@ fn replacement_mints_a_fresh_signal_decision_for_the_successor() {
 
 #[test]
 fn stale_conditional_installation_stops_before_lowering_or_signal_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = super::conditional_node_contract::node(
         "promotion-stale-conditional",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
     let mut workspace =
-        conditional_controlled_workspace("promotion-stale-conditional", node).unwrap();
+        conditional_controlled_workspace(request_execution, "promotion-stale-conditional", node)
+            .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = bind(&workspace, &installed);
     let consumer = bound.consumer_projection_contract().unwrap();
@@ -244,7 +273,10 @@ fn stale_conditional_installation_stops_before_lowering_or_signal_work() {
         .unwrap();
     workspace.advance_domain_installation_generation().unwrap();
 
-    let stale = match settled.into_lifecycle().promote(&mut workspace) {
+    let stale = match settled
+        .into_lifecycle()
+        .promote(request_execution, &mut workspace)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Stale(stale) => stale,
         _ => panic!("stale conditional installation did not produce stale proof"),
     };

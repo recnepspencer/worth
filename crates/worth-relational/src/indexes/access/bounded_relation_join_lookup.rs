@@ -15,6 +15,7 @@ impl IndexAccess<'_> {
         &self,
         request: BoundedRelationJoinLookupRequest,
         parity_mode: BoundedIndexParityMode,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupDenial> {
         let runtime = self.runtime;
         runtime.performance_access().count_query_index_attempt();
@@ -26,7 +27,7 @@ impl IndexAccess<'_> {
         })?;
         let projection = runtime
             .read_truth()
-            .project_snapshot(&snapshot)
+            .project_snapshot(&snapshot, execution)
             .ok_or_else(|| {
                 denial(
                     BoundedRelationJoinLookupDenialKind::SnapshotUnavailable,
@@ -41,6 +42,7 @@ impl IndexAccess<'_> {
         let overflowed = indexed_entries.len() > request.candidate_limit();
         let examined_entry_count = indexed_entries.len().min(request.candidate_limit());
         let candidate_entity_ids = prepared.verification.verify_entries(
+            execution,
             &source,
             &indexed_entries
                 .iter()
@@ -56,7 +58,13 @@ impl IndexAccess<'_> {
             parity_mode,
         );
         if parity_mode == BoundedIndexParityMode::Certification {
-            certify_storage_parity(&source, &prepared.verification, &request, &outcome)?;
+            certify_storage_parity(
+                execution,
+                &source,
+                &prepared.verification,
+                &request,
+                &outcome,
+            )?;
             runtime
                 .performance_access()
                 .count_query_index_parity_verification();
@@ -146,13 +154,14 @@ impl RelationJoinVerification {
 
     fn verify_external_endpoints(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
     ) -> Result<(), BoundedRelationJoinLookupDenial> {
         let left = source
-            .with_entity(self.left_entity_id, Clone::clone)
+            .with_entity(execution, self.left_entity_id, Clone::clone)
             .ok_or_else(|| self.corrupt())?;
         let right = source
-            .with_entity(self.right_entity_id, Clone::clone)
+            .with_entity(execution, self.right_entity_id, Clone::clone)
             .ok_or_else(|| self.corrupt())?;
         if left.kind.kind_id == self.join.left().external_entity_kind()
             && right.kind.kind_id == self.join.right().external_entity_kind()
@@ -165,14 +174,15 @@ impl RelationJoinVerification {
 
     fn verify_entries(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
         entries: &[RelationJoinEntry],
     ) -> Result<Vec<crate::identity::data::EntityId>, BoundedRelationJoinLookupDenial> {
-        self.verify_external_endpoints(source)?;
+        self.verify_external_endpoints(execution, source)?;
         let mut seen = BTreeSet::new();
         let mut candidates = Vec::with_capacity(entries.len());
         for entry in entries {
-            let candidate = self.verify_entry(source, entry)?;
+            let candidate = self.verify_entry(execution, source, entry)?;
             if !seen.insert(candidate) {
                 return Err(self.corrupt());
             }
@@ -183,17 +193,18 @@ impl RelationJoinVerification {
 
     fn verify_entry(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
         entry: &RelationJoinEntry,
     ) -> Result<crate::identity::data::EntityId, BoundedRelationJoinLookupDenial> {
         let shared = source
-            .with_entity(entry.shared_entity_id(), Clone::clone)
+            .with_entity(execution, entry.shared_entity_id(), Clone::clone)
             .ok_or_else(|| self.corrupt())?;
         let left = source
-            .with_relation(entry.left_relation_id(), Clone::clone)
+            .with_relation(execution, entry.left_relation_id(), Clone::clone)
             .ok_or_else(|| self.corrupt())?;
         let right = source
-            .with_relation(entry.right_relation_id(), Clone::clone)
+            .with_relation(execution, entry.right_relation_id(), Clone::clone)
             .ok_or_else(|| self.corrupt())?;
         if self.entry_matches(entry, &shared, &left, &right) {
             Ok(entry.shared_entity_id())
@@ -233,13 +244,17 @@ impl RelationJoinVerification {
 }
 
 fn certify_storage_parity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
     verification: &RelationJoinVerification,
     request: &BoundedRelationJoinLookupRequest,
     indexed: &BoundedRelationJoinLookupOutcome,
 ) -> Result<(), BoundedRelationJoinLookupDenial> {
-    let expected =
-        super::super::projected_field_values::build_relation_join_index(source, verification.join);
+    let expected = super::super::projected_field_values::build_relation_join_index(
+        execution,
+        source,
+        verification.join,
+    );
     let key = RelationJoinKey::new(request.left_entity_id(), request.right_entity_id());
     let expected = expected.get(&key).map(Vec::as_slice).unwrap_or(&[]);
     let expected_overflowed = expected.len() > request.candidate_limit();

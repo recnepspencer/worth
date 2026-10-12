@@ -1,12 +1,20 @@
 use super::*;
 
-pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(suite: &'static str) {
+pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let event_wave_rich_diagnostics_samples =
         capture_perf_samples(suite, "event_wave_compile_churn_rich_diagnostics", || {
             let runtime =
                 runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
-            let source = create_entity_in_partition(&runtime, "event-driver-rich", PartitionId(7));
+            let source = create_entity_in_partition(
+                execution,
+                &runtime,
+                "event-driver-rich",
+                PartitionId(7),
+            );
             let sinks = (0..16)
                 .map(|index| {
                     let partition_id = match index % 4 {
@@ -16,6 +24,7 @@ pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(suite: &'static 
                         _ => PartitionId(19),
                     };
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("event-sink-rich-{index}"),
                         partition_id,
@@ -24,6 +33,7 @@ pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(suite: &'static 
                 .collect::<Vec<_>>();
             for (index, sink) in sinks.iter().enumerate() {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     source,
                     *sink,
@@ -42,7 +52,12 @@ pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(suite: &'static 
             runtime.performance_access().reset_counters();
             for step in 0..ITERATIONS {
                 let update_started_at = Instant::now();
-                let _ = update_entity(&runtime, source, &format!("event-driver-rich-step-{step}"));
+                let _ = update_entity(
+                    execution,
+                    &runtime,
+                    source,
+                    &format!("event-driver-rich-step-{step}"),
+                );
                 total_update_micros += update_started_at.elapsed().as_micros();
 
                 let commit = runtime

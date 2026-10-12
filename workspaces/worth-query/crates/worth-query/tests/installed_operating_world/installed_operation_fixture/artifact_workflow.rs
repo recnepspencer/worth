@@ -38,42 +38,52 @@ use definitions::workflow_definition;
 use executor::ArtifactWorkflowExecutor;
 
 pub fn artifact_move_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     (runtime::WorthQueryWorkspace, ArtifactProbe),
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
-    artifact_workspace(name, ArtifactWorkflowKind::Move, true)
+    artifact_workspace(request_execution, name, ArtifactWorkflowKind::Move, true)
 }
 
 pub fn artifact_integrated_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     (runtime::WorthQueryWorkspace, ArtifactProbe),
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
-    artifact_workspace(name, ArtifactWorkflowKind::Integrated, true)
+    artifact_workspace(
+        request_execution,
+        name,
+        ArtifactWorkflowKind::Integrated,
+        true,
+    )
 }
 
 pub fn artifact_lease_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     (runtime::WorthQueryWorkspace, ArtifactProbe),
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
-    artifact_workspace(name, ArtifactWorkflowKind::Lease, true)
+    artifact_workspace(request_execution, name, ArtifactWorkflowKind::Lease, true)
 }
 
 pub fn artifact_workspace_without_support(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     (runtime::WorthQueryWorkspace, ArtifactProbe),
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
-    artifact_workspace(name, ArtifactWorkflowKind::Move, false)
+    artifact_workspace(request_execution, name, ArtifactWorkflowKind::Move, false)
 }
 
 pub fn artifact_controlled_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     (WorthQueryControlledTestWorkspace, ArtifactProbe),
@@ -81,7 +91,7 @@ pub fn artifact_controlled_workspace(
 > {
     let probe = ArtifactProbe::default();
     let workspace = artifact_runtime_builder(ArtifactWorkflowKind::Move, true, &probe)
-        .controlled_workspace(name)?;
+        .controlled_workspace(request_execution, name)?;
     Ok((workspace, probe))
 }
 
@@ -132,6 +142,7 @@ pub fn lease_intent_with_mode(mode: &str) -> domain::WorthQueryNormalizedWorkflo
 }
 
 fn artifact_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     kind: ArtifactWorkflowKind,
     admit_artifact_support: bool,
@@ -140,8 +151,8 @@ fn artifact_workspace(
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
     let probe = ArtifactProbe::default();
-    let workspace =
-        artifact_runtime_builder(kind, admit_artifact_support, &probe).workspace(name)?;
+    let workspace = artifact_runtime_builder(kind, admit_artifact_support, &probe)
+        .workspace(request_execution, name)?;
     Ok((workspace, probe))
 }
 

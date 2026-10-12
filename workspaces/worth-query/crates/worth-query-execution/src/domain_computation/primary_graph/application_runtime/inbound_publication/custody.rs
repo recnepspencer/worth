@@ -28,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportCustodyD
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum InstalledTransportPendingReason {
+    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     UnknownCompletion,
     ConcurrentContinuation,
     PublicationRetryRequired,
@@ -187,6 +188,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// custody until the exact World protection and provider seal both succeed.
     pub(in crate::domain_computation::primary_graph) fn resume_installed_transport_completion(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         correlation: &ExternalEffectCorrelationIdentity,
@@ -251,7 +253,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         match work {
             Work::Publish(evidence) => {
-                let outcome = self.publish_installed_transport_completion(phase, evidence, request);
+                let outcome = self
+                    .publish_installed_transport_completion(execution, phase, evidence, request);
                 let mut custody = self
                     .transport_completion_custody
                     .lock()

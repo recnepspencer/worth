@@ -223,7 +223,13 @@ fn refresh_collection(
     live: &mut UiLiveCollectionProjection,
     query: &mut WorthQueryWorkspace,
 ) -> UiCollectionProjectionFactReceipt {
-    match live.refresh(query).expect("real Query refresh completes") {
+    match query
+        .with_execution_request_mut(|execution, workspace| {
+            live.refresh(execution, workspace)
+                .expect("real Query refresh completes")
+        })
+        .expect("workspace host call opens")
+    {
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::Applied(receipt) => {
             receipt.into_fact()
         }

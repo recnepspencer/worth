@@ -72,9 +72,12 @@ fn admitted_currentness_refuses_before_registry_lookup_and_keeps_custody() {
 
 #[test]
 fn currentness_scope_returns_unmodified_custody_after_actual_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
     let port = port(&owner);
-    let ready = ready_relational_publication(&fixture, &owner, expected.clone());
+    let ready = ready_relational_publication(execution, &fixture, &owner, expected.clone());
     let cell = owner.state.branches.root_cell().unwrap();
     assert!(matches!(
         ready.publish(&cell, CompositeLateCancellationPosture::NotRequested),

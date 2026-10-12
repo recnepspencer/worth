@@ -14,12 +14,13 @@ pub(super) fn complete_leased_query(
     shape: QueryExecutionShape,
     ordering: QueryOrderingContract,
     fragments: Vec<QueryWorkerFragment>,
-    lease: &ExecutionResourceLease<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(CanonicalQueryResult, ExecutionReport), QueryReadExecutionStop> {
     let identity = PartitionIdentity::new(1);
     let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())])
         .map_err(QueryReadExecutionStop::CompletionAdmission)?;
-    let memory = lease.policy().budget().charged_memory_bytes();
+    let memory = execution.memory_limit();
     let captured_bytes = fragments.additional_charged_bytes();
     let scratch_ceiling = captured_bytes
         .saturating_mul(8)
@@ -31,7 +32,7 @@ pub(super) fn complete_leased_query(
         .min(memory / 3);
     let mut fragments = Some(fragments);
     match scan.run(
-        Some(lease),
+        lease,
         (),
         0,
         result_ceiling,

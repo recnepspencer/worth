@@ -39,8 +39,11 @@ impl<'a> WorthQueryRuntimeInspectionIntentAuthoring<'a> {
         self.review()?.admit()
     }
 
-    pub fn execute(self) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -103,8 +106,11 @@ impl<'a> WorthQueryRuntimeInspectionIntentAdmissionReview<'a> {
         })
     }
 
-    pub fn execute(self) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -136,9 +142,12 @@ impl<'a> WorthQueryAdmittedRuntimeInspectionIntent<'a> {
         &self.execution_binding
     }
 
-    pub fn execute(self) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
         self.runtime
-            .execute_unified_inspection_execution_binding(self.execution_binding)
+            .execute_unified_inspection_execution_binding(execution, self.execution_binding)
     }
 }
 

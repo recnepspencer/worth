@@ -3,6 +3,9 @@ use crate::tests::support::*;
 
 #[test]
 fn retained_root_preserves_relation_aspect_history_without_record_pins() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .mvcc(MvccConfig {
@@ -13,15 +16,15 @@ fn retained_root_preserves_relation_aspect_history_without_record_pins() {
             retention_backend: RetentionBackend::PinTrackedRetention,
         })
         .build();
-    let source_outcome = create_entity_outcome(&runtime, "source");
-    let target_outcome = create_entity_outcome(&runtime, "target");
+    let source_outcome = create_entity_outcome(execution, &runtime, "source");
+    let target_outcome = create_entity_outcome(execution, &runtime, "target");
     let source = changed_entities(&source_outcome)[0];
     let target = changed_entities(&target_outcome)[0];
-    let relation = create_aspect_bearing_relation(&runtime, source, target);
+    let relation = create_aspect_bearing_relation(execution, &runtime, source, target);
     let identity = runtime.main_branch_identity();
     let (_, retained_basis) = runtime.observe_branch(&identity).unwrap();
 
-    let deleted = delete_relation(&runtime, relation);
+    let deleted = delete_relation(execution, &runtime, relation);
     runtime
         .visibility_authority()
         .release_snapshot(&source_outcome.snapshot)
@@ -47,7 +50,7 @@ fn retained_root_preserves_relation_aspect_history_without_record_pins() {
     assert_eq!(runtime.relation_history_len_for_test(relation), 1);
     let historical = runtime
         .read_truth()
-        .read_observation(&retained_basis.observation())
+        .read_observation(execution, &retained_basis.observation())
         .unwrap();
     let relation_record = historical
         .relations
@@ -66,6 +69,7 @@ struct DeletedAspectRelationEvidence {
 }
 
 fn create_aspect_bearing_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     source: crate::facade::identity::EntityId,
     target: crate::facade::identity::EntityId,
@@ -85,12 +89,7 @@ fn create_aspect_bearing_relation(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let created = txn
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = txn.commit(execution, runtime).unwrap();
     let relation = changed_relations(&created)[0];
     assert_eq!(runtime.relation_history_len_for_test(relation), 1);
     release_test_commit_snapshot(runtime, &created);
@@ -98,6 +97,7 @@ fn create_aspect_bearing_relation(
 }
 
 fn delete_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     relation: crate::facade::identity::RelationId,
 ) -> DeletedAspectRelationEvidence {
@@ -113,12 +113,7 @@ fn delete_relation(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let deleted = delete_txn
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let deleted = delete_txn.commit(execution, runtime).unwrap();
     DeletedAspectRelationEvidence {
         created_snapshot,
         deleted_snapshot: deleted.snapshot.clone(),

@@ -104,7 +104,7 @@ fn ready_relational(
         expected.clone(),
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
             .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate(operation_name),
+                fixture.prepare_relational_owner_candidate(&execution, operation_name),
             ),
         &cancellation.token(),
         None,

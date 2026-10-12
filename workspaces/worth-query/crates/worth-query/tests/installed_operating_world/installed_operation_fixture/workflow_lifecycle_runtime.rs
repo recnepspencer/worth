@@ -6,6 +6,7 @@ use super::workflow_parallel_providers::WorkflowParallelProvider;
 use super::{configured_runtime_without_executors, GeometryDomain, ReadFamily, WorkflowRead};
 
 pub fn failing_controlled_workflow_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     failed_closes: usize,
 ) -> Result<
@@ -27,5 +28,5 @@ pub fn failing_controlled_workflow_workspace(
             WorkflowParallelProvider,
         )
         .fail_next_live_closes(failed_closes)
-        .controlled_workspace(name)
+        .controlled_workspace(request_execution, name)
 }

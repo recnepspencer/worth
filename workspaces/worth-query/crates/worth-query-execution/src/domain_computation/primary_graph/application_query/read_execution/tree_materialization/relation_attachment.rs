@@ -27,6 +27,7 @@ use ordered::attach_ordered_relation;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn attach_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
@@ -58,6 +59,7 @@ pub(super) fn attach_relation(
                 .is_some_and(|request| request.collection_path == relation.result_path()) =>
         {
             return attach_ordered_relation(
+                execution,
                 runtime,
                 projection,
                 graph,
@@ -75,6 +77,7 @@ pub(super) fn attach_relation(
             if target.collection_path == relation.result_path() =>
         {
             return attach_targeted_relation(
+                execution,
                 runtime,
                 projection,
                 graph,
@@ -95,9 +98,19 @@ pub(super) fn attach_relation(
     work.checkpoint(relation.result_path())?;
     let read = match relation.direction() {
         ApplicationQueryResultTraversalDirection::Forward => projection
-            .bounded_outgoing_relations_for_frontier(&frontier, layout.kind, work.remaining_work()),
+            .bounded_outgoing_relations_for_frontier(
+                execution,
+                &frontier,
+                layout.kind,
+                work.remaining_work(),
+            ),
         ApplicationQueryResultTraversalDirection::Reverse => projection
-            .bounded_incoming_relations_for_frontier(&frontier, layout.kind, work.remaining_work()),
+            .bounded_incoming_relations_for_frontier(
+                execution,
+                &frontier,
+                layout.kind,
+                work.remaining_work(),
+            ),
     }
     .map_err(|_| work_limit_denial(relation.result_path()))?;
     work.charge_adjacency(
@@ -139,7 +152,7 @@ pub(super) fn attach_relation(
     };
     for target in targets.values_mut() {
         retain_matching_targets(
-            projection, graph, governance, parameters, relation, target, work,
+            execution, projection, graph, governance, parameters, relation, target, work,
         )?;
     }
     let counts = parents
@@ -160,6 +173,7 @@ pub(super) fn attach_relation(
         })
         .collect::<Vec<_>>();
     let children = project_nodes(
+        execution,
         runtime,
         projection,
         graph,
@@ -191,6 +205,7 @@ pub(super) fn attach_relation(
 
 #[allow(clippy::too_many_arguments)]
 fn attach_targeted_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
@@ -213,9 +228,19 @@ fn attach_targeted_relation(
     work.checkpoint(relation.result_path())?;
     let read = match relation.direction() {
         ApplicationQueryResultTraversalDirection::Forward => projection
-            .bounded_incoming_relations_for_frontier(&frontier, layout.kind, work.remaining_work()),
+            .bounded_incoming_relations_for_frontier(
+                execution,
+                &frontier,
+                layout.kind,
+                work.remaining_work(),
+            ),
         ApplicationQueryResultTraversalDirection::Reverse => projection
-            .bounded_outgoing_relations_for_frontier(&frontier, layout.kind, work.remaining_work()),
+            .bounded_outgoing_relations_for_frontier(
+                execution,
+                &frontier,
+                layout.kind,
+                work.remaining_work(),
+            ),
     }
     .map_err(|_| work_limit_denial(relation.result_path()))?;
     work.charge_adjacency(
@@ -241,6 +266,7 @@ fn attach_targeted_relation(
     }
     let mut filtered_target = vec![target.child_entity_id];
     retain_matching_targets(
+        execution,
         projection,
         graph,
         governance,
@@ -254,6 +280,7 @@ fn attach_targeted_relation(
     }
     let mut nested_selection = ActiveResultTreeCollectionSelection::Complete;
     let children = project_nodes(
+        execution,
         runtime,
         projection,
         graph,

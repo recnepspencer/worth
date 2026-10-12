@@ -4,6 +4,7 @@ use crate::memory_workspace::WorthQueryWorkspaceErrorKind as Kind;
 
 pub(crate) fn classify_merge_validation_kind(kind: Kind) -> Denial {
     match kind {
+        Kind::ForeignPhase(cause) => Denial::ForeignPhase(cause),
         Kind::ExecutionDenied(kind) => Denial::ExecutionDenied(kind),
         Kind::ExecutionControlStopped(kind) => Denial::ExecutionControlStopped(kind),
         Kind::TransactionAllocationDenied { kind, requested_payload_bytes } => Denial::TransactionBackingDenied(crate::effect_lifecycle::EffectExecutionDenialKind::TransactionAllocationDenied { kind, requested_payload_bytes }),

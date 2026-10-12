@@ -216,17 +216,21 @@ fn real_approved_elevation_cannot_enter_the_bank_disbursement_operation() {
         .unwrap();
     let action = disbursement_action();
 
-    let denial = fixture
-        .runtime
-        .select_current_product()
-        .unwrap()
-        .admit_approved_elevation_access(
-            approved.query(),
-            requester.query(),
-            &capability,
-            action,
-            &request_scope(),
-        )
+    let denial =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .select_current_product(phase)
+                .unwrap()
+                .admit_approved_elevation_access(
+                    phase,
+                    approved.query(),
+                    requester.query(),
+                    &capability,
+                    action,
+                    &request_scope(),
+                )
+        })
         .err()
         .expect("DisburseEstate does not admit approved-elevation authority");
     assert_eq!(

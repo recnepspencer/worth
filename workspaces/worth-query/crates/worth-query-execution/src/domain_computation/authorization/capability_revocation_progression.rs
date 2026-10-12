@@ -83,6 +83,52 @@ where
 {
     pub fn authorize_capability_revocation<Capability, Operation, Input>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        WorthQueryOperationAuthorizationDenial,
+    >
+    where
+        Operation:
+            worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            >,
+        Input: ApplicationCapabilityRequest<Schema, Capability>
+            + ApplicationCapabilityRevocationRequest<Schema, Capability>,
+    {
+        let execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody")),
+        };
+        self.authorize_capability_revocation_with_request(
+            &execution,
+            access,
+            capability,
+            operation,
+            preconditions,
+        )
+    }
+
+    pub(in crate::domain_computation) fn authorize_capability_revocation_with_request<
+        Capability,
+        Operation,
+        Input,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -152,6 +198,7 @@ where
         let target_entity = projection.target().entity().to_owned();
         let resource = access.resource_entity_id();
         let admitted = progress_capability_operation(
+            execution,
             self,
             access,
             operation,

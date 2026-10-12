@@ -75,6 +75,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -193,7 +194,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let shape = super::super::execution_shape::prepare_one_shot_shape_admitted(
             query, &controls, admission,
         )?;
-        let basis = admit_application_query_permission_basis(self, basis_selection)?;
+        let basis = admit_application_query_permission_basis(execution, self, basis_selection)?;
         if !selected.application_basis().selected_program_inspected() {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
@@ -254,8 +255,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 let decisions = self
                     .primary_provider
                     .graph
-                    .with_runtime(|relational| {
+                    .with_runtime(execution, |relational| {
                         self.observe_query_authorization_requirement_admitted(
+                            execution,
                             session.identity(),
                             relational,
                             selected_snapshot.clone(),

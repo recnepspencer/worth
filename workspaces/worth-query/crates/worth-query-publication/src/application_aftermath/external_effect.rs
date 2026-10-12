@@ -22,6 +22,7 @@ pub enum WorthQueryPublishedExternalEffectPostureKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPublishedExternalEffectFailure {
+    CompletionExecutionRequest(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial),
     Timeout,
     Disconnect,
     LostResponse,
@@ -129,6 +130,9 @@ const fn publish_preparation_failure(
     use worth_query_execution::facade::primary_graph::WorthQueryExternalDispatchPreparationDenial as Execution;
 
     match denial {
+        Execution::CompletionExecutionRequest(cause) => {
+            WorthQueryPublishedExternalEffectFailure::CompletionExecutionRequest(cause)
+        }
         Execution::OwnerReadDenied(read) => {
             WorthQueryPublishedExternalEffectFailure::InitialDispatchOwnerReadDenied(read)
         }

@@ -50,6 +50,7 @@ where
         Spec,
     >(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bound: BoundWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: WorkflowDefinitionExpectedPredecessor,
     ) -> Result<
@@ -82,9 +83,10 @@ where
         }
 
         let layout = self.lease.layout.workflow().clone();
-        let lineage = self.lease.handle().with_runtime(|runtime| {
+        let lineage = self.lease.handle().with_runtime(execution, |runtime| {
             select_lineage::<Spec>(
                 runtime,
+                execution,
                 self.lease.snapshot(),
                 &layout,
                 bound.contract.definition(),

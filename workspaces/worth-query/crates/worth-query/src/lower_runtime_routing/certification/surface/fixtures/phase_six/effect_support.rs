@@ -41,6 +41,7 @@ pub(crate) fn relational_runtime_with_intent_strategy() -> RelationalRuntime {
 }
 
 pub(crate) fn create_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     name: &str,
     branch: BranchId,
@@ -71,10 +72,7 @@ pub(crate) fn create_entity(
     )
     .expect("phase-six effect fixture staging fits the configured transaction budget");
     let outcome = txn
-        .commit(
-            runtime,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("seed commit should succeed");
     let entity_id = outcome
         .changed_records

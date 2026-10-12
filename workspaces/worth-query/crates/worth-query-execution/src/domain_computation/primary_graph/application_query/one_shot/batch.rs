@@ -32,6 +32,43 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        plan: WorthQueryAdmittedApplicationQueryPlan<
+            '_,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        batch: &WorthQueryApplicationQueryBatchAdmission,
+    ) -> Result<
+        WorthQueryApplicationBatchResult<Query, QueryResult>,
+        WorthQueryApplicationBatchReadDenial,
+    >
+    where
+        QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+    {
+        let request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(WorthQueryApplicationBatchReadDenial::Execution(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"), plan.query.name()))),
+        };
+        let execution = &request;
+        self.execute_application_query_one_shot_in_batch_with_request(execution, plan, batch)
+    }
+
+    pub(in crate::domain_computation) fn execute_application_query_one_shot_in_batch_with_request<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut plan: WorthQueryAdmittedApplicationQueryPlan<
             '_,
             Schema,
@@ -85,6 +122,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let maximum = reservation.maximum();
         let spent = OneShotReadWorkObservation::new();
         let result = self.execute_application_query_one_shot_core(
+            execution,
             plan,
             Some(&spent),
             Some(batch),

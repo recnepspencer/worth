@@ -13,11 +13,16 @@ pub(crate) fn assert_sibling_writer_progress_while_combined_is_parked() {
         .map(|_| {
             world
                 .application
-                .branches()
-                .fork(root)
-                .components(|components| components.fork_relational().fork_signal())
-                .create()
-                .expect("each independent product branch must be created")
+                .with_host_advancement(|host_phase| {
+                    world
+                        .application
+                        .branches()
+                        .fork(root)
+                        .components(|components| components.fork_relational().fork_signal())
+                        .create(&host_phase)
+                        .expect("each independent product branch must be created")
+                })
+                .expect("installed host call opens")
         })
         .collect::<Vec<_>>();
     let parked = branches[0];
@@ -78,10 +83,13 @@ pub(crate) fn assert_sibling_writer_progress_while_combined_is_parked() {
     for branch in branches {
         assert!(world
             .application
-            .on_branch(branch)
-            .close()
-            .unwrap()
-            .is_complete());
+            .with_host_advancement(|host_phase| world
+                .application
+                .on_branch(branch)
+                .close(&host_phase)
+                .unwrap()
+                .is_complete())
+            .expect("installed host call opens"));
     }
 }
 
@@ -94,11 +102,16 @@ pub(crate) fn assert_independent_writer_slopes() {
             .map(|_| {
                 world
                     .application
-                    .branches()
-                    .fork(root)
-                    .components(|components| components.fork_relational().fork_signal())
-                    .create()
-                    .expect("each independent writer branch must be created")
+                    .with_host_advancement(|host_phase| {
+                        world
+                            .application
+                            .branches()
+                            .fork(root)
+                            .components(|components| components.fork_relational().fork_signal())
+                            .create(&host_phase)
+                            .expect("each independent writer branch must be created")
+                    })
+                    .expect("installed host call opens")
             })
             .collect::<Vec<_>>();
         let control = world.application.world_operation_control_for_test();
@@ -176,10 +189,13 @@ pub(crate) fn assert_independent_writer_slopes() {
         for branch in branches {
             assert!(world
                 .application
-                .on_branch(branch)
-                .close()
-                .unwrap()
-                .is_complete());
+                .with_host_advancement(|host_phase| world
+                    .application
+                    .on_branch(branch)
+                    .close(&host_phase)
+                    .unwrap()
+                    .is_complete())
+                .expect("installed host call opens"));
         }
     }
 }

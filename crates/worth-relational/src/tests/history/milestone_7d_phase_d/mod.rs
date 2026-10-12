@@ -211,11 +211,13 @@ fn string_aspect_field_patch_for_target(
 }
 
 fn create_entity_with_aspect_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     client_key: &str,
     fields: crate::transactions::data::AspectFieldPatch,
 ) -> crate::facade::identity::EntityId {
     create_entity_with_aspect_fields_on_branch(
+        execution,
         runtime,
         client_key,
         fields,
@@ -224,6 +226,7 @@ fn create_entity_with_aspect_fields(
 }
 
 fn create_entity_with_aspect_fields_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     client_key: &str,
     fields: crate::transactions::data::AspectFieldPatch,
@@ -243,22 +246,18 @@ fn create_entity_with_aspect_fields_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(
-        &txn.commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap(),
-    )[0]
+    changed_entities(&txn.commit(execution, runtime).unwrap())[0]
 }
 
 fn update_entity_aspect_fields_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     fields: crate::transactions::data::AspectFieldPatch,
     branch_id: BranchId,
 ) {
     let stable_name = read_entity_aspect_field_display(
+        execution,
         runtime,
         &branch_id,
         entity_id,
@@ -278,11 +277,7 @@ fn update_entity_aspect_fields_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, runtime).unwrap();
 }
 
 fn aspect_fields_with_identity_name(
@@ -303,6 +298,7 @@ fn aspect_fields_with_identity_name(
 }
 
 fn read_entity_aspect_field_display(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::facade::runtime::RelationalRuntime,
     branch: &BranchId,
     entity_id: crate::facade::identity::EntityId,
@@ -316,7 +312,7 @@ fn read_entity_aspect_field_display(
         .version_id;
     runtime
         .read_truth()
-        .read_version(version_id)
+        .read_version(execution, version_id)
         .get_entity(entity_id)
         .and_then(|entity| read_entity_aspect_field(entity, aspect_key, field))
         .expect("aspect field display value")

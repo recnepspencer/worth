@@ -105,11 +105,13 @@ fn signal_cancellation_stops_before_the_next_provider_step() {
             },
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = start_observe(execution, running, &graph, "cancel-before-step");
         active
             .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
             .expect("Bridge should cancel the exact Signal request");
-        let terminal = match active.advance(execution) {
+        let terminal = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Cancelled(terminal) => terminal,
             _ => panic!("Signal cancellation did not derive a cancelled terminal"),
         };
@@ -145,6 +147,8 @@ fn signal_timeout_stops_before_the_next_provider_step() {
             },
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = start_observe(execution, running, &graph, "timeout-before-step");
         bridge
             .advance_managed_execution_clock(1)
@@ -152,7 +156,7 @@ fn signal_timeout_stops_before_the_next_provider_step() {
         let timeout = active
             .admit_ready_timeout()
             .expect("Bridge should admit the ready exact-request timeout");
-        let terminal = match active.advance(execution) {
+        let terminal = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::TimedOut(terminal) => terminal,
             _ => panic!("Signal timeout did not derive a timed-out terminal"),
         };
@@ -193,13 +197,15 @@ fn signal_rejection_degrades_before_the_next_provider_step() {
             },
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = start_observe(execution, running, &graph, "reject-before-step");
         active
         .reject_execution(
             worth_runtime_bridge::facade::BridgeManagedExecutionRejectionReason::SemanticFailure,
         )
         .expect("Bridge should reject the exact Signal request");
-        let terminal = match active.advance(execution) {
+        let terminal = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Degraded(terminal) => terminal,
             _ => panic!("Signal rejection did not derive a degraded terminal"),
         };
@@ -231,8 +237,10 @@ fn provider_cannot_advance_after_exceeding_the_governed_work_port() {
             },
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = start_observe(execution, running, &graph, "over-budget-step");
-        let terminal = match active.advance(execution) {
+        let terminal = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("over-budget provider advanced the managed run"),
         };
@@ -271,11 +279,14 @@ fn rejected_work_closure_cannot_claim_a_completed_unit() {
             },
             resource_request,
         );
-        let terminal =
-            match start_observe(execution, running, &graph, "rejected-work").advance(execution) {
-                WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-                _ => panic!("rejected provider work advanced the managed run"),
-            };
+        let installed_running_phase = execution.phase_for_direct(&running);
+
+        let terminal = match start_observe(execution, running, &graph, "rejected-work")
+            .advance(&installed_running_phase)
+        {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("rejected provider work advanced the managed run"),
+        };
         assert_eq!(advances.load(Ordering::Relaxed), 1);
         assert_eq!(work_units.load(Ordering::Relaxed), 0);
         assert_eq!(terminal.provider_work().completed_work_units(), 0);
@@ -295,17 +306,19 @@ fn rejected_work_closure_cannot_claim_a_completed_unit() {
 }
 
 fn start_observe(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
     scope: &str,
 ) -> crate::domain_computation::WorthQueryActiveDirectGraphExecution {
-    running
-        .begin_graph_execution(
-            execution,
+    {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_graph_execution(
+            &installed_fixture_phase,
             graph,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
         )
-        .expect("exact installed provider should start")
+    }
+    .expect("exact installed provider should start")
 }

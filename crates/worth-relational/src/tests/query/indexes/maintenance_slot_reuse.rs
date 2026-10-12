@@ -11,17 +11,20 @@ fn cold_budget() -> DerivedIndexMaintenanceBudget {
 
 #[test]
 fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema_profile(
         RelationalRuntimeProfile::AiWorkflow,
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
-    let original = create_entity_outcome(&runtime, "original");
+    let original = create_entity_outcome(execution, &runtime, "original");
     let old_id = changed_entities(&original)[0];
     release_test_commit_snapshot(&runtime, &original);
-    let deleted = delete_entity(&runtime, old_id);
+    let deleted = delete_entity(execution, &runtime, old_id);
     release_test_commit_snapshot(&runtime, &deleted);
     runtime.retention().run_pass();
-    let replacement = create_entity_outcome(&runtime, "replacement");
+    let replacement = create_entity_outcome(execution, &runtime, "replacement");
     let new_id = changed_entities(&replacement)[0];
     assert_eq!(old_id.local_slot, new_id.local_slot);
     assert!(new_id.generation.0 > old_id.generation.0);
@@ -56,11 +59,14 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
             &basis,
             None,
             cold_budget(),
+            execution,
         )
         .unwrap();
-    let rebuilt_cold = runtime
-        .index_authority()
-        .build_for_basis(request(cold_id, replacement.commit.commit_id), &basis);
+    let rebuilt_cold = runtime.index_authority().build_for_basis(
+        execution,
+        request(cold_id, replacement.commit.commit_id),
+        &basis,
+    );
     assert_eq!(
         cold.generations[0].entries,
         rebuilt_cold.generations[0].entries
@@ -70,7 +76,7 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
     };
     assert_eq!(entries.values().next().unwrap().get(0), Some(&new_id));
 
-    let changed = update_entity(&runtime, new_id, "later");
+    let changed = update_entity(execution, &runtime, new_id, "later");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -81,23 +87,28 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
             &basis,
             Some(&replacement.snapshot),
             cold_budget(),
+            execution,
         )
         .unwrap();
     assert_eq!(local.work.cold_record_slots, 0);
-    let rebuilt = runtime
-        .index_authority()
-        .build_for_basis(request(cold_id, changed.commit.commit_id), &basis);
+    let rebuilt = runtime.index_authority().build_for_basis(
+        execution,
+        request(cold_id, changed.commit.commit_id),
+        &basis,
+    );
     assert_eq!(local.generations[0].entries, rebuilt.generations[0].entries);
     let retained = runtime
         .index_authority()
         .reconstruct_for_commit(
+            execution,
             request(retained_id, replacement.commit.commit_id),
             cold_budget(),
         )
         .unwrap();
-    let rebuilt_retained = runtime
-        .index_authority()
-        .build_for_commit(request(retained_id, replacement.commit.commit_id));
+    let rebuilt_retained = runtime.index_authority().build_for_commit(
+        execution,
+        request(retained_id, replacement.commit.commit_id),
+    );
     assert_eq!(
         retained.generations[0].entries,
         rebuilt_retained.generations[0].entries

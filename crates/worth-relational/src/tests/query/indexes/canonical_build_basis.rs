@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn exact_basis_index_build_rejects_each_mixed_axis_without_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let main = create_entity_outcome(&runtime, "exact-basis-main");
+    let main = create_entity_outcome(execution, &runtime, "exact-basis-main");
     let actual_branch = BranchId("main".to_string());
     let claimed_sibling = BranchId("feature".to_string());
     runtime
@@ -37,6 +40,7 @@ fn exact_basis_index_build_rejects_each_mixed_axis_without_publication() {
 
     for (claimed_commit, claimed_branch, expected_axis) in cases {
         let outcome = runtime.index_authority().build_for_basis(
+            execution,
             DerivedIndexBuildRequest {
                 source_commit_id: claimed_commit,
                 branch_id: claimed_branch,
@@ -65,8 +69,11 @@ fn exact_basis_index_build_rejects_each_mixed_axis_without_publication() {
 
 #[test]
 fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let main = create_entity_outcome(&runtime, "canonical-main");
+    let main = create_entity_outcome(execution, &runtime, "canonical-main");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -75,6 +82,7 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
         )
         .expect("feature branch forks");
     let feature = create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "canonical-feature",
         BranchId("feature".to_string()),
@@ -88,13 +96,14 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
         branch_scoped: true,
     });
 
-    let outcome = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let outcome = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: main.commit.commit_id,
             branch_id: BranchId("feature".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
 
     assert!(outcome.generations.is_empty());
     assert_eq!(outcome.failed_indexes, vec![index.index_id]);
@@ -116,8 +125,11 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
 
 #[test]
 fn commit_index_build_returns_retention_backpressure_instead_of_panicking() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_index_field_aspects();
-    let main = create_entity_outcome(&runtime, "capacity-main");
+    let main = create_entity_outcome(execution, &runtime, "capacity-main");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -126,6 +138,7 @@ fn commit_index_build_returns_retention_backpressure_instead_of_panicking() {
         )
         .expect("feature branch forks");
     let feature = create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "capacity-feature",
         BranchId("feature".to_string()),
@@ -140,13 +153,14 @@ fn commit_index_build_returns_retention_backpressure_instead_of_panicking() {
     });
     runtime.set_retention_capacity_for_test(2, 8);
 
-    let outcome = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let outcome = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: main.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
 
     assert!(outcome.generations.is_empty());
     assert_eq!(outcome.failed_indexes, vec![index.index_id]);

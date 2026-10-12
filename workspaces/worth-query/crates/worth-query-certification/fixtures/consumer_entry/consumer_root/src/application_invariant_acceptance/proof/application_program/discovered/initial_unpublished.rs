@@ -38,7 +38,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
     };
     let key = 10_061;
     reset_planar_source_adjustment_contacts(&observed_input);
-    world.application.fail_next_durable_append_for_test();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            world.application.fail_next_durable_append_for_test(
+                &phase
+                    .execution_request_for(world.application.product_runtime())
+                    .expect("matching installed phase"),
+            )
+        })
+        .expect("installed host call opens");
     let outcome = request
         .mutate(intent.clone())
         .without_source()

@@ -6,6 +6,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Schema,
     Binding,
 >(
+    execution: worth_execution::ExecutionRequest<'owner, 'owner>,
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
     runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -153,6 +154,7 @@ where
         .edit_admission_within(currentness_work);
     let (mut required_output, prepared_source, prepared_key, prepared_context) =
         match input_cutoff::advance_input_cutoff::<Schema, Binding, _, _, _>(
+            execution,
             runtime,
             selected,
             &admission,
@@ -306,6 +308,7 @@ where
                     ),
                 WorthQueryProducerCommitAuthority::ProgramOutput => runtime
                     .compare_and_commit_application_for_program_output_producer(
+                        &execution,
                         phase,
                         program,
                         idempotency,
@@ -313,6 +316,7 @@ where
                     ),
                 WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision } => {
                     runtime.compare_and_commit_application_for_program_output_producer(
+                        &execution,
                         phase,
                         program,
                         idempotency,

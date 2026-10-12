@@ -82,8 +82,12 @@ impl WorthQueryDomainOperatingContext<GeometryDomainEntry> for StructuredGeometr
     }
 }
 
-fn admitted_world_basis(regime: &'static str) -> WorthQueryAdmittedWorldBasis {
+fn admitted_world_basis(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    regime: &'static str,
+) -> WorthQueryAdmittedWorldBasis {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         GeometryDomainEntry,
         GeometryWorld(regime),
         [],
@@ -93,7 +97,11 @@ fn admitted_world_basis(regime: &'static str) -> WorthQueryAdmittedWorldBasis {
 
 #[test]
 fn retained_world_basis_matches_admitted_handle_identity_and_support() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let handle = crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         GeometryDomainEntry,
         GeometryWorld("collaborative"),
         [],
@@ -120,8 +128,11 @@ fn retained_world_basis_matches_admitted_handle_identity_and_support() {
 
 #[test]
 fn equivalent_packages_mint_distinct_retained_world_authority() {
-    let left = admitted_world_basis("collaborative");
-    let right = admitted_world_basis("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = admitted_world_basis(request_execution, "collaborative");
+    let right = admitted_world_basis(request_execution, "collaborative");
 
     assert_eq!(left.domain_key(), right.domain_key());
     assert_eq!(
@@ -133,8 +144,11 @@ fn equivalent_packages_mint_distinct_retained_world_authority() {
 
 #[test]
 fn changing_operating_context_changes_world_identity_digests() {
-    let collaborative = admitted_world_basis("collaborative");
-    let restricted = admitted_world_basis("restricted");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let collaborative = admitted_world_basis(request_execution, "collaborative");
+    let restricted = admitted_world_basis(request_execution, "restricted");
 
     assert_ne!(
         collaborative.operating_context_identity_digest(),
@@ -148,7 +162,11 @@ fn changing_operating_context_changes_world_identity_digests() {
 
 #[test]
 fn query_seals_structured_context_identity_independently_of_field_order() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let left = crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         GeometryDomainEntry,
         StructuredGeometryWorld {
             mode: "strict",
@@ -158,6 +176,7 @@ fn query_seals_structured_context_identity_independently_of_field_order() {
         [],
     );
     let reordered = crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         GeometryDomainEntry,
         StructuredGeometryWorld {
             mode: "strict",
@@ -167,6 +186,7 @@ fn query_seals_structured_context_identity_independently_of_field_order() {
         [],
     );
     let changed = crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         GeometryDomainEntry,
         StructuredGeometryWorld {
             mode: "relaxed",
@@ -188,8 +208,11 @@ fn query_seals_structured_context_identity_independently_of_field_order() {
 
 #[test]
 fn separate_installations_cannot_share_world_authority() {
-    let left = admitted_world_basis("collaborative");
-    let right = admitted_world_basis("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = admitted_world_basis(request_execution, "collaborative");
+    let right = admitted_world_basis(request_execution, "collaborative");
 
     assert_eq!(
         left.operating_context_identity_digest(),
@@ -204,15 +227,19 @@ fn separate_installations_cannot_share_world_authority() {
 
 #[test]
 fn retained_world_basis_projects_into_runtime_state_without_raw_world_reconstruction() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (workspace, handle) =
         crate::application::domain_test_support::installed_declaration_workspace(
+            request_execution,
             GeometryDomainEntry,
             GeometryWorld("collaborative"),
             [],
         );
     let basis = handle.retained_world_basis();
     let state = workspace
-        .state(&basis)
+        .state(request_execution, &basis)
         .expect("retained world basis should project into its installed runtime state");
 
     assert_eq!(state.kind(), WorthQueryRuntimeStateKind::Ready);

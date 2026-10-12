@@ -45,6 +45,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
 
     fn select_product_binding(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &BridgeSealedRuntimeAssembly,
         _runtime: &WorthQueryPrimaryGraphApplicationRuntime<TestSchema>,
         _truth: &WorthQueryConditionalTruthBasis,
@@ -70,6 +71,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
 
     fn prepare_derived_runtime_reinstallation(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             TestSchema,
         >,

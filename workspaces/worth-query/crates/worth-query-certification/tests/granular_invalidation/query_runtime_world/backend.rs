@@ -30,7 +30,10 @@ impl PrimarySnapshotAdapter {
 }
 
 impl runtime::WorthQueryRuntimeSnapshotIdentityAdapter for PrimarySnapshotAdapter {
-    fn current_snapshot_identity(&self) -> foundation::WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> foundation::WorthQuerySnapshotIdentity {
         let branch =
             worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id("main");
         let snapshot = self
@@ -47,6 +50,7 @@ pub struct DenyingWriteAuthority;
 impl runtime::WorthQueryRuntimeWriteAuthorityAdapter for DenyingWriteAuthority {
     fn write(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &worth_runtime_bridge::facade::RuntimeBridge,
         _relational_runtime: Option<&mut worth_relational::facade::runtime::RelationalRuntime>,
         _mutation: runtime::WorthQueryBackendAdmissibleMutation,

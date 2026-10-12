@@ -61,6 +61,7 @@ pub(super) fn observe_current_capability<
     Operation,
     Input,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     prepared: PreparedCapabilityAdmission<
         'a,
         Schema,
@@ -86,5 +87,5 @@ where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    currentness::observe_and_admit(prepared)
+    currentness::observe_and_admit(execution, prepared)
 }

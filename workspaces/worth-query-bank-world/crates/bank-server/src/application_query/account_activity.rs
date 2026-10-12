@@ -77,15 +77,19 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
         request: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<BankAccountActivityHistoricalResult, BankApplicationQueryDenial> {
         let application = self.runtime.application_runtime();
-        let ordinary = application.request(self.principal.external(), request);
-        let selected = ordinary
-            .at_commit(commit, maximum_work)
-            .map_err(BankApplicationQueryDenial::from_history_selection)?;
-        selected
-            .query(account_activity(self.account))
-            .limits(maximum_result_count, maximum_work)
-            .execute()
-            .map_err(BankApplicationQueryDenial::from_request_query)
+        application
+            .with_application_advancement(request, |phase| {
+                let ordinary = application.request(self.principal.external(), request);
+                let selected = ordinary
+                    .at_commit(&phase, commit, maximum_work)
+                    .map_err(BankApplicationQueryDenial::from_history_selection)?;
+                selected
+                    .query(account_activity(self.account))
+                    .limits(maximum_result_count, maximum_work)
+                    .execute_in_advancement(&phase)
+                    .map_err(BankApplicationQueryDenial::from_request_query)
+            })
+            .map_err(BankApplicationQueryDenial::ExecutionRequest)?
     }
 
     pub fn retained(
@@ -207,9 +211,6 @@ impl BankAccountActivityLiveLease<'_> {
                         Opening::Interrupted(Interruption::DeadlineExceeded) => {
                             BankAccountActivityLiveOutcome::DeadlineExceeded
                         }
-                        Opening::ForeignPhase => {
-                            BankAccountActivityLiveOutcome::ExecutionRequest(cause)
-                        }
                         Opening::Resource(_)
                         | Opening::NestedOpening
                         | Opening::NestedStopped
@@ -231,3 +232,7 @@ impl BankAccountActivityLiveLease<'_> {
         output::publish_close(self.query.close())
     }
 }
+
+#[cfg(test)]
+#[path = "account_activity/foreign_request.rs"]
+mod foreign_request;

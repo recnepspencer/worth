@@ -7,6 +7,7 @@ mod checkpointing;
 mod diagnostics;
 mod recovery;
 mod runtime_rebuild;
+pub(crate) use runtime_rebuild::replay_commit_stop;
 
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::BranchId;

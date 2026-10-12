@@ -132,6 +132,7 @@ where
     /// ```
     pub fn project_operation<Operation, Output>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
         ) -> Output,
@@ -141,6 +142,7 @@ where
         WorthQueryInvariantProjectionDenial,
     > {
         let completed = self.project(
+            phase,
             |reader| {
                 let mut decision_facts = DecisionReads::default();
                 let mut operation_reader =
@@ -174,6 +176,7 @@ where
         Output,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductBranchLease,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
@@ -184,6 +187,7 @@ where
         WorthQueryInvariantProjectionDenial,
     > {
         let completed = self.project_bounded(
+            execution,
             usize::MAX,
             product.relational_basis().clone(),
             |reader| {
@@ -217,6 +221,49 @@ where
 
     pub fn project_admitted_operation<Operation, Input, Scope, Output>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        projection: impl FnOnce(
+            &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
+            &WorthQueryInvariantEntityIdentity<Schema, Scope>,
+        ) -> Output,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output>,
+        WorthQueryOperationProjectionDenial,
+    > {
+        admission.validate_projection_authority(self.runtime_authority, &self.binding_identity)?;
+        let owner = admission
+            .graph_work()
+            .mutation_lease()
+            .expect("admitted operation retains its selected mutation lease")
+            .product()
+            .observation()
+            .owner_identity();
+        let phase_request = phase.request_for_owner(owner).map_err(|_| {
+            WorthQueryOperationProjectionDenial::from_invariant(
+                super::WorthQueryInvariantProjectionDenial::from_kind(
+                    super::WorthQueryInvariantProjectionDenialKind::ForeignPhase,
+                ),
+                admission.operation(),
+            )
+        })?;
+        self.project_admitted_operation_with_request(
+            &phase_request,
+            admission,
+            projection,
+            allocation_policy,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn project_admitted_operation_with_request<
+        Operation,
+        Input,
+        Scope,
+        Output,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
@@ -237,6 +284,7 @@ where
         let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
         let completed = self
             .project_bounded(
+                execution,
                 admission.allowed_graph_contract().projection_work_budget(),
                 product.relational_basis().clone(),
                 |reader| {
@@ -342,42 +390,4 @@ impl<Schema, Operation, Output>
 #[path = "operation_reader/read_access.rs"]
 mod read_access;
 
-impl<Schema, Operation> WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>
-where
-    Schema: ApplicationSchema,
-{
-    pub fn version(&self) -> worth_relational::facade::identity::VersionId {
-        self.snapshot.version()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn belongs_to(
-        &self,
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
-        binding_identity: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-        admission_identity: WorthQueryOperationAdmissionIdentity,
-    ) -> bool {
-        self.snapshot
-            .belongs_to(runtime_authority, binding_identity)
-            && self.admission_identity == admission_identity
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn into_lease_and_realized_scope(
-        self,
-    ) -> (
-        super::super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
-        super::WorthQueryRealizedProjectionScope,
-        DecisionReads,
-        Option<super::super::application_attempt::retained_decision_facts::RetainedSourceFacts>,
-        Vec<super::ConsumedOutputEvidence>,
-    ) {
-        let (lease, scope, dependent_source_facts, consumed_outputs) =
-            self.snapshot.into_lease_and_realized_scope(self.product);
-        (
-            lease,
-            scope,
-            self.decision_facts,
-            dependent_source_facts,
-            consumed_outputs,
-        )
-    }
-}
+mod snapshot_scope;

@@ -2,12 +2,15 @@ use super::super::support::*;
 
 #[test]
 fn aspect_native_mutation_builders_reject_empty_or_duplicate_authoring() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.aspect-errors")
         .expect("task runtime should open a named workspace");
 
     let empty = workspace
-        .insert("Task", |task| task)
+        .insert(request_execution, "Task", |task| task)
         .expect_err("empty aspect mutation should fail closed");
     match empty {
         WorthQueryRuntimeError::Workspace(error) => {
@@ -17,7 +20,7 @@ fn aspect_native_mutation_builders_reject_empty_or_duplicate_authoring() {
     }
 
     let duplicate = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("title.value"),
                 test_authored_string_aspect_value("Buy milk"),
@@ -36,12 +39,16 @@ fn aspect_native_mutation_builders_reject_empty_or_duplicate_authoring() {
     }
 
     let duplicate_clear = workspace
-        .update(test_entity_identity("entity:1:1:1"), |task| {
-            task.clear(test_aspect_touch("title.value")).set_aspect(
-                test_aspect_touch("title.value"),
-                test_authored_string_aspect_value("Buy milk"),
-            )
-        })
+        .update(
+            request_execution,
+            test_entity_identity("entity:1:1:1"),
+            |task| {
+                task.clear(test_aspect_touch("title.value")).set_aspect(
+                    test_aspect_touch("title.value"),
+                    test_authored_string_aspect_value("Buy milk"),
+                )
+            },
+        )
         .expect_err("clear and set of the same aspect should fail closed");
     match duplicate_clear {
         WorthQueryRuntimeError::Workspace(error) => {
@@ -51,7 +58,7 @@ fn aspect_native_mutation_builders_reject_empty_or_duplicate_authoring() {
     }
 
     let empty_batch = workspace
-        .batch(|batch| batch)
+        .batch(request_execution, |batch| batch)
         .expect_err("empty mutation batch should fail closed");
     match empty_batch {
         WorthQueryRuntimeError::Workspace(error) => {

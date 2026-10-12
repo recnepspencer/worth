@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryInboundComplet
 impl Denial {
     pub(in crate::domain_computation::primary_graph) fn retry_denial(self) -> Retry {
         match self {
+            Denial::ExecutionDenied(cause) => Retry::ExecutionDenied(cause),
             Denial::CompletionPreparation(preparation) => match preparation {
                 Preparation::ExecutionDenied { stage, kind } => {
                     Retry::PublicationExecutionDenied { stage, kind }

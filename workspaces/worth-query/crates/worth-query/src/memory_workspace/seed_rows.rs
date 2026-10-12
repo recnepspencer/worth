@@ -10,6 +10,7 @@ use super::{WorthQueryCommitIdentity, WorthQueryMemoryWorkspace, WorthQueryWorks
 impl WorthQueryMemoryWorkspace {
     pub(crate) fn insert_seed_rows_atomically(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         rows: Vec<Vec<crate::runtime::WorthQueryAuthoredAspectMutation>>,
     ) -> Result<WorthQueryCommitIdentity, WorthQueryWorkspaceError> {
         if rows.is_empty() {
@@ -42,7 +43,7 @@ impl WorthQueryMemoryWorkspace {
                 )))
             },
         );
-        let (result, _) = self.commit_batch(batch)?;
+        let (result, _) = self.commit_batch(request_execution, batch)?;
         self.next_client_key = next_key;
         let identity =
             WorthQueryCommitIdentity::from_runtime_receipt_commit(result.commit.commit_id.0);
@@ -51,6 +52,7 @@ impl WorthQueryMemoryWorkspace {
 
     pub(crate) fn seeded_identity_entities(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity_touch: &crate::runtime::WorthQueryAspectTouch,
     ) -> Result<
         std::collections::BTreeMap<String, super::WorthQueryEntityIdentity>,
@@ -66,7 +68,7 @@ impl WorthQueryMemoryWorkspace {
                     "seed identity touch is not declared by the test backend schema",
                 )
             })?;
-        self.entities()?
+        self.entities(execution)?
             .into_iter()
             .map(|entity| {
                 let identity = match entity.scalar_value_at(field_path) {

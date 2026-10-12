@@ -3,10 +3,13 @@ use crate::tests::support::*;
 
 #[test]
 fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_lineage_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "anchor");
+    let created = create_entity_outcome(execution, &runtime, "anchor");
     let anchor = changed_entities(&created)[0];
-    let target = create_entity(&runtime, "target");
+    let target = create_entity(execution, &runtime, "target");
     let start_lineage = runtime
         .lineage_access()
         .for_record(anchor)
@@ -134,12 +137,7 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     assert!(rollback_b.has_effects());
     assert!(rollback_a.has_effects());
@@ -186,7 +184,7 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
 
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let entity_names = read
         .entities()

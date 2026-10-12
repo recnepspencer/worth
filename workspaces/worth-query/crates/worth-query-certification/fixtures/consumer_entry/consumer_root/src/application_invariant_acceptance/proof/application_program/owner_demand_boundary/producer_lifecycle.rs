@@ -36,9 +36,19 @@ pub(super) fn live_output_and_stale_head_selection(
         WorthQueryProducerLifecyclePosture::Initial,
         "an unchanged live source retains its exact initial producer",
     );
-    let exhausted = application
-        .select_output_producer::<PlanarOutputFamily>(&exact.observed_sources()[0], "planar", 1)
-        .expect_err("the live-output lookup must fit its declared work budget");
+    let exhausted = world
+        .application
+        .with_host_advancement(|host_phase| {
+            application
+                .select_output_producer::<PlanarOutputFamily>(
+                    &host_phase,
+                    &exact.observed_sources()[0],
+                    "planar",
+                    1,
+                )
+                .expect_err("the live-output lookup must fit its declared work budget")
+        })
+        .expect("installed host call opens");
     assert_eq!(
         exhausted.kind(),
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
@@ -57,9 +67,21 @@ pub(super) fn live_output_and_stale_head_selection(
         9,
         10_700,
     );
-    let denied = application
-        .select_output_producer::<PlanarOutputFamily>(&stale.observed_sources()[0], "planar", 4_096)
-        .expect_err("a moved head cannot grant output lifecycle authority from an old source");
+    let denied = world
+        .application
+        .with_host_advancement(|host_phase| {
+            application
+                .select_output_producer::<PlanarOutputFamily>(
+                    &host_phase,
+                    &stale.observed_sources()[0],
+                    "planar",
+                    4_096,
+                )
+                .expect_err(
+                    "a moved head cannot grant output lifecycle authority from an old source",
+                )
+        })
+        .expect("installed host call opens");
     assert_eq!(denied.kind(), WorthQueryOutputDemandDenialKind::Superseded);
     assert_eq!(
         denied.recovery_posture(),
@@ -143,14 +165,19 @@ fn selected_lifecycle(
     disclosed: &WorthQueryApplicationOutputDemandSource<PlanarQuery, PlanarReadResult>,
 ) -> WorthQueryProducerLifecyclePosture {
     application
-        .select_output_producer::<PlanarOutputFamily>(
-            &disclosed.observed_sources()[0],
-            "planar",
-            4_096,
-        )
-        .expect("the installed producer selects for the real source")
-        .applicability()
-        .lifecycle()
+        .with_host_advancement(|host_phase| {
+            application
+                .select_output_producer::<PlanarOutputFamily>(
+                    &host_phase,
+                    &disclosed.observed_sources()[0],
+                    "planar",
+                    4_096,
+                )
+                .expect("the installed producer selects for the real source")
+                .applicability()
+                .lifecycle()
+        })
+        .expect("installed host call opens")
 }
 
 fn adjust(

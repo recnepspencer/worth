@@ -23,6 +23,9 @@ use crate::runtime::WorthQueryConditionalExecutionResources;
 
 #[test]
 fn ordinary_write_and_product_branch_creation_share_one_configured_relational_graph() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let subject = "dynamic-user-7f643b";
     let mut runtime = complete_backend_from_parts_builder()
         .conditional_execution_resources(WorthQueryConditionalExecutionResources::development())
@@ -44,7 +47,7 @@ fn ordinary_write_and_product_branch_creation_share_one_configured_relational_gr
         })
         .expect("one typed primary graph should configure")
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("the configured runtime should publish");
 
     let publication = runtime
@@ -54,13 +57,16 @@ fn ordinary_write_and_product_branch_creation_share_one_configured_relational_gr
     assert_eq!(publication.identity_index_count(), 1);
 
     runtime
-        .write(insert_command(
-            "Task",
-            [(
-                "identity.id",
-                test_string_aspect_value("ordinary-shared-root-write"),
-            )],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [(
+                    "identity.id",
+                    test_string_aspect_value("ordinary-shared-root-write"),
+                )],
+            ),
+        )
         .expect("ordinary Query write should commit through the shared graph");
 
     let workspace = runtime
@@ -68,36 +74,49 @@ fn ordinary_write_and_product_branch_creation_share_one_configured_relational_gr
         .expect("the installed runtime must expose its Product World");
     let root = workspace.current_world();
     let sibling = workspace
-        .branches()
-        .fork(root)
-        .components(|components| {
-            components
-                .reuse_exact_relational_basis()
-                .reuse_exact_signal_basis()
+        .runtime
+        .installed_product
+        .world
+        .with_advancement(|phase| {
+            workspace
+                .branches()
+                .fork(root)
+                .components(|components| {
+                    components
+                        .reuse_exact_relational_basis()
+                        .reuse_exact_signal_basis()
+                })
+                .create(&phase)
         })
-        .create()
+        .expect("the host scope opens")
         .expect("the Product World should create from the exact primary graph source");
     assert!(sibling.occurrence_ordinal() > root.occurrence_ordinal());
 }
 
 #[test]
 fn post_installation_bridge_backend_repairs_settlement_through_its_public_owner() {
-    let mut runtime = primary_graph_merge_runtime();
-    prepare_post_installation_merge_fault(&mut runtime);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = primary_graph_merge_runtime(request_execution);
+    prepare_post_installation_merge_fault(request_execution, &mut runtime);
     let mut workspace = runtime
         .workspace("primary-graph-public-settlement")
         .expect("primary-graph workspace opens");
     let declaration = declare_branch_merge("candidate", "main").expect("merge declares");
-    let context = branch_merge(&workspace, &declaration).expect("merge authority admits");
-    let outcome = declaration.using(context).run(&mut workspace);
+    let context =
+        branch_merge(request_execution, &workspace, &declaration).expect("merge authority admits");
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
     let deferred = outcome
         .settlement_deferred()
         .expect("performed post-installation merge returns a deferred outcome");
     let settlement = deferred.settlement().clone();
 
-    let mut foreign = primary_graph_merge_runtime();
+    let mut foreign = primary_graph_merge_runtime(request_execution);
     assert!(matches!(
-        foreign.repair_deferred_branch_merge_settlement(deferred),
+        foreign.repair_deferred_branch_merge_settlement(request_execution, deferred),
         Err(crate::runtime::WorthQuerySettlementRepairError::Settlement(
             worth_relational::facade::publication::DeferredPublicationSettlementError::ForeignRuntime {
                 ..
@@ -106,27 +125,32 @@ fn post_installation_bridge_backend_repairs_settlement_through_its_public_owner(
     ));
 
     let repaired = workspace
-        .repair_deferred_branch_merge_settlement(deferred)
+        .repair_deferred_branch_merge_settlement(request_execution, deferred)
         .expect("post-installation public owner repairs settlement");
     let repeated = workspace
-        .repair_deferred_branch_merge_settlement(deferred)
+        .repair_deferred_branch_merge_settlement(request_execution, deferred)
         .expect("post-installation repair is idempotent");
     assert_eq!(repaired.commit_id, settlement.commit().commit_id);
     assert_eq!(repeated, repaired);
 
     workspace
         .into_runtime()
-        .write(insert_command(
-            "Task",
-            [(
-                "identity.id",
-                test_string_aspect_value("after-public-repair"),
-            )],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [(
+                    "identity.id",
+                    test_string_aspect_value("after-public-repair"),
+                )],
+            ),
+        )
         .expect("a subsequent public operation proceeds after repair");
 }
 
-pub(super) fn primary_graph_merge_runtime() -> crate::runtime::WorthQueryRuntime {
+pub(super) fn primary_graph_merge_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::runtime::WorthQueryRuntime {
     complete_backend_from_parts_builder()
         .conditional_execution_resources(WorthQueryConditionalExecutionResources::development())
         .domain_package(primary_graph_domain_package())
@@ -147,16 +171,22 @@ pub(super) fn primary_graph_merge_runtime() -> crate::runtime::WorthQueryRuntime
         })
         .expect("primary graph configures")
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("post-installation bridge runtime publishes")
 }
 
-fn prepare_post_installation_merge_fault(runtime: &mut crate::runtime::WorthQueryRuntime) {
+fn prepare_post_installation_merge_fault(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut crate::runtime::WorthQueryRuntime,
+) {
     runtime
-        .write(insert_command(
-            "Task",
-            [("identity.id", test_string_aspect_value("merge-baseline"))],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [("identity.id", test_string_aspect_value("merge-baseline"))],
+            ),
+        )
         .expect("public write seeds the installed main branch");
     let graph =
         worth_query_execution::facade::integration::retain_primary_graph_integration_handle(
@@ -164,7 +194,7 @@ fn prepare_post_installation_merge_fault(runtime: &mut crate::runtime::WorthQuer
         )
         .expect("installed runtime retains its primary graph");
     graph
-        .execute_mutation_with_index_refresh(|relational| {
+        .execute_mutation_with_index_refresh(request_execution, |relational| {
             let main = worth_relational::facade::history::BranchId("main".to_owned());
             let (_, basis) = relational
                 .observe_fork_source(&main)
@@ -180,16 +210,19 @@ fn prepare_post_installation_merge_fault(runtime: &mut crate::runtime::WorthQuer
         .expect("fixture fork does not disturb indexes")
         .expect("fixture fork admits");
     runtime
-        .write(insert_command(
-            "Task",
-            [(
-                "identity.id",
-                test_string_aspect_value("merge-source-change"),
-            )],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [(
+                    "identity.id",
+                    test_string_aspect_value("merge-source-change"),
+                )],
+            ),
+        )
         .expect("public write advances only the source branch");
     graph
-        .execute_mutation_with_index_refresh(|relational| {
+        .execute_mutation_with_index_refresh(request_execution, |relational| {
             relational.fail_next_durable_append_for_test();
             Ok::<_, String>(())
         })
@@ -199,6 +232,9 @@ fn prepare_post_installation_merge_fault(runtime: &mut crate::runtime::WorthQuer
 
 #[test]
 fn mixed_host_schema_basis_is_rejected_before_primary_graph_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let result = complete_backend_from_parts_builder()
         .domain_package(primary_graph_domain_package())
         .expect("primary graph domain package should admit")
@@ -217,7 +253,7 @@ fn mixed_host_schema_basis_is_rejected_before_primary_graph_publication() {
         })
         .expect("typed primary graph contribution should configure")
         .build_backend_from_parts()
-        .build();
+        .build(request_execution);
     let error = match result {
         Ok(_) => panic!("mixed Relational schema authority must not publish a primary graph"),
         Err(error) => error,
@@ -235,6 +271,9 @@ fn mixed_host_schema_basis_is_rejected_before_primary_graph_publication() {
 
 #[test]
 fn custom_backend_must_explicitly_implement_primary_graph_transfer() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let result = custom_backend_without_primary_graph_transfer_builder()
         .domain_package(primary_graph_domain_package())
         .expect("primary graph domain package should admit")
@@ -251,7 +290,7 @@ fn custom_backend_must_explicitly_implement_primary_graph_transfer() {
             )
         })
         .expect("typed primary graph contribution should configure")
-        .build();
+        .build(request_execution);
     let error = match result {
         Ok(_) => panic!("an implicit custom-backend primary graph must not publish"),
         Err(error) => error,

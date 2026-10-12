@@ -2,13 +2,16 @@ use super::*;
 
 #[test]
 fn replay_contract_preserves_aspect_bearing_patch_and_history_surfaces() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "before");
+    let created = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
-    let updated = update_entity(&runtime, entity, "after");
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_outcome = create_relation_outcome(&runtime, source, target, "r1");
+    let updated = update_entity(execution, &runtime, entity, "after");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "r1");
     let relation = changed_relations(&relation_outcome)[0];
     let expected_entity_history =
         runtime
@@ -29,12 +32,16 @@ fn replay_contract_preserves_aspect_bearing_patch_and_history_surfaces() {
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: relation_outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: relation_outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert!(replay

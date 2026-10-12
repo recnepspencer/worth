@@ -11,6 +11,7 @@ use super::checked_entry_map::{checked_push, IndexKernelStop};
 use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_relation_join_index_checked(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     definition: RelationJoinDefinition,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
@@ -18,6 +19,7 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
     let mut left = BTreeMap::new();
     let mut right = BTreeMap::new();
     collect_join_relations_checked(
+        request_execution,
         projection,
         definition.left(),
         definition.shared_entity_kind(),
@@ -25,6 +27,7 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
         context,
     )?;
     collect_join_relations_checked(
+        request_execution,
         projection,
         definition.right(),
         definition.shared_entity_kind(),
@@ -61,6 +64,7 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
 }
 
 fn collect_join_relations_checked(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     leg: RelationJoinLeg,
     shared_entity_kind: KindId,
@@ -69,6 +73,7 @@ fn collect_join_relations_checked(
 ) -> Result<(), IndexKernelStop> {
     let budget = std::cell::RefCell::new(context);
     projection.try_for_each_relation(
+        request_execution,
         leg.relation_kind(),
         |bytes| {
             budget.borrow_mut().checkpoint(1)?;
@@ -83,9 +88,9 @@ fn collect_join_relations_checked(
             budget
                 .borrow()
                 .check_scratch_peak(projection.candidate_entity_bytes(external))?;
-            if projection.with_entity(shared, |record| record.kind.kind_id)
+            if projection.with_entity(request_execution, shared, |record| record.kind.kind_id)
                 != Some(shared_entity_kind)
-                || projection.with_entity(external, |record| record.kind.kind_id)
+                || projection.with_entity(request_execution, external, |record| record.kind.kind_id)
                     != Some(leg.external_entity_kind())
             {
                 return Ok(());
@@ -115,15 +120,18 @@ fn collect_join_relations_checked(
 }
 
 pub(in crate::indexes) fn build_relation_join_index(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     definition: RelationJoinDefinition,
 ) -> BTreeMap<RelationJoinKey, Vec<RelationJoinEntry>> {
     let left = collect_join_relations(
+        execution,
         projection,
         definition.left(),
         definition.shared_entity_kind(),
     );
     let right = collect_join_relations(
+        execution,
         projection,
         definition.right(),
         definition.shared_entity_kind(),
@@ -154,15 +162,17 @@ pub(in crate::indexes) fn build_relation_join_index(
 }
 
 fn collect_join_relations(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     leg: RelationJoinLeg,
     shared_entity_kind: KindId,
 ) -> BTreeMap<EntityId, BTreeMap<EntityId, RelationId>> {
     let mut collected = BTreeMap::<EntityId, BTreeMap<EntityId, RelationId>>::new();
-    projection.for_each_relation(leg.relation_kind(), |relation| {
+    projection.for_each_relation(execution, leg.relation_kind(), |relation| {
         let (shared, external) = join_endpoints(relation, leg.shared_endpoint());
-        if projection.with_entity(shared, |record| record.kind.kind_id) != Some(shared_entity_kind)
-            || projection.with_entity(external, |record| record.kind.kind_id)
+        if projection.with_entity(execution, shared, |record| record.kind.kind_id)
+            != Some(shared_entity_kind)
+            || projection.with_entity(execution, external, |record| record.kind.kind_id)
                 != Some(leg.external_entity_kind())
         {
             return;

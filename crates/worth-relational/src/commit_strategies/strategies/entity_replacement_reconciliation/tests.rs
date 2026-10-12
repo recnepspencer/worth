@@ -51,6 +51,9 @@ fn name_patch_target() -> AspectFieldLocator {
 #[test]
 fn entity_replacement_reconciliation_strategy_replaces_with_normalized_client_key_and_preserved_fields(
 ) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(711),
     );
@@ -64,7 +67,7 @@ fn entity_replacement_reconciliation_strategy_replaces_with_normalized_client_ke
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -87,7 +90,7 @@ fn entity_replacement_reconciliation_strategy_replaces_with_normalized_client_ke
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output =
         EntityReplacementReconciliationOutput::decode(execution.output().canonical_bytes())
@@ -113,6 +116,9 @@ fn entity_replacement_reconciliation_strategy_replaces_with_normalized_client_ke
 
 #[test]
 fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(713),
     );
@@ -126,7 +132,7 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -149,7 +155,7 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     for batch in execution
@@ -165,10 +171,7 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
         .expect("test staging stays within configured resource budgets");
     }
     let commit = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(request_execution, &runtime)
         .expect("replacement patch commit");
     let replacement_id = crate::tests::support::changed_entities(&commit)
         .into_iter()
@@ -177,7 +180,7 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
     let replacement_snapshot = runtime.visibility_authority().snapshot();
     let replacement_read = runtime
         .visibility_reads()
-        .read_snapshot(&replacement_snapshot)
+        .read_snapshot(&replacement_snapshot, request_execution)
         .expect("replacement snapshot should read");
     let replacement_record = replacement_read
         .get_entity(replacement_id)
@@ -203,6 +206,9 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
 
 #[test]
 fn entity_replacement_reconciliation_strategy_rejects_undeclared_fields() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(712),
     );
@@ -227,7 +233,7 @@ fn entity_replacement_reconciliation_strategy_rejects_undeclared_fields() {
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -250,15 +256,21 @@ fn entity_replacement_reconciliation_strategy_rejects_undeclared_fields() {
     let snapshot = runtime.visibility_authority().snapshot();
     let error = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, execution)
         .expect_err("undeclared replacement fields should fail");
 
     match error {
         crate::commit_strategies::StrategyExecutionError::ExecutorFailed { failure, .. } => {
-            assert_eq!(failure.class, StrategyExecutorFailureClass::DomainRejection);
-            assert!(failure
-                .detail
-                .contains("not a lowered foundational scalar entity aspect"));
+            let crate::commit_strategies::data::StrategyExecutorFailure::Domain {
+                class,
+                detail,
+                ..
+            } = failure
+            else {
+                panic!("unexpected request stop: {failure:?}")
+            };
+            assert_eq!(class, StrategyExecutorFailureClass::DomainRejection);
+            assert!(detail.contains("not a lowered foundational scalar entity aspect"));
         }
         other => panic!("expected executor failure, got {other:?}"),
     }
@@ -266,6 +278,9 @@ fn entity_replacement_reconciliation_strategy_rejects_undeclared_fields() {
 
 #[test]
 fn entity_replacement_reconciliation_strategy_replaces_when_only_client_key_changes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(77),
     );
@@ -279,7 +294,7 @@ fn entity_replacement_reconciliation_strategy_replaces_when_only_client_key_chan
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = create_entity(&runtime, "service");
+    let entity = create_entity(request_execution, &runtime, "service");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -302,7 +317,7 @@ fn entity_replacement_reconciliation_strategy_replaces_when_only_client_key_chan
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
 
     let output =
@@ -316,6 +331,9 @@ fn entity_replacement_reconciliation_strategy_replaces_when_only_client_key_chan
 
 #[test]
 fn entity_replacement_reconciliation_strategy_noops_when_authoritative_fields_match() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(78),
     );
@@ -329,7 +347,7 @@ fn entity_replacement_reconciliation_strategy_noops_when_authoritative_fields_ma
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = create_entity(&runtime, "service");
+    let entity = create_entity(request_execution, &runtime, "service");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -352,7 +370,7 @@ fn entity_replacement_reconciliation_strategy_noops_when_authoritative_fields_ma
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
 
     let output =

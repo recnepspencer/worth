@@ -16,11 +16,13 @@ fn direct_yield_retains_exact_authorities_and_releases_them_explicitly() {
             YieldProvider::installed(5),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let logical_run_identity = running.logical_run_identity().to_owned();
         let attempt_identity = running.identity().to_owned();
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -28,7 +30,7 @@ fn direct_yield_retains_exact_authorities_and_releases_them_explicitly() {
                 ),
             )
             .expect("yield provider should begin");
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("yield provider did not reach its declared safe point"),
         };
@@ -90,9 +92,11 @@ fn direct_yield_denials_preserve_the_paused_execution_authority() {
             YieldProvider::without_installed_yield(),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -100,7 +104,7 @@ fn direct_yield_denials_preserve_the_paused_execution_authority() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("provider did not pause"),
         };
@@ -112,7 +116,7 @@ fn direct_yield_denials_preserve_the_paused_execution_authority() {
             denied.kind(),
             crate::domain_computation::WorthQueryDirectYieldDenialKind::YieldNotInstalled
         );
-        let completion = match denied.into_paused().advance(execution) {
+        let completion = match denied.into_paused().advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
             _ => panic!("yield denial consumed the paused execution"),
         };
@@ -135,9 +139,11 @@ fn checkpoint_claim_is_required_even_when_yield_is_installed() {
             YieldProvider::without_checkpoint_evidence(),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -145,7 +151,7 @@ fn checkpoint_claim_is_required_even_when_yield_is_installed() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("provider did not pause"),
         };
@@ -157,7 +163,7 @@ fn checkpoint_claim_is_required_even_when_yield_is_installed() {
             denied.kind(),
             crate::domain_computation::WorthQueryDirectYieldDenialKind::CheckpointUnavailable
         );
-        let completion = match denied.into_paused().advance(execution) {
+        let completion = match denied.into_paused().advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
             _ => panic!("checkpoint denial consumed the execution"),
         };
@@ -184,9 +190,11 @@ fn suspension_failure_terminalizes_signal_but_preserves_cleanup_authority() {
             YieldProvider::suspension_failure(),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -194,7 +202,7 @@ fn suspension_failure_terminalizes_signal_but_preserves_cleanup_authority() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("provider did not pause"),
         };
@@ -278,8 +286,10 @@ fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
     ] {
         let (running, graph) =
             managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, provider, resource_request);
+    let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
-            .begin_graph_execution(execution,
+            .begin_graph_execution(&installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -287,7 +297,7 @@ fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("provider did not pause"),
         };
@@ -320,9 +330,11 @@ fn direct_yield_preserves_exact_applied_effect_evidence() {
             YieldProvider::installed_with_partial_effect(5),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::TouchEffect,
@@ -330,7 +342,7 @@ fn direct_yield_preserves_exact_applied_effect_evidence() {
                 ),
             )
             .expect("installed effect provider should begin");
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("effect provider did not reach its yield safe point"),
         };

@@ -2,12 +2,17 @@
 
 use super::super::fixture::InboundWorld;
 
-pub(crate) fn owner_commits(world: &InboundWorld) -> usize {
+pub(crate) fn owner_commits(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &InboundWorld,
+) -> usize {
     world
         .application
         .primary_provider
         .graph
-        .with_runtime(|runtime| runtime.history().immutable_commit_count())
+        .with_runtime(request_execution, |runtime| {
+            runtime.history().immutable_commit_count()
+        })
 }
 
 pub(crate) fn product_commit(
@@ -22,7 +27,10 @@ pub(crate) fn product_commit(
         .clone()
 }
 
-pub(crate) fn completion_records(world: &InboundWorld) -> usize {
+pub(crate) fn completion_records(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &InboundWorld,
+) -> usize {
     let product = world
         .application
         .product_runtime()
@@ -39,7 +47,7 @@ pub(crate) fn completion_records(world: &InboundWorld) -> usize {
         .application
         .primary_provider
         .graph
-        .with_runtime_mut(|runtime| {
+        .with_runtime_mut(execution, |runtime| {
             let snapshot =
                 super::super::super::super::exact_basis_access::open_exact_basis_snapshot(
                     runtime,
@@ -48,9 +56,9 @@ pub(crate) fn completion_records(world: &InboundWorld) -> usize {
                 .unwrap();
             let count = runtime
                 .read_truth()
-                .project_snapshot(&snapshot)
+                .project_snapshot(&snapshot, execution)
                 .unwrap()
-                .bounded_entities_of_kind(kind, 100)
+                .bounded_entities_of_kind(execution, kind, 100)
                 .unwrap()
                 .records()
                 .len();

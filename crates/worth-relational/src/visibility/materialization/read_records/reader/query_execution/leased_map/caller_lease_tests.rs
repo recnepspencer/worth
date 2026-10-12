@@ -21,7 +21,8 @@ fn relational_packet_dispatch_obeys_its_callers_lease() {
         .unwrap();
     let outcome = execute_leased_query_packets(
         vec![PacketizedQueryWork::ExplicitTargets(vec![])],
-        &lease,
+        &worth_execution::ExecutionRequest::leased(&lease),
+        Some(&lease),
         |_, _, _, context| {
             context.checkpoint(1)?;
             Err(MapKernelFailure::Domain(

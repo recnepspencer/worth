@@ -9,8 +9,11 @@ use crate::tests::support::*;
 
 #[test]
 fn cancellation_while_waiting_for_publication_coordination_denies_before_movement() {
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "contended-cancellation-anchor");
+    create_entity(execution, &runtime, "contended-cancellation-anchor");
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let source = RelationalCancellationSource::new();
@@ -29,10 +32,7 @@ fn cancellation_while_waiting_for_publication_coordination_denies_before_movemen
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let publication_cell = candidate.publication_cell_for_test();
     let coordination = Arc::clone(publication_cell.coordination());
@@ -42,7 +42,13 @@ fn cancellation_while_waiting_for_publication_coordination_denies_before_movemen
         .unwrap();
     let port = runtime.publication_port();
 
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            port.compare_and_publish(execution, candidate)
+        }
+    });
     let wait_deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
     while coordination.wait_count() == 0 && std::time::Instant::now() < wait_deadline {
         std::thread::yield_now();
@@ -73,8 +79,11 @@ fn cancellation_while_waiting_for_publication_coordination_denies_before_movemen
 
 #[test]
 fn cancellation_inside_publication_critical_section_defers_until_performed() {
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "critical-cancellation-anchor");
+    create_entity(execution, &runtime, "critical-cancellation-anchor");
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let source = RelationalCancellationSource::new();
@@ -96,17 +105,20 @@ fn cancellation_inside_publication_critical_section_defers_until_performed() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let before = runtime
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();
     let port = runtime.publication_port();
 
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            port.compare_and_publish(execution, candidate)
+        }
+    });
     reached.wait();
     assert_eq!(
         runtime

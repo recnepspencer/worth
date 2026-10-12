@@ -151,6 +151,7 @@ impl WorthQueryGeneratedOutputSuspensionRecoveryFailure {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn continue_generated_output_suspension_recovery<Producer>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryGeneratedOutputSuspensionRecovery,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<
@@ -175,6 +176,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::Unpublished { product, retry } => {
                     let needs_settlement = product.relational_requires_settlement();
                     self.continue_world(
+                        execution,
                         phase,
                         product.into_recovery(),
                         retry,
@@ -192,7 +194,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             ));
                         }
                     };
-                    self.continue_world(phase, recovery, retry, needs_settlement, request)
+                    self.continue_world(
+                        execution,
+                        phase,
+                        recovery,
+                        retry,
+                        needs_settlement,
+                        request,
+                    )
                 }
                 RecoveryState::HandoffWorld { old, next, retry } => {
                     self.finish_handoff(old, next, retry)
@@ -248,6 +257,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     fn continue_world(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
@@ -263,11 +273,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        self.adopt_settled(phase, recovery, retry, request)
+        self.adopt_settled(execution, phase, recovery, retry, request)
     }
 
     fn adopt_settled(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
@@ -276,7 +287,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     > {
-        let selected = match self.on_branch(retry.branch).select() {
+        let selected = match self.on_branch(retry.branch).select_with_request(execution) {
             Ok(selected) => selected,
             Err(_) => {
                 return Err(failure(
@@ -294,6 +305,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
+        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return Err(failure(
+                    WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(cause.into()),
+                    RecoveryState::World { recovery, retry },
+                ))
+            }
+        };
         let unpublished = match recovery.inspect() {
             Ok(unpublished) => unpublished,
             Err(_) => {
@@ -314,11 +334,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         drop(unpublished);
-        match prepared.execute(
-            phase
-                .execution_request_for(&self.product_runtime)
-                .expect("private progression uses its admitted runtime phase"),
-        ) {
+        match prepared.execute(publication_execution) {
             worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
                 let commit = performed
                     .component_results()

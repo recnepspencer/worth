@@ -10,6 +10,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -22,6 +23,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let prepared = match prepare_application_commit(
+            execution,
             phase,
             self,
             WorthQueryApplicationCommitPreparationRequest::new(
@@ -39,9 +41,10 @@ where
             Err(outcome) => return outcome,
         };
         finish_application_commit(
+            execution,
             phase,
             self,
-            progress_application_commit(phase, self, running, allocation_policy),
+            progress_application_commit(execution, phase, self, running, allocation_policy),
         )
     }
 }

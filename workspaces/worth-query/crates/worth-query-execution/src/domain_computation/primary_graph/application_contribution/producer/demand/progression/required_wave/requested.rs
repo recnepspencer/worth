@@ -11,6 +11,7 @@ use super::*;
 
 #[allow(clippy::too_many_arguments)]
 pub(in super::super) fn advance_requested_output<Schema, Family>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -30,7 +31,8 @@ where
         return Ok(None);
     };
     // A packet is scheduling evidence for exactly the native basis that issued it.
-    let (shared, positioned) = selection::select_required_basis(runtime, branch, admission)?;
+    let (shared, positioned) =
+        selection::select_required_basis(execution, runtime, branch, admission)?;
     let upstream = runtime.output_demands.requested_ready_readmission(
         &requested,
         &positioned,
@@ -55,7 +57,7 @@ where
             )? {
                 HeldUpstream::Ready(ready) => {
                     let (shared, positioned) =
-                        selection::select_required_basis(runtime, branch, admission)?;
+                        selection::select_required_basis(execution, runtime, branch, admission)?;
                     (ready, shared, positioned)
                 }
                 HeldUpstream::Unfinished | HeldUpstream::GaveBack => {
@@ -89,6 +91,7 @@ where
     // This target can certify only the requested chain. It never discharges or
     // promotes the parent's Interest; its successors stay in that parent's custody.
     let result = drive_required_wave(
+        execution,
         phase,
         runtime,
         demand,

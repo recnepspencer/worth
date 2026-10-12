@@ -2,8 +2,11 @@ use super::super::{MilestoneFivePointFiveWorkflowCertificationAdapter, WorkflowF
 
 #[test]
 fn workflow_certification_denial_counters_are_exact_and_non_trivial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let matrix = MilestoneFivePointFiveWorkflowCertificationAdapter::
-        workflow_declaration_taxonomy_and_context_binding_test();
+        workflow_declaration_taxonomy_and_context_binding_test(request_execution);
 
     let merge_family_denial = matrix
         .rejection_rows

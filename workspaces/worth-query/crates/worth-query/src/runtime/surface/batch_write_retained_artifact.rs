@@ -16,12 +16,13 @@ pub struct WorthQueryBatchWriteRetainedArtifact {
 
 impl WorthQueryBatchWriteRetainedArtifact {
     pub(in crate::runtime) fn build(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
         receipt: &WorthQueryBatchWriteReceipt,
         artifact_name: impl Into<String>,
         targets: impl IntoIterator<Item = WorthQueryDerivedMaterializationTarget>,
     ) -> Result<Self, WorthQueryRuntimeError> {
-        let inspection = match workspace.inspect(receipt)? {
+        let inspection = match workspace.inspect(execution, receipt)? {
             WorthQueryInspection::BatchWriteReceipt(inspection) => inspection,
             other => {
                 return Err(WorthQueryRuntimeError::Workspace(
@@ -32,7 +33,7 @@ impl WorthQueryBatchWriteRetainedArtifact {
             }
         };
         let retained_artifact =
-            workspace.materialize_derived_artifact_binding(artifact_name, targets)?;
+            workspace.materialize_derived_artifact_binding(execution, artifact_name, targets)?;
         Ok(Self {
             receipt: receipt.clone(),
             inspection,

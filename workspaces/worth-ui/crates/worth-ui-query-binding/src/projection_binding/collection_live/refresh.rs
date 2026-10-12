@@ -8,6 +8,7 @@ use super::{
 impl UiLiveCollectionProjection {
     pub fn refresh(
         &mut self,
+        execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
         workspace: &mut runtime::WorthQueryWorkspace,
     ) -> Result<UiCollectionProjectionRefreshOutcome, UiCollectionProjectionRefreshError> {
         let delivery = self
@@ -28,7 +29,7 @@ impl UiLiveCollectionProjection {
         self.consumer
             .bind_shared_target(&admitted, workspace)
             .map_err(|stop| UiCollectionProjectionRefreshError::Delivery(Box::new(stop)))?;
-        let patch = match self.consumer.plan_patch(&admitted, workspace) {
+        let patch = match self.consumer.plan_patch(execution, &admitted, workspace) {
             collection::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
             collection::WorthQueryCollectionDeliveryOutcome::NoDelivery(stop) => {
                 return Err(UiCollectionProjectionRefreshError::Delivery(Box::new(stop)));

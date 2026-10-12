@@ -14,12 +14,15 @@ use crate::runtime::{WorthQueryAuthorityLane, WorthQueryWorkspace};
 
 #[test]
 fn checkpoint_resume_replays_queued_delivery_and_preserves_one_shot_meaning() {
-    let mut workspace = task_workspace("managed-live-resume-replay");
-    let handle = open_task_resource(&mut workspace, "tasks.resume-replay");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution, "managed-live-resume-replay");
+    let handle = open_task_resource(request_execution, &mut workspace, "tasks.resume-replay");
     let checkpoint = checkpointed(handle.checkpoint(&mut workspace));
 
     workspace
-        .write(task_insert("Arrived while suspended"))
+        .write(request_execution, task_insert("Arrived while suspended"))
         .expect("write should remain Query-routed while the continuation owns the resource");
 
     let resumed = resumed(checkpoint.resume(&mut workspace));
@@ -27,9 +30,9 @@ fn checkpoint_resume_replays_queued_delivery_and_preserves_one_shot_meaning() {
     assert_eq!(resumed.receipt().resumed_delivery_sequence(), Some(1));
     let handle = resumed.into_handle();
     let live = handle
-        .read(&mut workspace)
+        .read(request_execution, &mut workspace)
         .expect("resumed managed resource should remain readable");
-    let one_shot = one_shot_task_result(&mut workspace);
+    let one_shot = one_shot_task_result(request_execution, &mut workspace);
     assert_eq!(live.rows(), one_shot.rows());
 
     let delivery = handle
@@ -45,10 +48,20 @@ fn checkpoint_resume_replays_queued_delivery_and_preserves_one_shot_meaning() {
 
 #[test]
 fn checkpoint_and_resume_receipts_preserve_delivery_already_waiting_at_checkpoint() {
-    let mut workspace = task_workspace("managed-live-checkpoint-pending-delivery");
-    let handle = open_task_resource(&mut workspace, "tasks.checkpoint-pending-delivery");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(
+        request_execution,
+        "managed-live-checkpoint-pending-delivery",
+    );
+    let handle = open_task_resource(
+        request_execution,
+        &mut workspace,
+        "tasks.checkpoint-pending-delivery",
+    );
     workspace
-        .write(task_insert("Queued before checkpoint"))
+        .write(request_execution, task_insert("Queued before checkpoint"))
         .expect("write should queue a delivery before checkpoint");
 
     let continuation = checkpointed(handle.checkpoint(&mut workspace));
@@ -76,10 +89,15 @@ fn checkpoint_and_resume_receipts_preserve_delivery_already_waiting_at_checkpoin
 
 #[test]
 fn foreign_workspace_resume_stops_without_consuming_recovery_authority() {
-    let mut owner = task_workspace("managed-live-resume-owner");
-    let mut foreign = task_workspace("managed-live-resume-foreign");
-    let continuation =
-        checkpointed(open_task_resource(&mut owner, "tasks.resume-owner").checkpoint(&mut owner));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut owner = task_workspace(request_execution, "managed-live-resume-owner");
+    let mut foreign = task_workspace(request_execution, "managed-live-resume-foreign");
+    let continuation = checkpointed(
+        open_task_resource(request_execution, &mut owner, "tasks.resume-owner")
+            .checkpoint(&mut owner),
+    );
 
     let stop = stopped(continuation.resume(&mut foreign));
     assert_eq!(
@@ -96,9 +114,17 @@ fn foreign_workspace_resume_stops_without_consuming_recovery_authority() {
 
 #[test]
 fn policy_drift_requires_authority_rebind_before_resume() {
-    let mut workspace = policy_drift_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = policy_drift_workspace(request_execution);
     let continuation = checkpointed(
-        open_task_resource(&mut workspace, "tasks.resume-policy-drift").checkpoint(&mut workspace),
+        open_task_resource(
+            request_execution,
+            &mut workspace,
+            "tasks.resume-policy-drift",
+        )
+        .checkpoint(&mut workspace),
     );
 
     let stop = stopped(continuation.resume(&mut workspace));
@@ -118,9 +144,17 @@ fn policy_drift_requires_authority_rebind_before_resume() {
 
 #[test]
 fn stale_basis_cannot_cross_a_managed_resume_boundary() {
-    let mut workspace = task_workspace("managed-live-resume-stale-basis");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution, "managed-live-resume-stale-basis");
     let continuation = checkpointed(
-        open_task_resource(&mut workspace, "tasks.resume-stale-basis").checkpoint(&mut workspace),
+        open_task_resource(
+            request_execution,
+            &mut workspace,
+            "tasks.resume-stale-basis",
+        )
+        .checkpoint(&mut workspace),
     );
     let name = continuation.checkpoint().resource_name().to_string();
     let (_, generation) = live_subscription_async_identity(&workspace.runtime, &name);
@@ -154,8 +188,15 @@ fn stale_basis_cannot_cross_a_managed_resume_boundary() {
 
 #[test]
 fn managed_observation_keeps_temporal_and_async_causes_distinct() {
-    let mut workspace = task_workspace("managed-live-causal-observation");
-    let handle = open_task_resource(&mut workspace, "tasks.causal-observation");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution, "managed-live-causal-observation");
+    let handle = open_task_resource(
+        request_execution,
+        &mut workspace,
+        "tasks.causal-observation",
+    );
     workspace
         .runtime
         .emit_time_only_delivery(
@@ -211,11 +252,17 @@ fn managed_observation_keeps_temporal_and_async_causes_distinct() {
 
 #[test]
 fn preview_binding_never_moves_managed_authority_or_delivery_into_preview_truth() {
-    let mut workspace = task_workspace("managed-live-preview-isolation");
-    let handle = open_task_resource(&mut workspace, "tasks.preview-isolated");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution, "managed-live-preview-isolation");
+    let handle = open_task_resource(request_execution, &mut workspace, "tasks.preview-isolated");
     let binding = {
         let mut preview = workspace
-            .preview(test_session_label("managed live preview isolation"))
+            .preview(
+                request_execution,
+                test_session_label("managed live preview isolation"),
+            )
             .expect("preview should open");
         let binding = preview.use_view(handle.view());
         assert!(preview.discard().discarded());
@@ -246,10 +293,17 @@ fn preview_binding_never_moves_managed_authority_or_delivery_into_preview_truth(
 
 #[test]
 fn abandoned_continuation_is_reaped_before_subsequent_runtime_work() {
-    let mut workspace = task_workspace("managed-live-abandoned-continuation");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution, "managed-live-abandoned-continuation");
     let continuation = checkpointed(
-        open_task_resource(&mut workspace, "tasks.abandoned-continuation")
-            .checkpoint(&mut workspace),
+        open_task_resource(
+            request_execution,
+            &mut workspace,
+            "tasks.abandoned-continuation",
+        )
+        .checkpoint(&mut workspace),
     );
     drop(continuation);
 
@@ -257,7 +311,10 @@ fn abandoned_continuation_is_reaped_before_subsequent_runtime_work() {
         .resolve_live_artifact_target("tasks.abandoned-continuation")
         .is_err());
     let receipt = workspace
-        .write(task_insert("After abandoned continuation"))
+        .write(
+            request_execution,
+            task_insert("After abandoned continuation"),
+        )
         .expect("subsequent work should reap an abandoned continuation first");
     assert!(receipt
         .terminal_affected_live_view_ids_projection()
@@ -312,7 +369,9 @@ fn task_insert(title: &str) -> crate::runtime::WorthQueryWriteCommand {
     )
 }
 
-fn policy_drift_workspace() -> WorthQueryWorkspace {
+fn policy_drift_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryWorkspace {
     complete_backend_from_parts_builder()
         .subscription_activation(RemaskingSubscriptionActivation {
             projection: WorthQueryRuntimeRemaskProjection::remasked(
@@ -325,7 +384,7 @@ fn policy_drift_workspace() -> WorthQueryWorkspace {
             ),
         })
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("policy-drift runtime should build")
         .workspace("managed-live-policy-drift")
         .expect("policy-drift workspace should open")

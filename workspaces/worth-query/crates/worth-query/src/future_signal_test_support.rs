@@ -283,9 +283,11 @@ impl WorthQueryDeclarationInput<FutureSignalDomain> for FutureSignalInput<AsyncF
 }
 
 pub(crate) fn future_signal_admitted_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
 ) -> WorthQueryInstalledDomainDeclarationContext<FutureSignalDomain, FutureSignalWorld> {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         FutureSignalDomain,
         FutureSignalWorld(world),
         [

@@ -59,7 +59,7 @@ where
             .with_application_advancement(self.scope, |phase| {
                 let selected = self
                     .application
-                    .select_application_read_observation(&self.observation)
+                    .select_application_read_observation(&phase, &self.observation)
                     .map_err(WorthQueryOutputCurrentnessDenial::Observation)?;
                 if selected.product().product_branch() != self.branch {
                     return Err(WorthQueryOutputCurrentnessDenial::ForeignBranch);

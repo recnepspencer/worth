@@ -4,7 +4,10 @@ use crate::runtime::WorthQueryLiveGraphReadMaintenanceBudget;
 
 #[test]
 fn installed_operation_resolution_is_identical_across_public_runtime_paths() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     let operation = installed_operation_declaration(&handle);
     let family = installed_bound_operation_family(operation.clone());
@@ -28,7 +31,7 @@ fn installed_operation_resolution_is_identical_across_public_runtime_paths() {
         .read(|read| installed_operation_read(read, operation))
         .expect("the handle-bound ordinary read must declare")
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .expect("the handle and workspace share runtime authority")
         .into_result()
         .expect("the installed operation must execute through ordinary read");

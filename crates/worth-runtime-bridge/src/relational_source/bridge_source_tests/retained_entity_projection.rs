@@ -12,8 +12,11 @@ use super::support::runtime_with_test_schema;
 
 #[test]
 fn retained_entity_projection_denies_mixed_branch_and_snapshot_axes() {
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let committed = create_entity_outcome(&runtime, "retained-projection");
+    let committed = create_entity_outcome(execution, &runtime, "retained-projection");
     let entity = changed_entities(&committed)[0];
     let main_identity = runtime.main_branch_identity();
     let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::new(runtime), "model")
@@ -50,9 +53,18 @@ fn retained_entity_projection_denies_mixed_branch_and_snapshot_axes() {
 
 #[test]
 fn retained_entity_projection_enforces_partition_authority_before_projection() {
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let admitted = create_entity_in_partition(&runtime, "partition-main", PartitionId::main());
-    let foreign = create_entity_in_partition(&runtime, "partition-foreign", PartitionId::new(7));
+    let admitted =
+        create_entity_in_partition(execution, &runtime, "partition-main", PartitionId::main());
+    let foreign = create_entity_in_partition(
+        execution,
+        &runtime,
+        "partition-foreign",
+        PartitionId::new(7),
+    );
     let main_identity = runtime.main_branch_identity();
     let source = RuntimeBridgeRelationalSource::for_graph_partition(
         Arc::new(runtime),

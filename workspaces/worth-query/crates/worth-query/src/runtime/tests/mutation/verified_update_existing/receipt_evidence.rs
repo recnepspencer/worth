@@ -2,30 +2,37 @@ use super::*;
 
 #[test]
 fn update_existing_verified_preserves_backend_verified_assertion_evidence_on_update_receipt() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.update-existing-verified")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.update-existing-verified-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-update-existing-verified-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.update-existing-verified-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-update-existing-verified-table")
+            },
+        )
         .expect("live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -54,6 +61,7 @@ fn update_existing_verified_preserves_backend_verified_assertion_evidence_on_upd
 
     let receipt = workspace
         .update_existing_verified(
+            request_execution,
             binding,
             |task| {
                 task.set_aspect(
@@ -97,7 +105,10 @@ fn update_existing_verified_preserves_backend_verified_assertion_evidence_on_upd
     );
     assert!(receipt.declared_aspect_value_digest().is_some());
 
-    match workspace.inspect(&receipt).expect("receipt should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect")
+    {
         WorthQueryInspection::WriteReceipt(inspection) => {
             assert_eq!(
                 inspection

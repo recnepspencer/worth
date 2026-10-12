@@ -16,7 +16,7 @@ fn composed_workflow_run_mints_artifact_authority_and_cleans_every_owner() {
     let attempt = runtime
         .start_workflow_resource_attempt(&operation, resources)
         .expect("workflow authority should reserve its exact resource plan");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
 
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
@@ -72,7 +72,7 @@ fn workflow_cleanup_pending_retains_run_until_live_artifact_owner_closes() {
     let attempt = runtime
         .start_workflow_resource_attempt(&operation, resources)
         .expect("artifact workflow should reserve");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
@@ -209,7 +209,7 @@ fn workflow_cleanup_thread_failure_returns_the_same_terminal_for_retry() {
     let attempt = runtime
         .start_workflow_resource_attempt(&operation, resources)
         .expect("workflow resources should reserve");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let terminal = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
@@ -276,7 +276,7 @@ fn rejected_workflow_admission_returns_its_reserved_attempt() {
     let attempt = owner_runtime
         .start_workflow_resource_attempt(&operation, resources)
         .expect("workflow resources should reserve");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
 
     let failure = match foreign_runtime
         .managed_run_admission(&lower.bridge, &lower.relational)

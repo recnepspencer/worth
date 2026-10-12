@@ -16,6 +16,9 @@ use worth_relational::facade::{
 
 #[test]
 fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     const WINDOW: usize = 4;
     let world = super::marking_ceiling::world_installing(|defaults| {
         WorthQueryInvalidationResourceInstallation {
@@ -23,25 +26,40 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
             ..defaults
         }
     });
-    let selected = world.selected_product();
-    let account = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
-    let principal = selected
-        .resolve_entity(
-            PrincipalIdentityField::reference(),
-            1,
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    PrincipalIdentityField::reference(),
+                    1,
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -67,8 +85,8 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(|runtime| {
-        write_field(runtime, account, label.clone(), "prime");
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
+        write_field(request_execution, runtime, account, label.clone(), "prime");
         let (basis_handle, basis) = snapshot(runtime);
         let upstream_facts: Arc<[WorthQueryApplicationObservedFact]> =
             Arc::from([WorthQueryApplicationObservedFact::Relation {
@@ -122,7 +140,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
             target: EntityReference::Existing(account),
         };
         let result = write_batch(
-            runtime,
+            request_execution, runtime,
             WorkerIntentBatch::new("add-pending-relation").push(MutationIntent::Create(
                 CreateIntent::Relation(RelationSpec {
                     partition_id: created.partition_id,
@@ -137,7 +155,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
         let relation = result.created_relation(&created).unwrap();
         release_test_commit_snapshot(runtime, &result);
         let result = write_batch(
-            runtime,
+            request_execution, runtime,
             WorkerIntentBatch::new("remove-pending-relation").push(MutationIntent::Relation(
                 RelationMutationIntent::Delete(DeleteRelationIntent {
                     relation_id: relation,
@@ -147,7 +165,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
         release_test_commit_snapshot(runtime, &result);
         for index in 0..=WINDOW {
             write_field(
-                runtime,
+                request_execution, runtime,
                 account,
                 label.clone(),
                 if index % 2 == 0 { "aa" } else { "bb" },
@@ -170,7 +188,7 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
             ))
         {
             assert_eq!(
-                fact.source_currentness_in(runtime, &current_handle, &mut owner.edit_admission())
+                fact.source_currentness_in(runtime,&host_custody.borrowed_request_for_test(),  &current_handle, &mut owner.edit_admission())
                     .unwrap()
                     .unwrap()
                     .movement(),
@@ -221,5 +239,5 @@ fn full_comparison_clears_expired_pending_edges_only_after_the_upstream_is_clean
         for snapshot in [basis_handle, current_handle] {
             runtime.snapshots().release_snapshot(&snapshot).unwrap();
         }
-    });
+    }) }).expect("the fixture read owns its installed host call");
 }

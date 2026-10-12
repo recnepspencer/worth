@@ -12,24 +12,42 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn cyclic_workflow_is_denied_by_installation_before_dependency_impact_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     assert_installation_denial(
-        workspace_for("dependency-impact-cycle", Scenario::Cycle),
+        workspace_for(
+            request_execution,
+            "dependency-impact-cycle",
+            Scenario::Cycle,
+        ),
         "cyclic-or-unreachable-workflow-stage",
     );
 }
 
 #[test]
 fn multiple_root_unreachable_workflow_is_denied_by_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     assert_installation_denial(
-        workspace_for("dependency-impact-multiple-root", Scenario::MultipleRoot),
+        workspace_for(
+            request_execution,
+            "dependency-impact-multiple-root",
+            Scenario::MultipleRoot,
+        ),
         "workflow-non-entry-root",
     );
 }
 
 #[test]
 fn missing_predecessor_is_denied_by_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     assert_installation_denial(
         workspace_for(
+            request_execution,
             "dependency-impact-missing-predecessor",
             Scenario::MissingPredecessor,
         ),
@@ -39,8 +57,12 @@ fn missing_predecessor_is_denied_by_installation() {
 
 #[test]
 fn graph_read_closure_mismatch_is_denied_by_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     assert_installation_denial(
         workspace_for(
+            request_execution,
             "dependency-impact-graph-read-closure",
             Scenario::GraphReadClosure,
         ),
@@ -50,24 +72,42 @@ fn graph_read_closure_mismatch_is_denied_by_installation() {
 
 #[test]
 fn touch_closure_mismatch_is_denied_by_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     assert_installation_denial(
-        workspace_for("dependency-impact-touch-closure", Scenario::TouchClosure),
+        workspace_for(
+            request_execution,
+            "dependency-impact-touch-closure",
+            Scenario::TouchClosure,
+        ),
         "workflow-touch-closure-mismatch",
     );
 }
 
 #[test]
 fn effect_closure_mismatch_is_denied_by_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     assert_installation_denial(
-        workspace_for("dependency-impact-effect-closure", Scenario::EffectClosure),
+        workspace_for(
+            request_execution,
+            "dependency-impact-effect-closure",
+            Scenario::EffectClosure,
+        ),
         "workflow-effect-closure-mismatch",
     );
 }
 
 #[test]
 fn invariant_closure_mismatch_is_denied_by_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     assert_installation_denial(
         workspace_for(
+            request_execution,
             "dependency-impact-invariant-closure",
             Scenario::InvariantClosure,
         ),
@@ -87,6 +127,7 @@ enum Scenario {
 }
 
 fn workspace_for(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     scenario: Scenario,
 ) -> Result<runtime::WorthQueryWorkspace, WorthQueryTestBackendError> {
@@ -160,7 +201,7 @@ fn workspace_for(
     in_memory_test_runtime()
         .with_schema(schema)
         .domain_package(package)
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 fn workflow(scenario: Scenario) -> domain::WorthQueryPortableWorkflowDefinition {

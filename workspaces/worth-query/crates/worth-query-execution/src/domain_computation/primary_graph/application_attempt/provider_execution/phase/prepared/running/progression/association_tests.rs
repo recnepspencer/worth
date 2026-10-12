@@ -124,16 +124,22 @@ fn assert_interleaved_terminal(
         .application
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
-            let baseline = world.invariant.active_snapshot_count();
-            let (victim, peer) = equivalent_programs(&world, "interleaved-fault");
+            let baseline = world
+                .invariant
+                .active_snapshot_count(&active_phase.borrowed_request_for_test());
+            let (victim, peer) = equivalent_programs(phase, &world, "interleaved-fault");
             let victim = start(phase, &world.application, victim, idempotency(145, 146));
             let peer = start(phase, &world.application, peer, idempotency(145, 146));
-            let both_attempts = world.invariant.active_snapshot_count();
+            let both_attempts = world
+                .invariant
+                .active_snapshot_count(&active_phase.borrowed_request_for_test());
             inject(&world);
             let victim = finish_application_commit(
+                &phase.borrowed_request_for_test(),
                 phase,
                 &world.application,
                 progress_application_commit(
+                    &phase.borrowed_request_for_test(),
                     phase,
                     &world.application,
                     victim,
@@ -141,7 +147,12 @@ fn assert_interleaved_terminal(
                 ),
             );
             assert_victim(&victim);
-            assert_only_peer_remains(&world, baseline, both_attempts);
+            assert_only_peer_remains(
+                &active_phase.borrowed_request_for_test(),
+                &world,
+                baseline,
+                both_attempts,
+            );
             let expected_peer =
                 if matches!(victim, WorthQueryApplicationCommitOutcome::Committed(_)) {
                     PeerExpectation::AlreadyCommitted
@@ -153,8 +164,13 @@ fn assert_interleaved_terminal(
         .expect("fixture owner admits its advancement");
 }
 
-fn assert_only_peer_remains(world: &AuthorizationWorld, baseline: usize, both_attempts: usize) {
-    let after_victim = world.invariant.active_snapshot_count();
+fn assert_only_peer_remains(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    baseline: usize,
+    both_attempts: usize,
+) {
+    let after_victim = world.invariant.active_snapshot_count(request_execution);
     let owned = both_attempts
         .checked_sub(baseline)
         .expect("interleaved attempts cannot reduce baseline snapshot ownership");
@@ -186,9 +202,11 @@ fn finish_peer(
     expectation: PeerExpectation,
 ) {
     let peer = finish_application_commit(
+        &phase.borrowed_request_for_test(),
         phase,
         &world.application,
         progress_application_commit(
+            &phase.borrowed_request_for_test(),
             phase,
             &world.application,
             peer,
@@ -219,7 +237,12 @@ fn finish_peer(
         }
         (expected, actual) => panic!("peer must reach {expected:?}, got {actual:?}"),
     }
-    assert_eq!(world.invariant.active_snapshot_count(), baseline);
+    assert_eq!(
+        world
+            .invariant
+            .active_snapshot_count(&phase.borrowed_request_for_test()),
+        baseline
+    );
     assert_eq!(
         world.application.provider_session_resource_count_for_test(),
         0
@@ -246,6 +269,7 @@ fn start(
     Account,
 > {
     let prepared = prepare_application_commit(
+        &phase.borrowed_request_for_test(),
         phase,
         application,
         WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
@@ -258,14 +282,21 @@ fn start(
 }
 
 fn equivalent_programs(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     replacement: &str,
 ) -> (RetainedProgram, RetainedProgram) {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "open",
+        &request,
+    );
     (
         retained_status_program(
+            &(phase_custody).test_host_request(),
             world,
             &principal,
             &account,
@@ -274,6 +305,7 @@ fn equivalent_programs(
             RetentionMutationBreadth::Narrow,
         ),
         retained_status_program(
+            &(phase_custody).test_host_request(),
             world,
             &principal,
             &account,

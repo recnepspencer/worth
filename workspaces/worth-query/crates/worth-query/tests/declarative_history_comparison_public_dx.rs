@@ -4,6 +4,9 @@ use support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn history_transcript_executes_using_only_history_capability_vocabulary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use worth_query::facade::history::{
         at, declare, AspectFieldSelector, AspectName, AuthoredResultShapeField, FieldName,
         QuerySchemaView, ScalarAspectType, SchemaFieldView,
@@ -36,12 +39,14 @@ fn history_transcript_executes_using_only_history_capability_vocabulary() {
     })
     .expect("history should declare")
     .retained_snapshot();
-    let runtime = PublicBridgeRuntimeHarness::new().bridge_backed_runtime();
+    let runtime = PublicBridgeRuntimeHarness::new().bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("public-history-dx")
         .expect("workspace should open");
-    let context = at(&workspace);
-    let outcome = declaration.using(context).run(&mut workspace);
+    let context = at(request_execution, &workspace);
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
 
     assert!(outcome.completed().is_some());
     assert!(outcome.stop().is_none());
@@ -49,6 +54,9 @@ fn history_transcript_executes_using_only_history_capability_vocabulary() {
 
 #[test]
 fn comparison_transcript_executes_using_only_comparison_capability_vocabulary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use worth_query::facade::comparison::{
         between, declare, AspectFieldSelector, AspectName, AuthoredResultShapeField, FieldName,
         QuerySchemaView, ScalarAspectType, SchemaFieldView, WorthQueryComparisonBasisFamily,
@@ -83,14 +91,15 @@ fn comparison_transcript_executes_using_only_comparison_capability_vocabulary() 
     .expect("comparison should declare")
     .diff();
     let mut left = PublicBridgeRuntimeHarness::new()
-        .bridge_backed_runtime()
+        .bridge_backed_runtime(request_execution)
         .workspace("public-comparison-left")
         .expect("left workspace should open");
     let mut right = PublicBridgeRuntimeHarness::new()
-        .bridge_backed_runtime()
+        .bridge_backed_runtime(request_execution)
         .workspace("public-comparison-right")
         .expect("right workspace should open");
     let context = between(
+        request_execution,
         &left,
         WorthQuerySessionLabel::scoped_strs("public-comparison", ["left"])
             .expect("left branch label should build"),
@@ -99,7 +108,9 @@ fn comparison_transcript_executes_using_only_comparison_capability_vocabulary() 
             .expect("right branch label should build"),
     )
     .expect("branch bases should admit");
-    let outcome = declaration.using(context).run((&mut left, &mut right));
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, (&mut left, &mut right));
 
     let completion = outcome.completed().expect("diff should complete");
     assert_eq!(completion.change(), WorthQueryComparisonChange::Unchanged);

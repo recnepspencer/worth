@@ -6,7 +6,7 @@ fn certification_bundle_phase_six_required_seams_are_concrete() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let surface =
-        super::super::surface::worth_query_lower_runtime_representative_surface(resource_request);
+        super::super::surface::worth_query_lower_runtime_representative_surface(&resource_request);
 
     for seam_key in required_phase_six_concrete_seams() {
         assert_eq!(

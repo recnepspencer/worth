@@ -39,6 +39,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// zero refuses without examining anything.
     pub fn bounded_visible_entities_of_kind(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
         maximum_work_units: usize,

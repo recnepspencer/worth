@@ -237,8 +237,15 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
     }
 }
 
+// Independent fixture oracle: one seed/kind/partition, two entities and one
+// relation. Their record bounds are 819, 601 and 257 bytes; the fragment's
+// 2021 retained bytes fit one chunk. Visit digests use ceil((4*b+1024)/4096),
+// final digests use ceil(b/4096). No request report supplies these units.
+mod principal_target_read_work;
+pub(super) use principal_target_read_work::PRINCIPAL_TARGET_READ_WORK;
+
 #[test]
-fn mutation_handler_and_inline_commit_remain_in_one_request() {
+fn a_mutation_handler_and_commit_share_one_charged_request() {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None);
@@ -253,16 +260,13 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
         .unwrap();
     let before = observed.receipt().inspect().basis().version();
     let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
-    // This handler has no managed computation, and the ordinary Relational
-    // reads are inline until part two. One is the least positive opening
-    // allowance. This mutation reaches no Signal dispatch: Relational commit
-    // carriage (and its exhaustion probe) belongs to part two.
+    // Admit the mutation's complete work, including its read and native commit.
     let restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(worth_foundational::ExecutionBudget::new(
             NonZeroUsize::MIN,
             policy.charged_memory_bytes(),
-            1,
+            policy.work_ceiling(),
         ))),
     );
     let contacts = crate::handler::handler_contacts();
@@ -285,10 +289,15 @@ fn mutation_handler_and_inline_commit_remain_in_one_request() {
         )
         .unwrap();
     assert_eq!(crate::handler::handler_contacts(), contacts + 1);
-    assert!(matches!(outcome, Outcome::Committed { .. }));
+    assert!(matches!(outcome, Outcome::Committed { .. }), "{outcome:?}");
     let opened = reports();
     assert_eq!(opened.len(), 1);
-    assert_eq!(opened[0].as_ref().unwrap().charged_work(), 0);
+    let charged = opened[0].as_ref().unwrap().charged_work();
+    assert_eq!(
+        charged,
+        PRINCIPAL_TARGET_READ_WORK + super::native_commit_work::MUTATION_COMMIT_WORK,
+        "the shared request pays the independently quoted read and native commit"
+    );
     drop(restore);
     let after = request
         .query(PlanarRead {

@@ -29,7 +29,10 @@ fn complexity_budget_preparation_packetization_is_chunked_for_broad_deltas() {
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = runtime
-        .commit_branch_transaction_with_lease(txn, &test_execution_lease())
+        .commit_branch_transaction(
+            &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
+            txn,
+        )
         .unwrap();
     let counters = runtime.performance_access().counters();
 
@@ -44,10 +47,13 @@ fn complexity_budget_preparation_packetization_is_chunked_for_broad_deltas() {
 
 #[test]
 fn complexity_budget_preparation_narrow_delta_falls_back_to_serial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     runtime.performance_access().reset_counters();
 
-    let _ = create_entity_outcome(&runtime, "narrow");
+    let _ = create_entity_outcome(execution, &runtime, "narrow");
     let counters = runtime.performance_access().counters();
 
     assert!(counters.preparation_packet_count <= 3);

@@ -6,12 +6,16 @@ fn loop_successor_verified_profile() -> WorthQueryRuntimeSupportProfile {
 
 #[test]
 fn compose_graph_supports_verified_loop_successor_rewire_with_assumption_summary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let binding = geometry_relation_binding(
         "authority:loop-next-rel",
         "HalfEdgeNextRelation:1",
         "HalfEdgeNextRelation",
     );
     let runtime = bridge_runtime_with_support_and_existing_truth_verification(
+        request_execution,
         loop_successor_verified_profile(),
         TestExistingTruthVerificationAdapter::default()
             .with_value(
@@ -30,7 +34,7 @@ fn compose_graph_supports_verified_loop_successor_rewire_with_assumption_summary
         .expect("workspace should open");
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let successor = graph.insert_entity("draft-half-edge", "HalfEdge", |half_edge| {
                 half_edge
                     .set_aspect(test_aspect_touch("identity.id"), test_authored_string_aspect_value("he-3"))
@@ -131,7 +135,10 @@ fn compose_graph_supports_verified_loop_successor_rewire_with_assumption_summary
         &successor_identity
     );
 
-    match workspace.inspect(&receipt).expect("receipt should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect")
+    {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             let component = &inspection.component_operations()[1];
             let inspection_assumptions = inspection
@@ -207,9 +214,13 @@ fn compose_graph_supports_verified_loop_successor_rewire_with_assumption_summary
 
 #[test]
 fn compose_graph_denies_loop_successor_rewire_when_identity_preservation_is_unavailable() {
-    let mut workspace = bridge_runtime_with_support(loop_successor_verified_profile())
-        .workspace("topology.graph-composition-loop-successor-identity-denial")
-        .expect("workspace should open");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        bridge_runtime_with_support(request_execution, loop_successor_verified_profile())
+            .workspace("topology.graph-composition-loop-successor-identity-denial")
+            .expect("workspace should open");
     let binding = workspace
         .bind_existing_relation(
             WorthQueryExistingRelationTarget::new(
@@ -223,7 +234,7 @@ fn compose_graph_denies_loop_successor_rewire_when_identity_preservation_is_unav
         .expect("relation binding should build");
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             graph.retarget_existing_verified(
                 binding,
                 |verify| {

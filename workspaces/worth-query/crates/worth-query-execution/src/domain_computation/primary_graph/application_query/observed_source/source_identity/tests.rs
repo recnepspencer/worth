@@ -113,58 +113,63 @@ fn sibling_product_occurrences_share_checkpoint_identity_not_runtime_idempotency
             true,
         );
     let source = world.application.current_world();
-    let first_branch = world
-        .application
-        .branches()
-        .fork(source)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the first sibling product publishes");
-    let second_branch = world
-        .application
-        .branches()
-        .fork(source)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the second sibling product publishes");
-    let selection = |branch| {
-        let selected = world
+    world.application.with_host_advancement(|phase| {
+let host_custody = phase.test_host_request();
+
+let first_branch = world
             .application
-            .on_branch(branch)
-            .select()
-            .expect("the sibling product remains selectable");
-        WorthQueryApplicationBasisSelectionIdentity::Product(
-            crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                selected.product().observation(),
-            ),
-        )
-    };
-    let registry = WorthQueryObservedSourceMeaningRegistry::new(
+            .branches()
+            .fork(source)
+            .components(|components| components.fork_relational().reuse_exact_signal_basis())
+            .create(&host_custody.phase_for_application(&world.application))
+            .expect("the first sibling product publishes");
+        let second_branch = world
+            .application
+            .branches()
+            .fork(source)
+            .components(|components| components.fork_relational().reuse_exact_signal_basis())
+            .create(&host_custody.phase_for_application(&world.application))
+            .expect("the second sibling product publishes");
+        let selection = |branch| {
+            let selected = world
+                .application
+                .on_branch(branch)
+                .select(&host_custody.phase_for_application(&world.application))
+                .expect("the sibling product remains selectable");
+            WorthQueryApplicationBasisSelectionIdentity::Product(
+                crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                    selected.product().observation(),
+                ),
+            )
+        };
+        let registry = WorthQueryObservedSourceMeaningRegistry::new(
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
     );
-    let root = EntityId::new(PartitionId::main(), 1, 1);
-    let first = registry
-        .intern(
-            &[7; 32],
-            &[8; 32],
-            footprint(root, true),
-            &selection(first_branch),
-        )
-        .unwrap();
-    let second = registry
-        .intern(
-            &[7; 32],
-            &[8; 32],
-            footprint(root, true),
-            &selection(second_branch),
-        )
-        .unwrap();
+        let root = EntityId::new(PartitionId::main(), 1, 1);
+        let first = registry
+            .intern(
+                &[7; 32],
+                &[8; 32],
+                footprint(root, true),
+                &selection(first_branch),
+            )
+            .unwrap();
+        let second = registry
+            .intern(
+                &[7; 32],
+                &[8; 32],
+                footprint(root, true),
+                &selection(second_branch),
+            )
+            .unwrap();
 
-    assert_ne!(
-        first.runtime_idempotency_identity(),
-        second.runtime_idempotency_identity()
-    );
-    assert_eq!(first.checkpoint_identity(), second.checkpoint_identity());
+        assert_ne!(
+            first.runtime_idempotency_identity(),
+            second.runtime_idempotency_identity()
+        );
+        assert_eq!(first.checkpoint_identity(), second.checkpoint_identity());
+
+}).expect("the fixture block owns its installed host call")
 }
 
 #[test]

@@ -2,9 +2,13 @@ use super::super::support::*;
 
 #[test]
 fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.preview-bind",
             task_live_request(),
             task_schema(),
@@ -12,6 +16,7 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
         .expect("live should declare");
     let computed = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.preview-bind", test_aspect_touches(["title"]))
                 .depends_on_live(&live)
                 .produces(test_aspect_touches(["title.summary"])),
@@ -35,15 +40,18 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
 
     let (live_binding, computed_binding, delivery_binding, intent_binding, outcome) = {
         let mut preview = runtime
-            .preview(test_session_label("derive-only bindings"))
+            .preview(
+                request_execution,
+                test_session_label("derive-only bindings"),
+            )
             .expect("preview session should be admitted");
         let live_binding = preview.use_view(&live);
         let computed_binding = preview.use_computed(&computed);
         let delivery_binding = preview
-            .use_effect(&delivery_effect)
+            .use_effect(request_execution, &delivery_effect)
             .expect("derive-only preview should bind delivery effect muted");
         let intent_binding = preview
-            .use_effect(&intent_effect)
+            .use_effect(request_execution, &intent_effect)
             .expect("derive-only preview should bind write-intent effect muted");
 
         assert_eq!(
@@ -93,7 +101,7 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
         .is_empty());
 
     let live_inspection = runtime
-        .inspect_preview_binding(&live_binding)
+        .inspect_preview_binding(request_execution, &live_binding)
         .expect("preview binding inspection should succeed");
     assert_eq!(
         live_inspection.family(),
@@ -111,7 +119,7 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
     assert!(!live_inspection.admission_digest().is_empty());
 
     let computed_inspection = runtime
-        .inspect_preview_binding(&computed_binding)
+        .inspect_preview_binding(request_execution, &computed_binding)
         .expect("computed preview binding inspection should succeed");
     assert_eq!(
         computed_inspection.family(),
@@ -123,7 +131,7 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
     );
 
     let delivery_inspection = runtime
-        .inspect_preview_binding(&delivery_binding)
+        .inspect_preview_binding(request_execution, &delivery_binding)
         .expect("delivery preview binding inspection should succeed");
     assert_eq!(
         delivery_inspection.effect_disposition(),
@@ -132,7 +140,7 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
     assert!(!delivery_inspection.effect_delivery_admitted());
 
     let intent_inspection = runtime
-        .inspect_preview_binding(&intent_binding)
+        .inspect_preview_binding(request_execution, &intent_binding)
         .expect("intent preview binding inspection should succeed");
     assert_eq!(
         intent_inspection.effect_disposition(),
@@ -141,7 +149,7 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
     assert!(!intent_inspection.pending_write_intent_admitted());
 
     let outcome_inspection = runtime
-        .inspect_preview_outcome(&outcome)
+        .inspect_preview_outcome(request_execution, &outcome)
         .expect("preview outcome inspection should succeed");
     assert_eq!(
         outcome_inspection.closeout_kind(),
@@ -170,9 +178,13 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
 
 #[test]
 fn preview_write_routes_bound_live_computed_and_redirected_effect_without_authoritative_residue() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.preview-execution",
             task_live_request(),
             task_schema(),
@@ -180,6 +192,7 @@ fn preview_write_routes_bound_live_computed_and_redirected_effect_without_author
         .expect("live should declare");
     let computed = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new(
                 "computed.preview-execution",
                 test_aspect_touches(["title"]),
@@ -203,6 +216,7 @@ fn preview_write_routes_bound_live_computed_and_redirected_effect_without_author
     let (execution_evidence, outcome) = {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 test_session_label("preview execution"),
                 WorthQueryPreviewOptions::redirected_delivery(),
             )
@@ -210,22 +224,25 @@ fn preview_write_routes_bound_live_computed_and_redirected_effect_without_author
         preview.use_view(&live);
         preview.use_computed(&computed);
         preview
-            .use_effect(&delivery_effect)
+            .use_effect(request_execution, &delivery_effect)
             .expect("redirected preview should admit delivery effect");
         preview
-            .write(insert_command(
-                "Task",
-                [
-                    (
-                        "identity.id",
-                        test_string_aspect_value("preview-execution-task"),
-                    ),
-                    (
-                        "title.value",
-                        test_string_aspect_value("Preview execution task"),
-                    ),
-                ],
-            ))
+            .write(
+                request_execution,
+                insert_command(
+                    "Task",
+                    [
+                        (
+                            "identity.id",
+                            test_string_aspect_value("preview-execution-task"),
+                        ),
+                        (
+                            "title.value",
+                            test_string_aspect_value("Preview execution task"),
+                        ),
+                    ],
+                ),
+            )
             .expect("preview write should stage and route");
         (
             preview.preview_execution_evidence().to_vec(),
@@ -268,7 +285,7 @@ fn preview_write_routes_bound_live_computed_and_redirected_effect_without_author
         .is_empty());
     assert_eq!(
         runtime
-            .read_derived_result(&computed)
+            .read_derived_result(request_execution, &computed)
             .expect("computed materialization should execute")
             .row_count(),
         0
@@ -281,9 +298,13 @@ fn preview_write_routes_bound_live_computed_and_redirected_effect_without_author
 
 #[test]
 fn preview_sandboxed_write_intent_execution_stays_separate_from_delivery_residue() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.preview-intent-exec",
             task_live_request(),
             task_schema(),
@@ -300,28 +321,32 @@ fn preview_sandboxed_write_intent_execution_stays_separate_from_delivery_residue
     let (execution_evidence, outcome) = {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 test_session_label("preview intent execution"),
                 WorthQueryPreviewOptions::sandboxed_write_intent(),
             )
             .expect("preview session should be admitted");
         preview.use_view(&live);
         preview
-            .use_effect(&intent_effect)
+            .use_effect(request_execution, &intent_effect)
             .expect("sandboxed preview should admit write-intent effect");
         preview
-            .write(insert_command(
-                "Task",
-                [
-                    (
-                        "identity.id",
-                        test_string_aspect_value("preview-intent-task"),
-                    ),
-                    (
-                        "title.value",
-                        test_string_aspect_value("Preview intent task"),
-                    ),
-                ],
-            ))
+            .write(
+                request_execution,
+                insert_command(
+                    "Task",
+                    [
+                        (
+                            "identity.id",
+                            test_string_aspect_value("preview-intent-task"),
+                        ),
+                        (
+                            "title.value",
+                            test_string_aspect_value("Preview intent task"),
+                        ),
+                    ],
+                ),
+            )
             .expect("preview write should route pending intent");
         (
             preview.preview_execution_evidence().to_vec(),

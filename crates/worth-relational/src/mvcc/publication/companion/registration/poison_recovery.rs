@@ -27,9 +27,9 @@ fn budget() -> CompanionPreflightBudget {
 fn catch(run: impl FnOnce()) {
     assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(run)).is_err());
 }
-fn recover(door: Door) {
+fn recover(execution: &worth_execution::ExecutionRequest<'_, '_>, door: Door) {
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "registry-poison-before");
+    create_entity(execution, &runtime, "registry-poison-before");
     let port = runtime.publication_companion_port();
     let registry = port.publication.companion_registry();
     let pending = port.begin_required_registration().unwrap();
@@ -45,7 +45,8 @@ fn recover(door: Door) {
             .unwrap()
             .activate(Arc::new(Unindexed), budget())
             .unwrap();
-        let committed = create_entity_outcome(&runtime, "registry-poison-after-activate");
+        let committed =
+            create_entity_outcome(execution, &runtime, "registry-poison-after-activate");
         release_test_commit_snapshot(&runtime, &committed);
         return;
     }
@@ -122,32 +123,50 @@ fn recover(door: Door) {
         }
         Door::Activate => unreachable!(),
     }
-    let committed = create_entity_outcome(&runtime, "registry-poison-after");
+    let committed = create_entity_outcome(execution, &runtime, "registry-poison-after");
     release_test_commit_snapshot(&runtime, &committed);
     assert!(registry.enter().unwrap().active().unwrap().is_some());
     drop(registration);
 }
 #[test]
 fn fork_recovers_registry_poison() {
-    recover(Door::Fork);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    recover(execution, Door::Fork);
 }
 #[test]
 fn enter_recovers_registry_poison() {
-    recover(Door::Enter);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    recover(execution, Door::Enter);
 }
 #[test]
 fn begin_recovers_registry_poison() {
-    recover(Door::Begin);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    recover(execution, Door::Begin);
 }
 #[test]
 fn remove_recovers_registry_poison() {
-    recover(Door::Remove);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    recover(execution, Door::Remove);
 }
 #[test]
 fn activate_recovers_registry_poison() {
-    recover(Door::Activate);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    recover(execution, Door::Activate);
 }
 #[test]
 fn head_selection_recovers_registry_poison() {
-    recover(Door::Head);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    recover(execution, Door::Head);
 }

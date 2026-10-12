@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
+pub(super) fn certify_local_scene_graph_propagation_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let local_scene_wave_samples =
         capture_perf_samples(suite, "local_scene_graph_propagation_wave", || {
             let mut runtime =
@@ -9,7 +12,7 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
                 &mut runtime,
                 PerfDiagnosticsPolicy::GeometryOperationalHotPath,
             );
-            let seeded = seed_game_engine_frame_world(&runtime, "scene-local", 8, 24);
+            let seeded = seed_game_engine_frame_world(execution, &runtime, "scene-local", 8, 24);
             let updated = seeded.frame_targets[3];
             let explicit_targets = seeded
                 .explicit_targets
@@ -27,7 +30,7 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
 
             runtime.performance_access().reset_counters();
             let update_started_at = Instant::now();
-            let update = update_entity(&runtime, updated, "scene-local-updated");
+            let update = update_entity(execution, &runtime, updated, "scene-local-updated");
             let update_micros = update_started_at.elapsed().as_micros();
 
             let snapshot = runtime.visibility_authority().snapshot();
@@ -58,7 +61,10 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
                         .read_truth()
                         .plan_query_packet(&snapshot, propagation_packet)
                         .expect("scene local propagation plan"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("scene local propagation outcome");
             let propagation_micros = propagation_started_at.elapsed().as_micros();
 
@@ -76,7 +82,10 @@ pub(super) fn certify_local_scene_graph_propagation_wave(suite: &'static str) {
                         .read_truth()
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("scene local explicit plan"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("scene local explicit outcome");
             let explicit_micros = explicit_started_at.elapsed().as_micros();
             assert!(runtime

@@ -86,6 +86,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<WorthQueryInboundMaintenanceReport, Denial> {
         self.with_application_advancement(request, |phase| {
             let phase = &phase;
+            let phase_request = phase
+                .execution_request_for(&self.product_runtime)
+                .map_err(|cause| Denial::advancement(cause.into()))?;
+            let execution = &phase_request;
             let installed = self
                 .installed_inbound_verifier(handle)
                 .ok_or(Denial::ForeignVerifier)?;
@@ -137,6 +141,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             };
             for correlation in inbound_candidates {
                 match self.progress_retained_inbound_occurrence(
+                    execution,
                     phase,
                     *correlation.bytes(),
                     request,
@@ -160,7 +165,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     }
                     // This report counts blocked work; it does not translate denials.
                     Err(
-                        Denial::ForeignVerifier
+                        Denial::ExecutionDenied(_)
+                        | Denial::ForeignVerifier
                         | Denial::Oversized
                         | Denial::Verification(_)
                         | Denial::IncompatibleMeaning
@@ -192,7 +198,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 }
             }
             for correlation in transport_candidates {
-                match self.resume_installed_transport_completion(phase, &correlation, request) {
+                match self.resume_installed_transport_completion(
+                    execution,
+                    phase,
+                    &correlation,
+                    request,
+                ) {
                     InstalledTransportResumeOutcome::Performed => report.performed += 1,
                     InstalledTransportResumeOutcome::Pending(
                         InstalledTransportPendingReason::RecoveryStaleProduct,
@@ -201,7 +212,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         report.advanced += 1;
                     }
                     InstalledTransportResumeOutcome::Pending(
-                        InstalledTransportPendingReason::UnknownCompletion
+                        InstalledTransportPendingReason::ExecutionRequest(_)
+                        | InstalledTransportPendingReason::UnknownCompletion
                         | InstalledTransportPendingReason::ConcurrentContinuation
                         | InstalledTransportPendingReason::PublicationRetryRequired
                         | InstalledTransportPendingReason::PublicationAtCapacity

@@ -46,13 +46,16 @@ where
     /// branch-set's performed prefix or untouched suffix.
     pub fn recover_branch_set_adoption(
         self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         recovery: worth_query_execution::facade::primary_graph::WorthQueryBranchSetAdoptionRecovery,
     ) -> Result<
         worth_query_execution::facade::primary_graph::WorthQueryBranchSetAdoptionRecoveryOutcome,
         worth_query_execution::facade::primary_graph::WorthQueryBranchSetAdoptionRecoveryFailure,
     > {
         self.application
-            .recover_branch_set_adoption(recovery, self.scope)
+            .recover_branch_set_adoption(phase, recovery, self.scope)
     }
 
     /// Releases exact unpublished custody and cancels only the untouched

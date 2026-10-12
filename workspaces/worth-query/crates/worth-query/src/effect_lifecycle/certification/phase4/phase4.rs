@@ -184,21 +184,23 @@ impl EffectLifecyclePhase4CertificationBundle {
     }
 }
 
-pub fn certify_effect_lifecycle_phase4() -> EffectLifecyclePhase4CertificationBundle {
-    let seeded = super::certify_effect_lifecycle_seeded(17, 12);
+pub fn certify_effect_lifecycle_phase4(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> EffectLifecyclePhase4CertificationBundle {
+    let seeded = super::certify_effect_lifecycle_seeded(execution, 17, 12);
     let rows = vec![
-        branch_mutation_execution_row(),
-        relational_merge_execution_row(),
-        bridge_writeback_execution_row(),
-        batch_execution_row(),
+        branch_mutation_execution_row(execution),
+        relational_merge_execution_row(execution),
+        bridge_writeback_execution_row(execution),
+        batch_execution_row(execution),
         batch_lane_denial_row(),
         preview_rebind_row(),
         deferred_replay_row(),
-        host_override_denial_row(),
-        stale_after_admission_row(),
-        stale_after_lowering_row(),
-        relational_oracle_row(),
-        bridge_oracle_row(),
+        host_override_denial_row(execution),
+        stale_after_admission_row(execution),
+        stale_after_lowering_row(execution),
+        relational_oracle_row(execution),
+        bridge_oracle_row(execution),
         seeded_replay_row(&seeded),
     ];
     EffectLifecyclePhase4CertificationBundle::new(rows, &seeded)

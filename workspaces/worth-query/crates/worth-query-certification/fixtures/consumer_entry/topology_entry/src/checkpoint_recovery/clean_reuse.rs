@@ -32,7 +32,8 @@ fn clean_ready_advancement_skips_source_query_but_changed_input_reenters_it() {
         .entity_id();
 
     for _ in 0..2 {
-        let before_basis = request.retain_read().unwrap();
+        let before_basis =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let before_entries = query_entries();
         let settled = match interest
             .advance(&request)
@@ -62,7 +63,8 @@ fn clean_ready_advancement_skips_source_query_but_changed_input_reenters_it() {
                 .entity_id(),
             original_entity
         );
-        let after_basis = request.retain_read().unwrap();
+        let after_basis =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         assert_eq!(
             before_basis.selected_commit(),
             after_basis.selected_commit()

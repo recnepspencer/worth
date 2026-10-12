@@ -72,22 +72,25 @@ impl<'runtime> MergeAccess<'runtime> {
     #[cfg(test)]
     pub fn inspect_history_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: MergePlanningRequest,
     ) -> Result<MergePlanningArtifactCore, MergePlanningError> {
-        self.inspect_planning_scope(request)
+        self.inspect_planning_scope(execution, request)
     }
 
     #[cfg(not(test))]
     pub fn inspect_history_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: OwnerBoundMergePlanningRequest,
     ) -> Result<MergePlanningArtifactCore, MergePlanningError> {
-        self.inspect_planning_scope(request)
+        self.inspect_planning_scope(execution, request)
     }
 
     #[cfg(test)]
     pub fn inspect_planning_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: MergePlanningRequest,
     ) -> Result<MergePlanningArtifactCore, MergePlanningError> {
         let started_at = Instant::now();
@@ -95,26 +98,29 @@ impl<'runtime> MergeAccess<'runtime> {
         let normalized_request = self
             .normalize_bound_merge_planning_request(bound)
             .map_err(MergePlanningError::from)?;
-        self.inspect_bound_planning_scope(normalized_request, started_at)
+        self.inspect_bound_planning_scope(execution, normalized_request, started_at)
     }
 
     #[cfg(not(test))]
     pub fn inspect_planning_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: OwnerBoundMergePlanningRequest,
     ) -> Result<MergePlanningArtifactCore, MergePlanningError> {
         let started_at = Instant::now();
         let normalized_request = self.normalize_merge_planning_request(request)?;
-        self.inspect_bound_planning_scope(normalized_request, started_at)
+        self.inspect_bound_planning_scope(execution, normalized_request, started_at)
     }
 
     fn inspect_bound_planning_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         normalized_request: NormalizedRelationalMergeRequest,
         started_at: Instant,
     ) -> Result<MergePlanningArtifactCore, MergePlanningError> {
-        let plan = self.lower_planning_scope(normalized_request)?;
-        let artifact = super::planning_artifact::materialize_planning_artifact(self.runtime, plan);
+        let plan = self.lower_planning_scope(execution, normalized_request)?;
+        let artifact =
+            super::planning_artifact::materialize_planning_artifact(execution, self.runtime, plan);
         self.runtime
             .performance_access()
             .count_merge_planning_elapsed(started_at.elapsed().as_nanos());
@@ -124,9 +130,10 @@ impl<'runtime> MergeAccess<'runtime> {
     #[cfg(test)]
     pub fn inspect_execution_surface(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: MergePlanningRequest,
     ) -> Result<RelationalMergeInspectionArtifact, MergePlanningError> {
-        let artifact = self.inspect_planning_scope(request)?;
+        let artifact = self.inspect_planning_scope(execution, request)?;
         Ok(RelationalMergeInspectionArtifact::from_input(
             artifact.inspection_input(),
         ))
@@ -135,9 +142,10 @@ impl<'runtime> MergeAccess<'runtime> {
     #[cfg(not(test))]
     pub fn inspect_execution_surface(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: OwnerBoundMergePlanningRequest,
     ) -> Result<RelationalMergeInspectionArtifact, MergePlanningError> {
-        let artifact = self.inspect_planning_scope(request)?;
+        let artifact = self.inspect_planning_scope(execution, request)?;
         Ok(RelationalMergeInspectionArtifact::from_input(
             artifact.inspection_input(),
         ))

@@ -62,6 +62,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         QueryResult,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: worth_relational::facade::snapshots::SnapshotHandle,
@@ -98,6 +99,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             size_of::<WorthQueryAuthorizationDecisionFact>(),
         )?;
         Ok(vec![observation.observe_one_admitted(
+            execution,
             self,
             requirement,
             admission,
@@ -112,6 +114,7 @@ where
 {
     fn observe_one_admitted(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
         admission: &mut InvalidationEditAdmission,
@@ -135,7 +138,8 @@ where
         }
         prepare(admission, installed_checks, 0)?;
         self.validate_installation(runtime, installed, requirement)?;
-        let evidence = self.observe_relational_admitted(installed, requirement, admission)?;
+        let evidence =
+            self.observe_relational_admitted(execution, installed, requirement, admission)?;
         let dependency_identity = *evidence.observation_identity().bytes();
         let bridge_observation = lower_bridge_observation_admitted(
             installed,
@@ -213,6 +217,7 @@ where
 
     fn observe_relational_admitted(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledAuthorizationPolicy,
         requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
         admission: &mut InvalidationEditAdmission,
@@ -270,7 +275,11 @@ where
             }
         })?;
         self.relational
-            .observe_authorization_budgeted(plan, &mut QueryObservationAdmission(admission))
+            .observe_authorization_budgeted(
+                plan,
+                &mut QueryObservationAdmission(admission),
+                execution,
+            )
             .map_err(|stop| match stop {
                 RelationalAuthorizationBudgetedObservationStop::Admission(stop) => {
                     AdmittedQueryAuthorizationStop::Preparation(stop)

@@ -13,6 +13,12 @@ pub use stop_class::{WorthQueryRuntimeMissingComponent, WorthQueryStopClass};
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum WorthQueryRuntimeError {
+    Advancement(
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
+    ForeignPhase(
+        worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+    ),
     MissingBackend,
     MissingRuntimeBridge,
     MissingSchemaAdapter,
@@ -113,6 +119,8 @@ pub enum WorthQueryRuntimeError {
 impl std::fmt::Display for WorthQueryRuntimeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Advancement(cause) => write!(f, "{cause}"),
+            Self::ForeignPhase(error) => write!(f, "foreign advancement phase: {error:?}"),
             Self::MissingBackend => {
                 write!(
                     f,
@@ -323,6 +331,7 @@ impl std::fmt::Display for WorthQueryRuntimeError {
 impl std::error::Error for WorthQueryRuntimeError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
+            Self::Advancement(cause) => Some(cause),
             Self::IntentExecutionRoutingFailed { source, .. } => Some(source.as_ref()),
             _ => None,
         }
@@ -344,5 +353,16 @@ impl From<WorthQueryWorkspaceError> for WorthQueryRuntimeError {
 impl From<WorthQueryProgramError> for WorthQueryRuntimeError {
     fn from(value: WorthQueryProgramError) -> Self {
         Self::Program(value)
+    }
+}
+
+impl
+    From<worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase>
+    for WorthQueryRuntimeError
+{
+    fn from(
+        cause: worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+    ) -> Self {
+        Self::ForeignPhase(cause)
     }
 }

@@ -16,6 +16,7 @@ pub(super) enum CommitAuthorityInput {
 
 #[derive(Debug)]
 pub(crate) struct AuthoritativeCommitContext {
+    pub(super) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(super) _mutation_authority: Option<crate::branch::RelationalBranchMutationAuthority>,
     pub(super) transaction_id: TransactionId,
     pub(super) validation_input: RelationalTransactionValidationInput,
@@ -75,6 +76,7 @@ impl AuthoritativeCommitContext {
             strategy_commit_artifacts,
             strategy_bulk_mutation_batch,
             validation_complexity_delta,
+            commit_work_budget,
             ..
         } = candidate;
         let bulk_mutation_telemetry = strategy_bulk_mutation_batch
@@ -87,6 +89,7 @@ impl AuthoritativeCommitContext {
                 )
             });
         Self {
+            commit_work_budget,
             _mutation_authority: Some(mutation_authority),
             transaction_id,
             validation_input,
@@ -145,6 +148,7 @@ impl AuthoritativeCommitContext {
         validate_merge_context_proof(&validation_input, &merge_plan)?;
 
         Ok(Self {
+            commit_work_budget: None,
             _mutation_authority: None,
             transaction_id: merge_plan.transaction_id,
             validation_input,

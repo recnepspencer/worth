@@ -12,7 +12,10 @@ use super::support::{admitted_handle, standard_profile, target_for_envelope, Con
 
 #[test]
 fn composed_orchestration_matches_explicit_declaration_bound_support_pipeline() {
-    let handle = admitted_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution);
     let progressed = match handle.declare_review_and_progress(ContributionInput::new("face-a")) {
         Ok(value) => value,
         Err(_) => panic!("expected progressed declaration"),
@@ -112,7 +115,10 @@ fn composed_orchestration_matches_explicit_declaration_bound_support_pipeline() 
 
 #[test]
 fn composed_request_digest_changes_with_declaration_and_contribution_meaning() {
-    let handle = admitted_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution);
     let first = handle.orchestrate_declaration_with_contributions_proof(
         WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-d1"))
             .with_contribution(WorthQueryContributionIntent::support(
@@ -137,7 +143,10 @@ fn composed_request_digest_changes_with_declaration_and_contribution_meaning() {
 
 #[test]
 fn equivalent_intent_orderings_share_the_same_composition_digest() {
-    let handle = admitted_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution);
     let left = handle
         .orchestrate_declaration_with_contributions(
             WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-e"))

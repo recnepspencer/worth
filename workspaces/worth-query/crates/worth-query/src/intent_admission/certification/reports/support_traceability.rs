@@ -161,12 +161,13 @@ impl WorthQueryIntentAdmissionSupportTraceabilityReport {
 }
 
 pub fn worth_query_intent_admission_support_traceability_report(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryIntentAdmissionSupportTraceabilityReport {
     let support = worth_query_intent_admission_support_matrix();
-    let admitted = certified_admitted_intent_fixture();
+    let admitted = certified_admitted_intent_fixture(execution);
     let advisory = certified_advisory_intent_fixture();
     let violation = certified_violation_intent_fixture();
-    let routing = certified_routing_intent_fixture();
+    let routing = certified_routing_intent_fixture(execution);
     let deferred = certified_deferred_intent_fixture();
     let unsupported = certified_unsupported_intent_fixture();
     let rows = vec![

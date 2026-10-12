@@ -133,7 +133,12 @@ fn refresh_and_publish(
     request: u64,
     expectation: &str,
 ) {
-    let fact = match live.refresh(workspace).unwrap() {
+    let fact = match workspace
+        .with_execution_request_mut(|execution, workspace| {
+            live.refresh(execution, workspace).unwrap()
+        })
+        .expect("workspace host call opens")
+    {
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::Applied(receipt) => {
             receipt.into_fact()
         }

@@ -26,7 +26,7 @@ impl BankApprovedPaymentWorkflow<'_, '_, '_> {
             .request(self.principal, self.scope)
             .query(payment_amount(authority.payment))
             .execute()
-            .map_err(BankApprovedPaymentWorkflowError::ConditionRead)?;
+            .map_err(|denial| BankApprovedPaymentWorkflowError::ConditionRead(Box::new(denial)))?;
         self.runtime
             .request(self.principal, self.scope)
             .mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })

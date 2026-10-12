@@ -14,14 +14,17 @@ use super::support::{
 
 #[test]
 fn retained_world_basis_and_subject_aware_temporal_readiness_stay_stitched() {
-    let (workspace, handle) = workspace_and_handle("cross-phase-temporal");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = workspace_and_handle(request_execution, "cross-phase-temporal");
     let world_basis = handle.retained_world_basis();
 
     let world_state = workspace
-        .state(&world_basis)
+        .state(request_execution, &world_basis)
         .expect("retained world basis should snapshot");
     let world_inspection = workspace
-        .inspect(&world_basis)
+        .inspect(request_execution, &world_basis)
         .expect("retained world basis should inspect");
 
     assert_eq!(world_state.kind(), WorthQueryRuntimeStateKind::Ready);
@@ -97,11 +100,14 @@ fn retained_world_basis_and_subject_aware_temporal_readiness_stay_stitched() {
 
 #[test]
 fn retained_world_basis_and_subject_aware_async_readiness_stay_stitched() {
-    let (workspace, handle) = workspace_and_handle("cross-phase-async");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = workspace_and_handle(request_execution, "cross-phase-async");
     let world_basis = handle.retained_world_basis();
 
     let world_inspection = workspace
-        .inspect(&world_basis)
+        .inspect(request_execution, &world_basis)
         .expect("retained world basis should inspect");
     match world_inspection {
         WorthQueryInspection::BasisLifecycle(inspection) => {

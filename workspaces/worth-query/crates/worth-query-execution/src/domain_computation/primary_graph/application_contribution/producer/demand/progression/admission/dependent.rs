@@ -6,6 +6,7 @@ where
 {
     pub(in crate::domain_computation) fn admit_dependent_output_demand<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -25,7 +26,7 @@ where
             )
         })?;
         let profile_kind = Family::profile_kind(&source);
-        self.admit_output_demand_with_source::<Family>(
+        self.admit_output_demand_with_source::<Family>(execution,
             source,
             observed_source,
             None,

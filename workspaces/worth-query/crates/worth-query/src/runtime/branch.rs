@@ -44,12 +44,13 @@ pub struct WorthQueryBranchSession<'a> {
 
 impl<'a> WorthQueryBranchSession<'a> {
     pub(super) fn new(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         label: WorthQuerySessionLabel,
         runtime: &'a mut WorthQueryRuntime,
         options: WorthQueryBranchOptions,
         basis_admission: WorthQueryBranchBasisAdmission,
     ) -> Self {
-        let basis_snapshot_identity = runtime.current_snapshot_identity();
+        let basis_snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
         Self {
             label,
             runtime,

@@ -168,25 +168,33 @@ impl WorthQueryDeclarationInput<SignalDomain> for SignalInput {
 }
 
 pub(super) fn admitted_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<SignalDomain, SignalWorld> {
-    admitted_handle_with_config(world, WorthQueryConfig::runtime_backed_default())
+    admitted_handle_with_config(
+        request_execution,
+        world,
+        WorthQueryConfig::runtime_backed_default(),
+    )
 }
 
 fn admitted_handle_with_config(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
     _config: WorthQueryConfig,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<SignalDomain, SignalWorld> {
-    installed_signal_context(SignalWorld(world))
+    installed_signal_context(request_execution, SignalWorld(world))
 }
 
 pub(super) fn installed_signal_context<C>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: C,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<SignalDomain, C>
 where
     C: WorthQueryDomainOperatingContext<SignalDomain>,
 {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         SignalDomain,
         context,
         [crate::application::domain_test_support::family::<

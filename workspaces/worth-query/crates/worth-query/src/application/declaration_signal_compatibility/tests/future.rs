@@ -10,7 +10,10 @@ use super::support::{
 
 #[test]
 fn ordinary_temporal_and_async_signal_subjects_keep_distinct_future_projection_truth() {
-    let handle = handle("future");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "future");
 
     let ordinary =
         compatibility_from_envelope_input(&handle, Input::<RuntimeFamily>::new("edge:42"));
@@ -37,7 +40,10 @@ fn ordinary_temporal_and_async_signal_subjects_keep_distinct_future_projection_t
 
 #[test]
 fn future_signal_subjects_stay_typed_under_public_runtime_posture() {
-    let handle = handle("future-public");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "future-public");
 
     match checked_from_future_public_runtime_signal_posture(
         &handle,

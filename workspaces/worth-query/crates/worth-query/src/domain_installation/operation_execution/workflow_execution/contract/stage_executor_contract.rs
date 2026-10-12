@@ -219,6 +219,7 @@ impl WorthQueryWorkflowStageMaterial {
 pub struct WorthQueryWorkflowStageExecutorFailure {
     class: worth_query_installation::facade::WorthQueryOperationFailureClass,
     detail: String,
+    request_denial: Option<Box<super::WorthQueryWorkflowAdvanceDenialKind>>,
     executed_effects: Vec<WorthQueryWorkflowEffectEvidence>,
 }
 
@@ -230,6 +231,7 @@ impl WorthQueryWorkflowStageExecutorFailure {
         Self {
             class,
             detail: detail.into(),
+            request_denial: None,
             executed_effects: Vec::new(),
         }
     }
@@ -238,6 +240,17 @@ impl WorthQueryWorkflowStageExecutorFailure {
     }
     pub fn detail(&self) -> &str {
         &self.detail
+    }
+
+    pub(crate) fn with_request_denial(
+        mut self,
+        denial: Box<super::WorthQueryWorkflowAdvanceDenialKind>,
+    ) -> Self {
+        self.request_denial = Some(denial);
+        self
+    }
+    pub(crate) fn request_denial(&self) -> Option<&super::WorthQueryWorkflowAdvanceDenialKind> {
+        self.request_denial.as_deref()
     }
 
     pub(crate) fn with_executed_effects(

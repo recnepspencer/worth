@@ -8,13 +8,17 @@ use crate::runtime::{
 };
 
 impl WorthQueryMutationRequest {
-    pub fn run(self, workspace: &mut WorthQueryWorkspace) -> WorthQueryMutationOutcome {
+    pub fn run(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryMutationOutcome {
         let counters = WorthQueryMutationCounters::context_checked();
         debug_assert_eq!(
             self.context.authority.family(),
             WorthQueryOrdinaryAuthorityFamily::Mutation
         );
-        match workspace.ordinary_authority_drift(&self.context.authority) {
+        match workspace.ordinary_authority_drift(request_execution, &self.context.authority) {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
                 return WorthQueryMutationOutcome::Stopped(WorthQueryMutationStop::authority(
                     WorthQueryMutationStopSource::ForeignAuthority,
@@ -39,9 +43,11 @@ impl WorthQueryMutationRequest {
                 );
             }
         }
-        let execution = match workspace
-            .execute_ordinary_authoritative_mutation(command, materialize_inspection)
-        {
+        let execution = match workspace.execute_ordinary_authoritative_mutation(
+            request_execution,
+            command,
+            materialize_inspection,
+        ) {
             Ok(execution) => execution,
             Err(error) => {
                 let counters = if matches!(

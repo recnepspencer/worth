@@ -18,6 +18,7 @@ where
 {
     pub(super) fn settle(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         sources: WorthQueryWorkflowConditionSources<Schema>,
     ) -> Result<
@@ -68,6 +69,7 @@ where
             values.push(value);
         }
         super::assessment::ensure_current(
+            execution,
             self.admitted.read_set(),
             &currentness_facts,
             &node_path,
@@ -121,7 +123,12 @@ where
         let node_path = self.admitted.node_path().to_owned();
         let progress_update = self.admitted.prepare_progress_update(outcome, None)?;
         let mut read_set = self.admitted.into_read_set();
-        super::assessment::bind_currentness_facts(&mut read_set, &currentness_facts, &node_path)?;
+        super::assessment::bind_currentness_facts(
+            execution,
+            &mut read_set,
+            &currentness_facts,
+            &node_path,
+        )?;
         let program = WorthQueryApplicationEffectProgram {
             read_set,
             effects,

@@ -27,6 +27,7 @@ pub(super) struct ChangeRouting {
 
 impl ChangeRouting {
     pub(super) fn classify(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         changes: &ChangedRecords,
         before: Option<&VisibilityProjectionView<'_>>,
         after: &VisibilityProjectionView<'_>,
@@ -37,16 +38,16 @@ impl ChangeRouting {
             relations: BTreeMap::new(),
         };
         for id in &changes.entities {
-            let old = record_metadata::entity_kind(before, *id, work)?;
-            let new = record_metadata::entity_kind(Some(after), *id, work)?;
+            let old = record_metadata::entity_kind(execution, before, *id, work)?;
+            let new = record_metadata::entity_kind(execution, Some(after), *id, work)?;
             let change = EntityChange { id: *id, old, new };
             for kind in old.into_iter().chain(new.filter(|kind| Some(*kind) != old)) {
                 insert(&mut routed.entities, kind, change, work)?;
             }
         }
         for id in &changes.relations {
-            let old = record_metadata::relation(before, *id, work)?;
-            let new = record_metadata::relation(Some(after), *id, work)?;
+            let old = record_metadata::relation(execution, before, *id, work)?;
+            let new = record_metadata::relation(execution, Some(after), *id, work)?;
             let change = RelationChange { id: *id, old, new };
             let old_kind = old.map(|r| r.kind);
             for kind in old_kind

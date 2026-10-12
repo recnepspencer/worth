@@ -6,6 +6,7 @@ use crate::facade::transactions::{
 use super::super::fixture::{FintechCaseRole, FintechWorld};
 
 pub(crate) fn diverge_case_trade_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
     case_role: FintechCaseRole,
@@ -60,14 +61,11 @@ pub(crate) fn diverge_case_trade_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        &world.runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap()
+    txn.commit(execution, &world.runtime).unwrap()
 }
 
 pub(crate) fn merge_branch_into_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     merge_parent_branch: BranchId,
 ) -> CommitResult {
@@ -76,9 +74,5 @@ pub(crate) fn merge_branch_into_main(
         BranchId("main".to_string()),
         vec![merge_parent_branch],
     );
-    txn.commit(
-        &world.runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap()
+    txn.commit(execution, &world.runtime).unwrap()
 }

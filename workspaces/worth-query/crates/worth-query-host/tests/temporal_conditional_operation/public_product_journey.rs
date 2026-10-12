@@ -12,7 +12,9 @@ use super::product_query_support::{
 use super::schema::*;
 use super::world::{self, CourtroomWorld};
 
-pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
+pub(super) fn selected_sibling_mutation_carries_one_world_occurrence(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let world = CourtroomWorld::publish("blocked");
     let request = world::request_scope();
     let principal = principal(&world, &request);
@@ -23,9 +25,14 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
         .unwrap();
     let source = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let source_branch = source.product().product_branch();
     let source_commit = source.product().selected_commit().clone();
     let sibling = fork_relational_product(
@@ -36,40 +43,63 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     );
     drop(source);
 
-    let selected = world.application.on_branch(sibling).select().unwrap();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.application.on_branch(sibling).select(&phase).unwrap())
+        .expect("installed host call opens");
     let sibling_commit = selected.product().selected_commit().clone();
-    let scope = selected
-        .resolve_entity(
-            IntentIdentityField::reference(),
-            "intent-1".to_string(),
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+    let scope = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    IntentIdentityField::reference(),
+                    "intent-1".to_string(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let access = primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-    let retained = selected
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new(),
-            controls(&request),
-        )
-        .unwrap();
+    let retained = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new(),
+                    controls(&request),
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
 
     let warm = world
         .application
-        .on_branch(sibling)
-        .select()
-        .unwrap()
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(sibling)
+                .select(&phase)
+                .unwrap()
+                .conditional_clock(request_execution, &world.clock)
+                .unwrap()
+        })
+        .expect("installed host call opens")
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(warm) = warm else {
         panic!("the sibling condition must warm: {}", outcome_kind(&warm))
     };
     assert_eq!(warm.retained_suppressed_wake_count(), 1);
     drop(warm);
-    let selected_sibling = world.application.on_branch(sibling).select().unwrap();
+    let selected_sibling = world
+        .application
+        .with_host_advancement(|phase| world.application.on_branch(sibling).select(&phase).unwrap())
+        .expect("installed host call opens");
     let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
     let definition = selected_sibling
         .publish_conditional_definition(
@@ -93,7 +123,10 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     let change = publication
         .take_performed_relational_product_change()
         .expect("the application commit must retain World's performed publication");
-    let sibling_after = world.application.on_branch(sibling).select().unwrap();
+    let sibling_after = world
+        .application
+        .with_host_advancement(|phase| world.application.on_branch(sibling).select(&phase).unwrap())
+        .expect("installed host call opens");
     assert_ne!(sibling_after.product().selected_commit(), &sibling_commit);
     assert_eq!(
         change.product_commit(),
@@ -117,9 +150,9 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     drop(sibling_after);
 
     let predecessor_interlude = selected_sibling
-        .conditional_clock(&world.clock)
+        .conditional_clock(request_execution, &world.clock)
         .unwrap()
-        .observe();
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(
         predecessor_interlude,
     ) = predecessor_interlude
@@ -132,12 +165,17 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     world.clock_control.push(3, 11);
     let execution = world
         .application
-        .on_branch(sibling)
-        .select()
-        .unwrap()
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(sibling)
+                .select(&phase)
+                .unwrap()
+                .conditional_clock(request_execution, &world.clock)
+                .unwrap()
+        })
+        .expect("installed host call opens")
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(execution) =
         execution
     else {
@@ -151,29 +189,51 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
     drop(execution);
 
     let read = |branch: product::WorthQueryProductBranch| {
-        let selected = world.application.on_branch(branch).select().unwrap();
-        let scope = selected
-            .resolve_entity(
-                IntentIdentityField::reference(),
-                "intent-1".to_string(),
-                &request,
-                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
+        let selected = world
+            .application
+            .with_host_advancement(|phase| {
+                world.application.on_branch(branch).select(&phase).unwrap()
+            })
+            .expect("installed host call opens");
+        let scope = world
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .resolve_entity(
+                        &phase,
+                        IntentIdentityField::reference(),
+                        "intent-1".to_string(),
+                        &request,
+                        primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         let access =
             primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-        let plan = selected
-            .admit_application_query(
-                &query,
-                &access,
-                ApplicationQueryParameterSet::new(),
-                controls(&request),
-            )
-            .unwrap();
+        let plan = world
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .admit_application_query(
+                        &phase,
+                        &query,
+                        &access,
+                        ApplicationQueryParameterSet::new(),
+                        controls(&request),
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         world
             .application
-            .execute_application_query_one_shot(plan)
-            .unwrap()
+            .with_host_advancement(|phase| {
+                world
+                    .application
+                    .execute_application_query_one_shot(&phase, plan)
+                    .unwrap()
+            })
+            .expect("installed host call opens")
     };
     let sibling_fresh = read(sibling);
     assert_eq!(sibling_fresh.rows()[0].input, "changed-on-sibling");
@@ -193,8 +253,13 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence() {
 
     let retained = world
         .application
-        .execute_application_query_one_shot(retained)
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .execute_application_query_one_shot(&phase, retained)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(retained.rows()[0].input, "payload");
     assert_eq!(
         product_identity(retained.receipt()).selected_commit(),

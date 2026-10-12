@@ -16,6 +16,7 @@ use super::{
 pub trait WorthQueryRuntimeStateTarget {
     fn into_state_snapshot(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError>;
 }
@@ -149,6 +150,7 @@ pub(crate) fn snapshot_live_view_name(
 impl<T> WorthQueryRuntimeStateTarget for &WorthQueryLiveView<T> {
     fn into_state_snapshot(
         self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         snapshot_live_view_name(runtime, self.name())
@@ -158,9 +160,10 @@ impl<T> WorthQueryRuntimeStateTarget for &WorthQueryLiveView<T> {
 impl<T> WorthQueryRuntimeStateTarget for &WorthQueryDerivedViewHandle<T> {
     fn into_state_snapshot(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
-        let inspection = runtime.inspect_derived_view(self)?;
+        let inspection = runtime.inspect_derived_view(execution, self)?;
         Ok(WorthQueryRuntimeStateSnapshot::ready(
             inspection.dependency_identity(),
             inspection.materialization_identity(),
@@ -176,6 +179,7 @@ impl<T> WorthQueryRuntimeStateTarget for &WorthQueryDerivedViewHandle<T> {
 impl WorthQueryRuntimeStateTarget for WorthQueryRuntimeFacadeFamily {
     fn into_state_snapshot(
         self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         let contract = runtime.public_api_contract();
@@ -237,6 +241,7 @@ impl WorthQueryRuntimeStateTarget for WorthQueryRuntimeFacadeFamily {
 impl WorthQueryRuntimeStateTarget for &WorthQueryWriteReceipt {
     fn into_state_snapshot(
         self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         let result_shape_identity =
@@ -259,6 +264,7 @@ impl WorthQueryRuntimeStateTarget for &WorthQueryWriteReceipt {
 impl WorthQueryRuntimeStateTarget for &WorthQueryBatchWriteReceipt {
     fn into_state_snapshot(
         self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         Ok(WorthQueryRuntimeStateSnapshot::ready(

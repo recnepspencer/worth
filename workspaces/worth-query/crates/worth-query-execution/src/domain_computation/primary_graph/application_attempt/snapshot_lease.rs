@@ -55,12 +55,13 @@ pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
 
 impl WorthQueryApplicationSnapshotLease {
     pub(in crate::domain_computation) fn acquire(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
         layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryApplicationSnapshotLeaseDenial> {
         let basis = product.relational_basis().clone();
-        let snapshot = handle.with_runtime_mut(|runtime| {
+        let snapshot = handle.with_runtime_mut(execution, |runtime| {
             let snapshot = runtime
                 .snapshots()
                 .snapshot_for_observation(&basis.observation())

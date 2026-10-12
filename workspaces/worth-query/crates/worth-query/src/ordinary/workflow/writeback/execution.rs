@@ -9,9 +9,13 @@ use super::{
 };
 
 impl WorthQueryWritebackRequest {
-    pub fn run(self, workspace: &mut WorthQueryWorkspace) -> WorthQueryWritebackOutcome {
+    pub fn run(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryWritebackOutcome {
         let counters = WorthQueryWorkflowCounters::context_checked();
-        match workspace.ordinary_authority_drift(&self.context.authority) {
+        match workspace.ordinary_authority_drift(request_execution, &self.context.authority) {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
                 return WorthQueryWritebackOutcome::Stopped(WorthQueryWritebackStop::denied(
                     WorthQueryWritebackStopSource::ForeignAuthority,
@@ -41,6 +45,7 @@ impl WorthQueryWritebackRequest {
         }
         let counters = counters.lower_runtime_attempted();
         let execution = match workspace.execute_ordinary_writeback(
+            request_execution,
             self.context.authority,
             identity.evidence_identity(),
             materialize_inspection,

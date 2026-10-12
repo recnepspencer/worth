@@ -91,13 +91,16 @@ pub(super) fn unwatched_accounts(
 
 #[test]
 fn unwatched_commit_with_more_touch_keys_than_the_ceiling_publishes_exactly() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = ceiling_world();
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let batch = unwatched_accounts(graph.layout(), CEILING, "marking-ceiling");
-    handle.with_runtime_mut(|runtime| {
-        let committed = write_batch(runtime, batch);
+    handle.with_runtime_mut(request_execution, |runtime| {
+        let committed = write_batch(request_execution, runtime, batch);
         release_test_commit_snapshot(runtime, &committed);
         let (after_handle, after) = snapshot(runtime);
         let report = owner
@@ -117,17 +120,29 @@ fn unwatched_commit_with_more_touch_keys_than_the_ceiling_publishes_exactly() {
 
 #[test]
 fn matched_fan_out_above_the_ceiling_publishes_and_readers_fully_verify() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = ceiling_world();
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -154,41 +169,55 @@ fn matched_fan_out_above_the_ceiling_publishes_and_readers_fully_verify() {
     let readers: Vec<_> = (0..(CEILING / 4) as usize)
         .map(|slot| RecordedSettlementIdentity::retain(&source, coordinate, slot))
         .collect();
-    handle.with_runtime_mut(|runtime| {
-        write_field(runtime, entity, status.clone(), "prime");
-        let (before_handle, before) = snapshot(runtime);
-        let facts: Arc<[_]> =
-            Arc::from([field_fact(runtime, &before_handle, entity, status.clone())]);
-        for reader in &readers {
-            register(owner, reader.clone(), facts.clone(), &before, OrdSet::new());
-        }
-        write_field(runtime, entity, status, "closed");
-        let (after_handle, after) = snapshot(runtime);
-        let report = owner
-            .native_marking_report(&after, &mut owner.edit_admission())
-            .unwrap()
-            .expect("the fanned-out commit published its own delivery report");
-        let NativeMarkingPrecision::MarkingCeilingExceeded(counts) = report.precision else {
-            panic!("fan-out above the ceiling must be reported, got {report:?}");
-        };
-        assert!(counts.matched_fact_postings > 0 && counts.matched_fact_postings <= CEILING);
-        for reader in &readers {
-            assert!(matches!(
-                currentness(owner, &after, reader),
-                SourceSettlementCurrentness::FullVerificationRequired(
-                    FullVerificationReason::DeclaredChangeUnavailable
-                )
-            ));
-        }
-        assert!(
-            matches!(
-                currentness(owner, &before, &readers[0]),
-                SourceSettlementCurrentness::Clean
-            ),
-            "the discontinuity cannot leak into the retained earlier snapshot"
-        );
-        for snapshot in [before_handle, after_handle] {
-            runtime.snapshots().release_snapshot(&snapshot).unwrap();
-        }
-    });
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            handle.with_runtime_mut(request_execution, |runtime| {
+                write_field(request_execution, runtime, entity, status.clone(), "prime");
+                let (before_handle, before) = snapshot(runtime);
+                let facts: Arc<[_]> = Arc::from([field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &before_handle,
+                    entity,
+                    status.clone(),
+                )]);
+                for reader in &readers {
+                    register(owner, reader.clone(), facts.clone(), &before, OrdSet::new());
+                }
+                write_field(request_execution, runtime, entity, status, "closed");
+                let (after_handle, after) = snapshot(runtime);
+                let report = owner
+                    .native_marking_report(&after, &mut owner.edit_admission())
+                    .unwrap()
+                    .expect("the fanned-out commit published its own delivery report");
+                let NativeMarkingPrecision::MarkingCeilingExceeded(counts) = report.precision
+                else {
+                    panic!("fan-out above the ceiling must be reported, got {report:?}");
+                };
+                assert!(
+                    counts.matched_fact_postings > 0 && counts.matched_fact_postings <= CEILING
+                );
+                for reader in &readers {
+                    assert!(matches!(
+                        currentness(owner, &after, reader),
+                        SourceSettlementCurrentness::FullVerificationRequired(
+                            FullVerificationReason::DeclaredChangeUnavailable
+                        )
+                    ));
+                }
+                assert!(
+                    matches!(
+                        currentness(owner, &before, &readers[0]),
+                        SourceSettlementCurrentness::Clean
+                    ),
+                    "the discontinuity cannot leak into the retained earlier snapshot"
+                );
+                for snapshot in [before_handle, after_handle] {
+                    runtime.snapshots().release_snapshot(&snapshot).unwrap();
+                }
+            })
+        })
+        .expect("the fixture read owns its installed host call");
 }

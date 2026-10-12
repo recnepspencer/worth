@@ -184,6 +184,7 @@ impl WorthQueryDecisionFactProvider for ProvisionalProvider {
 
     fn compare_decision_fact(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _session: WorthQueryProviderSessionView<'_>,
         _evidence: WorthQueryDecisionFactEvidenceView<'_>,
         admission: WorthQueryDecisionFactComparisonAdmission,
@@ -309,59 +310,8 @@ pub(super) fn provisional_run(
     )
 }
 
-pub(super) fn staged_with_fresh_read_set<'run>(
-    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-
-    running: &'run mut WorthQueryRunningDirectRun,
-    graph: &WorthQueryInstalledGraphParticipationAuthority,
-) -> (
-    crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
-    WorthQueryFreshDecisionReadSet,
-) {
-    let staged = running
-        .admit_provider_execution_plan(graph)
-        .unwrap()
-        .readmit(execution)
-        .unwrap()
-        .prepare()
-        .unwrap()
-        .bind_reads_and_effects();
-    let fresh = {
-        let reads = staged.read_authority();
-        let receipt = reads
-            .capture_decision_read_set(
-                [
-                    "base",
-                    "old",
-                    "source-1",
-                    "search-1",
-                    "candidate-a",
-                    "transform-1",
-                    "policy-1",
-                    "correspondence-1",
-                    "identity-map-1",
-                ]
-                .into_iter()
-                .map(|identity| {
-                    WorthQueryDecisionFactRequest::new(
-                        "planning-basis",
-                        WorthQueryDecisionFactLocator::observed(identity).unwrap(),
-                    )
-                    .unwrap()
-                }),
-                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                None,
-            )
-            .unwrap();
-        match reads.compare_decision_read_set(receipt).unwrap() {
-            WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) => fresh,
-            WorthQueryDecisionReadSetFreshnessOutcome::Stale(_) => {
-                panic!("fixture read set must remain fresh")
-            }
-        }
-    };
-    (staged, fresh)
-}
+mod staged_with_fresh_read_set;
+pub(super) use staged_with_fresh_read_set::staged_with_fresh_read_set;
 
 pub(super) fn effect_step(
     action: WorthQueryProvisionalEffectAction,

@@ -122,6 +122,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
 
     pub(super) fn progress<Schema, Operation, Input, Scope>(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &super::WorthQueryApplicationCommitProgressionAuthority<
             '_,
             '_,
@@ -137,6 +138,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         Input: Clone + Send + Sync + 'static,
     {
         let read_set = super::fresh::compare_provider_read_set(
+            execution,
             self.staged,
             self.requests,
             authority,
@@ -148,12 +150,17 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
                 return outcome
             }
         };
-        let candidate =
-            match fresh.progress_invariant(self.steps, authority.provider(), allocation_policy) {
-                Ok(candidate) => candidate,
-                Err(outcome) => return outcome,
-            };
+        let candidate = match fresh.progress_invariant(
+            execution,
+            self.steps,
+            authority.provider(),
+            allocation_policy,
+        ) {
+            Ok(candidate) => candidate,
+            Err(outcome) => return outcome,
+        };
         super::authorized::authorize_and_resolve_provider_commit(
+            execution,
             candidate,
             authority,
             self.dispatch_outbox,

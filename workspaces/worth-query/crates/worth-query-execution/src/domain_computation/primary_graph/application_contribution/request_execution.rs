@@ -22,6 +22,8 @@ use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputati
 mod test_placement;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use test_placement::FixturePlacement;
 pub use test_placement::{
     bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
@@ -339,7 +341,9 @@ pub use advancement::{
 };
 
 #[cfg(test)]
-pub(crate) use advancement::{drain_test_advancement_observations, with_test_advancement};
+pub(crate) use advancement::{
+    drain_test_advancement_observations, with_test_advancement, TestHostRequest,
+};
 
 pub use advancement::with_bootstrap_advancement;
 

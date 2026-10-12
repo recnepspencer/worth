@@ -19,9 +19,10 @@ enum TouchedRecordKey {
 impl<'runtime> MergeAccess<'runtime> {
     pub(crate) fn plan_causal_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: NormalizedRelationalMergeRequest,
     ) -> Result<CausallyAnnotatedMergePlan, MergePlanningError> {
-        let conflict_plan = self.plan_conflict_scope(request)?;
+        let conflict_plan = self.plan_conflict_scope(execution, request)?;
         Ok(self.annotate_causal_scope(conflict_plan))
     }
 

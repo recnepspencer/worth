@@ -35,12 +35,15 @@ impl PreparedSelections {
 
     pub(super) fn remains_equal(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         fact: &WorthQueryApplicationObservedFact,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         control: StorageControl<'_, '_>,
     ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
         super::check_control(control)?;
+        execution.check_live().map_err(|stop| super::super::fact_read_set_failure(
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::request_read_stopped(stop, "prepared indexed comparison")))?;
         let WorthQueryApplicationObservedFact::IndexedEntitySelection {
             index_id,
             definition,
@@ -51,7 +54,9 @@ impl PreparedSelections {
             candidates,
         } = fact
         else {
-            return Ok(fact.remains_equal_in(runtime, snapshot));
+            return fact
+                .remains_equal_in(runtime, execution, snapshot)
+                .map_err(super::super::fact_read_set_failure);
         };
         // Preserve scalar malformed-limit refusal before index admission.
         if *candidate_limit == 0 || *candidate_limit == usize::MAX {
@@ -59,16 +64,21 @@ impl PreparedSelections {
         }
         let key = (*index_id, *entity_kind, locator.clone());
         if !self.selectors.contains_key(&key) {
-            let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+            let Some(view) = runtime.read_truth().project_snapshot(snapshot, execution) else {
                 return Ok(false);
             };
-            let Ok(prepared) = runtime.index_access().prepare_entity_field_lookup(
-                &view,
-                *index_id,
-                *entity_kind,
-                locator,
-            ) else {
-                return Ok(false);
+            let prepared = match runtime.index_access().prepare_entity_field_lookup(
+                &view, *index_id, *entity_kind, locator, execution,
+            ) {
+                Ok(prepared) => prepared,
+                Err(denial) => match denial.kind() {
+                    worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause) => {
+                        return Err(super::super::fact_read_set_failure(
+                            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed admission"),
+                        ));
+                    }
+                    _ => return Ok(false),
+                },
             };
             self.selectors.insert(key.clone(), prepared);
         }
@@ -78,6 +88,7 @@ impl PreparedSelections {
             value,
             *candidate_limit,
             BoundedIndexParityMode::Production,
+            execution,
             || super::check_control(control),
         );
         match current {
@@ -85,6 +96,10 @@ impl PreparedSelections {
                 && current.retain_definition().as_ref() == definition.as_ref()
                 && current.candidate_entity_ids() == candidates),
             Err(BoundedEntityFieldLookupAdmissionStop::Admission(denial)) => Err(denial),
+            Err(BoundedEntityFieldLookupAdmissionStop::Lookup(denial)) => match denial.kind() {
+                worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause) => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed comparison"))),
+                _ => Ok(false),
+            },
             Err(_) => Ok(false),
         }
     }

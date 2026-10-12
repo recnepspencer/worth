@@ -33,36 +33,52 @@ mod semantic_contract;
 
 #[test]
 fn installed_snapshot_identity_converges_and_semantic_drift_changes_it() {
-    let first_workspace = installed_builder()
-        .workspace("worth-ui-operation-identity-first")
-        .unwrap();
-    let second_workspace = installed_builder()
-        .workspace("worth-ui-operation-identity-second")
-        .unwrap();
+    let first_workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            installed_builder()
+                .workspace(execution, "worth-ui-operation-identity-first")
+                .unwrap()
+        });
+    let second_workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            installed_builder()
+                .workspace(execution, "worth-ui-operation-identity-second")
+                .unwrap()
+        });
     let drifted_definition = snapshot_measurement_definition_with_value_alias("value");
     let drifted_identity = drifted_definition
         .clone()
         .into_portable()
         .canonical_identity()
         .to_owned();
-    let drifted_installation_denial = match installed_builder_with_package(
-        crate::domain_package::worth_ui_domain_package_with_snapshot_definition(
-            drifted_definition.clone(),
-        ),
-    )
-    .workspace("worth-ui-operation-identity-drifted")
-    {
-        Ok(_) => panic!("semantic drift cannot retain the old registered executor"),
-        Err(denial) => denial,
-    };
+    let drifted_installation_denial =
+        match crate::certification::request_custody::with_bootstrap_request(|execution| {
+            installed_builder_with_package(
+                crate::domain_package::worth_ui_domain_package_with_snapshot_definition(
+                    drifted_definition.clone(),
+                ),
+            )
+            .workspace(execution, "worth-ui-operation-identity-drifted")
+        }) {
+            Ok(_) => panic!("semantic drift cannot retain the old registered executor"),
+            Err(denial) => denial,
+        };
 
     let first = bound_snapshot(&first_workspace);
     let second = bound_snapshot(&second_workspace);
-    let drifted_workspace = drifted_installed_builder_with_package(
-        crate::domain_package::worth_ui_domain_package_with_snapshot_definition(drifted_definition),
-    )
-    .workspace("worth-ui-operation-identity-drifted-with-matching-executor")
-    .expect("semantic drift with its exact executor should install");
+    let drifted_workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            drifted_installed_builder_with_package(
+                crate::domain_package::worth_ui_domain_package_with_snapshot_definition(
+                    drifted_definition,
+                ),
+            )
+            .workspace(
+                execution,
+                "worth-ui-operation-identity-drifted-with-matching-executor",
+            )
+            .expect("semantic drift with its exact executor should install")
+        });
     let drifted = bound_snapshot(&drifted_workspace);
 
     assert_eq!(
@@ -85,7 +101,9 @@ fn installed_snapshot_identity_converges_and_semantic_drift_changes_it() {
 
 #[test]
 fn missing_snapshot_executor_denies_runtime_construction_before_ui_authority_exists() {
-    let denial = match base_builder().workspace("worth-ui-missing-operation-executor") {
+    let denial = match crate::certification::request_custody::with_bootstrap_request(|execution| {
+        base_builder().workspace(execution, "worth-ui-missing-operation-executor")
+    }) {
         Ok(_) => panic!("Query admitted an installed operation without its exact executor"),
         Err(denial) => denial,
     };
@@ -100,12 +118,16 @@ fn missing_snapshot_executor_denies_runtime_construction_before_ui_authority_exi
 
 #[test]
 fn gateway_rejects_a_foreign_world_before_binding_or_execution() {
-    let owner = installed_builder()
-        .workspace("worth-ui-gateway-owner")
-        .expect("owner workspace should build");
-    let foreign = installed_builder()
-        .workspace("worth-ui-gateway-foreign")
-        .expect("foreign workspace should build");
+    let owner = crate::certification::request_custody::with_bootstrap_request(|execution| {
+        installed_builder()
+            .workspace(execution, "worth-ui-gateway-owner")
+            .expect("owner workspace should build")
+    });
+    let foreign = crate::certification::request_custody::with_bootstrap_request(|execution| {
+        installed_builder()
+            .workspace(execution, "worth-ui-gateway-foreign")
+            .expect("foreign workspace should build")
+    });
     let view = owner
         .worth_ui()
         .expect("owner domain should install")

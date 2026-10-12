@@ -346,8 +346,7 @@ where
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        super::super::application_runtime::installation::publish_application_runtime_with_conditionals(
-            phase,
+        super::super::application_runtime::installation::publish_application_runtime_with_conditionals(phase,
             self.publication,
             self.bindings,
             self.output_readiness,

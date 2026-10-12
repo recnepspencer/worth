@@ -14,14 +14,17 @@ type SettledProjection = domain::WorthQuerySettledDomainProjection<
 
 #[test]
 fn settled_projection_promotes_refreshes_and_closes_on_drop() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
-        .workspace("projection-lifecycle-success")
+        .workspace(request_execution, "projection-lifecycle-success")
         .unwrap();
     let (settled, native_key) = settle_native(&mut workspace);
     let settled_identity = settled.identity().to_string();
     let current = settled.into_lifecycle();
     let predecessor_identity = current.identity().to_string();
-    let live = match current.promote(&mut workspace) {
+    let live = match current.promote(request_execution, &mut workspace) {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("current settled projection did not promote"),
     };
@@ -35,7 +38,7 @@ fn settled_projection_promotes_refreshes_and_closes_on_drop() {
     assert_eq!(live.receipt().counters().lower_runtime_contacts, 1);
     assert_eq!(live.receipt().counters().managed_resource_registrations, 1);
 
-    let refresh = live.refresh(&mut workspace).unwrap();
+    let refresh = live.refresh(request_execution, &mut workspace).unwrap();
     assert_eq!(refresh.work().authority_checks(), 1);
     assert_eq!(refresh.work().drain_calls(), 1);
     assert_eq!(refresh.work().delivery_batches(), 0);
@@ -55,11 +58,11 @@ fn settled_projection_promotes_refreshes_and_closes_on_drop() {
     assert_eq!(native.counters().indexed_accesses, 1);
     assert_eq!(native.counters().fact_scans, 0);
     let inserted = workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "live-update")
         })
         .unwrap();
-    let refreshed = live.refresh(&mut workspace).unwrap();
+    let refreshed = live.refresh(request_execution, &mut workspace).unwrap();
     assert_eq!(
         refreshed.impact().class(),
         domain::WorthQueryImpactClass::ValuePatch
@@ -83,18 +86,20 @@ fn settled_projection_promotes_refreshes_and_closes_on_drop() {
     assert_eq!(updated.counters().row_scans, 0);
     let inserted_identity = inserted.deltas()[0].entity_identity().clone();
     workspace
-        .update(inserted_identity.clone(), |mutation| {
+        .update(request_execution, inserted_identity.clone(), |mutation| {
             mutation.aspect("identity.id", "live-updated-again")
         })
         .unwrap();
-    let updated_refresh = live.refresh(&mut workspace).unwrap();
+    let updated_refresh = live.refresh(request_execution, &mut workspace).unwrap();
     assert_eq!(
         updated_refresh.impact().class(),
         domain::WorthQueryImpactClass::ValuePatch
     );
     assert_eq!(updated_refresh.delivery().batches().len(), 1);
-    workspace.delete(inserted_identity).unwrap();
-    let deleted_refresh = live.refresh(&mut workspace).unwrap();
+    workspace
+        .delete(request_execution, inserted_identity)
+        .unwrap();
+    let deleted_refresh = live.refresh(request_execution, &mut workspace).unwrap();
     assert_eq!(
         deleted_refresh.impact().class(),
         domain::WorthQueryImpactClass::Retirement
@@ -112,14 +117,20 @@ fn settled_projection_promotes_refreshes_and_closes_on_drop() {
 
 #[test]
 fn foreign_runtime_denial_preserves_the_projection_for_owner_retry() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut owner = configured_runtime()
-        .workspace("projection-lifecycle-owner")
+        .workspace(request_execution, "projection-lifecycle-owner")
         .unwrap();
     let settled = settle(&mut owner);
     let mut foreign = configured_runtime()
-        .workspace("projection-lifecycle-foreign")
+        .workspace(request_execution, "projection-lifecycle-foreign")
         .unwrap();
-    let stop = match settled.into_lifecycle().promote(&mut foreign) {
+    let stop = match settled
+        .into_lifecycle()
+        .promote(request_execution, &mut foreign)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Denied(stop) => stop,
         _ => panic!("foreign runtime did not deny promotion"),
     };
@@ -130,19 +141,25 @@ fn foreign_runtime_denial_preserves_the_projection_for_owner_retry() {
     assert_no_attempt_or_planning(stop.counters());
 
     assert!(matches!(
-        stop.into_current().promote(&mut owner),
+        stop.into_current().promote(request_execution, &mut owner),
         domain::WorthQueryProjectionPromotionOutcome::Promoted(_)
     ));
 }
 
 #[test]
 fn stale_installation_and_unsupported_basis_stop_before_lifecycle_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut controlled = configured_runtime()
-        .controlled_workspace("projection-lifecycle-stale")
+        .controlled_workspace(request_execution, "projection-lifecycle-stale")
         .unwrap();
     let settled = settle(&mut controlled);
     controlled.advance_domain_installation_generation().unwrap();
-    let stale = match settled.into_lifecycle().promote(&mut controlled) {
+    let stale = match settled
+        .into_lifecycle()
+        .promote(request_execution, &mut controlled)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Stale(stale) => stale,
         _ => panic!("replaced installation generation did not produce stale proof"),
     };
@@ -150,14 +167,18 @@ fn stale_installation_and_unsupported_basis_stop_before_lifecycle_work() {
     assert!(!stale.snapshot().identity().is_empty());
 
     let workspace = configured_runtime()
-        .workspace("projection-lifecycle-wrong-basis")
+        .workspace(request_execution, "projection-lifecycle-wrong-basis")
         .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let branch = workspace
-        .branches()
-        .fork(workspace.current_world())
-        .components(|components| components.reuse_exact_relational_basis().fork_signal())
-        .create()
+        .with_advancement(|phase| {
+            workspace
+                .branches()
+                .fork(workspace.current_world())
+                .components(|components| components.reuse_exact_relational_basis().fork_signal())
+                .create(&phase)
+        })
+        .expect("installed host call opens")
         .unwrap();
     let denial = match workspace
         .observe_operating_world(branch)
@@ -177,17 +198,23 @@ fn stale_installation_and_unsupported_basis_stop_before_lifecycle_work() {
 
 #[test]
 fn live_refresh_revalidates_installation_before_maintenance_or_delivery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
-        .controlled_workspace("projection-lifecycle-live-drift")
+        .controlled_workspace(request_execution, "projection-lifecycle-live-drift")
         .unwrap();
     let settled = settle(&mut workspace);
-    let live = match settled.into_lifecycle().promote(&mut workspace) {
+    let live = match settled
+        .into_lifecycle()
+        .promote(request_execution, &mut workspace)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("current projection did not promote before drift"),
     };
     workspace.advance_domain_installation_generation().unwrap();
 
-    let stop = match live.refresh(&mut workspace) {
+    let stop = match live.refresh(request_execution, &mut workspace) {
         Err(domain::WorthQueryLiveProjectionRefreshError::Authority(stop)) => stop,
         _ => panic!("stale live projection reached maintenance or delivery"),
     };
@@ -204,15 +231,21 @@ fn live_refresh_revalidates_installation_before_maintenance_or_delivery() {
 
 #[test]
 fn unsupported_live_support_denies_before_conditional_or_planning_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Live,
             domain::WorthQueryConsumerSupportPosture::Unsupported,
         )
-        .workspace("projection-lifecycle-unsupported-live")
+        .workspace(request_execution, "projection-lifecycle-unsupported-live")
         .unwrap();
     let settled = settle(&mut workspace);
-    let stop = match settled.into_lifecycle().promote(&mut workspace) {
+    let stop = match settled
+        .into_lifecycle()
+        .promote(request_execution, &mut workspace)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Denied(stop) => stop,
         _ => panic!("unsupported live support did not deny promotion"),
     };

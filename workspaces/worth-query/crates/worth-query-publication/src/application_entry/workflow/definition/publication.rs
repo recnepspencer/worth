@@ -136,7 +136,7 @@ where
         let application = self.application_runtime();
         let selected = application
             .on_branch(self.product_branch())
-            .select()
+            .select(phase, )
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(
                 WorthQueryWorkflowDefinitionPublicationPreparationDenial::RequestAdmission,
@@ -155,7 +155,7 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
             Spec,
-        >(
+        >(phase,
             &selected,
             contract,
             expected_predecessor,

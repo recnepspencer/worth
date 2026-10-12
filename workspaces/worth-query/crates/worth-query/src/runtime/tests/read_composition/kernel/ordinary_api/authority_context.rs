@@ -12,6 +12,9 @@ use crate::tenant_basis::{TenantBasisEpoch, TenantBindingSnapshot};
 
 #[test]
 fn ordinary_read_lowers_policy_tenant_and_relationship_authority_once() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_manager_relationship_read)
         .expect("relationship declaration should canonicalize");
     let policy_tenant = admitted_policy_tenant_inputs(1, true);
@@ -31,13 +34,13 @@ fn ordinary_read_lowers_policy_tenant_and_relationship_authority_once() {
             policy_tenant.schema,
         )
         .with_relationship_proofs(relationships);
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-policy-tenant-relationship")
         .expect("ordinary workspace should open");
 
     let completion = declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("fully admitted read should execute");
     let context_receipt = completion.context_receipt();
@@ -78,14 +81,23 @@ fn ordinary_read_lowers_policy_tenant_and_relationship_authority_once() {
 
 #[test]
 fn equivalent_relationship_declaration_order_converges_on_context_identity() {
-    let first = run_relationship_context([
-        WorthQueryReadRelationshipProof::direct_edge(manager_relation_name()),
-        WorthQueryReadRelationshipProof::tenant_membership(),
-    ]);
-    let second = run_relationship_context([
-        WorthQueryReadRelationshipProof::tenant_membership(),
-        WorthQueryReadRelationshipProof::direct_edge(manager_relation_name()),
-    ]);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let first = run_relationship_context(
+        request_execution,
+        [
+            WorthQueryReadRelationshipProof::direct_edge(manager_relation_name()),
+            WorthQueryReadRelationshipProof::tenant_membership(),
+        ],
+    );
+    let second = run_relationship_context(
+        request_execution,
+        [
+            WorthQueryReadRelationshipProof::tenant_membership(),
+            WorthQueryReadRelationshipProof::direct_edge(manager_relation_name()),
+        ],
+    );
 
     assert_eq!(first.context_receipt(), second.context_receipt());
     assert_eq!(
@@ -101,6 +113,9 @@ fn equivalent_relationship_declaration_order_converges_on_context_identity() {
 
 #[test]
 fn denied_policy_stops_before_graph_authority_admission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_identity_read).expect("read declaration should canonicalize");
     let policy_tenant = admitted_policy_tenant_inputs(1, false);
     let context = current().under_policy_tenant(
@@ -109,13 +124,13 @@ fn denied_policy_stops_before_graph_authority_admission() {
         policy_tenant.branch,
         policy_tenant.schema,
     );
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-policy-denied")
         .expect("ordinary workspace should open");
 
     let stop = declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("denied policy must stop the read");
     let counters = stop
@@ -141,6 +156,9 @@ fn denied_policy_stops_before_graph_authority_admission() {
 
 #[test]
 fn denied_branch_names_the_branch_authority_as_the_next_action() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_identity_read).expect("read declaration should canonicalize");
     let policy_tenant = admitted_policy_tenant_inputs(1, true);
     let branch = BranchAccessGrant::synthetic_denied(
@@ -154,13 +172,13 @@ fn denied_branch_names_the_branch_authority_as_the_next_action() {
         branch,
         policy_tenant.schema,
     );
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-branch-denied")
         .expect("ordinary workspace should open");
 
     let stop = declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("denied branch must stop the read");
 
@@ -178,6 +196,9 @@ fn denied_branch_names_the_branch_authority_as_the_next_action() {
 
 #[test]
 fn hidden_tenant_filter_names_tenant_authority_as_the_next_action() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_identity_read).expect("read declaration should canonicalize");
     let policy_tenant = admitted_policy_tenant_inputs(1, true);
     let tenant = TenantBindingSnapshot::synthetic_hidden_filter(
@@ -192,13 +213,13 @@ fn hidden_tenant_filter_names_tenant_authority_as_the_next_action() {
         policy_tenant.branch,
         policy_tenant.schema,
     );
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-tenant-denied")
         .expect("ordinary workspace should open");
 
     let stop = declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("hidden tenant authority must stop the read");
 
@@ -216,15 +237,18 @@ fn hidden_tenant_filter_names_tenant_authority_as_the_next_action() {
 
 #[test]
 fn relationship_read_without_relationship_authority_stops_before_other_admission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_manager_relationship_read)
         .expect("relationship read declaration should canonicalize");
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-missing-relationship-authority")
         .expect("ordinary workspace should open");
 
     let stop = declaration
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("relationship read must require relationship authority");
     let counters = stop
@@ -246,8 +270,11 @@ fn relationship_read_without_relationship_authority_stops_before_other_admission
 
 #[test]
 fn changed_policy_epoch_invalidates_only_context_identity() {
-    let first = run_policy_context(1);
-    let second = run_policy_context(2);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let first = run_policy_context(request_execution, 1);
+    let second = run_policy_context(request_execution, 2);
 
     assert_ne!(first.digest(), second.digest());
     assert_eq!(

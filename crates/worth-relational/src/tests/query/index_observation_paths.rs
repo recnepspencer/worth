@@ -8,19 +8,22 @@ use crate::validation::data::{InvariantCatalog, InvariantRegistration, Invariant
 
 #[test]
 fn unique_entity_aspect_field_index_refresh_rewrites_name_membership_after_entity_update() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
             InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
         )],
     });
-    let alpha = create_entity(&runtime, "alpha");
-    let beta = create_entity(&runtime, "beta");
+    let alpha = create_entity(execution, &runtime, "alpha");
+    let beta = create_entity(execution, &runtime, "beta");
 
     runtime
         .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes()
+        .rebuild_unique_entity_aspect_field_indexes(execution)
         .expect("main-branch unique index rebuild admits its exact basis");
-    update_entity(&runtime, beta, "gamma");
+    update_entity(execution, &runtime, beta, "gamma");
 
     let index_access = runtime.index_access();
     let name_field = aspect_field_locator(aspect_key("name"), field_key("name"));
@@ -51,6 +54,9 @@ fn unique_entity_aspect_field_index_refresh_rewrites_name_membership_after_entit
 
 #[test]
 fn unique_entity_aspect_field_index_keeps_same_field_key_separate_by_aspect_locator() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let name_field = field_key("name");
     let legal_name = aspect_key("legal.name");
     let display_name = aspect_key("display.name");
@@ -91,6 +97,7 @@ fn unique_entity_aspect_field_index_keeps_same_field_key_separate_by_aspect_loca
         .build();
 
     let alpha = create_entity_with_aspect_fields(
+        execution,
         &runtime,
         "alpha",
         aspect_field_patch_from_values([
@@ -107,6 +114,7 @@ fn unique_entity_aspect_field_index_keeps_same_field_key_separate_by_aspect_loca
         ]),
     );
     let beta = create_entity_with_aspect_fields(
+        execution,
         &runtime,
         "beta",
         aspect_field_patch_from_values([
@@ -125,7 +133,7 @@ fn unique_entity_aspect_field_index_keeps_same_field_key_separate_by_aspect_loca
 
     runtime
         .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes()
+        .rebuild_unique_entity_aspect_field_indexes(execution)
         .expect("main-branch unique index rebuild admits its exact basis");
     let index_access = runtime.index_access();
     let legal_entries = index_access
@@ -159,9 +167,12 @@ fn unique_entity_aspect_field_index_keeps_same_field_key_separate_by_aspect_loca
 
 #[test]
 fn derived_index_build_materializes_latest_visible_entity_field_values() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let alpha = create_entity(&runtime, "alpha");
-    let create_outcome = update_entity(&runtime, alpha, "gamma");
+    let alpha = create_entity(execution, &runtime, "alpha");
+    let create_outcome = update_entity(execution, &runtime, alpha, "gamma");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name".to_string(),
@@ -171,13 +182,14 @@ fn derived_index_build_materializes_latest_visible_entity_field_values() {
         branch_scoped: true,
     });
 
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: create_outcome.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     let index_access = runtime.index_access();
     let generation = index_access
         .latest_generation(index.index_id, &BranchId("main".to_string()))
@@ -201,6 +213,9 @@ fn derived_index_build_materializes_latest_visible_entity_field_values() {
 
 #[test]
 fn derived_index_build_materializes_declared_struct_field_through_field_projection_scope() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(aspect_key("name"), field_key("name")),
@@ -245,10 +260,7 @@ fn derived_index_build_materializes_declared_struct_field_through_field_projecti
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("entity create succeeds");
     let alpha = changed_entities(&outcome)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -260,13 +272,14 @@ fn derived_index_build_materializes_declared_struct_field_through_field_projecti
         branch_scoped: true,
     });
 
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: outcome.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     let index_access = runtime.index_access();
     let generation = index_access
         .latest_generation(index.index_id, &BranchId("main".to_string()))
@@ -293,6 +306,7 @@ fn field_comparison_key(value: &str) -> AuthoritativeFieldComparisonKey {
 }
 
 fn create_entity_with_aspect_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,
     fields: AspectFieldPatch,
@@ -311,10 +325,7 @@ fn create_entity_with_aspect_fields(
     )
     .expect("test staging stays within configured resource budgets");
     changed_entities(
-        &txn.commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("entity create succeeds"),
+        &txn.commit(execution, runtime)
+            .expect("entity create succeeds"),
     )[0]
 }

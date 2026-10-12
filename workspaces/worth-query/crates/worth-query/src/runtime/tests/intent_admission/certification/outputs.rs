@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn intent_admission_certification_reports_representative_and_seeded_outputs() {
-    let bundle = certify_intent_admission();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let bundle = certify_intent_admission(request_execution);
 
     for name in [
         "raw_intent_digest",

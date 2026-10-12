@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn exact_snapshot_position_is_admitted_before_native_binding_copies() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "position-admission-anchor");
+    create_entity(execution, &runtime, "position-admission-anchor");
     let handle = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let expected = runtime
         .read_truth()

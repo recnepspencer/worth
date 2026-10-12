@@ -117,6 +117,7 @@ where
 {
     pub(super) fn select_product_evaluation_binding(
         &mut self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &BridgeSealedRuntimeAssembly,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
@@ -146,7 +147,7 @@ where
         }
 
         let predecessor = self.predecessor_binding_state(&selected_identity);
-        let mut selected = self.fresh_evaluation_binding(bridge, runtime, truth, predecessor.as_ref())?;
+        let mut selected = self.fresh_evaluation_binding(execution, bridge, runtime, truth, predecessor.as_ref())?;
         if let Some(active_identity) = active_identity {
             self.swap_evaluation_binding(&mut selected);
             self.inactive_bindings.insert(active_identity, selected);
@@ -163,12 +164,13 @@ where
     /// The next accepted observation's batch carries `RefreshAll`.
     pub(super) fn rebuild_lagging_evaluation_binding(
         &mut self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &BridgeSealedRuntimeAssembly,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
         resume_after: Option<worth_relational::facade::publication::PatchStreamPosition>,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
-        let mut rebuilt = self.fresh_evaluation_binding(bridge, runtime, truth, None)?;
+        let mut rebuilt = self.fresh_evaluation_binding(execution, bridge, runtime, truth, None)?;
         rebuilt.authoritative_commit_cursor = resume_after;
         // The Query-commit delivery stays deliverable; the gap the rebuild
         // skipped and everything owed before it are owed as a full refresh.
@@ -180,6 +182,7 @@ where
 
     fn fresh_evaluation_binding(
         &mut self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &BridgeSealedRuntimeAssembly,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
@@ -195,11 +198,12 @@ where
                 )
             })?;
         let lowering = exact.installed_lowering();
-        self.create_evaluation_binding(bridge, runtime, truth, exact, &lowering, predecessor)
+        self.create_evaluation_binding(execution, bridge, runtime, truth, exact, &lowering, predecessor)
     }
 
     fn create_evaluation_binding(
         &mut self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &BridgeSealedRuntimeAssembly,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
@@ -231,7 +235,7 @@ where
                     denial.detail(),
                 )
             })?;
-        let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(
+        let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(execution,
             runtime,
             &self.definition.binding,
             &self.definition.reconstruction,

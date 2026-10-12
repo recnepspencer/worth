@@ -15,6 +15,7 @@ use crate::tests::support::{
 use super::{scenario_branch_main, ActiveRelation};
 
 pub(super) fn apply_operation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entities: &mut Vec<EntityId>,
     snapshots: &mut Vec<SnapshotHandle>,
@@ -30,8 +31,9 @@ pub(super) fn apply_operation(
         ScenarioOperation::CreateEntity { partition, .. } => {
             let name = format!("seed-{seed}-create-{step}-{name_counter}");
             *name_counter += 1;
-            let entity =
-                crate::tests::support::create_entity_in_partition(runtime, &name, *partition);
+            let entity = crate::tests::support::create_entity_in_partition(
+                execution, runtime, &name, *partition,
+            );
             entities.push(entity);
         }
         ScenarioOperation::UpdateEntity {
@@ -47,7 +49,7 @@ pub(super) fn apply_operation(
             let name = format!("seed-{seed}-update-{step}-{name_counter}");
             *name_counter += 1;
             if let Ok(outcome) =
-                try_update_entity_on_branch(runtime, entities[index], &name, branch)
+                try_update_entity_on_branch(execution, runtime, entities[index], &name, branch)
             {
                 release_test_commit_snapshot(runtime, &outcome);
             }
@@ -59,6 +61,7 @@ pub(super) fn apply_operation(
             ..
         } => {
             replace_entity_through_authoritative_patch(
+                execution,
                 runtime,
                 entities,
                 relations,
@@ -78,6 +81,7 @@ pub(super) fn apply_operation(
             ..
         } => {
             create_live_relation(
+                execution,
                 runtime,
                 entities,
                 relations,
@@ -97,13 +101,14 @@ pub(super) fn apply_operation(
             release_snapshot(runtime, snapshots, *snapshot_slot);
         }
         ScenarioOperation::DeleteRelation { relation_slot } => {
-            delete_relation(runtime, entities, relations, *relation_slot);
+            delete_relation(execution, runtime, entities, relations, *relation_slot);
         }
         ScenarioOperation::DeleteEntity {
             entity_slot,
             branch_slot,
         } => {
             delete_entity(
+                execution,
                 runtime,
                 entities,
                 relations,
@@ -127,17 +132,25 @@ pub(super) fn apply_operation(
             );
         }
         ScenarioOperation::MergeBranchIntoMain { branch_slot } => {
-            merge_branch_into_main(runtime, entities, relations, branches, *branch_slot);
+            merge_branch_into_main(
+                execution,
+                runtime,
+                entities,
+                relations,
+                branches,
+                *branch_slot,
+            );
         }
         ScenarioOperation::RunRetentionPass => {
             let _ = runtime.retention().run_pass();
-            refresh_live_world(runtime, entities, relations);
+            refresh_live_world(execution, runtime, entities, relations);
         }
         ScenarioOperation::DurableCheckpoint | ScenarioOperation::CompactDurableStore => {}
     }
 }
 
 fn replace_entity_through_authoritative_patch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entities: &mut Vec<EntityId>,
     relations: &mut Vec<ActiveRelation>,
@@ -178,19 +191,17 @@ fn replace_entity_through_authoritative_patch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    if let Ok(outcome) = txn.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    ) {
+    if let Ok(outcome) = txn.commit(execution, runtime) {
         if let Some(replacement) = crate::tests::support::changed_entities(&outcome).last() {
             entities[index] = *replacement;
         }
         release_test_commit_snapshot(runtime, &outcome);
-        refresh_live_world(runtime, entities, relations);
+        refresh_live_world(execution, runtime, entities, relations);
     }
 }
 
 fn create_live_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entities: &[EntityId],
     relations: &mut Vec<ActiveRelation>,
@@ -220,7 +231,8 @@ fn create_live_relation(
     }
     let client_key = format!("seed-{seed}-rel-{step}-{name_counter}");
     *name_counter += 1;
-    let relation = create_relation_in_partition(runtime, source, target, &client_key, partition);
+    let relation =
+        create_relation_in_partition(execution, runtime, source, target, &client_key, partition);
     relations.push(ActiveRelation {
         relation_id: relation,
         source,
@@ -246,6 +258,7 @@ fn release_snapshot(
 }
 
 fn delete_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entities: &mut Vec<EntityId>,
     relations: &mut Vec<ActiveRelation>,
@@ -266,17 +279,13 @@ fn delete_relation(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, runtime).unwrap();
     release_test_commit_snapshot(runtime, &outcome);
-    refresh_live_world(runtime, entities, relations);
+    refresh_live_world(execution, runtime, entities, relations);
 }
 
 fn delete_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entities: &mut Vec<EntityId>,
     relations: &mut Vec<ActiveRelation>,
@@ -298,14 +307,11 @@ fn delete_entity(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    if let Ok(outcome) = txn.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    ) {
+    if let Ok(outcome) = txn.commit(execution, runtime) {
         release_test_commit_snapshot(runtime, &outcome);
         entities.swap_remove(index);
         relations.retain(|relation| relation.source != deleted && relation.target != deleted);
-        refresh_live_world(runtime, entities, relations);
+        refresh_live_world(execution, runtime, entities, relations);
     }
 }
 
@@ -336,6 +342,7 @@ fn create_branch(
 }
 
 fn merge_branch_into_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entities: &mut Vec<EntityId>,
     relations: &mut Vec<ActiveRelation>,
@@ -352,41 +359,13 @@ fn merge_branch_into_main(
             scenario_branch_main(),
             vec![branch],
         );
-        if let Ok(outcome) = txn.commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        ) {
+        if let Ok(outcome) = txn.commit(execution, runtime) {
             release_test_commit_snapshot(runtime, &outcome);
-            refresh_live_world(runtime, entities, relations);
+            refresh_live_world(execution, runtime, entities, relations);
         }
     }
 }
 
-fn refresh_live_world(
-    runtime: &RelationalRuntime,
-    entities: &mut Vec<EntityId>,
-    relations: &mut Vec<ActiveRelation>,
-) {
-    let snapshot = runtime.visibility_authority().snapshot();
-    let read = runtime.read_truth().read_snapshot(&snapshot).unwrap();
-    *entities = read
-        .entities()
-        .iter()
-        .map(|record| record.entity_id)
-        .collect();
-    *relations = read
-        .relations()
-        .iter()
-        .map(|record| ActiveRelation {
-            relation_id: record.relation_id,
-            source: record.source,
-            target: record.target,
-            partition: record.relation_id.partition_id,
-        })
-        .collect();
-    drop(read);
-    assert!(runtime
-        .visibility_authority()
-        .release_snapshot(&snapshot)
-        .is_ok());
-}
+#[path = "operation_application/world_refresh.rs"]
+mod world_refresh;
+use world_refresh::refresh_live_world;

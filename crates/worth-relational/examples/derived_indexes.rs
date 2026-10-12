@@ -7,11 +7,14 @@ use worth_relational::facade::{
 };
 
 fn main() {
+    let host_request = support::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
         .build();
 
-    let (created, _entity_id) = support::create_entity(&runtime, "indexed");
+    let (created, _entity_id) = support::create_entity(request_execution, &runtime, "indexed");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name".to_string(),
@@ -21,13 +24,14 @@ fn main() {
         branch_scoped: true,
     });
 
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        request_execution,
+        DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
 
     let indexes = runtime.index_access();
     let generation = indexes

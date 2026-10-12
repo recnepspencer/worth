@@ -3,8 +3,11 @@ use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[test]
 fn direct_publication_settles_before_a_child_can_acknowledge() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "settlement-anchor");
+    create_entity(execution, &runtime, "settlement-anchor");
     runtime
         .durability_authority()
         .checkpoint()
@@ -18,10 +21,11 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .expect("direct parent prepares");
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("direct parent must perform");
     };
@@ -67,7 +71,7 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
         )
         .expect("test staging stays within configured resource budgets");
     let child_denial = runtime
-        .prepare_branch_transaction(blocked_child, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, blocked_child)
         .expect_err("a child cannot hide its parent's unfinished settlement");
     assert!(format!("{child_denial:?}").contains("requires explicit owner settlement"));
     let settled_parent = runtime
@@ -75,7 +79,7 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
         .expect("the direct owner explicitly settles its performed publication");
     release_test_commit_snapshot(&runtime, &settled_parent);
 
-    let child = create_entity_outcome(&runtime, "ordinary-child");
+    let child = create_entity_outcome(execution, &runtime, "ordinary-child");
     assert_eq!(child.commit.parents, vec![parent_id]);
     let durability = runtime.durability();
     let durable = durability.durable_log();
@@ -94,7 +98,7 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("fresh runtime recovers the baseline checkpoint plus exact tail");
     assert_eq!(
         recovered
@@ -112,7 +116,7 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
             .commit_id,
         child.commit.commit_id
     );
-    let continued = create_entity_outcome(&recovered, "post-recovery-child");
+    let continued = create_entity_outcome(execution, &recovered, "post-recovery-child");
     let continued_position = recovered
         .history
         .canonical_stream_position(continued.commit.commit_id)
@@ -126,8 +130,11 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
 /// Both axes are asserted: the published handle registry and the capacity owner.
 #[test]
 fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "repair-anchor");
+    create_entity(execution, &runtime, "repair-anchor");
     runtime
         .durability_authority()
         .checkpoint()
@@ -146,10 +153,11 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .expect("fault candidate prepares");
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("fault candidate performs");
     };
@@ -236,7 +244,7 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
         .durability_authority()
         .checkpoint()
         .expect("checkpoint succeeds after repair");
-    let child = create_entity_outcome(&runtime, "child-after-repair");
+    let child = create_entity_outcome(execution, &runtime, "child-after-repair");
     assert_eq!(child.commit.parents, vec![commit_id]);
 
     let plan = runtime.durability().recovery_plan(
@@ -245,7 +253,7 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("fresh runtime recovers repaired parent and child");
     assert_eq!(
         recovered
@@ -263,8 +271,11 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
 /// time. The runtime's own obligation stays exactly once against that ordering.
 #[test]
 fn deferred_carrier_repair_is_a_no_op_after_the_snapshot_was_already_released() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "already-released-anchor");
+    create_entity(execution, &runtime, "already-released-anchor");
     let published_before = runtime.visibility.published_snapshot_handle_count();
     let occupied_before = runtime
         .preparation_runtime_snapshot()
@@ -278,10 +289,11 @@ fn deferred_carrier_repair_is_a_no_op_after_the_snapshot_was_already_released() 
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
+        .prepare_branch_transaction(execution, transaction)
         .expect("already-released candidate prepares");
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("already-released candidate performs before its injected fault");
     };
@@ -346,7 +358,7 @@ fn deferred_carrier_repair_is_a_no_op_after_the_snapshot_was_already_released() 
         "an early release does not add or lose a durable append"
     );
 
-    let child = create_entity_outcome(&runtime, "child-after-early-release");
+    let child = create_entity_outcome(execution, &runtime, "child-after-early-release");
     assert_eq!(child.commit.parents, vec![commit_id]);
     release_test_commit_snapshot(&runtime, &child);
 }

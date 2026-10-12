@@ -11,13 +11,17 @@ use super::access::{
 };
 
 impl<'runtime> InspectionAccess<'runtime> {
-    pub fn graph_summary(&self, request: &GraphInspectionRequest) -> GraphInspectionSummary {
+    pub fn graph_summary(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &GraphInspectionRequest,
+    ) -> GraphInspectionSummary {
         self.count_graph_summary_request();
         if matches!(request.scope, InspectionScope::Current) {
             return self.current_graph_summary(request);
         }
         let version_id = self.scope_version_id(&request.scope);
-        let Some(read_view) = self.read_view_for_scope(&request.scope) else {
+        let Some(read_view) = self.read_view_for_scope(execution, &request.scope) else {
             return self.unavailable_graph_summary(request, version_id);
         };
         let partition_scope = PartitionScopeFilter::from_scope(request.partition_scope.as_ref());
@@ -97,14 +101,18 @@ impl<'runtime> InspectionAccess<'runtime> {
         }
     }
 
-    pub fn kind_summary(&self, request: &KindInspectionRequest) -> KindInspectionSummary {
+    pub fn kind_summary(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &KindInspectionRequest,
+    ) -> KindInspectionSummary {
         self.runtime
             .services
             .instrumentation
             .count(|counters| counters.inspection_kind_summary_requests += 1);
         let version_id = self.scope_version_id(&request.scope);
         let partition_scope = PartitionScopeFilter::from_scope(request.partition_scope.as_ref());
-        let Some(read_view) = self.read_view_for_scope(&request.scope) else {
+        let Some(read_view) = self.read_view_for_scope(execution, &request.scope) else {
             return KindInspectionSummary {
                 scope: request.scope.clone(),
                 version_id,

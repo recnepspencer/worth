@@ -42,19 +42,20 @@ impl BankIdentityRuntime {
 
     pub(super) fn admit_commit_recovery_effect(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         handle: &WorthQueryRecoveryHandle,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryRecoveryEffectAuthority, BankEstateProgressionDenial> {
         if matches!(action, EstateAction::DisburseEstate(_)) {
-            let admission = self.admit_estate_disbursement(principal, action, request)?;
+            let admission = self.admit_estate_disbursement(phase, principal, action, request)?;
             return self
                 .application_runtime()
                 .admit_recovery_effect_authority(handle, &admission)
                 .map_err(BankEstateProgressionDenial::from_recovery);
         }
-        let admission = self.admit_notification_operation(principal, action, request)?;
+        let admission = self.admit_notification_operation(phase, principal, action, request)?;
         self.application_runtime()
             .admit_recovery_effect_authority(handle, &admission)
             .map_err(BankEstateProgressionDenial::from_recovery)
@@ -62,15 +63,17 @@ impl BankIdentityRuntime {
 
     fn admit_commit_recovery_inspect(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         handle: &WorthQueryRecoveryHandle,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryRecoveryInspectAuthority, BankEstateProgressionDenial> {
         if matches!(action, EstateAction::DisburseEstate(_)) {
-            return self.admit_disbursement_recovery_inspect(handle, principal, action, request);
+            return self
+                .admit_disbursement_recovery_inspect(phase, handle, principal, action, request);
         }
-        let admission = self.admit_notification_operation(principal, action, request)?;
+        let admission = self.admit_notification_operation(phase, principal, action, request)?;
         let capability = self
             .application_runtime()
             .installed_schema()
@@ -80,10 +83,10 @@ impl BankIdentityRuntime {
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
         let selected = self
-            .select_current_product()
+            .select_current_product(phase)
             .map_err(BankEstateProgressionDenial::from_product_selection)?;
         let access = selected
-            .admit_capability_access(principal.query(), &capability, action, request)
+            .admit_capability_access(phase, principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let disclosure = self
             .application_runtime()
@@ -96,12 +99,13 @@ impl BankIdentityRuntime {
 
     fn admit_disbursement_recovery_inspect(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         handle: &WorthQueryRecoveryHandle,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryRecoveryInspectAuthority, BankEstateProgressionDenial> {
-        let admission = self.admit_estate_disbursement(principal, action, request)?;
+        let admission = self.admit_estate_disbursement(phase, principal, action, request)?;
         let capability = self
             .application_runtime()
             .installed_schema()
@@ -111,10 +115,10 @@ impl BankIdentityRuntime {
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
         let selected = self
-            .select_current_product()
+            .select_current_product(phase)
             .map_err(BankEstateProgressionDenial::from_product_selection)?;
         let access = selected
-            .admit_capability_access(principal.query(), &capability, action, request)
+            .admit_capability_access(phase, principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let disclosure = self
             .application_runtime()
@@ -127,61 +131,81 @@ impl BankIdentityRuntime {
 
     pub fn dispose_commit_recovery(
         &self,
+
         handle: BankCommitRecoveryHandle,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         request: &WorthQueryRequestScope,
     ) -> Result<BankRecoveryTransitionReceipt, BankEstateProgressionDenial> {
+        self.application_runtime().with_application_advancement(request, |phase| {
+
         let operation = handle.installed_operation().to_owned();
         let authority =
-            self.admit_commit_recovery_effect(handle.query(), principal, action, request)?;
+            self.admit_commit_recovery_effect(&phase, handle.query(), principal, action, request)?;
         dispose_recovery_handle(handle.query, &authority)
             .map_err(BankEstateProgressionDenial::from_recovery)?;
         Ok(BankRecoveryTransitionReceipt::new(operation))
+
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 
     pub fn reconcile_commit_recovery(
         &self,
+
         handle: BankCommitRecoveryHandle,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         request: &WorthQueryRequestScope,
     ) -> Result<BankRecoveryTransitionReceipt, BankEstateProgressionDenial> {
+        self.application_runtime().with_application_advancement(request, |phase| {
+
         let operation = handle.installed_operation().to_owned();
         let authority =
-            self.admit_commit_recovery_effect(handle.query(), principal, action, request)?;
+            self.admit_commit_recovery_effect(&phase, handle.query(), principal, action, request)?;
         reconcile_recovery_handle(handle.query, &authority)
             .map_err(BankEstateProgressionDenial::from_recovery)?;
         Ok(BankRecoveryTransitionReceipt::new(operation))
+
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 
     pub fn compensate_commit_recovery(
         &self,
+
         handle: BankCommitRecoveryHandle,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         request: &WorthQueryRequestScope,
     ) -> Result<BankRecoveryTransitionReceipt, BankEstateProgressionDenial> {
+        self.application_runtime().with_application_advancement(request, |phase| {
+
         let operation = handle.installed_operation().to_owned();
         let authority =
-            self.admit_commit_recovery_effect(handle.query(), principal, action, request)?;
+            self.admit_commit_recovery_effect(&phase, handle.query(), principal, action, request)?;
         compensate_recovery_handle(handle.query, &authority)
             .map_err(BankEstateProgressionDenial::from_recovery)?;
         Ok(BankRecoveryTransitionReceipt::new(operation))
+
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 
     pub fn inspect_commit_recovery(
         &self,
+
         handle: &BankCommitRecoveryHandle,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         request: &WorthQueryRequestScope,
     ) -> Result<BankRecoveryInspection, BankEstateProgressionDenial> {
+        self.application_runtime().with_application_advancement(request, |phase| {
+
         let authority =
-            self.admit_commit_recovery_inspect(handle.query(), principal, action, request)?;
+            self.admit_commit_recovery_inspect(&phase, handle.query(), principal, action, request)?;
         inspect_recovery_handle(handle.query(), &authority)
             .map(BankRecoveryInspection::from_query)
             .map_err(BankEstateProgressionDenial::from_recovery)
+
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }
 
     pub fn evaluate_commit_recovery_expiry(

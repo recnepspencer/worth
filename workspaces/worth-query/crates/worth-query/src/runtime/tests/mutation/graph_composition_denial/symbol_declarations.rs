@@ -2,12 +2,15 @@ use super::*;
 
 #[test]
 fn compose_graph_denies_empty_composition_typed_and_early() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.graph-composition-empty")
         .expect("task runtime should open a named workspace");
 
     let error = workspace
-        .compose_graph(|_graph| Ok(()))
+        .compose_graph(request_execution, |_graph| Ok(()))
         .expect_err("empty graph compositions should deny");
 
     match error {
@@ -37,12 +40,15 @@ fn compose_graph_denies_empty_composition_typed_and_early() {
 
 #[test]
 fn compose_graph_denies_duplicate_symbol_declarations_typed_and_early() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.graph-composition-duplicate")
         .expect("task runtime should open a named workspace");
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let _ = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
@@ -95,50 +101,63 @@ fn compose_graph_denies_duplicate_symbol_declarations_typed_and_early() {
 
 #[test]
 fn compose_graph_denies_relation_symbol_reuse_across_compositions_typed_and_early() {
-    let mut workspace = task_edge_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_edge_runtime(request_execution)
         .workspace("tasks.graph-composition-relation-leak")
         .expect("runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-relation-leak-tasks", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-relation-leak-tasks")
-        })
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-relation-leak-tasks",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-graph-composition-relation-leak-tasks")
+            },
+        )
         .expect("task live view should declare");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-relation-leak-edges", |q| {
-            q.from("TaskEdge")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind").unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts(
-                        "edge",
-                        "source_identity",
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-relation-leak-edges",
+            |q| {
+                q.from("TaskEdge")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts(
+                            "edge",
+                            "source_identity",
+                        )
+                        .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts(
+                            "edge",
+                            "target_identity",
+                        )
+                        .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind")
+                            .unwrap(),
                     )
-                    .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts(
-                        "edge",
-                        "target_identity",
-                    )
-                    .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind").unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-relation-leak-edges")
-        })
+                    .schema_basis("tasks-graph-composition-relation-leak-edges")
+            },
+        )
         .expect("edge live view should declare");
     let mut saved_relation = None;
     let _receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let draft = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
@@ -171,7 +190,7 @@ fn compose_graph_denies_relation_symbol_reuse_across_compositions_typed_and_earl
     let saved_relation = saved_relation.expect("composition should expose a saved relation symbol");
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             graph.update_relation(&saved_relation, |relation| {
                 relation
                     .set_aspect(

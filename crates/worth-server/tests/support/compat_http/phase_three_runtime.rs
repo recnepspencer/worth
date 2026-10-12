@@ -223,20 +223,22 @@ impl WorthServerQueryWorkspaceProvider for StatefulCountingMutationWorkspaceProv
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        let workspace_id = request
-            .resolved_request_context()
-            .request_context()
-            .workspace_target()
-            .workspace_id();
-        let resources = worth_query::facade::consumer_kit::in_memory_test_product_world_resources();
-        let (product_source, product_bridge) =
-            worth_query::facade::consumer_kit::in_memory_test_product_world_installation(
-                &resources,
-            )
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
-            })?;
-        WorthQueryRuntime::builder(resources)
+        crate::test_execution_policy::with_bootstrap(|request_execution| {
+            let workspace_id = request
+                .resolved_request_context()
+                .request_context()
+                .workspace_target()
+                .workspace_id();
+            let resources =
+                worth_query::facade::consumer_kit::in_memory_test_product_world_resources();
+            let (product_source, product_bridge) =
+                worth_query::facade::consumer_kit::in_memory_test_product_world_installation(
+                    &resources,
+                )
+                .map_err(|error| {
+                    WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
+                })?;
+            WorthQueryRuntime::builder(resources)
             .aspect_contracts(query_handoff_aspect_contracts())
             .map_err(|error| {
                 WorthServerQueryWorkspaceBindingError::new(
@@ -255,7 +257,7 @@ impl WorthServerQueryWorkspaceProvider for StatefulCountingMutationWorkspaceProv
                 worth_query::facade::runtime::WorthQueryConditionalExecutionResources::development(
                 ),
             )
-            .build()
+            .build(request_execution)
             .map_err(|error| {
                 WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
             })?
@@ -263,6 +265,7 @@ impl WorthServerQueryWorkspaceProvider for StatefulCountingMutationWorkspaceProv
             .map_err(|error| {
                 WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
             })
+        })
     }
 }
 

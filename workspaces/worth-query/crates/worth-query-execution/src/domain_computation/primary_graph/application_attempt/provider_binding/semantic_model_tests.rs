@@ -13,7 +13,10 @@ use worth_relational::facade::identity::{EntityId, KindId, PartitionId, Relation
 
 #[test]
 fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
-    let world = mixed_effect_world();
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
@@ -39,7 +42,10 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
 
 #[test]
 fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
-    let world = mixed_effect_world();
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId::main(),
@@ -64,7 +70,10 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
 
 #[test]
 fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
-    let world = mixed_effect_world();
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
         PartitionId(7),

@@ -1,12 +1,15 @@
 use super::*;
 
-pub(super) fn certify_merge_execution_vs_persisted_commit_floor(suite: &'static str) {
+pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let merge_vs_commit_floor_samples = capture_perf_samples(
         suite,
         "merge_execution_vs_persisted_commit_floor",
         || {
             let merge_runtime = persisted_runtime_with_test_schema();
-            create_entity(&merge_runtime, "main-anchor");
+            create_entity(execution, &merge_runtime, "main-anchor");
             create_branch_from_main(&merge_runtime, "feature");
             let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
                 &merge_runtime,
@@ -29,25 +32,25 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(suite: &'static 
             )
             .expect("test staging stays within configured resource budgets");
             let _feature_only = changed_entities(
-                &txn.commit(
-                    &merge_runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("feature create"),
+                &txn.commit(execution, &merge_runtime)
+                    .expect("feature create"),
             )[0];
 
             let prepared = merge_runtime
-                .prepare_merge_execution(MergeExecutionRequest {
-                    target_branch: BranchId("main".to_string()),
-                    source_branch: BranchId("feature".to_string()),
-                    merge_intent: MergeIntent::ReconcileIntoTarget,
-                })
+                .prepare_merge_execution(
+                    execution,
+                    MergeExecutionRequest {
+                        target_branch: BranchId("main".to_string()),
+                        source_branch: BranchId("feature".to_string()),
+                        merge_intent: MergeIntent::ReconcileIntoTarget,
+                    },
+                )
                 .expect("prepared merge");
 
             merge_runtime.performance_access().reset_counters();
             let merge_started_at = Instant::now();
             let merge_outcome = merge_runtime
-                .execute_prepared_merge(prepared)
+                .execute_prepared_merge(execution, prepared)
                 .expect("execute merge");
             let merge_elapsed_micros = merge_started_at.elapsed().as_micros();
             let merge_counters = merge_runtime.performance_access().counters();
@@ -63,11 +66,8 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(suite: &'static 
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    &control_runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("control persisted single create")
+                txn.commit(execution, &control_runtime)
+                    .expect("control persisted single create")
             };
             let control_elapsed_micros = control_started_at.elapsed().as_micros();
             let control_counters = control_runtime.performance_access().counters();

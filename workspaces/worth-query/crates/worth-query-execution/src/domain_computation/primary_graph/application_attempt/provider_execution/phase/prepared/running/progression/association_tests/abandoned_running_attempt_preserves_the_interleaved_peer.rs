@@ -11,15 +11,29 @@ fn abandoned_running_attempt_preserves_the_interleaved_peer() {
     world
         .application
         .with_host_advancement(|active_phase| {
+            let host_custody = active_phase.test_host_request();
             let phase = &active_phase;
 
-            let baseline = world.invariant.active_snapshot_count();
-            let (victim, peer) = equivalent_programs(&world, "abandoned-victim");
+            let baseline = world
+                .invariant
+                .active_snapshot_count(&active_phase.borrowed_request_for_test());
+            let (victim, peer) = equivalent_programs(
+                &host_custody.phase_for_application(&world.application),
+                &world,
+                "abandoned-victim",
+            );
             let victim = start(phase, &world.application, victim, idempotency(143, 144));
             let peer = start(phase, &world.application, peer, idempotency(143, 144));
-            let both_attempts = world.invariant.active_snapshot_count();
+            let both_attempts = world
+                .invariant
+                .active_snapshot_count(&active_phase.borrowed_request_for_test());
             drop(victim);
-            assert_only_peer_remains(&world, baseline, both_attempts);
+            assert_only_peer_remains(
+                &active_phase.borrowed_request_for_test(),
+                &world,
+                baseline,
+                both_attempts,
+            );
             finish_peer(phase, &world, peer, baseline, PeerExpectation::Committed);
         })
         .expect("fixture owner admits its advancement");

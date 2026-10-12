@@ -81,11 +81,12 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
     /// Every live relation of one kind on the branch.
     pub(in crate::domain_computation::primary_graph) fn relations_of_kind(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind: KindId,
     ) -> Result<Vec<RelationReadRecord>, WorkflowAdoptionReadDenial> {
         let read = self
             .view
-            .bounded_relations_of_kind(kind, self.remaining())
+            .bounded_relations_of_kind(execution, kind, self.remaining())
             .map_err(|denial| match denial {
                 RelationKindTruthReadDenial::WorkLimitExceeded(limit) => {
                     self.exhausted(limit.consumed_work_units())
@@ -101,12 +102,14 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
     /// Live outgoing relations of one kind from `entity`.
     pub(in crate::domain_computation::primary_graph) fn outgoing(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         kind: KindId,
     ) -> Result<Vec<RelationReadRecord>, WorkflowAdoptionReadDenial> {
         let read = self
             .view
             .bounded_outgoing_relations_for_frontier(
+                execution,
                 &BTreeSet::from([entity]),
                 kind,
                 self.remaining(),
@@ -119,10 +122,11 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
     /// The single live outgoing endpoint of one relation kind.
     pub(in crate::domain_computation::primary_graph) fn single_target(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         kind: KindId,
     ) -> Result<EntityId, WorkflowAdoptionReadDenial> {
-        match self.outgoing(entity, kind)?.as_slice() {
+        match self.outgoing(execution, entity, kind)?.as_slice() {
             [relation] => Ok(relation.target),
             _ => Err(WorkflowAdoptionReadDenial::UnreadableEntity { entity }),
         }
@@ -131,15 +135,21 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
     /// One live entity of the expected kind, charged one unit of work.
     pub(in crate::domain_computation::primary_graph) fn entity(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         kind: KindId,
     ) -> Result<WorkflowAdoptionEntity<'_, 'runtime>, WorkflowAdoptionReadDenial> {
         self.charge_one()?;
         self.view
-            .entity_record_with_projection_scope(entity, ProjectionAspectScope::empty(), |record| {
-                (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live)
-                    .then_some(())
-            })
+            .entity_record_with_projection_scope(
+                execution,
+                entity,
+                ProjectionAspectScope::empty(),
+                |record| {
+                    (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live)
+                        .then_some(())
+                },
+            )
             .map(|()| WorkflowAdoptionEntity {
                 truth: self,
                 entity,
@@ -158,6 +168,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionEntity<'
 impl WorkflowAdoptionEntity<'_, '_> {
     fn value(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         locator: &AspectFieldLocator,
     ) -> Result<Option<AspectValue>, WorkflowAdoptionReadDenial> {
         let field = locator
@@ -171,7 +182,7 @@ impl WorkflowAdoptionEntity<'_, '_> {
         // An absent aspect holds no field; a scalar one is not this layout.
         self.truth
             .view
-            .entity_record_with_projection_scope(self.entity, scope, |record| {
+            .entity_record_with_projection_scope(execution, self.entity, scope, |record| {
                 Some(match record.struct_aspect_value(aspect) {
                     Some(fields) => Ok(fields.get(field).cloned()),
                     None if record.aspect_value(aspect).is_some() => Err(()),
@@ -190,9 +201,10 @@ impl WorkflowAdoptionEntity<'_, '_> {
 
     pub(in crate::domain_computation::primary_graph) fn optional_text(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         locator: &AspectFieldLocator,
     ) -> Result<Option<String>, WorkflowAdoptionReadDenial> {
-        match self.value(locator)? {
+        match self.value(execution, locator)? {
             None => Ok(None),
             Some(AspectValue::String(InternedString::Raw(text))) => Ok(Some(text)),
             Some(_) => Err(self.unreadable()),
@@ -201,17 +213,19 @@ impl WorkflowAdoptionEntity<'_, '_> {
 
     pub(in crate::domain_computation::primary_graph) fn text(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         locator: &AspectFieldLocator,
     ) -> Result<String, WorkflowAdoptionReadDenial> {
-        self.optional_text(locator)?
+        self.optional_text(execution, locator)?
             .ok_or_else(|| self.unreadable())
     }
 
     pub(in crate::domain_computation::primary_graph) fn u64(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         locator: &AspectFieldLocator,
     ) -> Result<u64, WorkflowAdoptionReadDenial> {
-        match self.value(locator)? {
+        match self.value(execution, locator)? {
             Some(AspectValue::UInt64(value)) => Ok(value),
             _ => Err(self.unreadable()),
         }
@@ -219,9 +233,10 @@ impl WorkflowAdoptionEntity<'_, '_> {
 
     pub(in crate::domain_computation::primary_graph) fn bool(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         locator: &AspectFieldLocator,
     ) -> Result<bool, WorkflowAdoptionReadDenial> {
-        match self.value(locator)? {
+        match self.value(execution, locator)? {
             Some(AspectValue::Bool(value)) => Ok(value),
             _ => Err(self.unreadable()),
         }

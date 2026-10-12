@@ -2,14 +2,18 @@ use crate::world::supply_chain::*;
 
 #[test]
 fn production_snapshot_schema_ignores_program_descriptor_mutation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court()).unwrap();
     let program = CompiledSupplyChainProgram::compile(definition).unwrap();
-    let world = compile_supply_chain_baseline(program).unwrap();
+    let world = compile_supply_chain_baseline(execution, program).unwrap();
     let mut altered_program = world.program.clone();
     altered_program.definition_mut_for_test().schema =
         SupplyChainSchema::canonical(SchemaVersion::V2);
 
     let observed = observe_supply_chain_snapshot(
+        execution,
         &altered_program,
         &world.handles,
         &world.runtime,

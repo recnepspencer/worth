@@ -89,6 +89,7 @@ impl WorthQueryProductSecurityBasis<'_> {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     fn retain_security_basis<'basis>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,
         query_basis: Option<&'basis WorthQueryApplicationQueryBasisCustody>,
         index_currency: SecurityIndexCurrency<'_>,
@@ -111,8 +112,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .ok_or(WorthQueryProductBranchAdmissionDenial::ObservationRejected)?
                 .integration_handle();
             graph
-                .with_runtime_mut(|runtime| {
+                .with_runtime_mut(execution, |runtime| {
                     graph.ensure_primary_indexes_for_basis(
+                        execution,
                         runtime,
                         observation.basis().relational_basis(),
                     )
@@ -121,27 +123,34 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let relational = observation.basis().relational_basis();
         if let Some(query_basis) =
-            query_basis.filter(|basis| basis.can_reuse_security_snapshot_at(observation))
+            query_basis.filter(|basis| basis.can_reuse_security_snapshot_at(execution, observation))
         {
             let (_, interpretation) = self
-                .retain_selected_program_interpretation(relational)?
+                .retain_selected_program_interpretation(execution, relational)?
                 .into_parts();
             if let Some(snapshot) = query_basis.reusable_security_snapshot(interpretation.as_ref())
             {
                 return Ok((SecurityApplicationBasis::Reused(snapshot), interpretation));
             }
         }
-        let mut application_basis = self.retain_product_application_basis(observation)?;
-        let _ = self.bind_selected_program_interpretation(relational, &mut application_basis)?;
+        let mut application_basis =
+            self.retain_product_application_basis(execution, observation)?;
+        let _ = self.bind_selected_program_interpretation(
+            execution,
+            relational,
+            &mut application_basis,
+        )?;
         Ok((SecurityApplicationBasis::Owned(application_basis), None))
     }
 
     pub(in crate::domain_computation) fn admit_product_security_basis(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &impl WorthQueryProductObservationSource,
     ) -> Result<WorthQueryProductSecurityBasis<'static>, WorthQueryProductBranchAdmissionDenial>
     {
         self.admit_product_security_basis_with_query_basis(
+            execution,
             product,
             None,
             SecurityIndexCurrency::GraphRead,
@@ -152,11 +161,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         'basis,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &impl WorthQueryProductObservationSource,
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
     ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
     {
         self.admit_product_security_basis_with_query_basis(
+            execution,
             product,
             Some(query_basis),
             SecurityIndexCurrency::GraphRead,
@@ -170,12 +181,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         'basis,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &impl WorthQueryProductObservationSource,
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
         prepared: &PreparedSelectedReadIndexes,
     ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
     {
         self.admit_product_security_basis_with_query_basis(
+            execution,
             product,
             Some(query_basis),
             SecurityIndexCurrency::PreparedSelectedGraphRead(prepared),
@@ -184,6 +197,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     fn admit_product_security_basis_with_query_basis<'basis>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &impl WorthQueryProductObservationSource,
         query_basis: Option<&'basis WorthQueryApplicationQueryBasisCustody>,
         index_currency: SecurityIndexCurrency<'_>,
@@ -198,8 +212,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         if observation.lifecycle_incarnation() != selected.lifecycle_incarnation() {
                             return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
                         }
-                        let (application_basis, selected_program) =
-                            self.retain_security_basis(&observation, query_basis, index_currency)?;
+                        let (application_basis, selected_program) = self.retain_security_basis(
+                            execution,
+                            &observation,
+                            query_basis,
+                            index_currency,
+                        )?;
                         Ok(WorthQueryProductSecurityBasis {
                             _observation: observation,
                             application_basis,
@@ -226,8 +244,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     {
                         return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
                     }
-                    let (application_basis, selected_program) =
-                        self.retain_security_basis(selected, query_basis, index_currency)?;
+                    let (application_basis, selected_program) = self.retain_security_basis(
+                        execution,
+                        selected,
+                        query_basis,
+                        index_currency,
+                    )?;
                     Ok(WorthQueryProductSecurityBasis {
                         _observation: selected.clone(),
                         application_basis,

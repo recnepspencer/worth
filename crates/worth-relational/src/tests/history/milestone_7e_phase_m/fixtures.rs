@@ -71,22 +71,31 @@ pub(super) fn runtime_with_collaboration_merge_history() -> RelationalRuntime {
         .build()
 }
 
-pub(super) fn execute_feature_merge(runtime: &RelationalRuntime) -> MergeExecutionOutcome {
-    let prepared = prepared_feature_merge(runtime);
+pub(super) fn execute_feature_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> MergeExecutionOutcome {
+    let prepared = prepared_feature_merge(execution, runtime);
     runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed feature merge")
 }
 
-pub(super) fn prepared_feature_merge(runtime: &RelationalRuntime) -> PreparedMergeExecution {
-    install_merge_scenario(runtime);
+pub(super) fn prepared_feature_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> PreparedMergeExecution {
+    install_merge_scenario(execution, runtime);
     runtime
         .merge()
-        .prepare_merge_execution(MergeExecutionRequest::new(
-            BranchId("main".to_string()),
-            BranchId("feature".to_string()),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("prepared feature merge")
 }
 
@@ -162,7 +171,10 @@ fn lower_packet(
     basis
 }
 
-fn install_merge_scenario(runtime: &RelationalRuntime) {
+fn install_merge_scenario(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) {
     if runtime
         .history()
         .branch_head(&BranchId("feature".to_string()))
@@ -170,15 +182,16 @@ fn install_merge_scenario(runtime: &RelationalRuntime) {
     {
         return;
     }
-    let shared = create_entity(runtime, "shared");
+    let shared = create_entity(execution, runtime, "shared");
     create_branch_from_main(runtime, "feature");
     create_branch_from_main(runtime, "alt");
-    update_entity_status_on_branch(runtime, shared, "inactive", "main");
-    update_entity_status_on_branch(runtime, shared, "active", "feature");
-    update_entity_status_on_branch(runtime, shared, "pending", "alt");
+    update_entity_status_on_branch(execution, runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, runtime, shared, "active", "feature");
+    update_entity_status_on_branch(execution, runtime, shared, "pending", "alt");
 }
 
 fn update_entity_status_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     status: &str,
@@ -215,9 +228,6 @@ fn update_entity_status_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("update entity status on branch");
+    txn.commit(execution, runtime)
+        .expect("update entity status on branch");
 }

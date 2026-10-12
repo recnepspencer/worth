@@ -297,8 +297,11 @@ mod tests {
 
     #[test]
     fn transaction_admission_denies_missing_root_before_raw_key_normalization() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let runtime = crate::tests::support::runtime_with_test_schema();
-        crate::tests::support::create_entity_outcome(&runtime, "strategy-root-source");
+        crate::tests::support::create_entity_outcome(execution, &runtime, "strategy-root-source");
         let source = BranchId("main".to_owned());
         let (_, basis) = runtime
             .observe_fork_source(&source)

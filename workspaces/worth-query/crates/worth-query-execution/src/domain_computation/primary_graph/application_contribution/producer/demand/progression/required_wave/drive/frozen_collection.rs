@@ -23,6 +23,7 @@ pub(super) enum FrozenTruth {
     NotCurrent,
 }
 pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -49,6 +50,7 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
             .charge_external_work(9)
             .map_err(|_| work_denial())?;
         let mut inspected = super::super::performed::certification::certify_frozen_ready(
+            execution,
             runtime,
             principal,
             request,
@@ -85,6 +87,7 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
                         admission,
                     )?;
                     inspected = super::super::performed::certification::certify_frozen_ready(
+                        execution,
                         runtime,
                         principal,
                         request,

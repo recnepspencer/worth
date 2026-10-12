@@ -1,19 +1,22 @@
 use super::*;
 
 pub(super) fn staged<'run>(
-    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &'run crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: &'run mut WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
-    running
-        .admit_provider_execution_plan(graph)
-        .unwrap()
-        .readmit(execution)
-        .unwrap()
-        .prepare()
-        .unwrap()
-        .bind_reads_and_effects()
+    {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running
+            .admit_provider_execution_plan(graph)
+            .unwrap()
+            .readmit(&installed_fixture_phase)
+    }
+    .unwrap()
+    .prepare()
+    .unwrap()
+    .bind_reads_and_effects()
 }
 
 pub(super) fn cleanup(running: WorthQueryRunningDirectRun) {
@@ -75,7 +78,7 @@ where
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("decision-capable graph attempt should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)
@@ -132,7 +135,7 @@ where
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("provisional-capable graph attempt should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)
@@ -194,7 +197,7 @@ where
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("invariant-capable graph attempt should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)

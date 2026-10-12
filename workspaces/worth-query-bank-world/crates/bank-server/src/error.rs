@@ -108,6 +108,9 @@ impl std::error::Error for BankAuthenticationBoundaryBuildError {
 
 #[derive(Debug)]
 pub enum BankPrincipalAdmissionError {
+    ExecutionRequest(
+        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     Authentication(WorthQueryAuthenticationDenial),
     ProductSelection(WorthQueryProductBranchAdmissionDenial),
     Resolution(WorthQueryPrincipalResolutionDenial),
@@ -116,6 +119,9 @@ pub enum BankPrincipalAdmissionError {
 impl std::fmt::Display for BankPrincipalAdmissionError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ExecutionRequest(cause) => {
+                write!(formatter, "principal advancement denied: {cause:?}")
+            }
             Self::Authentication(error) => error.fmt(formatter),
             Self::ProductSelection(error) => error.fmt(formatter),
             Self::Resolution(error) => error.fmt(formatter),
@@ -126,6 +132,7 @@ impl std::fmt::Display for BankPrincipalAdmissionError {
 impl std::error::Error for BankPrincipalAdmissionError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
+            Self::ExecutionRequest(_) => None,
             Self::Authentication(error) => Some(error),
             Self::ProductSelection(error) => Some(error),
             Self::Resolution(error) => Some(error),

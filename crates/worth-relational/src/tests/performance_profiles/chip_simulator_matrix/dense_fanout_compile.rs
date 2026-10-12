@@ -1,10 +1,13 @@
 use super::*;
 
-pub(super) fn certify_dense_fanout_compile_wave(suite: &'static str) {
+pub(super) fn certify_dense_fanout_compile_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let fanout_compile_samples = capture_perf_samples(suite, "dense_fanout_compile_wave", || {
         let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
         let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
-        let source = create_entity_in_partition(&runtime, "net-driver", PartitionId(7));
+        let source = create_entity_in_partition(execution, &runtime, "net-driver", PartitionId(7));
         let targets = (0..24)
             .map(|index| {
                 let partition_id = match index % 4 {
@@ -13,7 +16,12 @@ pub(super) fn certify_dense_fanout_compile_wave(suite: &'static str) {
                     2 => PartitionId(17),
                     _ => PartitionId(19),
                 };
-                create_entity_in_partition(&runtime, &format!("net-sink-{index}"), partition_id)
+                create_entity_in_partition(
+                    execution,
+                    &runtime,
+                    &format!("net-sink-{index}"),
+                    partition_id,
+                )
             })
             .collect::<Vec<_>>();
 
@@ -41,11 +49,8 @@ pub(super) fn certify_dense_fanout_compile_wave(suite: &'static str) {
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-            txn.commit(
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .expect("chip fanout relation burst commit")
+            txn.commit(execution, &runtime)
+                .expect("chip fanout relation burst commit")
         };
         let commit_micros = commit_started_at.elapsed().as_micros();
         let commit = runtime

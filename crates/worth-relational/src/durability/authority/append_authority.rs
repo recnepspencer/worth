@@ -57,8 +57,11 @@ mod tests {
 
     #[test]
     fn foreign_runtime_authority_cannot_append_an_exact_commit_envelope() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let source = runtime_with_test_schema();
-        let committed = create_entity_outcome(&source, "durable-authority-source");
+        let committed = create_entity_outcome(execution, &source, "durable-authority-source");
         let envelope = committed.envelope().clone();
         let positioned = crate::history::data::PositionedCanonicalCommit::for_test(
             committed.patch_position(),

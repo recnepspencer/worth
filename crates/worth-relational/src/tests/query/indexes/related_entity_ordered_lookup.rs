@@ -7,21 +7,25 @@ use crate::facade::indexes::{
 
 #[test]
 fn related_ordering_certification_rejects_a_missing_candidate() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let parent = changed_entities(&create_entity_outcome(&runtime, "parent"))[0];
-    let alpha = changed_entities(&create_entity_outcome(&runtime, "alpha"))[0];
-    let beta = changed_entities(&create_entity_outcome(&runtime, "beta"))[0];
-    create_relation_outcome(&runtime, parent, alpha, "owns-alpha");
-    create_relation_outcome(&runtime, parent, beta, "owns-beta");
+    let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
+    let alpha = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
+    let beta = changed_entities(&create_entity_outcome(execution, &runtime, "beta"))[0];
+    create_relation_outcome(execution, &runtime, parent, alpha, "owns-alpha");
+    create_relation_outcome(execution, &runtime, parent, beta, "owns-beta");
     let index = register_related_name_index(&runtime);
     let source_commit_id = runtime.history().latest_commit().unwrap().commit_id;
-    runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     runtime
         .indexes
         .corrupt_latest_generation(index.index_id, |generation| {
@@ -49,6 +53,7 @@ fn related_ordering_certification_rejects_a_missing_candidate() {
         .execute_bounded_related_entity_ordered_lookup(
             request(),
             BoundedIndexParityMode::Production,
+            execution,
         )
         .unwrap();
     assert_eq!(production.child_entity_ids().len(), 1);
@@ -57,6 +62,7 @@ fn related_ordering_certification_rejects_a_missing_candidate() {
         .execute_bounded_related_entity_ordered_lookup(
             request(),
             BoundedIndexParityMode::Certification,
+            execution,
         )
         .unwrap_err();
     assert_eq!(
@@ -67,23 +73,27 @@ fn related_ordering_certification_rejects_a_missing_candidate() {
 
 #[test]
 fn related_entity_pages_seek_exact_order_with_identity_ties() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let parent = changed_entities(&create_entity_outcome(&runtime, "parent"))[0];
-    let alpha_one = changed_entities(&create_entity_outcome(&runtime, "alpha"))[0];
-    let beta = changed_entities(&create_entity_outcome(&runtime, "beta"))[0];
-    let alpha_two = changed_entities(&create_entity_outcome(&runtime, "alpha"))[0];
-    create_relation_outcome(&runtime, parent, beta, "owns");
-    create_relation_outcome(&runtime, parent, alpha_two, "owns");
-    create_relation_outcome(&runtime, parent, alpha_one, "owns");
+    let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
+    let alpha_one = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
+    let beta = changed_entities(&create_entity_outcome(execution, &runtime, "beta"))[0];
+    let alpha_two = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
+    create_relation_outcome(execution, &runtime, parent, beta, "owns");
+    create_relation_outcome(execution, &runtime, parent, alpha_two, "owns");
+    create_relation_outcome(execution, &runtime, parent, alpha_one, "owns");
     let index = register_related_name_index(&runtime);
     let source_commit_id = runtime.history().latest_commit().unwrap().commit_id;
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
     let snapshot = runtime.visibility_authority().snapshot();
 
@@ -100,6 +110,7 @@ fn related_entity_pages_seek_exact_order_with_identity_ties() {
             )
             .unwrap(),
             BoundedIndexParityMode::Certification,
+            execution,
         )
         .unwrap();
     let mut expected_alphas = vec![alpha_one, alpha_two];
@@ -122,6 +133,7 @@ fn related_entity_pages_seek_exact_order_with_identity_ties() {
             )
             .unwrap(),
             BoundedIndexParityMode::Certification,
+            execution,
         )
         .unwrap();
     assert_eq!(second.child_entity_ids(), &[beta]);
@@ -136,22 +148,30 @@ fn related_entity_pages_seek_exact_order_with_identity_ties() {
 
 #[test]
 fn related_entity_boundary_is_parent_and_generation_scoped() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let parent = changed_entities(&create_entity_outcome(&runtime, "parent"))[0];
-    let foreign_parent = changed_entities(&create_entity_outcome(&runtime, "foreign-parent"))[0];
-    let child = changed_entities(&create_entity_outcome(&runtime, "alpha"))[0];
-    let later_child = changed_entities(&create_entity_outcome(&runtime, "beta"))[0];
-    create_relation_outcome(&runtime, parent, child, "owns");
-    create_relation_outcome(&runtime, parent, later_child, "owns");
+    let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
+    let foreign_parent = changed_entities(&create_entity_outcome(
+        execution,
+        &runtime,
+        "foreign-parent",
+    ))[0];
+    let child = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
+    let later_child = changed_entities(&create_entity_outcome(execution, &runtime, "beta"))[0];
+    create_relation_outcome(execution, &runtime, parent, child, "owns");
+    create_relation_outcome(execution, &runtime, parent, later_child, "owns");
     let index = register_related_name_index(&runtime);
     let source_commit_id = runtime.history().latest_commit().unwrap().commit_id;
-    runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     let snapshot = runtime.visibility_authority().snapshot();
     let first = runtime
         .index_access()
@@ -166,6 +186,7 @@ fn related_entity_boundary_is_parent_and_generation_scoped() {
             )
             .unwrap(),
             BoundedIndexParityMode::Production,
+            execution,
         )
         .unwrap();
     assert!(first.has_more());
@@ -183,6 +204,7 @@ fn related_entity_boundary_is_parent_and_generation_scoped() {
             )
             .unwrap(),
             BoundedIndexParityMode::Production,
+            execution,
         )
         .unwrap_err();
     assert_eq!(
@@ -193,19 +215,23 @@ fn related_entity_boundary_is_parent_and_generation_scoped() {
 
 #[test]
 fn expected_generation_mismatch_denies_before_ordered_page_access() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let parent = changed_entities(&create_entity_outcome(&runtime, "parent"))[0];
-    let child = changed_entities(&create_entity_outcome(&runtime, "alpha"))[0];
-    create_relation_outcome(&runtime, parent, child, "owns");
+    let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
+    let child = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
+    create_relation_outcome(execution, &runtime, parent, child, "owns");
     let index = register_related_name_index(&runtime);
     let source_commit_id = runtime.history().latest_commit().unwrap().commit_id;
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     let actual = build.generations[0].generation_id;
     let foreign = crate::facade::indexes::DerivedIndexGenerationId(actual.0 + 1);
     let snapshot = runtime.visibility_authority().snapshot();
@@ -223,6 +249,7 @@ fn expected_generation_mismatch_denies_before_ordered_page_access() {
             .unwrap()
             .expect_generation(foreign),
             BoundedIndexParityMode::Production,
+            execution,
         )
         .unwrap_err();
     assert_eq!(
@@ -233,20 +260,24 @@ fn expected_generation_mismatch_denies_before_ordered_page_access() {
 
 #[test]
 fn related_ordering_rebuilds_retained_historical_child_values_after_update() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let parent = changed_entities(&create_entity_outcome(&runtime, "parent"))[0];
-    let child = changed_entities(&create_entity_outcome(&runtime, "historical"))[0];
-    let historical = create_relation_outcome(&runtime, parent, child, "owns-historical");
+    let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
+    let child = changed_entities(&create_entity_outcome(execution, &runtime, "historical"))[0];
+    let historical = create_relation_outcome(execution, &runtime, parent, child, "owns-historical");
     let index = register_related_name_index(&runtime);
 
-    update_entity(&runtime, child, "current");
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    update_entity(execution, &runtime, child, "current");
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: historical.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let result = runtime
@@ -262,6 +293,7 @@ fn related_ordering_rebuilds_retained_historical_child_values_after_update() {
             )
             .unwrap(),
             BoundedIndexParityMode::Certification,
+            execution,
         )
         .unwrap();
 

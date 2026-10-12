@@ -1,11 +1,18 @@
 use super::*;
 
-pub(super) fn certify_trade_correction_analysis_round_trip(suite: &'static str) {
+pub(super) fn certify_trade_correction_analysis_round_trip(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let trade_correction_samples =
         capture_perf_samples(suite, "trade_correction_analysis_round_trip", || {
             let runtime = persisted_runtime_with_test_schema();
-            let account =
-                create_entity_in_partition(&runtime, "portfolio-account", PartitionId(10));
+            let account = create_entity_in_partition(
+                execution,
+                &runtime,
+                "portfolio-account",
+                PartitionId(10),
+            );
             create_branch_from_main(&runtime, "analysis");
 
             runtime.performance_access().reset_counters();
@@ -115,11 +122,8 @@ pub(super) fn certify_trade_correction_analysis_round_trip(suite: &'static str) 
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("analysis branch correction commit")
+                txn.commit(execution, &runtime)
+                    .expect("analysis branch correction commit")
             };
             let analysis_commit_micros = analysis_commit_started_at.elapsed().as_micros();
             let analysis_entities = changed_entities(&analysis_commit);
@@ -128,15 +132,18 @@ pub(super) fn certify_trade_correction_analysis_round_trip(suite: &'static str) 
             let audit_record = analysis_entities[2];
 
             let prepared = runtime
-                .prepare_merge_execution(MergeExecutionRequest {
-                    target_branch: BranchId("main".to_string()),
-                    source_branch: BranchId("analysis".to_string()),
-                    merge_intent: MergeIntent::ReconcileIntoTarget,
-                })
+                .prepare_merge_execution(
+                    execution,
+                    MergeExecutionRequest {
+                        target_branch: BranchId("main".to_string()),
+                        source_branch: BranchId("analysis".to_string()),
+                        merge_intent: MergeIntent::ReconcileIntoTarget,
+                    },
+                )
                 .expect("prepared analysis merge");
             let merge_started_at = Instant::now();
             let merge_outcome = runtime
-                .execute_prepared_merge(prepared)
+                .execute_prepared_merge(execution, prepared)
                 .expect("analysis merge execution");
             let merge_execute_micros = merge_started_at.elapsed().as_micros();
 
@@ -160,7 +167,10 @@ pub(super) fn certify_trade_correction_analysis_round_trip(suite: &'static str) 
                         .read_truth()
                         .plan_query_packet(&snapshot, packet)
                         .expect("planned workflow query"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("workflow query outcome");
             let query_round_trip_micros = query_started_at.elapsed().as_micros();
 

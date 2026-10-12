@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::{
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_retained_approval_binding(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -26,6 +27,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     WorthQueryApplicationAttemptDenial,
 > {
     let approvals = adjacency_with_kind(
+        execution,
         runtime,
         snapshot,
         layout.transition_approval_relation,
@@ -42,7 +44,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         entity_id: *approval,
         kind,
     });
-    exact(
+    exact(execution,
         runtime,
         snapshot,
         *approval,
@@ -54,6 +56,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         facts,
     )?;
     exact(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -63,6 +66,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         facts,
     )?;
     exact(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -72,6 +76,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         facts,
     )?;
     let request = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -82,6 +87,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     let request = crate::domain_computation::authorization::WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(&request)
         .map_err(|()| denial("workflow approval authorization request is invalid"))?;
     let principal = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -97,13 +103,14 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
             "workflow approval principal evidence is nonportable",
         ));
     }
-    if !principal.remains_current_in(runtime, snapshot, graph_layout) {
+    if !principal.remains_current_in(execution, runtime, snapshot, graph_layout) {
         return Err(WorthQueryApplicationAttemptDenial::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::WorkflowApprovalPrincipalStale,
             "workflow approval principal evidence is stale",
         ));
     }
     let capability = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -117,6 +124,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
     let approver = observed_entity(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -129,6 +137,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         facts,
     )?;
     let scope = observed_entity(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -141,6 +150,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         facts,
     )?;
     let action = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -149,6 +159,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         facts,
     )?;
     let purpose = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -168,6 +179,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         ));
     }
     let grant = observed_entity(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -182,6 +194,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     // This per-observation identity is audit provenance, not a durable permit:
     // fresh readmission mints a different observation identity.
     let audit_observation_identity = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -197,6 +210,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         return Err(denial("workflow approval observation identity is invalid"));
     }
     let policy = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -210,6 +224,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         ));
     }
     let lineage = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -226,6 +241,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         serde_json::from_str(&lineage)
             .map_err(|_| denial("workflow approval capability lineage is invalid"))?;
     let support = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -237,6 +253,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         crate::domain_computation::authorization::decode_workflow_approval_support(&support)
             .map_err(|()| denial("workflow approval capability support is invalid"))?;
     let dependencies = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -255,6 +272,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         ));
     }
     let timeline = observed_text(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -268,6 +286,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         _ => return Err(denial("workflow approval validity timeline is invalid")),
     };
     let expiry = observed_u64(
+        execution,
         runtime,
         snapshot,
         *approval,
@@ -276,6 +295,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         facts,
     )?;
     let proposals = adjacency_with_kind(
+        execution,
         runtime,
         snapshot,
         layout.approval_proposal_relation,
@@ -288,6 +308,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         return Err(denial("workflow approval proposal binding changed"));
     }
     let mut evidence = adjacency_with_kind(
+        execution,
         runtime,
         snapshot,
         layout.approval_evidence_relation,
@@ -310,6 +331,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
 }
 
 fn observed_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: EntityId,
@@ -317,9 +339,33 @@ fn observed_entity(
     locators: [&worth_foundational::facade::AspectFieldLocator; 3],
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<EntityId, WorthQueryApplicationAttemptDenial> {
-    let partition = observed_u64(runtime, snapshot, entity, kind, locators[0], facts)?;
-    let slot = observed_u64(runtime, snapshot, entity, kind, locators[1], facts)?;
-    let generation = observed_u64(runtime, snapshot, entity, kind, locators[2], facts)?;
+    let partition = observed_u64(
+        execution,
+        runtime,
+        snapshot,
+        entity,
+        kind,
+        locators[0],
+        facts,
+    )?;
+    let slot = observed_u64(
+        execution,
+        runtime,
+        snapshot,
+        entity,
+        kind,
+        locators[1],
+        facts,
+    )?;
+    let generation = observed_u64(
+        execution,
+        runtime,
+        snapshot,
+        entity,
+        kind,
+        locators[2],
+        facts,
+    )?;
     Ok(EntityId::new(
         worth_relational::facade::identity::PartitionId(
             u32::try_from(partition)

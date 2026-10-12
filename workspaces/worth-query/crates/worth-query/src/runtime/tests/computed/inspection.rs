@@ -2,9 +2,13 @@ use super::*;
 
 #[test]
 fn computed_handle_inspection_reports_dependencies_aspects_and_materialization() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -12,6 +16,7 @@ fn computed_handle_inspection_reports_dependencies_aspects_and_materialization()
         .expect("live should declare");
     let computed = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.inspectable", touches(["title"]))
                 .depends_on_live(&live)
                 .produces(touches(["title.summary"])),
@@ -19,17 +24,20 @@ fn computed_handle_inspection_reports_dependencies_aspects_and_materialization()
         )
         .expect("computed should declare");
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Inspectable task")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Inspectable task")),
+                ],
+            ),
+        )
         .expect("write should materialize computed output");
 
     let evidence = runtime
-        .inspect_derived_view(&computed)
+        .inspect_derived_view(request_execution, &computed)
         .expect("computed handle should inspect");
 
     assert_eq!(evidence.name(), "computed.inspectable");
@@ -59,9 +67,9 @@ fn computed_handle_inspection_reports_dependencies_aspects_and_materialization()
     assert!(!evidence.pending_patch_digest().is_empty());
     assert!(!evidence.inspection_digest().is_empty());
 
-    let foreign_runtime = stateful_bridge_task_runtime();
+    let foreign_runtime = stateful_bridge_task_runtime(request_execution);
     let error = foreign_runtime
-        .inspect_derived_view(&computed)
+        .inspect_derived_view(request_execution, &computed)
         .expect_err("foreign computed handle should not inspect in another runtime");
     assert!(matches!(
         error,
@@ -71,9 +79,13 @@ fn computed_handle_inspection_reports_dependencies_aspects_and_materialization()
 
 #[test]
 fn nested_computed_inspection_explains_dependency_and_patch_posture() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -81,6 +93,7 @@ fn nested_computed_inspection_explains_dependency_and_patch_posture() {
         .expect("live view should declare");
     let titles = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.inspect.titles", touches(["title"]))
                 .depends_on_live(&live)
                 .produces(touches(["title.summary"])),
@@ -89,6 +102,7 @@ fn nested_computed_inspection_explains_dependency_and_patch_posture() {
         .expect("source computed should declare");
     let summary = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.inspect.summary", touches(["title.summary"]))
                 .depends_on_derived(&titles)
                 .produces(touches(["validation.state"])),
@@ -97,7 +111,7 @@ fn nested_computed_inspection_explains_dependency_and_patch_posture() {
         .expect("nested computed should declare");
 
     let before = runtime
-        .inspect_derived_view(&summary)
+        .inspect_derived_view(request_execution, &summary)
         .expect("nested computed should inspect before materialization");
     assert_eq!(
         before.upstream_derived_views(),
@@ -117,19 +131,22 @@ fn nested_computed_inspection_explains_dependency_and_patch_posture() {
     assert!(before.incremental_delivery());
 
     let insert = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Nested inspectable"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Nested inspectable"),
+                    ),
+                ],
+            ),
+        )
         .expect("insert should update nested computeds");
     let after = runtime
-        .inspect_derived_view(&summary)
+        .inspect_derived_view(request_execution, &summary)
         .expect("nested computed should inspect after materialization");
 
     assert_eq!(insert.considered_computed_view_count(), 2);
@@ -152,9 +169,17 @@ fn nested_computed_inspection_explains_dependency_and_patch_posture() {
 
 #[test]
 fn refresh_fallback_computed_inspection_reports_fallback_posture() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.table", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.table",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
     let computed_definition = runtime
         .declare_derived_view(
@@ -167,24 +192,27 @@ fn refresh_fallback_computed_inspection_reports_fallback_posture() {
     );
 
     let before = runtime
-        .inspect_derived_view(&computed)
+        .inspect_derived_view(request_execution, &computed)
         .expect("refresh fallback computed should inspect before write");
     assert!(!before.incremental_delivery());
 
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Refresh inspectable"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Refresh inspectable"),
+                    ),
+                ],
+            ),
+        )
         .expect("insert should route fallback computed patch");
     let after = runtime
-        .inspect_derived_view(&computed)
+        .inspect_derived_view(request_execution, &computed)
         .expect("refresh fallback computed should inspect after write");
 
     assert!(!after.incremental_delivery());

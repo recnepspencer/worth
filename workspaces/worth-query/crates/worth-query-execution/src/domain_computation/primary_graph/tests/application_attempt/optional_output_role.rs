@@ -219,34 +219,37 @@ fn execute_report_for_input(
     WorthQueryApplicationIdempotencyBinding,
 ) {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, &input.status, &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(OptionalOutputOperation::reference())
-        .unwrap();
-    let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            TypedMutationPreconditions::new(),
-            &request,
-        )
-        .unwrap();
-    let key = key.to_owned();
-    let identities = ApplicationMutationIdentities::<
-        IdentityExecutionSchema,
-        OptionalOutputMutationBinding,
-    >::encode(&key, &input)
-    .expect("the request encodes");
-    let idempotency = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities);
-    let execution = world
+    world
         .application
         .with_application_advancement(&request, |phase| {
-            world
+            let custody = phase.test_host_request();
+            let principal = authenticated_principal(&custody, world, &request);
+            let account = resolved_account(&custody, world, &input.status, &request);
+            let operation = world
+                .application
+                .installed_schema()
+                .installed_operation(OptionalOutputOperation::reference())
+                .unwrap();
+            let admission = world
+                .selected_product(&custody)
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    TypedMutationPreconditions::new(),
+                    &request,
+                )
+                .unwrap();
+            let key = key.to_owned();
+            let identities = ApplicationMutationIdentities::<
+                IdentityExecutionSchema,
+                OptionalOutputMutationBinding,
+            >::encode(&key, &input)
+            .expect("the request encodes");
+            let idempotency =
+                WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities);
+            let execution = world
                 .application
                 .execute_mutation_handler_report::<OptionalOutputMutationBinding>(
                     &phase,
@@ -254,8 +257,8 @@ fn execute_report_for_input(
                     principal.principal_identity(),
                     admission,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                );
+            (execution, idempotency)
         })
-        .expect("the fixture policy admits its handler call");
-    (execution, idempotency)
+        .expect("the fixture policy admits its handler call")
 }

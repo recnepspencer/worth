@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_replay_window_drift_stability(suite: &'static str) {
+pub(super) fn certify_replay_window_drift_stability(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let replay_window_drift_samples =
         capture_perf_samples(suite, "replay_window_drift_stability", || {
             let runtime = persisted_runtime_with_test_schema_profile(
@@ -10,7 +13,8 @@ pub(super) fn certify_replay_window_drift_stability(suite: &'static str) {
             const REPLAY_WINDOW: usize = 32;
             let mut commit_ids = Vec::with_capacity(HISTORY_DEPTH);
             for index in 0..HISTORY_DEPTH {
-                let outcome = create_entity_outcome(&runtime, &format!("replay-window-{index}"));
+                let outcome =
+                    create_entity_outcome(execution, &runtime, &format!("replay-window-{index}"));
                 commit_ids.push(outcome.commit.commit_id);
             }
 
@@ -26,12 +30,16 @@ pub(super) fn certify_replay_window_drift_stability(suite: &'static str) {
                 let replay_started_at = Instant::now();
                 let outcome = runtime
                     .replay_authority()
-                    .replay_commit(RelationalReplayRequest {
-                        commit_id: *commit_id,
-                        branch_id: BranchId("main".to_string()),
-                        execution_mode: ReplayExecutionMode::SerialDeterministic,
-                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                    });
+                    .replay_commit(
+                        RelationalReplayRequest {
+                            commit_id: *commit_id,
+                            branch_id: BranchId("main".to_string()),
+                            execution_mode: ReplayExecutionMode::SerialDeterministic,
+                            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                        },
+                        execution,
+                    )
+                    .unwrap();
                 let replay_micros = replay_started_at.elapsed().as_micros();
                 assert!(
                     outcome.failure.is_none(),

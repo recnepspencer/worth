@@ -22,7 +22,10 @@ const ALIAS_INPUT: [u8; 32] = [0x63; 32];
 
 #[test]
 fn a_republication_continues_the_suspended_performed_record() {
-    staged(|mut stage| {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    staged(request_execution, |mut stage| {
         let selection = WorthQueryObservedSourceSelection::selecting_for_test(2);
         let facts: Arc<[Fact]> = Arc::from([source_entity(1), source_entity(2)]);
         let consumed: Arc<[ConsumedOutputEvidence]> = Arc::from([]);
@@ -114,7 +117,10 @@ fn a_republication_continues_the_suspended_performed_record() {
 
 #[test]
 fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
-    staged(|mut stage| {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    staged(request_execution, |mut stage| {
         let facts: Arc<[Fact]> = Arc::from([source_entity(1), source_entity(2)]);
         let suspended_generation = stage.restored_generation() - 1;
         let restored_witness = Arc::clone(&stage.restored_witness);
@@ -161,7 +167,10 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
 
 #[test]
 fn a_republished_stable_alias_holds_the_performed_sequence() {
-    staged(|mut stage| {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    staged(request_execution, |mut stage| {
         let selection = WorthQueryObservedSourceSelection::selecting_for_test(2);
         let consumed: Arc<[ConsumedOutputEvidence]> = Arc::from([]);
         let suspended_generation = stage.restored_generation() - 1;
@@ -261,7 +270,10 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
 
 #[test]
 fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
-    staged(|mut stage| {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    staged(request_execution, |mut stage| {
         let selection = WorthQueryObservedSourceSelection::selecting_for_test(2);
         let consumed: Arc<[ConsumedOutputEvidence]> = Arc::from([]);
         let alias_generation = stage.restored_generation() - 1;
@@ -318,7 +330,10 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
 
 #[test]
 fn a_republication_whose_predecessor_holds_no_mark_row_is_verified_in_full() {
-    staged(|mut stage| {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    staged(request_execution, |mut stage| {
         let selection = WorthQueryObservedSourceSelection::selecting_for_test(2);
         let facts: Arc<[Fact]> = Arc::from([source_entity(1), source_entity(2)]);
         let consumed: Arc<[ConsumedOutputEvidence]> = Arc::from([]);

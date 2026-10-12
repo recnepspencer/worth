@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_commit_query_churn_stability(suite: &'static str) {
+pub(super) fn certify_commit_query_churn_stability(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let commit_query_churn_samples =
         capture_perf_samples(suite, "commit_query_churn_stability", || {
             let runtime =
@@ -15,7 +18,8 @@ pub(super) fn certify_commit_query_churn_stability(suite: &'static str) {
             runtime.performance_access().reset_counters();
             for index in 0..ITERATIONS {
                 let commit_started_at = Instant::now();
-                let outcome = create_entity_outcome(&runtime, &format!("sustained-{index}"));
+                let outcome =
+                    create_entity_outcome(execution, &runtime, &format!("sustained-{index}"));
                 total_commit_micros += commit_started_at.elapsed().as_micros();
 
                 let entity = changed_entities(&outcome)[0];
@@ -34,7 +38,10 @@ pub(super) fn certify_commit_query_churn_stability(suite: &'static str) {
                             .read_truth()
                             .plan_query_packet(&snapshot, packet)
                             .expect("planned sustained explicit query"),
+                        execution,
                     )
+                    .expect("request remains live")
+                    .map(|read| read.outcome)
                     .expect("sustained explicit query outcome");
                 total_query_micros += query_started_at.elapsed().as_micros();
                 max_query_packets_per_iteration =
@@ -55,8 +62,8 @@ pub(super) fn certify_commit_query_churn_stability(suite: &'static str) {
                 .version_id;
             let final_entity_count = runtime
                 .read_truth()
-                .project_historical_version(latest_version)
-                .all_authoritative_entity_records()
+                .project_historical_version(execution, latest_version)
+                .all_authoritative_entity_records(execution)
                 .len();
             let counters = runtime.performance_access().counters();
 

@@ -28,19 +28,21 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
     }
     pub(super) fn reselect(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
         match self.state {
             SelectionState::Frozen => Ok(self),
             SelectionState::Live(_) => {
-                reselect_required_wave(runtime, LiveSelection(self), admission)
+                reselect_required_wave(execution, runtime, LiveSelection(self), admission)
             }
         }
     }
     /// Only actual custody delivery can thaw; unrelated entries stay frozen.
     pub(super) fn after_awaited_delivery(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         _delivery: super::super::super::required_continuations::DeliveredAwaited,
         admission: &mut InvalidationEditAdmission,
@@ -56,7 +58,7 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
         match head {
             crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection::Frozen => Ok(self),
             crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection::Live(_) =>
-                select_required_wave_from_ready(runtime, self.anchor_ready, self.branch, self.target, admission),
+                select_required_wave_from_ready(execution, runtime, self.anchor_ready, self.branch, self.target, admission),
         }
     }
     pub(super) fn from_basis(
@@ -84,6 +86,7 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
 }
 
 pub(super) fn select_required_wave<'runtime, Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     interest: &WorthQueryOutputDemandInterest,
     branch: WorthQueryProductBranch,
@@ -99,6 +102,7 @@ where
         return Ok(None);
     };
     select_required_wave_from_ready(
+        execution,
         runtime,
         anchor_ready,
         branch,
@@ -110,6 +114,7 @@ where
 
 /// Only a live advance can select the basis following a completed publication.
 fn reselect_required_wave<'runtime, Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     previous: LiveSelection<'_, Schema>,
     admission: &mut InvalidationEditAdmission,
@@ -126,10 +131,11 @@ where
         state: _,
     } = previous.0;
     drop((shared, positioned));
-    select_required_wave_from_ready(runtime, anchor_ready, branch, target, admission)
+    select_required_wave_from_ready(execution, runtime, anchor_ready, branch, target, admission)
 }
 
 fn select_required_wave_from_ready<'runtime, Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     anchor_ready: SelectedReadyReadmission,
     branch: WorthQueryProductBranch,
@@ -139,7 +145,7 @@ fn select_required_wave_from_ready<'runtime, Schema>(
 where
     Schema: ApplicationSchema + 'static,
 {
-    let (shared, positioned) = select_required_basis(runtime, branch, admission)?;
+    let (shared, positioned) = select_required_basis(execution, runtime, branch, admission)?;
     let head = runtime.output_demands.publication_head_selection(
         shared
             .selected()
@@ -160,6 +166,7 @@ where
 
 /// The same owner-issued Product/native basis for both kinds of wave anchor.
 pub(super) fn select_required_basis<'runtime, Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     branch: WorthQueryProductBranch,
     admission: &mut InvalidationEditAdmission,
@@ -178,18 +185,21 @@ where
         .primary_provider
         .take_ready_read_snapshot_pressure()
         .then(|| runtime.hold_world_snapshot_pressure_for_test(branch));
-    let selected = runtime.on_branch(branch).select().map_err(|stop| {
-        WorthQueryOutputDemandDenial::new(
-            WorthQueryOutputDemandDenialKind::ProductSelection(stop),
-            "required output Product basis could not be selected",
-        )
-    })?;
+    let selected = runtime
+        .on_branch(branch)
+        .select_with_request(execution)
+        .map_err(|stop| {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ProductSelection(stop),
+                "required output Product basis could not be selected",
+            )
+        })?;
     let product = selected.product().read_lease_ref();
     let snapshot = selected.application_basis().snapshot_handle();
     let positioned = runtime
         .primary_provider
         .graph
-        .with_runtime(|native| {
+        .with_runtime(execution, |native| {
             native
                 .read_truth()
                 .positioned_snapshot_admitted(snapshot, |work, bytes| {

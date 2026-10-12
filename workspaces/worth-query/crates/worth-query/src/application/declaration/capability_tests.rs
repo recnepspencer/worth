@@ -152,9 +152,11 @@ impl WorthQueryDeclarationFamilyMarker<GeometryDomain> for MaskedCoverageFamily 
 }
 
 fn admitted_query_only_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<GeometryDomain, QueryOnlyWorld>
 {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         GeometryDomain,
         QueryOnlyWorld,
         [
@@ -186,7 +188,10 @@ fn package_admission_rejects_a_deferred_declaration_family() {
 
 #[test]
 fn family_support_and_checked_declaration_agree_on_invalid_context_denial() {
-    let handle = admitted_query_only_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_query_only_handle(request_execution);
     let support = handle.family_support::<HistoricalFamily>();
     assert_eq!(
         support.declare_status(),
@@ -209,7 +214,10 @@ fn family_support_and_checked_declaration_agree_on_invalid_context_denial() {
 
 #[test]
 fn family_support_report_exposes_aspect_contract_alongside_family_admission() {
-    let handle = admitted_query_only_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_query_only_handle(request_execution);
     let support = handle.family_support::<MaskedCoverageFamily>();
 
     assert_declaration_aspect_projections(
@@ -227,7 +235,10 @@ fn family_support_report_exposes_aspect_contract_alongside_family_admission() {
 
 #[test]
 fn family_support_report_can_expose_masked_semantic_slices_without_losing_family_admission() {
-    let handle = admitted_query_only_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_query_only_handle(request_execution);
     let support = handle.family_support::<MaskedCoverageFamily>();
 
     assert_eq!(

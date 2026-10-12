@@ -79,8 +79,11 @@ impl WorthQueryCheckpointTransitionRecovery {
 
     pub fn repair_to_checkpoint(
         mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
     ) -> Result<WorthQueryApplicationCheckpoint, Self> {
+        let request = phase.execution_request();
+        let execution = &request;
         self.capture_denial = None;
         if let Err(error) = policy.check_live() {
             self.retain_capture_denial(error.into());
@@ -92,7 +95,7 @@ impl WorthQueryCheckpointTransitionRecovery {
             .expect("repair capsule always carries its phase")
         {
             Settlement::Deferred(deferred) => {
-                match self.graph.with_runtime_mut(|runtime| {
+                match self.graph.with_runtime_mut(execution, |runtime| {
                     runtime
                         .durability_recovery()
                         .repair_checkpoint_transition(deferred)
@@ -117,7 +120,7 @@ impl WorthQueryCheckpointTransitionRecovery {
             .map_err(WorthQueryCheckpointCaptureDenial::from)
             .and_then(|()| {
                 self.graph
-                    .with_runtime(|runtime| {
+                    .with_runtime(execution, |runtime| {
                         runtime.durability_authority().native_checkpoint(policy)
                     })
                     .map_err(WorthQueryCheckpointCaptureDenial::from)

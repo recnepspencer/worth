@@ -20,6 +20,7 @@ pub(in crate::domain_computation::primary_graph) enum OutputDependencySelection 
 }
 
 pub(in crate::domain_computation::primary_graph) fn compare_retained_output_dependencies(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     identity_current: bool,
@@ -30,7 +31,7 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
         Ok(facts) => facts,
         Err(fresh) => return Ok(fresh),
     };
-    match first_moved_fact(runtime, snapshot, facts, admission) {
+    match first_moved_fact(execution, runtime, snapshot, facts, admission) {
         Ok(None) => Ok(OutputDependencySelection::Reuse),
         Ok(Some(_)) => Ok(OutputDependencySelection::FreshRequired),
         Err(RetainedFactStop::Work) => Err(work_denial()),
@@ -52,13 +53,14 @@ pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
 /// The first of a retained output's facts that moved at `snapshot`, compared
 /// in order and paid from the request's meter. `None` when every fact holds.
 pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<&'fact WorthQueryApplicationObservedFact>, RetainedFactStop<'fact>> {
     for fact in facts {
-        match fact.source_currentness_in(runtime, snapshot, admission) {
+        match fact.source_currentness_in(runtime, execution, snapshot, admission) {
             Ok(Ok(movement)) if movement.movement() == Movement::Moved => return Ok(Some(fact)),
             Ok(Ok(_)) => {}
             Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable)) => {
@@ -79,6 +81,7 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
 /// A row no sealed witness covers is decided by its source facts and by the
 /// full verification its lineage row requires.
 pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witness(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     witness: Option<&SealedNativeOutputWitness>,
@@ -88,7 +91,7 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witn
         return Ok(OutputDependencySelection::Reuse);
     };
     let unchanged = owner_read(
-        witness.unchanged_in(runtime, snapshot, admission),
+        witness.unchanged_in(execution, runtime, snapshot, admission),
         "retained output witness could not be compared",
     )?;
     Ok(if unchanged {

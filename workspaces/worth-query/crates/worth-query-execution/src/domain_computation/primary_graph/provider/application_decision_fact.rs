@@ -1,3 +1,4 @@
+use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
 use std::sync::Arc;
 
 use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency;
@@ -117,19 +118,33 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         }
     }
 
-    pub(super) fn remains_equal_in(
+    pub(in crate::domain_computation) fn remains_equal_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> bool {
-        match self {
-            Self::Application { fact, .. } => fact.remains_equal_in(runtime, snapshot),
-            Self::ObservedSource { fact } => fact.remains_equal_in(runtime, snapshot),
-            Self::ApplicationObservedSource { fact, .. } => {
-                fact.remains_equal_in(runtime, snapshot)
+    ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+        execution
+            .check_live()
+            .map_err(|stop| SelfDenial::request_read_stopped(stop, "decision fact comparison"))?;
+        let equal = match self {
+            Self::Application { fact, .. } => {
+                fact.remains_equal_in(runtime, execution, snapshot)?
             }
-            Self::Principal(dependency) => dependency.remains_current_in(runtime, snapshot),
-            Self::Authorization { decision, .. } => decision.remains_equal_in(runtime, snapshot),
-        }
+            Self::ObservedSource { fact } => fact.remains_equal_in(runtime, execution, snapshot)?,
+            Self::ApplicationObservedSource { fact, .. } => {
+                fact.remains_equal_in(runtime, execution, snapshot)?
+            }
+            Self::Principal(dependency) => {
+                dependency.remains_current_in(execution, runtime, snapshot)
+            }
+            Self::Authorization { decision, .. } => {
+                decision.remains_equal_in(execution, runtime, snapshot)
+            }
+        };
+        execution
+            .check_live()
+            .map_err(|stop| SelfDenial::request_read_stopped(stop, "decision fact comparison"))?;
+        Ok(equal)
     }
 }

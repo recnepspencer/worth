@@ -6,10 +6,13 @@ use crate::domain_computation::primary_graph::output_lineage::own_write_fixture:
 #[test]
 fn a_current_proof_from_another_basis_acknowledges_nothing() {
     with_committed_own_write(|world, _receipt, _recorded, resources| {
+        world.application.with_host_advancement(|phase| {
+        let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
+
         let runtime = &world.application;
         let mut admission = runtime.demand_request_admission();
         let (basis_a, _) = super::super::super::selection::select_required_basis(
-            runtime,
+            &execution, runtime,
             runtime.current_world(),
             &mut admission,
         )
@@ -29,9 +32,9 @@ fn a_current_proof_from_another_basis_acknowledges_nothing() {
             member.certify_current_basis(a.clone()),
         );
         // Use the registry's real queue, so the writer's state is observable.
-        evict_index_with_unrelated_write(world, &resources);
+        evict_index_with_unrelated_write(&phase, world, &resources);
         let (basis_b, _) = super::super::super::selection::select_required_basis(
-            runtime,
+            &execution, runtime,
             runtime.current_world(),
             &mut admission,
         )
@@ -65,6 +68,8 @@ fn a_current_proof_from_another_basis_acknowledges_nothing() {
             "the new inspection acknowledges its own basis"
         );
         drop(interest);
+
+        }).expect("the fixture owns its installed host request");
     });
 }
 
@@ -76,20 +81,30 @@ impl CurrentProof<()> {
         test: impl FnOnce(Self),
     ) {
         with_committed_own_write(|world, _, _, _| {
-            let runtime = &world.application;
-            let mut admission = runtime.demand_request_admission();
-            let (selected, _) = super::super::super::selection::select_required_basis(
-                runtime,
-                runtime.current_world(),
-                &mut admission,
-            )
-            .unwrap();
-            let basis = CurrentBasis::of(selected.selected().product().observation());
-            test(PerformedMembers::start().current(
-                (),
-                basis.clone(),
-                member.certify_current_basis(basis),
-            ));
+            world
+                .application
+                .with_host_advancement(|phase| {
+                    let execution = phase
+                        .execution_request_for(&world.application.product_runtime)
+                        .unwrap();
+
+                    let runtime = &world.application;
+                    let mut admission = runtime.demand_request_admission();
+                    let (selected, _) = super::super::super::selection::select_required_basis(
+                        &execution,
+                        runtime,
+                        runtime.current_world(),
+                        &mut admission,
+                    )
+                    .unwrap();
+                    let basis = CurrentBasis::of(selected.selected().product().observation());
+                    test(PerformedMembers::start().current(
+                        (),
+                        basis.clone(),
+                        member.certify_current_basis(basis),
+                    ));
+                })
+                .expect("the fixture owns its installed host request");
         });
     }
 }
@@ -97,10 +112,13 @@ impl CurrentProof<()> {
 #[test]
 fn a_current_proof_of_record_a_cannot_acknowledge_record_b_at_the_same_basis() {
     with_committed_own_write(|world, _, _, _| {
+        world.application.with_host_advancement(|phase| {
+        let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
+
         let runtime = &world.application;
         let mut admission = runtime.demand_request_admission();
         let (selected, _) = super::super::super::selection::select_required_basis(
-            runtime,
+            &execution, runtime,
             runtime.current_world(),
             &mut admission,
         )
@@ -152,5 +170,7 @@ fn a_current_proof_of_record_a_cannot_acknowledge_record_b_at_the_same_basis() {
             "certification has not acknowledged record A either"
         );
         drop((interest_a, interest_b));
+
+        }).expect("the fixture owns its installed host request");
     });
 }

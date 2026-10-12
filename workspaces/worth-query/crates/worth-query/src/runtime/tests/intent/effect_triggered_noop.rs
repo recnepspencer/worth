@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn effect_triggered_idempotent_intent_noop_consumes_pending_work_without_feedback() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let routed = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = complete_backend_from_parts_builder()
         .signal_sink(CountingSignalSink {
@@ -10,10 +13,11 @@ fn effect_triggered_idempotent_intent_noop_consumes_pending_work_without_feedbac
         .intent_authority(NoopIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.effect-noop-intent",
             task_live_request(),
             task_schema(),
@@ -28,11 +32,14 @@ fn effect_triggered_idempotent_intent_noop_consumes_pending_work_without_feedbac
         .expect("write-intent effect should declare");
 
     let write = runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
-            "title.value",
-            "already reconciled title",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                "title.value",
+                "already reconciled title",
+            ),
+        )
         .expect("write should route pending effect intent");
     assert_eq!(write.pending_write_intent_count(), 1);
     assert_eq!(
@@ -42,7 +49,12 @@ fn effect_triggered_idempotent_intent_noop_consumes_pending_work_without_feedbac
     );
 
     let effect_intent = runtime
-        .execute_next_effect_write_intent(&effect, "1.0", "effect.intent.input.v1")
+        .execute_next_effect_write_intent(
+            request_execution,
+            &effect,
+            "1.0",
+            "effect.intent.input.v1",
+        )
         .expect("pending effect intent should execute as an idempotent no-op");
 
     assert_eq!(
@@ -60,7 +72,7 @@ fn effect_triggered_idempotent_intent_noop_consumes_pending_work_without_feedbac
     );
     assert_eq!(
         runtime
-            .inspect_effect(&effect)
+            .inspect_effect(request_execution, &effect)
             .expect("pending no-op should be consumed")
             .pending_write_intent_count(),
         0

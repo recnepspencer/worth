@@ -96,6 +96,7 @@ pub(super) fn authorize_target_support<
     Operation,
     Input,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     target_capability: &WorthQueryInstalledApplicationCapability<
         Schema,
@@ -121,8 +122,8 @@ where
         + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>,
 {
     access
-        .with_exact_observation(runtime, |observation| {
-            observation.authorize_delegation_support(target_capability, proposed)
+        .with_exact_observation(execution, runtime, |observation| {
+            observation.authorize_delegation_support(execution, target_capability, proposed)
         })
         .ok_or_else(|| {
             WorthQueryOperationAuthorizationDenial::new(

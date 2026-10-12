@@ -41,6 +41,9 @@ type MutationOperation<Schema, Intent> =
 #[derive(Debug)]
 pub enum WorthQueryOrdinaryWorkflowPublicationDenial {
     RuntimeMismatch,
+    ProductSelection(
+        worth_query_execution::facade::product::WorthQueryProductBranchAdmissionDenial,
+    ),
     InvalidDefinition(ApplicationWorkflowValidationDenial),
     UnsupportedDefinition(WorthQueryApplicationWorkflowInstallationDenial),
     Preparation(WorthQueryWorkflowDefinitionPublicationPreparationDenial),
@@ -51,6 +54,9 @@ impl std::fmt::Display for WorthQueryOrdinaryWorkflowPublicationDenial {
         match self {
             Self::RuntimeMismatch => {
                 formatter.write_str("workflow runtime belongs to another application")
+            }
+            Self::ProductSelection(denial) => {
+                write!(formatter, "workflow product selection denied: {denial:?}")
             }
             Self::InvalidDefinition(denial) => {
                 write!(formatter, "invalid authored workflow: {denial}")
@@ -70,7 +76,7 @@ impl std::fmt::Display for WorthQueryOrdinaryWorkflowPublicationDenial {
 impl std::error::Error for WorthQueryOrdinaryWorkflowPublicationDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::RuntimeMismatch => None,
+            Self::RuntimeMismatch | Self::ProductSelection(_) => None,
             Self::InvalidDefinition(denial) => Some(denial),
             Self::UnsupportedDefinition(denial) => Some(denial),
             Self::Preparation(denial) => Some(denial),
@@ -142,6 +148,9 @@ where
     /// Pure admission and installed-vocabulary binding; no product selection or permission is retained.
     pub fn workflow<'workflow, Spec>(
         self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         authored: AuthoredWorkflowDefinition<Spec>,
     ) -> Result<
@@ -159,7 +168,8 @@ where
             .validate()
             .map_err(WorthQueryOrdinaryWorkflowPublicationDenial::InvalidDefinition)?;
         let contract = workflow
-            .workflow_spec_on(self.product_branch())
+            .workflow_spec_on(phase, self.product_branch())
+            .map_err(WorthQueryOrdinaryWorkflowPublicationDenial::ProductSelection)?
             .bind_definition(validated)
             .map_err(WorthQueryOrdinaryWorkflowPublicationDenial::UnsupportedDefinition)?;
         Ok(WorthQueryOrdinaryWorkflowDraft {

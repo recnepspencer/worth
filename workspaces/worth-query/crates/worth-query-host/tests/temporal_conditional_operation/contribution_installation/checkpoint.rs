@@ -1,7 +1,9 @@
 use super::*;
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
-pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
+pub(crate) fn application_checkpoint_restores_fresh_editable_authority(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let contacts = ContactCounters::default();
     let (installation_predicate, _) = Predicate::controlled(contacts.clone());
     let (definition_predicate, _) = Predicate::controlled(contacts.clone());
@@ -31,8 +33,15 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
     let original_world = application.current_world();
     assert_live_relation_is_readable(&application, "source");
     let (checkpoint, sections) = application
-        .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
-        .expect("the current committed world captures as opaque bytes");
+        .with_host_advancement(|phase| {
+            application
+                .capture_application_checkpoint_with_sections(
+                    &phase,
+                    CapturePolicy::SystemAllocation,
+                )
+                .expect("the current committed world captures as opaque bytes")
+        })
+        .expect("installed host call opens");
     assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
     assert!(sections.native_bytes() > 0);
     assert_eq!(
@@ -86,6 +95,7 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
         .as_ref()
         .expect("the restored conditional route is live");
     change_input(
+        request_execution,
         &restored,
         &installed.invariant,
         restored.current_world(),
@@ -110,32 +120,46 @@ fn assert_live_relation_is_readable(
     let authentication = admit_identity_adapter(schema);
     let external = block_on(authentication.authenticate((), &request)).unwrap();
     let selected = application
-        .on_branch(application.current_world())
-        .select()
-        .unwrap();
-    let principal = selected
-        .resolve_authenticated_principal(
-            &principal_binding,
-            &external,
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let scope = selected
-        .resolve_entity(
-            IntentIdentityField::reference(),
-            "intent-1".to_owned(),
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .on_branch(application.current_world())
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let principal = application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_authenticated_principal(
+                    &host_phase,
+                    &principal_binding,
+                    &external,
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let scope = application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    IntentIdentityField::reference(),
+                    "intent-1".to_owned(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let query = schema
         .certification_query(TemporalIntentLiveQuery::reference())
         .unwrap();
     let access = primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-    let plan = selected
+    let plan = application.with_host_advancement(|host_phase| selected
         .admit_application_query(
-            &query,
+            &host_phase, &query,
             &access,
             worth_query_host::facade::declaration::application_query::ApplicationQueryParameterSet::new(),
             primary_graph::WorthQueryProductQueryControls::new(
@@ -144,10 +168,14 @@ fn assert_live_relation_is_readable(
                 &request,
             ),
         )
-        .unwrap();
+        .unwrap()).expect("installed host call opens");
     let result = application
-        .execute_application_query_one_shot(plan)
-        .expect("checkpointed relation remains readable");
+        .with_host_advancement(|phase| {
+            application
+                .execute_application_query_one_shot(&phase, plan)
+                .expect("checkpointed relation remains readable")
+        })
+        .expect("installed host call opens");
     assert_eq!(result.rows().len(), 1);
     assert_eq!(result.rows()[0].targets, vec!["intent-1"], "{phase}");
 }
@@ -179,8 +207,12 @@ pub(crate) fn application_checkpoint_denies_corrupt_incompatible_and_forged_byte
     )
     .expect("the denial courtroom source application installs");
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|phase| {
+            application
+                .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let mut corrupt_payload = checkpoint.bytes().to_vec();
     *corrupt_payload.last_mut().unwrap() ^= 0x01;
     let forged_commit = checkpoint

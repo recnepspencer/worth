@@ -169,11 +169,12 @@ impl WorthQuerySessionReadAuthority<'_> {
 
     pub fn compare_decision_read_set(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: WorthQueryCompleteDecisionReadSetReceipt,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
         self.compare_decision_read_set_with(receipt, |evidence, admission| {
             self.provider()
-                .compare_decision_fact(self.session(), evidence, admission)
+                .compare_decision_fact(execution, self.session(), evidence, admission)
         })
     }
 
@@ -263,9 +264,10 @@ impl WorthQuerySessionReadAuthority<'_> {
 
     pub(crate) fn recompare_fresh_decision_read_set(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         fresh: WorthQueryFreshDecisionReadSet,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
-        self.compare_decision_read_set(fresh.receipt)
+        self.compare_decision_read_set(execution, fresh.receipt)
     }
 }
 

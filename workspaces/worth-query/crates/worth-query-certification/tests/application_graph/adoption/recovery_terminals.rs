@@ -22,6 +22,9 @@ use crate::document_retention_model::programs::RetentionProgramP1;
 
 #[test]
 fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
@@ -44,7 +47,8 @@ fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup(
         .adopt(&requirements)
         .prepare(64)
         .expect("adoption prepares");
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     let unpublished = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => unpublished,
         _ => panic!("the first injected durability loss must retain exact custody"),
@@ -100,6 +104,9 @@ fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup(
 
 #[test]
 fn unavailable_settlement_evidence_returns_the_same_recovery_for_retry() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
@@ -118,7 +125,8 @@ fn unavailable_settlement_evidence_returns_the_same_recovery_for_retry() {
         .adopt(&requirements)
         .prepare(64)
         .expect("adoption prepares");
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     let recovery = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
             unpublished.into_recovery()
@@ -126,7 +134,8 @@ fn unavailable_settlement_evidence_returns_the_same_recovery_for_retry() {
         _ => panic!("the first durability loss must retain exact custody"),
     };
 
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     let failure = host
         .runtime()
         .request(&principal, &scope)

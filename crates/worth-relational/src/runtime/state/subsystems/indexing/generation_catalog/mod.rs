@@ -230,6 +230,7 @@ impl GenerationCatalog {
 
     /// Preserve routing precedence: published, branch, exact version, exact
     /// schema, then version and generation identity. At most one payload is read.
+    #[cfg(test)]
     pub(super) fn candidate(
         &self,
         index: DerivedIndexId,
@@ -259,6 +260,7 @@ impl GenerationCatalog {
             .collect()
     }
 
+    #[cfg(test)]
     pub(super) fn any_at_or_before(&self, version: VersionId) -> bool {
         self.versions
             .first_key_value()

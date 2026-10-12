@@ -42,6 +42,14 @@ where
 {
     if wave.is_frozen() {
         return super::frozen_collection::collect(
+            &phase
+                .execution_request_for(&runtime.product_runtime)
+                .map_err(|cause| {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                        "frozen member inspection",
+                    )
+                })?,
             runtime,
             principal,
             request,

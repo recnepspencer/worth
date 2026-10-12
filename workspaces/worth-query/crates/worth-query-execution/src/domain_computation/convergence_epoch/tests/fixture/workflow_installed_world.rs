@@ -312,7 +312,7 @@ fn workflow_admission_fixture_with_provider(
     let attempt = runtime
         .start_workflow_resource_attempt(&bound, resources)
         .expect("fixture workflow resource attempt must start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let managed = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_workflow(&bound, attempt, lower.read_request(), resource_request)

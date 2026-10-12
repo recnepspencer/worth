@@ -39,7 +39,7 @@ use worth_query_decl::facade::application_schema::OperationEmits;
 
 use rail_transport::BankEstateRailTransport;
 
-fn main() {
+fn main() -> Result<(), String> {
     std::thread::Builder::new()
         .name("inbound-completion-example".to_owned())
         .stack_size(16 * 1024 * 1024)
@@ -47,15 +47,15 @@ fn main() {
             tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()
-                .expect("example runtime starts")
-                .block_on(run());
+                .map_err(|error| format!("example runtime refused: {error}"))?
+                .block_on(run())
         })
-        .expect("example thread starts")
+        .map_err(|error| format!("example thread refused: {error}"))?
         .join()
-        .expect("example thread completes");
+        .map_err(|_| "example thread panicked".to_owned())?
 }
 
-async fn run() {
+async fn run() -> Result<(), String> {
     let _declared = BankSchema::declaration().expect("Bank publishes its Query schema");
     fn require_declared_effect<Operation, Effect: OperationEmits<Operation>>() {}
     require_declared_effect::<NotifyDeathEstateOperation, EstateDeathNotificationEffect>();
@@ -125,14 +125,19 @@ async fn run() {
             &support::request_scope(),
         )
     })
-    .expect("Bank issues the declared death notice");
+    .map_err(|cause| format!("Bank death notice refused: {cause:?}"))?;
     let BankMutationCommitOutcome::Committed(receipt) = receipt else {
-        panic!("the notification must commit a fresh outbox: {receipt:?}");
+        return Err(format!(
+            "the notification did not commit a fresh outbox: {receipt:?}"
+        ));
     };
     let outbox = runtime
-        .observe_committed_dispatch_outbox(&receipt)
-        .expect("the committed dispatch is readable")
-        .expect("one external effect was emitted");
+        .with_application_advancement(&support::request_scope(), |phase| {
+            runtime.observe_committed_dispatch_outbox(&phase, &receipt)
+        })
+        .map_err(|cause| format!("Bank request refused: {cause:?}"))?
+        .map_err(|cause| format!("committed dispatch refused: {cause:?}"))?
+        .ok_or_else(|| "no external effect was emitted".to_owned())?;
     let token = *outbox.correlation();
     let terminal = tokio::time::timeout(Duration::from_secs(20), async {
         loop {
@@ -174,6 +179,7 @@ async fn run() {
         drop(runtime);
         drop(transport);
     });
+    Ok(())
 }
 
 fn rail_binary_path() -> std::path::PathBuf {

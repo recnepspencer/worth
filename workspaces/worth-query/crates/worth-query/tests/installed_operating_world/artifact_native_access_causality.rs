@@ -8,12 +8,15 @@ const TWO_FIELD_BYTES: usize = ROWS * 16;
 
 #[test]
 fn native_physical_counters_move_only_with_their_declared_causal_axes() {
-    let bulk = execute("native-bulk");
-    let field = execute("native-field");
-    let chunks = execute("native-short-chunks");
-    let scalar = execute("native-scalar");
-    let projection_small = execute("native-projection-small");
-    let projection_wide = execute("native-projection-wide");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let bulk = execute(request_execution, "native-bulk");
+    let field = execute(request_execution, "native-field");
+    let chunks = execute(request_execution, "native-short-chunks");
+    let scalar = execute(request_execution, "native-scalar");
+    let projection_small = execute(request_execution, "native-projection-small");
+    let projection_wide = execute(request_execution, "native-projection-wide");
 
     assert_same_two_field_payload(&bulk, &chunks);
     assert_same_two_field_payload(&bulk, &scalar);
@@ -79,9 +82,13 @@ fn assert_projection_chunk_axis(small: &ArtifactNativeSuccess, wide: &ArtifactNa
     assert!(small.peak_result_capacity_bytes < wide.peak_result_capacity_bytes);
 }
 
-fn execute(mode: &str) -> ArtifactNativeSuccess {
+fn execute(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    mode: &str,
+) -> ArtifactNativeSuccess {
     let (mut workspace, probe) =
-        artifact_move_workspace(&format!("artifact-native-causal-{mode}")).unwrap();
+        artifact_move_workspace(request_execution, &format!("artifact-native-causal-{mode}"))
+            .unwrap();
     bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),

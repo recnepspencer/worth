@@ -160,7 +160,12 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 )
             })?;
         let semantic_input = slot.input().semantic_value();
-        let graph_snapshot = workspace.snapshot_identity();
+        let graph_snapshot = workspace.snapshot_identity(execution).map_err(|cause| {
+            WorthQueryWorkflowAdvanceDenial::new(
+                WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause.into()),
+                self.counters,
+            )
+        })?;
         let conditional = match self.admit_stage_condition(
             execution,
             stage.identity(),
@@ -203,7 +208,12 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 material: executed.material,
                 graph_receipts,
                 conditional,
-                execution_snapshot: workspace.snapshot_identity(),
+                execution_snapshot: workspace.snapshot_identity(execution).map_err(|cause| {
+                    WorthQueryWorkflowAdvanceDenial::new(
+                        WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause.into()),
+                        self.counters,
+                    )
+                })?,
                 effect_workflow_binding: executed.effect_workflow_binding,
                 counters_before,
                 resource_evidence,
@@ -267,8 +277,15 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             .collect::<Vec<_>>();
         self.assert_predecessor_authority(&predecessor_receipts);
         self.counters.stage_executor_contacts += 1;
-        let effect_workflow_binding =
-            self.stage_effect_workflow_binding(stage, workspace.snapshot_identity());
+        let effect_workflow_binding = self.stage_effect_workflow_binding(
+            stage,
+            workspace.snapshot_identity(execution).map_err(|cause| {
+                WorthQueryWorkflowAdvanceDenial::new(
+                    WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause.into()),
+                    self.counters,
+                )
+            })?,
+        );
         let context = self.stage_execution_context(
             execution
                 .execution_request_for(&workspace.advancement_owner())
@@ -289,7 +306,9 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             .apply(slot, &context, workspace)
             .map_err(|failure| {
                 let class = failure.class().clone();
-                let kind = if stage.semantics().failure_classes.contains(&class) {
+                let kind = if let Some(denial) = failure.request_denial() {
+                    denial.clone()
+                } else if stage.semantics().failure_classes.contains(&class) {
                     WorthQueryWorkflowAdvanceDenialKind::StageExecutor {
                         class,
                         detail: failure.detail().into(),

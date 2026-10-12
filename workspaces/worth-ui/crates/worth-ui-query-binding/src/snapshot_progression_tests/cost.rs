@@ -34,10 +34,15 @@ fn one_declared_measurement_is_independent_of_unrelated_projected_width() {
 }
 
 fn measurement_cost(label: &str, row_count: usize) -> MeasurementDerivationCost {
-    let mut workspace = super::installed_builder().workspace(label).unwrap();
+    let mut workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            super::installed_builder()
+                .workspace(execution, label)
+                .unwrap()
+        });
     for index in 0..row_count {
-        workspace
-            .insert("WorthUiMeasurement", |measurement| {
+        workspace.with_execution_request_mut(|execution, workspace| workspace
+            .insert(execution, "WorthUiMeasurement", |measurement| {
                 measurement
                     .set_aspect(
                         worth_query::facade::runtime::WorthQueryAspectTouch::from_authoring_ingress_text(
@@ -60,7 +65,7 @@ fn measurement_cost(label: &str, row_count: usize) -> MeasurementDerivationCost 
                         ),
                     )
             })
-            .unwrap();
+            .unwrap()).expect("workspace host call opens");
     }
     let reference = super::installed_reference(&workspace);
     let settled = super::settle(&reference, &mut workspace);

@@ -9,13 +9,16 @@ use super::{declare, inspection_basis, WorthQueryInspectionOutcome};
 
 #[test]
 fn operational_and_rich_inspection_preserve_the_same_receipt_and_operational_posture() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-inspection")
         .expect("workspace should open");
     let completion = declare_read(identity_read)
         .expect("read should declare")
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("read should complete");
 
@@ -47,13 +50,16 @@ fn operational_and_rich_inspection_preserve_the_same_receipt_and_operational_pos
 
 #[test]
 fn ordinary_inspection_implements_common_outcome_navigation() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-inspection-navigation")
         .expect("workspace should open");
     let completion = declare_read(identity_read)
         .expect("read should declare")
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("read should complete");
     let outcome = declare(&completion)

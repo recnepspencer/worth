@@ -95,7 +95,7 @@ where
         }
         let selected = application
             .on_branch(self.product_branch())
-            .select()
+            .select(&phase, )
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
         let staged = self.stage().map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
@@ -111,7 +111,7 @@ where
             MutationInput<Schema, Intent>,
             MutationScope<Schema, IntentBinding<Schema, Intent>>,
             Spec,
-        >(
+        >(&phase,
             &selected,
             workflow,
             instance,

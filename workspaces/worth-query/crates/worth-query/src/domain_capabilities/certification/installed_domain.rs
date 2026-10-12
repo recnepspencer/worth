@@ -53,6 +53,7 @@ impl WorthQueryDomainCapabilityCertificationInstallation {
 }
 
 pub(crate) fn install_domain_capability_certification(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryDomainCapabilityCertificationInstallation {
     let marker = WorthQueryDomainCapabilityCertificationDomain;
     let package = WorthQueryDomainPackage::declare(
@@ -84,7 +85,7 @@ pub(crate) fn install_domain_capability_certification(
     let workspace = in_memory_test_runtime()
         .with_schema(schema)
         .domain_package(package)
-        .workspace("domain-capability-certification")
+        .workspace(execution, "domain-capability-certification")
         .expect("certification domain must install through a real runtime");
     let handle = workspace
         .domain(marker)
@@ -130,7 +131,10 @@ mod tests {
 
     #[test]
     fn certification_surface_is_minted_by_its_live_installed_runtime() {
-        let installation = install_domain_capability_certification();
+        let host_request = crate::test_execution_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let installation = install_domain_capability_certification(request_execution);
         let handle = installation
             .workspace()
             .domain(WorthQueryDomainCapabilityCertificationDomain)

@@ -16,7 +16,7 @@ fn engine_skips_rules_when_request_groups_do_not_intersect() {
         ))],
     };
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,

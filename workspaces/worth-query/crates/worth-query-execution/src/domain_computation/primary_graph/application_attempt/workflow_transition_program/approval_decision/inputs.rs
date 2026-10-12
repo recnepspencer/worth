@@ -17,6 +17,7 @@ pub(super) struct ValidatedApprovalInputs {
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn observe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
     layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     graph_layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -38,8 +39,8 @@ pub(super) fn observe(
     let proposal_transition = progress
         .latest_transition(proposal_source.entity())
         .ok_or_else(|| affinity("approval proposal transition is absent"))?;
-    let (proposal_entity, proposal_identity, mut facts) = handle.with_runtime(|runtime| {
-        super::super::super::workflow_instance_observation::observe_retained_workflow_proposal_identity(
+    let (proposal_entity, proposal_identity, mut facts) = handle.with_runtime(execution, |runtime| {
+        super::super::super::workflow_instance_observation::observe_retained_workflow_proposal_identity(execution,
             runtime,
             snapshot,
             layout,
@@ -63,8 +64,9 @@ pub(super) fn observe(
     let join_transition = progress
         .latest_transition(evidence_source.entity())
         .ok_or_else(|| affinity("approval joined evidence is absent"))?;
-    handle.with_runtime(|runtime| {
+    handle.with_runtime(execution, |runtime| {
         super::super::super::workflow_instance_observation::observe_retained_transition(
+            execution,
             runtime,
             snapshot,
             layout,
@@ -91,6 +93,7 @@ pub(super) fn observe(
     for node in authored {
         check_request_live(observation_request, "workflow retained evidence")?;
         let subject = super::super::assessment_coverage::observe_subject_cached(
+            execution,
             compiled,
             layout,
             progress,
@@ -102,8 +105,9 @@ pub(super) fn observe(
             &mut observed_proposals,
         )?;
         check_request_live(observation_request, "workflow retained evidence")?;
-        let observed = handle.with_runtime(|runtime| {
+        let observed = handle.with_runtime(execution, |runtime| {
             super::super::assessment_applicability::observe(
+                execution,
                 node,
                 graph_layout,
                 runtime,
@@ -138,8 +142,8 @@ pub(super) fn observe(
                 )
             })?;
         check_request_live(observation_request, "workflow retained evidence")?;
-        let (observed, mut retained_facts) = handle.with_runtime(|runtime| {
-            super::super::super::workflow_instance_observation::observe_retained_assessment_evidence(
+        let (observed, mut retained_facts) = handle.with_runtime(execution, |runtime| {
+            super::super::super::workflow_instance_observation::observe_retained_assessment_evidence(execution,
                 runtime,
                 snapshot,
                 layout,
@@ -150,6 +154,7 @@ pub(super) fn observe(
         facts.append(&mut retained_facts);
         check_request_live(observation_request, "workflow retained evidence")?;
         let coverage_state = super::super::assessment_coverage::observe(
+            execution,
             node,
             compiled.program_revision(),
             &coverage,

@@ -11,6 +11,7 @@ use super::VisibilityProjectionView;
 impl VisibilityProjectionView<'_> {
     pub(crate) fn try_for_each_entity_record_in<E>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
         kind_id: Option<KindId>,
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
@@ -24,8 +25,8 @@ impl VisibilityProjectionView<'_> {
         };
         let mut examine = |slot: usize| {
             before_candidate(self.candidate_entity_bytes(partition, slot))?;
-            if let Some(record) =
-                self.authoritative_entity_record(EntityId::new(partition_id, slot as u64, 0))
+            if let Some(record) = self
+                .authoritative_entity_record(execution, EntityId::new(partition_id, slot as u64, 0))
             {
                 if kind_id.is_none_or(|kind_id| record.kind.kind_id == kind_id) {
                     visit(&record)?;
@@ -47,6 +48,7 @@ impl VisibilityProjectionView<'_> {
 
     pub(crate) fn try_for_each_relation_record_in<E>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
         kind_id: Option<KindId>,
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
@@ -60,9 +62,10 @@ impl VisibilityProjectionView<'_> {
         };
         let mut examine = |slot: usize| {
             before_candidate(self.candidate_relation_bytes(partition, slot))?;
-            if let Some(record) =
-                self.authoritative_relation_record(RelationId::new(partition_id, slot as u64, 0))
-            {
+            if let Some(record) = self.authoritative_relation_record(
+                execution,
+                RelationId::new(partition_id, slot as u64, 0),
+            ) {
                 if kind_id.is_none_or(|kind_id| record.kind.kind_id == kind_id) {
                     visit(&record)?;
                 }
@@ -83,6 +86,7 @@ impl VisibilityProjectionView<'_> {
 
     pub(crate) fn try_for_each_entity_record<E>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: Option<KindId>,
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
@@ -92,6 +96,7 @@ impl VisibilityProjectionView<'_> {
         };
         root.try_for_each_partition_id(|partition_id| {
             self.try_for_each_entity_record_in(
+                execution,
                 partition_id,
                 kind_id,
                 &mut before_candidate,
@@ -102,6 +107,7 @@ impl VisibilityProjectionView<'_> {
 
     pub(crate) fn try_for_each_relation_record<E>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: Option<KindId>,
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
@@ -111,6 +117,7 @@ impl VisibilityProjectionView<'_> {
         };
         root.try_for_each_partition_id(|partition_id| {
             self.try_for_each_relation_record_in(
+                execution,
                 partition_id,
                 kind_id,
                 &mut before_candidate,

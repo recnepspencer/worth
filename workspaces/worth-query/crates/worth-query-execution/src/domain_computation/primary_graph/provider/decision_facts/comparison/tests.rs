@@ -10,6 +10,7 @@ use worth_query_admission::facade::authenticated_principal::{
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn assert_comparison_scope_lifecycle(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
         requests: Vec<WorthQueryDecisionFactRequest>,
         request: &WorthQueryRequestScope,
@@ -19,8 +20,9 @@ impl WorthQueryPrimaryGraphProvider {
         let control =
             StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, Some(request));
         let count = || {
-            self.graph
-                .with_runtime(|runtime| runtime.retention().inspect_plan().active_snapshot_count)
+            self.graph.with_runtime(execution, |runtime| {
+                runtime.retention().inspect_plan().active_snapshot_count
+            })
         };
         let baseline = count();
         let capture = || {
@@ -28,12 +30,14 @@ impl WorthQueryPrimaryGraphProvider {
                 .capture_decision_read_set(requests.clone(), control.policy(), Some(request))
                 .unwrap()
         };
-        let generic = authority.compare_decision_read_set(capture()).unwrap();
+        let generic = authority
+            .compare_decision_read_set(execution, capture())
+            .unwrap();
         let WorthQueryDecisionReadSetFreshnessOutcome::Fresh(generic) = generic else {
             panic!("real unmodified facts must compare fresh");
         };
         let scoped = self
-            .compare_application_read_set(authority, capture(), control)
+            .compare_application_read_set(execution, authority, capture(), control)
             .unwrap();
         let WorthQueryDecisionReadSetFreshnessOutcome::Fresh(scoped) = scoped else {
             panic!("scoped comparison must agree with generic comparison");
@@ -45,14 +49,14 @@ impl WorthQueryPrimaryGraphProvider {
             "normal comparison releases its sole observer"
         );
         let foreign_count = || {
-            foreign
-                .graph
-                .with_runtime(|runtime| runtime.retention().inspect_plan().active_snapshot_count)
+            foreign.graph.with_runtime(execution, |runtime| {
+                runtime.retention().inspect_plan().active_snapshot_count
+            })
         };
         let foreign_baseline = foreign_count();
         assert_eq!(
             foreign
-                .compare_application_read_set(authority, capture(), control)
+                .compare_application_read_set(execution, authority, capture(), control)
                 .err()
                 .unwrap()
                 .kind(),
@@ -64,13 +68,18 @@ impl WorthQueryPrimaryGraphProvider {
             "foreign registration must be rejected before observer admission"
         );
         let receipt = capture();
-        let mut comparison =
-            PrimaryDecisionReadSetComparison::acquire(self, authority.session(), control).unwrap();
+        let mut comparison = PrimaryDecisionReadSetComparison::acquire(
+            execution,
+            self,
+            authority.session(),
+            control,
+        )
+        .unwrap();
         assert_eq!(count(), baseline + 1);
         cancellation.cancel();
         let denied = authority
             .compare_decision_read_set_with(receipt, |evidence, admission| {
-                comparison.compare(authority.session(), evidence, admission, control)
+                comparison.compare(execution, authority.session(), evidence, admission, control)
             })
             .err()
             .unwrap();
@@ -87,10 +96,15 @@ impl WorthQueryPrimaryGraphProvider {
             "interruption releases the exact comparison observer"
         );
         assert_eq!(
-            PrimaryDecisionReadSetComparison::acquire(self, authority.session(), control)
-                .err()
-                .unwrap()
-                .kind(),
+            PrimaryDecisionReadSetComparison::acquire(
+                execution,
+                self,
+                authority.session(),
+                control
+            )
+            .err()
+            .unwrap()
+            .kind(),
             denied.kind()
         );
         assert_eq!(

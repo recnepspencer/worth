@@ -1522,6 +1522,7 @@ dependencies = [
 name = "worth-query-host"
 version = "0.1.0"
 dependencies = [
+ "worth-execution",
  "worth-foundational",
  "worth-query-admission",
  "worth-query-decl",

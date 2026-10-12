@@ -2,9 +2,12 @@ use super::*;
 
 #[test]
 fn ordinary_continuity_reuses_registry_allocation_at_small_and_large_schema_scale() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for additional_kind_count in [0_u32, 256] {
         let runtime = runtime_with_registry_width(additional_kind_count);
-        create_entity_outcome(&runtime, "schema-allocation-basis");
+        create_entity_outcome(execution, &runtime, "schema-allocation-basis");
         let prior_root = runtime
             .history
             .branch_cell(&BranchId("main".to_owned()))
@@ -30,7 +33,7 @@ fn ordinary_continuity_reuses_registry_allocation_at_small_and_large_schema_scal
             "ordinary continuity must share the root registry allocation at width {additional_kind_count}"
         );
 
-        create_entity_outcome(&runtime, "schema-allocation-next");
+        create_entity_outcome(execution, &runtime, "schema-allocation-next");
         let next_root = runtime
             .history
             .branch_cell(&BranchId("main".to_owned()))

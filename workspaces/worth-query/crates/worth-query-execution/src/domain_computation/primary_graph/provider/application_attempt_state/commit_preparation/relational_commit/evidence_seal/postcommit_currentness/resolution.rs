@@ -49,6 +49,7 @@ impl PreparedFactRebase {
     /// error; the inner one is a fact the walk could not resolve.
     pub(super) fn prepare(
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         fact: &Fact,
         retired: &std::collections::BTreeSet<worth_relational::facade::identity::EntityId>,
@@ -63,15 +64,15 @@ impl PreparedFactRebase {
         if let Some(entity_id) = retirement::retired_anchor(fact, retired) {
             admission.charge_external_work(1)?;
             // No other fact may stand in for a retirement the snapshot lacks.
-            return Ok(
-                retirement::committed_retirement(runtime, snapshot, entity_id, fact)
-                    .map(Self::Replace)
-                    .ok_or(unavailable),
-            );
+            return Ok(retirement::committed_retirement(
+                execution, runtime, snapshot, entity_id, fact,
+            )
+            .map(Self::Replace)
+            .ok_or(unavailable));
         }
         if producer_output && reads_source(fact) {
             return Ok(
-                match fact.source_currentness_in(runtime, snapshot, admission)? {
+                match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
                     Ok(movement) => Ok(match movement.movement() {
                         Movement::Unmoved => Self::Keep,
                         Movement::Moved => Self::KeepSuperseded,
@@ -99,6 +100,7 @@ impl PreparedFactRebase {
         }
         Ok(Self::resolve(
             runtime,
+            execution,
             snapshot,
             fact,
             producer_output,
@@ -110,6 +112,7 @@ impl PreparedFactRebase {
 
     fn resolve(
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         fact: &Fact,
         producer_output: bool,
@@ -134,8 +137,8 @@ impl PreparedFactRebase {
                 );
                 match runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
-                    .and_then(|view| view.entity_field_revision(*entity_id, &locator))
+                    .project_snapshot(snapshot, execution)
+                    .and_then(|view| view.entity_field_revision(execution, *entity_id, &locator))
                 {
                     Some(revision) => Ok(Self::Field { locator, revision }),
                     None if producer_output => Err(unavailable),
@@ -147,8 +150,8 @@ impl PreparedFactRebase {
             } => {
                 match runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
-                    .and_then(|view| view.entity_aspect_version(*entity_id, aspect))
+                    .project_snapshot(snapshot, execution)
+                    .and_then(|view| view.entity_aspect_version(execution, *entity_id, aspect))
                 {
                     Some(revision) => Ok(Self::Aspect(revision)),
                     None if producer_output => Err(unavailable),
@@ -162,7 +165,7 @@ impl PreparedFactRebase {
                 comparison_work_limit,
                 ..
             } => {
-                let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+                let Some(view) = runtime.read_truth().project_snapshot(snapshot, execution) else {
                     return if producer_output {
                         Err(unavailable)
                     } else {
@@ -170,6 +173,7 @@ impl PreparedFactRebase {
                     };
                 };
                 match view.bounded_adjacency_structural_revision(
+                    execution,
                     *anchor,
                     *relation_kind,
                     *direction,
@@ -193,6 +197,7 @@ impl PreparedFactRebase {
             }
             Fact::Relation { .. } | Fact::Adjacency { .. } => {
                 match adjacency::prepare_decision_adjacency(
+                    execution,
                     runtime,
                     snapshot,
                     fact,
@@ -220,8 +225,13 @@ impl PreparedFactRebase {
                     })?)
                     .map_err(RebaseVerificationReason::AdmissionDenied)?;
                 let mut remaining = reserved_work;
-                let observed =
-                    reobserve_indexed_entity_selection(fact, runtime, snapshot, &mut remaining);
+                let observed = reobserve_indexed_entity_selection(
+                    fact,
+                    runtime,
+                    execution,
+                    snapshot,
+                    &mut remaining,
+                );
                 reserved
                     .settle(u64::try_from(reserved_work - remaining).map_err(|_| {
                         RebaseVerificationReason::AdmissionDenied(

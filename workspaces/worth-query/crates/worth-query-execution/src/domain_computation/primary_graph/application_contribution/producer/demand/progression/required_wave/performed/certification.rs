@@ -82,7 +82,7 @@ where
     admission
         .charge_external_work(1)
         .map_err(admission_denial)?;
-    // Only the caller's exact InterestÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢Ready join may reuse the installed
+    // Only the caller's exact InterestÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ready join may reuse the installed
     // entry retained when that same demand was admitted. Other cues still
     // resolve their own producer through the installed table.
     performed
@@ -153,6 +153,7 @@ mod acknowledgement_basis;
 /// registry frame moved to the advance that requires it. No global sweep runs.
 /// A caller needing work is Pending and is retried by its driving owner.
 pub(in super::super) fn certify_frozen_ready<Schema: ApplicationSchema + 'static>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -188,6 +189,7 @@ pub(in super::super) fn certify_frozen_ready<Schema: ApplicationSchema + 'static
         .capture(selected.key(), &candidate, admission)?;
     let candidate = candidate.ok().flatten();
     let result = installed.executor.inspect_frozen_ready(
+        execution,
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenInspection {
             runtime, principal, request, shared: &wave.shared, positioned: &wave.positioned,
             selected, candidate: candidate.as_ref(), contacts,

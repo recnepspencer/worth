@@ -43,6 +43,7 @@ impl RelationalPublicationCompanion for FirstWriterGate {
 }
 
 fn candidate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &BranchId,
     entity: EntityId,
@@ -70,26 +71,35 @@ fn candidate(
         )
         .unwrap();
     runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap()
 }
 
 #[test]
 fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = Arc::clone(&handle.source_owner.invalidation_owner);
@@ -99,7 +109,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         .field_locator(reference.entity(), reference.aspect(), reference.field())
         .unwrap()
         .clone();
-    let result: Result<_, &'static str> = handle.with_runtime_mut(|runtime| {
+    let result: Result<_, &'static str> = handle.with_runtime_mut(request_execution, |runtime| {
         // A real Native fork has no Query lookup cell before its first write.
         // No derived table, Native head or existing registration is erased.
         let branch = BranchId("concurrent-first-native-fork".to_owned());
@@ -128,13 +138,27 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
                 owner.resources.preflight_budget(),
             )
             .unwrap();
-        let first = candidate(runtime, &branch, entity, status.clone(), "first");
-        let second = candidate(runtime, &branch, entity, status, "second");
+        let first = candidate(
+            request_execution,
+            runtime,
+            &branch,
+            entity,
+            status.clone(),
+            "first",
+        );
+        let second = candidate(
+            request_execution,
+            runtime,
+            &branch,
+            entity,
+            status,
+            "second",
+        );
         let port = runtime.publication_port();
         let (performed, second, hang_guard) = std::thread::scope(|threads| {
             let first_thread = threads.spawn(|| {
                 let published = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    port.compare_and_publish(first)
+                    port.compare_and_publish(request_execution, first)
                 }));
                 first_done.send(()).unwrap();
                 published.unwrap()
@@ -153,7 +177,8 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
                 }
                 return Err("hang guard: the first candidate did not reach its prepared gate");
             }
-            let second_thread = threads.spawn(|| port.compare_and_publish(second));
+            let second_thread =
+                threads.spawn(|| port.compare_and_publish(request_execution, second));
             let overlapping = observe_second.recv_timeout(std::time::Duration::from_secs(10));
             release_first.send(()).unwrap();
             let first = first_thread

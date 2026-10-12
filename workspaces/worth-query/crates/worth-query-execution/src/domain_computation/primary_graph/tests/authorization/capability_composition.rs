@@ -38,73 +38,27 @@ fn lawful_combination_is_one_decision_over_presence_and_absence_facts() {
     let world = installed_composed_capability_world(CapabilityCompositionScenario::Lawful);
     world.authorization_time.script([time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let access = admit_composed_access(&world, &principal, &request).unwrap();
+    let access = world
+        .application
+        .with_host_advancement(|phase| {
+            admit_composed_access(&phase, &world, &principal, &request).unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(access.authorization_decision_fact_count(), 2);
     assert_eq!(access.relational_counters().paths_evaluated, 9);
     assert_eq!(access.signal_dependency_count(), 31);
 }
 
-#[test]
-fn every_installed_combination_predicate_denies_independently_and_together() {
-    for (scenario, expected_causes, expected_explanation) in [
-        (
-            CapabilityCompositionScenario::MissingAssignment,
-            vec![WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing],
-            WorthQueryApplicationAuthorizationExplanationCause::MissingCapability,
-        ),
-        (
-            CapabilityCompositionScenario::ExplicitDeny,
-            vec![WorthQueryOperationAuthorizationDenialKind::ExplicitDenyRuleMatched],
-            WorthQueryApplicationAuthorizationExplanationCause::ExplicitPolicyDenial,
-        ),
-        (
-            CapabilityCompositionScenario::ConflictingBeneficiary,
-            vec![WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched],
-            WorthQueryApplicationAuthorizationExplanationCause::Conflict,
-        ),
-        (
-            CapabilityCompositionScenario::RequestActor,
-            vec![WorthQueryOperationAuthorizationDenialKind::SeparationOfDutyRuleMatched],
-            WorthQueryApplicationAuthorizationExplanationCause::SeparationOfDuty,
-        ),
-        (
-            CapabilityCompositionScenario::PriorActor,
-            vec![WorthQueryOperationAuthorizationDenialKind::DistinctActorRuleMatched],
-            WorthQueryApplicationAuthorizationExplanationCause::SeparationOfDuty,
-        ),
-        (
-            CapabilityCompositionScenario::AccumulatedProhibitions,
-            vec![
-                WorthQueryOperationAuthorizationDenialKind::ExplicitDenyRuleMatched,
-                WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched,
-                WorthQueryOperationAuthorizationDenialKind::SeparationOfDutyRuleMatched,
-                WorthQueryOperationAuthorizationDenialKind::DistinctActorRuleMatched,
-            ],
-            WorthQueryApplicationAuthorizationExplanationCause::ExplicitPolicyDenial,
-        ),
-    ] {
-        let world = installed_composed_capability_world(scenario);
-        world.authorization_time.script([time(100)]);
-        let request = live_scope();
-        let principal = authenticated_principal(&world, &request);
-
-        let denial = admit_composed_access(&world, &principal, &request)
-            .err()
-            .unwrap_or_else(|| panic!("{scenario:?} must deny at initial access admission"));
-
-        assert!(denial.identity().is_some(), "{scenario:?}");
-        assert_eq!(denial.kind(), expected_causes[0], "{scenario:?}");
-        assert_eq!(denial.causes(), expected_causes, "{scenario:?}");
-        assert_eq!(
-            denial.explanation_cause(),
-            Some(expected_explanation),
-            "{scenario:?}"
-        );
-    }
-}
+#[path = "capability_composition/every_installed_combination_predicate_denies_independently_and_t.rs"]
+mod every_installed_combination_predicate_denies_independently_and_t;
 
 #[test]
 fn unrelated_actor_records_do_not_poison_the_selected_transition() {
@@ -112,9 +66,19 @@ fn unrelated_actor_records_do_not_poison_the_selected_transition() {
         installed_composed_capability_world(CapabilityCompositionScenario::UnrelatedActorRecords);
     world.authorization_time.script([time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
 
-    admit_composed_access(&world, &principal, &request).unwrap();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            admit_composed_access(&phase, &world, &principal, &request).unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
@@ -122,12 +86,36 @@ fn required_assignment_loss_denies_at_operation_progression() {
     let world = installed_composed_capability_world(CapabilityCompositionScenario::Lawful);
     world.authorization_time.script([time(100), time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let access = admit_composed_access(&world, &principal, &request).unwrap();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let access = world
+        .application
+        .with_host_advancement(|phase| {
+            admit_composed_access(&phase, &world, &principal, &request).unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
-    remove_policy_relation(&world, super::super::fixture::AccountOwner::reference());
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            remove_policy_relation(
+                &phase,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                super::super::fixture::AccountOwner::reference(),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
-    assert_stale_at_operation(&world, access);
+    world
+        .application
+        .with_host_advancement(|phase| assert_stale_at_operation(&phase, &world, access))
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
@@ -135,16 +123,35 @@ fn new_conflict_denies_at_operation_progression() {
     let world = installed_composed_capability_world(CapabilityCompositionScenario::Lawful);
     world.authorization_time.script([time(100), time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let access = admit_composed_access(&world, &principal, &request).unwrap();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let access = world
+        .application
+        .with_host_advancement(|phase| {
+            admit_composed_access(&phase, &world, &principal, &request).unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
-    add_policy_relation(
-        &world,
-        CapabilityConflictingBeneficiary::reference(),
-        "late-conflicting-beneficiary",
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            add_policy_relation(
+                &phase,
+                &world,
+                CapabilityConflictingBeneficiary::reference(),
+                "late-conflicting-beneficiary",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
-    assert_stale_at_operation(&world, access);
+    world
+        .application
+        .with_host_advancement(|phase| assert_stale_at_operation(&phase, &world, access))
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
@@ -152,15 +159,29 @@ fn new_prior_actor_denies_final_commit_before_effect_authority() {
     let world = installed_composed_capability_world(CapabilityCompositionScenario::Lawful);
     world.authorization_time.script(vec![time(100); 16]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let program = composed_program(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| composed_program(&phase, &world, &principal, &request))
+        .expect("the fixture read owns its installed host call");
 
-    add_action_policy_relation(
-        &world,
-        CapabilityPriorActor::reference(),
-        "late-prior-actor",
-        "selected-prior",
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            add_action_policy_relation(
+                &phase,
+                &world,
+                CapabilityPriorActor::reference(),
+                "late-prior-actor",
+                "selected-prior",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     let WorthQueryApplicationCommitOutcome::Denied(denial) =
         world.application.compare_and_commit_application(
@@ -181,39 +202,11 @@ fn new_prior_actor_denies_final_commit_before_effect_authority() {
     );
 }
 
-#[test]
-fn unrelated_published_actor_drift_preserves_the_prepared_product_mutation() {
-    let world = installed_composed_capability_world(CapabilityCompositionScenario::Lawful);
-    world.authorization_time.script(vec![time(100); 16]);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let program = composed_program(&world, &principal, &request);
-
-    add_action_policy_relation(
-        &world,
-        CapabilityRequestActor::reference(),
-        "late-unrelated-request-actor",
-        "other-request",
-    );
-    add_action_policy_relation(
-        &world,
-        CapabilityPriorActor::reference(),
-        "late-unrelated-prior-actor",
-        "other-prior",
-    );
-
-    let outcome = world.application.compare_and_commit_application(
-        program,
-        idempotency(76, 76),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    assert!(
-        matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
-        "unrelated actor edges must preserve current authorization and decision: {outcome:?}"
-    );
-}
+#[path = "capability_composition/unrelated_published_actor_drift_preserves_the_prepared_product_m.rs"]
+mod unrelated_published_actor_drift_preserves_the_prepared_product_m;
 
 fn admit_composed_access(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -226,15 +219,22 @@ fn admit_composed_access(
             ComposedCapabilityTouchOperation::reference(),
         )
         .unwrap();
-    world.selected_product().admit_capability_access(
-        principal,
-        &capability,
-        composed_input(),
-        request,
-    )
+    world
+        .selected_product(&(phase_custody).test_host_request())
+        .admit_capability_access(
+            phase_custody,
+            principal,
+            &capability,
+            composed_input(),
+            request,
+        )
 }
 
-fn assert_stale_at_operation(world: &AuthorizationWorld, access: ComposedAccess) {
+fn assert_stale_at_operation(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &AuthorizationWorld,
+    access: ComposedAccess,
+) {
     let operation = world
         .application
         .installed_schema()
@@ -242,7 +242,7 @@ fn assert_stale_at_operation(world: &AuthorizationWorld, access: ComposedAccess)
         .unwrap();
     let denial = world
         .application
-        .authorize_capability_operation(access, &operation, Default::default())
+        .authorize_capability_operation(phase_custody, access, &operation, Default::default())
         .err()
         .expect("composition drift must deny at operation progression");
     assert_eq!(
@@ -252,11 +252,12 @@ fn assert_stale_at_operation(world: &AuthorizationWorld, access: ComposedAccess)
 }
 
 fn composed_program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> ComposedProgram {
-    let access = admit_composed_access(world, principal, request).unwrap();
+    let access = admit_composed_access(phase_custody, world, principal, request).unwrap();
     let operation = world
         .application
         .installed_schema()
@@ -264,12 +265,13 @@ fn composed_program(
         .unwrap();
     let admission = world
         .application
-        .authorize_capability_operation(access, &operation, Default::default())
+        .authorize_capability_operation(phase_custody, access, &operation, Default::default())
         .unwrap();
-    let account = resolved_account(world, "open", request);
+    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |reader, projected| {
                 reader
@@ -283,6 +285,7 @@ fn composed_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -290,6 +293,7 @@ fn composed_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

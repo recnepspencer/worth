@@ -6,9 +6,11 @@ use worth_query::facade::domain::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
 
-pub fn assert_duplicate_and_reordered_convergence() {
-    let direct_then_performed = run_case(false);
-    let performed_then_direct = run_case(true);
+pub fn assert_duplicate_and_reordered_convergence(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let direct_then_performed = run_case(request_execution, false);
+    let performed_then_direct = run_case(request_execution, true);
     assert_eq!(direct_then_performed.duplicate_count, 1);
     assert_eq!(performed_then_direct.duplicate_count, 1);
     assert_eq!(direct_then_performed.promotion_count, 1);
@@ -26,7 +28,7 @@ pub fn assert_duplicate_and_reordered_convergence() {
         direct_then_performed.projected_field_count,
         performed_then_direct.projected_field_count
     );
-    assert_same_width_runtime_substitution_is_denied();
+    assert_same_width_runtime_substitution_is_denied(request_execution);
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -39,15 +41,18 @@ struct ConvergenceObservation {
     projected_field_count: usize,
 }
 
-fn run_case(performed_first: bool) -> ConvergenceObservation {
+fn run_case(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    performed_first: bool,
+) -> ConvergenceObservation {
     let mut host = CourtroomWorld::publish("blocked");
-    let mut query = build_primary_query_world(&host);
+    let mut query = build_primary_query_world(request_execution, &host);
     let installation = host.application.granular_invalidation_installation();
     let binding = bind_primary_runtime_granular_invalidations(&query.live, installation.clone());
-    let mut baseline = observe(&mut host);
+    let mut baseline = observe(request_execution, &mut host);
     assert!(baseline.take_granular_invalidation_batch().is_empty());
     host.amend_intent(1, "active", "ready");
-    let mut changed = observe(&mut host);
+    let mut changed = observe(request_execution, &mut host);
     let performed = changed.take_granular_invalidation_batch();
     assert_eq!(performed.len(), 1);
     assert!(performed.bridge_deliveries()[0]
@@ -65,9 +70,14 @@ fn run_case(performed_first: bool) -> ConvergenceObservation {
     let lower = batch.observation();
     assert_eq!(lower.direct_truth_delivery_count(), 2);
     assert_eq!(lower.signal_performed_delivery_count(), 1);
-    let outcome =
-        maintain_primary_runtime_granular_batch(&query.live, &mut query.workspace, &binding, batch)
-            .expect("duplicate direct/performed delivery must converge");
+    let outcome = maintain_primary_runtime_granular_batch(
+        request_execution,
+        &query.live,
+        &mut query.workspace,
+        &binding,
+        batch,
+    )
+    .expect("duplicate direct/performed delivery must converge");
     let WorthQueryPrimaryGranularMaintenanceOutcome::Performed(performed) = outcome else {
         panic!("the converged performed delivery must maintain Query")
     };
@@ -85,13 +95,15 @@ fn run_case(performed_first: bool) -> ConvergenceObservation {
     }
 }
 
-fn assert_same_width_runtime_substitution_is_denied() {
+fn assert_same_width_runtime_substitution_is_denied(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut current_host = CourtroomWorld::publish("blocked");
-    let query = build_primary_query_world(&current_host);
-    let current_batch = performed_batch(&mut current_host);
+    let query = build_primary_query_world(request_execution, &current_host);
+    let current_batch = performed_batch(request_execution, &mut current_host);
 
     let mut substituted_host = CourtroomWorld::publish("blocked");
-    let substituted_batch = performed_batch(&mut substituted_host);
+    let substituted_batch = performed_batch(request_execution, &mut substituted_host);
     let reads_before = query.observations.exact_record_reads();
     let denial = match current_batch.merge_transport_batch(substituted_batch) {
         Err(denial) => denial,
@@ -105,12 +117,13 @@ fn assert_same_width_runtime_substitution_is_denied() {
 }
 
 fn performed_batch(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     host: &mut CourtroomWorld,
 ) -> worth_query_execution::facade::primary_graph::WorthQueryGranularInvalidationDeliveryBatch {
-    let mut baseline = observe(host);
+    let mut baseline = observe(request_execution, host);
     assert!(baseline.take_granular_invalidation_batch().is_empty());
     host.amend_intent(1, "active", "ready");
-    let mut changed = observe(host);
+    let mut changed = observe(request_execution, host);
     let batch = changed.take_granular_invalidation_batch();
     assert_eq!(batch.len(), 1);
     assert!(batch.bridge_deliveries()[0].performed_signal().is_some());
@@ -118,11 +131,12 @@ fn performed_batch(
 }
 
 fn observe(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut CourtroomWorld,
 ) -> worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationReceipt<
     crate::adapters::CourtroomClock,
 > {
-    match world.conditional_clock().observe() {
+    match world.conditional_clock().observe(request_execution) {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         _ => panic!("the convergence observation must be accepted"),
     }

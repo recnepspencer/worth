@@ -17,16 +17,18 @@ pub(super) struct WorthQueryAdoptionSelection {
 /// The selected branch's own root. Adoption reads the branch's writes and
 /// never another branch's, so a fork decides only what the fork holds.
 pub(super) fn branch_view<'runtime>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
 ) -> Result<VisibilityProjectionView<'runtime>, WorthQueryBranchAdoptionPreparationDenial> {
     runtime
         .read_truth()
-        .project_observation(&basis.observation())
+        .project_observation(execution, &basis.observation())
         .map_err(WorthQueryBranchAdoptionPreparationDenial::BranchBasisUnavailable)
 }
 
 pub(super) fn select(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     branch: &VisibilityProjectionView<'_>,
     layout: &WorthQueryPrimaryGraphLayout,
     requirements: &WorthQueryProgramAdoptionRequirements,
@@ -60,7 +62,7 @@ pub(super) fn select(
         })?;
         let remaining = maximum_work_units.saturating_sub(consumed);
         let read = branch
-            .bounded_entities_of_kind(kind, remaining)
+            .bounded_entities_of_kind(execution, kind, remaining)
             .map_err(|denial| {
                 WorthQueryBranchAdoptionPreparationDenial::SelectionLimitExceeded {
                     maximum_work_units,

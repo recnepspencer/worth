@@ -2,6 +2,7 @@
 use super::*;
 
 pub(super) fn reacquire_current_committed_output<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     receipt: &WorthQueryApplicationCommitReceipt,
 ) -> Result<Option<WorthQueryProductObservationLease>, WorthQueryOutputDemandDenial>
@@ -11,7 +12,7 @@ where
     let committed = receipt.committed_product_publication();
     let selected = runtime
         .on_branch(receipt.product_branch())
-        .select()
+        .select_with_request(execution)
         .map_err(|error| {
             WorthQueryOutputDemandDenial::product_selection(
                 error,

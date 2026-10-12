@@ -1,6 +1,8 @@
 mod admission_denial;
 mod aggregate;
 mod consumed_output;
+#[path = "invariant_projection/field_projection.rs"]
+mod field_projection;
 mod identity_encoding;
 mod pending_output_read;
 pub(in crate::domain_computation::primary_graph) use pending_output_read::RequestedOutputRead;
@@ -177,18 +179,31 @@ where
     }
 
     #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn active_snapshot_count(&self) -> usize {
-        self.graph
-            .with_runtime_mut(|runtime| runtime.retention().inspect_plan().active_snapshot_count)
+    pub(in crate::domain_computation::primary_graph) fn active_snapshot_count(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> usize {
+        self.graph.with_runtime_mut(request_execution, |runtime| {
+            runtime.retention().inspect_plan().active_snapshot_count
+        })
     }
 
     pub fn snapshot(
         &self,
+        phase: &super::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         WorthQueryApplicationInvariantProjectionSnapshot<Schema>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let (basis, snapshot) = self.graph.with_runtime_mut(|runtime| {
+        let request = phase
+            .request_for_source(self.graph.relational_runtime_instance_id())
+            .map_err(|_| {
+                WorthQueryInvariantProjectionDenial::from_kind(
+                    WorthQueryInvariantProjectionDenialKind::ForeignPhase,
+                )
+            })?;
+        let execution = &request;
+        let (basis, snapshot) = self.graph.with_runtime_mut(execution, |runtime| {
             let identity = runtime.main_branch_identity();
             let (_, basis) = runtime
                 .observe_branch(&identity)
@@ -221,39 +236,6 @@ where
 {
     pub fn version(&self) -> VersionId {
         self.snapshot().version_id()
-    }
-
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
-        &self,
-        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Option<Value>
-    where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        if identity.authority_identity != self.authority_identity
-            || identity.entity.as_ref() != field.entity()
-        {
-            return None;
-        }
-        let locator = self
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())?
-            .clone();
-        self.graph
-            .with_runtime(|runtime| {
-                super::application_attempt::observe_field_value(
-                    runtime,
-                    self.snapshot(),
-                    identity.entity_id,
-                    identity.kind,
-                    &locator,
-                )
-            })
-            .and_then(|value| Field::Binding::decode(&value).ok())
     }
 
     pub(in crate::domain_computation::primary_graph) fn belongs_to(

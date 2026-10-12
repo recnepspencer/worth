@@ -20,8 +20,11 @@ use support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn declared_domain_operation_resolves_through_registry_by_operation_key() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-three.domain-key")
         .expect("runtime should open workspace");
@@ -72,8 +75,11 @@ fn declared_domain_operation_resolves_through_registry_by_operation_key() {
 
 #[test]
 fn declared_domain_operation_without_registry_support_returns_required_capability() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-three.missing-domain-registry")
         .expect("runtime should open workspace");
@@ -112,8 +118,11 @@ fn declared_domain_operation_without_registry_support_returns_required_capabilit
 
 #[test]
 fn unsupported_declared_domain_shape_denies_without_generic_traversal_fallback() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-three.unsupported-domain")
         .expect("runtime should open workspace");
@@ -144,8 +153,11 @@ fn unsupported_declared_domain_shape_denies_without_generic_traversal_fallback()
 
 #[test]
 fn ordinary_traversal_with_same_relations_does_not_become_domain_operation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-three.no-relation-magic")
         .expect("runtime should open workspace");

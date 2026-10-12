@@ -54,6 +54,7 @@ where
     /// runs and closes it; an instance that already ended is refused.
     pub(super) fn close_live_workflow_instance<Spec>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         layout: &WorthQueryWorkflowLayout,
         instance: &PublishedWorkflowInstanceRef,
@@ -65,6 +66,7 @@ where
         let handle = self.lease.handle();
         let snapshot = self.lease.snapshot();
         let (mut compiled, mut facts) = reconstruct_compiled_definition(
+            execution,
             handle,
             snapshot,
             layout,
@@ -83,8 +85,9 @@ where
         let maximum_transitions = super::maximum_transitions(installed);
         let budget = installed.resources().history_reconstruction_budget();
         let entity = instance.entity_id();
-        handle.with_runtime(|runtime| {
+        handle.with_runtime(execution, |runtime| {
             let mut observed = observe_workflow_instance(
+                execution,
                 handle,
                 runtime,
                 snapshot,
@@ -104,6 +107,7 @@ where
                 ));
             };
             observed.ensure_history(
+                execution,
                 handle,
                 runtime,
                 snapshot,
@@ -116,6 +120,7 @@ where
             // An external operation the owner still holds has committed but
             // not settled. Cancelling now would dispose of that custody.
             facts.push(fence_owner_custody(
+                execution,
                 runtime,
                 snapshot,
                 layout,
@@ -151,6 +156,7 @@ where
             ];
             let mut performed = performed::own_effects(&observed.transitions, &compiled, HISTORY)?;
             performed.extend(performed::inherited_effects(
+                execution,
                 runtime,
                 snapshot,
                 layout,

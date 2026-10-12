@@ -15,16 +15,19 @@ use worth_query_host::facade::primary_graph::{
 use super::{host::FinancialCourtroomWorld, query};
 use crate::adapters::CourtroomClock;
 
-pub fn assert_shared_financial_execution_and_publication() {
+pub fn assert_shared_financial_execution_and_publication(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut host = FinancialCourtroomWorld::publish_curve();
-    let mut query = query::build_shared_curve(&host);
-    baseline_and_amend(&mut host);
+    let mut query = query::build_shared_curve(request_execution, &host);
+    baseline_and_amend(request_execution, &mut host);
     let binding = bind_shared_primary_runtime_granular_invalidations(
         &query.subject,
         host.application.granular_invalidation_installation(),
     );
-    let mut observation = observe(&mut host);
+    let mut observation = observe(request_execution, &mut host);
     let outcome = maintain_shared_primary_runtime_granular_batch(
+        request_execution,
         &[&query.subject, &query.candidate],
         &mut query.workspace,
         &binding,
@@ -55,8 +58,9 @@ pub fn assert_shared_financial_execution_and_publication() {
     assert_eq!(second.backpressure_posture(), "drop_with_gap_notice");
     host.amend_curve(3, 4_250, 5_100);
     host.curve_clock_control.push(3, 12);
-    let mut reverse_observation = observe(&mut host);
+    let mut reverse_observation = observe(request_execution, &mut host);
     let reverse = maintain_shared_primary_runtime_granular_batch(
+        request_execution,
         &[&query.subject, &query.candidate],
         &mut query.workspace,
         &binding,
@@ -75,20 +79,24 @@ pub fn assert_shared_financial_execution_and_publication() {
     }));
 }
 
-pub fn assert_shared_financial_disclosure_revalidation() {
-    changed_policy_is_denied_before_refresh();
-    revoked_lease_does_not_disturb_the_survivor();
+pub fn assert_shared_financial_disclosure_revalidation(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
+    changed_policy_is_denied_before_refresh(request_execution);
+    revoked_lease_does_not_disturb_the_survivor(request_execution);
 }
 
-fn changed_policy_is_denied_before_refresh() {
+fn changed_policy_is_denied_before_refresh(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut host = FinancialCourtroomWorld::publish_curve();
-    let mut query = query::build_shared_curve(&host);
-    baseline_and_amend(&mut host);
+    let mut query = query::build_shared_curve(request_execution, &host);
+    baseline_and_amend(request_execution, &mut host);
     let binding = bind_shared_primary_runtime_granular_invalidations(
         &query.subject,
         host.application.granular_invalidation_installation(),
     );
-    let mut observation = observe(&mut host);
+    let mut observation = observe(request_execution, &mut host);
     let selected = prepare_shared_primary_runtime_granular_batch(
         &[&query.subject, &query.candidate],
         &mut query.workspace,
@@ -114,6 +122,7 @@ fn changed_policy_is_denied_before_refresh() {
         .unwrap();
     assert!(matches!(
         perform_prepared_shared_primary_runtime_granular_maintenance(
+            request_execution,
             prepared,
             &[&query.subject, &query.candidate],
             &mut query.workspace,
@@ -123,15 +132,17 @@ fn changed_policy_is_denied_before_refresh() {
     ));
 }
 
-fn revoked_lease_does_not_disturb_the_survivor() {
+fn revoked_lease_does_not_disturb_the_survivor(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut host = FinancialCourtroomWorld::publish_curve();
-    let mut query = query::build_shared_curve(&host);
-    baseline_and_amend(&mut host);
+    let mut query = query::build_shared_curve(request_execution, &host);
+    baseline_and_amend(request_execution, &mut host);
     let binding = bind_shared_primary_runtime_granular_invalidations(
         &query.subject,
         host.application.granular_invalidation_installation(),
     );
-    let mut observation = observe(&mut host);
+    let mut observation = observe(request_execution, &mut host);
     let selected = prepare_shared_primary_runtime_granular_batch(
         &[&query.subject, &query.candidate],
         &mut query.workspace,
@@ -150,6 +161,7 @@ fn revoked_lease_does_not_disturb_the_survivor() {
     };
     assert!(!disposed.release().owner_terminal());
     let outcome = perform_prepared_shared_primary_runtime_granular_maintenance(
+        request_execution,
         prepared,
         &[&query.subject],
         &mut query.workspace,
@@ -165,9 +177,14 @@ fn revoked_lease_does_not_disturb_the_survivor() {
     assert_eq!(performed.maintenance_counters().authorization_denials(), 1);
 }
 
-fn baseline_and_amend(host: &mut FinancialCourtroomWorld) {
+fn baseline_and_amend(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    host: &mut FinancialCourtroomWorld,
+) {
     assert!(matches!(
-        host.conditional_clock(&host.curve_clock).unwrap().observe(),
+        host.conditional_clock(request_execution, &host.curve_clock)
+            .unwrap()
+            .observe(request_execution),
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
     ));
     host.amend_curve(2, 4_260, 5_100);
@@ -176,9 +193,14 @@ fn baseline_and_amend(host: &mut FinancialCourtroomWorld) {
 }
 
 fn observe(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     host: &mut FinancialCourtroomWorld,
 ) -> WorthQueryConditionalClockObservationReceipt<CourtroomClock> {
-    match host.conditional_clock(&host.curve_clock).unwrap().observe() {
+    match host
+        .conditional_clock(request_execution, &host.curve_clock)
+        .unwrap()
+        .observe(request_execution)
+    {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         _ => panic!("the due financial curve observation was not accepted"),
     }

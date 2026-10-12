@@ -20,6 +20,7 @@ pub(in crate::domain_computation::authorization) use admitted_operation::{
 };
 
 pub(in crate::domain_computation::authorization::operation_progression) fn transition_capability_operation<Schema, Capability, Operation, Input>(
+execution: &worth_execution::ExecutionRequest<'_, '_>,
     bound: PreconditionBoundCapabilityOperation<'_, Schema, Capability, Operation, Input>,
 ) -> Result<
     WorthQueryAdmittedApplicationOperation<
@@ -46,5 +47,5 @@ where
         access,
         operation,
     } = validated;
-    access.transition_operation(runtime, operation, preconditions)
+    access.transition_operation(execution, runtime, operation, preconditions)
 }

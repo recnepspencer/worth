@@ -136,6 +136,7 @@ impl WorthQueryGeneratedOutputRestorationRecoveryFailure {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn continue_generated_output_restoration_recovery(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryGeneratedOutputRestorationRecovery,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<
@@ -158,6 +159,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     let (product, retry) = unpublished.into_parts();
                     let needs_settlement = product.relational_requires_settlement();
                     self.continue_restoration_world(
+                        execution,
                         phase,
                         product.into_recovery(),
                         retry,
@@ -176,6 +178,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         }
                     };
                     self.continue_restoration_world(
+                        execution,
                         phase,
                         recovery,
                         retry,
@@ -210,12 +213,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::PublishedWorld {
                     recovery,
                     settlement,
-                } => self.finish_restoration_published(recovery, settlement),
+                } => self.finish_restoration_published(execution, recovery, settlement),
                 RecoveryState::PublishedCleanup {
                     cleanup,
                     settlement,
                 } => match cleanup.retry() {
-                    Ok(_) => Ok(settlement.finish(self)),
+                    Ok(_) => Ok(settlement.finish(execution, self)),
                     Err(failed) => Err(failure(
                         WorthQueryGeneratedOutputRestorationRecoveryStage::OwnerCleanup,
                         RecoveryState::PublishedCleanup {
@@ -237,6 +240,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     fn continue_restoration_world(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: RestorationRetry,
@@ -252,11 +256,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        self.adopt_settled_restoration(phase, recovery, retry, request)
+        self.adopt_settled_restoration(execution, phase, recovery, retry, request)
     }
 
     fn adopt_settled_restoration(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: RestorationRetry,
@@ -265,6 +270,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         super::WorthQueryRestoredGeneratedOutput,
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
     > {
+        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return Err(failure(
+                    WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied(
+                        cause.into(),
+                    ),
+                    RecoveryState::World { recovery, retry },
+                ))
+            }
+        };
         let unpublished = match recovery.inspect() {
             Ok(unpublished) => unpublished,
             Err(_) => {
@@ -288,11 +304,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         drop(unpublished);
         let publication = retry.publication.clone();
-        match prepared.execute(
-            phase
-                .execution_request_for(&self.product_runtime)
-                .expect("private progression uses its admitted runtime phase"),
-        ) {
+        match prepared.execute(publication_execution) {
             worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
                 let commit = performed
                     .component_results()
@@ -304,6 +316,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .take_successor_observation()
                     .expect("settled restoration adoption reserves its successor observation");
                 self.finish_restoration_published(
+                    execution,
                     recovery,
                     PublishedRestorationSettlement {
                         observation,

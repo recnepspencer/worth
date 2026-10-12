@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn durability_contract_failure_schema_mismatch_is_explicit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "main-a");
+    create_entity_outcome(execution, &runtime, "main-a");
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -19,7 +22,11 @@ fn durability_contract_failure_schema_mismatch_is_explicit() {
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(mismatched_registry)
         .build();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::SchemaMismatch);
     assert!(matches!(
@@ -34,15 +41,22 @@ fn durability_contract_failure_schema_mismatch_is_explicit() {
 
 #[test]
 fn durability_contract_failure_descriptor_semantics_version_mismatch_is_explicit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity_outcome(&runtime, "main-a");
+    create_entity_outcome(execution, &runtime, "main-a");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     plan.descriptor_semantics_version = DescriptorSemanticsVersion(99);
 
     let mut recovered = runtime_with_test_schema();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::SchemaMismatch);
     assert!(matches!(
@@ -58,8 +72,11 @@ fn durability_contract_failure_descriptor_semantics_version_mismatch_is_explicit
 
 #[test]
 fn durability_recovery_plan_preserves_explicit_verification_mode() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "main-a");
+    create_entity_outcome(execution, &runtime, "main-a");
 
     let normal = runtime
         .durability()
@@ -80,8 +97,11 @@ fn durability_recovery_plan_preserves_explicit_verification_mode() {
 
 #[test]
 fn durability_recovery_plan_reports_descriptor_version_mismatch_before_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "main-a");
+    create_entity_outcome(execution, &runtime, "main-a");
     runtime.performance_access().reset_counters();
     let store = runtime
         .durability()
@@ -138,8 +158,11 @@ fn durability_recovery_plan_reports_descriptor_version_mismatch_before_recovery(
 
 #[test]
 fn durability_contract_failure_descriptor_canonical_basis_version_mismatch_is_explicit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    let _ = create_entity_outcome(&runtime, "main-a");
+    let _ = create_entity_outcome(execution, &runtime, "main-a");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -172,11 +195,7 @@ fn durability_contract_failure_descriptor_canonical_basis_version_mismatch_is_ex
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let segment_path = runtime
         .durability()
@@ -229,14 +248,20 @@ fn durability_contract_failure_descriptor_canonical_basis_version_mismatch_is_ex
 
 #[test]
 fn durability_recovery_emits_authority_continuity_diagnostic_before_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "main-a");
+    create_entity_outcome(execution, &runtime, "main-a");
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
 
     let mut recovered = persisted_runtime_with_test_schema();
-    let _ = recovered.durability_recovery().recover(plan).unwrap();
+    let _ = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
 
     let diagnostics = recovered.publication().diagnostics();
     let authority_continuity_entry = diagnostics
@@ -257,15 +282,21 @@ fn durability_recovery_emits_authority_continuity_diagnostic_before_execution() 
 
 #[test]
 fn durability_certification_recovery_authority_continuity_is_explained_and_counted() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "main-a");
+    create_entity_outcome(execution, &runtime, "main-a");
     runtime.performance_access().reset_counters();
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
 
     let mut recovered = persisted_runtime_with_test_schema();
-    let _ = recovered.durability_recovery().recover(plan).unwrap();
+    let _ = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
 
     let diagnostics = recovered.publication().diagnostics();
     let authority_continuity_entry = diagnostics

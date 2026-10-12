@@ -16,9 +16,12 @@ use crate::tests::support::*;
 
 #[test]
 fn cdc_certification_seeded_matrix_is_deterministic_and_resume_exact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for seed in 0_u64..16 {
-        let left = run_seeded_cdc_scenario(seed, 96);
-        let right = run_seeded_cdc_scenario(seed, 96);
+        let left = run_seeded_cdc_scenario(execution, seed, 96);
+        let right = run_seeded_cdc_scenario(execution, seed, 96);
 
         let full_left =
             collect_subscriber_patches(&left.runtime, left.baseline_checkpoint.clone(), 512);
@@ -70,11 +73,14 @@ fn cdc_certification_seeded_matrix_is_deterministic_and_resume_exact() {
 #[test]
 #[ignore = "scheduled hostile CDC certification; run explicitly in the scheduled relational lane"]
 fn cdc_certification_thousand_step_random_resume_matrix_converges() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for seed in 0_u64..3 {
-        let world = run_seeded_scenario(SeededScenarioConfig::geometry_kernel(
-            seed,
-            CertificationPressureProfile::ThousandStep,
-        ));
+        let world = run_seeded_scenario(
+            execution,
+            SeededScenarioConfig::geometry_kernel(seed, CertificationPressureProfile::ThousandStep),
+        );
         assert!(
             !world.trace.operations.is_empty(),
             "seed {seed} produced no operations"
@@ -103,23 +109,43 @@ fn cdc_certification_thousand_step_random_resume_matrix_converges() {
 
 #[test]
 fn cdc_certification_explicit_dependency_graph_resume_is_exact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-    let source = create_entity_in_partition(&runtime, "source-a", PartitionId(7));
-    let target = create_entity_in_partition(&runtime, "target-b", PartitionId(11));
-    let _dependency =
-        create_relation_in_partition(&runtime, source, target, "depends-on", PartitionId(29));
+    let source = create_entity_in_partition(execution, &runtime, "source-a", PartitionId(7));
+    let target = create_entity_in_partition(execution, &runtime, "target-b", PartitionId(11));
+    let _dependency = create_relation_in_partition(
+        execution,
+        &runtime,
+        source,
+        target,
+        "depends-on",
+        PartitionId(29),
+    );
     let baseline_checkpoint = checkpoint_for_schema_version(
         runtime.publication().latest_patch().unwrap().position,
         SchemaVersionId(1),
     );
 
     for step in 0..48 {
-        update_entity_and_release_snapshot(&runtime, target, &format!("target-b-{step}"));
+        update_entity_and_release_snapshot(
+            execution,
+            &runtime,
+            target,
+            &format!("target-b-{step}"),
+        );
         if step % 4 == 0 {
-            update_entity_and_release_snapshot(&runtime, source, &format!("source-a-{step}"));
+            update_entity_and_release_snapshot(
+                execution,
+                &runtime,
+                source,
+                &format!("source-a-{step}"),
+            );
         }
         if step % 6 == 0 {
             let _ = create_entity_in_partition(
+                execution,
                 &runtime,
                 &format!("churn-{step}"),
                 match step % 3 {
@@ -144,8 +170,11 @@ fn cdc_certification_explicit_dependency_graph_resume_is_exact() {
 #[test]
 #[ignore = "scheduled hostile CDC certification; run explicitly in the scheduled relational lane"]
 fn cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-    let entity = create_entity_in_partition(&runtime, "rewrite-storm-0", PartitionId(7));
+    let entity = create_entity_in_partition(execution, &runtime, "rewrite-storm-0", PartitionId(7));
     let profile = CertificationPressureProfile::RewriteStorm;
     let baseline_checkpoint = checkpoint_for_schema_version(
         runtime.publication().latest_patch().unwrap().position,
@@ -153,7 +182,12 @@ fn cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows() {
     );
 
     for step in 1..=profile.steps() {
-        update_entity_and_release_snapshot(&runtime, entity, &format!("rewrite-storm-{step}"));
+        update_entity_and_release_snapshot(
+            execution,
+            &runtime,
+            entity,
+            &format!("rewrite-storm-{step}"),
+        );
         if step % 16 == 0 {
             let partition = match step % 4 {
                 0 => PartitionId(7),
@@ -161,7 +195,12 @@ fn cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows() {
                 2 => PartitionId(29),
                 _ => PartitionId(31),
             };
-            let _ = create_entity_in_partition(&runtime, &format!("storm-churn-{step}"), partition);
+            let _ = create_entity_in_partition(
+                execution,
+                &runtime,
+                &format!("storm-churn-{step}"),
+                partition,
+            );
         }
     }
 
@@ -178,10 +217,16 @@ fn cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows() {
 
 #[test]
 fn cdc_certification_restart_loops_do_not_leak_resume_state_across_sessions() {
-    let world = run_seeded_scenario(SeededScenarioConfig::hostile_geometry(
-        0xABCD1234,
-        CertificationPressureProfile::HistoryPressure,
-    ));
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = run_seeded_scenario(
+        execution,
+        SeededScenarioConfig::hostile_geometry(
+            0xABCD1234,
+            CertificationPressureProfile::HistoryPressure,
+        ),
+    );
     let head = collect_subscriber_patches_from_head(&world.runtime, 4096);
     let checkpoints = random_checkpoints_from_patches(&head, 0xD15C0C7, 20);
 

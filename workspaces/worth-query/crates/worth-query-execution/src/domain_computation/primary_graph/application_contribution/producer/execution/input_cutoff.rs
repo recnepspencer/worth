@@ -66,6 +66,7 @@ fn fresh<'owner, Schema, OperationType, Input, Scope>(
 /// construction. The Fresh branch returns the original preparation custody;
 /// no input/context proof or source fact set is reconstructed on fallback.
 pub(super) fn advance_input_cutoff<'owner, Schema, Binding, OperationType, Input, Scope>(
+    execution: worth_execution::ExecutionRequest<'owner, 'owner>,
     runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     selected: &'owner WorthQuerySelectedProductOperation<'_, Schema>,
     operation: &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
@@ -188,7 +189,7 @@ where
     // The Native owner authenticates and funds the exact issued handle once.
     // Verification consumes this paired proof instead of resolving it again.
     let basis = handle
-        .with_runtime(|relational| {
+        .with_runtime(&execution, |relational| {
             PreparedInputCutoffBasis::prepare(
                 relational,
                 selected.application_basis().snapshot_handle(),
@@ -197,8 +198,9 @@ where
         })
         .map_err(cutoff_basis_denial)?;
     let decision = handle
-        .with_runtime(|relational| {
+        .with_runtime(&execution, |relational| {
             candidate.verify_for_reuse_owned(
+                &execution,
                 key,
                 context,
                 matched_predecessors,
@@ -233,7 +235,7 @@ where
             // published. Recompare prepared facts; do not rerun a handler read.
             let current = runtime
                 .on_branch(selected.product().product_branch())
-                .select()
+                .select_with_request(&execution)
                 .map_err(|stop| {
                     denial(
                         WorthQueryOutputDemandDenialKind::ProductSelection(stop),
@@ -241,7 +243,7 @@ where
                     )
                 })?;
             let basis = handle
-                .with_runtime(|relational| {
+                .with_runtime(&execution, |relational| {
                     PreparedInputCutoffBasis::prepare(
                         relational,
                         current.application_basis().snapshot_handle(),
@@ -250,8 +252,9 @@ where
                 })
                 .map_err(cutoff_basis_denial)?;
             let verified = handle
-                .with_runtime(|relational| {
+                .with_runtime(&execution, |relational| {
                     verified.recompare_for_publication(
+                        &execution,
                         relational,
                         basis,
                         source_owner,

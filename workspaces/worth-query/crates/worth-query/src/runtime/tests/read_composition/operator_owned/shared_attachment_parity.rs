@@ -6,12 +6,15 @@ use crate::runtime::{WorthQueryReadBuiltInOperator, WorthQueryReadScopeClass};
 
 #[test]
 fn compose_read_shared_attachment_detail_matches_open_coded_local_detail_query_semantics() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.shared-attachment-parity-detail")
         .expect("read-backed runtime should open a workspace");
 
     let operator_owned = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_attachment_detail(
                 "user",
                 frontier_manager_schema(),
@@ -47,7 +50,7 @@ fn compose_read_shared_attachment_detail_matches_open_coded_local_detail_query_s
         .expect("operator-owned shared attachment detail should execute");
 
     let open_coded = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_detail(
                 "user",
                 frontier_manager_schema(),
@@ -115,12 +118,15 @@ fn compose_read_shared_attachment_detail_matches_open_coded_local_detail_query_s
 
 #[test]
 fn compose_read_shared_attachment_collection_matches_open_coded_local_collection_query_semantics() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.shared-attachment-parity-collection")
         .expect("read-backed runtime should open a workspace");
 
     let operator_owned = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_attachment_collection(
                 "user",
                 frontier_manager_schema(),
@@ -160,7 +166,7 @@ fn compose_read_shared_attachment_collection_matches_open_coded_local_collection
         .expect("operator-owned shared attachment collection should execute");
 
     let open_coded = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_collection(
                 "user",
                 frontier_manager_schema(),

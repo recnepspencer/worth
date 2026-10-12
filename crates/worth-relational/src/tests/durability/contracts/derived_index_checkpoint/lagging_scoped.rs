@@ -5,14 +5,18 @@ use crate::indexes::data::DerivedIndexGenerationId;
 
 #[test]
 fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let anchor = create_entity_outcome(&runtime, "immutable-parent-name");
+    let anchor = create_entity_outcome(execution, &runtime, "immutable-parent-name");
     let entity = changed_entities(&anchor)[0];
     let branch = create_branch_from_main(&runtime, "lagging-scoped-fork");
     let index = scoped_name_index(&runtime);
     let identity = runtime.branch_identity(&branch).unwrap();
     let (_, inherited_basis) = runtime.observe_branch(&identity).unwrap();
     let inherited = runtime.index_authority().build_for_basis(
+        execution,
         DerivedIndexBuildRequest {
             source_commit_id: anchor.commit.commit_id,
             branch_id: branch.clone(),
@@ -35,7 +39,10 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
                            current: &RelationalCommitReceipt,
                            expected_name: &str| {
         let mut reopened = persisted_runtime_with_test_schema();
-        reopened.durability_recovery().recover(plan).unwrap();
+        reopened
+            .durability_recovery()
+            .recover(execution, plan)
+            .unwrap();
         let retained = reopened.indexes.generation(generation).unwrap();
         assert_eq!(retained.index_id, index.index_id);
         assert_eq!(retained.source_commit_id, source.commit_id);
@@ -64,7 +71,13 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
         );
     };
 
-    let first = update_entity_on_branch(&runtime, entity, "fork-own-first", branch.clone());
+    let first = update_entity_on_branch(
+        execution,
+        &runtime,
+        entity,
+        "fork-own-first",
+        branch.clone(),
+    );
     assert_eq!(first.commit.branch_id, branch);
     release_test_commit_snapshot(&runtime, &first);
     runtime.durability_authority().checkpoint().unwrap();
@@ -80,8 +93,15 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
 
     // The next cache is authored on the fork's own older commit. Advance its
     // real branch once more without rebuilding that cache, then capture again.
-    let own_generation = build_on_branch(&runtime, index.index_id, &first, branch.clone());
-    let second = update_entity_on_branch(&runtime, entity, "fork-own-second", branch.clone());
+    let own_generation =
+        build_on_branch(execution, &runtime, index.index_id, &first, branch.clone());
+    let second = update_entity_on_branch(
+        execution,
+        &runtime,
+        entity,
+        "fork-own-second",
+        branch.clone(),
+    );
     assert_eq!(second.commit.branch_id, branch);
     release_test_commit_snapshot(&runtime, &second);
     runtime.durability_authority().checkpoint().unwrap();

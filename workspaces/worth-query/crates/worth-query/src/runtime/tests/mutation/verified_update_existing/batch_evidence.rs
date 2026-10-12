@@ -2,30 +2,37 @@ use super::*;
 
 #[test]
 fn batch_update_existing_verified_preserves_aggregate_assertion_digest() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.batch-update-existing-verified")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.batch-update-existing-verified-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-batch-update-existing-verified-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.batch-update-existing-verified-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-batch-update-existing-verified-table")
+            },
+        )
         .expect("live view should declare");
 
     let seed_one = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -41,7 +48,7 @@ fn batch_update_existing_verified_preserves_aggregate_assertion_digest() {
         })
         .expect("first seed should execute");
     let seed_two = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-2"),
@@ -77,7 +84,7 @@ fn batch_update_existing_verified_preserves_aggregate_assertion_digest() {
         .expect("binding two should build");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .update_existing_verified(
                     binding_one,
@@ -125,6 +132,9 @@ fn batch_update_existing_verified_preserves_aggregate_assertion_digest() {
 
 #[test]
 fn primary_multi_verified_update_batch_shares_one_commit_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let attempted_writes = std::rc::Rc::new(std::cell::Cell::new(0usize));
     let attempted_batches = std::rc::Rc::new(std::cell::Cell::new(0usize));
     let runtime = test_product_runtime_builder()
@@ -148,7 +158,7 @@ fn primary_multi_verified_update_batch_shares_one_commit_boundary() {
         .aspect_contracts(stateful_bridge_aspect_contracts())
         .expect("verified update test aspect contracts should admit")
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("primary bridge-backed runtime should build");
     let mut workspace = runtime
         .workspace("tasks.batch-update-existing-verified-atomic")
@@ -178,7 +188,7 @@ fn primary_multi_verified_update_batch_shares_one_commit_boundary() {
         .expect("second binding should build");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .update_existing_verified(
                     binding_one,

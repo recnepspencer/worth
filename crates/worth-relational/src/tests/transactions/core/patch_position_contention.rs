@@ -22,6 +22,9 @@ const PAUSE_SIGNAL_BUDGET: Duration = Duration::from_secs(30);
 /// counters are exact, and the deferred branch gives back everything it took.
 #[test]
 fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue() {
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(test_schema_registry())
@@ -35,7 +38,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
             candidate_max_lifetime_millis: 30_000,
         })
         .build();
-    create_entity(&runtime, "patch-position-contention-anchor");
+    create_entity(execution, &runtime, "patch-position-contention-anchor");
     fork_contention_branch(&runtime, "winner");
     fork_contention_branch(&runtime, "loser");
 
@@ -52,6 +55,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     let (reached, reached_signal) = std::sync::mpsc::sync_channel::<()>(1);
     let release = Arc::new(RelationalPatchPositionReservationGateForTest::default());
     let winner = prepared_write_on(
+        execution,
         &runtime,
         "winner",
         "contention-winner",
@@ -60,6 +64,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     );
     let winner_cell = winner.publication_cell_for_test();
     let loser = prepared_write_on(
+        execution,
         &runtime,
         "loser",
         "contention-loser",
@@ -69,7 +74,13 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     let position_before = runtime.patch_position_reservation_counters();
 
     let winner_port = runtime.publication_port();
-    let winner_thread = std::thread::spawn(move || winner_port.compare_and_publish(winner));
+    let winner_thread = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            winner_port.compare_and_publish(execution, winner)
+        }
+    });
     // The seam signal, not elapsed time, is what orders this test: the winner is
     // inside its cutover from here until the gate is opened. A seam that is
     // never reached times out by name rather than stalling the run.
@@ -90,7 +101,9 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
         .publication_binding()
         .pending_settlement_contact_count();
 
-    let loser_outcome = runtime.publication_port().compare_and_publish(loser);
+    let loser_outcome = runtime
+        .publication_port()
+        .compare_and_publish(execution, loser);
 
     // Every observation is taken before the winner is released, so the order of
     // the assertions below cannot change what any of them saw.
@@ -235,12 +248,14 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     // The candidate slot is the one residue a counter cannot fake: if the
     // deferral kept it, the second refill below would be refused instead.
     let refill = prepared_write_on(
+        execution,
         &runtime,
         "loser",
         "post-contention-refill",
         RelationalOperationControl::uninterrupted(),
     );
     let second_refill = prepared_write_on(
+        execution,
         &runtime,
         "winner",
         "post-contention-second-refill",
@@ -259,10 +274,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
         .expect("test staging stays within configured resource budgets");
     assert!(
         matches!(
-            runtime.prepare_branch_transaction(
-                overflow,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            ),
+            runtime.prepare_branch_transaction(execution, overflow),
             Err(TransactionCommitError::PublicationDeferred {
                 deferred: crate::mvcc::RelationalPublicationDeferred::CandidateCapacityExhausted {
                     maximum_candidates: 2,
@@ -307,6 +319,7 @@ fn begin_contention_transaction(
 }
 
 fn prepared_write_on(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &str,
     entity: &str,
@@ -320,9 +333,6 @@ fn prepared_write_on(
         )
         .expect("test staging stays within configured resource budgets");
     runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("contention candidate prepares")
 }

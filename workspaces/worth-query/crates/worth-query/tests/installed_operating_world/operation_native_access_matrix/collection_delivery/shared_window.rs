@@ -7,10 +7,28 @@ use super::required_patch;
 
 #[test]
 fn one_shared_epoch_yields_two_lease_specific_collection_patches() {
-    let mut workspace = matrix_workspace("collection-shared-window", 0, false);
-    let changed = insert_matrix_value(&mut workspace, 0, matrix_value_with_order(0, "30"));
-    insert_matrix_value(&mut workspace, 1, matrix_value_with_order(1, "10"));
-    insert_matrix_value(&mut workspace, 2, matrix_value_with_order(2, "20"));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = matrix_workspace(request_execution, "collection-shared-window", 0, false);
+    let changed = insert_matrix_value(
+        request_execution,
+        &mut workspace,
+        0,
+        matrix_value_with_order(0, "30"),
+    );
+    insert_matrix_value(
+        request_execution,
+        &mut workspace,
+        1,
+        matrix_value_with_order(1, "10"),
+    );
+    insert_matrix_value(
+        request_execution,
+        &mut workspace,
+        2,
+        matrix_value_with_order(2, "20"),
+    );
 
     let (subject_collection, _) = bound_collection(&mut workspace);
     let subject_window = first_window(&subject_collection, 3);
@@ -25,7 +43,7 @@ fn one_shared_epoch_yields_two_lease_specific_collection_patches() {
     )
     .unwrap();
 
-    let (subject, candidate) = shared_leases(&mut workspace);
+    let (subject, candidate) = shared_leases(request_execution, &mut workspace);
     assert!(subject.drain(&mut workspace).unwrap().delivery().is_empty());
     assert!(candidate
         .drain(&mut workspace)
@@ -33,7 +51,7 @@ fn one_shared_epoch_yields_two_lease_specific_collection_patches() {
         .delivery()
         .is_empty());
     workspace
-        .update(changed, |mutation| {
+        .update(request_execution, changed, |mutation| {
             mutation.set_aspect(
                 runtime::WorthQueryAspectTouch::whole_aspect(matrix_aspect_key()),
                 matrix_value_with_order(0, "05"),
@@ -67,8 +85,18 @@ fn one_shared_epoch_yields_two_lease_specific_collection_patches() {
         .bind_shared_target(&candidate_admitted, &workspace)
         .unwrap();
 
-    let subject_patch = required_patch(&mut subject_consumer, &subject_admitted, &workspace);
-    let candidate_patch = required_patch(&mut candidate_consumer, &candidate_admitted, &workspace);
+    let subject_patch = required_patch(
+        request_execution,
+        &mut subject_consumer,
+        &subject_admitted,
+        &workspace,
+    );
+    let candidate_patch = required_patch(
+        request_execution,
+        &mut candidate_consumer,
+        &candidate_admitted,
+        &workspace,
+    );
     let subject_ordinal = subject_patch.maintenance_ordinal();
     let candidate_ordinal = candidate_patch.maintenance_ordinal();
     let denial = match candidate_consumer.apply_patch(subject_patch) {
@@ -79,7 +107,12 @@ fn one_shared_epoch_yields_two_lease_specific_collection_patches() {
         denial.kind(),
         domain::WorthQueryCollectionDeliveryDenialKind::WrongLease
     );
-    let subject_patch = required_patch(&mut subject_consumer, &subject_admitted, &workspace);
+    let subject_patch = required_patch(
+        request_execution,
+        &mut subject_consumer,
+        &subject_admitted,
+        &workspace,
+    );
     subject_consumer.apply_patch(subject_patch).unwrap();
     candidate_consumer.apply_patch(candidate_patch).unwrap();
     assert_eq!(subject_ordinal, candidate_ordinal);
@@ -98,10 +131,14 @@ fn one_shared_epoch_yields_two_lease_specific_collection_patches() {
 }
 
 fn shared_leases(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut runtime::WorthQueryWorkspace,
 ) -> (super::CollectionLease, super::CollectionLease) {
     let (subject, _) = settled_with_order_key(workspace);
-    let live = match subject.into_lifecycle().promote(workspace) {
+    let live = match subject
+        .into_lifecycle()
+        .promote(request_execution, workspace)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("shared collection subject did not promote"),
     };

@@ -66,6 +66,7 @@ struct ObservedConventionalAdmission<
 }
 
 pub(super) fn transition<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     bound: super::super::super::PreconditionBoundConventionalOperation<
         '_,
         Schema,
@@ -82,14 +83,23 @@ pub(super) fn transition<Schema, Principal, PrincipalIdentity, Operation, Input,
 where
     Schema: ApplicationSchema,
 {
-    let prepared = prepare_identity_and_graph_work(bound)?;
-    let observed = observe_current_authorization(prepared)?;
+    let prepared = prepare_identity_and_graph_work(execution, bound)?;
+    let observed = observe_current_authorization(execution, prepared)?;
     Ok(construct_admitted_operation(observed))
 }
 
-fn prepare_identity_and_graph_work<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
+fn prepare_identity_and_graph_work<
+    'bound,
+    Schema,
+    Principal,
+    PrincipalIdentity,
+    Operation,
+    Input,
+    Scope,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     bound: super::super::super::PreconditionBoundConventionalOperation<
-        '_,
+        'bound,
         Schema,
         Principal,
         PrincipalIdentity,
@@ -99,7 +109,7 @@ fn prepare_identity_and_graph_work<Schema, Principal, PrincipalIdentity, Operati
     >,
 ) -> Result<
     ConventionalAdmissionPreparation<
-        '_,
+        'bound,
         Schema,
         Principal,
         PrincipalIdentity,
@@ -133,6 +143,7 @@ where
     let resource_binding_identity = admission_identity.resource_binding_identity();
     let graph_work =
         crate::domain_computation::authorization::graph_work_session::start_operation_graph_work(
+            execution,
             runtime,
             product.retained_clone(),
             operation,
@@ -153,9 +164,18 @@ where
     })
 }
 
-fn observe_current_authorization<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
+fn observe_current_authorization<
+    'preparation,
+    Schema,
+    Principal,
+    PrincipalIdentity,
+    Operation,
+    Input,
+    Scope,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     mut preparation: ConventionalAdmissionPreparation<
-        '_,
+        'preparation,
         Schema,
         Principal,
         PrincipalIdentity,
@@ -165,7 +185,7 @@ fn observe_current_authorization<Schema, Principal, PrincipalIdentity, Operation
     >,
 ) -> Result<
     ObservedConventionalAdmission<
-        '_,
+        'preparation,
         Schema,
         Principal,
         PrincipalIdentity,
@@ -179,6 +199,7 @@ where
     Schema: ApplicationSchema,
 {
     let authorization = preparation.runtime.observe_operation_authorization(
+        execution,
         preparation.principal,
         preparation.scope,
         preparation.operation,

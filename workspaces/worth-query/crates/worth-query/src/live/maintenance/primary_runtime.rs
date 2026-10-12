@@ -61,6 +61,7 @@ pub fn maintain_primary_runtime_granular_invalidations<
     L: BasisOperationLane,
     Clock,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     live: &WorthQueryLiveBoundDomainProjection<D, O, F, L>,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
     binding: &super::WorthQueryPrimaryRuntimeInvalidationBinding,
@@ -74,7 +75,7 @@ pub fn maintain_primary_runtime_granular_invalidations<
     }
     let admitted = admit_primary_runtime_granular_invalidations(live.snapshot(), binding, receipt)
         .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Admission)?;
-    maintain_admitted_batch(live, workspace, admitted, None)
+    maintain_admitted_batch(execution, live, workspace, admitted, None)
 }
 
 /// Perform Query-owned maintenance from an execution-owned primary batch.
@@ -88,6 +89,7 @@ pub fn maintain_primary_runtime_granular_batch<
     F: 'static,
     L: BasisOperationLane,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     live: &WorthQueryLiveBoundDomainProjection<D, O, F, L>,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
     binding: &super::WorthQueryPrimaryRuntimeInvalidationBinding,
@@ -99,7 +101,7 @@ pub fn maintain_primary_runtime_granular_batch<
     }
     let admitted = admit_primary_runtime_granular_batch(live.snapshot(), binding, batch)
         .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Admission)?;
-    maintain_admitted_batch(live, workspace, admitted, None)
+    maintain_admitted_batch(execution, live, workspace, admitted, None)
 }
 
 /// Perform primary granular maintenance against a retained Query collection
@@ -110,6 +112,7 @@ pub fn maintain_primary_runtime_granular_collection_batch<
     F: 'static,
     L: BasisOperationLane,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     live: &WorthQueryLiveBoundDomainProjection<D, O, F, L>,
     collection: &mut crate::domain_installation::WorthQueryCollectionConsumerWindow,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
@@ -122,10 +125,11 @@ pub fn maintain_primary_runtime_granular_collection_batch<
     }
     let admitted = admit_primary_runtime_granular_batch(live.snapshot(), binding, batch)
         .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Admission)?;
-    maintain_admitted_batch(live, workspace, admitted, Some(collection))
+    maintain_admitted_batch(execution, live, workspace, admitted, Some(collection))
 }
 
 fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     live: &WorthQueryLiveBoundDomainProjection<D, O, F, L>,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
     admitted: WorthQueryAdmittedInvalidationBatch,
@@ -182,7 +186,7 @@ fn maintain_admitted_batch<D: 'static, O: 'static, F: 'static, L: BasisOperation
         .source_read_basis()
         .ok_or(WorthQueryPrimaryGranularMaintenanceDenial::MixedMaintenancePosture)?;
     let refresh = live
-        .refresh_granular_scope(plan.scope(), basis, workspace)
+        .refresh_granular_scope(execution, plan.scope(), basis, workspace)
         .map_err(WorthQueryPrimaryGranularMaintenanceDenial::Execution)?;
     let maintenance_owner = live.maintenance_owner_identity().to_owned();
     let (projection, maintained_impacts) = prepare_covered_projection_maintenance(

@@ -85,9 +85,26 @@ fn exact_pair_population_overflow_denies_before_authority() {
     let world = installed_capability_world_with_exact_pair_population(65);
     world.authorization_time.script([time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let Err(denial) = admitted_capability_access(&world, &principal, &request, 100) else {
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_capability_access(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+                100,
+            )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
         panic!("an over-budget exact grant population must deny");
     };
 
@@ -100,13 +117,23 @@ fn exact_pair_population_overflow_denies_before_authority() {
 fn admission_work(world: AuthorizationWorld) -> DelegationAdmissionWork {
     world.authorization_time.script([time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let access = admitted_capability_access(&world, &principal, &request, 100).unwrap();
-    DelegationAdmissionWork {
-        relational: access.relational_counters(),
-        signal_dependencies: access.signal_dependency_count(),
-        canonical: access.admission_canonical_work(),
-    }
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+            let access =
+                admitted_capability_access(phase_custody, &world, &principal, &request, 100)
+                    .unwrap();
+            DelegationAdmissionWork {
+                relational: access.relational_counters(),
+                signal_dependencies: access.signal_dependency_count(),
+                canonical: access.admission_canonical_work(),
+            }
+        })
+        .expect("the fixture admission owns its host call")
 }
 
 fn assert_same_link_delta(

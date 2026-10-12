@@ -26,7 +26,13 @@ impl WorthServerQueryWorkspaceProvider for TestWorkspaceProvider {
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        bind_with_backend(TestQueryRuntimeBackend::default(), request)
+        crate::test_execution_policy::with_bootstrap(|request_execution| {
+            bind_with_backend(
+                request_execution,
+                TestQueryRuntimeBackend::default(),
+                request,
+            )
+        })
     }
 }
 
@@ -50,10 +56,13 @@ impl WorthServerQueryWorkspaceProvider for ProfiledTestWorkspaceProvider {
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        bind_with_backend(
-            TestQueryRuntimeBackend::new(self.support_profile.clone()),
-            request,
-        )
+        crate::test_execution_policy::with_bootstrap(|request_execution| {
+            bind_with_backend(
+                request_execution,
+                TestQueryRuntimeBackend::new(self.support_profile.clone()),
+                request,
+            )
+        })
     }
 }
 
@@ -84,13 +93,16 @@ impl WorthServerQueryWorkspaceProvider for ProfiledCountingTestWorkspaceProvider
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        bind_with_backend(
-            TestQueryRuntimeBackend::new_with_attempted_writes(
-                self.support_profile.clone(),
-                self.attempted_writes.clone(),
-            ),
-            request,
-        )
+        crate::test_execution_policy::with_bootstrap(|request_execution| {
+            bind_with_backend(
+                request_execution,
+                TestQueryRuntimeBackend::new_with_attempted_writes(
+                    self.support_profile.clone(),
+                    self.attempted_writes.clone(),
+                ),
+                request,
+            )
+        })
     }
 }
 
@@ -106,14 +118,18 @@ impl WorthServerQueryWorkspaceProvider for PanicOnReadTestWorkspaceProvider {
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        bind_with_backend(
-            TestQueryRuntimeBackend::new_panicking_on_live_reads(),
-            request,
-        )
+        crate::test_execution_policy::with_bootstrap(|request_execution| {
+            bind_with_backend(
+                request_execution,
+                TestQueryRuntimeBackend::new_panicking_on_live_reads(),
+                request,
+            )
+        })
     }
 }
 
 fn bind_with_backend(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     backend: TestQueryRuntimeBackend,
     request: &WorthServerQueryWorkspaceBindingRequest,
 ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
@@ -141,7 +157,7 @@ fn bind_with_backend(
             product_bridge,
             worth_query::facade::runtime::WorthQueryConditionalExecutionResources::development(),
         )
-        .build()
+        .build(request_execution)
         .map_err(|error| {
             WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
         })?
@@ -149,6 +165,6 @@ fn bind_with_backend(
         .map_err(|error| {
             WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
         })?;
-    install_requested_named_read(&mut workspace, request)?;
+    install_requested_named_read(request_execution, &mut workspace, request)?;
     Ok(workspace)
 }

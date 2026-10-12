@@ -9,11 +9,14 @@ fn allocated<T>() -> u64 {
 }
 #[test]
 fn consumed_custody_is_bounded_per_edge_and_returns_on_every_release() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         let (snapshot_handle, basis) = snapshot(runtime);
         let baseline = owner.resources.retained_capacity_bytes();
         let metadata = 128;

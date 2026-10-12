@@ -2,17 +2,20 @@ use crate::tests::support::*;
 
 #[test]
 fn complexity_budget_query_packetization_reports_parallel_shape_for_cross_partition_reads() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let left_a = create_entity_in_partition(&runtime, "left-a", PartitionId(7));
-    let left_b = create_entity_in_partition(&runtime, "left-b", PartitionId(7));
-    let right = create_entity_in_partition(&runtime, "right", PartitionId(11));
+    let left_a = create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
+    let left_b = create_entity_in_partition(execution, &runtime, "left-b", PartitionId(7));
+    let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
     let snapshot = runtime.visibility_authority().snapshot();
 
     runtime.performance_access().reset_counters();
     let lease = test_execution_lease();
     let _ = runtime
         .read_truth()
-        .execute_query_plan_with_lease(
+        .execute_query_plan(
             planned_explicit_query(
                 &runtime,
                 &snapshot,
@@ -23,8 +26,9 @@ fn complexity_budget_query_packetization_reports_parallel_shape_for_cross_partit
                     crate::facade::transactions::RecordRef::Entity(right),
                 ],
             ),
-            &lease,
+            &worth_execution::ExecutionRequest::leased(&lease),
         )
+        .map(|read| read.map(|read| read.outcome))
         .expect("leased query execution")
         .expect("query outcome");
     let counters = runtime.performance_access().counters();
@@ -40,10 +44,14 @@ fn complexity_budget_query_packetization_reports_parallel_shape_for_cross_partit
 
 #[test]
 fn complexity_budget_query_packetization_reports_narrow_shape_with_a_lease() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "single");
+    let entity = create_entity(execution, &runtime, "single");
     for partition in 20..84 {
         let _ = create_entity_in_partition(
+            execution,
             &runtime,
             &format!("unrelated-{partition}"),
             PartitionId(partition),
@@ -55,15 +63,16 @@ fn complexity_budget_query_packetization_reports_narrow_shape_with_a_lease() {
     let lease = test_execution_lease();
     let _ = runtime
         .read_truth()
-        .execute_query_plan_with_lease(
+        .execute_query_plan(
             planned_explicit_query(
                 &runtime,
                 &snapshot,
                 "single-target",
                 vec![crate::facade::transactions::RecordRef::Entity(entity)],
             ),
-            &lease,
+            &worth_execution::ExecutionRequest::leased(&lease),
         )
+        .map(|read| read.map(|read| read.outcome))
         .expect("leased query execution")
         .expect("query outcome");
     let counters = runtime.performance_access().counters();

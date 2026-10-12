@@ -16,7 +16,13 @@ use support::graph_index_inventory::runtime_profiles::{
 
 #[test]
 fn oversized_read_rejects_before_ephemeral_allocation() {
-    let mut workspace = workspace("graph-read-access.phase-eight.budget-rejects-first");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-eight.budget-rejects-first",
+    );
     let family = dense_traversal_family(&mut workspace, "phase-eight-budget-rejects-first");
     let review = workspace
         .read_family_intent(&family)
@@ -43,7 +49,11 @@ fn oversized_read_rejects_before_ephemeral_allocation() {
 
 #[test]
 fn bounded_ephemeral_index_plan_is_visible_before_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-eight.plan-visible",
         profile_with_ephemeral_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
@@ -74,7 +84,11 @@ fn bounded_ephemeral_index_plan_is_visible_before_execution() {
 
 #[test]
 fn bounded_ephemeral_index_receipt_proves_cleanup_after_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-eight.cleanup",
         profile_with_ephemeral_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
@@ -83,7 +97,7 @@ fn bounded_ephemeral_index_receipt_proves_cleanup_after_execution() {
     let family = traversal_collection_family(&mut workspace, "phase-eight-cleanup");
     let result = workspace
         .read_family_intent(&family)
-        .execute()
+        .execute(request_execution)
         .expect("bounded ephemeral read should execute through admitted plan");
     let receipt = result
         .receipt()
@@ -108,7 +122,11 @@ fn bounded_ephemeral_index_receipt_proves_cleanup_after_execution() {
 
 #[test]
 fn bounded_ephemeral_index_rebuild_is_stable_for_same_snapshot_and_plan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut first_workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-eight.equivalence",
         profile_with_ephemeral_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
@@ -117,7 +135,7 @@ fn bounded_ephemeral_index_rebuild_is_stable_for_same_snapshot_and_plan() {
     let first_family = traversal_collection_family(&mut first_workspace, "phase-eight-equivalence");
     let first_receipt = first_workspace
         .read_family_intent(&first_family)
-        .execute()
+        .execute(request_execution)
         .expect("first bounded ephemeral read should execute")
         .receipt()
         .ephemeral_graph_index_receipt()
@@ -126,7 +144,7 @@ fn bounded_ephemeral_index_rebuild_is_stable_for_same_snapshot_and_plan() {
 
     let second_receipt = first_workspace
         .read_family_intent(&first_family)
-        .execute()
+        .execute(request_execution)
         .expect("second bounded ephemeral read should execute")
         .receipt()
         .ephemeral_graph_index_receipt()
@@ -144,7 +162,11 @@ fn bounded_ephemeral_index_rebuild_is_stable_for_same_snapshot_and_plan() {
 
 #[test]
 fn bounded_ephemeral_receipt_changes_when_snapshot_scope_changes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut first_workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-eight.scope-a",
         profile_with_ephemeral_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
@@ -154,7 +176,7 @@ fn bounded_ephemeral_receipt_changes_when_snapshot_scope_changes() {
         traversal_collection_family(&mut first_workspace, "phase-eight-scope-sensitive");
     let first_receipt = first_workspace
         .read_family_intent(&first_family)
-        .execute()
+        .execute(request_execution)
         .expect("first bounded ephemeral read should execute")
         .receipt()
         .ephemeral_graph_index_receipt()
@@ -162,6 +184,7 @@ fn bounded_ephemeral_receipt_changes_when_snapshot_scope_changes() {
         .clone();
 
     let mut second_workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-eight.scope-b",
         profile_with_ephemeral_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
@@ -170,7 +193,7 @@ fn bounded_ephemeral_receipt_changes_when_snapshot_scope_changes() {
     let second_family =
         traversal_collection_family(&mut second_workspace, "phase-eight-scope-sensitive");
     second_workspace
-        .insert("user", |user| {
+        .insert(request_execution, "user", |user| {
             user.set_aspect(
                 touch("identity.id"),
                 authored_text("phase-eight-scope-sensitive-user"),
@@ -180,7 +203,7 @@ fn bounded_ephemeral_receipt_changes_when_snapshot_scope_changes() {
         .expect("state change should create a distinct snapshot scope");
     let second_receipt = second_workspace
         .read_family_intent(&second_family)
-        .execute()
+        .execute(request_execution)
         .expect("second bounded ephemeral read should execute")
         .receipt()
         .ephemeral_graph_index_receipt()
@@ -194,7 +217,11 @@ fn bounded_ephemeral_receipt_changes_when_snapshot_scope_changes() {
 
 #[test]
 fn bounded_ephemeral_receipt_is_bound_to_admitted_ephemeral_plan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.phase-eight.receipt-plan-binding",
         profile_with_ephemeral_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
@@ -203,7 +230,7 @@ fn bounded_ephemeral_receipt_is_bound_to_admitted_ephemeral_plan() {
     let family = traversal_collection_family(&mut workspace, "phase-eight-receipt-plan-binding");
     let result = workspace
         .read_family_intent(&family)
-        .execute()
+        .execute(request_execution)
         .expect("bounded ephemeral read should execute");
     let access_plan = result
         .receipt()
@@ -231,14 +258,18 @@ fn bounded_ephemeral_receipt_is_bound_to_admitted_ephemeral_plan() {
 
 #[test]
 fn ordinary_inline_indexed_read_does_not_emit_ephemeral_receipt() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace =
         support::graph_index_inventory::runtime_profiles::default_graph_support_workspace(
+            request_execution,
             "graph-read-access.phase-eight.inline-no-ephemeral",
         );
     let family = traversal_collection_family(&mut workspace, "phase-eight-inline");
     let result = workspace
         .read_family_intent(&family)
-        .execute()
+        .execute(request_execution)
         .expect("inline indexed read should execute");
 
     assert!(result.receipt().ephemeral_graph_index_receipt().is_none());

@@ -9,17 +9,29 @@ use worth_relational::facade::mvcc::CompanionCellEditStop;
 
 #[test]
 fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_racing_edit() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -49,10 +61,10 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         .unwrap()
         .clone();
 
-    handle.with_runtime_mut(|runtime| {
-        write_field(runtime, entity, label, "prime");
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
+        write_field(request_execution, runtime, entity, label, "prime");
         let (snapshot, basis) = snapshot(runtime);
-        let facts: Arc<[_]> = Arc::from([field_fact(runtime, &snapshot, entity, status)]);
+        let facts: Arc<[_]> = Arc::from([field_fact(&host_custody.borrowed_request_for_test(), runtime, &snapshot, entity, status)]);
         register(
             owner,
             Arc::clone(&prior),
@@ -182,5 +194,5 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
             SourceSettlementCurrentness::Clean
         ));
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
-    });
+    }) }).expect("the fixture read owns its installed host call");
 }

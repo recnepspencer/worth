@@ -17,6 +17,7 @@ use crate::visibility::snapshot_states::{SnapshotStateBasis, VisibilitySnapshotB
 type PacketFailure = MapKernelFailure<QueryReadPacketDenial>;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_scan_fragment(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     basis: &VisibilitySnapshotBasis,
     packet: &PlannedQueryPacket,
@@ -34,6 +35,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
     let (target_count, touched_partitions) =
         if let Some((partition_id, kind_id, target_count)) = entity_scan_scope(work) {
             projection.try_for_each_entity_record_in(
+                execution,
                 partition_id,
                 kind_id,
                 |bytes| {
@@ -59,6 +61,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
             (target_count, usize::from(!entities.is_empty()))
         } else if let Some((partition_id, kind_id, target_count)) = relation_scan_scope(work) {
             projection.try_for_each_relation_record_in(
+                execution,
                 partition_id,
                 kind_id,
                 |bytes| {

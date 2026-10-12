@@ -1,16 +1,19 @@
 use super::*;
 
-pub(super) fn run_replacement_strategy_certification() -> ReplacementCertificationBundle {
+pub(super) fn run_replacement_strategy_certification(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> ReplacementCertificationBundle {
     let root_path = unique_test_store_path("worth-relational-strategy-replacement-cert");
     let recovered_root = root_path.clone();
     let runtime = persisted_replacement_strategy_runtime(root_path);
-    let replacement_entity = create_entity(&runtime, "replace-target");
+    let replacement_entity = create_entity(execution, &runtime, "replace-target");
     let replacement_start_lineage = runtime
         .lineage_access()
         .for_record(replacement_entity)
         .expect("replacement entity lineage before strategy")
         .lineage_id;
     let replacement_commit = execute_strategy_commit(
+        execution,
         &runtime,
         EntityReplacementReconciliationInput {
             entity_id: replacement_entity,
@@ -27,7 +30,7 @@ pub(super) fn run_replacement_strategy_certification() -> ReplacementCertificati
     );
     let current = runtime
         .read_truth()
-        .read_version(runtime.current_version_id());
+        .read_version(execution, runtime.current_version_id());
     let replacement_record = changed_entities(&replacement_commit)
         .into_iter()
         .find_map(|entity_id| current.get_entity(entity_id).map(|record| record.entity_id))
@@ -47,12 +50,16 @@ pub(super) fn run_replacement_strategy_certification() -> ReplacementCertificati
     ));
     let replacement_replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: replacement_commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: replacement_commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         replacement_replay.failure.is_none(),
         "replacement replay failed: {replacement_replay:?}"
@@ -82,22 +89,25 @@ pub(super) fn run_replacement_strategy_certification() -> ReplacementCertificati
                 .lineage_transition_count(),
         },
     };
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         persisted_replacement_strategy_runtime(recovered_root)
     });
     let recovered_replacement_envelope = recovered
         .replay()
         .canonical_commit_envelope(replacement_commit.commit.commit_id)
         .expect("recovered replacement envelope");
-    let recovered_replacement_replay =
-        recovered
-            .replay_authority()
-            .replay_commit(RelationalReplayRequest {
+    let recovered_replacement_replay = recovered
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
                 commit_id: replacement_commit.commit.commit_id,
                 branch_id: BranchId("main".to_string()),
                 execution_mode: ReplayExecutionMode::SerialDeterministic,
                 verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-            });
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         recovered_replacement_replay.failure.is_none(),
         "recovered replacement replay failed: {recovered_replacement_replay:?}"

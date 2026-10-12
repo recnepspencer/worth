@@ -135,11 +135,12 @@ impl WorthQueryDeclarationInput<GeometryDomain> for GeometryInput {
 }
 
 fn admitted_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<GeometryDomain, GeometryWorld>
 {
     crate::application::domain_test_support::installed_declaration_context_with_contributions(
-        GeometryDomain,
+        request_execution, GeometryDomain,
         GeometryWorld(world),
         [crate::application::domain_test_support::family::<
             GeometryDomain,
@@ -182,7 +183,10 @@ fn progressed(
 
 #[test]
 fn preview_helper_matches_generic_signal_orchestration_path() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let helper_progressed = match handle
         .geometry_helpers()
         .progress_active_face_selection(GeometryInput::new("face-a"))
@@ -207,64 +211,15 @@ fn preview_helper_matches_generic_signal_orchestration_path() {
     assert_eq!(helper.linked_artifacts(), generic.linked_artifacts());
 }
 
-#[test]
-fn truth_view_helpers_keep_current_and_historical_meaning_distinct() {
-    let handle = admitted_handle("main");
-    let current_helper = handle
-        .geometry_helpers()
-        .prepare_current_truth_view_for_active_face_selection_checked(progressed(
-            &handle, "face-b",
-        ));
-    let historical_helper = handle
-        .geometry_helpers()
-        .prepare_historical_truth_view_for_active_face_selection_checked(progressed(
-            &handle, "face-c",
-        ));
-    let current_generic = handle.orchestrate_signal_compatibility_checked(
-        generic_signal_orchestration_input(&handle, progressed(&handle, "face-b"))
-            .with_bridge_request(
-                crate::application::WorthQueryDeclarationBridgeContinuationRequest::new(
-                    crate::application::WorthQueryDeclarationBridgeContinuationMode::TruthView,
-                    crate::application::WorthQueryDeclarationBridgeTruthContext::Current,
-                ),
-            ),
-    );
-    let historical_generic = handle.orchestrate_signal_compatibility_checked(
-        generic_signal_orchestration_input(&handle, progressed(&handle, "face-c"))
-            .with_bridge_request(
-                crate::application::WorthQueryDeclarationBridgeContinuationRequest::new(
-                    crate::application::WorthQueryDeclarationBridgeContinuationMode::TruthView,
-                    crate::application::WorthQueryDeclarationBridgeTruthContext::Historical,
-                ),
-            ),
-    );
-
-    assert_eq!(
-        current_helper.orchestration_digest(),
-        current_generic.orchestration_digest()
-    );
-    assert_eq!(
-        historical_helper.orchestration_digest(),
-        historical_generic.orchestration_digest()
-    );
-    assert_ne!(
-        current_helper.orchestration_digest(),
-        historical_helper.orchestration_digest()
-    );
-    if let WorthQuerySignalCompatibilityOrchestrationOutcome::Bound(
-        WorthQuerySignalCompatibilityOrchestration::Prepared(prepared),
-    ) = current_helper.outcome()
-    {
-        assert_eq!(
-            prepared.signal_execution_family(),
-            Some(WorthQueryDeclarationSignalExecutionFamily::RuntimeDerivedExecution)
-        );
-    }
-}
+#[path = "tests/truth_view_helpers_keep_current_and_historical_meaning_distinct.rs"]
+mod truth_view_helpers_keep_current_and_historical_meaning_distinct;
 
 #[test]
 fn material_attachment_helper_matches_generic_composed_path() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let helper_input = WorthQueryGeometryMaterialAttachmentInput::new(GeometryInput::new("face-d"))
         .with_support_contribution(
             WorthQuerySupportContributionAuthoring::declaration_traceability(
@@ -317,8 +272,11 @@ fn material_attachment_helper_matches_generic_composed_path() {
 
 #[test]
 fn helper_wrong_world_matches_generic_path() {
-    let left = admitted_handle("left");
-    let right = admitted_handle("right");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = admitted_handle(request_execution, "left");
+    let right = admitted_handle(request_execution, "right");
     let helper = right
         .geometry_helpers()
         .prepare_runtime_route_for_active_face_selection_outcome(progressed(&left, "face-e"));
@@ -340,7 +298,10 @@ fn helper_wrong_world_matches_generic_path() {
 
 #[test]
 fn material_attachment_helper_preserves_contribution_checked_topology() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let outcome = handle
         .geometry_helpers()
         .orchestrate_material_attachment_for_active_face_selection_outcome(

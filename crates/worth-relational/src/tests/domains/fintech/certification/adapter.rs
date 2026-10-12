@@ -128,8 +128,10 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
         _plan: &WorkflowPlan<Self::Step>,
         _profile: &WorkflowRuntimeProfile,
     ) -> Result<Self::Session, Self::Error> {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         Ok(CertifiedRelationalFintechSession {
-            world: setup_world_for(FintechScenario::SmokeBook),
+            world: setup_world_for(execution, FintechScenario::SmokeBook),
             named_branches: BTreeMap::from([("main".to_string(), BranchId("main".to_string()))]),
             named_snapshots: BTreeMap::new(),
             named_reads: BTreeMap::new(),
@@ -141,10 +143,13 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
 
     fn execute_step(
         &self,
+
         session: &mut Self::Session,
         step: &WorkflowStep<Self::Step>,
         _injection: Option<&FailureInjectionPoint>,
     ) -> Result<WorkflowStepOutcome, Self::Error> {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         session.executed_steps.push(step.name.clone());
         match &step.operation {
             FintechWorkflowStep::CaptureMainSnapshot { alias } => {
@@ -164,14 +169,14 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
             }
             FintechWorkflowStep::ShockMarket { branch_alias } => {
                 let branch = session.branch(branch_alias)?;
-                shock_market_on_branch(&mut session.world, branch);
+                shock_market_on_branch(execution, &mut session.world, branch);
                 Ok(WorkflowStepOutcome::applied())
             }
             FintechWorkflowStep::CorrectCaseTrade { branch_alias, case } => {
                 let branch = session.branch(branch_alias)?;
                 match case {
                     FintechCaseRef::LateTradeCorrection => {
-                        correct_seeded_trade_candidate(&mut session.world, branch);
+                        correct_seeded_trade_candidate(execution, &mut session.world, branch);
                     }
                     other => {
                         return Err(format!(
@@ -185,7 +190,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                 let branch = session.branch(branch_alias)?;
                 match case {
                     FintechCaseRef::IntradayRisk => {
-                        stress_seeded_intraday_risk(&mut session.world, branch);
+                        stress_seeded_intraday_risk(execution, &mut session.world, branch);
                     }
                     other => {
                         return Err(format!(
@@ -199,7 +204,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                 let branch = session.branch(branch_alias)?;
                 match case {
                     FintechCaseRef::FailedSettlementRepair => {
-                        repair_seeded_failed_settlement(&mut session.world, branch);
+                        repair_seeded_failed_settlement(execution, &mut session.world, branch);
                     }
                     other => {
                         return Err(format!(
@@ -211,7 +216,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
             }
             FintechWorkflowStep::RefreshRisk { branch_alias } => {
                 let branch = session.branch(branch_alias)?;
-                refresh_risk_views(&mut session.world, branch);
+                refresh_risk_views(execution, &mut session.world, branch);
                 Ok(WorkflowStepOutcome::applied())
             }
             FintechWorkflowStep::ReadSnapshot {
@@ -219,7 +224,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                 read_alias,
             } => {
                 let snapshot = session.snapshot(snapshot_alias)?;
-                let summary = read_summary(session, snapshot)?;
+                let summary = read_summary(execution, session, snapshot)?;
                 session
                     .named_reads
                     .insert((*read_alias).to_string(), summary);
@@ -229,7 +234,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                 let workflow_case = Self::case_for(session, *case);
                 session.named_reads.insert(
                     (*read_alias).to_string(),
-                    case_read_summary(session, workflow_case.role),
+                    case_read_summary(execution, session, workflow_case.role),
                 );
                 Ok(WorkflowStepOutcome::applied())
             }
@@ -245,14 +250,20 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                     .latest_commit()
                     .ok_or_else(|| "latest commit unavailable for replay capture".to_string())?
                     .commit_id;
-                let replay = session.world.runtime.replay_authority().replay_commit(
-                    RelationalReplayRequest {
-                        commit_id,
-                        branch_id: branch,
-                        execution_mode: ReplayExecutionMode::SerialDeterministic,
-                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                    },
-                );
+                let replay = session
+                    .world
+                    .runtime
+                    .replay_authority()
+                    .replay_commit(
+                        RelationalReplayRequest {
+                            commit_id,
+                            branch_id: branch,
+                            execution_mode: ReplayExecutionMode::SerialDeterministic,
+                            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                        },
+                        execution,
+                    )
+                    .unwrap();
                 session.named_replays.insert((*alias).to_string(), replay);
                 Ok(WorkflowStepOutcome::applied())
             }

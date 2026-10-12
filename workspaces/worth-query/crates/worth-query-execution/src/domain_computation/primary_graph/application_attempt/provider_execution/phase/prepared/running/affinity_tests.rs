@@ -49,7 +49,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             let running = start(
                 phase,
                 &world,
-                retained_program(&world, "axis-owner"),
+                retained_program(phase, &world, "axis-owner"),
                 idempotency(187, 188),
             );
             let WorthQueryRunningApplicationCommit {
@@ -82,6 +82,9 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             .is_err());
 
             let substitute_lease = WorthQueryApplicationSnapshotLease::acquire(
+                &phase
+                    .execution_request_for(&world.application.product_runtime)
+                    .expect("fixture issuer"),
                 lease.handle().clone(),
                 std::sync::Arc::clone(&lease.layout),
                 lease.product().retained_clone(),
@@ -100,23 +103,28 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 .is_err());
             assert!(substitute_lease.release());
 
-            let foreign_branch_snapshot = lease.handle().with_runtime_mut(|runtime| {
-                let foreign = worth_relational::facade::history::BranchId(
-                    "foreign-affinity-branch".to_owned(),
-                );
-                let (_, fork_basis) = runtime
-                    .observe_fork_source(lease.snapshot().branch_id())
-                    .expect("test runtime can observe the exact source basis");
-                runtime
-                    .fork_branch(foreign.clone(), fork_basis)
-                    .expect("test runtime can issue a real sibling branch");
-                let identity = runtime.branch_identity(&foreign).unwrap();
-                let (_, basis) = runtime.observe_branch(&identity).unwrap();
-                runtime
-                    .snapshots()
-                    .snapshot_for_observation(&basis.observation())
-                    .unwrap()
-            });
+            let foreign_branch_snapshot = lease.handle().with_runtime_mut(
+                &phase
+                    .execution_request_for(&world.application.product_runtime)
+                    .expect("fixture issuer"),
+                |runtime| {
+                    let foreign = worth_relational::facade::history::BranchId(
+                        "foreign-affinity-branch".to_owned(),
+                    );
+                    let (_, fork_basis) = runtime
+                        .observe_fork_source(lease.snapshot().branch_id())
+                        .expect("test runtime can observe the exact source basis");
+                    runtime
+                        .fork_branch(foreign.clone(), fork_basis)
+                        .expect("test runtime can issue a real sibling branch");
+                    let identity = runtime.branch_identity(&foreign).unwrap();
+                    let (_, basis) = runtime.observe_branch(&identity).unwrap();
+                    runtime
+                        .snapshots()
+                        .snapshot_for_observation(&basis.observation())
+                        .unwrap()
+                },
+            );
             assert!(WorthQueryApplicationAttemptBasis::capture(
                 &world.application,
                 &admission,
@@ -124,12 +132,17 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 lease.product(),
             )
             .is_err());
-            assert!(lease.handle().with_runtime_mut(|runtime| {
-                runtime
-                    .snapshots()
-                    .release_snapshot(&foreign_branch_snapshot)
-                    .is_ok()
-            }));
+            assert!(lease.handle().with_runtime_mut(
+                &phase
+                    .execution_request_for(&world.application.product_runtime)
+                    .expect("fixture issuer"),
+                |runtime| {
+                    runtime
+                        .snapshots()
+                        .release_snapshot(&foreign_branch_snapshot)
+                        .is_ok()
+                }
+            ));
             let _ = staged.abort();
             finish_uncommitted(mutation_run, running, lease);
         })
@@ -151,13 +164,13 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
             let first = start(
                 phase,
                 &world,
-                retained_program(&world, "plan-owner"),
+                retained_program(phase, &world, "plan-owner"),
                 idempotency(189, 190),
             );
             let second = start(
                 phase,
                 &world,
-                retained_program(&world, "plan-peer"),
+                retained_program(phase, &world, "plan-peer"),
                 idempotency(191, 192),
             );
             let WorthQueryRunningApplicationCommit {
@@ -305,6 +318,7 @@ fn start(
     Account,
 > {
     let prepared = prepare_application_commit(
+        &phase.borrowed_request_for_test(),
         phase,
         &world.application,
         WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
@@ -316,11 +330,21 @@ fn start(
         .unwrap_or_else(|outcome| panic!("affinity fixture must start: {outcome:?}"))
 }
 
-fn retained_program(world: &AuthorizationWorld, replacement: &str) -> RetainedProgram {
+fn retained_program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &AuthorizationWorld,
+    replacement: &str,
+) -> RetainedProgram {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "open",
+        &request,
+    );
     retained_status_program(
+        &(phase_custody).test_host_request(),
         world,
         &principal,
         &account,

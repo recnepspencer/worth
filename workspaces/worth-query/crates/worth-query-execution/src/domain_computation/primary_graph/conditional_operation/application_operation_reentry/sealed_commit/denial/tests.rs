@@ -198,7 +198,10 @@ fn custody_faults_never_retry_through_either_projection() {
     use crate::domain_computation::primary_graph::WorthQueryAdvancementDenial as Opening;
     for (opening, resource) in [
         (Opening::NestedOpening, Resource::NestedAdvancementOpening),
-        (Opening::ForeignPhase, Resource::ForeignAdvancementPhase),
+        (
+            Opening::Resource(Resource::ForeignAdvancementPhase),
+            Resource::ForeignAdvancementPhase,
+        ),
     ] {
         assert!(!opening.is_transient());
         assert!(!Opening::Resource(resource).is_transient());

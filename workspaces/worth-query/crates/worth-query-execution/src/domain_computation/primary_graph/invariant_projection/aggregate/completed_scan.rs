@@ -23,6 +23,7 @@ pub(super) struct CompletedAggregateScan {
 }
 
 pub(super) fn complete(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     miss: UncachedAggregatePlan,
@@ -35,7 +36,7 @@ pub(super) fn complete(
         plan: &plan,
         accounting,
     }
-    .rebuild()?;
+    .rebuild(execution)?;
     Ok(CompletedAggregateScan {
         plan,
         sum: accumulator.sum,
@@ -51,12 +52,18 @@ struct AggregateScanReader<'scan, 'work> {
 }
 
 impl AggregateScanReader<'_, '_> {
-    fn rebuild(&mut self) -> Result<AggregateScanAccumulator, WorthQueryInvariantAggregateDenial> {
-        let read = self.branch_view()?.bounded_incoming_relations_of_kind(
-            self.plan.target(),
-            self.plan.key().relation_kind,
-            self.accounting.remaining(),
-        );
+    fn rebuild(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<AggregateScanAccumulator, WorthQueryInvariantAggregateDenial> {
+        let read = self
+            .branch_view(execution)?
+            .bounded_incoming_relations_of_kind(
+                execution,
+                self.plan.target(),
+                self.plan.key().relation_kind,
+                self.accounting.remaining(),
+            );
         let read = read.map_err(|limit| {
             self.accounting
                 .reject_initial_adjacency(limit, self.plan.relation_member())
@@ -70,7 +77,7 @@ impl AggregateScanReader<'_, '_> {
         );
         let mut accumulator = AggregateScanAccumulator::new();
         for record in read.into_records() {
-            let value = self.observe_source(&record)?;
+            let value = self.observe_source(execution, &record)?;
             accumulator.push(value, self.plan)?;
         }
         Ok(accumulator)
@@ -78,13 +85,17 @@ impl AggregateScanReader<'_, '_> {
 
     fn observe_source(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         record: &worth_relational::facade::runtime::RelationReadRecord,
     ) -> Result<Option<AspectValue>, WorthQueryInvariantAggregateDenial> {
-        let relations = self.branch_view()?.bounded_outgoing_relations_of_kind(
-            record.source,
-            self.plan.key().relation_kind,
-            self.accounting.remaining(),
-        );
+        let relations = self
+            .branch_view(execution)?
+            .bounded_outgoing_relations_of_kind(
+                execution,
+                record.source,
+                self.plan.key().relation_kind,
+                self.accounting.remaining(),
+            );
         let relations = relations.map_err(|limit| {
             self.accounting
                 .reject_bounded_adjacency(limit, self.plan.relation_member())
@@ -105,6 +116,7 @@ impl AggregateScanReader<'_, '_> {
         let value =
             crate::domain_computation::primary_graph::application_attempt::observe_field_value(
                 self.runtime,
+                execution,
                 self.snapshot,
                 record.source,
                 self.plan.source_kind(),
@@ -118,13 +130,14 @@ impl AggregateScanReader<'_, '_> {
     /// has no readable source field, as `observe_field_value` also reports.
     fn branch_view(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_relational::facade::runtime::VisibilityProjectionView<'_>,
         WorthQueryInvariantAggregateDenial,
     > {
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot)
+            .project_snapshot(self.snapshot, execution)
             .ok_or_else(|| {
                 denial(
                     WorthQueryInvariantAggregateDenialKind::InvalidScalar,

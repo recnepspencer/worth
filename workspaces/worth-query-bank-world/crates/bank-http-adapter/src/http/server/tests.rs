@@ -14,6 +14,7 @@ mod continuation_replay;
 mod elevation;
 mod elevation_request_replay;
 mod fixture;
+mod historical_cancellation;
 mod mutation;
 mod protocol;
 mod rail_audience_facade;

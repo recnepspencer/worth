@@ -69,6 +69,7 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn scoped_authoritative_entity_record(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         entity_id: EntityId,
     ) -> Option<EntityReadRecord> {
@@ -82,7 +83,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                     self.runtime.current_version_id(),
                 ),
             InspectionScope::Version(_) | InspectionScope::Snapshot(_) => self
-                .read_view_for_scope(scope)?
+                .read_view_for_scope(execution, scope)?
                 .get_entity(entity_id)
                 .cloned(),
         }
@@ -90,6 +91,7 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn scoped_authoritative_relation_record(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         relation_id: RelationId,
     ) -> Option<RelationReadRecord> {
@@ -103,7 +105,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                     self.runtime.current_version_id(),
                 ),
             InspectionScope::Version(_) | InspectionScope::Snapshot(_) => self
-                .read_view_for_scope(scope)?
+                .read_view_for_scope(execution, scope)?
                 .get_relation(relation_id)
                 .cloned(),
         }
@@ -111,6 +113,7 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn scoped_relation_ids_for_entity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         entity_id: EntityId,
     ) -> Vec<RelationId> {
@@ -120,7 +123,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                 .storage_access()
                 .all_relations_for_entity(entity_id, self.runtime.current_version_id()),
             InspectionScope::Version(_) | InspectionScope::Snapshot(_) => self
-                .read_view_for_scope(scope)
+                .read_view_for_scope(execution, scope)
                 .map(|read_view| {
                     read_view
                         .relations()
@@ -135,6 +138,7 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn scoped_relation_endpoints(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         relation_id: RelationId,
     ) -> Option<(EntityId, EntityId)> {
@@ -151,7 +155,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                 })
                 .map(|endpoints| (endpoints.source, endpoints.target)),
             InspectionScope::Version(_) | InspectionScope::Snapshot(_) => self
-                .scoped_authoritative_relation_record(scope, relation_id)
+                .scoped_authoritative_relation_record(execution, scope, relation_id)
                 .map(|record| (record.source, record.target)),
         }
     }

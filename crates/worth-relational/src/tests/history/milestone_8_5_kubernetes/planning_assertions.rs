@@ -1,17 +1,21 @@
 use super::*;
 
 pub(super) fn planning_for(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     source_branch: BranchId,
     target_branch: BranchId,
 ) -> crate::merge::data::MergePlanningArtifactCore {
     runtime
         .merge()
-        .inspect_planning_scope(MergePlanningRequest::new(
-            target_branch,
-            source_branch,
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            execution,
+            MergePlanningRequest::new(
+                target_branch,
+                source_branch,
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("merge planning")
 }
 

@@ -65,6 +65,7 @@ pub struct FinancialCourtroomWorld {
 impl FinancialCourtroomWorld {
     pub fn conditional_clock<'world, Node>(
         &'world self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &'world primary_graph::WorthQueryConditionalClockHandle<
             FinancialHostSchema,
             Node,
@@ -80,10 +81,14 @@ impl FinancialCourtroomWorld {
         primary_graph::WorthQueryConditionalClockObservationDenial,
     > {
         self.application
-            .on_branch(self.application.current_world())
-            .select()
-            .unwrap()
-            .conditional_clock(handle)
+            .with_host_advancement(|host_phase| {
+                self.application
+                    .on_branch(self.application.current_world())
+                    .select(&host_phase)
+                    .unwrap()
+                    .conditional_clock(request_execution, handle)
+            })
+            .expect("installed host call opens")
     }
 
     pub fn publish_curve() -> Self {
@@ -102,33 +107,43 @@ impl FinancialCourtroomWorld {
         &self,
     ) -> worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts {
         self.application
-            .on_branch(self.application.current_world())
-            .select()
-            .expect("the selected product branch remains admitted")
-            .resolve_entity(
-                MarketIdentityField::reference(),
-                self.record_identity.to_string(),
-                &super::adapters::request_scope(),
-                primary_graph::WorthQueryPrincipalResolutionMode::Certification,
-            )
-            .unwrap()
-            .relational_record_identity_parts()
+            .with_host_advancement(|host_phase| {
+                self.application
+                    .on_branch(self.application.current_world())
+                    .select(&host_phase)
+                    .expect("the selected product branch remains admitted")
+                    .resolve_entity(
+                        &host_phase,
+                        MarketIdentityField::reference(),
+                        self.record_identity.to_string(),
+                        &super::adapters::request_scope(),
+                        primary_graph::WorthQueryPrincipalResolutionMode::Certification,
+                    )
+                    .unwrap()
+                    .relational_record_identity_parts()
+            })
+            .expect("installed host call opens")
     }
 
     pub fn sibling_curve_record_identity(
         &self,
     ) -> worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts {
         self.application
-            .on_branch(self.application.current_world())
-            .select()
-            .expect("the selected product branch remains admitted")
-            .resolve_entity(
-                MarketIdentityField::reference(),
-                "curve-usd-rates-10y".to_string(),
-                &super::adapters::request_scope(),
-                primary_graph::WorthQueryPrincipalResolutionMode::Certification,
-            )
-            .unwrap()
-            .relational_record_identity_parts()
+            .with_host_advancement(|host_phase| {
+                self.application
+                    .on_branch(self.application.current_world())
+                    .select(&host_phase)
+                    .expect("the selected product branch remains admitted")
+                    .resolve_entity(
+                        &host_phase,
+                        MarketIdentityField::reference(),
+                        "curve-usd-rates-10y".to_string(),
+                        &super::adapters::request_scope(),
+                        primary_graph::WorthQueryPrincipalResolutionMode::Certification,
+                    )
+                    .unwrap()
+                    .relational_record_identity_parts()
+            })
+            .expect("installed host call opens")
     }
 }

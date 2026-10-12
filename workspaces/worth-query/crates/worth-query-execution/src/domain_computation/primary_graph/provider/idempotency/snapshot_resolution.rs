@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphPr
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
 
 pub(super) fn resolve_at_snapshot(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -31,10 +32,10 @@ pub(super) fn resolve_at_snapshot(
         snapshot,
         layout,
     };
-    let Some(entity_id) = locate_idempotency_entity(&context, &key)? else {
+    let Some(entity_id) = locate_idempotency_entity(execution, &context, &key)? else {
         return Ok(WorthQueryProviderIdempotencyResolution::Absent);
     };
-    let record = read_idempotency_record(&context, entity_id, &key)?;
+    let record = read_idempotency_record(execution, &context, entity_id, &key)?;
     resolve_projected_idempotency(&context, expected_product, binding, record)
 }
 
@@ -60,6 +61,7 @@ struct WorthQueryProjectedIdempotencyRecord {
 }
 
 fn locate_idempotency_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &WorthQueryIdempotencySnapshotContext<'_>,
     key: &AspectValue,
 ) -> Result<Option<worth_relational::facade::identity::EntityId>, &'static str> {
@@ -75,7 +77,7 @@ fn locate_idempotency_entity(
     let lookup = context
         .runtime
         .index_access()
-        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
+        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production, execution)
         .map_err(|_| "provider idempotency index lookup failed")?;
     if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
         return Err("provider idempotency key is not unique");
@@ -84,6 +86,7 @@ fn locate_idempotency_entity(
 }
 
 fn read_idempotency_record(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &WorthQueryIdempotencySnapshotContext<'_>,
     entity_id: worth_relational::facade::identity::EntityId,
     key: &AspectValue,
@@ -101,9 +104,9 @@ fn read_idempotency_record(
     context
         .runtime
         .read_truth()
-        .project_snapshot(context.snapshot)
+        .project_snapshot(context.snapshot, execution)
         .and_then(|view| {
-            view.entity_record_with_projection_scope(entity_id, scope, |record| {
+            view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
                 (record.kind_id() == context.layout.entity_kind
                     && record.lifecycle() == RecordLifecycleState::Live
                     && record.aspect_field_value(

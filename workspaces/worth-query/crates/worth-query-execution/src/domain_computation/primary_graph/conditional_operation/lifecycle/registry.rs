@@ -101,6 +101,7 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
 
     pub(in crate::domain_computation::primary_graph) fn prepare_derived_runtime_reinstallation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         product: &crate::basis::WorthQueryProductBranchLease,
@@ -113,7 +114,7 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
             .map(|(identity, operation)| {
                 operation
                     .lock_operation()
-                    .prepare_derived_runtime_reinstallation(runtime, bridge, product)
+                    .prepare_derived_runtime_reinstallation(execution, runtime, bridge, product)
                     .map(|prepared| (identity.clone(), prepared))
             })
             .collect()

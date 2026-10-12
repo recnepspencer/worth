@@ -2,9 +2,13 @@ use super::*;
 
 #[test]
 fn refresh_rebuilt_computed_wakes_downstream_dependencies_through_produced_aspects() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -12,6 +16,7 @@ fn refresh_rebuilt_computed_wakes_downstream_dependencies_through_produced_aspec
         .expect("live view should declare");
     let refresh = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.refresh.count", touches(["title"]))
                 .depends_on_live(&live)
                 .produces(touches(["summary.count"]))
@@ -21,6 +26,7 @@ fn refresh_rebuilt_computed_wakes_downstream_dependencies_through_produced_aspec
         .expect("refresh maintainer computed should declare");
     let downstream = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.refresh.summary", touches(["summary.count"]))
                 .depends_on_derived(&refresh)
                 .produces(touches(["validation.state"])),
@@ -29,13 +35,16 @@ fn refresh_rebuilt_computed_wakes_downstream_dependencies_through_produced_aspec
         .expect("downstream computed should declare");
 
     let insert = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Nested refresh")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Nested refresh")),
+                ],
+            ),
+        )
         .expect("insert should wake refresh and downstream computeds");
     let refresh_patches = runtime.drain_derived_patches(&refresh);
     let downstream_patches = runtime.drain_derived_patches(&downstream);
@@ -55,7 +64,7 @@ fn refresh_rebuilt_computed_wakes_downstream_dependencies_through_produced_aspec
         test_aspect_touches(["validation.state"]).as_slice()
     );
     assert_eq!(
-        read_derived_value_aspects(&runtime, &downstream),
+        read_derived_value_aspects(request_execution, &runtime, &downstream),
         vec![test_string_aspect_value(
             "summary:computed.refresh.count".to_string()
         )]
@@ -64,6 +73,9 @@ fn refresh_rebuilt_computed_wakes_downstream_dependencies_through_produced_aspec
 
 #[test]
 fn downstream_refresh_fallback_receives_declared_live_siblings_through_computed_dependency_chain() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     struct MixedUpstreamSnapshotMaintainer;
 
     impl WorthQueryDerivedViewMaintainer for MixedUpstreamSnapshotMaintainer {
@@ -130,9 +142,10 @@ fn downstream_refresh_fallback_receives_declared_live_siblings_through_computed_
         }
     }
 
-    let mut runtime = stateful_bridge_task_issue_runtime();
+    let mut runtime = stateful_bridge_task_issue_runtime(request_execution);
     let tasks = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -140,6 +153,7 @@ fn downstream_refresh_fallback_receives_declared_live_siblings_through_computed_
         .expect("task live view should declare");
     let issues = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "issues.table",
             issue_live_request(),
             issue_schema(),
@@ -147,6 +161,7 @@ fn downstream_refresh_fallback_receives_declared_live_siblings_through_computed_
         .expect("issue live view should declare");
     let refresh = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.refresh.count", touches(["title"]))
                 .depends_on_live(&tasks)
                 .produces(touches(["summary.count"]))
@@ -156,6 +171,7 @@ fn downstream_refresh_fallback_receives_declared_live_siblings_through_computed_
         .expect("upstream refresh maintainer should declare");
     let downstream = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new(
                 "computed.refresh.mixed",
                 touches(["summary.count", "summary"]),
@@ -169,33 +185,39 @@ fn downstream_refresh_fallback_receives_declared_live_siblings_through_computed_
         .expect("downstream mixed refresh maintainer should declare");
 
     runtime
-        .write(insert_command(
-            "Issue",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "summary.value",
-                    test_string_aspect_value("Issue sibling stays retained"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Issue",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "summary.value",
+                        test_string_aspect_value("Issue sibling stays retained"),
+                    ),
+                ],
+            ),
+        )
         .expect("issue insert should seed sibling live state");
     runtime.drain_derived_patches(&refresh);
     runtime.drain_derived_patches(&downstream);
 
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Task wakes upstream refresh"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Task wakes upstream refresh"),
+                    ),
+                ],
+            ),
+        )
         .expect("task insert should rebuild downstream from derived and live siblings");
-    let downstream_rows = read_derived_value_aspects(&runtime, &downstream);
+    let downstream_rows = read_derived_value_aspects(request_execution, &runtime, &downstream);
 
     assert_eq!(
         downstream_rows,

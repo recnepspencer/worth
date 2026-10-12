@@ -7,18 +7,29 @@ use super::managed_collection_lease;
 
 #[test]
 fn unsupported_point_lookup_yields_one_explicit_reset_then_blocks_patch_work() {
-    let mut workspace =
-        matrix_workspace_without_collection_lookup("collection-delivery-reset", &[]);
-    let row = insert_matrix_value(&mut workspace, 0, matrix_value_with_order(0, "10"));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = matrix_workspace_without_collection_lookup(
+        request_execution,
+        "collection-delivery-reset",
+        &[],
+    );
+    let row = insert_matrix_value(
+        request_execution,
+        &mut workspace,
+        0,
+        matrix_value_with_order(0, "10"),
+    );
     let (collection, _) = bound_collection(&mut workspace);
     let window = first_window(&collection, 1);
     let mut consumer =
         domain::WorthQueryCollectionConsumerWindow::from_bound(collection, window).unwrap();
-    let lease = managed_collection_lease(&mut workspace);
+    let lease = managed_collection_lease(request_execution, &mut workspace);
     assert!(lease.drain(&mut workspace).unwrap().delivery().is_empty());
 
     workspace
-        .update(row, |mutation| {
+        .update(request_execution, row, |mutation| {
             mutation.set_aspect(
                 runtime::WorthQueryAspectTouch::whole_aspect(matrix_aspect_key()),
                 matrix_value_with_order(0, "20"),
@@ -35,7 +46,7 @@ fn unsupported_point_lookup_yields_one_explicit_reset_then_blocks_patch_work() {
     consumer.bind_shared_target(&admitted, &workspace).unwrap();
     let expected_foundational = admitted.delta().foundational_projection();
 
-    let patch = match consumer.plan_patch(&admitted, &workspace) {
+    let patch = match consumer.plan_patch(request_execution, &admitted, &workspace) {
         domain::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
         domain::WorthQueryCollectionDeliveryOutcome::NoDelivery(denial) => {
             panic!("unsupported point lookup hid reset: {:?}", denial.kind())
@@ -47,7 +58,7 @@ fn unsupported_point_lookup_yields_one_explicit_reset_then_blocks_patch_work() {
     assert!(receipt.reset_required());
     assert!(consumer.reset_pending());
 
-    let outcome = consumer.plan_patch(&admitted, &workspace);
+    let outcome = consumer.plan_patch(request_execution, &admitted, &workspace);
     let domain::WorthQueryCollectionDeliveryOutcome::NoDelivery(denial) = outcome else {
         panic!("reset-pending consumer continued incremental work")
     };

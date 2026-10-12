@@ -184,16 +184,21 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
         cancellation.token(),
     );
     let account = application
-        .on_branch(application.current_world())
-        .select()
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountNumber::reference(),
-            "account-001".to_string(),
-            &request_scope,
-            WorthQueryPrincipalResolutionMode::Certification,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            application
+                .on_branch(application.current_world())
+                .select(&phase)
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountNumber::reference(),
+                    "account-001".to_string(),
+                    &request_scope,
+                    WorthQueryPrincipalResolutionMode::Certification,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(account.examined_candidate_count(), 1);
     assert_eq!(
         account.binding_identity(),

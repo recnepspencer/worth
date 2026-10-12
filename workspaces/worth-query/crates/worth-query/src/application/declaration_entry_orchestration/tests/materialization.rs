@@ -16,7 +16,10 @@ use super::domain::{
 
 #[test]
 fn orchestration_policy_exposes_semantic_publication_by_lane() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
 
     let ordinary = worth_query_lower_declaration_entry_orchestration_on_handle(
         &handle,
@@ -78,7 +81,10 @@ fn orchestration_policy_exposes_semantic_publication_by_lane() {
 
 #[test]
 fn orchestration_identity_tracks_aspect_publication_inputs() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
 
     let aspect_rich = worth_query_lower_declaration_entry_orchestration_on_handle(
         &handle,
@@ -101,7 +107,10 @@ fn orchestration_identity_tracks_aspect_publication_inputs() {
 
 #[test]
 fn orchestration_identity_changes_when_lane_publication_changes() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
 
     let ordinary = worth_query_lower_declaration_entry_orchestration_on_handle(
         &handle,
@@ -124,7 +133,10 @@ fn orchestration_identity_changes_when_lane_publication_changes() {
 
 #[test]
 fn progressed_product_plans_carry_reviewed_aspect_coverage_basis() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progressed = handle
         .declare_review_and_progress(Input::<AspectRichFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));
@@ -147,7 +159,10 @@ fn progressed_product_plans_carry_reviewed_aspect_coverage_basis() {
 
 #[test]
 fn declared_family_coverage_keeps_conflicting_publication_out_of_visible_surfaces() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
 
     let proof = worth_query_lower_declaration_entry_orchestration_on_handle(
         &handle,
@@ -172,7 +187,10 @@ fn declared_family_coverage_keeps_conflicting_publication_out_of_visible_surface
 
 #[test]
 fn product_orchestration_receipts_and_envelopes_match_planned_crossing_publication() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progressed = handle
         .declare_review_and_progress(Input::<AspectRichFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));
@@ -222,7 +240,10 @@ fn product_orchestration_receipts_and_envelopes_match_planned_crossing_publicati
 
 #[test]
 fn envelope_proof_keeps_envelope_ceiling_while_exposing_authority_summaries() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progressed = handle
         .declare_review_and_progress(Input::<AuthorityRichFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));
@@ -272,7 +293,10 @@ fn envelope_proof_keeps_envelope_ceiling_while_exposing_authority_summaries() {
 
 #[test]
 fn authority_summaries_change_plan_identity_when_retained_meaning_changes() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let authority_rich = worth_query_lower_declaration_entry_orchestration_on_handle(
         &handle,
         Input::<AuthorityRichFamily>::new("edge:42"),

@@ -64,17 +64,25 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
     let resources = product_resources.invalidation_resources();
     let world = installed_authorization_world_with_product_resources(product_resources);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program = retained_status_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "open",
-        RetentionMutationBreadth::Narrow,
-    )
-    .with_output_demand_observation();
+    let program = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let principal = authenticated_principal(phase_custody, &world, &request);
+            let account = resolved_account(phase_custody, &world, "open", &request);
+            retained_status_program(
+                phase_custody,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "open",
+                RetentionMutationBreadth::Narrow,
+            )
+            .with_output_demand_observation()
+        })
+        .expect("the prerequisite materialization owns its host call");
     let identity = idempotency(233, 233)
         .bind_source(Some(&[17; 32]))
         .bind_source_partition(&[13; 32])
@@ -102,45 +110,54 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
                 "retained-account".to_owned(),
             )],
         )]));
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let operation = world
+    world
         .application
-        .installed_schema()
-        .installed_operation(ReadRetainedAccount::reference())
-        .unwrap();
-    let admitted = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            TypedMutationPreconditions::new(),
-            &request,
-        )
-        .unwrap();
-    let maximum = resources.installation().maximum_retained_bytes;
-    let held = resources
-        .reserve_retained_capacity(maximum - resources.retained_capacity_bytes())
-        .unwrap();
-    let mut seen = None;
-    let projected = world.invariant.project_admitted_operation(
-        &admitted,
-        |reader, root| {
-            let denied = reader
-                .current_output::<RetainedFamily, Account>(root)
-                .err()
-                .expect("the full ledger cannot retain the consumed edge");
-            seen = Some(denied.kind());
-        },
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    assert_eq!(resources.retained_capacity_bytes(), maximum);
-    drop(held);
-    (
-        seen.expect("the handler ran"),
-        projected
-            .err()
-            .expect("the projection returns its capacity stop"),
-    )
+        .with_application_advancement(&request, |phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let principal = authenticated_principal(phase_custody, &world, &request);
+            let account = resolved_account(phase_custody, &world, "open", &request);
+            let operation = world
+                .application
+                .installed_schema()
+                .installed_operation(ReadRetainedAccount::reference())
+                .unwrap();
+            let admitted = world
+                .selected_product(phase_custody)
+                .authorize_operation(
+                    &phase_custody.phase_for_application(&world.application),
+                    &principal,
+                    &account,
+                    &operation,
+                    TypedMutationPreconditions::new(),
+                    &request,
+                )
+                .unwrap();
+            let maximum = resources.installation().maximum_retained_bytes;
+            let held = resources
+                .reserve_retained_capacity(maximum - resources.retained_capacity_bytes())
+                .unwrap();
+            let mut seen = None;
+            let projected = world.invariant.project_admitted_operation(
+                &phase_custody.phase_for_application(&world.application),
+                &admitted,
+                |reader, root| {
+                    let denied = reader
+                        .current_output::<RetainedFamily, Account>(root)
+                        .err()
+                        .expect("the full ledger cannot retain the consumed edge");
+                    seen = Some(denied.kind());
+                },
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            );
+            assert_eq!(resources.retained_capacity_bytes(), maximum);
+            drop(held);
+            (
+                seen.expect("the handler ran"),
+                projected
+                    .err()
+                    .expect("the projection returns its capacity stop"),
+            )
+        })
+        .expect("the capacity projection owns its host call")
 }

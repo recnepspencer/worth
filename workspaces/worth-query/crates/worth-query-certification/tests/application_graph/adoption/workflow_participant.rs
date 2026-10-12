@@ -59,8 +59,13 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
     );
 
     let (published_under, carried) = application
-        .runtime()
-        .workflow_definition_revisions_for_test(&definition);
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .workflow_definition_revisions_for_test(&host_phase, &definition)
+        })
+        .expect("installed host call opens")
+        .expect("workflow branch remains admitted");
     assert!(published_under.is_some() && carried.is_none());
     publish_adoption(prepare_second_program_adoption(
         &application,
@@ -68,8 +73,13 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
         Some(&|inventory| inventory.carry_compatible().unwrap()),
     ));
     let (still_published_under, carried) = application
-        .runtime()
-        .workflow_definition_revisions_for_test(&definition);
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .workflow_definition_revisions_for_test(&host_phase, &definition)
+        })
+        .expect("installed host call opens")
+        .expect("workflow branch remains admitted");
     assert_eq!(
         still_published_under, published_under,
         "carriage never rewrites publication provenance",

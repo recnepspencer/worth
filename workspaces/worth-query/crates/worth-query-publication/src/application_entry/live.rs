@@ -184,7 +184,6 @@ where
                     }
                     Denial::Resource(_)
                     | Denial::NestedOpening
-                    | Denial::ForeignPhase
                     | Denial::NestedStopped
                     | Denial::Panicked => {}
                 }
@@ -195,7 +194,9 @@ where
 
     fn next_in_advancement(
         &mut self,
-        _phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         fresh_request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         WorthQueryApplicationLiveOutcome<Query<Schema, Intent>, QueryResult<Schema, Intent>>,
@@ -209,9 +210,9 @@ where
         let selected = self
             .application
             .on_branch(fresh_request.branch)
-            .select()
+            .select(phase)
             .map_err(WorthQueryApplicationLiveNextDenial::ProductSelection)?;
-        let principal = match selected.resolve_authenticated_principal(
+        let principal = match selected.resolve_authenticated_principal(phase,
             binding.principal_binding(),
             fresh_request.principal,
             fresh_request.scope,
@@ -253,7 +254,7 @@ where
                 _ => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
             },
         };
-        Ok(self.lease.next(&principal, fresh_request.scope))
+        Ok(self.lease.next(phase, &principal, fresh_request.scope))
     }
 
     pub fn close(self) -> WorthQueryApplicationLiveCloseOutcome {

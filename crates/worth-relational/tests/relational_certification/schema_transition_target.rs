@@ -19,8 +19,11 @@ use worth_relational::facade::schema::{
 
 #[test]
 fn branch_schema_target_admission_is_typed_and_never_moves_a_branch() {
-    let (world, baseline) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &baseline);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &baseline);
     let main = BranchId("main".to_owned());
     let before = world.runtime.branch_reference_state(&main).unwrap();
     let identity = world.runtime.main_branch_identity();
@@ -113,7 +116,10 @@ fn branch_schema_target_admission_is_typed_and_never_moves_a_branch() {
 
 #[test]
 fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let main_identity = world.runtime.main_branch_identity();
     let (_, main_basis) = world.runtime.observe_branch(&main_identity).unwrap();
     let retained_v1 = world
@@ -133,6 +139,7 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
         world.runtime.fork_branch(branch.clone(), source).unwrap();
         let before = world.runtime.branch_reference_state(&branch).unwrap();
         let batch = lower_supply_chain_production_delta(
+            execution,
             &world.runtime,
             &world.program,
             &world.handles,
@@ -142,6 +149,7 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
         )
         .unwrap();
         let committed = commit_supply_chain_delta(
+            execution,
             &world.runtime,
             &world.program,
             branch.clone(),
@@ -154,6 +162,7 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
             "each schema transition moves only its branch"
         );
         let observed = observe_supply_chain_snapshot(
+            execution,
             &world.program,
             &world.handles.for_snapshot(committed.snapshot.clone()),
             &world.runtime,
@@ -210,6 +219,7 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
             .snapshot_for_observation(&basis.observation())
             .unwrap();
         let observed = observe_supply_chain_snapshot(
+            execution,
             &world.program,
             &world.handles.for_snapshot(snapshot.clone()),
             &world.runtime,
@@ -235,16 +245,21 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
     let replay = world
         .runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: replay_commit,
-            branch_id: replay_branch,
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: replay_commit,
+                branch_id: replay_branch,
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert_eq!(replay.failure, None, "V2 sibling replay failed: {replay:?}");
     assert!(replay.mismatches.is_empty());
 
     let historical = observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles.for_snapshot(retained_v1.clone()),
         &world.runtime,
@@ -266,7 +281,10 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
 
 #[test]
 fn stale_schema_transition_basis_cannot_install_target_authority() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let identity = world.runtime.main_branch_identity();
     let basis = world.runtime.admit_branch_basis(&identity).unwrap();
     let ordinary = world
@@ -276,12 +294,7 @@ fn stale_schema_transition_basis_cannot_install_target_authority() {
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .unwrap();
-    let committed = ordinary
-        .commit(
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = ordinary.commit(execution, &world.runtime).unwrap();
     world
         .runtime
         .snapshots()
@@ -311,6 +324,7 @@ fn stale_schema_transition_basis_cannot_install_target_authority() {
         .snapshot_for_observation(&fresh_basis.observation())
         .unwrap();
     let observed = observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles.for_snapshot(snapshot.clone()),
         &world.runtime,

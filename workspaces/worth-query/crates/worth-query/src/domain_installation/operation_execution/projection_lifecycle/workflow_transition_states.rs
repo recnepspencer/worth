@@ -140,12 +140,14 @@ macro_rules! operational_inspection {
         impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> $name<D, O, F, L> {
             pub fn refresh(
                 &self,
+                execution: &worth_execution::ExecutionRequest<'_, '_>,
                 workspace: &mut crate::runtime::WorthQueryWorkspace,
             ) -> Result<
                 super::WorthQueryLiveProjectionRefresh,
                 super::WorthQueryLiveProjectionRefreshError,
             > {
                 super::refresh::refresh_source(
+                    execution,
                     self.transitioned.successor().source(),
                     self.transitioned.successor().handle(),
                     workspace,

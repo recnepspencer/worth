@@ -18,10 +18,18 @@ use worth_foundational::facade::AspectKey;
 
 #[test]
 fn prepare_merge_execution_admits_fully_ready_source_only_addition() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let request = MergeExecutionRequest {
         target_branch: BranchId("main".to_string()),
@@ -31,7 +39,7 @@ fn prepare_merge_execution_admits_fully_ready_source_only_addition() {
 
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(request.clone())
+        .prepare_merge_execution(execution, request.clone())
         .expect("merge execution should prepare");
     let normalized_request = runtime
         .merge()
@@ -54,11 +62,15 @@ fn prepare_merge_execution_admits_fully_ready_source_only_addition() {
 
 #[test]
 fn prepare_merge_execution_rejects_blocked_merge_plans() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "shared-main");
+    update_entity(execution, &runtime, shared, "shared-main");
     update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "shared-feature",
@@ -67,11 +79,14 @@ fn prepare_merge_execution_rejects_blocked_merge_plans() {
 
     let error = runtime
         .merge()
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect_err("blocked merge plan must not prepare");
 
     match error {
@@ -90,6 +105,9 @@ fn prepare_merge_execution_rejects_blocked_merge_plans() {
 
 #[test]
 fn prepare_merge_execution_rejects_rejected_merge_plans() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -123,10 +141,11 @@ fn prepare_merge_execution_rejects_rejected_merge_plans() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "shared-main");
+    update_entity(execution, &runtime, shared, "shared-main");
     update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "shared-feature",
@@ -135,11 +154,14 @@ fn prepare_merge_execution_rejects_rejected_merge_plans() {
 
     let error = runtime
         .merge()
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect_err("rejected merge plan must not prepare");
 
     match error {
@@ -158,10 +180,18 @@ fn prepare_merge_execution_rejects_rejected_merge_plans() {
 
 #[test]
 fn runtime_prepare_merge_execution_matches_merge_access_surface() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
     let request = MergeExecutionRequest {
         target_branch: BranchId("main".to_string()),
         source_branch: BranchId("feature".to_string()),
@@ -169,11 +199,11 @@ fn runtime_prepare_merge_execution_matches_merge_access_surface() {
     };
 
     let via_runtime = runtime
-        .prepare_merge_execution(request.clone())
+        .prepare_merge_execution(execution, request.clone())
         .expect("runtime merge prepare");
     let via_access = runtime
         .merge()
-        .prepare_merge_execution(request.clone())
+        .prepare_merge_execution(execution, request.clone())
         .expect("merge access prepare");
     let normalized_request = runtime
         .merge()

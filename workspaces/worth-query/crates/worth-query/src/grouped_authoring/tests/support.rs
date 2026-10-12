@@ -225,25 +225,28 @@ impl WorthQueryDeclarationInput<GeometryDomain> for RequiredIntentGeometryInput 
 }
 
 pub(super) fn admitted_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<GeometryDomain, GeometryWorld>
 {
-    installed_geometry_context(GeometryWorld(world))
+    installed_geometry_context(request_execution, GeometryWorld(world))
 }
 
 pub(super) fn admitted_handle_with_shifted_relational_digest(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<GeometryDomain, GeometryWorld>
 {
-    installed_geometry_context(GeometryWorld(world))
+    installed_geometry_context(request_execution, GeometryWorld(world))
 }
 
 fn installed_geometry_context(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: GeometryWorld,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<GeometryDomain, GeometryWorld>
 {
     crate::application::domain_test_support::installed_declaration_context_with_contributions(
-        GeometryDomain,
+        request_execution, GeometryDomain,
         context,
         [
             crate::application::domain_test_support::family::<GeometryDomain, GeometryFamily>(),

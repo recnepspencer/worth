@@ -15,6 +15,7 @@ use crate::domain_computation::execution_runtime::product_world::{
 /// unfinished.
 #[derive(Debug)]
 pub enum WorthQueryApplicationProductBranchCloseDenial {
+    ForeignPhase,
     /// The application's pending publication on the branch could not be
     /// settled first. The close did not begin.
     ApplicationSettlementPending,
@@ -32,8 +33,12 @@ pub enum WorthQueryApplicationProductBranchCloseDenial {
 impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
     pub fn close(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryProductBranchCloseReceipt, WorthQueryApplicationProductBranchCloseDenial>
     {
+        let execution = phase
+            .execution_request_for(&self.application.product_runtime)
+            .map_err(|_| WorthQueryApplicationProductBranchCloseDenial::ForeignPhase)?;
         let occurrence = self.branch.occurrence();
         let commit_lane = self
             .application
@@ -45,7 +50,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
         let _coordination = commit_lane.enter();
         self.application
             .primary_provider
-            .settle_before_product_retirement(occurrence)
+            .settle_before_product_retirement(&execution, occurrence)
             .map_err(|_| {
                 WorthQueryApplicationProductBranchCloseDenial::ApplicationSettlementPending
             })?;

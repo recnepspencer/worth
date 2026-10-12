@@ -48,10 +48,11 @@ pub struct BankAdmittedEstateEmergencyAccessActivityPreview<'a> {
 impl BankAdmittedEstateEmergencyAccessActivityHistorical<'_> {
     pub fn execute(
         self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<BankEstateEmergencyAccessActivityResult, BankApplicationQueryDenial> {
         let result = self
             .application
-            .execute_application_query_one_shot(self.plan)
+            .execute_application_query_one_shot(phase, self.plan)
             .map_err(BankApplicationQueryDenial::from_execution)?;
         Ok(publish_application_result(result.into_admitted_disclosed()))
     }
@@ -60,10 +61,11 @@ impl BankAdmittedEstateEmergencyAccessActivityHistorical<'_> {
 impl BankAdmittedEstateEmergencyAccessActivityPreview<'_> {
     pub fn execute(
         self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<BankEstateEmergencyAccessActivityResult, BankApplicationQueryDenial> {
         let result = self
             .application
-            .execute_application_query_one_shot(self.plan)
+            .execute_application_query_one_shot(phase, self.plan)
             .map_err(BankApplicationQueryDenial::from_execution)?;
         Ok(publish_application_result(result.into_admitted_disclosed()))
     }
@@ -94,14 +96,17 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
     pub(crate) fn historical<Output>(
         self,
         after_admission: impl for<'admitted> FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             BankAdmittedEstateEmergencyAccessActivityHistorical<'admitted>,
         )
             -> Result<Output, BankApplicationQueryDenial>,
     ) -> Result<Output, BankApplicationQueryDenial> {
         let application = self.runtime.application_runtime();
+        application.with_application_advancement(self.controls.request(), |phase| {
+        let application = self.runtime.application_runtime();
         let request = application.request(self.principal.external(), self.controls.request());
         let retained = request
-            .at_approved_elevation(self.approved.query(), self.controls.maximum_work())
+            .at_approved_elevation(&phase, self.approved.query(), self.controls.maximum_work())
             .map_err(BankApplicationQueryDenial::from_history_selection)?;
         let capability_input = self.request.capability_request();
         retained
@@ -111,28 +116,35 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
                 self.controls.maximum_work(),
             )
             .admit_approved_retained(
+                &phase,
                 self.approved.query(),
                 bank_domain::schema::ViewEstateEmergencyProtectionCapability::reference(),
                 bank_domain::schema::ViewRestrictedEstateOperation::reference(),
                 capability_input,
-                |application, plan| {
-                    after_admission(BankAdmittedEstateEmergencyAccessActivityHistorical {
+                |phase, application, plan| {
+                    after_admission(phase, BankAdmittedEstateEmergencyAccessActivityHistorical {
                         application,
                         plan,
                     })
                 },
             )
             .map_err(BankApplicationQueryDenial::from_request_query)?
+
+        }).map_err(|cause| BankApplicationQueryDenial::from_request_query(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::ExecutionRequest(cause)))?
     }
 
     pub(crate) fn preview<Output>(
         self,
         session: &BankPreviewSession,
         after_admission: impl for<'admitted> FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             BankAdmittedEstateEmergencyAccessActivityPreview<'admitted>,
         )
             -> Result<Output, BankApplicationQueryDenial>,
     ) -> Result<Output, BankApplicationQueryDenial> {
+        let application = self.runtime.application_runtime();
+        application.with_application_advancement(self.controls.request(), |phase| {
         let capability_input = self.request.capability_request();
         self.runtime
             .application_runtime()
@@ -144,17 +156,21 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
                 self.controls.maximum_work(),
             )
             .admit_approved_retained(
+                &phase,
                 self.approved.query(),
                 bank_domain::schema::ViewEstateEmergencyProtectionCapability::reference(),
                 bank_domain::schema::ViewRestrictedEstateOperation::reference(),
                 capability_input,
-                |application, plan| {
-                    after_admission(BankAdmittedEstateEmergencyAccessActivityPreview {
+                |phase, application, plan| {
+                    after_admission(phase, BankAdmittedEstateEmergencyAccessActivityPreview {
                         application,
                         plan,
                     })
                 },
             )
             .map_err(BankApplicationQueryDenial::from_request_query)?
+
+        }).map_err(|cause| BankApplicationQueryDenial::from_request_query(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::ExecutionRequest(cause)))?
     }
 }

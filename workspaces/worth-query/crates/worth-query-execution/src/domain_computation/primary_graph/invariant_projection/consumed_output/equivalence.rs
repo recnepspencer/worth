@@ -25,6 +25,7 @@ enum EquivalenceComparison {
 }
 
 pub(super) fn check<'evidence>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     roots: impl ExactSizeIterator<Item = EvidenceView<'evidence>>,
     image: Result<FullVerificationImage<'_>, FullVerificationStop>,
     marked: Result<ConsumedOutputVerification, ConsumedOutputVerificationStop>,
@@ -34,7 +35,9 @@ pub(super) fn check<'evidence>(
     // It cannot clear pending obligations or promote incomplete evidence.
     let full = image.and_then(|image| {
         for root in roots {
-            if image.verify_source_view(root, admission)? == FullVerificationDecision::Changed {
+            if image.verify_source_view(execution, root, admission)?
+                == FullVerificationDecision::Changed
+            {
                 return Ok(FullVerificationDecision::Changed);
             }
         }

@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn refusing_ancestor_through_both_public_doors() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     in_isolated_process(
         concat!(
             module_path!(),
@@ -12,7 +15,7 @@ fn refusing_ancestor_through_both_public_doors() {
                 .request_lease(request(32 * 1024 * 1024, 1_000_000))
                 .unwrap();
             let _held = lease.reserve_memory(32 * 1024 * 1024).unwrap();
-            check_lease(&lease, |stop, ancestor| {
+            check_lease(execution, &lease, |stop, ancestor| {
                 let Outcome::Denied(failure) = stop else {
                     panic!("wrong ancestor stop")
                 };
@@ -53,6 +56,7 @@ fn unrelated_lease_through_public_commit() {
             let unrelated = authority()
                 .request_lease(request(32 * 1024 * 1024, 1_000_000))
                 .unwrap();
+            let execution = &worth_execution::ExecutionRequest::leased(&unrelated);
             // Only a flat Copy denial crosses this probe's kernel boundary; the
             // rejected transaction and its log are dropped before returning.
             let captured = std::sync::Mutex::new(None);
@@ -61,10 +65,7 @@ fn unrelated_lease_through_public_commit() {
                 ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).unwrap();
             let outcome = scan.run(Some(&parent), (), 0, 0, 0, 0, |_, _, _| {
                 let error = runtime
-                    .prepare_branch_transaction_with_lease(
-                        transaction(&runtime, "nested-target"),
-                        &unrelated,
-                    )
+                    .prepare_branch_transaction(execution, transaction(&runtime, "nested-target"))
                     .expect_err("a public preparation cannot nest under an unrelated lease");
                 let TransactionCommitError::Execution { denial, .. } = error else {
                     panic!("wrong nested refusal")

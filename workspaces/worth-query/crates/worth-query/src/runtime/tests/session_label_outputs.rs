@@ -4,7 +4,9 @@ use crate::facade::runtime::{
 };
 use crate::runtime::WorthQueryStopClass;
 
-fn session_entry_runtime() -> WorthQueryRuntime {
+fn session_entry_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
     test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -17,22 +19,25 @@ fn session_entry_runtime() -> WorthQueryRuntime {
         .intent_authority(TestIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("session-entry runtime should build")
 }
 
 #[test]
 fn display_colliding_preview_labels_produce_distinct_closeout_digests() {
-    let mut runtime = session_entry_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = session_entry_runtime(request_execution);
     let left = WorthQuerySessionLabel::scoped_strs("worth.kernel", ["preview"]).expect("label");
     let right = WorthQuerySessionLabel::scoped_strs("worth", ["kernel", "preview"]).expect("label");
 
     let left_outcome = runtime
-        .preview(left.clone())
+        .preview(request_execution, left.clone())
         .expect("left preview should admit")
         .discard();
     let right_outcome = runtime
-        .preview(right.clone())
+        .preview(request_execution, right.clone())
         .expect("right preview should admit")
         .discard();
 
@@ -47,48 +52,57 @@ fn display_colliding_preview_labels_produce_distinct_closeout_digests() {
 
 #[test]
 fn display_colliding_preview_labels_produce_distinct_write_receipt_identities() {
-    let mut runtime = session_entry_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = session_entry_runtime(request_execution);
     let left = WorthQuerySessionLabel::scoped_strs("worth.kernel", ["preview"]).expect("label");
     let right = WorthQuerySessionLabel::scoped_strs("worth", ["kernel", "preview"]).expect("label");
 
     let left_receipt = {
         let mut preview = runtime
-            .preview(left.clone())
+            .preview(request_execution, left.clone())
             .expect("left preview should admit");
         preview
-            .write(insert_command(
-                "Task",
-                [
-                    (
-                        "identity.id",
-                        test_string_aspect_value("left-receipt-render-collision"),
-                    ),
-                    (
-                        "title.value",
-                        test_string_aspect_value("Left receipt render collision"),
-                    ),
-                ],
-            ))
+            .write(
+                request_execution,
+                insert_command(
+                    "Task",
+                    [
+                        (
+                            "identity.id",
+                            test_string_aspect_value("left-receipt-render-collision"),
+                        ),
+                        (
+                            "title.value",
+                            test_string_aspect_value("Left receipt render collision"),
+                        ),
+                    ],
+                ),
+            )
             .expect("left preview write should stage")
     };
     let right_receipt = {
         let mut preview = runtime
-            .preview(right.clone())
+            .preview(request_execution, right.clone())
             .expect("right preview should admit");
         preview
-            .write(insert_command(
-                "Task",
-                [
-                    (
-                        "identity.id",
-                        test_string_aspect_value("right-receipt-render-collision"),
-                    ),
-                    (
-                        "title.value",
-                        test_string_aspect_value("Right receipt render collision"),
-                    ),
-                ],
-            ))
+            .write(
+                request_execution,
+                insert_command(
+                    "Task",
+                    [
+                        (
+                            "identity.id",
+                            test_string_aspect_value("right-receipt-render-collision"),
+                        ),
+                        (
+                            "title.value",
+                            test_string_aspect_value("Right receipt render collision"),
+                        ),
+                    ],
+                ),
+            )
             .expect("right preview write should stage")
     };
 
@@ -108,9 +122,13 @@ fn display_colliding_preview_labels_produce_distinct_write_receipt_identities() 
 
 #[test]
 fn display_colliding_preview_labels_produce_distinct_execution_digests() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.render-collision-execution",
             task_live_request(),
             task_schema(),
@@ -122,25 +140,29 @@ fn display_colliding_preview_labels_produce_distinct_execution_digests() {
     let left_execution = {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 left.clone(),
                 WorthQueryPreviewOptions::redirected_delivery(),
             )
             .expect("left preview should admit");
         preview.use_view(&live);
         preview
-            .write(insert_command(
-                "Task",
-                [
-                    (
-                        "identity.id",
-                        test_string_aspect_value("left-render-collision"),
-                    ),
-                    (
-                        "title.value",
-                        test_string_aspect_value("Left render collision"),
-                    ),
-                ],
-            ))
+            .write(
+                request_execution,
+                insert_command(
+                    "Task",
+                    [
+                        (
+                            "identity.id",
+                            test_string_aspect_value("left-render-collision"),
+                        ),
+                        (
+                            "title.value",
+                            test_string_aspect_value("Left render collision"),
+                        ),
+                    ],
+                ),
+            )
             .expect("left preview write should stage");
         preview
             .preview_execution_evidence()
@@ -152,25 +174,29 @@ fn display_colliding_preview_labels_produce_distinct_execution_digests() {
     let right_execution = {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 right.clone(),
                 WorthQueryPreviewOptions::redirected_delivery(),
             )
             .expect("right preview should admit");
         preview.use_view(&live);
         preview
-            .write(insert_command(
-                "Task",
-                [
-                    (
-                        "identity.id",
-                        test_string_aspect_value("right-render-collision"),
-                    ),
-                    (
-                        "title.value",
-                        test_string_aspect_value("Right render collision"),
-                    ),
-                ],
-            ))
+            .write(
+                request_execution,
+                insert_command(
+                    "Task",
+                    [
+                        (
+                            "identity.id",
+                            test_string_aspect_value("right-render-collision"),
+                        ),
+                        (
+                            "title.value",
+                            test_string_aspect_value("Right render collision"),
+                        ),
+                    ],
+                ),
+            )
             .expect("right preview write should stage");
         preview
             .preview_execution_evidence()
@@ -190,7 +216,10 @@ fn display_colliding_preview_labels_produce_distinct_execution_digests() {
 
 #[test]
 fn canonical_session_label_intake_phase_six_outputs_are_non_empty_and_stable() {
-    let mut runtime = session_entry_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = session_entry_runtime(request_execution);
     let preview_label = test_session_label("phase-six-preview");
     let branch_label = test_session_label("phase-six-branch");
     let render_collision_left =
@@ -200,6 +229,7 @@ fn canonical_session_label_intake_phase_six_outputs_are_non_empty_and_stable() {
 
     let preview = runtime
         .preview_with_options(
+            request_execution,
             preview_label.clone(),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
@@ -213,6 +243,7 @@ fn canonical_session_label_intake_phase_six_outputs_are_non_empty_and_stable() {
 
     let branch = runtime
         .branch_with_options(
+            request_execution,
             branch_label.clone(),
             WorthQueryBranchOptions::sandboxed_write_intent(),
         )
@@ -225,11 +256,11 @@ fn canonical_session_label_intake_phase_six_outputs_are_non_empty_and_stable() {
     drop(branch);
 
     runtime
-        .preview(render_collision_left.clone())
+        .preview(request_execution, render_collision_left.clone())
         .expect("left render-collision label should admit")
         .discard();
     let render_collision_outcome = runtime
-        .preview(render_collision_right.clone())
+        .preview(request_execution, render_collision_right.clone())
         .expect("right render-collision label should admit")
         .discard();
     let render_collision_admission_digest = render_collision_outcome
@@ -237,7 +268,7 @@ fn canonical_session_label_intake_phase_six_outputs_are_non_empty_and_stable() {
         .closeout_digest()
         .to_string();
 
-    let collision_error = match runtime.preview(preview_label.clone()) {
+    let collision_error = match runtime.preview(request_execution, preview_label.clone()) {
         Ok(_) => panic!("same-family replay should collide"),
         Err(error) => error,
     };

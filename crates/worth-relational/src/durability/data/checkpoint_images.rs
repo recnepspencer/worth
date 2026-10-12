@@ -312,10 +312,14 @@ mod tests {
 
     #[test]
     fn streamed_branch_root_image_digest_matches_buffered_wire_for_divergent_roots() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let runtime = persisted_runtime_with_test_schema();
-        create_entity(&runtime, "streamed-image-seed");
+        create_entity(execution, &runtime, "streamed-image-seed");
         let sibling = create_branch_from_main(&runtime, "streamed-image-sibling");
-        let changed = create_entity_outcome_on_branch(&runtime, "streamed-image-fork", sibling);
+        let changed =
+            create_entity_outcome_on_branch(execution, &runtime, "streamed-image-fork", sibling);
         release_test_commit_snapshot(&runtime, &changed);
         let checkpoint = runtime.durability_authority().checkpoint().unwrap();
         assert_eq!(checkpoint.branch_roots.len(), 2);

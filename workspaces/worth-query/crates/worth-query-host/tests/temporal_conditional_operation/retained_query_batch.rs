@@ -38,20 +38,30 @@ fn retained_batch_orders_independent_scopes_and_bills_duplicates_at_one_basis() 
     let external = block_on(auth.authenticate((), &scope)).unwrap();
     let observation = world
         .application
-        .request(&external, &scope)
-        .retain_read()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let request = world
         .application
         .request(&external, &scope)
         .at(&observation);
     let single = request.query(read("intent-1")).execute().unwrap();
     let scalar_work = single.receipt().inspect().read_work().total_work_units();
-    let batch = request
-        .query_batch(vec![read("intent-1"), read("intent-2"), read("intent-1")])
-        .limits(limits(1024, 1_048_576))
-        .execute()
-        .unwrap();
+    let batch = world
+        .application
+        .with_host_advancement(|phase| {
+            request
+                .query_batch(vec![read("intent-1"), read("intent-2"), read("intent-1")])
+                .limits(limits(1024, 1_048_576))
+                .execute(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(
         batch
             .items()
@@ -102,26 +112,41 @@ fn late_missing_scope_publishes_no_collection_and_releases_staged_custody() {
     let external = block_on(auth.authenticate((), &scope)).unwrap();
     let observation = world
         .application
-        .request(&external, &scope)
-        .retain_read()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let observer = world.application.result_buffer_observer();
     let before = observer.observe();
     let denial = world
         .application
-        .request(&external, &scope)
-        .at(&observation)
-        .query_batch(vec![read("intent-1"), read("absent")])
-        .limits(limits(1024, 1_048_576))
-        .execute();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .at(&observation)
+                .query_batch(vec![read("intent-1"), read("absent")])
+                .limits(limits(1024, 1_048_576))
+                .execute(&phase)
+        })
+        .expect("installed host call opens");
     assert!(matches!(denial, Err(WorthQueryApplicationQueryBatchDenial::Item { index: 1, cause: worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::ScopeResolution(_) })));
     assert_eq!(observer.observe().retained_bytes(), before.retained_bytes());
     assert_eq!(observer.observe().active_buffers(), before.active_buffers());
     let current = world
         .application
-        .request(&external, &scope)
-        .retain_read()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(current.selected_commit(), observation.selected_commit());
 }
 
@@ -133,9 +158,14 @@ fn aggregate_work_refuses_second_read_without_returning_the_first() {
     let external = block_on(auth.authenticate((), &scope)).unwrap();
     let observation = world
         .application
-        .request(&external, &scope)
-        .retain_read()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let request = world
         .application
         .request(&external, &scope)
@@ -145,10 +175,15 @@ fn aggregate_work_refuses_second_read_without_returning_the_first() {
     drop(scalar);
     let observer = world.application.result_buffer_observer();
     let before = observer.observe().retained_bytes();
-    let outcome = request
-        .query_batch(vec![read("intent-1"), read("intent-1")])
-        .limits(limits(work, 1_048_576))
-        .execute();
+    let outcome = world
+        .application
+        .with_host_advancement(|phase| {
+            request
+                .query_batch(vec![read("intent-1"), read("intent-1")])
+                .limits(limits(work, 1_048_576))
+                .execute(&phase)
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         outcome,
         Err(WorthQueryApplicationQueryBatchDenial::Resource {
@@ -168,26 +203,41 @@ fn aggregate_custody_refusal_releases_every_earlier_item() {
     let external = block_on(auth.authenticate((), &scope)).unwrap();
     let observation = world
         .application
-        .request(&external, &scope)
-        .retain_read()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let request = world
         .application
         .request(&external, &scope)
         .at(&observation);
-    let single = request
-        .query_batch(vec![read("intent-1")])
-        .limits(limits(1024, 1_048_576))
-        .execute()
-        .unwrap();
+    let single = world
+        .application
+        .with_host_advancement(|phase| {
+            request
+                .query_batch(vec![read("intent-1")])
+                .limits(limits(1024, 1_048_576))
+                .execute(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let bytes = single.receipt().read_work().peak_bytes();
     drop(single);
     let observer = world.application.result_buffer_observer();
     let before = observer.observe().retained_bytes();
-    let outcome = request
-        .query_batch(vec![read("intent-1"), read("intent-1")])
-        .limits(limits(1024, bytes))
-        .execute();
+    let outcome = world
+        .application
+        .with_host_advancement(|phase| {
+            request
+                .query_batch(vec![read("intent-1"), read("intent-1")])
+                .limits(limits(1024, bytes))
+                .execute(&phase)
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         outcome,
         Err(WorthQueryApplicationQueryBatchDenial::Resource {
@@ -207,18 +257,28 @@ fn historical_batch_reads_original_data_but_current_revocation_still_refuses() {
     let external = block_on(auth.authenticate((), &scope)).unwrap();
     let observation = world
         .application
-        .request(&external, &scope)
-        .retain_read()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     world.change_input_after_query_admission("new-payload");
     let historical = world
         .application
-        .request(&external, &scope)
-        .at(&observation)
-        .query_batch(vec![read("intent-1"), read("intent-1")])
-        .limits(limits(1024, 1_048_576))
-        .execute()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .at(&observation)
+                .query_batch(vec![read("intent-1"), read("intent-1")])
+                .limits(limits(1024, 1_048_576))
+                .execute(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert!(historical
         .items()
         .iter()
@@ -227,11 +287,16 @@ fn historical_batch_reads_original_data_but_current_revocation_still_refuses() {
     world.revoke_principal_on_default_product();
     let revoked = world
         .application
-        .request(&external, &scope)
-        .at(&observation)
-        .query_batch(vec![read("intent-1")])
-        .limits(limits(1024, 1_048_576))
-        .execute();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .at(&observation)
+                .query_batch(vec![read("intent-1")])
+                .limits(limits(1024, 1_048_576))
+                .execute(&phase)
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         revoked,
         Err(WorthQueryApplicationQueryBatchDenial::Item {
@@ -241,66 +306,8 @@ fn historical_batch_reads_original_data_but_current_revocation_still_refuses() {
     ));
 }
 
-#[test]
-fn pre_kernel_cancellation_keeps_its_real_execution_cause() {
-    use super::{product_query_support, schema::*};
-    use worth_query_host::facade::{
-        admission::authenticated_principal::*,
-        declaration::application_query::ApplicationQueryParameterSet, primary_graph,
-    };
-    let world = CourtroomWorld::publish("ready");
-    let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(
-        Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-        cancellation.token(),
-    );
-    let principal = product_query_support::principal(&world, &request);
-    let query = world
-        .application
-        .installed_schema()
-        .certification_query(TemporalIntentQuery::reference())
-        .unwrap();
-    let selected = world
-        .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
-    let scope = selected
-        .resolve_entity(
-            IntentIdentityField::reference(),
-            "intent-1".to_owned(),
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let access = primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-    let plan = selected
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new(),
-            product_query_support::controls(&request),
-        )
-        .unwrap();
-    let batch =
-        primary_graph::WorthQueryApplicationQueryBatchAdmission::new(limits(1024, 1_048_576));
-    cancellation.cancel();
-    let result = world
-        .application
-        .execute_application_query_one_shot_in_batch(plan, &batch);
-    assert!(
-        matches!(result, Err(primary_graph::WorthQueryApplicationBatchReadDenial::Execution(error)) if error.kind() == primary_graph::WorthQueryApplicationOneShotDenialKind::Cancelled)
-    );
-    assert_eq!(batch.observe().retained_bytes(), 0);
-    assert_eq!(
-        world
-            .application
-            .result_buffer_observer()
-            .observe()
-            .active_buffers(),
-        0
-    );
-}
+#[path = "retained_query_batch/pre_kernel_cancellation_keeps_its_real_execution_cause.rs"]
+mod pre_kernel_cancellation_keeps_its_real_execution_cause;
 
 #[test]
 fn genuine_source_clone_keeps_custody_after_batch_drop_and_refunds_on_last_drop() {
@@ -310,19 +317,29 @@ fn genuine_source_clone_keeps_custody_after_batch_drop_and_refunds_on_last_drop(
     let external = block_on(auth.authenticate((), &scope)).unwrap();
     let observation = world
         .application
-        .request(&external, &scope)
-        .retain_read()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let observer = world.application.result_buffer_observer();
     let before = observer.observe().retained_bytes();
     let batch = world
         .application
-        .request(&external, &scope)
-        .at(&observation)
-        .query_batch(vec![read("intent-1")])
-        .limits(limits(1024, 1_048_576))
-        .execute()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .request(&external, &scope)
+                .at(&observation)
+                .query_batch(vec![read("intent-1")])
+                .limits(limits(1024, 1_048_576))
+                .execute(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let source = batch.items()[0].observed_sources()[0].clone();
     drop(batch);
     assert!(observer.observe().retained_bytes() > before);

@@ -30,6 +30,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     security: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -77,6 +78,7 @@ where
     let current = plan
         .authorization
         .conventional_decisions_current_admitted(
+            execution,
             runtime,
             security,
             application.authorization.bridge(),

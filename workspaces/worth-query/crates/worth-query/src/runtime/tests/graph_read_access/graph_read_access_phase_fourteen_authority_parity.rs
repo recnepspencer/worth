@@ -18,8 +18,13 @@ use support::graph_read_access::read_surface_declarations::graph_access_family;
 
 #[test]
 fn current_preview_and_branch_use_same_requirements_with_distinct_authority_digests() {
-    let mut workspace =
-        default_graph_support_workspace("graph-read-access.phase-fourteen.authority-parity");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = default_graph_support_workspace(
+        request_execution,
+        "graph-read-access.phase-fourteen.authority-parity",
+    );
     let family = graph_access_family(&mut workspace, "phase-fourteen-authority-family");
 
     let current_authority =
@@ -34,7 +39,7 @@ fn current_preview_and_branch_use_same_requirements_with_distinct_authority_dige
 
     let preview_basis = {
         let preview = workspace
-            .preview(session_label("preview"))
+            .preview(request_execution, session_label("preview"))
             .expect("preview basis should admit");
         preview.basis_admission().clone()
     };
@@ -49,7 +54,7 @@ fn current_preview_and_branch_use_same_requirements_with_distinct_authority_dige
 
     let branch_basis = {
         let branch = workspace
-            .branch(session_label("branch"))
+            .branch(request_execution, session_label("branch"))
             .expect("branch basis should admit");
         branch.basis_admission().clone()
     };
@@ -99,7 +104,7 @@ fn current_preview_and_branch_use_same_requirements_with_distinct_authority_dige
     let preview_result = preview_review
         .admit()
         .expect("preview authority read should admit")
-        .execute()
+        .execute(request_execution)
         .expect("preview authority read should execute");
     let branch_review = workspace
         .read_family_intent_in_graph_read_authority(&family, &branch_authority)
@@ -113,7 +118,7 @@ fn current_preview_and_branch_use_same_requirements_with_distinct_authority_dige
     let branch_result = branch_review
         .admit()
         .expect("branch authority read should admit")
-        .execute()
+        .execute(request_execution)
         .expect("branch authority read should execute");
 
     assert_eq!(
@@ -152,8 +157,13 @@ fn current_preview_and_branch_use_same_requirements_with_distinct_authority_dige
 
 #[test]
 fn tenant_and_relationship_proofs_enter_shape_and_cost_before_execution() {
-    let mut workspace =
-        default_graph_support_workspace("graph-read-access.phase-fourteen.policy-proof");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = default_graph_support_workspace(
+        request_execution,
+        "graph-read-access.phase-fourteen.policy-proof",
+    );
     let family = graph_access_family(&mut workspace, "phase-fourteen-policy-proof-family");
     let canonical = canonical_query();
     let policy_tenant = admitted_policy_tenant(&canonical, "tenant-a");
@@ -223,7 +233,7 @@ fn tenant_and_relationship_proofs_enter_shape_and_cost_before_execution() {
     let result = review
         .admit()
         .expect("authority-bound read should admit")
-        .execute()
+        .execute(request_execution)
         .expect("authority-bound read should execute with reviewed plan");
     let receipt = result.receipt();
     let receipt_plan = receipt
@@ -250,8 +260,13 @@ fn tenant_and_relationship_proofs_enter_shape_and_cost_before_execution() {
 
 #[test]
 fn policy_tenant_denial_stops_before_graph_access_planning() {
-    let workspace =
-        default_graph_support_workspace("graph-read-access.phase-fourteen.policy-denial");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = default_graph_support_workspace(
+        request_execution,
+        "graph-read-access.phase-fourteen.policy-denial",
+    );
     let canonical = canonical_query();
     let request = policy_tenant_authority_request(&canonical, "tenant-policy-denial", false);
 

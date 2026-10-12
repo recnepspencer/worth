@@ -18,12 +18,15 @@ fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
     let host = publish_on_first_program();
     let main = host.current_world();
     let sibling = host
-        .runtime()
-        .branches()
-        .fork(main)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the sibling branch publishes");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the sibling branch publishes")
+        })
+        .expect("installed host call opens");
     let target = *host
         .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
@@ -60,14 +63,22 @@ fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
 
     let main_selection = host
         .runtime()
-        .on_branch(main)
-        .select()
-        .expect("main selects its exact occurrence");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .on_branch(main)
+                .select(&host_phase)
+                .expect("main selects its exact occurrence")
+        })
+        .expect("installed host call opens");
     let sibling_selection = host
         .runtime()
-        .on_branch(sibling)
-        .select()
-        .expect("sibling selects its exact occurrence");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .on_branch(sibling)
+                .select(&host_phase)
+                .expect("sibling selects its exact occurrence")
+        })
+        .expect("installed host call opens");
     let main_owner = host
         .selected_program_owner(&main_selection)
         .expect("main resolves its installed P1 owner");
@@ -92,9 +103,14 @@ fn same_typed_first_branch_from_another_live_host_cannot_select_an_owner() {
     let foreign = publish_on_first_program();
     let foreign_selection = foreign
         .runtime()
-        .on_branch(foreign.current_world())
-        .select()
-        .expect("the foreign host can select its own branch");
+        .with_host_advancement(|host_phase| {
+            foreign
+                .runtime()
+                .on_branch(foreign.current_world())
+                .select(&host_phase)
+                .expect("the foreign host can select its own branch")
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         host.selected_program_owner(&foreign_selection),
         Err(WorthQuerySelectedProgramOwnerDenial::ProductSelection(

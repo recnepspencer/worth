@@ -43,23 +43,24 @@ impl WorkflowDefinitionDependencies {
 }
 
 pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     truth: &mut WorkflowAdoptionTruth<'_>,
     layout: &WorthQueryWorkflowLayout,
     lineage: EntityId,
     definition: EntityId,
 ) -> Result<WorkflowDefinitionDependencies, WorkflowAdoptionReadDenial> {
     let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity: definition };
-    truth.entity(definition, layout.definition.entity_kind)?;
-    let lineage_record = truth.entity(lineage, layout.lineage.entity_kind)?;
-    if lineage_record.u64(&layout.lineage.protocol_version)?
+    truth.entity(execution, definition, layout.definition.entity_kind)?;
+    let lineage_record = truth.entity(execution, lineage, layout.lineage.entity_kind)?;
+    if lineage_record.u64(execution, &layout.lineage.protocol_version)?
         != crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION
     {
         return Err(WorkflowAdoptionReadDenial::UnreadableEntity { entity: lineage });
     }
-    let spec = lineage_record.text(&layout.lineage.spec)?;
+    let spec = lineage_record.text(execution, &layout.lineage.spec)?;
     let mut nodes = Vec::new();
-    for membership in truth.outgoing(definition, layout.definition_node_relation)? {
-        nodes.push(read_node(truth, layout, membership.target)?);
+    for membership in truth.outgoing(execution, definition, layout.definition_node_relation)? {
+        nodes.push(read_node(execution, truth, layout, membership.target)?);
     }
     if nodes.is_empty() {
         return Err(unreadable);
@@ -90,12 +91,14 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
         }
     }
     let mut approval_authorities = Vec::new();
-    for membership in truth.outgoing(definition, layout.definition_connection_relation)? {
+    for membership in
+        truth.outgoing(execution, definition, layout.definition_connection_relation)?
+    {
         let connection = membership.target;
-        let record = truth.entity(connection, layout.connection.entity_kind)?;
+        let record = truth.entity(execution, connection, layout.connection.entity_kind)?;
         let tag = WorkflowConnectionTag::from_persisted(
-            record.u64(&layout.connection.family)?,
-            record.u64(&layout.connection.variant)?,
+            record.u64(execution, &layout.connection.family)?,
+            record.u64(execution, &layout.connection.variant)?,
         )
         .ok_or(WorkflowAdoptionReadDenial::UnreadableEntity { entity: connection })?;
         if !matches!(
@@ -104,8 +107,10 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
         ) {
             continue;
         }
-        let approval = truth.single_target(connection, layout.connection_source_relation)?;
-        let operation = truth.single_target(connection, layout.connection_target_relation)?;
+        let approval =
+            truth.single_target(execution, connection, layout.connection_source_relation)?;
+        let operation =
+            truth.single_target(execution, connection, layout.connection_target_relation)?;
         approval_authorities.push((approval, operation));
     }
     let dependencies = WorkflowDefinitionDependencies {
@@ -136,31 +141,35 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
 }
 
 fn read_node(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     truth: &mut WorkflowAdoptionTruth<'_>,
     layout: &WorthQueryWorkflowLayout,
     entity: EntityId,
 ) -> Result<WorkflowRetainedNode, WorkflowAdoptionReadDenial> {
     let node = &layout.node;
-    let record = truth.entity(entity, node.entity_kind)?;
+    let record = truth.entity(execution, entity, node.entity_kind)?;
     let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity };
-    let path = record.text(&node.path)?;
-    let identifier = record.text(&node.member)?;
-    let inbound_origin = record.optional_text(&node.inbound_origin)?;
+    let path = record.text(execution, &node.path)?;
+    let identifier = record.text(execution, &node.member)?;
+    let inbound_origin = record.optional_text(execution, &node.inbound_origin)?;
     let required = |locator: &worth_foundational::facade::AspectFieldLocator| {
-        record.optional_text(locator)?.ok_or(unreadable)
+        record.optional_text(execution, locator)?.ok_or(unreadable)
     };
-    let dependencies = match WorkflowNodeTag::from_persisted(record.u64(&node.kind)?) {
+    let dependencies = match WorkflowNodeTag::from_persisted(record.u64(execution, &node.kind)?) {
         Some(WorkflowNodeTag::Operation) => vec![WorthQueryWorkflowNodeDependency::Operation {
             input_type: required(&node.input_type)?,
             binding: record
-                .optional_text(&node.operation_binding)?
+                .optional_text(execution, &node.operation_binding)?
                 .filter(|binding| !binding.is_empty()),
-            requires_authority: record.bool(&node.requires_authority)?,
+            requires_authority: record.bool(execution, &node.requires_authority)?,
             identifier,
         }],
         Some(WorkflowNodeTag::AwaitInbound) => {
             let origin = inbound_origin.as_deref().ok_or(unreadable)?;
-            if origin.is_empty() || record.u64(&node.inbound_wait)? != 0 || identifier.is_empty() {
+            if origin.is_empty()
+                || record.u64(execution, &node.inbound_wait)? != 0
+                || identifier.is_empty()
+            {
                 return Err(unreadable);
             }
             let contract = required(&node.inbound_contract)?;
@@ -182,10 +191,10 @@ fn read_node(
         }],
         Some(WorkflowNodeTag::Condition) => CompiledWorkflowCondition::from_record(
             identifier,
-            record.optional_text(&node.parameter_type)?,
-            record.optional_text(&node.result_type)?,
-            record.optional_text(&node.condition_binding)?,
-            record.optional_text(&node.condition_operands)?,
+            record.optional_text(execution, &node.parameter_type)?,
+            record.optional_text(execution, &node.result_type)?,
+            record.optional_text(execution, &node.condition_binding)?,
+            record.optional_text(execution, &node.condition_operands)?,
         )
         .ok_or(unreadable)?
         .operands

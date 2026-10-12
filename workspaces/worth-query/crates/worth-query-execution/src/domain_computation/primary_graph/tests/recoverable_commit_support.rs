@@ -76,16 +76,30 @@ fn commit_with_observation(
     retain_output_demand_observation: bool,
 ) -> WorthQueryApplicationCommitReceipt {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, current_status, &request);
-    let program = super::application_attempt::preimage_evidence::retained_status_program(
-        world,
-        &principal,
-        &account,
-        &request,
-        replacement,
-        super::application_attempt::preimage_evidence::RetentionMutationBreadth::Narrow,
-    );
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+            let account = resolved_account(
+                &(phase_custody).test_host_request(),
+                world,
+                current_status,
+                &request,
+            );
+            let program = super::application_attempt::preimage_evidence::retained_status_program(
+                &(phase_custody).test_host_request(),
+                world,
+                &principal,
+                &account,
+                &request,
+                replacement,
+                super::application_attempt::preimage_evidence::RetentionMutationBreadth::Narrow,
+            );
+            program
+        })
+        .expect("the recoverable fixture opens its preparation call");
     let program = if retain_output_demand_observation {
         program.with_output_demand_observation()
     } else {

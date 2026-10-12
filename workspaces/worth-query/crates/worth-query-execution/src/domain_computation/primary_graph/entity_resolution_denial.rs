@@ -1,6 +1,8 @@
 /// Why an entity could not be resolved from its identity field.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryEntityResolutionDenialKind {
+    /// The supplied phase belongs to another installed runtime.
+    ForeignPhase,
     /// Resolution was cancelled.
     Cancelled,
     /// Resolution reached its deadline.

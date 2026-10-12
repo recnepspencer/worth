@@ -114,8 +114,9 @@ impl WorthQueryDomainCapabilityRepresentativeReport {
 }
 
 pub fn worth_query_domain_capability_representative_report(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryDomainCapabilityRepresentativeReport {
-    let installation = install_domain_capability_certification();
+    let installation = install_domain_capability_certification(execution);
     worth_query_domain_capability_representative_report_in(installation.contributions())
 }
 

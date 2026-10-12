@@ -20,16 +20,18 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
     let handle = graph.integration_handle();
     let index_ids = handle.primary_index_ids.to_vec();
 
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (feature_commit, main_commit) = handle
-        .execute_mutation_with_index_refresh(|runtime| {
+        .execute_mutation_with_index_refresh(execution, |runtime| {
             let (_, source) = runtime
                 .observe_fork_source(&BranchId("main".to_owned()))
                 .expect("main exposes an exact fork source");
             runtime
                 .fork_branch(BranchId("index-refresh-feature".to_owned()), source)
                 .expect("feature branch forks from main");
-            let feature = commit_empty(runtime, "index-refresh-feature");
-            let main = commit_empty(runtime, "main");
+            let feature = commit_empty(execution, runtime, "index-refresh-feature");
+            let main = commit_empty(execution, runtime, "main");
             assert!(index_ids.iter().any(|index_id| {
                 runtime
                     .index_access()
@@ -41,7 +43,7 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
         .expect("exact publication delta refresh succeeds")
         .expect("mutation succeeds");
 
-    handle.with_runtime(|runtime| {
+    handle.with_runtime(execution, |runtime| {
         for committed in [&feature_commit, &main_commit] {
             for index_id in &index_ids {
                 assert!(
@@ -60,6 +62,9 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
 
 #[test]
 fn multi_commit_callback_reconstructs_each_retained_generation_with_cold_budget() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_world(&[(
         "index-refresh-cold",
         WorthQueryPrincipalMappingStatus::Enabled,
@@ -72,12 +77,15 @@ fn multi_commit_callback_reconstructs_each_retained_generation_with_cold_budget(
     let handle = graph.integration_handle();
     let index_ids = handle.primary_index_ids.to_vec();
     let commits = handle
-        .execute_mutation_with_index_refresh(|runtime| {
-            Ok::<_, &'static str>([commit_empty(runtime, "main"), commit_empty(runtime, "main")])
+        .execute_mutation_with_index_refresh(execution, |runtime| {
+            Ok::<_, &'static str>([
+                commit_empty(execution, runtime, "main"),
+                commit_empty(execution, runtime, "main"),
+            ])
         })
         .expect("bounded reconstruction succeeds")
         .expect("both commits succeed");
-    handle.with_runtime(|runtime| {
+    handle.with_runtime(execution, |runtime| {
         for commit in &commits {
             for index_id in &index_ids {
                 assert!(runtime
@@ -91,6 +99,9 @@ fn multi_commit_callback_reconstructs_each_retained_generation_with_cold_budget(
 
 #[test]
 fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_world(&[(
         "index-refresh-missing",
         WorthQueryPrincipalMappingStatus::Enabled,
@@ -101,7 +112,7 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
         .primary_graph()
         .expect("published graph");
     let handle = graph.integration_handle();
-    handle.source_owner.with_runtime_mut(|runtime| {
+    handle.source_owner.with_runtime_mut(execution, |runtime| {
         let identity = runtime.main_branch_identity();
         let (_, before_basis) = runtime.observe_branch(&identity).unwrap();
         let before = runtime
@@ -119,9 +130,10 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
             },
             branch_scoped: true,
         });
-        let committed = commit_empty(runtime, "main");
+        let committed = commit_empty(execution, runtime, "main");
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
         let refreshed = super::super::index_maintenance_budget::refresh_with_cold_fallback(
+            execution,
             runtime,
             DerivedIndexBuildRequest {
                 source_commit_id: committed.commit_id,
@@ -138,6 +150,7 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
 }
 
 pub(super) fn commit_empty(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     branch: &str,
 ) -> RelationalCommitReceipt {
@@ -151,10 +164,7 @@ pub(super) fn commit_empty(
     let committed = runtime
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .expect("transaction binds to exact branch")
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("empty fixture transaction commits");
     let receipt = committed.commit.clone();
     super::fixture::release_test_commit_snapshot(runtime, &committed);

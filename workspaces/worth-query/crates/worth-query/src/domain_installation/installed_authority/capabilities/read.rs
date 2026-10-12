@@ -44,6 +44,7 @@ pub struct WorthQueryInstalledDomainReadRequest<D> {
 impl<D: 'static> WorthQueryInstalledDomainReadRequest<D> {
     pub fn run(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<
         WorthQueryInstalledDomainReadOutcome<D>,
@@ -63,7 +64,7 @@ impl<D: 'static> WorthQueryInstalledDomainReadRequest<D> {
                 )
             },
         )?;
-        let outcome = self.request.run(workspace);
+        let outcome = self.request.run(execution, workspace);
         Ok(WorthQueryInstalledDomainReadOutcome {
             witness: self.witness,
             declaration_identity,

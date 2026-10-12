@@ -10,6 +10,7 @@ enum RecoveryStep {
 
 impl ConsumedOutputEvidence {
     pub(super) fn compare_equal_chain(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         evidence: EvidenceView<'_>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
@@ -58,6 +59,7 @@ impl ConsumedOutputEvidence {
                 return Err(ConsumedOutputVerificationStop::Unavailable);
             }
             let changed = Self::compare_facts(
+                execution,
                 &facts,
                 row.output_facts(),
                 witness,

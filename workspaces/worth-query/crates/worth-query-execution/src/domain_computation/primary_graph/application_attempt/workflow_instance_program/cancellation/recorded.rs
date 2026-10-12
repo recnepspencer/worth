@@ -22,6 +22,7 @@ use crate::domain_computation::primary_graph::workflow::{
 /// What the recorded cancellation reports, or `None` when the instance
 /// records no cancellation under `identity`.
 pub(super) fn observe_recorded_cancellation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -38,6 +39,7 @@ pub(super) fn observe_recorded_cancellation(
 > {
     let recorded = observe_field_value(
         runtime,
+        execution,
         snapshot,
         instance,
         layout.instance.entity_kind,
@@ -59,6 +61,7 @@ pub(super) fn observe_recorded_cancellation(
         value: AspectValue::UInt64(WorkflowInstanceState::Ready.persisted_tag()),
     }];
     let (mut performed, history_facts) = observe_ended_history(
+        execution,
         runtime,
         snapshot,
         layout,
@@ -68,6 +71,7 @@ pub(super) fn observe_recorded_cancellation(
     )?;
     facts.extend(history_facts);
     performed.extend(performed::inherited_effects(
+        execution,
         runtime,
         snapshot,
         layout,

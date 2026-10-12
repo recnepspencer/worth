@@ -228,9 +228,14 @@ pub(super) fn performed_source_settles_required_output(
         latest_commit,
         "the aggregate selects the exact newest commit across every settled graph output"
     );
-    let current_basis = request
-        .retain_read()
-        .expect("current product basis remains readable");
+    let current_basis = world
+        .application
+        .with_host_advancement(|host_phase| {
+            request
+                .retain_read(&host_phase)
+                .expect("current product basis remains readable")
+        })
+        .expect("installed host call opens");
     request
         .at(&current_basis)
         .require_current_program_output(&original_settlement, NonZeroUsize::new(4_096).unwrap())

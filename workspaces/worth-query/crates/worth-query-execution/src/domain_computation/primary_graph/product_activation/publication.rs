@@ -18,6 +18,7 @@ use crate::domain_computation::primary_graph::{
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProductConditionalPublicationDenial
 {
+    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     ProductActivation(WorthQueryProductActivationDenial),
     WorldPreparation(NoEffectCompositePublication),
     BridgePreparation(BridgeConditionalDenial),
@@ -89,7 +90,11 @@ where
                 .publish_bridge_conditional_definition(
                     phase
                         .execution_request_for(&self.product_runtime)
-                        .expect("private progression uses its admitted runtime phase"),
+                        .map_err(|cause| {
+                            WorthQueryProductConditionalPublicationDenial::ExecutionRequest(
+                                cause.into(),
+                            )
+                        })?,
                     prepared_world,
                     prepared_bridge,
                     &bridge,

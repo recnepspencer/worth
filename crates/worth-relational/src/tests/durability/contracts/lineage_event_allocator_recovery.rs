@@ -2,14 +2,17 @@ use super::*;
 
 #[test]
 fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "checkpoint-before-tail-overflow");
+    create_entity_outcome(execution, &runtime, "checkpoint-before-tail-overflow");
     runtime
         .durability_authority()
         .checkpoint()
         .expect("checkpoint");
-    let replay_invalid = create_entity_outcome(&runtime, "tail-before-overflow");
-    let allocator_exhausted = create_entity_outcome(&runtime, "tail-event-overflow");
+    let replay_invalid = create_entity_outcome(execution, &runtime, "tail-before-overflow");
+    let allocator_exhausted = create_entity_outcome(execution, &runtime, "tail-event-overflow");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -48,8 +51,9 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("tail allocator exhaustion must deny");
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
     assert!(error.detail.contains("tail lineage event id exhausted"));
@@ -58,8 +62,11 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
 
 #[test]
 fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "lineage-gap-checkpoint");
+    create_entity_outcome(execution, &runtime, "lineage-gap-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
     let (abandoned_lineage_id, abandoned_event_id) = runtime.lineage.identity_frontiers();
     let published_node_count = runtime.lineage.node_count();
@@ -73,10 +80,7 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
         )
         .expect("test staging stays within configured resource budgets");
     let durability_deferred = failed
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("performed movement without durable acknowledgement is typed");
     assert!(matches!(
         durability_deferred,
@@ -109,10 +113,7 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
         )
         .expect("test staging stays within configured resource budgets");
     let child_denial = child
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("an unsettled performed parent denies descendants");
     assert!(child_denial
         .detail()
@@ -132,7 +133,7 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
     let mut recovered = persisted_runtime_with_test_schema();
     let recovery = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("recovery stops at the last acknowledged checkpoint");
     assert_eq!(recovery.recovered_commits, 1);
     assert_eq!(
@@ -147,8 +148,11 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
 
 #[test]
 fn multi_event_reservation_exhaustion_denies_before_public_effects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let baseline = create_entity_outcome(&runtime, "reservation-exhaustion-baseline");
+    let baseline = create_entity_outcome(execution, &runtime, "reservation-exhaustion-baseline");
     let baseline_head = baseline.commit.clone();
     let baseline_entities = runtime.storage_access().storage_stats().live_entities;
     let (lineage_frontier, _) = runtime.lineage.identity_frontiers();
@@ -170,10 +174,7 @@ fn multi_event_reservation_exhaustion_denies_before_public_effects() {
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("two-event reservation must deny at the allocator boundary");
 
     assert!(format!("{error:?}").contains("lineage event id allocator exhausted"));
@@ -196,12 +197,19 @@ fn multi_event_reservation_exhaustion_denies_before_public_effects() {
 
 #[test]
 fn branch_local_sparse_slot_create_publishes_and_recovers_exact_lineage() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "sparse-slot-shared-root");
+    create_entity_outcome(execution, &runtime, "sparse-slot-shared-root");
     let feature = create_branch_from_main(&runtime, "sparse-slot-feature");
-    create_entity_outcome(&runtime, "sparse-slot-main-divergence");
-    let feature_create =
-        create_entity_outcome_on_branch(&runtime, "sparse-slot-feature-create", feature.clone());
+    create_entity_outcome(execution, &runtime, "sparse-slot-main-divergence");
+    let feature_create = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "sparse-slot-feature-create",
+        feature.clone(),
+    );
     let feature_entity = changed_entities(&feature_create)[0];
     assert!(feature_entity.local_slot.0 > 1);
     let lineage_id = runtime
@@ -226,7 +234,7 @@ fn branch_local_sparse_slot_create_publishes_and_recovers_exact_lineage() {
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("sparse branch-local lineage recovers");
     assert_eq!(
         recovered

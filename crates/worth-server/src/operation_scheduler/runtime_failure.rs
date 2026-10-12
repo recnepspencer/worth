@@ -2,13 +2,38 @@ use worth_query::facade::runtime::WorthQueryRuntimeError;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthServerSchedulerRuntimeFailure {
-    DirectMutationAssertionDenied { detail: String },
-    DirectMutationBindingDenied { detail: String },
-    DirectMutationContractDenied { detail: String },
-    DirectMutationContinuityDenied { detail: String },
-    DirectMutationNamingDenied { detail: String },
-    DirectMutationTargetReferenceDenied { detail: String },
-    Opaque { detail: String },
+    DirectMutationAssertionDenied {
+        detail: String,
+    },
+    DirectMutationBindingDenied {
+        detail: String,
+    },
+    DirectMutationContractDenied {
+        detail: String,
+    },
+    DirectMutationContinuityDenied {
+        detail: String,
+    },
+    DirectMutationNamingDenied {
+        detail: String,
+    },
+    DirectMutationTargetReferenceDenied {
+        detail: String,
+    },
+    /// The advancement refused admission or completion of the basis lookup.
+    BasisAdvancementDenied {
+        denial: worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+        detail: String,
+    },
+    /// The snapshot reader refused custody of an already borrowed phase.
+    BasisSnapshotReadDenied {
+        denial:
+            worth_query_host::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+        detail: String,
+    },
+    Opaque {
+        detail: String,
+    },
 }
 
 impl WorthServerSchedulerRuntimeFailure {
@@ -60,6 +85,8 @@ impl WorthServerSchedulerRuntimeFailure {
             | Self::DirectMutationContinuityDenied { detail }
             | Self::DirectMutationNamingDenied { detail }
             | Self::DirectMutationTargetReferenceDenied { detail }
+            | Self::BasisAdvancementDenied { detail, .. }
+            | Self::BasisSnapshotReadDenied { detail, .. }
             | Self::Opaque { detail } => detail,
         }
     }

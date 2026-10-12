@@ -10,7 +10,10 @@ use super::support::{
 
 #[test]
 fn bridge_routed_artifacts_expose_authority_and_mapping_aspect_state() {
-    let routing = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let routing = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_plan_receipt_envelope_and_route_bridge_continuation(
             RoutingInput::<PreviewSessionFamily>::new("edge:42"),
         )
@@ -33,8 +36,11 @@ fn bridge_routed_artifacts_expose_authority_and_mapping_aspect_state() {
 
 #[test]
 fn bridge_routing_denies_missing_and_conflicting_authority_slices() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     match checked_from_progressed(
-        &admitted_handle("primary"),
+        &admitted_handle(request_execution, "primary"),
         RoutingInput::<MissingAspectFamily>::new("edge:42"),
     ) {
         WorthQueryDeclarationBridgeRoutingChecked::Denied(denial) => assert_eq!(
@@ -45,7 +51,7 @@ fn bridge_routing_denies_missing_and_conflicting_authority_slices() {
     }
 
     match checked_from_progressed(
-        &admitted_handle("primary"),
+        &admitted_handle(request_execution, "primary"),
         RoutingInput::<ConflictingAspectFamily>::new("edge:42"),
     ) {
         WorthQueryDeclarationBridgeRoutingChecked::Denied(denial) => assert_eq!(
@@ -58,12 +64,15 @@ fn bridge_routing_denies_missing_and_conflicting_authority_slices() {
 
 #[test]
 fn bridge_routing_digest_changes_with_mapped_aspect_truth() {
-    let base = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let base = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_plan_receipt_envelope_and_route_bridge_continuation(
             RoutingInput::<PreviewSessionFamily>::new("edge:42"),
         )
         .unwrap_or_else(|_| panic!("bridge routing should succeed"));
-    let expanded = admitted_handle("primary")
+    let expanded = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_plan_receipt_envelope_and_route_bridge_continuation(
             RoutingInput::<ExpandedAspectFamily>::new("edge:42"),
         )
@@ -77,7 +86,10 @@ fn bridge_routing_digest_changes_with_mapped_aspect_truth() {
 
 #[test]
 fn bridge_support_rows_expose_narrower_mapped_slice_than_available_coverage() {
-    let support = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let support = admitted_handle(request_execution, "primary")
         .bridge_continuation_support::<RoutingInput<ExpandedAspectFamily>>();
     let row = &support.rows()[0];
 

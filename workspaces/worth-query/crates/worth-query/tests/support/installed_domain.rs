@@ -22,7 +22,10 @@ impl domain::WorthQueryDomainEntryMarker for PublicInstalledDomain {
     }
 }
 
-pub fn workspace(name: &str) -> runtime::WorthQueryWorkspace {
+pub fn workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> runtime::WorthQueryWorkspace {
     let package = domain::WorthQueryDomainPackage::declare(
         PublicInstalledDomain,
         domain::WorthQueryDomainIdentityDeclaration::new(
@@ -42,7 +45,7 @@ pub fn workspace(name: &str) -> runtime::WorthQueryWorkspace {
     in_memory_test_runtime()
         .with_schema(schema)
         .domain_package(package)
-        .workspace(name)
+        .workspace(request_execution, name)
         .unwrap()
 }
 

@@ -102,7 +102,7 @@ where
     let selected = request
         .application
         .on_branch(request.branch)
-        .select()
+        .select(phase)
         .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
     authorize_selected(phase, request, preconditions, &selected)
 }
@@ -129,6 +129,7 @@ where
         .map_err(WorthQueryApplicationRequestMutationDenial::BindingInstallation)?;
     let principal = selected
         .resolve_authenticated_principal(
+            _phase,
             binding.principal_binding(),
             request.principal,
             request.scope,
@@ -142,6 +143,7 @@ where
     let principal_identity = principal.principal_identity().clone();
     let scope = selected
         .resolve_entity(
+            _phase,
             scope_field,
             scope_value,
             request.scope,
@@ -150,6 +152,7 @@ where
         .map_err(WorthQueryApplicationRequestMutationDenial::ScopeResolution)?;
     let admission = selected
         .authorize_operation(
+            _phase,
             &principal,
             &scope,
             binding.operation(),

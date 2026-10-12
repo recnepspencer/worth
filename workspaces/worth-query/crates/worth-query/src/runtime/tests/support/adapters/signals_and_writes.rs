@@ -19,6 +19,7 @@ pub(in crate::runtime::tests) struct TestWriteAuthority;
 impl WorthQueryRuntimeWriteAuthorityAdapter for TestWriteAuthority {
     fn write(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
         _relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -61,6 +62,7 @@ pub(in crate::runtime::tests) struct DenyingWriteAuthority;
 impl WorthQueryRuntimeWriteAuthorityAdapter for DenyingWriteAuthority {
     fn write(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
         _relational_runtime: Option<&mut RelationalRuntime>,
         _mutation: WorthQueryBackendAdmissibleMutation,
@@ -76,6 +78,7 @@ pub(in crate::runtime::tests) struct AuthorityLessWriteAuthority;
 impl WorthQueryRuntimeWriteAuthorityAdapter for AuthorityLessWriteAuthority {
     fn write(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
         _relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -100,6 +103,7 @@ pub(in crate::runtime::tests) struct CountingWriteAuthority {
 impl WorthQueryRuntimeWriteAuthorityAdapter for CountingWriteAuthority {
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
         _relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -107,7 +111,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for CountingWriteAuthority {
         self.attempted_writes
             .set(self.attempted_writes.get().saturating_add(1));
         let mut authority = TestWriteAuthority;
-        authority.write(_bridge, _relational_runtime, mutation)
+        authority.write(execution, _bridge, _relational_runtime, mutation)
     }
 }
 
@@ -119,6 +123,7 @@ pub(in crate::runtime::tests) struct AtomicBatchCountingWriteAuthority {
 impl WorthQueryRuntimeWriteAuthorityAdapter for AtomicBatchCountingWriteAuthority {
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
         _relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -126,11 +131,12 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for AtomicBatchCountingWriteAuthorit
         self.attempted_writes
             .set(self.attempted_writes.get().saturating_add(1));
         let mut authority = TestWriteAuthority;
-        authority.write(_bridge, _relational_runtime, mutation)
+        authority.write(execution, _bridge, _relational_runtime, mutation)
     }
 
     fn write_batch(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
         _relational_runtime: Option<&mut RelationalRuntime>,
         mutations: Vec<WorthQueryBackendAdmissibleMutation>,

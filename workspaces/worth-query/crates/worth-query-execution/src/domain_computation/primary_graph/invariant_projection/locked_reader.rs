@@ -36,6 +36,7 @@ pub use traversal_denial::{
 /// It resolves entities by identity field, reads fields, traverses relations,
 /// and summarizes aggregates. Every read is charged to the projection's work.
 pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
+    pub(super) execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
     pub(super) runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     pub(super) snapshot: &'runtime worth_relational::facade::snapshots::SnapshotHandle,
@@ -94,6 +95,7 @@ where
 {
     pub fn project<Output>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
@@ -102,7 +104,16 @@ where
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let basis = self.graph.with_runtime_mut(|runtime| {
+        let phase_request = phase
+            .request_for_source(self.graph.relational_runtime_instance_id())
+            .map_err(|_| {
+                WorthQueryInvariantProjectionDenial::from_kind(
+                    super::WorthQueryInvariantProjectionDenialKind::ForeignPhase,
+                )
+            })?;
+        let execution = &phase_request;
+
+        let basis = self.graph.with_runtime_mut(execution, |runtime| {
             let identity = runtime.main_branch_identity();
             runtime
                 .observe_branch(&identity)
@@ -110,6 +121,7 @@ where
                 .map_err(super::admission_denial::from_branch_basis_denial)
         })?;
         self.project_with_work_budget(
+            execution,
             WorthQueryInvariantProjectionWorkBudget::unbounded(),
             basis,
             projection,
@@ -122,6 +134,7 @@ where
 
     pub(super) fn project_bounded<Output>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         maximum_work: usize,
         basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         projection: impl FnOnce(
@@ -136,6 +149,7 @@ where
         WorthQueryInvariantProjectionDenial,
     > {
         self.project_with_work_budget(
+            execution,
             WorthQueryInvariantProjectionWorkBudget::bounded(maximum_work),
             basis,
             projection,
@@ -148,6 +162,7 @@ where
 
     fn project_with_work_budget<Output>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         work_budget: WorthQueryInvariantProjectionWorkBudget,
         basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         projection: impl FnOnce(
@@ -158,15 +173,16 @@ where
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let snapshot = self.graph.with_runtime_mut(|runtime| {
+        let snapshot = self.graph.with_runtime_mut(execution, |runtime| {
             runtime
                 .snapshots()
                 .snapshot_for_observation(&basis.observation())
                 .map_err(super::admission_denial::from_snapshot_admission_denial)
         })?;
-        let projected = self.graph.with_runtime_mut(|runtime| {
+        let projected = self.graph.with_runtime_mut(execution, |runtime| {
             catch_unwind(AssertUnwindSafe(|| {
                 let mut reader = WorthQueryApplicationInvariantProjectionReader {
+                    execution,
                     runtime,
                     layout: &self.layout,
                     snapshot: &snapshot,
@@ -238,7 +254,7 @@ where
         let dependent_source_facts = match dependent_source_facts {
             Ok(facts) => facts,
             Err(denial) => {
-                self.graph.with_runtime_mut(|runtime| {
+                self.graph.with_runtime_mut(execution, |runtime| {
                     crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
                 });
                 return Err(

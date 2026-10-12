@@ -40,7 +40,7 @@ fn public_performed_recovery_is_exclusive_and_history_has_real_pin_counts() {
             expected,
             CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
                 .with_prepared_relational_candidate(
-                    fixture.prepare_relational_owner_candidate("inspection"),
+                    fixture.prepare_relational_owner_candidate(&execution, "inspection"),
                 ),
             &cancellation.token(),
             None,
@@ -237,7 +237,7 @@ fn retained_age_is_carried_and_cleanup_uses_the_explicit_minimum() {
             expected,
             CompositePublicationIntent::with_signal(Some(RelationalTransactionIntent::ordinary()))
                 .with_prepared_relational_candidate(
-                    fixture.prepare_relational_owner_candidate("aged-effects"),
+                    fixture.prepare_relational_owner_candidate(&execution, "aged-effects"),
                 ),
             &cancel.token(),
             None,

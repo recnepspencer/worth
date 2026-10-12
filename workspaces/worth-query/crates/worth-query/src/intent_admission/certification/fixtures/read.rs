@@ -39,8 +39,9 @@ pub(in crate::intent_admission::certification) struct ReadDelegationParityFixtur
 }
 
 pub(in crate::intent_admission::certification) fn certified_read_intent_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> CertifiedReadIntentFixture {
-    let mut workspace = certification_read_workspace("certification-read-intent");
+    let mut workspace = certification_read_workspace(execution, "certification-read-intent");
     let family = certification_read_family(&mut workspace, "certification-read-family");
     let review = workspace
         .review_read_execution(family.clone(), None)
@@ -59,7 +60,7 @@ pub(in crate::intent_admission::certification) fn certified_read_intent_fixture(
         .into_runtime_read_execution_binding(handoff.clone())
         .expect("read binding should prepare");
     let result = workspace
-        .execute_bound_read_execution(binding.clone())
+        .execute_bound_read_execution(execution, binding.clone())
         .expect("read binding should execute");
     let trace = result
         .receipt()
@@ -77,14 +78,15 @@ pub(in crate::intent_admission::certification) fn certified_read_intent_fixture(
 }
 
 pub(in crate::intent_admission::certification) fn read_delegation_parity_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> ReadDelegationParityFixture {
-    let mut delegated_current = certification_read_workspace("delegated-read-current");
+    let mut delegated_current = certification_read_workspace(execution, "delegated-read-current");
     let current_family = certification_read_family(&mut delegated_current, "tasks");
     let current_legacy = delegated_current
-        .execute_read_family(&current_family)
+        .execute_read_family(execution, &current_family)
         .expect("delegated current read should execute");
 
-    let mut canonical_current = certification_read_workspace("canonical-read-current");
+    let mut canonical_current = certification_read_workspace(execution, "canonical-read-current");
     let canonical_current_family = certification_read_family(&mut canonical_current, "tasks");
     let current_review = canonical_current
         .review_read_execution(canonical_current_family, None)
@@ -96,20 +98,20 @@ pub(in crate::intent_admission::certification) fn read_delegation_parity_fixture
         .into_runtime_read_execution_binding(current_handoff)
         .expect("canonical current binding should prepare");
     let current_canonical = canonical_current
-        .execute_bound_read_execution(current_binding)
+        .execute_bound_read_execution(execution, current_binding)
         .expect("canonical current read should execute");
 
-    let mut delegated_basis = certification_read_workspace("delegated-read-basis");
+    let mut delegated_basis = certification_read_workspace(execution, "delegated-read-basis");
     let basis_family = certification_read_family(&mut delegated_basis, "tasks");
     let basis_context = current_context_for_family(
         &basis_family,
         certification_snapshot_identity("certification-read-basis"),
     );
     let basis_legacy = delegated_basis
-        .execute_read_family_in_basis_context(&basis_family, &basis_context)
+        .execute_read_family_in_basis_context(execution, &basis_family, &basis_context)
         .expect("delegated basis read should execute");
 
-    let mut canonical_basis = certification_read_workspace("canonical-read-basis");
+    let mut canonical_basis = certification_read_workspace(execution, "canonical-read-basis");
     let canonical_basis_family = certification_read_family(&mut canonical_basis, "tasks");
     let canonical_context = current_context_for_family(
         &canonical_basis_family,
@@ -125,7 +127,7 @@ pub(in crate::intent_admission::certification) fn read_delegation_parity_fixture
         .into_runtime_read_execution_binding(basis_handoff)
         .expect("canonical basis binding should prepare");
     let basis_canonical = canonical_basis
-        .execute_bound_read_execution(basis_binding)
+        .execute_bound_read_execution(execution, basis_binding)
         .expect("canonical basis read should execute");
 
     ReadDelegationParityFixture {
@@ -136,14 +138,19 @@ pub(in crate::intent_admission::certification) fn read_delegation_parity_fixture
     }
 }
 
-fn certification_read_workspace(name: &str) -> WorthQueryWorkspace {
-    certification_read_runtime()
+fn certification_read_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> WorthQueryWorkspace {
+    certification_read_runtime(request_execution)
         .workspace(name)
         .expect("certification read workspace should build")
 }
 
-fn certification_read_runtime() -> crate::runtime::WorthQueryRuntime {
-    certification_runtime()
+fn certification_read_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::runtime::WorthQueryRuntime {
+    certification_runtime(request_execution)
 }
 
 fn certification_read_family(

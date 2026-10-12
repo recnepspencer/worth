@@ -50,6 +50,9 @@ impl<G> domain::WorthQueryGraphParticipationProvider<G> for RetainingProvider {
 
 #[test]
 fn retained_call_cannot_replace_the_current_sealed_step() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let retained = Arc::new(Mutex::new(None));
     let mut workspace = configured_runtime_for_package(federated_package::<RemoteA, RemoteB>())
         .graph_participation(read_definition::<RemoteA>(
@@ -74,7 +77,7 @@ fn retained_call_cannot_replace_the_current_sealed_step() {
                 projection_label: "remote-b-projection",
             },
         )
-        .workspace("graph-provider-retained-call")
+        .workspace(request_execution, "graph-provider-retained-call")
         .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
 

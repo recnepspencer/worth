@@ -73,7 +73,8 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
             WorthQueryApplicationProgramOutputProgress::Settled(v) => Some(v),
         })
         .expect("the real program wave must settle after selected-program production");
-    let observation = request.retain_read().unwrap();
+    let observation =
+        crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     request
         .at(&observation)
         .require_current_program_output(&settled, NonZeroUsize::new(1_000_000).unwrap())

@@ -32,42 +32,28 @@ use crate::domain_computation::primary_graph::{
 
 type World = super::super::fixture::AuthorizationWorld;
 
-#[test]
-fn revoked_access_cannot_progress_to_operation_authority() {
-    let world = installed_capability_authorization_world();
-    world.authorization_time.script([time(100), time(100)]);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let access = admitted_capability_access(&world, &principal, &request, 100).unwrap();
-    revoke_grant(&world);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(CapabilityTouchOperation::reference())
-        .unwrap();
-
-    let Err(denial) =
-        world
-            .application
-            .authorize_capability_operation(access, &operation, Default::default())
-    else {
-        panic!("revoked retained access cannot become operation authority");
-    };
-
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
-    );
-}
+#[path = "capability_commit_revalidation/revoked_access_cannot_progress_to_operation_authority.rs"]
+mod revoked_access_cannot_progress_to_operation_authority;
 
 #[test]
 fn equivalent_retry_denies_before_receipt_after_grant_revocation() {
     let world = current_retry_world();
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let (first, retry) = equivalent_programs(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let (first, retry) = world
+        .application
+        .with_host_advancement(|phase| equivalent_programs(&phase, &world, &principal, &request))
+        .expect("the fixture read owns its installed host call");
     commit_first(&world, first, 51);
-    revoke_grant(&world);
+    world
+        .application
+        .with_host_advancement(|phase| revoke_grant(&phase, &world))
+        .expect("the fixture read owns its installed host call");
 
     assert_readmission_denial(world.application.compare_and_commit_application(
         retry,
@@ -76,28 +62,23 @@ fn equivalent_retry_denies_before_receipt_after_grant_revocation() {
     ));
 }
 
-#[test]
-fn equivalent_retry_denies_before_receipt_after_principal_disablement() {
-    let world = current_retry_world();
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let (first, retry) = equivalent_programs(&world, &principal, &request);
-    commit_first(&world, first, 52);
-    disable_mapping(&world, principal.mapping_entity_id());
-
-    assert_readmission_denial(world.application.compare_and_commit_application(
-        retry,
-        idempotency(52, 52),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    ));
-}
+#[path = "capability_commit_revalidation/equivalent_retry_denies_before_receipt_after_principal_disableme.rs"]
+mod equivalent_retry_denies_before_receipt_after_principal_disableme;
 
 #[test]
 fn equivalent_retry_denies_before_receipt_after_capability_expiry() {
     let world = current_retry_world();
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let (first, retry) = equivalent_programs(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let (first, retry) = world
+        .application
+        .with_host_advancement(|phase| equivalent_programs(&phase, &world, &principal, &request))
+        .expect("the fixture read owns its installed host call");
     commit_first(&world, first, 53);
     world.authorization_time.script([time(300)]);
 
@@ -108,72 +89,31 @@ fn equivalent_retry_denies_before_receipt_after_capability_expiry() {
     ));
 }
 
-#[test]
-fn future_equivalent_grant_cannot_inherit_an_expired_access_context() {
-    let world = installed_capability_replacement_world();
-    world.authorization_time.script([
-        time(100),
-        time(100),
-        time(100),
-        time(100),
-        time(100),
-        time(100),
-        time(100),
-        time(100),
-        time(100),
-        time(100),
-        time(100),
-        time(100),
-    ]);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let (first, retry) = equivalent_programs(&world, &principal, &request);
-    commit_first(&world, first, 56);
-    world.authorization_time.script([time(120)]);
+#[path = "capability_commit_revalidation/future_equivalent_grant_cannot_inherit_an_expired_access_context.rs"]
+mod future_equivalent_grant_cannot_inherit_an_expired_access_context;
 
-    assert_readmission_denial(world.application.compare_and_commit_application(
-        retry,
-        idempotency(56, 56),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    ));
-}
-
-#[test]
-fn idempotency_inspection_denies_before_receipt_after_grant_revocation() {
-    let world = current_retry_world();
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let first = admitted_capability_program(&world, &principal, &request, "committed").0;
-    let admission = admitted_capability_operation(&world, &principal, &request);
-    commit_first(&world, first, 57);
-    revoke_grant(&world);
-
-    let Err(denial) = world
-        .application
-        .resolve_admitted_application_idempotency(&admission, idempotency(57, 57))
-    else {
-        panic!("stale capability facts cannot inspect a committed idempotency receipt");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
-            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
-        )
-    );
-    assert_eq!(
-        denial.authorization().map(|denial| denial.kind()),
-        Some(WorthQueryOperationAuthorizationDenialKind::StaleAuthorization)
-    );
-}
+#[path = "capability_commit_revalidation/idempotency_inspection_denies_before_receipt_after_grant_revocat.rs"]
+mod idempotency_inspection_denies_before_receipt_after_grant_revocat;
 
 #[test]
 fn equivalent_retry_denies_before_receipt_after_resource_workflow_drift() {
     let world = current_retry_world();
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let (first, retry) = equivalent_programs(&world, &principal, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let (first, retry) = world
+        .application
+        .with_host_advancement(|phase| equivalent_programs(&phase, &world, &principal, &request))
+        .expect("the fixture read owns its installed host call");
     commit_first(&world, first, 54);
-    change_account_status(&world, "account-1", "closed");
+    world
+        .application
+        .with_host_advancement(|phase| change_account_status(&phase, &world, "account-1", "closed"))
+        .expect("the fixture read owns its installed host call");
 
     assert_readmission_denial(world.application.compare_and_commit_application(
         retry,
@@ -182,29 +122,8 @@ fn equivalent_retry_denies_before_receipt_after_resource_workflow_drift() {
     ));
 }
 
-#[test]
-fn unrelated_graph_drift_preserves_current_idempotent_recovery() {
-    let world = current_retry_world();
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let (first, retry) = equivalent_programs(&world, &principal, &request);
-    let committed = commit_first(&world, first, 55);
-    change_account_label(&world, "account-2", "independently-updated");
-
-    let outcome = world.application.compare_and_commit_application(
-        retry,
-        idempotency(55, 55),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = outcome else {
-        panic!("unrelated drift must preserve lawful idempotent recovery: {outcome:?}");
-    };
-    assert!(recovered.is_same_authoritative_commit(&committed));
-    assert_eq!(
-        recovered.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
-    );
-}
+#[path = "capability_commit_revalidation/unrelated_graph_drift_preserves_current_idempotent_recovery.rs"]
+mod unrelated_graph_drift_preserves_current_idempotent_recovery;
 
 fn current_retry_world() -> World {
     let world = installed_capability_authorization_world();
@@ -230,6 +149,7 @@ fn current_retry_world() -> World {
 }
 
 fn equivalent_programs(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         super::super::fixture::IdentityExecutionSchema,
@@ -238,8 +158,10 @@ fn equivalent_programs(
     >,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> (Program, Program) {
-    let first = admitted_capability_program(world, principal, request, "committed").0;
-    let retry = admitted_capability_program(world, principal, request, "committed").0;
+    let first =
+        admitted_capability_program(phase_custody, world, principal, request, "committed").0;
+    let retry =
+        admitted_capability_program(phase_custody, world, principal, request, "committed").0;
     (first, retry)
 }
 
@@ -270,11 +192,15 @@ fn assert_readmission_denial(outcome: WorthQueryApplicationCommitOutcome) {
     );
 }
 
-pub(super) fn revoke_grant(world: &World) {
+pub(super) fn revoke_grant(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &World,
+) {
     let request = live_scope();
     let grant = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .resolve_entity(
+            phase_custody,
             CapabilityIdentity::reference(),
             "capability-1".to_owned(),
             &request,
@@ -284,6 +210,7 @@ pub(super) fn revoke_grant(world: &World) {
     let field = CapabilityStatusField::reference();
     let locator = installed_field(world, field.entity(), field.aspect(), field.field());
     update_field(
+        &phase_custody.borrowed_request_for_test(),
         world,
         grant.entity_id(),
         locator,
@@ -292,13 +219,18 @@ pub(super) fn revoke_grant(world: &World) {
     );
 }
 
-pub(super) fn disable_mapping(world: &World, mapping: EntityId) {
+pub(super) fn disable_mapping(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &World,
+    mapping: EntityId,
+) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let layout = graph
         .layout()
         .principal_binding(world.binding.binding())
         .unwrap();
     update_field(
+        execution,
         world,
         mapping,
         layout.status_locator.clone(),
@@ -310,13 +242,18 @@ pub(super) fn disable_mapping(world: &World, mapping: EntityId) {
     );
 }
 
-pub(super) fn enable_mapping(world: &World, mapping: EntityId) {
+pub(super) fn enable_mapping(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &World,
+    mapping: EntityId,
+) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let layout = graph
         .layout()
         .principal_binding(world.binding.binding())
         .unwrap();
     update_field(
+        execution,
         world,
         mapping,
         layout.status_locator.clone(),
@@ -326,9 +263,15 @@ pub(super) fn enable_mapping(world: &World, mapping: EntityId) {
     );
 }
 
-fn change_account_status(world: &World, key: &str, status: &str) {
+fn change_account_status(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &World,
+    key: &str,
+    status: &str,
+) {
     let field = AccountStatus::reference();
     change_account_field(
+        phase_custody,
         world,
         key,
         (field.entity(), field.aspect(), field.field()),
@@ -337,9 +280,15 @@ fn change_account_status(world: &World, key: &str, status: &str) {
     );
 }
 
-fn change_account_label(world: &World, key: &str, label: &str) {
+fn change_account_label(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &World,
+    key: &str,
+    label: &str,
+) {
     let field = AccountLabel::reference();
     change_account_field(
+        phase_custody,
         world,
         key,
         (field.entity(), field.aspect(), field.field()),
@@ -349,6 +298,7 @@ fn change_account_label(world: &World, key: &str, label: &str) {
 }
 
 fn change_account_field(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     key: &str,
     field: (&str, &str, &str),
@@ -357,8 +307,9 @@ fn change_account_field(
 ) {
     let request = live_scope();
     let account = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .resolve_entity(
+            phase_custody,
             super::super::fixture::AccountIdentity::reference(),
             key.to_owned(),
             &request,
@@ -366,7 +317,14 @@ fn change_account_field(
         )
         .unwrap();
     let locator = installed_field(world, field.0, field.1, field.2);
-    update_field(world, account.entity_id(), locator, value, reason);
+    update_field(
+        &phase_custody.borrowed_request_for_test(),
+        world,
+        account.entity_id(),
+        locator,
+        value,
+        reason,
+    );
 }
 
 fn installed_field(world: &World, entity: &str, aspect: &str, field: &str) -> AspectFieldLocator {
@@ -382,6 +340,7 @@ fn installed_field(world: &World, entity: &str, aspect: &str, field: &str) -> As
 }
 
 fn update_field(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &World,
     entity_id: EntityId,
     locator: AspectFieldLocator,
@@ -390,6 +349,7 @@ fn update_field(
 ) {
     let fields = AspectFieldPatch::from(BTreeMap::from([(locator, value)]));
     publish_relational_mutation(
+        execution,
         world,
         WorkerIntentBatch::new(reason).push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent { entity_id, fields }),

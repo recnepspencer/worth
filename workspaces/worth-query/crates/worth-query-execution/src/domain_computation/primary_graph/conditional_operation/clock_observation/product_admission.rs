@@ -14,6 +14,7 @@ where
     /// This installs commit watches early enough for later World publications.
     pub fn conditional_clock<Node, Clock>(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &'runtime WorthQueryConditionalClockHandle<Schema, Node, Clock>,
     ) -> Result<
         WorthQueryConditionalClockObservationPort<'runtime, Schema, Node, Clock>,
@@ -40,7 +41,7 @@ where
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         operation
-            .admit_product_binding(&bridge, runtime, &truth)
+            .admit_product_binding(execution, &bridge, runtime, &truth)
             .map_err(|denial| {
                 WorthQueryConditionalClockObservationDenial::new(
                     WorthQueryConditionalClockObservationDenialKind::ProductAdmission(

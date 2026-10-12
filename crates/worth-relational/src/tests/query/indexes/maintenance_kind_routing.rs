@@ -9,6 +9,9 @@ use worth_execution::ExecutionAllocationPolicy as Allocation;
 
 #[test]
 fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
@@ -27,8 +30,8 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build();
-    let shared = create_entity(&runtime, "shared");
-    let unrelated = create_entity(&runtime, "unrelated");
+    let shared = create_entity(execution, &runtime, "shared");
+    let unrelated = create_entity(execution, &runtime, "unrelated");
     let external = |name: &str| {
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         transaction
@@ -44,9 +47,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
                 Allocation::SystemAllocation,
             )
             .unwrap();
-        let committed = transaction
-            .commit(&runtime, Allocation::SystemAllocation)
-            .unwrap();
+        let committed = transaction.commit(execution, &runtime).unwrap();
         let id = changed_entities(&committed)[0];
         release_test_commit_snapshot(&runtime, &committed);
         id
@@ -54,8 +55,8 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
     let left = external("left");
     let right = external("right");
     let replacement = external("replacement");
-    create_relation(&runtime, left, shared, "left-shared");
-    let initial = create_relation_outcome(&runtime, shared, right, "shared-right");
+    create_relation(execution, &runtime, left, shared, "left-shared");
+    let initial = create_relation_outcome(execution, &runtime, shared, right, "shared-right");
     let moved_relation = changed_relations(&initial)[0];
     let definitions = [
         DerivedIndexDefinition {
@@ -94,11 +95,11 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
     };
     let built = runtime
         .index_authority()
-        .build_for_commit(request(initial.commit.commit_id));
+        .build_for_commit(execution, request(initial.commit.commit_id));
     assert!(built.failed_indexes.is_empty());
     let retained = built.generations.clone();
     assert_selected_rows(&retained, shared, left, right, moved_relation);
-    let edited = update_entity(&runtime, unrelated, "unrelated-edited");
+    let edited = update_entity(execution, &runtime, unrelated, "unrelated-edited");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -109,6 +110,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
             &basis,
             Some(&initial.snapshot),
             budget(),
+            execution,
         )
         .unwrap();
     // Both indexes have populated relevant rows, but the changed entity has
@@ -117,6 +119,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
     assert_eq!(local.work.entry_edits, 0);
     assert_eq!(local.work.adjacency_work_units, 0);
     assert_rebuild(
+        execution,
         &runtime,
         &basis,
         request(edited.commit.commit_id),
@@ -141,9 +144,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
             Allocation::SystemAllocation,
         )
         .unwrap();
-    let rewired = transaction
-        .commit(&runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let rewired = transaction.commit(execution, &runtime).unwrap();
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -154,6 +155,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
             &basis,
             Some(&edited.snapshot),
             budget(),
+            execution,
         )
         .unwrap();
     assert!(local.work.entry_edits > 0);
@@ -165,6 +167,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
         moved_relation,
     );
     assert_rebuild(
+        execution,
         &runtime,
         &basis,
         request(rewired.commit.commit_id),
@@ -174,7 +177,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
     assert_ne!(retained[1].entries, local.generations[1].entries);
     let old = runtime
         .index_authority()
-        .build_for_commit(request(initial.commit.commit_id));
+        .build_for_commit(execution, request(initial.commit.commit_id));
     assert!(old.failed_indexes.is_empty());
     for (original, rebuilt) in retained.iter().zip(&old.generations) {
         assert_eq!(original.entries, rebuilt.entries);
@@ -199,9 +202,7 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
             Allocation::SystemAllocation,
         )
         .unwrap();
-    let replaced = transaction
-        .commit(&runtime, Allocation::SystemAllocation)
-        .unwrap();
+    let replaced = transaction.commit(execution, &runtime).unwrap();
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -212,9 +213,11 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
             &basis,
             Some(&rewired.snapshot),
             budget(),
+            execution,
         )
         .unwrap();
     assert_rebuild(
+        execution,
         &runtime,
         &basis,
         request(replaced.commit.commit_id),
@@ -267,12 +270,15 @@ fn budget() -> DerivedIndexMaintenanceBudget {
 }
 
 fn assert_rebuild(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     basis: &crate::branch::AdmittedRelationalBranchBasis,
     request: DerivedIndexBuildRequest,
     generations: &[crate::indexes::data::DerivedIndexGeneration],
 ) {
-    let rebuilt = runtime.index_authority().build_for_basis(request, basis);
+    let rebuilt = runtime
+        .index_authority()
+        .build_for_basis(execution, request, basis);
     assert!(rebuilt.failed_indexes.is_empty());
     assert_eq!(generations.len(), rebuilt.generations.len());
     for (local, rebuilt) in generations.iter().zip(&rebuilt.generations) {

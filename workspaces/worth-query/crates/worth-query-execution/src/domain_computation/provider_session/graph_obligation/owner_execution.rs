@@ -30,6 +30,7 @@ impl WorthQueryGraphReadOwnerPort {
 
     pub(super) fn execute_prepared<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &ApplicationSchemaBindingIdentity,
         read: impl FnOnce(&RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
     ) -> Result<T, WorthQueryGraphReadOwnerPortDenial> {
@@ -40,11 +41,12 @@ impl WorthQueryGraphReadOwnerPort {
         // operation cannot poison the runtime for another root or request.
         Ok(self
             .source
-            .with_runtime_unwind_isolated(|runtime| read(runtime, &self.layout)))
+            .with_runtime_unwind_isolated(execution, |runtime| read(runtime, &self.layout)))
     }
 
     pub(super) fn execute<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &ApplicationSchemaBindingIdentity,
         read: impl FnOnce(&mut RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
     ) -> Result<T, WorthQueryGraphReadOwnerPortDenial> {
@@ -53,7 +55,7 @@ impl WorthQueryGraphReadOwnerPort {
         }
         Ok(self
             .source
-            .with_runtime_mut(|runtime| read(runtime, &self.layout)))
+            .with_runtime_mut(execution, |runtime| read(runtime, &self.layout)))
     }
 }
 

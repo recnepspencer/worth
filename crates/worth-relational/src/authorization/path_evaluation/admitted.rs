@@ -18,6 +18,7 @@ mod state;
 use state::{Context, State, Witness};
 
 pub(in crate::authorization) fn evaluate_path<A: RelationalAuthorizationObservationAdmission>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     view: &VisibilityProjectionView<'_>,
     plan: &RelationalAuthorizationObservationPlan,
@@ -39,12 +40,21 @@ pub(in crate::authorization) fn evaluate_path<A: RelationalAuthorizationObservat
     state.counters.paths_evaluated += 1;
     state.counters.maximum_frontier_width =
         state.counters.maximum_frontier_width.max(frontier.len());
-    constraints::apply(&context, path, 0, &mut frontier, &mut state)?;
+    constraints::apply(execution, &context, path, 0, &mut frontier, &mut state)?;
     for (index, traversal) in path.traversals().iter().enumerate() {
         admission::prepare(state.admission, 1 + path.entity_anchors().len() as u64, 0)?;
         let anchor = super::unique_anchor_at(path, index + 1);
-        frontier = traverse(&context, traversal, anchor, &frontier, &mut state)?;
-        constraints::apply(&context, path, index + 1, &mut frontier, &mut state)?;
+        frontier = traverse(
+            execution, &context, traversal, anchor, &frontier, &mut state,
+        )?;
+        constraints::apply(
+            execution,
+            &context,
+            path,
+            index + 1,
+            &mut frontier,
+            &mut state,
+        )?;
         state.counters.maximum_frontier_width =
             state.counters.maximum_frontier_width.max(frontier.len());
         if frontier.is_empty() {
@@ -72,6 +82,7 @@ pub(in crate::authorization) fn evaluate_path<A: RelationalAuthorizationObservat
 }
 
 fn traverse<A: RelationalAuthorizationObservationAdmission>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &Context<'_, '_, '_>,
     traversal: &RelationalAuthorizationTraversal,
     anchor: Option<EntityId>,
@@ -96,14 +107,15 @@ fn traverse<A: RelationalAuthorizationObservationAdmission>(
                     }
                 },
             );
-            relations::collect(context, anchor, &inverse, state)?
+            relations::collect(execution, context, anchor, &inverse, state)?
         } else {
-            relations::collect(context, current, traversal, state)?
+            relations::collect(execution, context, current, traversal, state)?
         };
         for id in ids {
             admission::prepare(state.admission, 1, 0)?;
             state.counters.relation_records_inspected += 1;
-            let Some(candidate) = relations::traverse(context, id, current, traversal, state)?
+            let Some(candidate) =
+                relations::traverse(execution, context, id, current, traversal, state)?
             else {
                 continue;
             };
@@ -111,7 +123,7 @@ fn traverse<A: RelationalAuthorizationObservationAdmission>(
                 continue;
             }
             state.entity(candidate.0)?;
-            if field::live(context, candidate.0, candidate.1, state)? {
+            if field::live(execution, context, candidate.0, candidate.1, state)? {
                 let count =
                     witness.entities.len().checked_add(1).ok_or(
                         RelationalAuthorizationBudgetedObservationStop::AccountingOverflow,

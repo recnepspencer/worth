@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn intent_support_profile_claim_requires_executable_authority_adapter() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let error = match test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -13,7 +16,7 @@ fn intent_support_profile_claim_requires_executable_authority_adapter() {
         .inspector_evidence(TestInspectorEvidence)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
     {
         Ok(_) => panic!("intent support claim without adapter should fail"),
         Err(error) => error,
@@ -29,6 +32,9 @@ fn intent_support_profile_claim_requires_executable_authority_adapter() {
 
 #[test]
 fn intent_source_lanes_that_need_policy_deny_before_authority_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -44,7 +50,7 @@ fn intent_source_lanes_that_need_policy_deny_before_authority_execution() {
         })
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
 
     for source_lane in [
@@ -55,6 +61,7 @@ fn intent_source_lanes_that_need_policy_deny_before_authority_execution() {
     ] {
         let error = runtime
             .execute_intent(
+                request_execution,
                 WorthQueryIntentDeclaration::strategy_commit(
                     "non-user-authored",
                     "strategy.intent.reconcile",
@@ -92,6 +99,9 @@ fn intent_source_lanes_that_need_policy_deny_before_authority_execution() {
 
 #[test]
 fn intent_execution_strategy_drift_denies_before_signal_routing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let routed = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -107,17 +117,20 @@ fn intent_execution_strategy_drift_denies_before_signal_routing() {
         .intent_authority(DriftingIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
 
     let error = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "drifting-strategy",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task-1")]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "drifting-strategy",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([("entity", "task-1")]),
+            ),
+        )
         .expect_err("strategy drift must not mint an intent receipt");
 
     match error {
@@ -155,6 +168,9 @@ fn intent_execution_strategy_drift_denies_before_signal_routing() {
 
 #[test]
 fn strategy_drift_denial_inspection_keeps_declared_and_returned_strategy_separate() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -167,17 +183,20 @@ fn strategy_drift_denial_inspection_keeps_declared_and_returned_strategy_separat
         .intent_authority(DriftingIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
 
     let error = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "inspectable-drifting-strategy",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task-1")]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "inspectable-drifting-strategy",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([("entity", "task-1")]),
+            ),
+        )
         .expect_err("strategy drift must deny");
 
     let evidence = match error {
@@ -185,7 +204,7 @@ fn strategy_drift_denial_inspection_keeps_declared_and_returned_strategy_separat
         other => panic!("expected strategy drift denial, got {other:?}"),
     };
     let inspection = runtime
-        .inspect_intent_denial(&evidence)
+        .inspect_intent_denial(request_execution, &evidence)
         .expect("strategy drift denial should inspect");
 
     assert_eq!(inspection.strategy_identity(), "strategy.intent.reconcile");

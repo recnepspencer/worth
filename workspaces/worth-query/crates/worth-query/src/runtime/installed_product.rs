@@ -62,18 +62,21 @@ impl WorthQueryInstalledProduct {
     }
 
     pub(super) fn install(
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         backend: &dyn super::WorthQueryRuntimeBackend,
         mut conditional: BridgeSealedRuntimeAssembly,
         managed_execution_bridge: worth_runtime_bridge::facade::RuntimeBridge,
         cache_budget: super::WorthQueryConditionalEvaluationCacheBudget,
         product_world_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
     ) -> Result<Self, super::WorthQueryRuntimeError> {
-        let source = backend.prepare_product_source().map_err(|denial| {
-            super::WorthQueryRuntimeError::InvariantRegistration {
-                stage: "product_source_installation",
-                message: denial.to_string(),
-            }
-        })?;
+        let source = backend
+            .prepare_product_source(request_execution)
+            .map_err(
+                |denial| super::WorthQueryRuntimeError::InvariantRegistration {
+                    stage: "product_source_installation",
+                    message: denial.to_string(),
+                },
+            )?;
         let world = WorthQueryProductRuntime::install(
             source,
             &mut conditional,

@@ -9,12 +9,15 @@ use crate::runtime::{
 
 #[test]
 fn compose_read_executes_anchored_expansion_detail_with_receipt_classification() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.anchored-expansion")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_detail(
                 "user",
                 expanded_manager_schema(),
@@ -68,12 +71,15 @@ fn compose_read_executes_anchored_expansion_detail_with_receipt_classification()
 
 #[test]
 fn compose_read_denies_anchored_expansion_without_traversal() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.anchored-denial")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_detail(
                 "user",
                 manager_schema(),
@@ -107,12 +113,15 @@ fn compose_read_denies_anchored_expansion_without_traversal() {
 
 #[test]
 fn compose_read_denies_anchored_expansion_when_shape_is_still_local() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.anchored-local-mismatch")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_detail(
                 "user",
                 manager_schema(),
@@ -151,12 +160,15 @@ fn compose_read_denies_anchored_expansion_when_shape_is_still_local() {
 
 #[test]
 fn compose_read_executes_explicit_broad_search_detail_with_receipt_classification() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.broad-search")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_detail(
                 "user",
                 searchable_manager_schema(),
@@ -210,12 +222,15 @@ fn compose_read_executes_explicit_broad_search_detail_with_receipt_classificatio
 
 #[test]
 fn compose_read_denies_explicit_broad_search_without_traversal_or_predicate() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.broad-denial")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_detail(
                 "user",
                 manager_schema(),

@@ -17,8 +17,11 @@ use super::support::{
 
 #[test]
 fn prepared_continuation_rejects_foreign_runtime_before_later_work() {
-    let owner = admitted_handle("main");
-    let foreign = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let owner = admitted_handle(request_execution, "main");
+    let foreign = admitted_handle(request_execution, "main");
     let prepared = prepared_runtime_continuation(&owner);
 
     let WorthQueryContinuationExecutionOutcome::InstalledAuthorityDrift(drift) =
@@ -44,7 +47,10 @@ fn prepared_continuation_rejects_foreign_runtime_before_later_work() {
 
 #[test]
 fn prepared_continuation_rejects_stale_generation_on_current_handle() {
-    let (mut workspace, retained_handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, retained_handle) = admitted_workspace(request_execution, "main");
     let prepared = prepared_runtime_continuation(&retained_handle);
     let retained_generation = retained_handle
         .installed_authority()
@@ -88,7 +94,10 @@ fn prepared_continuation_rejects_stale_generation_on_current_handle() {
 
 #[test]
 fn stale_handle_cannot_prepare_after_generation_turnover() {
-    let (mut workspace, stale_handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, stale_handle) = admitted_workspace(request_execution, "main");
     let request = target_request::<RuntimeFamily>(&stale_handle, "face-a", runtime_route_request());
     workspace
         .replace_domain_installation_with_successor_generation()
@@ -110,8 +119,11 @@ fn stale_handle_cannot_prepare_after_generation_turnover() {
 
 #[test]
 fn recovery_retains_foreign_runtime_authority_drift_without_promoting_it() {
-    let owner = admitted_handle("main");
-    let foreign = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let owner = admitted_handle(request_execution, "main");
+    let foreign = admitted_handle(request_execution, "main");
     let prepared = prepared_runtime_continuation(&owner);
 
     let brief = worth_query_recovery_brief_from_continuation_execution_checked(

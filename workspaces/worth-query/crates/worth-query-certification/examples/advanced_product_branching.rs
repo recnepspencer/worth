@@ -33,36 +33,56 @@ fn run() {
 
     let reuse_both = application
         .runtime
-        .branches()
-        .fork(source)
-        .components(|components| {
-            components
-                .reuse_exact_relational_basis()
-                .reuse_exact_signal_basis()
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime
+                .branches()
+                .fork(source)
+                .components(|components| {
+                    components
+                        .reuse_exact_relational_basis()
+                        .reuse_exact_signal_basis()
+                })
+                .create(&host_phase)
+                .expect("the exact reuse product must publish")
         })
-        .create()
-        .expect("the exact reuse product must publish");
+        .expect("installed host call opens");
     let fork_relational = application
         .runtime
-        .branches()
-        .fork(source)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the Relational fork product must publish");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime
+                .branches()
+                .fork(source)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the Relational fork product must publish")
+        })
+        .expect("installed host call opens");
     let fork_signal = application
         .runtime
-        .branches()
-        .fork(source)
-        .components(|components| components.reuse_exact_relational_basis().fork_signal())
-        .create()
-        .expect("the Signal fork product must publish");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime
+                .branches()
+                .fork(source)
+                .components(|components| components.reuse_exact_relational_basis().fork_signal())
+                .create(&host_phase)
+                .expect("the Signal fork product must publish")
+        })
+        .expect("installed host call opens");
     let fork_both = application
         .runtime
-        .branches()
-        .fork(source)
-        .components(|components| components.fork_relational().fork_signal())
-        .create()
-        .expect("the fully independent product must publish");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime
+                .branches()
+                .fork(source)
+                .components(|components| components.fork_relational().fork_signal())
+                .create(&host_phase)
+                .expect("the fully independent product must publish")
+        })
+        .expect("installed host call opens");
 
     let first = mutate(
         &application,
@@ -94,15 +114,20 @@ fn run() {
 
     let historical = application
         .runtime
-        .request(&principal, &scope)
-        .on_branch(fork_relational)
-        .at_commit(&first, NonZeroUsize::new(2).unwrap())
-        .expect("the first application receipt must select its retained generation")
-        .query(TemporalIntentRead {
-            identity: "intent-1".to_owned(),
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime
+                .request(&principal, &scope)
+                .on_branch(fork_relational)
+                .at_commit(&host_phase, &first, NonZeroUsize::new(2).unwrap())
+                .expect("the first application receipt must select its retained generation")
+                .query(TemporalIntentRead {
+                    identity: "intent-1".to_owned(),
+                })
+                .execute()
+                .expect("the historical read must use the retained application evidence")
         })
-        .execute()
-        .expect("the historical read must use the retained application evidence");
+        .expect("installed host call opens");
     assert_eq!(historical.rows()[0].input, "branch-local-change");
 
     let history = application
@@ -125,9 +150,14 @@ fn run() {
     for branch in [reuse_both, fork_signal, fork_both, fork_relational] {
         let closed = application
             .runtime
-            .on_branch(branch)
-            .close()
-            .expect("released branch resources must close");
+            .with_host_advancement(|host_phase| {
+                application
+                    .runtime
+                    .on_branch(branch)
+                    .close(&host_phase)
+                    .expect("released branch resources must close")
+            })
+            .expect("installed host call opens");
         assert!(closed.is_complete());
     }
     assert!(application.runtime.branches().pending_cleanup().is_empty());

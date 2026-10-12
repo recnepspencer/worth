@@ -72,23 +72,31 @@ fn real_handle_under(seed: u8, label: &str, request: WorthQueryRequestScope) -> 
         .application
         .mint_recovery_handle(&receipt)
         .expect("the production receipt admits a recovery handle");
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, label, &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(ExactStatusRetentionOperation::reference())
-        .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            TypedMutationPreconditions::new(),
-            &request,
-        )
-        .expect("the committed product admits the current recovery operation");
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            let principal = authenticated_principal(&host, &world, &request);
+            let account = resolved_account(&host, &world, label, &request);
+            let operation = world
+                .application
+                .installed_schema()
+                .installed_operation(ExactStatusRetentionOperation::reference())
+                .unwrap();
+            let admission = world
+                .selected_product(&host)
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    TypedMutationPreconditions::new(),
+                    &request,
+                )
+                .expect("the committed product admits the current recovery operation");
+            admission
+        })
+        .expect("the recovery fixture opens its admission call");
     (world, receipt, handle, admission)
 }
 
@@ -111,7 +119,12 @@ fn performed_redispatch(
 ) -> WorthQueryPerformedExternalRedispatch {
     world
         .application
-        .redispatch_admitted_external_effect(handle, authority, admission)
+        .with_application_advancement(admission.publication_request(), |phase| {
+            world
+                .application
+                .redispatch_admitted_external_effect(&phase, handle, authority, admission)
+        })
+        .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement(cause)))
         .expect("the public redispatch route performs the exact bound outbox")
 }
 
@@ -165,7 +178,12 @@ fn redispatch_without_an_installed_transport_names_the_missing_transport() {
     let authority = authority(&world, &handle, &admission);
     let denied = world
         .application
-        .redispatch_admitted_external_effect(&handle, &authority, &admission)
+        .with_application_advancement(admission.publication_request(), |phase| {
+            world
+                .application
+                .redispatch_admitted_external_effect(&phase, &handle, &authority, &admission)
+        })
+        .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement(cause)))
         .expect_err("no installed transport means no physical attempt");
     assert_eq!(
         denied,
@@ -218,10 +236,15 @@ fn redispatch_names_fresh_authority_and_current_admission_failures_apart() {
         real_handle(216, "notify-death-other");
     let own_authority = authority(&world, &handle, &admission);
     let other_authority = authority(&other, &other_handle, &other_admission);
-    let redispatch = |authority, admission| {
+    let redispatch = |authority, admission: &RecoveryAdmission| {
         world
             .application
-            .redispatch_admitted_external_effect(&handle, authority, admission)
+            .with_application_advancement(admission.publication_request(), |phase| {
+                world
+                    .application
+                    .redispatch_admitted_external_effect(&phase, &handle, authority, admission)
+            })
+            .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement(cause)))
             .expect_err("each presented failure refuses before transport")
     };
 

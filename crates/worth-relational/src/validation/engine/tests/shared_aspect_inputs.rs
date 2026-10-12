@@ -125,15 +125,24 @@ impl CustomInvariantRule for ReadsSummary {
 
 #[test]
 fn overlapping_field_reads_are_shared_without_sharing_verdicts_or_changed_basis() {
-    assert_overlapping_field_reads(false);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_overlapping_field_reads(execution, false);
 }
 
 #[test]
 fn leased_opaque_field_read_rules_are_denied_before_execution() {
-    assert_overlapping_field_reads(true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_overlapping_field_reads(execution, true);
 }
 
-fn assert_overlapping_field_reads(leased: bool) {
+fn assert_overlapping_field_reads(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    leased: bool,
+) {
     let target = Arc::new(OnceLock::new());
     let schema = AspectSchemaFixture {
         entity_aspects: vec![
@@ -164,7 +173,7 @@ fn assert_overlapping_field_reads(leased: bool) {
             .unwrap(),
         )
         .build();
-    let created = commit_entity_with_summary(&runtime, "subject", "before", "open")
+    let created = commit_entity_with_summary(execution, &runtime, "subject", "before", "open")
         .expect("subject publication");
     let entity = created
         .changed_records
@@ -196,17 +205,17 @@ fn assert_overlapping_field_reads(leased: bool) {
         )
         .expect("stage summary change");
     transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("summary change publication");
-    assert_entity_summary(&runtime, entity, "after", "open");
+    assert_entity_summary(execution, &runtime, entity, "after", "open");
     assert_shared_field_reads(&runtime, false, leased);
 }
 
 #[test]
 fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let target = Arc::new(OnceLock::new());
     let schema = AspectSchemaFixture {
         entity_aspects: vec![
@@ -237,7 +246,8 @@ fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
             .unwrap(),
         )
         .build();
-    let created = commit_entity_with_summary(&runtime, "subject", "before", "open").unwrap();
+    let created =
+        commit_entity_with_summary(execution, &runtime, "subject", "before", "open").unwrap();
     let entity = created
         .changed_records
         .iter()
@@ -249,7 +259,7 @@ fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
     target.set(entity).unwrap();
     runtime.performance_access().reset_counters();
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -290,7 +300,10 @@ fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool
     let engine = InvariantEngine::new(runtime);
     let results = if leased {
         let denial = engine
-            .execute_with_lease(request, &test_execution_lease())
+            .execute(
+                &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
+                request,
+            )
             .expect_err("opaque custom rules cannot execute under a lease");
         assert!(matches!(
             denial,
@@ -308,7 +321,7 @@ fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool
         assert_eq!(counters.custom_invariant_execution_count, 0);
         return;
     } else {
-        engine.execute(request)
+        engine.execute_fixture(request)
     };
     assert_eq!(results.results().len(), 2);
     assert!(matches!(

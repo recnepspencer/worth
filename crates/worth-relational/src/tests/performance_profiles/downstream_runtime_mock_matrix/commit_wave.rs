@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_geometry_commit_downstream_wave(suite: &'static str) {
+pub(super) fn certify_geometry_commit_downstream_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     for (case, development_profile) in [
         ("geometry_commit_downstream_wave_operational", false),
         ("geometry_commit_downstream_wave_development", true),
@@ -16,19 +19,21 @@ pub(super) fn certify_geometry_commit_downstream_wave(suite: &'static str) {
                     if development_profile { 256 } else { 0 }
             });
 
-            let source = create_entity_outcome(&relational, "merged-geometry-source");
-            let middle = create_entity_outcome(&relational, "merged-geometry-middle");
-            let target = create_entity_outcome(&relational, "merged-geometry-target");
+            let source = create_entity_outcome(execution, &relational, "merged-geometry-source");
+            let middle = create_entity_outcome(execution, &relational, "merged-geometry-middle");
+            let target = create_entity_outcome(execution, &relational, "merged-geometry-target");
             let source_entity = changed_entities(&source)[0];
             let middle_entity = changed_entities(&middle)[0];
             let target_entity = changed_entities(&target)[0];
             create_relation_outcome(
+                execution,
                 &relational,
                 source_entity,
                 middle_entity,
                 "merged-geometry-link-a",
             );
             create_relation_outcome(
+                execution,
                 &relational,
                 middle_entity,
                 target_entity,
@@ -38,8 +43,12 @@ pub(super) fn certify_geometry_commit_downstream_wave(suite: &'static str) {
             let mut downstream_runtime = build_mock_downstream_runtime(development_profile, 4);
 
             let relational_commit_started_at = Instant::now();
-            let update =
-                update_entity(&relational, middle_entity, "merged-geometry-middle-updated");
+            let update = update_entity(
+                execution,
+                &relational,
+                middle_entity,
+                "merged-geometry-middle-updated",
+            );
             let relational_commit_micros = relational_commit_started_at.elapsed().as_micros();
 
             let snapshot = relational.visibility_authority().snapshot();
@@ -70,7 +79,10 @@ pub(super) fn certify_geometry_commit_downstream_wave(suite: &'static str) {
                         .read_truth()
                         .plan_query_packet(&snapshot, traversal_packet)
                         .expect("merged traversal plan"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("merged traversal outcome");
             let relational_query_micros = relational_query_started_at.elapsed().as_micros();
 

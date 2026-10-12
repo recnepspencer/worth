@@ -109,7 +109,15 @@ fn cycle_chain_at_small_retention(
                 application.output_lineage_retained_bytes_for_test(),
                 evidence_entries,
             ),
-            application.history_retained_for_test(),
+            application
+                .with_host_advancement(|phase| {
+                    application.history_retained_for_test(
+                        &phase
+                            .execution_request_for(application.product_runtime())
+                            .expect("matching installed phase"),
+                    )
+                })
+                .expect("installed host call opens"),
         );
     }
 }

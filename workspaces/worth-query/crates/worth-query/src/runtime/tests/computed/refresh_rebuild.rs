@@ -2,9 +2,13 @@ use super::*;
 
 #[test]
 fn refresh_fallback_maintainer_rebuilds_from_retained_live_rows() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -12,6 +16,7 @@ fn refresh_fallback_maintainer_rebuilds_from_retained_live_rows() {
         .expect("live view should declare");
     let computed = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.refresh.count", touches(["title"]))
                 .depends_on_live(&live)
                 .produces(touches(["summary.count"]))
@@ -21,13 +26,16 @@ fn refresh_fallback_maintainer_rebuilds_from_retained_live_rows() {
         .expect("refresh maintainer computed should declare");
 
     let first = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("First title")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("First title")),
+                ],
+            ),
+        )
         .expect("first insert should route retained refresh rebuild");
     let first_patches = runtime.drain_derived_patches(&computed);
 
@@ -37,7 +45,7 @@ fn refresh_fallback_maintainer_rebuilds_from_retained_live_rows() {
     );
     assert!(first.refresh_fallback());
     assert_eq!(
-        read_derived_value_aspects(&runtime, &computed),
+        read_derived_value_aspects(request_execution, &runtime, &computed),
         vec![test_string_aspect_value("count:1".to_string())]
     );
     assert_eq!(first_patches.derived_patches.len(), 1);
@@ -52,26 +60,33 @@ fn refresh_fallback_maintainer_rebuilds_from_retained_live_rows() {
     );
 
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Second title")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Second title")),
+                ],
+            ),
+        )
         .expect("second insert should rebuild from retained live rows");
 
     assert_eq!(
-        read_derived_value_aspects(&runtime, &computed),
+        read_derived_value_aspects(request_execution, &runtime, &computed),
         vec![test_string_aspect_value("count:2".to_string())]
     );
 }
 
 #[test]
 fn refresh_fallback_maintainer_seeds_retained_live_rows_during_declaration() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -79,20 +94,24 @@ fn refresh_fallback_maintainer_seeds_retained_live_rows_during_declaration() {
         .expect("live view should declare");
 
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Seeded before computed declaration"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Seeded before computed declaration"),
+                    ),
+                ],
+            ),
+        )
         .expect("task insert should retain upstream live row before computed declaration");
 
     let computed = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.refresh.seeded", touches(["title"]))
                 .depends_on_live(&live)
                 .produces(touches(["summary.count"]))
@@ -102,12 +121,12 @@ fn refresh_fallback_maintainer_seeds_retained_live_rows_during_declaration() {
         .expect("refresh maintainer should seed from retained live rows during declaration");
 
     assert_eq!(
-        read_derived_value_aspects(&runtime, &computed),
+        read_derived_value_aspects(request_execution, &runtime, &computed),
         vec![test_string_aspect_value("count:1".to_string())]
     );
     assert_eq!(
         runtime
-            .inspect_derived_view(&computed)
+            .inspect_derived_view(request_execution, &computed)
             .expect("seeded refresh computed should inspect")
             .materialized_row_count(),
         1
@@ -123,9 +142,13 @@ fn refresh_fallback_maintainer_seeds_retained_live_rows_during_declaration() {
 
 #[test]
 fn refresh_fallback_maintainer_receives_all_declared_upstream_live_rows() {
-    let mut runtime = stateful_bridge_task_issue_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_issue_runtime(request_execution);
     let tasks = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -133,6 +156,7 @@ fn refresh_fallback_maintainer_receives_all_declared_upstream_live_rows() {
         .expect("task live view should declare");
     let issues = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "issues.table",
             issue_live_request(),
             issue_schema(),
@@ -140,6 +164,7 @@ fn refresh_fallback_maintainer_receives_all_declared_upstream_live_rows() {
         .expect("issue live view should declare");
     let computed = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.refresh.multi", touches(["title"]))
                 .depends_on_live(&tasks)
                 .depends_on_live(&issues)
@@ -150,30 +175,36 @@ fn refresh_fallback_maintainer_receives_all_declared_upstream_live_rows() {
         .expect("multi-upstream refresh maintainer should declare");
 
     runtime
-        .write(insert_command(
-            "Issue",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "summary.value",
-                    test_string_aspect_value("Sibling upstream row"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Issue",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "summary.value",
+                        test_string_aspect_value("Sibling upstream row"),
+                    ),
+                ],
+            ),
+        )
         .expect("issue insert should seed sibling upstream");
     runtime.drain_derived_patches(&computed);
 
     let insert = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Task wakes refresh computed"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Task wakes refresh computed"),
+                    ),
+                ],
+            ),
+        )
         .expect("task insert should rebuild from both retained upstreams");
     let patches = runtime.drain_derived_patches(&computed);
 
@@ -183,7 +214,7 @@ fn refresh_fallback_maintainer_receives_all_declared_upstream_live_rows() {
     );
     assert!(insert.refresh_fallback());
     assert_eq!(
-        read_derived_value_aspects(&runtime, &computed),
+        read_derived_value_aspects(request_execution, &runtime, &computed),
         vec![test_string_aspect_value("count:2".to_string())]
     );
     assert_eq!(patches.derived_patches.len(), 1);

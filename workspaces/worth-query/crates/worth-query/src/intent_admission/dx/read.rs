@@ -55,8 +55,11 @@ impl<'a> WorthQueryWorkspaceReadIntentAuthoring<'a> {
         self.review()?.admit()
     }
 
-    pub fn execute(self) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -209,8 +212,11 @@ impl<'a> WorthQueryWorkspaceReadIntentAdmissionReview<'a> {
         })
     }
 
-    pub fn execute(self) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -258,21 +264,28 @@ impl<'a> WorthQueryAdmittedWorkspaceReadIntent<'a> {
         &self.execution_binding
     }
 
-    pub fn execute(self) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
         self.workspace
-            .execute_bound_read_execution(self.execution_binding)
+            .execute_bound_read_execution(execution, self.execution_binding)
     }
 
-    pub(crate) fn execute_count(self) -> Result<WorthQueryCountResult, WorthQueryRuntimeError> {
+    pub(crate) fn execute_count(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryCountResult, WorthQueryRuntimeError> {
         self.workspace
-            .execute_bound_count_read_execution(self.execution_binding)
+            .execute_bound_count_read_execution(execution, self.execution_binding)
     }
 
     pub(crate) fn open_managed_live<T>(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
     ) -> Result<crate::runtime::WorthQueryLiveView<T>, WorthQueryRuntimeError> {
         self.workspace
-            .open_admitted_live_binding(name, self.execution_binding)
+            .open_admitted_live_binding(request_execution, name, self.execution_binding)
     }
 }

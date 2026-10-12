@@ -9,8 +9,11 @@ use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[test]
 fn branch_transactions_are_detached_and_overlays_do_not_cross() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    create_entity(&runtime, "fork-source");
+    create_entity(execution, &runtime, "fork-source");
     fork_from_main(&mut runtime, "storm");
     fork_from_main(&mut runtime, "maintenance");
 
@@ -68,12 +71,12 @@ fn branch_transactions_are_detached_and_overlays_do_not_cross() {
         &storm_created,
     );
 
-    create_entity(&runtime, "unrelated-main-work");
+    create_entity(execution, &runtime, "unrelated-main-work");
     let storm_commit = storm
-        .commit(&runtime, AllocationPolicy::SystemAllocation)
+        .commit(execution, &runtime)
         .expect("storm commits independently");
     let maintenance_commit = maintenance
-        .commit(&runtime, AllocationPolicy::SystemAllocation)
+        .commit(execution, &runtime)
         .expect("maintenance commits independently");
     assert_eq!(storm_commit.commit.branch_id, BranchId("storm".into()));
     assert_eq!(
@@ -84,9 +87,12 @@ fn branch_transactions_are_detached_and_overlays_do_not_cross() {
 
 #[test]
 fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "relation-source");
-    let target = create_entity(&runtime, "relation-target");
+    let source = create_entity(execution, &runtime, "relation-source");
+    let target = create_entity(execution, &runtime, "relation-target");
     fork_from_main(&mut runtime, "candidate");
     fork_from_main(&mut runtime, "sibling");
 
@@ -98,11 +104,12 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
         )
         .expect("test staging stays within configured resource budgets");
     let proposal = candidate
-        .validate(&runtime, AllocationPolicy::SystemAllocation)
+        .validate(execution, &runtime)
         .expect("candidate validation succeeds before sibling work");
 
     let counters_before_sibling = runtime.performance_access().counters();
     create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         target,
@@ -119,7 +126,7 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
     );
 
     let candidate = runtime
-        .prepare_validated_proposal(proposal)
+        .prepare_validated_proposal(execution, proposal)
         .expect("sibling advancement permits candidate revalidation");
     let exact_records = candidate
         .with_prepared_changed_records(|records| records.to_vec())
@@ -129,7 +136,7 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
         Some(exact_records.len())
     );
     let committed = runtime
-        .publish_prepared_candidate(candidate)
+        .publish_prepared_candidate(execution, candidate)
         .expect("prepared candidate publishes through its owner");
     assert_eq!(committed.changed_records, exact_records);
 
@@ -154,8 +161,11 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
 
 #[test]
 fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "basis-value");
+    let entity = create_entity(execution, &runtime, "basis-value");
     let (_, mut transaction) = begin_on(&runtime, "main");
 
     let before = transaction
@@ -165,7 +175,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
         before.base().and_then(read_entity_name),
         Some("basis-value".into())
     );
-    update_entity(&runtime, entity, "current-value");
+    update_entity(execution, &runtime, entity, "current-value");
     let after_movement = transaction
         .read_entity(entity)
         .expect("detached basis read projects");
@@ -196,7 +206,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
     let reference_cost_before = runtime.phase4_reference_cost_counters();
     let complexity_before = runtime.performance_access().counters();
     let error = transaction
-        .commit(&runtime, AllocationPolicy::SystemAllocation)
+        .commit(execution, &runtime)
         .expect_err("complete-reference movement stales the old basis");
     assert!(matches!(
         error,
@@ -230,7 +240,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
         .clone();
     let current = runtime
         .read_truth()
-        .read_snapshot(&current_snapshot)
+        .read_snapshot(&current_snapshot, execution)
         .unwrap();
     assert_eq!(
         current.get_entity(entity).and_then(read_entity_name),
@@ -240,13 +250,16 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
 
 #[test]
 fn stale_transaction_denies_before_interning_new_client_keys() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
         .build();
-    create_entity(&runtime, "stale-symbol-basis");
+    create_entity(execution, &runtime, "stale-symbol-basis");
     let (_, mut transaction) = begin_on(&runtime, "main");
-    create_entity(&runtime, "stale-symbol-advance");
+    create_entity(execution, &runtime, "stale-symbol-advance");
     let symbols_before = runtime.services.symbols.clone();
     let symbol_table_before = runtime.config().identity.symbol_table.clone();
     let branch_cells_before = runtime.history().branch_cells_snapshot();
@@ -261,7 +274,7 @@ fn stale_transaction_denies_before_interning_new_client_keys() {
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(&runtime, AllocationPolicy::SystemAllocation)
+        .commit(execution, &runtime)
         .expect_err("stale currentness is checked before normalization");
 
     assert!(matches!(

@@ -8,13 +8,20 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn reconstituted_runtime_handles_reenter_the_retained_conditional_source() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = node(
         "reconstituted-conditional-source",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
-    let mut workspace =
-        conditional_controlled_workspace("reconstituted-conditional-source", declaration).unwrap();
+    let mut workspace = conditional_controlled_workspace(
+        request_execution,
+        "reconstituted-conditional-source",
+        declaration,
+    )
+    .unwrap();
     let prior = workspace.domain(GeometryDomain).unwrap();
     workspace.advance_domain_installation_generation().unwrap();
     workspace.advance_domain_installation_generation().unwrap();
@@ -48,12 +55,16 @@ fn reconstituted_runtime_handles_reenter_the_retained_conditional_source() {
 
 #[test]
 fn rebuilt_conditional_lookup_retains_the_exact_installed_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = node(
         "rebuilt-conditional-index",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
-    let mut workspace = conditional_workspace("rebuilt-conditional-index", declaration).unwrap();
+    let mut workspace =
+        conditional_workspace(request_execution, "rebuilt-conditional-index", declaration).unwrap();
 
     let installed = workspace.domain(GeometryDomain).unwrap();
     let before_rebuild = workspace

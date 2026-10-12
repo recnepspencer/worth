@@ -18,9 +18,15 @@ fn successful_direct_readmission_carries_exact_query_and_bridge_work() {
 
         let (yielded, bridge, runtime) =
             super::readmission_direct::yielded_direct(execution, resource_request);
-        let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-            WorthQueryDirectReadmissionOutcome::Readmitted(readmitted) => readmitted,
-            _ => panic!("owner runtime must readmit the direct yielded authority"),
+        let readmitted = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectReadmissionOutcome::Readmitted(readmitted) => readmitted,
+                _ => panic!("owner runtime must readmit the direct yielded authority"),
+            }
         };
 
         assert_committed_owner_work(readmitted.readmission_evidence(), 0);
@@ -50,9 +56,15 @@ fn successful_workflow_readmission_carries_exact_query_and_bridge_work() {
                 YieldProvider::installed(7),
                 resource_request,
             );
-        let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-            WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => readmitted,
-            _ => panic!("owner runtime must readmit the workflow yielded authority"),
+        let readmitted = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                WorthQueryWorkflowReadmissionOutcome::Readmitted(readmitted) => readmitted,
+                _ => panic!("owner runtime must readmit the workflow yielded authority"),
+            }
         };
 
         assert_committed_owner_work(readmitted.readmission_evidence(), 1);

@@ -29,6 +29,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Schema,
     Binding,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     installed: &WorthQueryInstalledApplicationQueryBinding<Schema, SourceBinding<Schema, Binding>>,
     validated_principal: &worth_query_installation::facade::WorthQueryValidatedPrincipalBinding,
@@ -134,7 +135,7 @@ where
     )
     .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
     runtime
-        .with_fresh_retained_query_permission(
+        .with_fresh_retained_query_permission(execution,
             installed,
             Some(validated_principal),
             external_principal,
@@ -147,15 +148,15 @@ where
                     return on_disclosure(permission, None, admission);
                 };
                 let Some(sealed) = permission
-                    .seal_current_ready(admission)
+                    .seal_current_ready(execution, admission)
                     .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?
                 else {
                     return on_disclosure(permission, None, admission);
                 };
                 let handle = &runtime.primary_provider.graph;
                 let current = handle
-                    .with_runtime(|relational| {
-                        candidate.certify_current(
+                    .with_runtime(execution, |relational| {
+                        candidate.certify_current(execution,
                             &handle.source_owner.invalidation_owner,
                             relational,
                             sealed.product(),
@@ -215,14 +216,14 @@ where
                                     break;
                                 };
                                 let (old, successor) = old.into_parts();
-                                let evidence = rebound_consumption::retain(runtime, &successor, &pending, sealed.product(),
+                                let evidence = rebound_consumption::retain(execution, runtime, &successor, &pending, sealed.product(),
                                     sealed.snapshot_handle(), positioned, admission)?;
 
                                 MatchedRequiredPredecessors::join(&mut matched, &runtime.output_demands, &consumer, old, evidence, positioned, admission)
                                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
                                 let next = handle
-                                    .with_runtime(|relational| {
-                                        pending.next_pending(
+                                    .with_runtime(execution, |relational| {
+                                        pending.next_pending(execution,
                                             &handle.source_owner.invalidation_owner,
                                             relational,
                                             sealed.snapshot_handle(),

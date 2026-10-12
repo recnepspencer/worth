@@ -72,7 +72,13 @@ fn a_checkpoint_of_a_frozen_head_restores_truth_without_a_publication_hold() {
         "the checkpoint preserves the changed publication, not the pre-edit output"
     );
     let checkpoint = application
-        .capture_application_checkpoint(WorthQueryCheckpointCapturePolicy::SystemAllocation)
+        .with_host_advancement(|phase| {
+            application.capture_application_checkpoint(
+                &phase,
+                WorthQueryCheckpointCapturePolicy::SystemAllocation,
+            )
+        })
+        .unwrap()
         .unwrap();
     assert_eq!(
         application.undelivered_publication_counts_for_test(),

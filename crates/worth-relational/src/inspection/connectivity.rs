@@ -45,14 +45,15 @@ impl ConnectivityWork {
 impl<'runtime> InspectionAccess<'runtime> {
     pub fn connectivity_summary(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &ConnectivityInspectionRequest,
     ) -> ConnectivityInspectionSummary {
         self.count_connectivity_summary_request();
         if matches!(request.scope, InspectionScope::Current) {
-            return self.current_connectivity_summary(request);
+            return self.current_connectivity_summary(execution, request);
         }
         let version_id = self.scope_version_id(&request.scope);
-        let Some(read_view) = self.read_view_for_scope(&request.scope) else {
+        let Some(read_view) = self.read_view_for_scope(execution, &request.scope) else {
             return self.unavailable_connectivity_summary(request, version_id);
         };
         let partition_scope = PartitionScopeFilter::from_scope(request.partition_scope.as_ref());
@@ -157,15 +158,16 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub fn neighbors(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: InspectionScope,
         entity_id: EntityId,
     ) -> NeighborInspectionResult {
         self.count_neighbor_request();
         let version_id = self.scope_version_id(&scope);
-        let relation_ids = self.scoped_relation_ids_for_entity(&scope, entity_id);
+        let relation_ids = self.scoped_relation_ids_for_entity(execution, &scope, entity_id);
         let (outgoing_relation_ids, incoming_relation_ids): (Vec<_>, Vec<_>) =
             relation_ids.into_iter().partition(|relation_id| {
-                self.scoped_relation_endpoints(&scope, *relation_id)
+                self.scoped_relation_endpoints(execution, &scope, *relation_id)
                     .is_some_and(|(source, _)| source == entity_id)
             });
         NeighborInspectionResult {
@@ -182,6 +184,7 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     fn current_connectivity_summary(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &ConnectivityInspectionRequest,
     ) -> ConnectivityInspectionSummary {
         let partition_scope = PartitionScopeFilter::from_scope(request.partition_scope.as_ref());
@@ -232,7 +235,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         for entity in &entities {
             adjacency.entry(*entity).or_default();
             for relation_id in
-                self.scoped_relation_ids_for_entity(&InspectionScope::Current, *entity)
+                self.scoped_relation_ids_for_entity(execution, &InspectionScope::Current, *entity)
             {
                 if !seen_relations.insert(relation_id) {
                     continue;
@@ -254,9 +257,11 @@ impl<'runtime> InspectionAccess<'runtime> {
                         InspectionDegradation::RelationBudgetExceeded,
                     );
                 }
-                let Some(record) = self
-                    .scoped_authoritative_relation_record(&InspectionScope::Current, relation_id)
-                else {
+                let Some(record) = self.scoped_authoritative_relation_record(
+                    execution,
+                    &InspectionScope::Current,
+                    relation_id,
+                ) else {
                     continue;
                 };
                 let kind_id = record.kind.kind_id;

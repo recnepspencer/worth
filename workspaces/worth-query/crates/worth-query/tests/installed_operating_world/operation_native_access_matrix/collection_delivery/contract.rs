@@ -7,18 +7,31 @@ use super::managed_collection_lease;
 
 #[test]
 fn a_lease_with_a_different_native_layout_cannot_target_the_consumer() {
-    let mut workspace = matrix_workspace("collection-delivery-contract-affinity", 0, false);
-    let changed = insert_matrix_value(&mut workspace, 0, matrix_value_with_order(0, "10"));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = matrix_workspace(
+        request_execution,
+        "collection-delivery-contract-affinity",
+        0,
+        false,
+    );
+    let changed = insert_matrix_value(
+        request_execution,
+        &mut workspace,
+        0,
+        matrix_value_with_order(0, "10"),
+    );
     let (settled, _) = settled_with_native_field(&mut workspace, 14);
     let collection = settled.into_bound_collection().unwrap();
     let window = first_window(&collection, 1);
     let mut consumer =
         domain::WorthQueryCollectionConsumerWindow::from_bound(collection, window).unwrap();
-    let lease = managed_collection_lease(&mut workspace);
+    let lease = managed_collection_lease(request_execution, &mut workspace);
     assert!(lease.drain(&mut workspace).unwrap().delivery().is_empty());
 
     workspace
-        .update(changed, |mutation| {
+        .update(request_execution, changed, |mutation| {
             mutation.set_aspect(
                 runtime::WorthQueryAspectTouch::whole_aspect(matrix_aspect_key()),
                 matrix_value_with_order(0, "20"),

@@ -2,9 +2,13 @@ use super::super::support::*;
 
 #[test]
 fn write_intent_effect_lowers_to_pending_intent_with_phase_evidence() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -26,16 +30,19 @@ fn write_intent_effect_lowers_to_pending_intent_with_phase_evidence() {
         .expect("pending write-intent effect should declare");
 
     let write = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Intent task")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Intent task")),
+                ],
+            ),
+        )
         .expect("write should route pending intent effect");
     let evidence = runtime
-        .inspect_effect(&effect)
+        .inspect_effect(request_execution, &effect)
         .expect("pending intent effect should inspect");
     let deliveries = runtime
         .drain_effect_deliveries(&effect)
@@ -104,9 +111,13 @@ fn write_intent_effect_lowers_to_pending_intent_with_phase_evidence() {
 
 #[test]
 fn write_intent_effect_rejects_authoritative_truth_target() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),

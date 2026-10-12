@@ -104,7 +104,7 @@ RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Sche
         if !std::ptr::eq(application.runtime(), request.application) {
             return Err((self, WorthQueryRequiredOutputPreparationDenial::ForeignProgram));
         }
-        if let Err(denial) = application.validate_required_program_source::<Root>(
+        if let Err(denial) = application.validate_required_program_source::<Root>(phase,
             &worth_query_execution::publication_boundary::program_publication_access(),
             &self.prepared, &self.receipt, &self.retained_source,
             request.principal, request.scope, request.branch,

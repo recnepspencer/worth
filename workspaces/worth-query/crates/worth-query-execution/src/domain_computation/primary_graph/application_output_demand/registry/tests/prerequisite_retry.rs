@@ -44,6 +44,9 @@ fn pending_required_prerequisite_preserves_its_retryable_operation() {
 /// the retry reads the current upstream row.
 #[test]
 fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use crate::domain_computation::execution_runtime::source_invalidation::{
         WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
     };
@@ -83,16 +86,18 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
             true,
         );
     let graph = world.application.runtime.primary_graph().unwrap();
-    let selected = graph.integration_handle().with_runtime(|runtime| {
-        let basis = runtime
-            .admit_branch_basis(&runtime.main_branch_identity())
-            .unwrap();
-        let snapshot = runtime
-            .snapshots()
-            .snapshot_for_observation(&basis.observation())
-            .unwrap();
-        Arc::new(runtime.read_truth().positioned_snapshot(&snapshot).unwrap())
-    });
+    let selected = graph
+        .integration_handle()
+        .with_runtime(request_execution, |runtime| {
+            let basis = runtime
+                .admit_branch_basis(&runtime.main_branch_identity())
+                .unwrap();
+            let snapshot = runtime
+                .snapshots()
+                .snapshot_for_observation(&basis.observation())
+                .unwrap();
+            Arc::new(runtime.read_truth().positioned_snapshot(&snapshot).unwrap())
+        });
     let consumed = crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence::retained_for_test(
         &source_owner, retired, Arc::from([]), Vec::new(), None, selected,
     );

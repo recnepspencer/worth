@@ -210,6 +210,7 @@ impl RebasedSourceFacts {
 /// a source the effect moved.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn rebase_output(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     prepared: PreparedSourceFactRebase,
@@ -231,6 +232,7 @@ pub(super) fn rebase_output(
         .filter(|entity| changed_entities.contains(entity))
         .collect();
     rebase(
+        execution,
         runtime,
         snapshot,
         prepared,
@@ -242,6 +244,7 @@ pub(super) fn rebase_output(
 }
 
 fn rebase(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     prepared: PreparedSourceFactRebase,
@@ -281,6 +284,7 @@ fn rebase(
         let unasked = &facts[ordinal..];
         let prepared = match resolution::PreparedFactRebase::prepare(
             runtime,
+            execution,
             snapshot,
             fact,
             retired,

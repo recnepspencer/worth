@@ -34,11 +34,12 @@ pub(in crate::intent_admission::certification) struct RoutingDelegationParityFix
 }
 
 pub(in crate::intent_admission::certification) fn certified_routing_intent_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> CertifiedRoutingIntentFixture {
-    let mut workspace = certification_runtime()
+    let mut workspace = certification_runtime(execution)
         .workspace("certification-routing-intent")
         .expect("routing certification workspace should open");
-    let binding = seeded_probe_binding(&mut workspace);
+    let binding = seeded_probe_binding(execution, &mut workspace);
     let request = WorthQueryExistingTruthProbeRequest::new(binding, probe_aspects())
         .expect("routing certification request should build");
     let runtime = workspace.into_runtime();
@@ -54,7 +55,7 @@ pub(in crate::intent_admission::certification) fn certified_routing_intent_fixtu
     let handoff_digest = admitted.handoff().handoff_digest().to_string();
     let binding_digest = admitted.execution_binding().binding_digest().to_string();
     let result = admitted
-        .execute()
+        .execute(execution)
         .expect("routing certification admitted execution should succeed");
     let trace_digest = result
         .receipt()
@@ -73,29 +74,31 @@ pub(in crate::intent_admission::certification) fn certified_routing_intent_fixtu
 }
 
 pub(in crate::intent_admission::certification) fn routing_delegation_parity_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RoutingDelegationParityFixture {
-    let mut delegated_workspace = certification_runtime()
+    let mut delegated_workspace = certification_runtime(execution)
         .workspace("certification-routing-workspace-legacy")
         .expect("workspace routing parity workspace should open");
-    let delegated_binding = seeded_probe_binding(&mut delegated_workspace);
+    let delegated_binding = seeded_probe_binding(execution, &mut delegated_workspace);
     let workspace_legacy_request =
         WorthQueryExistingTruthProbeRequest::new(delegated_binding, probe_aspects())
             .expect("workspace routing legacy request should build");
     let workspace_legacy = delegated_workspace
         .probe_existing(
+            execution,
             workspace_legacy_request.binding().clone(),
             workspace_legacy_request.aspect_touches().iter().cloned(),
         )
         .expect("workspace routing legacy path should execute");
     let workspace_legacy_canonical = delegated_workspace
         .probe_existing_intent(workspace_legacy_request.clone())
-        .execute()
+        .execute(execution)
         .expect("workspace routing delegated evidence should execute");
 
-    let mut canonical_workspace = certification_runtime()
+    let mut canonical_workspace = certification_runtime(execution)
         .workspace("certification-routing-workspace-canonical")
         .expect("workspace routing canonical workspace should open");
-    let canonical_binding = seeded_probe_binding(&mut canonical_workspace);
+    let canonical_binding = seeded_probe_binding(execution, &mut canonical_workspace);
     let canonical_request =
         WorthQueryExistingTruthProbeRequest::new(canonical_binding, probe_aspects())
             .expect("workspace routing canonical request should build");
@@ -105,29 +108,31 @@ pub(in crate::intent_admission::certification) fn routing_delegation_parity_fixt
         .expect("workspace routing canonical review should succeed")
         .admit()
         .expect("workspace routing canonical admission should succeed")
-        .execute()
+        .execute(execution)
         .expect("workspace routing canonical path should execute");
 
-    let mut delegated_runtime_workspace = certification_runtime()
+    let mut delegated_runtime_workspace = certification_runtime(execution)
         .workspace("certification-routing-runtime-legacy")
         .expect("runtime routing legacy workspace should open");
-    let delegated_runtime_binding = seeded_probe_binding(&mut delegated_runtime_workspace);
+    let delegated_runtime_binding =
+        seeded_probe_binding(execution, &mut delegated_runtime_workspace);
     let delegated_runtime_request =
         WorthQueryExistingTruthProbeRequest::new(delegated_runtime_binding, probe_aspects())
             .expect("runtime routing legacy request should build");
     let delegated_runtime = delegated_runtime_workspace.into_runtime();
     let runtime_legacy = delegated_runtime
-        .probe_existing(delegated_runtime_request.clone())
+        .probe_existing(execution, delegated_runtime_request.clone())
         .expect("runtime routing legacy path should execute");
     let runtime_legacy_canonical = delegated_runtime
         .probe_existing_intent(delegated_runtime_request)
-        .execute()
+        .execute(execution)
         .expect("runtime routing delegated evidence should execute");
 
-    let mut canonical_runtime_workspace = certification_runtime()
+    let mut canonical_runtime_workspace = certification_runtime(execution)
         .workspace("certification-routing-runtime-canonical")
         .expect("runtime routing canonical workspace should open");
-    let canonical_runtime_binding = seeded_probe_binding(&mut canonical_runtime_workspace);
+    let canonical_runtime_binding =
+        seeded_probe_binding(execution, &mut canonical_runtime_workspace);
     let canonical_runtime_request =
         WorthQueryExistingTruthProbeRequest::new(canonical_runtime_binding, probe_aspects())
             .expect("runtime routing canonical request should build");
@@ -138,7 +143,7 @@ pub(in crate::intent_admission::certification) fn routing_delegation_parity_fixt
         .expect("runtime routing canonical review should succeed")
         .admit()
         .expect("runtime routing canonical admission should succeed")
-        .execute()
+        .execute(execution)
         .expect("runtime routing canonical path should execute");
 
     RoutingDelegationParityFixture {
@@ -176,10 +181,11 @@ fn probe_aspects() -> [WorthQueryAspectTouch; 2] {
 }
 
 fn seeded_probe_binding(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
 ) -> WorthQueryExistingTruthTargetBinding {
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(execution, "Task", |task| {
             task.set_aspect(
                 identity_id_touch(),
                 crate::runtime::WorthQueryAuthoredAspectValue::string("task-1"),

@@ -7,7 +7,10 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn installed_dag_mints_one_query_owned_trace_and_publication() {
-    let mut workspace = workflow_workspace("installed-workflow").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "installed-workflow").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -129,7 +132,11 @@ fn installed_dag_mints_one_query_owned_trace_and_publication() {
 
 #[test]
 fn incomplete_completion_denial_retains_exact_run_work_without_deeper_execution() {
-    let mut workspace = workflow_workspace("installed-workflow-incomplete").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workflow_workspace(request_execution, "installed-workflow-incomplete").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -167,7 +174,10 @@ fn incomplete_completion_denial_retains_exact_run_work_without_deeper_execution(
 
 #[test]
 fn skipping_a_predecessor_denies_before_stage_executor_contact() {
-    let mut workspace = workflow_workspace("installed-workflow-skip").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "installed-workflow-skip").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -202,7 +212,11 @@ fn skipping_a_predecessor_denies_before_stage_executor_contact() {
 
 #[test]
 fn duplicate_stage_advancement_denies_without_a_second_executor_contact() {
-    let mut workspace = workflow_workspace("installed-workflow-duplicate-advance").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workflow_workspace(request_execution, "installed-workflow-duplicate-advance").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -241,7 +255,11 @@ fn duplicate_stage_advancement_denies_without_a_second_executor_contact() {
 
 #[test]
 fn copied_stage_label_is_only_a_candidate_and_cannot_invent_progression() {
-    let mut workspace = workflow_workspace("installed-workflow-copied-stage-label").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workflow_workspace(request_execution, "installed-workflow-copied-stage-label").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -276,7 +294,10 @@ fn copied_stage_label_is_only_a_candidate_and_cannot_invent_progression() {
 
 #[test]
 fn foreign_runtime_denies_stage_progression_before_executor_contact() {
-    let mut owner = workflow_workspace("installed-workflow-owner").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut owner = workflow_workspace(request_execution, "installed-workflow-owner").unwrap();
     let installed_domain = owner.domain(GeometryDomain).unwrap();
     let run = owner
         .observe_operating_world(owner.current_world())
@@ -291,7 +312,7 @@ fn foreign_runtime_denies_stage_progression_before_executor_contact() {
         .unwrap()
         .start_workflow(&mut owner)
         .unwrap();
-    let mut foreign = workflow_workspace("installed-workflow-foreign").unwrap();
+    let mut foreign = workflow_workspace(request_execution, "installed-workflow-foreign").unwrap();
     let denial = match run.advance(
         "start",
         domain::WorthQueryWorkflowValue::NotRequired,
@@ -315,13 +336,20 @@ fn foreign_runtime_denies_stage_progression_before_executor_contact() {
 
 #[test]
 fn independent_stage_order_converges_to_one_semantic_trace() {
-    let left_first = complete_trace("workflow-left-first", ["left", "right"]);
-    let right_first = complete_trace("workflow-right-first", ["right", "left"]);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left_first = complete_trace(request_execution, "workflow-left-first", ["left", "right"]);
+    let right_first = complete_trace(request_execution, "workflow-right-first", ["right", "left"]);
     assert_eq!(left_first, right_first);
 }
 
-fn complete_trace(name: &str, order: [&str; 2]) -> String {
-    let mut workspace = workflow_workspace(name).unwrap();
+fn complete_trace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+    order: [&str; 2],
+) -> String {
+    let mut workspace = workflow_workspace(request_execution, name).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let mut run = workspace
         .observe_operating_world(workspace.current_world())

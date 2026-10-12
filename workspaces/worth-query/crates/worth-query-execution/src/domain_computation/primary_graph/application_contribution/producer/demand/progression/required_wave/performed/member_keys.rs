@@ -76,8 +76,10 @@ mod tests {
         crate::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write(|world, _, _, _| {
             let runtime = &world.application;
             let mut admission = runtime.demand_request_admission();
-            let (shared, _) = super::super::super::selection::select_required_basis(
-                runtime, runtime.current_world(), &mut admission).unwrap();
+            let (shared, _) = runtime.with_host_advancement(|phase| {
+                super::super::super::selection::select_required_basis(
+                    &phase.borrowed_request_for_test(), runtime, runtime.current_world(), &mut admission)
+            }).unwrap().unwrap();
             let source = WorthQueryObservedSourceEpoch::new(
                 [1; 32], [2; 32],
                 worth_relational::facade::identity::EntityId::new(

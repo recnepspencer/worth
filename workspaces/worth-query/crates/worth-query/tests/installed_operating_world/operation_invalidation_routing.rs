@@ -12,6 +12,9 @@ use super::installed_operation_fixture::{GeometryDomain, ReadFamily};
 
 #[test]
 fn two_affected_owners_and_four_leases_report_exact_k_plus_l_routing_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
@@ -25,15 +28,15 @@ fn two_affected_owners_and_four_leases_report_exact_k_plus_l_routing_work() {
             domain::WorthQueryConsumerSupportDimension::DependencyImpact,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace("invalidation-indexed-k-plus-l")
+        .workspace(request_execution, "invalidation-indexed-k-plus-l")
         .unwrap();
-    let (first_subject, first_candidate) = shared_pair(&mut workspace);
-    let (second_subject, second_candidate) = shared_pair(&mut workspace);
+    let (first_subject, first_candidate) = shared_pair(request_execution, &mut workspace);
+    let (second_subject, second_candidate) = shared_pair(request_execution, &mut workspace);
     consume_empty_epoch(&mut workspace, &first_subject, &first_candidate);
     consume_empty_epoch(&mut workspace, &second_subject, &second_candidate);
 
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "two-owner-update")
         })
         .unwrap();
@@ -105,6 +108,9 @@ fn two_affected_owners_and_four_leases_report_exact_k_plus_l_routing_work() {
 
 #[test]
 fn same_aspect_other_field_ordinary_consumers_do_not_enter_installed_owner_routing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
@@ -118,20 +124,22 @@ fn same_aspect_other_field_ordinary_consumers_do_not_enter_installed_owner_routi
             domain::WorthQueryConsumerSupportDimension::DependencyImpact,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace("invalidation-same-aspect-field-routing")
+        .workspace(request_execution, "invalidation-same-aspect-field-routing")
         .unwrap();
     let inserted = workspace
-        .insert("Vertex", |mutation| mutation.aspect("identity.id", "seed"))
+        .insert(request_execution, "Vertex", |mutation| {
+            mutation.aspect("identity.id", "seed")
+        })
         .unwrap();
     let entity = inserted.deltas()[0].entity_identity().clone();
-    let (subject, candidate) = shared_pair(&mut workspace);
+    let (subject, candidate) = shared_pair(request_execution, &mut workspace);
     consume_empty_epoch(&mut workspace, &subject, &candidate);
     let ordinary = (0..64)
-        .map(|ordinal| ordinary_name_view(&mut workspace, ordinal))
+        .map(|ordinal| ordinary_name_view(request_execution, &mut workspace, ordinal))
         .collect::<Vec<_>>();
 
     workspace
-        .update(entity, |mutation| {
+        .update(request_execution, entity, |mutation| {
             mutation.aspect("identity.id", "affected-installed-owner")
         })
         .unwrap();
@@ -155,11 +163,16 @@ fn same_aspect_other_field_ordinary_consumers_do_not_enter_installed_owner_routi
 
 #[test]
 fn installed_ordering_dependency_routes_end_to_end_when_the_live_read_omits_it() {
-    let mut workspace =
-        impact_collection_invalidation_workspace("invalidation-installed-only-ordering-routing")
-            .unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = impact_collection_invalidation_workspace(
+        request_execution,
+        "invalidation-installed-only-ordering-routing",
+    )
+    .unwrap();
     let inserted = workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation
                 .aspect("identity.id", "installed-ordering-row")
                 .aspect("ordering.position", "first")
@@ -168,7 +181,7 @@ fn installed_ordering_dependency_routes_end_to_end_when_the_live_read_omits_it()
     let entity = inserted.deltas()[0].entity_identity().clone();
     let live = match settle_installed_ordering(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("installed ordering subject did not promote"),
@@ -188,7 +201,7 @@ fn installed_ordering_dependency_routes_end_to_end_when_the_live_read_omits_it()
         .is_empty());
 
     workspace
-        .update(entity, |mutation| {
+        .update(request_execution, entity, |mutation| {
             mutation.aspect("ordering.position", "second")
         })
         .unwrap();
@@ -217,8 +230,14 @@ fn installed_ordering_dependency_routes_end_to_end_when_the_live_read_omits_it()
     assert_eq!(delta.epoch_counters().capability_index_lookups, 1);
 }
 
-fn shared_pair(workspace: &mut runtime::WorthQueryWorkspace) -> (Lease, Lease) {
-    let live = match settle_native(workspace).into_lifecycle().promote(workspace) {
+fn shared_pair(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace: &mut runtime::WorthQueryWorkspace,
+) -> (Lease, Lease) {
+    let live = match settle_native(workspace)
+        .into_lifecycle()
+        .promote(request_execution, workspace)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("indexed routing subject did not promote"),
     };
@@ -268,6 +287,7 @@ fn settle_installed_ordering(
 }
 
 fn ordinary_name_view(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut runtime::WorthQueryWorkspace,
     ordinal: usize,
 ) -> runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape> {
@@ -298,6 +318,11 @@ fn ordinary_name_view(
         [],
     );
     workspace
-        .live_view_request(format!("ordinary-name-{ordinal}"), request, schema)
+        .live_view_request(
+            request_execution,
+            format!("ordinary-name-{ordinal}"),
+            request,
+            schema,
+        )
         .unwrap()
 }

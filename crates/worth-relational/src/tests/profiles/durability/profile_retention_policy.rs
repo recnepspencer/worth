@@ -2,10 +2,13 @@ use crate::tests::support::*;
 
 #[test]
 fn geometry_profile_does_not_force_retention_pass_on_each_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
 
     runtime.performance_access().reset_counters();
-    let created = create_entity_outcome(&runtime, "geometry-hot-retention");
+    let created = create_entity_outcome(execution, &runtime, "geometry-hot-retention");
     let entity = changed_entities(&created)[0];
     let counters_after_create = runtime.performance_access().counters();
 
@@ -13,7 +16,7 @@ fn geometry_profile_does_not_force_retention_pass_on_each_commit() {
     assert_eq!(counters_after_create.retention_relation_slots_scanned, 0);
 
     runtime.performance_access().reset_counters();
-    let deleted = delete_entity(&runtime, entity);
+    let deleted = delete_entity(execution, &runtime, entity);
     let counters_after_delete = runtime.performance_access().counters();
 
     assert_eq!(counters_after_delete.retention_entity_slots_scanned, 0);
@@ -34,11 +37,14 @@ fn geometry_profile_does_not_force_retention_pass_on_each_commit() {
 
 #[test]
 fn ai_profile_commit_and_release_only_make_reclamation_eligible() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
-    let entity = create_entity(&runtime, "ai-retention");
+    let entity = create_entity(execution, &runtime, "ai-retention");
     runtime.performance_access().reset_counters();
 
-    let deleted = delete_entity(&runtime, entity);
+    let deleted = delete_entity(execution, &runtime, entity);
     runtime
         .snapshots()
         .release_snapshot(&deleted.snapshot)

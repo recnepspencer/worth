@@ -29,11 +29,16 @@ impl WorthQueryWorkflowContextStop {
 }
 
 pub fn preview(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &WorthQueryWorkspace,
     label: WorthQuerySessionLabel,
 ) -> Result<WorthQueryWorkflowContext, WorthQueryWorkflowContextStop> {
     let authority = workspace
-        .capture_ordinary_preview_authority(label, WorthQueryEffectPolicy::SandboxedWriteIntent)
+        .capture_ordinary_preview_authority(
+            execution,
+            label,
+            WorthQueryEffectPolicy::SandboxedWriteIntent,
+        )
         .map_err(|error| WorthQueryWorkflowContextStop { error })?;
     debug_assert_eq!(
         authority.family(),

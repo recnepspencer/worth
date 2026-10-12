@@ -32,7 +32,7 @@ fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {
         .observe_branch(&court.records.runtime.main_branch_identity())
         .unwrap()
         .0;
-    drop(court.prepare_cargo(&root, "5"));
+    drop(court.prepare_cargo(&execution, &root, "5"));
     assert_eq!(
         court
             .world
@@ -42,7 +42,7 @@ fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {
             .reserved(),
         0
     );
-    let prepared = court.prepare_cargo(&root, "5");
+    let prepared = court.prepare_cargo(&execution, &root, "5");
     let cancel = RuntimeWorldCancellationSource::new();
     cancel.cancel();
     let RuntimeWorldPublicationOutcome::NoEffect(denied) = court
@@ -70,7 +70,7 @@ fn cancellation_prepared_drop_and_stale_head_do_not_move_components() {
         signal_before
     );
     drop(denied);
-    let stale_prepared = court.prepare_cargo(&root, "7");
+    let stale_prepared = court.prepare_cargo(&execution, &root, "7");
     let healthy = court.publish_cargo(&root, "5");
     let current = court
         .records
@@ -133,9 +133,10 @@ fn foreign_candidate_denial_has_a_healthy_candidate_twin() {
         .observe_branch(&court.records.runtime.main_branch_identity())
         .unwrap()
         .0;
-    let candidate = other
-        .records
-        .candidate(foreign.basis().relational_basis(), "grain", "8");
+    let candidate =
+        other
+            .records
+            .candidate(&execution, foreign.basis().relational_basis(), "grain", "8");
     let prepared = court
         .world
         .publication_port()
@@ -174,6 +175,9 @@ fn foreign_candidate_denial_has_a_healthy_candidate_twin() {
 
 #[test]
 fn signal_denial_before_movement_has_no_partial_and_healthy_twin() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut court = CompositeSupplyChainCourt::compile();
     let policy = match court.world.execution_placement() {
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
@@ -211,7 +215,7 @@ fn signal_denial_before_movement_has_no_partial_and_healthy_twin() {
     let RuntimeWorldPublicationOutcome::NoEffect(denied) = port.execute_with_signal(
         execution,
         prepared,
-        &mut court.context(&root),
+        &mut court.context(request_execution, &root),
         &token,
         |_| {
             Err(SignalError::InvalidInput {
@@ -250,7 +254,7 @@ fn signal_denial_before_movement_has_no_partial_and_healthy_twin() {
     let RuntimeWorldPublicationOutcome::Performed(done) = port.execute_with_signal(
         execution,
         prepared,
-        &mut court.context(&root),
+        &mut court.context(request_execution, &root),
         &token,
         |_| Ok(()),
     ) else {
@@ -284,7 +288,7 @@ fn public_owner_loss_denies_reserved_execution_without_component_movement() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let root = court.bootstrap();
-    let prepared = court.prepare_cargo(&root, "5");
+    let prepared = court.prepare_cargo(&execution, &root, "5");
     let port = court.world.publication_port();
     let signal = court
         .signal

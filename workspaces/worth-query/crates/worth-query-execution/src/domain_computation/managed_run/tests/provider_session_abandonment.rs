@@ -20,11 +20,13 @@ fn dropping_a_readmitted_session_aborts_once() {
             false,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         drop(
             running
                 .admit_provider_execution_plan(&graph)
                 .expect("provider plan should admit")
-                .readmit(execution)
+                .readmit(&installed_running_phase)
                 .expect("provider plan should readmit"),
         );
         assert_eq!(
@@ -55,11 +57,13 @@ fn dropping_a_prepared_session_aborts_once() {
             false,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         drop(
             running
                 .admit_provider_execution_plan(&graph)
                 .expect("provider plan should admit")
-                .readmit(execution)
+                .readmit(&installed_running_phase)
                 .expect("provider plan should readmit")
                 .prepare()
                 .expect("provider session should prepare"),
@@ -93,11 +97,13 @@ fn dropping_a_staged_session_aborts_once() {
             false,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         drop(
             running
                 .admit_provider_execution_plan(&graph)
                 .expect("provider plan should admit")
-                .readmit(execution)
+                .readmit(&installed_running_phase)
                 .expect("provider plan should readmit")
                 .prepare()
                 .expect("provider session should prepare")
@@ -132,11 +138,13 @@ fn dropping_a_commit_prepared_session_aborts_once() {
             false,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         drop(
             running
                 .admit_provider_execution_plan(&graph)
                 .expect("provider plan should admit")
-                .readmit(execution)
+                .readmit(&installed_running_phase)
                 .expect("provider plan should readmit")
                 .prepare()
                 .expect("provider session should prepare")
@@ -174,10 +182,12 @@ fn failed_preparation_aborts_once() {
             false,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let _ = running
             .admit_provider_execution_plan(&graph)
             .expect("provider plan should admit")
-            .readmit(execution)
+            .readmit(&installed_running_phase)
             .expect("provider plan should readmit")
             .prepare()
             .expect_err("preparation panic must be contained");

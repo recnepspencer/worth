@@ -33,29 +33,43 @@ mod sealed {
 /// argument, owns basis authority and is revalidated before execution.
 pub trait WorthQueryComparisonExecution: sealed::Sealed {
     #[doc(hidden)]
-    fn execute(self, request: WorthQueryComparisonRequest) -> WorthQueryComparisonOutcome;
+    fn execute(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: WorthQueryComparisonRequest,
+    ) -> WorthQueryComparisonOutcome;
 }
 
 impl WorthQueryComparisonRequest {
-    pub fn run(self, execution: impl WorthQueryComparisonExecution) -> WorthQueryComparisonOutcome {
-        execution.execute(self)
+    pub fn run(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: impl WorthQueryComparisonExecution,
+    ) -> WorthQueryComparisonOutcome {
+        execution.execute(request_execution, self)
     }
 }
 
 impl WorthQueryComparisonExecution for &mut WorthQueryWorkspace {
-    fn execute(self, request: WorthQueryComparisonRequest) -> WorthQueryComparisonOutcome {
+    fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: WorthQueryComparisonRequest,
+    ) -> WorthQueryComparisonOutcome {
         let WorthQueryComparisonPairAuthority::CurrentAndRetained { current, retained } =
             request.context.authority.clone()
         else {
             return invalid_execution_resource();
         };
         let counters = WorthQueryComparisonJourneyCounters::validate_pair();
-        if !current.matches(self) || !retained.admits_snapshot(&self.snapshot_identity()) {
+        if !current.matches(execution, self)
+            || !retained.admits_snapshot(&self.snapshot_identity_with_request(execution))
+        {
             return stale_pair(counters);
         }
 
         let counters = counters.execute_left();
-        let left = match execute_current_read(request.declaration.left_read, self) {
+        let left = match execute_current_read(execution, request.declaration.left_read, self) {
             Ok(result) => result,
             Err(reason) => {
                 return stopped(
@@ -70,18 +84,21 @@ impl WorthQueryComparisonExecution for &mut WorthQueryWorkspace {
         let counters = counters.execute_right().materialize_historical();
         let historical =
             WorthQueryHistoricalPathDeclaration::retained_from_read(request.declaration.right_read);
-        let (right, materialization) =
-            match historical.using(retained.clone()).run(self).into_result() {
-                Ok(completion) => completion.into_parts(),
-                Err(stop) => {
-                    return stopped(
-                        WorthQueryComparisonStopSource::RightExecution,
-                        WorthQueryComparisonNextAction::ResolveAuthority,
-                        format!("right historical comparison query stopped: {stop:?}"),
-                        counters,
-                    );
-                }
-            };
+        let (right, materialization) = match historical
+            .using(retained.clone())
+            .run(execution, self)
+            .into_result()
+        {
+            Ok(completion) => completion.into_parts(),
+            Err(stop) => {
+                return stopped(
+                    WorthQueryComparisonStopSource::RightExecution,
+                    WorthQueryComparisonNextAction::ResolveAuthority,
+                    format!("right historical comparison query stopped: {stop:?}"),
+                    counters,
+                );
+            }
+        };
         let pair = WorthQueryComparisonBasisPairEvidence::new(
             WorthQueryComparisonBasisFamily::CurrentToHistorical,
             WorthQueryComparisonBasisEvidence::new(
@@ -109,7 +126,11 @@ impl WorthQueryComparisonExecution for &mut WorthQueryWorkspace {
 }
 
 impl WorthQueryComparisonExecution for (&mut WorthQueryWorkspace, &mut WorthQueryWorkspace) {
-    fn execute(self, request: WorthQueryComparisonRequest) -> WorthQueryComparisonOutcome {
+    fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: WorthQueryComparisonRequest,
+    ) -> WorthQueryComparisonOutcome {
         let (left_workspace, right_workspace) = self;
         let WorthQueryComparisonPairAuthority::BranchToBranch { left, right } =
             request.context.authority.clone()
@@ -117,36 +138,39 @@ impl WorthQueryComparisonExecution for (&mut WorthQueryWorkspace, &mut WorthQuer
             return invalid_execution_resource();
         };
         let counters = WorthQueryComparisonJourneyCounters::validate_pair();
-        if !left.matches(left_workspace) || !right.matches(right_workspace) {
+        if !left.matches(execution, left_workspace) || !right.matches(execution, right_workspace) {
             return stale_pair(counters);
         }
 
         let counters = counters.execute_left();
-        let left_result = match execute_current_read(request.declaration.left_read, left_workspace)
-        {
-            Ok(result) => result,
-            Err(reason) => {
-                return stopped(
-                    WorthQueryComparisonStopSource::LeftExecution,
-                    WorthQueryComparisonNextAction::ResolveAuthority,
-                    reason,
-                    counters,
-                );
-            }
-        };
-        let counters = counters.execute_right();
-        let right_result =
-            match execute_current_read(request.declaration.right_read, right_workspace) {
+        let left_result =
+            match execute_current_read(execution, request.declaration.left_read, left_workspace) {
                 Ok(result) => result,
                 Err(reason) => {
                     return stopped(
-                        WorthQueryComparisonStopSource::RightExecution,
+                        WorthQueryComparisonStopSource::LeftExecution,
                         WorthQueryComparisonNextAction::ResolveAuthority,
                         reason,
                         counters,
                     );
                 }
             };
+        let counters = counters.execute_right();
+        let right_result = match execute_current_read(
+            execution,
+            request.declaration.right_read,
+            right_workspace,
+        ) {
+            Ok(result) => result,
+            Err(reason) => {
+                return stopped(
+                    WorthQueryComparisonStopSource::RightExecution,
+                    WorthQueryComparisonNextAction::ResolveAuthority,
+                    reason,
+                    counters,
+                );
+            }
+        };
         let pair = WorthQueryComparisonBasisPairEvidence::new(
             WorthQueryComparisonBasisFamily::BranchToBranch,
             WorthQueryComparisonBasisEvidence::new(
@@ -174,11 +198,12 @@ impl WorthQueryComparisonExecution for (&mut WorthQueryWorkspace, &mut WorthQuer
 }
 
 fn execute_current_read(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     read: crate::ordinary::read::WorthQueryReadDeclaration,
     workspace: &mut WorthQueryWorkspace,
 ) -> Result<WorthQueryReadResult, String> {
     read.using(current())
-        .run(workspace)
+        .run(execution, workspace)
         .into_result()
         .map(|completion| completion.into_result())
         .map_err(|stop| format!("comparison query stopped: {stop:?}"))
@@ -348,34 +373,6 @@ fn resolve_correspondence(
     }
 }
 
-fn invalid_execution_resource() -> WorthQueryComparisonOutcome {
-    stopped(
-        WorthQueryComparisonStopSource::InvalidBasisPair,
-        WorthQueryComparisonNextAction::RefreshBasisPair,
-        "execution resources do not match the structurally bound comparison family",
-        WorthQueryComparisonJourneyCounters::validate_pair(),
-    )
-}
-
-fn stale_pair(counters: WorthQueryComparisonJourneyCounters) -> WorthQueryComparisonOutcome {
-    stopped(
-        WorthQueryComparisonStopSource::StaleBasisPair,
-        WorthQueryComparisonNextAction::RefreshBasisPair,
-        "one or both structurally bound comparison bases are stale or mismatched",
-        counters,
-    )
-}
-
-fn stopped(
-    source: WorthQueryComparisonStopSource,
-    next_action: WorthQueryComparisonNextAction,
-    reason: impl Into<String>,
-    counters: WorthQueryComparisonJourneyCounters,
-) -> WorthQueryComparisonOutcome {
-    WorthQueryComparisonOutcome::Stopped(WorthQueryComparisonStop::new(
-        source,
-        next_action,
-        reason,
-        counters,
-    ))
-}
+#[path = "execution_stops.rs"]
+mod execution_stops;
+use execution_stops::{invalid_execution_resource, stale_pair, stopped};

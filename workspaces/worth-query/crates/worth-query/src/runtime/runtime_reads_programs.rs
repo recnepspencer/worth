@@ -2,8 +2,12 @@ use super::*;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 
 impl WorthQueryRuntime {
-    pub fn read_live<T>(&mut self, view: &WorthQueryLiveView<T>) -> Vec<WorthQueryEntity> {
-        self.read_live_result(view)
+    pub fn read_live<T>(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        view: &WorthQueryLiveView<T>,
+    ) -> Vec<WorthQueryEntity> {
+        self.read_live_result(execution, view)
             .expect("live view declaration admitted before runtime.read_live execution")
             .rows()
             .to_vec()
@@ -11,9 +15,10 @@ impl WorthQueryRuntime {
 
     pub fn read_live_result<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &WorthQueryLiveView<T>,
     ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
-        self.execute_live_read_for_installation(view.subscription_installation().clone())
+        self.execute_live_read_for_installation(execution, view.subscription_installation().clone())
     }
 
     pub fn drain_patches<T>(&mut self, view: &WorthQueryLiveView<T>) -> WorthQueryPatchBatch {
@@ -75,6 +80,7 @@ impl WorthQueryRuntime {
 
     pub fn read_derived_result<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &WorthQueryDerivedViewHandle<T>,
     ) -> Result<WorthQueryDerivedMaterializationResult, WorthQueryRuntimeError> {
         self.review_runtime_derived_materialization(view.name().to_string())
@@ -82,17 +88,20 @@ impl WorthQueryRuntime {
                 self.resolve_reviewed_admitted_derived_materialization_handoff(review)
             })
             .map(|handoff| self.prepare_derived_materialization_execution_binding(handoff))
-            .and_then(|binding| self.execute_derived_materialization_execution_binding(binding))
+            .and_then(|binding| {
+                self.execute_derived_materialization_execution_binding(execution, binding)
+            })
     }
 
     pub fn inspect_derived_view<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &WorthQueryDerivedViewHandle<T>,
     ) -> Result<WorthQueryComputedInspectionEvidence, WorthQueryRuntimeError> {
         let review = self.review_runtime_derived_inspection(view.name().to_string())?;
         let handoff = self.resolve_reviewed_admitted_derived_inspection_handoff(review)?;
         let binding = self.prepare_derived_inspection_execution_binding(handoff);
-        self.execute_derived_inspection_execution_binding(binding)
+        self.execute_derived_inspection_execution_binding(execution, binding)
             .map(|result| result.evidence().clone())
     }
 
@@ -110,9 +119,10 @@ impl WorthQueryRuntime {
 
     pub fn inspect_effect<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         effect: &WorthQueryEffectHandle<T>,
     ) -> Result<WorthQueryEffectInspectionEvidence, WorthQueryRuntimeError> {
-        match self.inspect(effect)? {
+        match self.inspect(execution, effect)? {
             WorthQueryInspection::Effect(inspection) => Ok(inspection),
             other => panic!("expected effect inspection, got {other:?}"),
         }
@@ -150,9 +160,25 @@ impl WorthQueryRuntime {
             .collect()
     }
 
-    pub fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    pub fn current_snapshot_identity(
+        &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+    ) -> Result<
+        WorthQuerySnapshotIdentity,
+        worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+    > {
+        let execution = phase.execution_request_for(&self.installed_product.world)?;
+        Ok(self.current_snapshot_identity_with_request(&execution))
+    }
+
+    pub(in crate::runtime) fn current_snapshot_identity_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         self.backend
-            .current_snapshot_identity()
+            .current_snapshot_identity(execution)
             .admit_runtime_backend_authority()
     }
 
@@ -168,6 +194,21 @@ impl WorthQueryRuntime {
 
     pub fn run_operation(
         &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        operation: WorthQueryInstalledOperation,
+        inputs: Vec<WorthQueryOperationInput>,
+    ) -> Result<WorthQueryRunReceipt, WorthQueryRuntimeError> {
+        let execution = phase
+            .execution_request_for(&self.installed_product.world)
+            .map_err(WorthQueryRuntimeError::ForeignPhase)?;
+        self.run_operation_with_request(&execution, operation, inputs)
+    }
+
+    pub(in crate::runtime) fn run_operation_with_request(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         operation: WorthQueryInstalledOperation,
         inputs: Vec<WorthQueryOperationInput>,
     ) -> Result<WorthQueryRunReceipt, WorthQueryRuntimeError> {
@@ -195,7 +236,7 @@ impl WorthQueryRuntime {
                     schema_view,
                 } => {
                     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> =
-                        self.declare_live_view(name.clone(), request, schema_view)?;
+                        self.declare_live_view(execution, name.clone(), request, schema_view)?;
                     trace.record_declaration(format!("live:{name}"));
                 }
                 WorthQueryProgramEffect::DeclareDerivedView(view) => {
@@ -204,13 +245,13 @@ impl WorthQueryRuntime {
                     trace.record_declaration(format!("derived:{name}"));
                 }
                 WorthQueryProgramEffect::Write(command) => {
-                    let receipt = self.write(command)?;
+                    let receipt = self.write(execution, command)?;
                     trace.record_write_receipt(receipt.commit_identity().clone());
                     write_receipts.push(receipt);
                 }
                 WorthQueryProgramEffect::WriteTemplate(template) => {
                     let command = template.bind(&bound_inputs)?;
-                    let receipt = self.write(command)?;
+                    let receipt = self.write(execution, command)?;
                     trace.record_write_receipt(receipt.commit_identity().clone());
                     write_receipts.push(receipt);
                 }
@@ -222,7 +263,7 @@ impl WorthQueryRuntime {
                         .ok_or_else(|| {
                             WorthQueryRuntimeError::MissingLiveView(view_name.clone())
                         })?;
-                    let read = self.execute_live_read_for_installation(installation)?;
+                    let read = self.execute_live_read_for_installation(execution, installation)?;
                     outputs.push(WorthQueryOperationOutput::from_live_read_entities(
                         format!("live:{view_name}"),
                         read.rows().iter().cloned(),
@@ -323,6 +364,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_live_read_for_installation(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installation: WorthQueryRuntimeLiveSubscriptionInstallation,
     ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
         if self.managed_live_resource_is_abandoned(installation.view_name()) {
@@ -334,6 +376,6 @@ impl WorthQueryRuntime {
         let review = self.review_runtime_live_read_execution(installation)?;
         let handoff = self.resolve_reviewed_admitted_live_read_execution_handoff(review)?;
         let binding = self.prepare_live_read_execution_binding(handoff)?;
-        self.execute_live_read_execution_binding(binding)
+        self.execute_live_read_execution_binding(execution, binding)
     }
 }

@@ -156,10 +156,11 @@ impl BankEstateEmergencyAccessActivityContinuation {
 impl BankAdmittedEstateEmergencyAccessActivityContinuation<'_> {
     pub fn execute(
         self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<BankEstateEmergencyAccessActivityPageResult, BankApplicationQueryDenial> {
         let page = self
             .application
-            .execute_application_query_continuation_page(self.plan)
+            .execute_application_query_continuation_page(phase, self.plan)
             .map_err(BankApplicationQueryDenial::from_continuation_execution)?;
         Ok(publish_page(page))
     }
@@ -192,7 +193,9 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
         continuation: BankEstateEmergencyAccessActivityContinuation,
         controls: WorthQueryApplicationQueryResumeControls<'_>,
     ) -> Result<BankEstateEmergencyAccessActivityPageResult, BankApplicationQueryDenial> {
-        self.readmit_resume(continuation, controls, |admitted| admitted.execute())
+        self.readmit_resume(continuation, controls, |phase, admitted| {
+            admitted.execute(phase)
+        })
     }
 
     pub(crate) fn readmit_resume<Output>(
@@ -200,6 +203,7 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
         continuation: BankEstateEmergencyAccessActivityContinuation,
         controls: WorthQueryApplicationQueryResumeControls<'_>,
         after_readmission: impl for<'admitted> FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             BankAdmittedEstateEmergencyAccessActivityContinuation<'admitted>,
         )
             -> Result<Output, BankApplicationQueryDenial>,
@@ -220,11 +224,11 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
                 continuation,
                 controls.maximum_page_width(),
                 controls.maximum_work(),
-                |application, plan| {
-                    after_readmission(BankAdmittedEstateEmergencyAccessActivityContinuation {
-                        application,
-                        plan,
-                    })
+                |phase, application, plan| {
+                    after_readmission(
+                        phase,
+                        BankAdmittedEstateEmergencyAccessActivityContinuation { application, plan },
+                    )
                 },
             )
             .map_err(BankApplicationQueryDenial::from_request_query)?

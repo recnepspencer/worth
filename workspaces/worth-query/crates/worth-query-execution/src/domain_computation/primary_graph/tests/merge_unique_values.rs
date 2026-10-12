@@ -30,41 +30,53 @@ const FEATURE: &str = "unique-feature";
 
 #[test]
 fn a_merge_that_creates_a_value_the_target_holds_is_denied() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = MergeWorld::new();
     world.fork();
-    world.create("main", "ada", 7);
-    world.create(FEATURE, "bob", 7);
-    assert_eq!(world.merge(), Err(Kind::ValueTaken));
+    world.create(execution, "main", "ada", 7);
+    world.create(execution, FEATURE, "bob", 7);
+    assert_eq!(world.merge(execution,), Err(Kind::ValueTaken));
 }
 
 #[test]
 fn a_merge_of_free_values_commits() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = MergeWorld::new();
     world.fork();
-    world.create("main", "ada", 7);
-    world.create(FEATURE, "bob", 8);
-    world.create(FEATURE, "cy", 9);
-    assert_eq!(world.merge(), Ok(()));
+    world.create(execution, "main", "ada", 7);
+    world.create(execution, FEATURE, "bob", 8);
+    world.create(execution, FEATURE, "cy", 9);
+    assert_eq!(world.merge(execution,), Ok(()));
 }
 
 #[test]
 fn one_merge_writes_each_unique_value_at_most_once() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = MergeWorld::new();
     world.fork();
-    world.create(FEATURE, "ada", 7);
-    world.create(FEATURE, "bob", 7);
-    assert_eq!(world.merge(), Err(Kind::ValueTaken));
+    world.create(execution, FEATURE, "ada", 7);
+    world.create(execution, FEATURE, "bob", 7);
+    assert_eq!(world.merge(execution,), Err(Kind::ValueTaken));
 }
 
 #[test]
 fn an_uninstalled_unique_index_is_its_own_denial() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = MergeWorld::new();
     world.fork();
-    world.create(FEATURE, "ada", 7);
+    world.create(execution, FEATURE, "ada", 7);
     let unindexed = world.unique(None);
-    let admitted = world.mutate(|runtime| {
-        let prepared = prepared_merge(runtime);
-        admit_merge_unique_values(unindexed.fields(), runtime, &prepared)
+    let admitted = world.mutate(execution, |runtime| {
+        let prepared = prepared_merge(execution, runtime);
+        admit_merge_unique_values(unindexed.fields(), runtime, execution, &prepared)
             .map_err(|denial| denial.kind())
     });
     assert_eq!(admitted, Err(Kind::IndexUnavailable));
@@ -74,25 +86,31 @@ fn an_uninstalled_unique_index_is_its_own_denial() {
 /// that writes it reads it taken, never unavailable.
 #[test]
 fn a_value_held_past_the_candidate_limit_reads_as_taken() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = MergeWorld::new();
     for key in ["ada", "ada-restored", "ada-restored-again"] {
-        world.create("main", key, 7);
+        world.create(execution, "main", key, 7);
     }
     world.fork();
-    world.create(FEATURE, "bob", 7);
-    assert_eq!(world.merge(), Err(Kind::ValueTaken));
+    world.create(execution, FEATURE, "bob", 7);
+    assert_eq!(world.merge(execution,), Err(Kind::ValueTaken));
 }
 
 #[test]
 fn restored_duplicates_deny_merges_of_their_value_only() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = MergeWorld::new();
-    world.create("main", "ada", 7);
-    world.create("main", "ada-restored", 7);
+    world.create(execution, "main", "ada", 7);
+    world.create(execution, "main", "ada-restored", 7);
     world.fork();
-    world.create(FEATURE, "bob", 8);
-    assert_eq!(world.merge(), Ok(()));
-    world.create(FEATURE, "cy", 7);
-    assert_eq!(world.merge(), Err(Kind::ValueTaken));
+    world.create(execution, FEATURE, "bob", 8);
+    assert_eq!(world.merge(execution,), Ok(()));
+    world.create(execution, FEATURE, "cy", 7);
+    assert_eq!(world.merge(execution,), Err(Kind::ValueTaken));
 }
 
 /// An installed graph whose `Account.AccountLabel`, an equality-indexed
@@ -154,7 +172,9 @@ impl MergeWorld {
     }
 
     fn fork(&self) {
-        self.mutate(|runtime| {
+        let host_request = crate::test_request_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+        self.mutate(execution, |runtime| {
             let (_, source) = runtime
                 .observe_fork_source(&BranchId("main".to_owned()))
                 .expect("main exposes a fork source");
@@ -166,6 +186,7 @@ impl MergeWorld {
 
     pub(in crate::domain_computation::primary_graph) fn create(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: &str,
         key: &str,
         handle: u64,
@@ -181,8 +202,8 @@ impl MergeWorld {
             client_key: created.client_key.clone(),
             fields: self.created_fields(key, handle),
         }));
-        self.mutate(|runtime| {
-            let committed = commit(runtime, branch, intent);
+        self.mutate(execution, |runtime| {
+            let committed = commit(execution, runtime, branch, intent);
             let entity = committed
                 .created_entity(&created)
                 .expect("the create issued");
@@ -196,14 +217,14 @@ impl MergeWorld {
 
     /// Admits the feature-into-main merge under the installed schema, and
     /// executes it when admitted.
-    fn merge(&self) -> Result<(), Kind> {
+    fn merge(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<(), Kind> {
         let unique = self.unique(Some(self.index));
-        self.mutate(|runtime| {
-            let prepared = prepared_merge(runtime);
-            admit_merge_unique_values(unique.fields(), runtime, &prepared)
+        self.mutate(execution, |runtime| {
+            let prepared = prepared_merge(execution, runtime);
+            admit_merge_unique_values(unique.fields(), runtime, execution, &prepared)
                 .map_err(|denial| denial.kind())?;
             runtime
-                .execute_prepared_merge(prepared)
+                .execute_prepared_merge(execution, prepared)
                 .expect("an admitted merge executes");
             Ok(())
         })
@@ -225,20 +246,24 @@ impl MergeWorld {
 
     pub(in crate::domain_computation::primary_graph) fn mutate<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutate: impl FnOnce(&mut RelationalRuntime) -> T,
     ) -> T {
         self.handle
-            .execute_mutation_with_index_refresh(|runtime| Ok::<_, ()>(mutate(runtime)))
+            .execute_mutation_with_index_refresh(execution, |runtime| Ok::<_, ()>(mutate(runtime)))
             .expect("the unique field's index refreshes")
             .expect("the fixture mutation is infallible")
     }
 }
 
-fn prepared_merge(runtime: &mut RelationalRuntime) -> PreparedMergeExecution {
+fn prepared_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut RelationalRuntime,
+) -> PreparedMergeExecution {
     let bound = runtime
         .bind_merge_execution_request(merge_request())
         .unwrap();
-    runtime.prepare_merge_execution(bound).unwrap()
+    runtime.prepare_merge_execution(execution, bound).unwrap()
 }
 
 fn merge_request() -> MergeExecutionRequest {
@@ -250,6 +275,7 @@ fn merge_request() -> MergeExecutionRequest {
 }
 
 fn commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     branch: &str,
     intent: MutationIntent,
@@ -273,10 +299,7 @@ fn commit(
         )
         .expect("the fixture batch stages");
     transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("the fixture commits")
 }
 

@@ -246,7 +246,11 @@ fn ordinary_orchestration_projection_preserves_refusal_class() {
 
 #[test]
 fn admitted_handle_exposes_ordinary_binding_and_orchestration_entrypoints() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let handle = crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         OrdinaryDomain,
         OrdinaryWorld,
         [

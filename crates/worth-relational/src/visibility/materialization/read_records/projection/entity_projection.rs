@@ -9,13 +9,14 @@ use super::{EntityProjectionRecord, ProjectionAspectScope, VisibilityProjectionV
 impl VisibilityProjectionView<'_> {
     pub(super) fn project_entity_record<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         scope: &ProjectionAspectScope,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
     ) -> Option<T> {
         let SnapshotStateBasis::Exact(basis) = &self.basis else {
             // Historical reconstruction retains its own version-selection rules.
-            let record = self.authoritative_entity_record(entity)?;
+            let record = self.authoritative_entity_record(execution, entity)?;
             return project(EntityProjectionRecord::new(&record, scope));
         };
         let root = basis.root();

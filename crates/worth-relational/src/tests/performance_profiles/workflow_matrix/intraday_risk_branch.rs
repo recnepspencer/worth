@@ -1,19 +1,22 @@
 use super::*;
 
-pub(super) fn certify_fintech_intraday_risk_branch_round_trip(suite: &'static str) {
+pub(super) fn certify_fintech_intraday_risk_branch_round_trip(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let fintech_intraday_risk_samples =
         capture_perf_samples(suite, "fintech_intraday_risk_branch_round_trip", || {
-            let mut world = setup_intraday_risk_perf_world();
+            let mut world = setup_intraday_risk_perf_world(execution);
             let baseline_observability = perf_capture_baseline_observability(&world);
             let analysis = perf_open_analysis_branch(&mut world);
 
             world.runtime.performance_access().reset_counters();
             let stress_started_at = Instant::now();
-            let stress_commit = perf_stress_intraday_risk(&mut world, analysis);
+            let stress_commit = perf_stress_intraday_risk(execution, &mut world, analysis);
             let stress_commit_micros = stress_started_at.elapsed().as_micros();
 
             let query_started_at = Instant::now();
-            let probe = perf_capture_intraday_risk_probe(&world);
+            let probe = perf_capture_intraday_risk_probe(execution, &world);
             let query_probe_micros = query_started_at.elapsed().as_micros();
             let elapsed_micros = stress_commit_micros + query_probe_micros;
             let counters = world.runtime.performance_access().counters();

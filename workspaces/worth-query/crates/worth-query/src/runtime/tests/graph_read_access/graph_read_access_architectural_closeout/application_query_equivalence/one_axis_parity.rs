@@ -163,7 +163,10 @@ where
 
 #[test]
 fn mature_and_application_sources_share_every_one_axis_planning_delta() {
-    let mature = support::mature_family();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mature = support::mature_family(request_execution);
     let application = support::installed_application_query();
     let mature_graph = mature.read_graph();
     let application_graph = application.read_graph();

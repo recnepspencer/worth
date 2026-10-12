@@ -13,6 +13,9 @@ impl WorthQueryApplicationReadObservation {
     }
 
     pub fn retain_on_branch<Schema>(
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     ) -> Result<
@@ -22,7 +25,7 @@ impl WorthQueryApplicationReadObservation {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        let selected = application.on_branch(branch).select()?;
+        let selected = application.on_branch(branch).select(phase)?;
         Ok(Self::new(selected.retain_application_read()))
     }
 
@@ -42,6 +45,9 @@ impl WorthQueryApplicationReadObservation {
     /// Selects this exact retained product for read-only application queries.
     pub fn select_on<'a, Schema>(
         &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &'a worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> Result<
         worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
@@ -53,13 +59,14 @@ impl WorthQueryApplicationReadObservation {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        application.select_application_read_observation(&self.retained)
+        application.select_application_read_observation(phase, &self.retained)
     }
 
     /// Begins non-authoritative preview custody from this exact retained
     /// occurrence. The returned session carries no publication authority.
     pub fn begin_preview<Schema, Program>(
         &self,
+phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         application: &worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<
             Schema,
             Program,
@@ -75,7 +82,7 @@ impl WorthQueryApplicationReadObservation {
             Schema,
         >,
     {
-        application.begin_preview(&self.retained, request)
+        application.begin_preview(phase, &self.retained, request)
     }
 
     pub(super) fn retained_clone(&self) -> Self {

@@ -53,9 +53,11 @@ impl WorthQueryDomainOperatingContext<GeometryDomain> for GeometryWorld {
 }
 
 pub fn handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     regime: &'static str,
 ) -> WorthQueryInstalledDomainDeclarationContext<GeometryDomain, GeometryWorld> {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         GeometryDomain,
         GeometryWorld(regime),
         [

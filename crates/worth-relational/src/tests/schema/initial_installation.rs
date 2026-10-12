@@ -11,6 +11,9 @@ use crate::facade::{identity::PartitionId, symbols::ClientKey};
 
 #[test]
 fn initial_schema_installation_moves_empty_exact_basis_without_revoking_retained_reads() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = RelationalRuntimeApi::builder().build();
     let identity = runtime.main_branch_identity();
     let (old_descriptor, old_basis) = runtime.observe_branch(&identity).unwrap();
@@ -61,7 +64,7 @@ fn initial_schema_installation_moves_empty_exact_basis_without_revoking_retained
     );
     assert!(runtime
         .read_truth()
-        .read_version(crate::identity::data::VersionId(0))
+        .read_version(execution, crate::identity::data::VersionId(0))
         .entities()
         .is_empty());
 
@@ -165,6 +168,9 @@ fn initial_schema_installation_retains_existing_kinds_and_rejects_duplicates() {
 
 #[test]
 fn held_preparation_port_observes_atomic_initial_schema_replacement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = RelationalRuntimeApi::builder().build();
     let preparation = runtime.preparation_port();
     install_entity_kind(&mut runtime, KindId(7), "held-port-installed");
@@ -184,10 +190,7 @@ fn held_preparation_port_observes_atomic_initial_schema_replacement() {
         .expect("post-installation transaction stages");
 
     let candidate = preparation
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("held port validates against the atomically replaced schema world");
     preparation
         .discard_prepared_candidate(candidate)
@@ -196,6 +199,9 @@ fn held_preparation_port_observes_atomic_initial_schema_replacement() {
 
 #[test]
 fn initial_schema_authority_closes_after_first_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(
             RelationalSchemaRegistry::new()
@@ -217,12 +223,7 @@ fn initial_schema_authority_closes_after_first_commit() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    transaction.commit(execution, &runtime).unwrap();
 
     let denial = runtime.prepare_initial_schema_installation().unwrap_err();
     assert_eq!(

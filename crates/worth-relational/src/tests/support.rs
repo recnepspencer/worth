@@ -75,8 +75,6 @@ mod durability;
 mod history;
 #[path = "support/inspection.rs"]
 mod inspection;
-#[path = "support/leased_records.rs"]
-mod leased_records;
 #[path = "support/records.rs"]
 mod records;
 #[path = "support/relation_integrity.rs"]
@@ -94,7 +92,6 @@ pub(crate) use aspect_field_patches::*;
 pub(crate) use durability::*;
 pub(crate) use history::*;
 pub(crate) use inspection::*;
-pub(crate) use leased_records::*;
 pub(crate) use records::*;
 pub(crate) use relation_integrity::*;
 pub(crate) use runtime::*;
@@ -139,13 +136,14 @@ pub(super) struct AspectTruthBundle {
 }
 
 pub(super) fn capture_aspect_truth_bundle(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_ids: &[crate::facade::identity::EntityId],
     relation_ids: &[RelationId],
     lineage_ids: &[LineageId],
 ) -> AspectTruthBundle {
     AspectTruthBundle {
-        visible_truth: VisibleTruthSummary::capture(runtime),
+        visible_truth: VisibleTruthSummary::capture(execution, runtime),
         latest_patch: runtime.publication().artifacts().latest_patch(),
         latest_replay: runtime.publication().artifacts().latest_replay(),
         diagnostics: runtime.publication().diagnostics(),
@@ -208,6 +206,7 @@ pub(super) fn explicit_query_packet(
 }
 
 pub(super) fn execute_explicit_query(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &crate::snapshots::data::SnapshotHandle,
     label: &str,
@@ -215,52 +214,13 @@ pub(super) fn execute_explicit_query(
 ) -> crate::query::data::QueryExecutionOutcome {
     runtime
         .read_truth()
-        .execute_query_plan(planned_explicit_query(runtime, snapshot, label, targets))
+        .execute_query_plan(
+            planned_explicit_query(runtime, snapshot, label, targets),
+            execution,
+        )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome")
-}
-
-pub(super) fn assert_stable_aspect_truth_bundle_eq(
-    expected: &AspectTruthBundle,
-    actual: &AspectTruthBundle,
-) {
-    assert_eq!(expected.visible_truth, actual.visible_truth);
-    assert_eq!(
-        expected.entity_history_digests,
-        actual.entity_history_digests
-    );
-    assert_eq!(
-        expected.relation_history_digests,
-        actual.relation_history_digests
-    );
-    assert_eq!(
-        expected.lineage_history_digests,
-        actual.lineage_history_digests
-    );
-}
-
-pub(super) fn assert_recovered_commit_truth_matches(
-    original_runtime: &RelationalRuntime,
-    recovered_runtime: &RelationalRuntime,
-    commit_id: crate::facade::history::CommitId,
-    entity_ids: &[crate::facade::identity::EntityId],
-    relation_ids: &[RelationId],
-    lineage_ids: &[LineageId],
-) {
-    let original_envelope = original_runtime
-        .replay()
-        .canonical_commit_envelope(commit_id)
-        .unwrap();
-    let recovered_envelope = recovered_runtime
-        .replay()
-        .canonical_commit_envelope(commit_id)
-        .unwrap();
-    let original_bundle =
-        capture_aspect_truth_bundle(original_runtime, entity_ids, relation_ids, lineage_ids);
-    let recovered_bundle =
-        capture_aspect_truth_bundle(recovered_runtime, entity_ids, relation_ids, lineage_ids);
-
-    assert_stable_aspect_truth_bundle_eq(&original_bundle, &recovered_bundle);
-    assert_eq!(original_envelope, recovered_envelope);
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -277,6 +237,7 @@ pub(super) struct InspectionTruthBundle {
 }
 
 pub(super) fn capture_inspection_truth_bundle(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: &BranchId,
     entity_id: crate::facade::identity::EntityId,
@@ -290,6 +251,7 @@ pub(super) fn capture_inspection_truth_bundle(
         .expect("latest commit");
     InspectionTruthBundle {
         graph_summary: inspection.graph_summary(
+            execution,
             &crate::facade::inspection::GraphInspectionRequest {
                 scope: crate::facade::inspection::InspectionScope::Current,
                 partition_scope: None,
@@ -298,13 +260,17 @@ pub(super) fn capture_inspection_truth_bundle(
                 budget: crate::tests::support::inspection::default_graph_budget(),
             },
         ),
-        kind_summary: inspection.kind_summary(&crate::facade::inspection::KindInspectionRequest {
-            scope: crate::facade::inspection::InspectionScope::Current,
-            partition_scope: None,
-            kind_id: KindId(1),
-            record_class: crate::facade::inspection::InspectionRecordClass::Entity,
-        }),
+        kind_summary: inspection.kind_summary(
+            execution,
+            &crate::facade::inspection::KindInspectionRequest {
+                scope: crate::facade::inspection::InspectionScope::Current,
+                partition_scope: None,
+                kind_id: KindId(1),
+                record_class: crate::facade::inspection::InspectionRecordClass::Entity,
+            },
+        ),
         connectivity_summary: inspection.connectivity_summary(
+            execution,
             &crate::facade::inspection::ConnectivityInspectionRequest {
                 scope: crate::facade::inspection::InspectionScope::Current,
                 partition_scope: None,
@@ -314,6 +280,7 @@ pub(super) fn capture_inspection_truth_bundle(
             },
         ),
         historical_record: inspection.inspect_historical_record(
+            execution,
             branch_id,
             historical_version,
             RecordRef::Entity(entity_id),
@@ -390,5 +357,9 @@ pub(super) fn assert_lineage_history_origin_invariants(
     )));
 }
 
+#[path = "support/truth_comparison.rs"]
+mod truth_comparison;
+pub(super) use truth_comparison::assert_recovered_commit_truth_matches;
+pub(super) use truth_comparison::assert_stable_aspect_truth_bundle_eq;
 mod worker_completion;
 pub(super) use worker_completion::join_completed_worker;

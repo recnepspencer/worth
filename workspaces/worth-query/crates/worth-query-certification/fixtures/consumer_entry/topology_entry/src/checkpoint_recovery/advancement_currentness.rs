@@ -28,7 +28,8 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let settlement = settle(&request, &application);
-    let retained = request.retain_read().unwrap();
+    let retained =
+        crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let current = request.at(&retained);
     let maximum_work = NonZeroUsize::new(4_096).unwrap();
     let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();

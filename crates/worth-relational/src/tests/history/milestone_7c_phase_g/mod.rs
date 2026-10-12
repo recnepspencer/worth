@@ -14,10 +14,13 @@ use certification_cases::{
 
 #[test]
 fn authoritative_merge_execution_certification_emits_machine_checkable_artifacts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let suite = AuthoritativeMergeExecutionCertificationSuite {
-        exact_shared: certify_exact_shared_merge_execution(),
-        source_only_addition: certify_source_only_addition_merge_execution(),
-        prefer_richer_reconcile: certify_prefer_richer_merge_execution(),
+        exact_shared: certify_exact_shared_merge_execution(execution),
+        source_only_addition: certify_source_only_addition_merge_execution(execution),
+        prefer_richer_reconcile: certify_prefer_richer_merge_execution(execution),
     };
 
     for certification in [

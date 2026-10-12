@@ -16,26 +16,46 @@ fn filters_siblings_before_child_projection() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .unwrap()
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .unwrap()
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .unwrap()
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .unwrap()
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = world
         .application
         .installed_schema()
@@ -48,19 +68,30 @@ fn filters_siblings_before_child_projection() {
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .selected_product()
-        .admit_application_query(
-            &query,
-            &access,
-            selected_activity_parameters("open", "activity-primary"),
-            current_controls(&request),
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    selected_activity_parameters("open", "activity-primary"),
+                    current_controls(&request),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
     let result = world
         .application
-        .execute_application_query_one_shot(plan)
-        .expect("the selected related entity projects without its sibling");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .expect("the selected related entity projects without its sibling")
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(result.rows()[0].sequence(), 11);
     assert_eq!(result.receipt().projected_record_count(), 2);

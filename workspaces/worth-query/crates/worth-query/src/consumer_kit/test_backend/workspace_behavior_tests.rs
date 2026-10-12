@@ -14,7 +14,10 @@ mod atomic_setup;
 
 #[test]
 fn in_memory_workspace_exposes_bounded_creation_recovery_and_cleanup_discovery() {
-    let workspace = task_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = task_workspace(request_execution);
     let page = workspace
         .branches()
         .recovery_page(None, NonZeroUsize::new(1).unwrap())
@@ -25,41 +28,48 @@ fn in_memory_workspace_exposes_bounded_creation_recovery_and_cleanup_discovery()
 
 #[test]
 fn in_memory_test_runtime_executes_public_insert_and_live_read() {
-    let mut workspace = task_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution);
     let tasks = workspace
-        .live_view::<WorthQueryUnrefinedLiveShape>("consumer-kit.test.tasks", |view| {
-            view.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-        })
+        .live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
+            "consumer-kit.test.tasks",
+            |view| {
+                view.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+            },
+        )
         .expect("test backend should declare a live view for its collection");
 
     let receipt = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-1"))
                 .set_aspect(touch("title.value"), authored_text("Write real tests"))
         })
         .expect("test backend should execute public workspace insert");
 
-    assert_eq!(workspace.read(&tasks).len(), 1);
+    assert_eq!(workspace.read(request_execution, &tasks).len(), 1);
     assert_eq!(
         workspace
-            .read_live_result(&tasks)
+            .read_live_result(request_execution, &tasks)
             .expect("typed live read should execute")
             .rows()
             .len(),
         1
     );
     match workspace
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("write receipt should inspect")
     {
         WorthQueryInspection::WriteReceipt(inspection) => {
@@ -78,7 +88,7 @@ fn in_memory_test_runtime_executes_public_insert_and_live_read() {
         WorthQuerySessionLabel::scoped_strs("consumer-kit-test-backend", ["preview"])
             .expect("preview label");
     let preview = workspace
-        .preview(preview_label.clone())
+        .preview(request_execution, preview_label.clone())
         .expect("test backend should admit preview basis");
     assert_eq!(preview.basis_admission().label(), preview_label.display());
     assert_eq!(
@@ -89,17 +99,26 @@ fn in_memory_test_runtime_executes_public_insert_and_live_read() {
 
 #[test]
 fn in_memory_test_runtime_executes_update_delete_and_live_routing() {
-    let mut workspace = task_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution);
     let tasks = workspace
-        .live_view::<WorthQueryUnrefinedLiveShape>("consumer-kit.test.crud.tasks", |view| {
-            view.from("Task").select([
-                crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id").unwrap(),
-                crate::authoring::AspectFieldKey::from_authoring_parts("title", "value").unwrap(),
-            ])
-        })
+        .live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
+            "consumer-kit.test.crud.tasks",
+            |view| {
+                view.from("Task").select([
+                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                        .unwrap(),
+                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                        .unwrap(),
+                ])
+            },
+        )
         .expect("task live view should declare");
     let insert = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-crud"))
                 .set_aspect(touch("title.value"), authored_text("Draft"))
         })
@@ -110,7 +129,7 @@ fn in_memory_test_runtime_executes_update_delete_and_live_routing() {
         .clone();
 
     let update = workspace
-        .update(entity_identity.clone(), |task| {
+        .update(request_execution, entity_identity.clone(), |task| {
             task.set_aspect(touch("title.value"), authored_text("Updated"))
         })
         .expect("update should execute");
@@ -120,36 +139,40 @@ fn in_memory_test_runtime_executes_update_delete_and_live_routing() {
         &["consumer-kit.test.crud.tasks".to_string()]
     );
     assert_eq!(
-        workspace.read(&tasks)[0].scalar_value_at(&field_path("title.value")),
+        workspace.read(request_execution, &tasks)[0].scalar_value_at(&field_path("title.value")),
         Some(&text("Updated"))
     );
 
     let delete = workspace
-        .delete(entity_identity)
+        .delete(request_execution, entity_identity)
         .expect("delete should execute");
     assert_eq!(delete.mutation_family(), WorthQueryMutationFamily::Delete);
     assert_eq!(
         delete.terminal_affected_live_view_ids_projection(),
         &["consumer-kit.test.crud.tasks".to_string()]
     );
-    assert!(workspace.read(&tasks).is_empty());
+    assert!(workspace.read(request_execution, &tasks).is_empty());
 }
 
 #[test]
 fn in_memory_test_runtime_stages_sandboxed_preview_writes_without_authoritative_residue() {
-    let mut workspace = task_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution);
     let preview_label =
         WorthQuerySessionLabel::scoped_strs("consumer-kit-test-backend", ["sandboxed-preview"])
             .expect("preview label");
     let mut preview = workspace
         .preview_with_options(
+            request_execution,
             preview_label,
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
         .expect("sandboxed preview should admit");
 
     preview
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("preview-task"))
                 .set_aspect(touch("title.value"), authored_text("Preview only"))
         })
@@ -161,31 +184,41 @@ fn in_memory_test_runtime_stages_sandboxed_preview_writes_without_authoritative_
     assert_eq!(outcome.write_count(), 1);
     assert_eq!(outcome.authoritative_residue_count(), 0);
     let tasks = workspace
-        .live_view::<WorthQueryUnrefinedLiveShape>("consumer-kit.test.after-preview", |view| {
-            view.from("Task").select([
-                crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id").unwrap(),
-                crate::authoring::AspectFieldKey::from_authoring_parts("title", "value").unwrap(),
-            ])
-        })
+        .live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
+            "consumer-kit.test.after-preview",
+            |view| {
+                view.from("Task").select([
+                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                        .unwrap(),
+                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                        .unwrap(),
+                ])
+            },
+        )
         .expect("live view should declare after preview discard");
-    assert!(workspace.read(&tasks).is_empty());
+    assert!(workspace.read(request_execution, &tasks).is_empty());
 }
 
 #[test]
 fn in_memory_test_runtime_denies_wrong_collection_preview_before_residue() {
-    let mut workspace = task_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution);
     let preview_label =
         WorthQuerySessionLabel::scoped_strs("consumer-kit-test-backend", ["bad-preview"])
             .expect("preview label");
     let mut preview = workspace
         .preview_with_options(
+            request_execution,
             preview_label,
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
         .expect("sandboxed preview should admit");
 
     let error = preview
-        .insert("Issue", |issue| {
+        .insert(request_execution, "Issue", |issue| {
             issue.set_aspect(touch("identity.id"), authored_text("issue-preview"))
         })
         .expect_err("preview write should honor backend schema before staging");
@@ -198,9 +231,12 @@ fn in_memory_test_runtime_denies_wrong_collection_preview_before_residue() {
 
 #[test]
 fn in_memory_test_runtime_fails_closed_for_unsupported_collections() {
-    let mut workspace = task_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution);
     let error = workspace
-        .insert("Issue", |issue| {
+        .insert(request_execution, "Issue", |issue| {
             issue
                 .set_aspect(touch("identity.id"), authored_text("issue-1"))
                 .set_aspect(touch("title.value"), authored_text("Wrong family"))
@@ -212,6 +248,9 @@ fn in_memory_test_runtime_fails_closed_for_unsupported_collections() {
 
 #[test]
 fn in_memory_test_runtime_lowers_invariant_catalog_into_real_write_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = task_schema();
     let mut workspace = in_memory_test_runtime()
         .with_schema(schema)
@@ -220,11 +259,14 @@ fn in_memory_test_runtime_lowers_invariant_catalog_into_real_write_denial() {
                 InvariantRule::MaxMergedIntents(0),
             )],
         })
-        .workspace("consumer-kit.test-backend.invariant-denial")
+        .workspace(
+            request_execution,
+            "consumer-kit.test-backend.invariant-denial",
+        )
         .expect("in-memory test runtime with invariant catalog should build");
 
     let error = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-denied"))
                 .set_aspect(touch("title.value"), authored_text("Denied by invariant"))
         })
@@ -235,6 +277,9 @@ fn in_memory_test_runtime_lowers_invariant_catalog_into_real_write_denial() {
 
 #[test]
 fn in_memory_test_runtime_merges_repeated_invariant_catalog_inputs() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = task_schema();
     let blocking_catalog = InvariantCatalog {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
@@ -250,11 +295,14 @@ fn in_memory_test_runtime_merges_repeated_invariant_catalog_inputs() {
         .with_schema(schema)
         .invariant_catalog(blocking_catalog)
         .invariant_catalog(harmless_catalog)
-        .workspace("consumer-kit.test-backend.invariant-merge")
+        .workspace(
+            request_execution,
+            "consumer-kit.test-backend.invariant-merge",
+        )
         .expect("in-memory test runtime with merged invariant catalogs should build");
 
     let error = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-denied"))
                 .set_aspect(
                     touch("title.value"),
@@ -266,11 +314,13 @@ fn in_memory_test_runtime_merges_repeated_invariant_catalog_inputs() {
     assert_workspace_error_kind(error, WorthQueryWorkspaceErrorKind::Unclassified);
 }
 
-fn task_workspace() -> crate::runtime::WorthQueryWorkspace {
+fn task_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::runtime::WorthQueryWorkspace {
     let schema = task_schema();
     in_memory_test_runtime()
         .with_schema(schema)
-        .workspace("consumer-kit.test-backend")
+        .workspace(request_execution, "consumer-kit.test-backend")
         .expect("in-memory test runtime should build")
 }
 

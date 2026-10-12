@@ -118,6 +118,7 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
 }
 
 pub(super) fn apply_initial_seed(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut crate::memory_workspace::WorthQueryMemoryWorkspace,
     collection: &str,
     specification: Option<WorthQueryTestSeedSpecification>,
@@ -141,6 +142,7 @@ pub(super) fn apply_initial_seed(
         .collect::<BTreeSet<_>>();
     let commit_identity = workspace
         .insert_seed_rows_atomically(
+            execution,
             specification
                 .rows
                 .into_iter()
@@ -149,7 +151,7 @@ pub(super) fn apply_initial_seed(
         )
         .map_err(|error| seed_error(format!("initial seed commit failed: {error}")))?;
     let entities = workspace
-        .seeded_identity_entities(&specification.identity_touch)
+        .seeded_identity_entities(execution, &specification.identity_touch)
         .map_err(|error| seed_error(error.to_string()))?;
     if entities.keys().cloned().collect::<BTreeSet<_>>() != expected {
         return Err(seed_error(

@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn unleased_query_execution_preserves_multi_seed_traversal_packets() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(declared_aspect_schema_registry(
@@ -9,18 +12,18 @@ fn unleased_query_execution_preserves_multi_seed_traversal_packets() {
         ))
         .build();
     let seeds = vec![
-        create_entity_in_partition(&runtime, "s0", PartitionId(7)),
-        create_entity_in_partition(&runtime, "s1", PartitionId(11)),
-        create_entity_in_partition(&runtime, "s2", PartitionId(13)),
-        create_entity_in_partition(&runtime, "s3", PartitionId(17)),
-        create_entity_in_partition(&runtime, "s4", PartitionId(19)),
+        create_entity_in_partition(execution, &runtime, "s0", PartitionId(7)),
+        create_entity_in_partition(execution, &runtime, "s1", PartitionId(11)),
+        create_entity_in_partition(execution, &runtime, "s2", PartitionId(13)),
+        create_entity_in_partition(execution, &runtime, "s3", PartitionId(17)),
+        create_entity_in_partition(execution, &runtime, "s4", PartitionId(19)),
     ];
     let neighbors = [
-        create_entity_in_partition(&runtime, "n0", PartitionId(23)),
-        create_entity_in_partition(&runtime, "n1", PartitionId(29)),
-        create_entity_in_partition(&runtime, "n2", PartitionId(31)),
-        create_entity_in_partition(&runtime, "n3", PartitionId(37)),
-        create_entity_in_partition(&runtime, "n4", PartitionId(41)),
+        create_entity_in_partition(execution, &runtime, "n0", PartitionId(23)),
+        create_entity_in_partition(execution, &runtime, "n1", PartitionId(29)),
+        create_entity_in_partition(execution, &runtime, "n2", PartitionId(31)),
+        create_entity_in_partition(execution, &runtime, "n3", PartitionId(37)),
+        create_entity_in_partition(execution, &runtime, "n4", PartitionId(41)),
     ];
     let relations = seeds
         .iter()
@@ -28,6 +31,7 @@ fn unleased_query_execution_preserves_multi_seed_traversal_packets() {
         .enumerate()
         .map(|(index, (seed, neighbor))| {
             create_relation_in_partition(
+                execution,
                 &runtime,
                 *seed,
                 *neighbor,
@@ -64,7 +68,9 @@ fn unleased_query_execution_preserves_multi_seed_traversal_packets() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(plan, execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
     let counters = runtime.performance_access().counters();
     let expected_packet_count = 2;

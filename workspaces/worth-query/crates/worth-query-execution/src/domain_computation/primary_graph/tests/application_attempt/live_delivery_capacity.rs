@@ -37,10 +37,26 @@ fn assert_live_reservation_denial(
 ) {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            authenticated_principal(&phase.test_host_request(), &world, &request)
+        })
+        .unwrap();
+    let account = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            resolved_account(&phase.test_host_request(), &world, "open", &request)
+        })
+        .unwrap();
     let branch = world.application.current_world();
-    let selected = world.application.on_branch(branch).select().unwrap();
+    let selected = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            world.application.on_branch(branch).select(&phase)
+        })
+        .unwrap()
+        .unwrap();
     let product_before = selected.product().selected_commit().clone();
     let bridge_before = bridge_head_commit(&world, resource_request);
     let _live = world
@@ -51,14 +67,20 @@ fn assert_live_reservation_denial(
         .application
         .primary_provider
         .set_application_commit_causality_limits(batch_capacity, byte_capacity);
-    let program = admitted_program_with_emit(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "must-not-move",
-        Some(payload),
-    );
+    let program = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            admitted_program_with_emit(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "must-not-move",
+                Some(payload),
+            )
+        })
+        .unwrap();
 
     let outcome = world
         .application
@@ -77,7 +99,13 @@ fn assert_live_reservation_denial(
         outcome,
         WorthQueryApplicationCommitOutcome::Aborted
     ));
-    let product_after = world.application.on_branch(branch).select().unwrap();
+    let product_after = world
+        .application
+        .with_application_advancement(&request, |phase| {
+            world.application.on_branch(branch).select(&phase)
+        })
+        .unwrap()
+        .unwrap();
     assert_eq!(product_after.product().selected_commit(), &product_before);
     assert_eq!(bridge_head_commit(&world, resource_request), bridge_before);
     assert_eq!(
@@ -87,7 +115,12 @@ fn assert_live_reservation_denial(
             .published_application_commit_count(),
         0
     );
-    resolved_account(&world, "open", &request);
+    world
+        .application
+        .with_application_advancement(&request, |phase| {
+            resolved_account(&phase.test_host_request(), &world, "open", &request)
+        })
+        .unwrap();
 }
 
 fn bridge_head_commit(

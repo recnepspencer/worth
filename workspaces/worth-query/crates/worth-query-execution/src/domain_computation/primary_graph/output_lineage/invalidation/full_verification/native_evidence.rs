@@ -4,6 +4,7 @@ use super::*;
 impl FullVerificationImage<'_> {
     pub(super) fn verify_native_evidence(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: EvidenceView<'_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
@@ -17,13 +18,13 @@ impl FullVerificationImage<'_> {
                 continue;
             }
             visited.insert(Arc::clone(source.identity()));
-            if !self.root_source_is_current(source, admission)? {
+            if !self.root_source_is_current(execution, source, admission)? {
                 return Ok(FullVerificationDecision::Changed);
             }
             let witness = source
                 .native_output_witness()
                 .ok_or(FullVerificationStop::OutputEvidenceUnavailable)?;
-            if !witness.unchanged_in(self.runtime, self.snapshot, admission)? {
+            if !witness.unchanged_in(execution, self.runtime, self.snapshot, admission)? {
                 return Ok(FullVerificationDecision::Changed);
             }
             reserve_pending(&mut pending, source.upstream().len(), admission)?;

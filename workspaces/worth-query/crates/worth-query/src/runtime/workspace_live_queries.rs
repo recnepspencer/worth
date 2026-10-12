@@ -13,17 +13,24 @@ use super::{
 impl WorthQueryWorkspace {
     pub fn declare_bridge_async_live_view<T>(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
         request: super::DeclarativeLiveQueryRequest,
         schema_view: super::QuerySchemaView,
         bridge_request: &worth_runtime_bridge::facade::AdmittedBridgeAsyncRequestIdentity,
     ) -> Result<super::WorthQueryLiveView<T>, WorthQueryRuntimeError> {
-        self.runtime
-            .declare_bridge_async_live_view(name, request, schema_view, bridge_request)
+        self.runtime.declare_bridge_async_live_view(
+            request_execution,
+            name,
+            request,
+            schema_view,
+            bridge_request,
+        )
     }
 
     pub fn declare_bridge_async_live_view_with_typed_identity<T>(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
         request: super::DeclarativeLiveQueryRequest,
         schema_view: super::QuerySchemaView,
@@ -32,6 +39,7 @@ impl WorthQueryWorkspace {
     ) -> Result<super::WorthQueryLiveView<T>, WorthQueryRuntimeError> {
         self.runtime
             .declare_bridge_async_live_view_with_typed_identity(
+                request_execution,
                 name,
                 request,
                 schema_view,
@@ -86,16 +94,18 @@ impl WorthQueryWorkspace {
 
     pub(crate) fn read_managed_live_view<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &super::WorthQueryLiveView<T>,
         capability: &std::sync::Arc<super::WorthQueryManagedLiveWorkspaceCapability>,
     ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
         self.admit_managed_live_capability(capability, view.name())?;
         self.runtime.reap_abandoned_managed_live_resources()?;
-        self.read_live_result(view)
+        self.read_live_result(execution, view)
     }
 
     pub(crate) fn read_managed_live_view_for_granular_scope<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &super::WorthQueryLiveView<T>,
         capability: &std::sync::Arc<super::WorthQueryManagedLiveWorkspaceCapability>,
         scope: &crate::live::WorthQueryMaintenanceScope,
@@ -111,7 +121,7 @@ impl WorthQueryWorkspace {
             .resolve_reviewed_admitted_live_read_execution_handoff(review)?;
         let binding = self.runtime.prepare_live_read_execution_binding(handoff)?;
         self.runtime
-            .execute_granular_live_read_execution_binding(binding, scope, basis)
+            .execute_granular_live_read_execution_binding(execution, binding, scope, basis)
     }
 
     pub(crate) fn drain_managed_live_view<T>(
@@ -151,9 +161,10 @@ impl WorthQueryWorkspace {
 
     pub fn read<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &super::WorthQueryLiveView<T>,
     ) -> Vec<crate::memory_workspace::WorthQueryEntity> {
-        self.read_live_result(view)
+        self.read_live_result(execution, view)
             .expect("live view declaration admitted before workspace.read execution")
             .rows()
             .to_vec()
@@ -161,13 +172,15 @@ impl WorthQueryWorkspace {
 
     pub fn read_live_result<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &super::WorthQueryLiveView<T>,
     ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
-        self.read_live_intent(view).execute()
+        self.read_live_intent(view).execute(execution)
     }
 
     pub fn read_live_target(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
         let resolved = self.resolve_live_artifact_target(target.terminal_view_name_projection())?;
@@ -180,7 +193,7 @@ impl WorthQueryWorkspace {
                 )
             })?;
         self.runtime
-            .execute_live_read_for_installation(installation)
+            .execute_live_read_for_installation(execution, installation)
     }
 
     pub fn state_live<T>(
@@ -207,6 +220,7 @@ impl WorthQueryWorkspace {
 
     pub fn read_live_artifact_binding(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         artifact_name: impl Into<String>,
         targets: impl IntoIterator<Item = WorthQueryLiveArtifactTarget>,
     ) -> Result<WorthQueryLiveArtifactBinding, WorthQueryRuntimeError> {
@@ -215,12 +229,13 @@ impl WorthQueryWorkspace {
             WorthQueryForbiddenFallbackSeam::ReadLiveArtifactBinding,
         );
         let retained_targets = targets.into_iter().collect::<Vec<_>>();
-        self.read_live_artifact_bundle(retained_targets.clone())?
+        self.read_live_artifact_bundle(execution, retained_targets.clone())?
             .bind_live_artifact(artifact_name, retained_targets)
     }
 
     pub fn read_live_artifact_bundle(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         targets: impl IntoIterator<Item = WorthQueryLiveArtifactTarget>,
     ) -> Result<WorthQueryLiveArtifactBundle, WorthQueryRuntimeError> {
         #[cfg(test)]
@@ -240,7 +255,7 @@ impl WorthQueryWorkspace {
             })?;
             let result = self
                 .runtime
-                .execute_live_read_for_installation(installation)?;
+                .execute_live_read_for_installation(execution, installation)?;
             reads.insert(target, result);
         }
         let snapshot_identity = live_bundle_snapshot_identity(&reads)?;
@@ -253,9 +268,10 @@ impl WorthQueryWorkspace {
 
     pub fn materialize_result<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &WorthQueryDerivedViewHandle<T>,
     ) -> Result<WorthQueryDerivedMaterializationResult, WorthQueryRuntimeError> {
-        self.runtime.read_derived_result(view)
+        self.runtime.read_derived_result(execution, view)
     }
 
     pub fn observe_computed<T>(

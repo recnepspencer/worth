@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
+    let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let alpha_id = changed_entities(&alpha)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -13,13 +16,14 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
         },
         branch_scoped: true,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: alpha.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     let snapshot = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
 
     runtime
@@ -29,8 +33,9 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
             &BranchId("main".to_owned()),
         )
         .expect("sibling begins at the observed root");
-    update_entity(&runtime, alpha_id, "main-new");
+    update_entity(execution, &runtime, alpha_id, "main-new");
     create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "sibling-only",
         BranchId("index-sibling".to_owned()),
@@ -63,11 +68,14 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
         .expect("exact observation plans after both references move");
     let authoritative = runtime
         .read_truth()
-        .execute_query_plan(plan.clone())
+        .execute_query_plan(plan.clone(), execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("authoritative exact-root query succeeds");
     let indexed = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity)
+        .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity, execution)
+        .expect("request remains live")
         .expect("indexed exact-root query succeeds");
 
     assert!(build.failed_indexes.is_empty());
@@ -86,8 +94,11 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
 
 #[test]
 fn current_query_prefers_its_exact_generation_over_a_later_historical_rebuild() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
+    let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let alpha_id = changed_entities(&alpha)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -97,28 +108,31 @@ fn current_query_prefers_its_exact_generation_over_a_later_historical_rebuild() 
         },
         branch_scoped: true,
     });
-    let first = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let first = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: alpha.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
-        });
-    let current = update_entity(&runtime, alpha_id, "beta");
-    let current_build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+        },
+    );
+    let current = update_entity(execution, &runtime, alpha_id, "beta");
+    let current_build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: current.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
-        });
-    let historical_rebuild = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+        },
+    );
+    let historical_rebuild = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: alpha.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
 
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime
@@ -149,7 +163,12 @@ fn current_query_prefers_its_exact_generation_over_a_later_historical_rebuild() 
         .expect("current query plans");
     let indexed = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::ProductionAdmissibility)
+        .execute_query_plan_with_index_parity(
+            plan,
+            IndexParityMode::ProductionAdmissibility,
+            execution,
+        )
+        .expect("request remains live")
         .expect("current indexed query executes");
 
     assert!(first.failed_indexes.is_empty());
@@ -172,8 +191,11 @@ fn current_query_prefers_its_exact_generation_over_a_later_historical_rebuild() 
 
 #[test]
 fn current_query_rejects_an_older_generation_and_returns_every_exact_match() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(&runtime, "shared-name");
+    let first = create_entity_outcome(execution, &runtime, "shared-name");
     let first_id = changed_entities(&first)[0];
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -183,14 +205,15 @@ fn current_query_rejects_an_older_generation_and_returns_every_exact_match() {
         },
         branch_scoped: true,
     });
-    let older_build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let older_build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: first.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
-        });
-    let second = create_entity_outcome(&runtime, "shared-name");
+        },
+    );
+    let second = create_entity_outcome(execution, &runtime, "shared-name");
     let second_id = changed_entities(&second)[0];
 
     let snapshot = runtime.visibility_authority().snapshot();
@@ -222,7 +245,12 @@ fn current_query_rejects_an_older_generation_and_returns_every_exact_match() {
         .expect("current query plans");
     let outcome = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::ProductionAdmissibility)
+        .execute_query_plan_with_index_parity(
+            plan,
+            IndexParityMode::ProductionAdmissibility,
+            execution,
+        )
+        .expect("request remains live")
         .expect("current query falls back to exact storage truth");
 
     assert!(older_build.failed_indexes.is_empty());

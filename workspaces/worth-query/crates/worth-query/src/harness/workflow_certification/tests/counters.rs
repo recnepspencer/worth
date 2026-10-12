@@ -14,6 +14,9 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 
 #[test]
 fn workflow_certification_lane_specific_counters_are_exercised() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -90,7 +93,7 @@ fn workflow_certification_lane_specific_counters_are_exercised() {
     let inspection = crate::workflow::inspect_merge_conflicts(
         &inspection_declaration,
         &merge_lowered,
-        &deleted_vs_modified_inspection_artifact(),
+        &deleted_vs_modified_inspection_artifact(request_execution),
     )
     .expect("inspection should succeed");
     assert_eq!(

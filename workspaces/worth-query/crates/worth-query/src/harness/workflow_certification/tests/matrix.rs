@@ -6,8 +6,11 @@ use crate::harness::certification::{milestone_five_point_five_requirements, unme
 
 #[test]
 fn workflow_certification_matrix_covers_required_rows() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let matrix = MilestoneFivePointFiveWorkflowCertificationAdapter::
-        workflow_declaration_taxonomy_and_context_binding_test();
+        workflow_declaration_taxonomy_and_context_binding_test(request_execution);
     let requirements = milestone_five_point_five_requirements();
     assert_eq!(
         requirements.suite_name,
@@ -25,8 +28,11 @@ fn workflow_certification_matrix_covers_required_rows() {
 
 #[test]
 fn workflow_certification_lanes_emit_required_verification_outputs() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let matrix = MilestoneFivePointFiveWorkflowCertificationAdapter::
-        workflow_declaration_taxonomy_and_context_binding_test();
+        workflow_declaration_taxonomy_and_context_binding_test(request_execution);
 
     for row in &matrix.rows {
         for lane in [&row.control_lane, &row.hostile_lane, &row.parity_lane] {

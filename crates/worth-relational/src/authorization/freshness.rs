@@ -16,6 +16,7 @@ impl RelationalRuntime {
         expected: &RelationalAuthorizationObservationEvidence,
         snapshot: &SnapshotHandle,
         admission: &mut A,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalAuthorizationObservationFreshness, Stop<A::Stop>> {
         let plan = match expected
             .comparison_plan_admitted(snapshot, |work, bytes| admission.prepare(work, bytes))
@@ -31,7 +32,7 @@ impl RelationalRuntime {
                 return Err(Stop::AccountingOverflow);
             }
         };
-        let current = match self.evaluate_authorization_admitted(&plan, admission) {
+        let current = match self.evaluate_authorization_admitted(&plan, admission, execution) {
             Ok(current) => current,
             Err(Stop::Native(_) | Stop::ExactBasisRequired) => {
                 return Ok(RelationalAuthorizationObservationFreshness::Stale);
@@ -76,11 +77,13 @@ impl RelationalRuntime {
         &self,
         expected: &RelationalAuthorizationObservationEvidence,
         snapshot: SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> RelationalAuthorizationObservationFreshness {
         match self.compare_authorization_observation_budgeted(
             expected,
             &snapshot,
             &mut UnrestrictedObservation,
+            execution,
         ) {
             Ok(freshness) => freshness,
             Err(Stop::AccountingOverflow) => RelationalAuthorizationObservationFreshness::Stale,

@@ -122,8 +122,10 @@ fn stage_contract_wider_than_the_signal_queue_denies_before_provider_constructio
             resources,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let failure = match running.begin_stage_graph_execution(
-            execution,
+            &installed_running_phase,
             "stage",
             &graph,
             WorthQueryManagedGraphCallRequest::new(

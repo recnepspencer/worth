@@ -13,14 +13,16 @@ use super::{
 impl WorthQueryInMemoryTestRuntimeBuilder {
     pub fn workspace(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
     ) -> Result<WorthQueryWorkspace, WorthQueryTestBackendError> {
-        self.workspace_with_seed_receipt(name)
+        self.workspace_with_seed_receipt(execution, name)
             .map(|(workspace, _)| workspace)
     }
 
     pub fn workspace_with_seed_receipt(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
     ) -> Result<(WorthQueryWorkspace, WorthQueryTestSeedReceipt), WorthQueryTestBackendError> {
         let schema = self.schema.take().ok_or_else(|| {
@@ -50,7 +52,12 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
                 initial_seed_rows,
             )
             .map_err(workspace_error)?;
-        let seed = apply_initial_seed(&mut memory, schema.collection(), self.initial_seed)?;
+        let seed = apply_initial_seed(
+            execution,
+            &mut memory,
+            schema.collection(),
+            self.initial_seed,
+        )?;
         let source = memory.relational_source_owner();
         let product_bridge = super::product_bridge::build_product_bridge(&source, &schema)?;
         let backend = WorthQueryInMemoryTestBackend::with_close_failures(
@@ -76,7 +83,7 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
         runtime = runtime
             .aspect_contracts(schema.contracts().cloned())
             .map_err(workspace_error)?;
-        let runtime = runtime.build().map_err(workspace_error)?;
+        let runtime = runtime.build(execution).map_err(workspace_error)?;
         let workspace = WorthQueryWorkspace::new(name, runtime).map_err(workspace_error)?;
         Ok((workspace, seed))
     }

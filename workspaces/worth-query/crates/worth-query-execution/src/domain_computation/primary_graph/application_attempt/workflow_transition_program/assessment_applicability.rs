@@ -27,6 +27,7 @@ pub(super) struct ObservedAssessmentApplicability {
 /// never from the number of assessment evidence facts already published.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn observe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     node: &CompiledWorkflowNode,
     layout: &WorthQueryPrimaryGraphLayout,
     runtime: &RelationalRuntime,
@@ -79,10 +80,11 @@ pub(super) fn observe(
             check_request_live(observation_request, "workflow retained evidence")?;
             let view = runtime
                 .read_truth()
-                .project_snapshot(snapshot)
+                .project_snapshot(snapshot, execution)
                 .ok_or_else(|| denial("applicability snapshot is unavailable"))?;
             for (entity, kind) in [(resource, binding.from), (related, binding.to)] {
                 let matches = view.entity_record_with_projection_scope(
+                    execution,
                     entity,
                     ProjectionAspectScope::empty(),
                     |record| {
@@ -100,6 +102,7 @@ pub(super) fn observe(
             }
             let native_revision = view
                 .bounded_adjacency_structural_revision(
+                    execution,
                     resource,
                     binding.kind,
                     RelationalAdjacencyDirection::Outgoing,
@@ -119,6 +122,7 @@ pub(super) fn observe(
                 .revision();
             let relations = observe_adjacency_checked(
                 runtime,
+                execution,
                 snapshot,
                 binding.kind,
                 resource,

@@ -29,12 +29,22 @@ use fixture::{
 fn external_encoded_width_participates_in_candidate_denial() {
     let world = installed_world();
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| authenticated_principal(&phase, &world, &request))
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| resolved_account(&phase, &world, "open", &request))
+        .expect("the fixture read owns its installed host call");
     let requirement = requirements(0, 0, 0, 0, 0, 1, 2);
 
-    let mut accepted =
-        reserved_external_builder(&world, &principal, &account, &request, requirement);
+    let mut accepted = world
+        .application
+        .with_host_advancement(|phase| {
+            reserved_external_builder(&phase, &world, &principal, &account, &request, requirement)
+        })
+        .expect("the fixture read owns its installed host call");
     accepted
         .emit_external(
             MutationFreeExternalEffect::reference(),
@@ -42,7 +52,12 @@ fn external_encoded_width_participates_in_candidate_denial() {
         )
         .expect("one typed and one encoded byte fit");
 
-    let mut denied = reserved_external_builder(&world, &principal, &account, &request, requirement);
+    let mut denied = world
+        .application
+        .with_host_advancement(|phase| {
+            reserved_external_builder(&phase, &world, &principal, &account, &request, requirement)
+        })
+        .expect("the fixture read owns its installed host call");
     let denial = denied
         .emit_external(
             MutationFreeExternalEffect::reference(),
@@ -80,13 +95,28 @@ fn multi_unlink_preflight_preserves_effects_and_reservation_on_denial() {
 fn foreign_delete_denial_preserves_capacity_for_valid_delete() {
     let world = installed_world();
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| authenticated_principal(&phase, &world, &request))
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| resolved_account(&phase, &world, "open", &request))
+        .expect("the fixture read owns its installed host call");
     let requirement = requirements(0, 1, 0, 0, 0, 0, 0);
-    let foreign_builder =
-        reserved_touch_builder(&world, &principal, &account, &request, requirement);
+    let foreign_builder = world
+        .application
+        .with_host_advancement(|phase| {
+            reserved_touch_builder(&phase, &world, &principal, &account, &request, requirement)
+        })
+        .expect("the fixture read owns its installed host call");
     let foreign = foreign_builder.existing_entity(&account).unwrap();
-    let mut candidate = reserved_touch_builder(&world, &principal, &account, &request, requirement);
+    let mut candidate = world
+        .application
+        .with_host_advancement(|phase| {
+            reserved_touch_builder(&phase, &world, &principal, &account, &request, requirement)
+        })
+        .expect("the fixture read owns its installed host call");
 
     let denial = candidate
         .delete_entity(Account::reference(), &foreign)
@@ -176,6 +206,7 @@ fn hostile_key_and_value_capacity_requires_the_exact_owned_capacity_ceiling() {
 }
 
 fn reserved_external_builder(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &ReservationWorld,
     principal: &WorthQueryAuthenticatedPrincipal<ReservationSchema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<ReservationSchema, Account>,
@@ -193,8 +224,9 @@ fn reserved_external_builder(
         .installed_operation(MutationFreeEmitOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
+        .selected_product(phase_custody)
         .authorize_operation(
+            phase_custody,
             principal,
             account,
             &operation,
@@ -205,6 +237,7 @@ fn reserved_external_builder(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |_, _| {},
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -214,12 +247,14 @@ fn reserved_external_builder(
     world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
@@ -228,6 +263,7 @@ fn reserved_external_builder(
 }
 
 fn reserved_touch_builder(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &ReservationWorld,
     principal: &WorthQueryAuthenticatedPrincipal<ReservationSchema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<ReservationSchema, Account>,
@@ -245,8 +281,9 @@ fn reserved_touch_builder(
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
+        .selected_product(phase_custody)
         .authorize_operation(
+            phase_custody,
             principal,
             account,
             &operation,
@@ -257,6 +294,7 @@ fn reserved_touch_builder(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |reader, projected| {
                 reader
@@ -270,12 +308,14 @@ fn reserved_touch_builder(
     world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

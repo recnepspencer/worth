@@ -30,32 +30,47 @@ enum Successor {
 
 #[test]
 fn equal_clean_successor_passes_the_cutoff_and_verifies_the_full_handler_prefix() {
-    cutoff_journey(Successor::Equal);
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    cutoff_journey(request_execution, Successor::Equal);
 }
 
 #[test]
 fn clean_unequal_or_dirty_successor_still_defers_at_the_cutoff() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for successor in [Successor::Unequal, Successor::Dirty] {
-        cutoff_journey(successor);
+        cutoff_journey(request_execution, successor);
     }
 }
 
-fn cutoff_journey(successor: Successor) {
+fn cutoff_journey(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    successor: Successor,
+) {
     with_generated_own_write(|world, _, performed, _| {
         let graph = world.application.runtime.primary_graph().unwrap();
         let handle = graph.integration_handle();
         let owner = &handle.source_owner.invalidation_owner;
         let record = performed.get().unwrap();
         let entity = world
-            .selected_product()
-            .resolve_entity(
-                AccountStatus::reference(),
-                "2".to_owned(),
-                &live_scope(),
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap()
-            .entity_id();
+            .application
+            .with_host_advancement(|host_phase| {
+                world
+                    .selected_product(&host_phase.test_host_request())
+                    .resolve_entity(
+                        &host_phase,
+                        AccountStatus::reference(),
+                        "2".to_owned(),
+                        &live_scope(),
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+                    .entity_id()
+            })
+            .expect("installed host call opens");
         let status = AccountStatus::reference();
         let status = graph
             .layout()
@@ -77,10 +92,10 @@ fn cutoff_journey(successor: Successor) {
         source.output_binding = OutputBindingIdentity::declared("Consumer");
         let consumer =
             RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
-        handle.with_runtime_mut(|runtime| {
+        handle.with_runtime_mut(request_execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
-            let prefix: Arc<[_]> = Arc::from([field_fact(runtime, &before_handle, entity, label)]);
-            register(owner, Arc::clone(&a0), Arc::from([field_fact(runtime, &before_handle, entity, status.clone())]), &before, OrdSet::new());
+            let prefix: Arc<[_]> = Arc::from([field_fact(request_execution, runtime, &before_handle, entity, label)]);
+            register(owner, Arc::clone(&a0), Arc::from([field_fact(request_execution, runtime, &before_handle, entity, status.clone())]), &before, OrdSet::new());
             // b has an authentic equality chain. Both b rows become pending
             // when a changes; a's later equality clears them one level only,
             // leaving c's pending edge to b's predecessor in place.
@@ -90,14 +105,14 @@ fn cutoff_journey(successor: Successor) {
             register(owner, Arc::clone(&b), Arc::from([]), &before, OrdSet::unit(Arc::clone(&a0)));
             register_dependent_alias(owner, &before, &b, &b_successor, &a0);
             register(owner, Arc::clone(&consumer), Arc::clone(&prefix), &before, OrdSet::unit(Arc::clone(&b)));
-            write_field(runtime, entity, status.clone(), "cutoff-upstream-changed");
+            write_field(request_execution, runtime, entity, status.clone(), "cutoff-upstream-changed");
             let (selected_handle, selected) = snapshot(runtime);
             match successor {
-                Successor::Equal | Successor::Dirty => register_alias(owner, runtime, &selected_handle, &selected, entity, status.clone(), &a0, &a1),
-                Successor::Unequal => register(owner, Arc::clone(&a1), Arc::from([field_fact(runtime, &selected_handle, entity, status.clone())]), &selected, OrdSet::new()),
+                Successor::Equal | Successor::Dirty => register_alias(request_execution, owner, runtime, &selected_handle, &selected, entity, status.clone(), &a0, &a1),
+                Successor::Unequal => register(owner, Arc::clone(&a1), Arc::from([field_fact(request_execution, runtime, &selected_handle, entity, status.clone())]), &selected, OrdSet::new()),
             }
             if matches!(successor, Successor::Dirty) {
-                write_field(runtime, entity, status, "cutoff-successor-dirty");
+                write_field(request_execution, runtime, entity, status, "cutoff-successor-dirty");
             }
             let (live_handle, live) = snapshot(runtime);
             match successor {
@@ -142,7 +157,7 @@ fn cutoff_journey(successor: Successor) {
             let mut currentness = owner.edit_admission();
             let available = currentness.remaining_work_amount();
             let result = candidate.clone().verify_for_reuse(
-                candidate.prepared_input_key().unwrap().continued_by_republication(), context, None,
+                request_execution, candidate.prepared_input_key().unwrap().continued_by_republication(), context, None,
                 runtime, &basis, owner, &mut admission, &mut currentness,
             );
             if matches!(successor, Successor::Equal) {
@@ -151,13 +166,13 @@ fn cutoff_journey(successor: Successor) {
                 let mut expected = owner.edit_admission();
                 let start = expected.remaining_work_amount();
                 assert!(ConsumedOutputEvidence::own_evidence_is_current(
-                    &prefix, &[], candidate.native_output_witness().unwrap(), runtime, &live_handle, &mut expected,
+request_execution,                    &prefix, &[], candidate.native_output_witness().unwrap(), runtime, &live_handle, &mut expected,
                 ).unwrap());
                 // Full-prefix verification adds a visit and a native comparison
                 // for every completed handler fact, after the own-evidence check.
                 for fact in prefix.iter() {
                     expected.charge_external_work(1).unwrap();
-                    assert_eq!(fact.source_currentness_in(runtime, &live_handle, &mut expected).unwrap().unwrap().movement(), Movement::Unmoved);
+                    assert_eq!(fact.source_currentness_in(runtime, request_execution, &live_handle, &mut expected).unwrap().unwrap().movement(), Movement::Unmoved);
                 }
                 assert_eq!(available - currentness.remaining_work_amount(), start - expected.remaining_work_amount(),
                     "resolved pending marks must still verify the whole handler prefix");
@@ -265,21 +280,30 @@ fn candidate(
 
 #[test]
 fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     with_generated_own_write(|world, _, performed, _| {
         let graph = world.application.runtime.primary_graph().unwrap();
         let handle = graph.integration_handle();
         let owner = &handle.source_owner.invalidation_owner;
         let record = performed.get().unwrap();
         let entity = world
-            .selected_product()
-            .resolve_entity(
-                AccountStatus::reference(),
-                "2".to_owned(),
-                &live_scope(),
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap()
-            .entity_id();
+            .application
+            .with_host_advancement(|host_phase| {
+                world
+                    .selected_product(&host_phase.test_host_request())
+                    .resolve_entity(
+                        &host_phase,
+                        AccountStatus::reference(),
+                        "2".to_owned(),
+                        &live_scope(),
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+                    .entity_id()
+            })
+            .expect("installed host call opens");
         let status = AccountStatus::reference();
         let status = graph
             .layout()
@@ -295,18 +319,31 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
         source.output_binding = OutputBindingIdentity::declared("Consumer");
         let consumer =
             RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
-        handle.with_runtime_mut(|runtime| {
+        handle.with_runtime_mut(request_execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             register(
                 owner,
                 Arc::clone(&a0),
-                Arc::from([field_fact(runtime, &before_handle, entity, status.clone())]),
+                Arc::from([field_fact(
+                    request_execution,
+                    runtime,
+                    &before_handle,
+                    entity,
+                    status.clone(),
+                )]),
                 &before,
                 OrdSet::new(),
             );
-            write_field(runtime, entity, status.clone(), "retained-upstream-changed");
+            write_field(
+                request_execution,
+                runtime,
+                entity,
+                status.clone(),
+                "retained-upstream-changed",
+            );
             let (live_handle, live) = snapshot(runtime);
             register_alias(
+                request_execution,
                 owner,
                 runtime,
                 &live_handle,

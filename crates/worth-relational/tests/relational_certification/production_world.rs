@@ -6,10 +6,14 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn supply_chain_world_compiles_causally_through_public_facades() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let program =
         CompiledSupplyChainProgram::compile(SupplyChainWorldDefinition::empty(empty_scale()))
             .expect("empty Supply Chain program compiles");
-    let world = compile_supply_chain_baseline(program).expect("empty production world compiles");
+    let world =
+        compile_supply_chain_baseline(execution, program).expect("empty production world compiles");
     assert_eq!(world.handles.entities.len(), 0);
     assert_eq!(world.handles.relations.len(), 0);
     assert_eq!(world.schema_receipt.retained_entity_kind_count(), 8);
@@ -17,10 +21,10 @@ fn supply_chain_world_compiles_causally_through_public_facades() {
     assert!(world
         .runtime
         .read_truth()
-        .read_snapshot(&world.handles.snapshot)
+        .read_snapshot(&world.handles.snapshot, execution)
         .is_some());
-    let certified =
-        audit_supply_chain_baseline(world).expect("empty production baseline is observable");
+    let certified = audit_supply_chain_baseline(execution, world)
+        .expect("empty production baseline is observable");
     assert!(certified.observed.entities.is_empty());
     assert!(certified.expected.entities.is_empty());
     assert_eq!(certified.world.commit, certified.world.commit_result.commit);
@@ -39,7 +43,7 @@ fn supply_chain_world_compiles_causally_through_public_facades() {
             .expect("Court Supply Chain definition is valid"),
     )
     .expect("Court Supply Chain program compiles");
-    let court_world = compile_supply_chain_baseline(court_program)
+    let court_world = compile_supply_chain_baseline(execution, court_program)
         .expect("Court production world compiles through public facades");
     assert_eq!(court_world.schema_receipt.retained_entity_kind_count(), 8);
     assert_eq!(
@@ -64,11 +68,15 @@ fn empty_scale() -> SupplyChainScale {
 
 #[test]
 fn supply_chain_named_handles_are_owner_issued_and_complete() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
         .expect("Court Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
         .expect("Court Supply Chain program compiles");
-    let world = compile_supply_chain_baseline(program).expect("Court production world compiles");
+    let world =
+        compile_supply_chain_baseline(execution, program).expect("Court production world compiles");
     assert_eq!(world.handles.entities.len(), 244);
     assert_eq!(world.handles.relations.len(), 247);
     assert_eq!(world.commit, world.commit_result.commit);
@@ -104,8 +112,8 @@ fn supply_chain_named_handles_are_owner_issued_and_complete() {
             .len(),
         world.handles.relations.len()
     );
-    let certified =
-        audit_supply_chain_baseline(world).expect("Court baseline matches independent oracle");
+    let certified = audit_supply_chain_baseline(execution, world)
+        .expect("Court baseline matches independent oracle");
     assert_eq!(
         certified.observed.entities.len(),
         certified.expected.entities.len()
@@ -119,11 +127,15 @@ fn supply_chain_named_handles_are_owner_issued_and_complete() {
 
 #[test]
 fn standard_supply_chain_baseline_matches_oracle_and_forks_without_copying() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::standard())
         .expect("Standard Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
         .expect("Standard Supply Chain program compiles");
-    let world = compile_supply_chain_baseline(program).expect("Standard production world compiles");
+    let world = compile_supply_chain_baseline(execution, program)
+        .expect("Standard production world compiles");
     assert_eq!(world.handles.entities.len(), 4_848);
     assert_eq!(world.handles.relations.len(), 3_363);
     let budget = world
@@ -132,8 +144,8 @@ fn standard_supply_chain_baseline_matches_oracle_and_forks_without_copying() {
         .expect("Standard baseline records its patch budget");
     assert_eq!(budget.patch_record_count, 8_211);
     assert_eq!(budget.max_patch_records_per_commit, 16_384);
-    let certified =
-        audit_supply_chain_baseline(world).expect("Standard baseline matches independent oracle");
+    let certified = audit_supply_chain_baseline(execution, world)
+        .expect("Standard baseline matches independent oracle");
     assert_eq!(
         certified.observed.entities.len(),
         certified.expected.entities.len()

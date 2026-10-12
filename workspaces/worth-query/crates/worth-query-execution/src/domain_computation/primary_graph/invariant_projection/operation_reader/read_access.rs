@@ -11,6 +11,7 @@ where
 
     pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
         &mut self,
+
         field: ApplicationFieldRef<
             Schema,
             Entity,
@@ -28,11 +29,13 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let _execution = self.reader.execution;
         self.reader.resolve_entity(field, value)
     }
 
     pub fn resolve_optional_entity<Aspect, Entity, Field, Value, Write, Unit>(
         &mut self,
+
         field: ApplicationFieldRef<
             Schema,
             Entity,
@@ -53,11 +56,13 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let _execution = self.reader.execution;
         self.reader.resolve_optional_entity(field, value)
     }
 
     pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &mut self,
+
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Option<Value>
@@ -67,6 +72,7 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let _execution = self.reader.execution;
         self.reader.field(identity, field)
     }
 
@@ -101,6 +107,7 @@ where
 
     pub fn relations_from<Relation, From, To>(
         &mut self,
+
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         from: &WorthQueryInvariantEntityIdentity<Schema, From>,
     ) -> Result<
@@ -110,11 +117,13 @@ where
     where
         Relation: OperationReads<Operation>,
     {
+        let _execution = self.reader.execution;
         self.reader.relations_from(relation, from)
     }
 
     pub fn relations_to<Relation, From, To>(
         &mut self,
+
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         to: &WorthQueryInvariantEntityIdentity<Schema, To>,
     ) -> Result<
@@ -124,6 +133,7 @@ where
     where
         Relation: OperationReads<Operation>,
     {
+        let _execution = self.reader.execution;
         self.reader.relations_to(relation, to)
     }
 
@@ -139,6 +149,7 @@ where
         Unit,
     >(
         &mut self,
+
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         field: ApplicationFieldRef<Schema, From, Aspect, Field, Value, Write, Equality, Unit>,
         target: &WorthQueryInvariantEntityIdentity<Schema, To>,
@@ -150,6 +161,7 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let _execution = self.reader.execution;
         self.reader
             .summarize_exclusive_incoming(relation, field, target)
     }

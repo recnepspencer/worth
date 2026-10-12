@@ -21,6 +21,7 @@ pub enum WorthQueryRelationalSourceInstallationDenial {
 #[derive(Clone)]
 pub struct WorthQueryRelationalSourceOwner {
     pub(super) runtime: Arc<Mutex<RelationalRuntime>>,
+    pub(in crate::domain_computation) runtime_instance_id: u64,
     pub(super) source: RuntimeBridgeRelationalSource,
     pub(super) bridge_head: Arc<Mutex<Option<RelationalBridgeBranchHeadLease>>>,
     pub(in crate::domain_computation) invalidation_owner:
@@ -59,6 +60,7 @@ impl WorthQueryRelationalSourceOwner {
             .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionRegistration)?;
         Ok(Self {
             runtime,
+            runtime_instance_id,
             source,
             bridge_head: Arc::new(Mutex::new(None)),
             invalidation_owner,
@@ -66,17 +68,20 @@ impl WorthQueryRelationalSourceOwner {
         })
     }
 
+    /// Construction reads only the owner's stable branch identity.
+    ///
     /// Resolve only a branch identity here; Native alone selects the current
     /// head while excluding publication through the prepaid lookup install.
     pub(in crate::domain_computation) fn mint_mark_cell_at_head(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: &worth_relational::facade::history::BranchId,
         admission: &mut crate::domain_computation::primary_graph::InvalidationEditAdmission,
     ) -> Result<
         (),
         crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop,
     > {
-        self.with_runtime(|runtime| {
+        self.with_runtime(execution, |runtime| {
             let identity = runtime.branch_identity(branch).map_err(|_|
                 crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop::Native(
                     worth_relational::facade::mvcc::PublicationCompanionRegistrationStop::HeadUnavailable))?;
@@ -86,7 +91,8 @@ impl WorthQueryRelationalSourceOwner {
 
     /// Returns exact snapshot custody to its issuing owner. This is release,
     /// not a source read: even a refused advancement must settle retained facts.
-    pub(crate) fn release_query_snapshot(
+    #[doc(hidden)]
+    pub fn release_query_snapshot(
         &self,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) {
@@ -97,7 +103,36 @@ impl WorthQueryRelationalSourceOwner {
         crate::relational_snapshot_release::release_query_snapshot(&mut runtime, snapshot);
     }
 
-    pub fn with_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {
+    pub(in crate::domain_computation) fn release_component_basis(
+        &self,
+        retention: worth_relational::facade::branch::RelationalBranchRetentionLease,
+    ) -> Result<
+        worth_relational::facade::branch::RelationalBranchRetentionReleaseReceipt,
+        worth_relational::facade::branch::RelationalBranchRetentionReleaseDenial,
+    > {
+        let runtime = self
+            .runtime
+            .lock()
+            .expect("Relational source owner is available");
+        runtime.release_component_basis(retention)
+    }
+
+    /// Metadata read: fixed-size counters, without row traversal or request work.
+    pub(in crate::domain_computation) fn custom_invariant_candidate_input_counters(
+        &self,
+    ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
+        self.runtime
+            .lock()
+            .expect("Relational source owner is available")
+            .custom_invariant_candidate_input_counters()
+    }
+
+    pub fn with_runtime<T>(
+        &self,
+        // Required caller request proves custody for this callback.
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        read: impl FnOnce(&RelationalRuntime) -> T,
+    ) -> T {
         let runtime = self
             .runtime
             .lock()
@@ -106,7 +141,12 @@ impl WorthQueryRelationalSourceOwner {
         read(&runtime)
     }
 
-    pub fn with_runtime_mut<T>(&self, mutate: impl FnOnce(&mut RelationalRuntime) -> T) -> T {
+    pub fn with_runtime_mut<T>(
+        &self,
+        // Required caller request proves custody for this callback.
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        mutate: impl FnOnce(&mut RelationalRuntime) -> T,
+    ) -> T {
         let mut runtime = self
             .runtime
             .lock()
@@ -120,13 +160,16 @@ impl WorthQueryRelationalSourceOwner {
     /// read capability; cloning a runtime would create a second owner.
     pub(crate) fn with_runtime_unwind_isolated<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce(&RelationalRuntime) -> T,
     ) -> T {
-        self.with_runtime_mut_unwind_isolated(|runtime| read(runtime))
+        self.with_runtime_mut_unwind_isolated(execution, |runtime| read(runtime))
     }
 
     pub(crate) fn with_runtime_mut_unwind_isolated<T>(
         &self,
+        // Required caller request proves custody for this callback.
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutate: impl FnOnce(&mut RelationalRuntime) -> T,
     ) -> T {
         let mut runtime = self

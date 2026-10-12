@@ -87,12 +87,14 @@ pub(crate) fn connectivity_request(
 }
 
 pub(crate) fn retained_record_inspection(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: &BranchId,
     version_id: crate::facade::identity::VersionId,
     target: RecordRef,
 ) -> crate::facade::inspection::HistoricalRecordInspection {
     runtime.inspect_what_happened().inspect_historical_record(
+        execution,
         branch_id,
         version_id,
         target,
@@ -101,12 +103,14 @@ pub(crate) fn retained_record_inspection(
 }
 
 pub(crate) fn reconstructed_record_inspection(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: &BranchId,
     version_id: crate::facade::identity::VersionId,
     target: RecordRef,
 ) -> crate::facade::inspection::HistoricalRecordInspection {
     runtime.inspect_what_happened().inspect_historical_record(
+        execution,
         branch_id,
         version_id,
         target,

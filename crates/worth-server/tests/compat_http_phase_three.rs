@@ -2,6 +2,8 @@
 mod compat_http_phase_three_runtime;
 #[path = "support/query_handoff/runtime.rs"]
 mod query_handoff_runtime;
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;
 #[path = "support/worth_native/assertions.rs"]
 mod worth_native_assertions;
 #[path = "support/worth_native/runtime.rs"]

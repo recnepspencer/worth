@@ -8,10 +8,13 @@ use crate::validation::engine::state_view::InvariantStateView;
 
 #[test]
 fn adjacency_budget_charges_candidates_even_when_access_filters_every_relation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    create_relation(&runtime, source, target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    create_relation(execution, &runtime, source, target, "edge");
     let observation = crate::validation::engine::InvariantObservation::committed(
         runtime.storage_access().current_edition(),
     );
@@ -37,10 +40,13 @@ fn adjacency_budget_charges_candidates_even_when_access_filters_every_relation()
 
 #[test]
 fn rejected_adjacency_budget_never_consumes_the_denied_scan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    create_relation(&runtime, source, target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    create_relation(execution, &runtime, source, target, "edge");
     let observation = crate::validation::engine::InvariantObservation::committed(
         runtime.storage_access().current_edition(),
     );

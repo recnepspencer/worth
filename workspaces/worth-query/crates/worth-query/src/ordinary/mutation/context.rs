@@ -24,10 +24,11 @@ impl WorthQueryMutationContextStop {
 }
 
 pub fn authoritative(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &WorthQueryWorkspace,
 ) -> Result<WorthQueryMutationContext, WorthQueryMutationContextStop> {
     let authority = workspace
-        .capture_ordinary_mutation_authority()
+        .capture_ordinary_mutation_authority(execution)
         .map_err(|error| WorthQueryMutationContextStop { error })?;
     debug_assert_eq!(
         authority.family(),

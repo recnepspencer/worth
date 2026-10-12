@@ -14,6 +14,7 @@ use super::PreparedEntityFieldLookup;
 /// Certification deliberately traverses authoritative storage at the same
 /// retained root. Production never constructs this materialized comparison.
 pub(super) fn certify<E>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     prepared: &PreparedEntityFieldLookup,
     value: &AspectValue,
@@ -26,6 +27,7 @@ pub(super) fn certify<E>(
     let expected = AuthoritativeFieldComparisonKey::from_aspect_value(value);
     let mut storage_ids = Vec::new();
     view.try_for_each_entity_record(
+        execution,
         Some(prepared.entity_kind()),
         |_| check_live().map_err(Stop::Admission),
         |record| {

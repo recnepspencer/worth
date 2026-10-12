@@ -181,15 +181,22 @@ pub(super) fn record_billed(
 
 #[test]
 fn member_by_member_frontiers_preserve_success_failure_denial_and_partial_effects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
     for seed in [1, 7, 29] {
-        let mut workspace = phased_workflow::reference_workspace("reference-fold-success");
+        let mut workspace =
+            phased_workflow::reference_workspace(request_execution, "reference-fold-success");
         let success = run(&mut workspace, seed, None, true);
         assert_eq!(success.outcome, None);
         assert_eq!(success.effects.len(), phased_workflow::MEMBERS.len());
         for position in 0..phased_workflow::MEMBERS.len() {
             for mode in 1..=5 {
-                let mut workspace = phased_workflow::reference_workspace("reference-fold-failure");
+                let mut workspace = phased_workflow::reference_workspace(
+                    request_execution,
+                    "reference-fold-failure",
+                );
                 let failed = run(&mut workspace, seed, Some((position, mode)), true);
                 assert!(failed.outcome.is_some());
                 assert_eq!(failed.receipts.len(), position + 1);
@@ -201,14 +208,18 @@ fn member_by_member_frontiers_preserve_success_failure_denial_and_partial_effect
 
 #[test]
 fn phased_frontiers_match_member_by_member_at_every_failure_position() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
     for seed in [1, 7, 29] {
         for failure in std::iter::once(None)
             .chain((0..3).flat_map(|position| (1..=5).map(move |mode| Some((position, mode)))))
         {
             let mut reference_workspace =
-                phased_workflow::reference_workspace("phase-differential");
-            let mut phased = phased_workflow::phased_workspace("phase-differential");
+                phased_workflow::reference_workspace(request_execution, "phase-differential");
+            let mut phased =
+                phased_workflow::phased_workspace(request_execution, "phase-differential");
             _probe.take_computes();
             let expected = run(&mut reference_workspace, seed, failure, true);
             let actual = run(&mut phased, seed, failure, false);
@@ -230,6 +241,9 @@ fn phased_frontiers_match_member_by_member_at_every_failure_position() {
 }
 #[test]
 fn idempotent_retry_preserves_reference_failure_and_counters() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
     fn attempts(workspace: &mut runtime::WorthQueryWorkspace) -> Vec<Record> {
         let attempt = start(workspace)
@@ -265,8 +279,9 @@ fn idempotent_retry_preserves_reference_failure_and_counters() {
             ),
         ]
     }
-    let mut reference_workspace = phased_workflow::reference_workspace("phase-retry");
-    let mut phased = phased_workflow::phased_workspace("phase-retry");
+    let mut reference_workspace =
+        phased_workflow::reference_workspace(request_execution, "phase-retry");
+    let mut phased = phased_workflow::phased_workspace(request_execution, "phase-retry");
     assert_eq!(attempts(&mut phased), attempts(&mut reference_workspace));
 }
 

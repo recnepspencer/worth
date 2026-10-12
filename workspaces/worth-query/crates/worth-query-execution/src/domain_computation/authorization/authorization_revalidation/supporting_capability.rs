@@ -57,24 +57,27 @@ where
 {
     pub(super) fn readmit_capability_commit_support(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         supporting: Option<&WorthQueryCapabilitySupportCommitBasis>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        self.readmit_capability_support(supporting, runtime, snapshot)
+        self.readmit_capability_support(execution, supporting, runtime, snapshot)
     }
 
     pub(super) fn readmit_retained_capability_support(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         supporting: Option<&WorthQueryRetainedCapabilitySupport>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        self.readmit_capability_support(supporting, runtime, snapshot)
+        self.readmit_capability_support(execution, supporting, runtime, snapshot)
     }
 
     fn readmit_capability_support<Support>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         supporting: Option<&Support>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -89,6 +92,7 @@ where
         if supporting.capability_authority_identity()
             != installed.capability_authority_identity().as_ref()
             || !supporting.decision().remains_current_in(
+                execution,
                 runtime,
                 snapshot,
                 self.authorization.bridge(),
@@ -109,6 +113,7 @@ where
             },
         )
         .observe_retained_capability(
+            execution,
             supporting.posture(),
             supporting.grant(),
             Some(supporting.decision()),

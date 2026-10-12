@@ -2,28 +2,35 @@ use super::*;
 
 #[test]
 fn compose_graph_denies_entity_symbol_reuse_across_compositions_typed_and_early() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.graph-composition-entity-leak")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-entity-leak-tasks", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-entity-leak-tasks")
-        })
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-entity-leak-tasks",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-graph-composition-entity-leak-tasks")
+            },
+        )
         .expect("task live view should declare");
     let mut saved_entity = None;
     let _receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             saved_entity = Some(graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
@@ -40,7 +47,7 @@ fn compose_graph_denies_entity_symbol_reuse_across_compositions_typed_and_early(
     let saved_entity = saved_entity.expect("composition should expose a saved entity symbol");
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             graph.update_entity(&saved_entity, |task| {
                 task.set_aspect(
                     test_aspect_touch("title.value"),
@@ -73,50 +80,63 @@ fn compose_graph_denies_entity_symbol_reuse_across_compositions_typed_and_early(
 
 #[test]
 fn compose_graph_denies_symbolic_collection_mismatch_typed_and_early() {
-    let mut workspace = task_edge_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_edge_runtime(request_execution)
         .workspace("tasks.graph-composition-collection-mismatch")
         .expect("runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-collection-mismatch-tasks", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-collection-mismatch-tasks")
-        })
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-collection-mismatch-tasks",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-graph-composition-collection-mismatch-tasks")
+            },
+        )
         .expect("task live view should declare");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-collection-mismatch-edges", |q| {
-            q.from("TaskEdge")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind").unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts(
-                        "edge",
-                        "source_identity",
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-collection-mismatch-edges",
+            |q| {
+                q.from("TaskEdge")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts(
+                            "edge",
+                            "source_identity",
+                        )
+                        .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts(
+                            "edge",
+                            "target_identity",
+                        )
+                        .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind")
+                            .unwrap(),
                     )
-                    .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts(
-                        "edge",
-                        "target_identity",
-                    )
-                    .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind").unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-collection-mismatch-edges")
-        })
+                    .schema_basis("tasks-graph-composition-collection-mismatch-edges")
+            },
+        )
         .expect("edge live view should declare");
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let task = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),

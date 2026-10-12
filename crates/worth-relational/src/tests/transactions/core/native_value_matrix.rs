@@ -11,6 +11,9 @@ use worth_foundational::facade::{
 
 #[test]
 fn ordinary_native_mutation_roundtrips_every_foundational_scalar_family() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let values = scalar_samples();
     let contracts = values
         .iter()
@@ -60,17 +63,12 @@ fn ordinary_native_mutation_roundtrips_every_foundational_scalar_family() {
         )
         .expect("test staging stays within configured resource budgets");
 
-    let committed = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = transaction.commit(execution, &runtime).unwrap();
     let entity = changed_entities(&committed)[0];
     {
         let read = runtime
             .read_truth()
-            .read_snapshot(&committed.snapshot)
+            .read_snapshot(&committed.snapshot, execution)
             .unwrap();
         assert_scalar_state(
             read.get_entity(entity)
@@ -84,9 +82,12 @@ fn ordinary_native_mutation_roundtrips_every_foundational_scalar_family() {
         );
     }
     let recovery_fixture = fixture.clone();
-    let (_, recovered) =
-        checkpoint_and_recover_with(&runtime, move || recovery_fixture.build_runtime());
-    let read = recovered.read_truth().read_version(committed.version_id);
+    let (_, recovered) = checkpoint_and_recover_with(execution, &runtime, move || {
+        recovery_fixture.build_runtime()
+    });
+    let read = recovered
+        .read_truth()
+        .read_version(execution, committed.version_id);
     assert_scalar_state(
         read.get_entity(entity)
             .unwrap()

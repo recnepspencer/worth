@@ -19,10 +19,39 @@ use crate::domain_computation::primary_graph::{
 fn exact_conflicted_approver_cannot_open_elevation_authority() {
     let (world, request, approved) = super::approval_transition::exact_approved_world();
     world.authorization_time.script([time(100)]);
-    let principal = authenticated_principal(&world, &request);
-    add_approver_conflict(&world);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&host_custody, &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            add_approver_conflict(
+                &host_custody,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let Err(denial) = super::admit(&world, &approved, &principal, &request, Some("elevation-2"))
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::admit(
+                &host_custody,
+                &world,
+                &approved,
+                &principal,
+                &request,
+                Some("elevation-2"),
+            )
+        })
+        .expect("the fixture read owns its installed host call")
     else {
         panic!("a conflict held by the exact approver must deny elevation admission");
     };
@@ -37,20 +66,57 @@ fn exact_conflicted_approver_cannot_open_elevation_authority() {
 fn approver_conflict_drift_stales_admitted_elevation_authority() {
     let (world, request, approved) = super::approval_transition::exact_approved_world();
     world.authorization_time.script([time(100), time(100)]);
-    let principal = authenticated_principal(&world, &request);
-    let access =
-        super::admit(&world, &approved, &principal, &request, Some("elevation-2")).unwrap();
-    add_approver_conflict(&world);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated_principal(&host_custody, &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let access = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::admit(
+                &host_custody,
+                &world,
+                &approved,
+                &principal,
+                &request,
+                Some("elevation-2"),
+            )
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            add_approver_conflict(
+                &host_custody,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(ElevatedCapabilityTouchOperation::reference())
         .unwrap();
 
-    let Err(denial) =
-        world
-            .application
-            .authorize_capability_operation(access, &operation, Default::default())
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world.application.authorize_capability_operation(
+                &host_custody.phase_for_application(&world.application),
+                access,
+                &operation,
+                Default::default(),
+            )
+        })
+        .expect("the fixture read owns its installed host call")
     else {
         panic!("new conflict truth for the exact approver must stale retained authority");
     };
@@ -61,13 +127,21 @@ fn approver_conflict_drift_stales_admitted_elevation_authority() {
     );
 }
 
-fn add_approver_conflict(world: &super::super::super::fixture::AuthorizationWorld) {
+fn add_approver_conflict(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &super::super::super::fixture::AuthorizationWorld,
+) {
     let scope = live_scope();
     let approver = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             PrincipalIdentityField::reference(),
             2_u64,
             &scope,
@@ -76,9 +150,13 @@ fn add_approver_conflict(world: &super::super::super::fixture::AuthorizationWorl
         .unwrap();
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             AccountIdentity::reference(),
             "account-1".to_owned(),
             &scope,
@@ -92,6 +170,7 @@ fn add_approver_conflict(world: &super::super::super::fixture::AuthorizationWorl
         .unwrap()
         .kind;
     super::super::super::fixture::publish_relational_mutation(
+        execution,
         world,
         WorkerIntentBatch::new("add-approver-conflict").push(MutationIntent::Create(
             CreateIntent::Relation(RelationSpec {

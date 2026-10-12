@@ -79,6 +79,7 @@ impl WorthQueryRuntimeSourceAdapter for PublicSourceAdapter {
 
     fn live_entities_for_target(
         &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         let state = self.state.borrow();
@@ -141,6 +142,7 @@ impl PublicWriteAuthorityAdapter {
 impl WorthQueryRuntimeWriteAuthorityAdapter for PublicWriteAuthorityAdapter {
     fn write(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
         _relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -284,7 +286,10 @@ impl PublicSnapshotIdentityAdapter {
 }
 
 impl WorthQueryRuntimeSnapshotIdentityAdapter for PublicSnapshotIdentityAdapter {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         let state = self.state.borrow();
         match state.current_snapshot_parts {
             Some((snapshot, version)) => public_snapshot_from_parts(

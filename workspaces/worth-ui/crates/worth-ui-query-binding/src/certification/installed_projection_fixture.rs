@@ -19,15 +19,17 @@ pub fn worth_ui_installed_test_domain(label: &str) -> WorthUiInstalledQueryDomai
         .expect("identity aspect")
         .aspect("measurement.value", "measurement.value")
         .expect("measurement aspect");
-    crate::install_worth_ui_test_operation_executors(
-        in_memory_test_runtime()
-            .with_schema(schema)
-            .domain_package(worth_ui_domain_package()),
-    )
-    .workspace(label)
-    .expect("installed Worth UI Query workspace")
-    .worth_ui()
-    .expect("Worth UI domain installed")
+    crate::certification::request_custody::with_bootstrap_request(|execution| {
+        crate::install_worth_ui_test_operation_executors(
+            in_memory_test_runtime()
+                .with_schema(schema)
+                .domain_package(worth_ui_domain_package()),
+        )
+        .workspace(execution, label)
+        .expect("installed Worth UI Query workspace")
+        .worth_ui()
+        .expect("Worth UI domain installed")
+    })
 }
 
 /// Hostile integration fixture owned by the only crate allowed to translate
@@ -49,32 +51,41 @@ impl WorthUiInstalledQueryTestFixture {
             .expect("identity aspect")
             .aspect("measurement.value", "measurement.value")
             .expect("measurement aspect");
-        let mut workspace = crate::install_worth_ui_test_operation_executors(
-            in_memory_test_runtime()
-                .with_schema(schema)
-                .domain_package(worth_ui_domain_package()),
-        )
-        .workspace(label)
-        .expect("installed Worth UI Query workspace");
+        let mut workspace =
+            crate::certification::request_custody::with_bootstrap_request(|execution| {
+                crate::install_worth_ui_test_operation_executors(
+                    in_memory_test_runtime()
+                        .with_schema(schema)
+                        .domain_package(worth_ui_domain_package()),
+                )
+                .workspace(execution, label)
+                .expect("installed Worth UI Query workspace")
+            });
         workspace
-            .insert("WorthUiMeasurement", |measurement| {
-                measurement
-                    .set_aspect(
-                        WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
-                            .expect("identity touch"),
-                        WorthQueryAuthoredAspectValue::string("measurement"),
-                    )
-                    .set_aspect(
-                        WorthQueryAspectTouch::from_authoring_ingress_text("measurement.value")
-                            .expect("measurement touch"),
-                        WorthQueryAuthoredAspectValue::native(
-                            worth_foundational::AspectValue::Float32(
-                                worth_foundational::CanonicalF32::from_f32(240.0),
-                            ),
-                        ),
-                    )
+            .with_execution_request_mut(|execution, workspace| {
+                workspace
+                    .insert(execution, "WorthUiMeasurement", |measurement| {
+                        measurement
+                            .set_aspect(
+                                WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
+                                    .expect("identity touch"),
+                                WorthQueryAuthoredAspectValue::string("measurement"),
+                            )
+                            .set_aspect(
+                                WorthQueryAspectTouch::from_authoring_ingress_text(
+                                    "measurement.value",
+                                )
+                                .expect("measurement touch"),
+                                WorthQueryAuthoredAspectValue::native(
+                                    worth_foundational::AspectValue::Float32(
+                                        worth_foundational::CanonicalF32::from_f32(240.0),
+                                    ),
+                                ),
+                            )
+                    })
+                    .expect("measurement insertion")
             })
-            .expect("measurement insertion");
+            .expect("workspace host call opens");
         let installed = workspace.worth_ui().expect("Worth UI domain installed");
         let view = installed
             .measurement_view("inspector.measurements")

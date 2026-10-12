@@ -66,6 +66,7 @@ pub(super) fn record_index_preparation_strategy_counters(
 }
 
 pub(super) fn execute_index_packets(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     packets: Vec<IndexPreparationPacket>,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -90,10 +91,11 @@ pub(super) fn execute_index_packets(
             value: packet,
         })
         .collect();
-    execute_index_inputs(projection, inputs, lease, work_budget)
+    execute_index_inputs(execution, projection, inputs, lease, work_budget)
 }
 
 pub(super) fn execute_index_inputs(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     inputs: Vec<ReadOnlyPacket<IndexPreparationPacket>>,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -105,9 +107,9 @@ pub(super) fn execute_index_inputs(
         work_budget,
         |packet, context| {
             if lease.is_some() {
-                index_packet_result_checked(projection, packet, context)
+                index_packet_result_checked(execution, projection, packet, context)
             } else {
-                Ok(index_packet_result(projection, packet))
+                Ok(index_packet_result(execution, projection, packet))
             }
         },
         |stream: &IndexResultStream| {
@@ -141,6 +143,7 @@ pub(super) fn execute_index_inputs(
 }
 
 fn index_packet_result_checked(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     packet: &IndexPreparationPacket,
     context: &mut PacketKernelContext<'_, '_, '_>,
@@ -148,13 +151,23 @@ fn index_packet_result_checked(
     let entries = match &packet.definition.kind {
         DerivedIndexKind::EntityField { field_locator } => {
             DerivedIndexEntries::EntityField(checked_finish(
-                build_entity_aspect_field_index_checked(projection, field_locator, context)?,
+                build_entity_aspect_field_index_checked(
+                    execution,
+                    projection,
+                    field_locator,
+                    context,
+                )?,
                 context,
             )?)
         }
         DerivedIndexKind::RelationField { field_locator } => {
             DerivedIndexEntries::RelationField(checked_finish(
-                build_relation_aspect_field_index_checked(projection, field_locator, context)?,
+                build_relation_aspect_field_index_checked(
+                    execution,
+                    projection,
+                    field_locator,
+                    context,
+                )?,
                 context,
             )?)
         }
@@ -171,13 +184,15 @@ fn index_packet_result_checked(
                 ordering,
             );
             DerivedIndexEntries::RelatedEntityOrdering(checked_finish(
-                build_related_entity_ordering_index_checked(projection, &contract, context)?,
+                build_related_entity_ordering_index_checked(
+                    execution, projection, &contract, context,
+                )?,
                 context,
             )?)
         }
         DerivedIndexKind::RelationJoin(definition) => {
             DerivedIndexEntries::RelationJoin(checked_finish(
-                build_relation_join_index_checked(projection, *definition, context)?,
+                build_relation_join_index_checked(execution, projection, *definition, context)?,
                 context,
             )?)
         }
@@ -193,15 +208,16 @@ fn index_packet_result_checked(
 }
 
 fn index_packet_result(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_, '_>,
     packet: &IndexPreparationPacket,
 ) -> IndexResultStream {
     let entries = match &packet.definition.kind {
         DerivedIndexKind::EntityField { field_locator } => DerivedIndexEntries::EntityField(
-            build_entity_aspect_field_index(projection, field_locator).into(),
+            build_entity_aspect_field_index(execution, projection, field_locator).into(),
         ),
         DerivedIndexKind::RelationField { field_locator } => DerivedIndexEntries::RelationField(
-            build_relation_aspect_field_index(projection, field_locator).into(),
+            build_relation_aspect_field_index(execution, projection, field_locator).into(),
         ),
         DerivedIndexKind::RelatedEntityOrdering {
             relation_kind,
@@ -210,6 +226,7 @@ fn index_packet_result(
             ordering,
         } => DerivedIndexEntries::RelatedEntityOrdering(
             build_related_entity_ordering_index(
+                execution,
                 projection,
                 &RelatedEntityOrderingProjection::new(
                     *relation_kind,
@@ -221,7 +238,7 @@ fn index_packet_result(
             .into(),
         ),
         DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
-            build_relation_join_index(projection, *definition).into(),
+            build_relation_join_index(execution, projection, *definition).into(),
         ),
     };
     OrderedReductionStream::singleton(

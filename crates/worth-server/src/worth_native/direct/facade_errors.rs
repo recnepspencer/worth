@@ -204,7 +204,9 @@ impl WorthServerWorthNativeDirectFacade {
                 self.admission.request_context().diagnostics_profile(),
                 detail.clone(),
             )),
-            crate::WorthServerSchedulerRuntimeFailure::Opaque { .. } => {
+            crate::WorthServerSchedulerRuntimeFailure::Opaque { .. }
+            | crate::WorthServerSchedulerRuntimeFailure::BasisAdvancementDenied { .. }
+            | crate::WorthServerSchedulerRuntimeFailure::BasisSnapshotReadDenied { .. } => {
                 TransitionOutcome::failed(crate::WorthServerQueryHandoffFailure::new(
                     "direct_mutation_scheduler_runtime_failed",
                 ))

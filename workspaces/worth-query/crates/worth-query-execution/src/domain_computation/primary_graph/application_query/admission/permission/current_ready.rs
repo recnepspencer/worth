@@ -56,6 +56,7 @@ where
     /// The caller may continue only through fresh disclosure/reselection.
     pub(in crate::domain_computation::primary_graph) fn seal_current_ready<'basis>(
         &'basis self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<
         Option<SealedCurrentReadyQueryPermission<'basis>>,
@@ -65,6 +66,7 @@ where
         let security = self
             .issuer
             .admit_matching_head_query_permission_basis(
+                execution,
                 &self.security_product,
                 &self.basis,
                 admission,

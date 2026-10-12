@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn retry_requires_installed_idempotence_and_never_reuses_attempt_identity() {
-    let mut workspace = workflow_workspace("idempotent-stage-retry").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "idempotent-stage-retry").unwrap();
     let run = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),

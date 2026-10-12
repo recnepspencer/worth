@@ -2,27 +2,34 @@ use super::super::support::*;
 
 #[test]
 fn batch_verify_existing_preserves_aggregate_assertion_digest() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.batch-verify-existing")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.batch-verify-existing-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-batch-verify-existing-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.batch-verify-existing-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-batch-verify-existing-table")
+            },
+        )
         .expect("live view should declare");
     let seed_one = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -34,7 +41,7 @@ fn batch_verify_existing_preserves_aggregate_assertion_digest() {
         })
         .expect("first seed should execute");
     let seed_two = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-2"),
@@ -69,7 +76,7 @@ fn batch_verify_existing_preserves_aggregate_assertion_digest() {
         .expect("binding two should build");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .verify_existing(binding_one, |task| {
                     task.set_aspect(
@@ -89,7 +96,10 @@ fn batch_verify_existing_preserves_aggregate_assertion_digest() {
         .aggregate_existing_truth_assertion_digest()
         .is_some());
 
-    match workspace.inspect(&receipt).expect("batch should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("batch should inspect")
+    {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             assert_eq!(
                 inspection.component_operations()[0]
@@ -111,27 +121,34 @@ fn batch_verify_existing_preserves_aggregate_assertion_digest() {
 
 #[test]
 fn preview_verify_existing_requires_authoritative_lane() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.preview-verify-existing")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.preview-verify-existing-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-preview-verify-existing-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.preview-verify-existing-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-preview-verify-existing-table")
+            },
+        )
         .expect("live view should declare");
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -143,7 +160,10 @@ fn preview_verify_existing_requires_authoritative_lane() {
         })
         .expect("seed insert should execute");
     let mut preview = workspace
-        .preview(test_session_label("verify-existing-preview"))
+        .preview(
+            request_execution,
+            test_session_label("verify-existing-preview"),
+        )
         .expect("preview should open");
     let binding = preview
         .bind_existing_entity(
@@ -158,7 +178,7 @@ fn preview_verify_existing_requires_authoritative_lane() {
         .expect("binding should build");
 
     let error = preview
-        .verify_existing(binding, |task| {
+        .verify_existing(request_execution, binding, |task| {
             task.set_aspect(
                 test_aspect_touch("title.value"),
                 test_authored_string_aspect_value("Seed title"),
@@ -176,29 +196,36 @@ fn preview_verify_existing_requires_authoritative_lane() {
 
 #[test]
 fn verify_existing_relation_preserves_backend_verified_assertion_evidence() {
-    let runtime = stateful_bridge_task_relation_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = stateful_bridge_task_relation_runtime(request_execution);
     let mut workspace = runtime
         .workspace("tasks.verify-existing-relation")
         .expect("workspace should open");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.verify-existing-relation-table", |q| {
-            q.from("TaskRelation")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-verify-existing-relation-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.verify-existing-relation-table",
+            |q| {
+                q.from("TaskRelation")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-verify-existing-relation-table")
+            },
+        )
         .expect("relation live view should declare");
 
     let seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -223,7 +250,7 @@ fn verify_existing_relation_preserves_backend_verified_assertion_evidence() {
         .expect("relation binding should build");
 
     let receipt = workspace
-        .verify_existing(binding, |relation| {
+        .verify_existing(request_execution, binding, |relation| {
             relation.set_aspect(
                 test_aspect_touch("kind.value"),
                 test_authored_string_aspect_value("depends_on"),

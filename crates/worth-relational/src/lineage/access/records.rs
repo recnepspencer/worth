@@ -37,14 +37,21 @@ impl<'runtime> LineageAccess<'runtime> {
     }
 
     #[cfg(test)]
-    pub(crate) fn branch_nodes_snapshot(&self, branch_id: &BranchId) -> Vec<LineageNode> {
+    pub(crate) fn branch_nodes_snapshot(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branch_id: &BranchId,
+    ) -> Vec<LineageNode> {
         let history = self.runtime.history();
         let Some(head) = history.branch_head(branch_id) else {
             return Vec::new();
         };
         let cache_hit =
             cached_historical_state_for_version(self.runtime, head.version_id).is_some();
-        let read_view = self.runtime.read_truth().read_version(head.version_id);
+        let read_view = self
+            .runtime
+            .read_truth()
+            .read_version(execution, head.version_id);
         self.runtime
             .performance_access()
             .count_lineage_graph_snapshot_visibility_cache(cache_hit);

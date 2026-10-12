@@ -16,10 +16,28 @@ fn any_preexisting_approver_relation_blocks_fresh_approval_materialization() {
     let (world, request, requested) =
         super::approval_transition::requested_world(CapabilityElevationScenario::Active);
     let requester = requested.requester();
-    super::mutation::add_self_approver(&world, "elevation-2", requester);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::mutation::add_self_approver(
+                &host_custody,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                "elevation-2",
+                requester,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let Err(denial) =
-        approval_reads(&world, &request, requested).materialize_elevation_approval_program()
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            approval_reads(&host_custody, &world, &request, requested)
+                .materialize_elevation_approval_program()
+        })
+        .expect("the fixture read owns its installed host call")
     else {
         panic!("approval must prove the complete preexisting approver set is empty");
     };
@@ -41,23 +59,58 @@ type Reads = WorthQueryCompleteApplicationReadSet<
 fn ordinary_operation_and_commit_paths_cannot_publish_approval_authority() {
     let (world, request, requested) =
         super::approval_transition::requested_world(CapabilityElevationScenario::Active);
-    let approver = super::approval_transition::authenticated(&world, "bob", &request);
-    let access = super::approval_transition::approval_access(&world, &approver, &request).unwrap();
+    let approver = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::approval_transition::authenticated(&host_custody, &world, "bob", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let access = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::approval_transition::approval_access(&host_custody, &world, &approver, &request)
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = super::approval_transition::approval_operation(&world);
     let denial = world
         .application
-        .authorize_capability_operation(access, &operation, Default::default())
-        .err()
-        .expect("ordinary operation progression must reject approval lifecycle work");
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .authorize_capability_operation(
+                    &host_custody.phase_for_application(&world.application),
+                    access,
+                    &operation,
+                    Default::default(),
+                )
+                .err()
+                .expect("ordinary operation progression must reject approval lifecycle work")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
         WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired
     );
 
-    let ordinary = approval_reads(&world, &request, requested)
-        .begin_effect_program()
-        .finish()
-        .unwrap();
+    let ordinary = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            approval_reads(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                &request,
+                requested,
+            )
+            .begin_effect_program()
+            .finish()
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationCommitOutcome::Denied(denial) =
         world.application.compare_and_commit_application(
             ordinary,
@@ -77,10 +130,28 @@ fn ordinary_operation_and_commit_paths_cannot_publish_approval_authority() {
 fn lifecycle_drift_before_approval_commit_is_stale_and_returns_request_authority() {
     let (world, request, requested) =
         super::approval_transition::requested_world(CapabilityElevationScenario::Active);
-    let program = approval_reads(&world, &request, requested)
-        .materialize_elevation_approval_program()
-        .unwrap();
-    super::mutation::set_status(&world, "elevation-2", CapabilityElevationStatus::Revoked);
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            approval_reads(&host_custody, &world, &request, requested)
+                .materialize_elevation_approval_program()
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::mutation::set_status(
+                &host_custody,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                "elevation-2",
+                CapabilityElevationStatus::Revoked,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     let outcome = world
         .application
@@ -100,20 +171,30 @@ fn lifecycle_drift_before_approval_commit_is_stale_and_returns_request_authority
 }
 
 fn approval_reads(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &super::approval_transition::World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     requested: WorthQueryRequestedElevation,
 ) -> Reads {
-    let approver = super::approval_transition::authenticated(world, "bob", request);
-    let access = super::approval_transition::approval_access(world, &approver, request).unwrap();
+    let approver = super::approval_transition::authenticated(phase_custody, world, "bob", request);
+    let access =
+        super::approval_transition::approval_access(phase_custody, world, &approver, request)
+            .unwrap();
     let operation = super::approval_transition::approval_operation(world);
     let admission = world
         .application
-        .authorize_elevation_approval(requested, access, &operation, Default::default())
+        .authorize_elevation_approval(
+            &phase_custody.phase_for_application(&world.application),
+            requested,
+            access,
+            &operation,
+            Default::default(),
+        )
         .unwrap();
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            &phase_custody.phase_for_application(&world.application),
             &admission,
             |reader, _| super::approval_transition::seal_approval_facts(reader),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -123,12 +204,14 @@ fn approval_reads(
     world
         .application
         .begin_projected_application_read_attempt(
+            &phase_custody.phase_for_application(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
+            &phase_custody.phase_for_application(&world.application),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

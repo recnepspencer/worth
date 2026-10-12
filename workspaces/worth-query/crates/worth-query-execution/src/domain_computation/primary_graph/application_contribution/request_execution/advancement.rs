@@ -18,8 +18,6 @@ pub enum WorthQueryAdvancementDenial {
     /// A public call tried to open an advancement from an active host call or
     /// a member compute.
     NestedOpening,
-    /// The phase belongs to a different installed runtime.
-    ForeignPhase,
     NestedStopped,
     Panicked,
 }
@@ -66,7 +64,6 @@ impl WorthQueryAdvancementDenial {
                 | WorthQueryManagedComputationInterruption::DeadlineExceeded,
             )
             | Self::NestedOpening
-            | Self::ForeignPhase
             | Self::NestedStopped
             | Self::Panicked => false,
         }
@@ -133,13 +130,18 @@ impl QueryRequestExecution<'_> {
         }
         let mut body_unwind = None;
         let outcome = request.run(ExecutionWorkCeiling::new(self.declared_work), |_| {
-            let active = ActiveAdvancement {
-                execution: self,
-                owner,
-                source_instance,
+            let active = ActiveAdvancement { execution: self };
+            let source = match (source_instance, owner) {
+                (Some(source), _) => phase_custody::AdvancementSource::Relational(source),
+                (None, Some(owner)) => phase_custody::AdvancementSource::ProductOwner(owner),
+                (None, None) => phase_custody::AdvancementSource::Bootstrap,
             };
             match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                body(WorthQueryAdvancementPhase { active: &active })
+                body(WorthQueryAdvancementPhase {
+                    active: &active,
+                    source,
+                    owner,
+                })
             })) {
                 Ok(result) => Some(result),
                 Err(payload) => {
@@ -281,11 +283,6 @@ impl WorthQueryAdvancementDenial {
                 partition_identity: None,
                 policy_ancestor: None,
             }),
-            Self::ForeignPhase => Ok(Kind::ExecutionResource {
-                denial: Resource::ForeignAdvancementPhase,
-                partition_identity: None,
-                policy_ancestor: None,
-            }),
             Self::NestedStopped => Ok(Kind::ExecutionNestedPatternStopped {
                 partition_identity: None,
             }),
@@ -307,15 +304,13 @@ pub use observation::{
 
 #[cfg(test)]
 pub(crate) fn with_test_advancement<R>(
-    body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
 ) -> R {
     let policy =
         crate::domain_computation::execution_runtime::product_world::test_product_world_resources()
             .execution_policy();
     with_bootstrap_advancement(policy, |bootstrap| {
-        body(WorthQueryAdvancementPhase {
-            active: bootstrap.active,
-        })
+        body(test_host_policy::TestHostRequest::new(bootstrap.active))
     })
     .expect("the declared fixture policy admits its host call")
 }
@@ -332,3 +327,8 @@ pub(in crate::domain_computation::primary_graph) use observation::record_caller_
 pub(crate) fn drain_test_advancement_observations() {
     drop(observation::advancement_observations_on_this_thread_for_test());
 }
+
+#[cfg(test)]
+mod test_host_policy;
+#[cfg(test)]
+pub(crate) use test_host_policy::TestHostRequest;

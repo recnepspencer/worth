@@ -95,7 +95,7 @@ fn query_counts_each_governed_domain_port_and_contains_rejection_or_panic() {
 }
 
 fn indeterminate_terminal_with_probe(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -108,18 +108,26 @@ fn indeterminate_terminal_with_probe(
     let (fixture, probe) =
         direct_admission_fixture_with_domain_port_probe(disposition, resource_request);
     let epoch = fixture.admit();
-    let started = epoch
-        .begin_iteration(
-            execution,
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_iteration(
+            &installed_fixture_phase,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
                 "governed-domain-port-probe",
             ),
         )
-        .unwrap_or_else(|_| panic!("governed probe iteration must start"));
-    let outcome = match started.advance(execution) {
-        WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("governed probe provider must complete"),
+    }
+    .unwrap_or_else(|_| panic!("governed probe iteration must start"));
+    let outcome = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("governed probe provider must complete"),
+        }
     };
     let terminal = match outcome {
         WorthQueryDirectConvergenceIterationOutcome::Indeterminate(terminal) => terminal,

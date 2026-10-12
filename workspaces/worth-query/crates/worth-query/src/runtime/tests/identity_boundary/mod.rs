@@ -31,7 +31,11 @@ fn evidence_identity_resists_joined_string_folklore() {
 
 #[test]
 fn stop_class_remains_typed_under_message_rewording() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let first_error = bridge_runtime_with_support(
+        request_execution,
         WorthQueryRuntimeSupportProfile::scaffold_backend_profile().with_family_support(
             WorthQueryRuntimeFamilySupport::supported_with_teaching_posture_and_reason(
                 WorthQueryRuntimeFacadeFamily::Temporal,
@@ -48,6 +52,7 @@ fn stop_class_remains_typed_under_message_rewording() {
     .admit_public_api_family(WorthQueryRuntimeFacadeFamily::Temporal)
     .expect_err("temporal admission should fail closed");
     let second_error = bridge_runtime_with_support(
+        request_execution,
         WorthQueryRuntimeSupportProfile::scaffold_backend_profile().with_family_support(
             WorthQueryRuntimeFamilySupport::supported_with_teaching_posture_and_reason(
                 WorthQueryRuntimeFacadeFamily::Temporal,
@@ -91,7 +96,11 @@ fn stop_class_remains_typed_under_message_rewording() {
 
 #[test]
 fn session_label_identity_holds_under_collision_pressure() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = bridge_runtime_with_support_and_intent_authority(
+        request_execution,
         intent_support_profile(),
         TestIntentAuthority,
     );
@@ -101,18 +110,18 @@ fn session_label_identity_holds_under_collision_pressure() {
         WorthQuerySessionLabel::scoped_strs("worth", ["kernel", "preview"]).expect("label");
 
     runtime
-        .preview(preview_label.clone())
+        .preview(request_execution, preview_label.clone())
         .expect("first preview label should admit")
         .discard();
     runtime
-        .preview(render_collision.clone())
+        .preview(request_execution, render_collision.clone())
         .expect("display-colliding but identity-distinct preview label should admit")
         .discard();
     runtime
-        .branch(preview_label.clone())
+        .branch(request_execution, preview_label.clone())
         .expect("branch family should admit same identity independently");
 
-    let error = match runtime.branch(preview_label.clone()) {
+    let error = match runtime.branch(request_execution, preview_label.clone()) {
         Ok(_) => panic!("same-family branch replay should collide"),
         Err(error) => error,
     };

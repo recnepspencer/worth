@@ -17,6 +17,7 @@ where
         Family,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &WorthQueryObservedSource<
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
@@ -29,6 +30,7 @@ where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         self.select_output_producer_with_remaining_core::<Family>(
+            execution,
             source,
             profile_kind,
             admission,

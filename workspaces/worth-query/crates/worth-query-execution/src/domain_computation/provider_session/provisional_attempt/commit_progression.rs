@@ -125,10 +125,11 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
 
     pub fn compare_and_commit(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryProviderCompareAndCommitOutcome {
         self.compare_and_commit_with(allocation_policy, |authority, fresh| {
-            authority.recompare_fresh_decision_read_set(fresh)
+            authority.recompare_fresh_decision_read_set(execution, fresh)
         })
     }
 

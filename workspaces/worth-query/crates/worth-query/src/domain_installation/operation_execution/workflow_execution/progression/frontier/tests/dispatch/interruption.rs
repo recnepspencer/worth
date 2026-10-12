@@ -4,6 +4,9 @@ use domain::WorthQueryWorkflowAdvanceDenialKind as Denial;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource as CancellationSource;
 #[test]
 fn predispatch_cancellation_is_identical_at_every_first_compute_position_and_width() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     for first in 0..3 {
         let mut expected = None;
@@ -21,7 +24,7 @@ fn predispatch_cancellation_is_identical_at_every_first_compute_position_and_wid
             for (rank, member) in input.iter_mut().enumerate().take(first) {
                 member.1 = domain::WorthQueryWorkflowValue::Text(format!("{}:9:0", 7 + rank));
             }
-            let mut workspace = Policy::width(workers).workspace(&probe);
+            let mut workspace = Policy::width(workers).workspace(request_execution, &probe);
             let actual =
                 observe_members(start(&mut workspace), input, &mut workspace, Some(&scope));
             assert_eq!(
@@ -47,8 +50,11 @@ fn predispatch_cancellation_is_identical_at_every_first_compute_position_and_wid
 }
 #[test]
 fn cancellation_during_middle_and_last_compute_obeys_each_constructed_schedule() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
-    let successful = observe(7, None, Policy::width(0), &probe).0;
+    let successful = observe(request_execution, 7, None, Policy::width(0), &probe).0;
     for at in [1, 2] {
         for workers in [0, 1, 2, 4] {
             for hold_earlier in [false, true] {
@@ -63,7 +69,7 @@ fn cancellation_during_middle_and_last_compute_obeys_each_constructed_schedule()
                     Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
                     source.token(),
                 );
-                let mut workspace = Policy::width(workers).workspace(&probe);
+                let mut workspace = Policy::width(workers).workspace(request_execution, &probe);
                 let run = start(&mut workspace);
                 let (actual, charged, failed) =
                     observe_members(run, members(7, Some((at, 8))), &mut workspace, Some(&scope));

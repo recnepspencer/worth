@@ -7,7 +7,9 @@ use super::courtroom_support::{assert_authoritative_value, observe};
 use super::schema::{IntentEffectField, IntentLifecycleField};
 use super::world::CourtroomWorld;
 
-pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() {
+pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("ready");
     let transport = Arc::new(CompletingExternalTransport::default());
     world
@@ -16,26 +18,32 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         .unwrap();
     let selected = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let selected_commit = selected.product().selected_commit().clone();
     drop(selected);
     let integration = world
         .application
         .granular_invalidation_installation()
         .retain_primary_graph_integration_handle();
-    let commits_before =
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count());
+    let commits_before = integration.with_runtime(request_execution, |runtime| {
+        runtime.history().immutable_commit_count()
+    });
     integration
-        .execute_mutation_with_index_refresh(|runtime| {
+        .execute_mutation_with_index_refresh(request_execution, |runtime| {
             runtime.fail_next_durable_append_for_test();
             Ok::<(), ()>(())
         })
         .unwrap()
         .unwrap();
 
-    let partial = observe(&world);
+    let partial = observe(request_execution, &world);
     assert_eq!(partial.committed_operation_count(), 0);
     assert_eq!(partial.already_committed_operation_count(), 0);
     assert_eq!(partial.retained_due_wake_count(), 1);
@@ -54,7 +62,9 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         primary_graph::WorthQueryConditionalExecutionTerminal::ProductUnpublished
     );
     assert_eq!(
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
+        integration.with_runtime(request_execution, |runtime| runtime
+            .history()
+            .immutable_commit_count()),
         commits_before + 1
     );
     let page = world
@@ -89,7 +99,7 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
         .contains(&ProductUnpublishedNextAction::SettleOwnerEffects));
     assert!(!recovery.inspect().unwrap().relational_requires_settlement());
 
-    let retained = observe(&world);
+    let retained = observe(request_execution, &world);
     assert_eq!(retained.retained_due_wake_count(), 1);
     assert_eq!(retained.committed_operation_count(), 0);
     assert_eq!(retained.already_committed_operation_count(), 0);
@@ -107,16 +117,23 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
     );
     let current = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(
         current.product().selected_commit(),
         &selected_commit,
         "settlement cannot fabricate a product occurrence"
     );
     assert_eq!(
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
+        integration.with_runtime(request_execution, |runtime| runtime
+            .history()
+            .immutable_commit_count()),
         commits_before + 1
     );
     let cleanup = world
@@ -131,12 +148,17 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
     );
     let denial = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap()
-        .conditional_clock(&world.clock)
-        .err()
-        .expect("close revokes the caller's retained clock handle");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+                .conditional_clock(request_execution, &world.clock)
+                .err()
+                .expect("close revokes the caller's retained clock handle")
+        })
+        .expect("installed host call opens");
     assert_eq!(
         denial.kind(),
         primary_graph::WorthQueryConditionalClockObservationDenialKind::ForeignRuntime
@@ -145,9 +167,14 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
     super::courtroom_lifecycle::assert_conditional_resources_empty(lifetime.live_inventory());
     let after_close = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(after_close.product().selected_commit(), &selected_commit);
     assert!(world
         .application
@@ -158,38 +185,53 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
     assert_eq!(transport.contact_count(), 0);
 }
 
-pub fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit() {
+pub fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let world = CourtroomWorld::publish("ready");
     let selected = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let selected_commit = selected.product().selected_commit().clone();
     drop(selected);
     let integration = world
         .application
         .granular_invalidation_installation()
         .retain_primary_graph_integration_handle();
-    let commits_before =
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count());
+    let commits_before = integration.with_runtime(request_execution, |runtime| {
+        runtime.history().immutable_commit_count()
+    });
     world.application.fail_next_post_commit_snapshot_for_test();
 
-    let committed = observe(&world);
+    let committed = observe(request_execution, &world);
     assert_eq!(committed.retained_due_wake_count(), 0);
     assert_eq!(committed.committed_operation_count(), 1);
     assert_eq!(committed.already_committed_operation_count(), 0);
     assert_eq!(world.contacts.snapshot(), (1, 1, 1, 1));
     let current = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_ne!(current.product().selected_commit(), &selected_commit);
     let current_commit = current.product().selected_commit().clone();
     drop(current);
     assert_eq!(
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
+        integration.with_runtime(request_execution, |runtime| runtime
+            .history()
+            .immutable_commit_count()),
         commits_before + 1
     );
     assert_authoritative_value(
@@ -203,7 +245,7 @@ pub fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit(
         "completed".to_string(),
     );
 
-    let settled = observe(&world);
+    let settled = observe(request_execution, &world);
     assert_eq!(settled.retained_due_wake_count(), 0);
     assert_eq!(
         world.contacts.snapshot(),
@@ -211,17 +253,23 @@ pub fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit(
         "post-commit recovery never repeats application behavior"
     );
     assert_eq!(
-        world
+        &world
             .application
-            .on_branch(world.application.current_world())
-            .select()
-            .unwrap()
-            .product()
-            .selected_commit(),
+            .with_host_advancement(|phase| world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+                .product()
+                .selected_commit()
+                .clone())
+            .expect("installed host call opens"),
         &current_commit
     );
     assert_eq!(
-        integration.with_runtime(|runtime| runtime.history().immutable_commit_count()),
+        integration.with_runtime(request_execution, |runtime| runtime
+            .history()
+            .immutable_commit_count()),
         commits_before + 1
     );
 }

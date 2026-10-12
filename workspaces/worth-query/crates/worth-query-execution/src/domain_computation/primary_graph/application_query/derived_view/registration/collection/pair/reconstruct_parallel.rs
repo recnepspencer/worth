@@ -175,7 +175,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             owner_hold.resize(input_bytes).map_err(|memory| {
                                 denial::lease(worth_execution::LeaseDenial::MemoryExhausted(memory))
                             })?;
-                            authorization.push(pair.admit(self, root, context)?);
+                            authorization.push(pair.admit(&request, self, root, context)?);
                             owner_stage::retain_member_token(&mut owner_hold, &member)?;
                             tokens.insert(root, RetainedMemberToken::clone_admitted(&member)?);
                             plans.push(pair);
@@ -203,7 +203,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     )?;
                     let (outputs, stop) = canonical_results::CanonicalPairResults::settle(
                         roots,
-                        map.run_owned(lease, |pair, context| pair.run(context)),
+                        map.run_owned(lease, |pair, context| pair.run(&request, context)),
                     );
                     // The map releases its result allowance at settlement. Admit the
                     // returned prefix for owner staging before projection; these two

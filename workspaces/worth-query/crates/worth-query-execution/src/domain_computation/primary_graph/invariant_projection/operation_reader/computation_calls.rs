@@ -135,10 +135,12 @@ impl<Schema, Operation>
     /// work admits.
     pub(in crate::domain_computation::primary_graph) fn observe_retained(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         comparator: &Comparator,
         key: &WorthQueryApplicationFactKey,
     ) -> Result<ObservedRetained, WorthQueryApplicationAttemptDenial> {
         observe_fact(
+            execution,
             &*self.reader.runtime,
             self.reader.snapshot,
             self.reader.layout,

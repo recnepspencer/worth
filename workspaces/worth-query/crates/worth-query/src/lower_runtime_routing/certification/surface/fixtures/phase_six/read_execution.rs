@@ -21,10 +21,12 @@ use crate::schema_view::{QuerySchemaView, ScalarAspectType, SchemaFieldView};
 
 use super::super::{RepresentativeArtifacts, WorthQueryLowerRuntimeRepresentativeEvidenceSource};
 
-pub(crate) fn representative_compose_read_row() -> RepresentativeArtifacts {
-    let mut workspace = certification_workspace("lower-runtime-compose-read");
+pub(crate) fn representative_compose_read_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
+    let mut workspace = certification_workspace(execution, "lower-runtime-compose-read");
     let result = workspace
-        .compose_read(read_declaration())
+        .compose_read(execution, read_declaration())
         .expect("compose-read fixture should execute");
 
     route_planned_read_row(
@@ -34,11 +36,13 @@ pub(crate) fn representative_compose_read_row() -> RepresentativeArtifacts {
     )
 }
 
-pub(crate) fn representative_execute_read_family_row() -> RepresentativeArtifacts {
-    let mut workspace = certification_workspace("lower-runtime-execute-read-family");
+pub(crate) fn representative_execute_read_family_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
+    let mut workspace = certification_workspace(execution, "lower-runtime-execute-read-family");
     let family = certification_read_family(&mut workspace, "lower-runtime-read-family");
     let result = workspace
-        .execute_read_family(&family)
+        .execute_read_family(execution, &family)
         .expect("execute-read-family fixture should execute");
 
     route_planned_read_row(
@@ -48,17 +52,20 @@ pub(crate) fn representative_execute_read_family_row() -> RepresentativeArtifact
     )
 }
 
-pub(crate) fn representative_execute_read_family_in_basis_context_row() -> RepresentativeArtifacts {
-    let mut workspace = certification_workspace("lower-runtime-execute-read-family-basis");
+pub(crate) fn representative_execute_read_family_in_basis_context_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
+    let mut workspace =
+        certification_workspace(execution, "lower-runtime-execute-read-family-basis");
     let family = certification_read_family(&mut workspace, "lower-runtime-basis-family");
-    let snapshot_identity = workspace.snapshot_identity();
+    let snapshot_identity = workspace.snapshot_identity_with_request(execution);
     let snapshot_evidence_identity = snapshot_identity.evidence_identity();
     let context = branch_context_for_family(
         &family,
         snapshot_evidence_identity.terminal_projection_for_reporting(),
     );
     let result = workspace
-        .execute_read_family_in_basis_context(&family, &context)
+        .execute_read_family_in_basis_context(execution, &family, &context)
         .expect("execute-read-family-in-basis-context fixture should execute");
 
     route_planned_read_row(
@@ -68,11 +75,13 @@ pub(crate) fn representative_execute_read_family_in_basis_context_row() -> Repre
     )
 }
 
-pub(crate) fn representative_runtime_current_read_graph_row() -> RepresentativeArtifacts {
-    let mut workspace = certification_workspace("lower-runtime-runtime-current-read");
+pub(crate) fn representative_runtime_current_read_graph_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
+    let mut workspace = certification_workspace(execution, "lower-runtime-runtime-current-read");
     let family = certification_read_family(&mut workspace, "lower-runtime-current-family");
     let result = workspace
-        .execute_read_family(&family)
+        .execute_read_family(execution, &family)
         .expect("runtime current-read fixture should execute");
 
     route_planned_read_row(
@@ -82,17 +91,19 @@ pub(crate) fn representative_runtime_current_read_graph_row() -> RepresentativeA
     )
 }
 
-pub(crate) fn representative_runtime_basis_context_read_graph_row() -> RepresentativeArtifacts {
-    let mut workspace = certification_workspace("lower-runtime-runtime-basis-read");
+pub(crate) fn representative_runtime_basis_context_read_graph_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
+    let mut workspace = certification_workspace(execution, "lower-runtime-runtime-basis-read");
     let family = certification_read_family(&mut workspace, "lower-runtime-runtime-basis-family");
-    let snapshot_identity = workspace.snapshot_identity();
+    let snapshot_identity = workspace.snapshot_identity_with_request(execution);
     let snapshot_evidence_identity = snapshot_identity.evidence_identity();
     let context = branch_context_for_family(
         &family,
         snapshot_evidence_identity.terminal_projection_for_reporting(),
     );
     let result = workspace
-        .execute_read_family_in_basis_context(&family, &context)
+        .execute_read_family_in_basis_context(execution, &family, &context)
         .expect("runtime basis-context read fixture should execute");
 
     route_planned_read_row(
@@ -181,8 +192,11 @@ fn read_result_evidence_identity(result: &WorthQueryReadResult) -> WorthQueryEvi
     builder.seal()
 }
 
-fn certification_workspace(label: &str) -> WorthQueryWorkspace {
-    certification_runtime()
+fn certification_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    label: &str,
+) -> WorthQueryWorkspace {
+    certification_runtime(request_execution)
         .workspace(label)
         .expect("lower-runtime read fixture workspace should build")
 }

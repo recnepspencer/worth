@@ -55,19 +55,21 @@ impl<Schema, Operation, Input, Scope, Phase>
 
     pub(super) fn validate_identity_freshness<Entity>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: &str,
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.lease
             .handle()
-            .with_runtime(|runtime| {
+            .with_runtime(execution, |runtime| {
                 self.entity_resolution
                     .at_snapshot(
+                        execution,
                         runtime,
                         self.lease.snapshot(),
                         super::super::super::WorthQueryPrincipalResolutionMode::Ordinary,
                     )
-                    .and_then(|truth| truth.validate_entity_freshness(identity))
+                    .and_then(|truth| truth.validate_entity_freshness(execution, identity))
             })
             .map_err(|_| {
                 denial(

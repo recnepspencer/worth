@@ -2,11 +2,14 @@ use super::*;
 
 #[test]
 fn update_existing_preserves_authoritative_binding_evidence() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.update-existing")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.update-existing-table", |q| {
+        .live_view(request_execution, "tasks.update-existing-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -23,7 +26,7 @@ fn update_existing_preserves_authoritative_binding_evidence() {
         .expect("live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -53,7 +56,7 @@ fn update_existing_preserves_authoritative_binding_evidence() {
         .expect("binding should build");
 
     let receipt = workspace
-        .update_existing(binding, |task| {
+        .update_existing(request_execution, binding, |task| {
             task.set_aspect(
                 test_aspect_touch("title.value"),
                 test_authored_string_aspect_value("After existing update"),
@@ -61,7 +64,7 @@ fn update_existing_preserves_authoritative_binding_evidence() {
         })
         .expect("existing-target update should execute");
     let inspection = workspace
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("existing-target receipt should inspect");
 
     let evidence = receipt
@@ -124,7 +127,10 @@ fn update_existing_preserves_authoritative_binding_evidence() {
 
 #[test]
 fn update_existing_denies_missing_target_typed_and_early() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.update-existing-denial")
         .expect("task runtime should open a named workspace");
     let binding = workspace
@@ -140,7 +146,7 @@ fn update_existing_denies_missing_target_typed_and_early() {
         .expect("binding should build");
 
     let error = workspace
-        .update_existing(binding, |task| {
+        .update_existing(request_execution, binding, |task| {
             task.set_aspect(
                 test_aspect_touch("title.value"),
                 test_authored_string_aspect_value("No target"),

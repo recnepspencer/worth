@@ -17,12 +17,16 @@ use worth_foundational::facade::{
 
 #[test]
 fn unique_entity_aspect_field_invariant_rejects_duplicate_struct_field_projection() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_summary_title_uniqueness();
-    commit_entity_with_summary(&runtime, "alpha", "shared-title", "open")
+    commit_entity_with_summary(execution, &runtime, "alpha", "shared-title", "open")
         .expect("first summary entity");
 
     let before = runtime_marker(&runtime);
-    let duplicate = commit_entity_with_summary(&runtime, "beta", "shared-title", "closed");
+    let duplicate =
+        commit_entity_with_summary(execution, &runtime, "beta", "shared-title", "closed");
 
     assert_unique_entity_field_conflict(duplicate.unwrap_err(), "shared-title");
     assert_runtime_marker_unchanged(&runtime, before);
@@ -30,17 +34,23 @@ fn unique_entity_aspect_field_invariant_rejects_duplicate_struct_field_projectio
 
 #[test]
 fn unique_entity_aspect_field_invariant_ignores_sibling_struct_field_values() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_summary_title_uniqueness();
-    commit_entity_with_summary(&runtime, "alpha", "alpha-title", "shared-status")
+    commit_entity_with_summary(execution, &runtime, "alpha", "alpha-title", "shared-status")
         .expect("first summary entity");
     let distinct_title =
-        commit_entity_with_summary(&runtime, "beta", "beta-title", "shared-status");
+        commit_entity_with_summary(execution, &runtime, "beta", "beta-title", "shared-status");
 
     assert!(distinct_title.is_ok());
 }
 
 #[test]
 fn unique_entity_aspect_field_rejects_entity_aspect_create() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_summary_title_commit_boundary_uniqueness();
     let contract = runtime
         .entity_aspect_plan(KindId(1))
@@ -65,10 +75,7 @@ fn unique_entity_aspect_field_rejects_entity_aspect_create() {
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-        transaction.commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        transaction.commit(execution, runtime)
     };
 
     create(&mut runtime, "first").expect("first entity-aspect create");
@@ -86,10 +93,13 @@ fn unique_entity_aspect_field_rejects_entity_aspect_create() {
 
 #[test]
 fn unique_entity_aspect_field_rejects_entity_aspect_patch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_summary_title_commit_boundary_uniqueness();
-    commit_entity_with_summary(&runtime, "first", "shared-title", "open")
+    commit_entity_with_summary(execution, &runtime, "first", "shared-title", "open")
         .expect("first summary entity");
-    let second = commit_entity_with_summary(&runtime, "second", "second-title", "open")
+    let second = commit_entity_with_summary(execution, &runtime, "second", "second-title", "open")
         .expect("second summary entity");
     let second_id = second
         .changed_records
@@ -122,15 +132,10 @@ fn unique_entity_aspect_field_rejects_entity_aspect_patch() {
         )
         .expect("test staging stays within configured resource budgets");
 
-    let error = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = transaction.commit(execution, &runtime).unwrap_err();
     assert_unique_entity_field_conflict(error, "shared-title");
     assert_runtime_marker_unchanged(&runtime, before);
-    assert_entity_summary(&runtime, second_id, "second-title", "open");
+    assert_entity_summary(execution, &runtime, second_id, "second-title", "open");
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -200,6 +205,7 @@ fn assert_unique_entity_field_conflict(error: TransactionCommitError, value: &st
 }
 
 pub(super) fn assert_entity_summary(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     entity_id: crate::identity::data::EntityId,
     title: &str,
@@ -209,7 +215,7 @@ pub(super) fn assert_entity_summary(
     let snapshot = crate::tests::support::snapshot_for_owner_identity(runtime, &identity);
     let read = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("main snapshot remains readable");
     let record = read.get_entity(entity_id).expect("entity remains visible");
     let summary = record

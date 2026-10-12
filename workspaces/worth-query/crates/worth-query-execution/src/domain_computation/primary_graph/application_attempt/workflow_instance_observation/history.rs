@@ -51,6 +51,7 @@ pub(super) struct ObservedWorkflowHistory {
 /// The effects an instance that has already ended performed through its own
 /// receipted transitions, read as recorded. It admits no progression.
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_ended_history(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -65,6 +66,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     WorthQueryApplicationAttemptDenial,
 > {
     let history = observe(
+        execution,
         runtime,
         snapshot,
         layout,
@@ -88,6 +90,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
 }
 
 pub(super) fn observe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -101,6 +104,7 @@ pub(super) fn observe(
     let inventory_limit = charge.inventory_limit(maximum_transitions);
     let transitions = observe_adjacency_checked(
         runtime,
+        execution,
         snapshot,
         layout.instance_transition_relation,
         instance,
@@ -112,6 +116,19 @@ pub(super) fn observe(
             denial("workflow instance transition inventory is unavailable")
         }
         AdjacencyObservationDenial::WorkBudgetExceeded => budget::inventory_exhausted(),
+        AdjacencyObservationDenial::Interrupted(event) => {
+            super::super::WorthQueryApplicationAttemptDenial::new(
+                match event.interruption() {
+                    worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
+                        super::super::WorthQueryApplicationAttemptDenialKind::Cancelled
+                    }
+                    worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => {
+                        super::super::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
+                    }
+                },
+                "workflow transition inventory",
+            )
+        }
     })?;
     let transition_count = transitions.len();
     charge.reserve_inventory(transition_count)?;
@@ -120,6 +137,7 @@ pub(super) fn observe(
     let mut scratch = Vec::new();
     for transition in transitions {
         charge.reserve_record(
+            execution,
             runtime,
             snapshot,
             transition.to,
@@ -128,15 +146,17 @@ pub(super) fn observe(
         )?;
         let evidence = observe_adjacency(
             runtime,
+            execution,
             snapshot,
             layout.transition_assessment_evidence_relation,
             transition.to,
             WorthQueryApplicationAdjacencyDirection::Outgoing,
             2,
-        )
+        )?
         .ok_or_else(|| denial("workflow assessment evidence relation is unavailable"))?;
         for evidence in evidence {
             charge.reserve_record(
+                execution,
                 runtime,
                 snapshot,
                 evidence.to,
@@ -146,6 +166,7 @@ pub(super) fn observe(
         }
         scratch.clear();
         let settlement = settlement::observe_settled_transition(
+            execution,
             runtime,
             snapshot,
             layout,
@@ -154,6 +175,7 @@ pub(super) fn observe(
         )?;
         let identity = match super::observe_field_value(
             runtime,
+            execution,
             snapshot,
             transition.to,
             layout.transition.entity_kind,
@@ -173,6 +195,7 @@ pub(super) fn observe(
                 let Some(AspectValue::String(InternedString::Raw(path))) =
                     super::observe_field_value(
                         runtime,
+                        execution,
                         snapshot,
                         settlement.node(),
                         layout.node.entity_kind,
@@ -186,6 +209,7 @@ pub(super) fn observe(
             }
         }
         let assessment_evidence = settlement::observe_assessment_evidence(
+            execution,
             runtime,
             snapshot,
             layout,

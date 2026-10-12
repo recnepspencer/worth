@@ -9,14 +9,15 @@ use crate::lineage::data::{
 impl<'runtime> LineageAccess<'runtime> {
     pub fn divergence_between_branches(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: LineageDivergenceRequest,
     ) -> LineageDivergenceSummary {
-        let left_graph = self.graph(LineageGraphRequest {
+        let left_graph = self.graph(execution, LineageGraphRequest {
             branch_id: request.left_branch.clone(),
             traversal_basis:
                 crate::lineage::data::LineageGraphTraversalBasis::FullBranchGraphMaterialization,
         });
-        let right_graph = self.graph(LineageGraphRequest {
+        let right_graph = self.graph(execution, LineageGraphRequest {
             branch_id: request.right_branch.clone(),
             traversal_basis:
                 crate::lineage::data::LineageGraphTraversalBasis::FullBranchGraphMaterialization,

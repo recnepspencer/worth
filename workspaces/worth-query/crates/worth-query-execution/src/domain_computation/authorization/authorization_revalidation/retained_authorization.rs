@@ -22,6 +22,7 @@ where
 {
     pub(super) fn validate_admitted_authorization<Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
             Schema,
             Operation,
@@ -41,18 +42,19 @@ where
             .mutation_product()
             .ok_or_else(inconsistent_authorization)?;
         match authorization.capability_authorization() {
-            Some(capability) => self.validate_retained_capability(capability, product),
-            None => self.validate_retained_conventional(authorization, product),
+            Some(capability) => self.validate_retained_capability(execution, capability, product),
+            None => self.validate_retained_conventional(execution, authorization, product),
         }
     }
 
     fn validate_retained_conventional(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authorization: &WorthQueryRetainedAuthorizationDecisionFacts,
         product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let security = self
-            .admit_product_security_basis(product)
+            .admit_product_security_basis(execution, product)
             .map_err(|denial| {
                 super::super::denial::product_security_basis_denial(
                     denial,
@@ -60,20 +62,24 @@ where
                 )
             })?;
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
-        graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = security.snapshot_handle();
-            let current = validate_retained_currentness(
-                authorization,
-                runtime,
-                snapshot,
-                self.authorization.bridge(),
-            );
-            current
-        })
+        graph
+            .integration_handle()
+            .with_runtime_mut(execution, |runtime| {
+                let snapshot = security.snapshot_handle();
+                let current = validate_retained_currentness(
+                    execution,
+                    authorization,
+                    runtime,
+                    snapshot,
+                    self.authorization.bridge(),
+                );
+                current
+            })
     }
 
     fn validate_retained_capability(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability: &WorthQueryRetainedCapabilityAuthorization,
         product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
@@ -85,7 +91,7 @@ where
         }
         let sample = self.sample_capability_time(installed)?;
         let security = self
-            .admit_product_security_basis(product)
+            .admit_product_security_basis(execution, product)
             .map_err(|denial| {
                 super::super::denial::product_security_basis_denial(
                     denial,
@@ -93,33 +99,46 @@ where
                 )
             })?;
         let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
-        graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = security.snapshot_handle();
-            let primary = self.validate_retained_capability_observation(
-                capability, installed, &sample, runtime, snapshot,
-            );
-            let result = primary.and_then(|()| {
-                self.readmit_retained_capability_support(capability.supporting(), runtime, snapshot)
-            });
-            result
-        })
+        graph
+            .integration_handle()
+            .with_runtime_mut(execution, |runtime| {
+                let snapshot = security.snapshot_handle();
+                let primary = self.validate_retained_capability_observation(
+                    execution, capability, installed, &sample, runtime, snapshot,
+                );
+                let result = primary.and_then(|()| {
+                    self.readmit_retained_capability_support(
+                        execution,
+                        capability.supporting(),
+                        runtime,
+                        snapshot,
+                    )
+                });
+                result
+            })
     }
 
     fn validate_retained_capability_observation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability: &WorthQueryRetainedCapabilityAuthorization,
         installed: &super::super::capability_registry::WorthQueryInstalledCapabilityPlan,
         sample: &super::super::WorthQueryRuntimeTimeSample,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        if !capability.principal().remains_current_in(runtime, snapshot) {
+        if !capability
+            .principal()
+            .remains_current_in(execution, runtime, snapshot)
+        {
             return Err(stale_principal());
         }
-        if !capability
-            .decision()
-            .remains_current_in(runtime, snapshot, self.authorization.bridge())
-        {
+        if !capability.decision().remains_current_in(
+            execution,
+            runtime,
+            snapshot,
+            self.authorization.bridge(),
+        ) {
             return Err(stale_authorization());
         }
         WorthQueryAuthorizationRevalidationObservation::from_axes(RevalidationObservationAxes {
@@ -131,7 +150,11 @@ where
             request: capability.request(),
             sample,
         })
-        .observe_active_capability(Some(capability.grant()), Some(capability.decision()))
+        .observe_active_capability(
+            execution,
+            Some(capability.grant()),
+            Some(capability.decision()),
+        )
         .map(drop)
     }
 }

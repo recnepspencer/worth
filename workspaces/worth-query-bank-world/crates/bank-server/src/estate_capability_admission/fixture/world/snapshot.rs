@@ -10,6 +10,22 @@ use super::super::{
 };
 
 pub(super) fn snapshot(unrelated_grants: usize) -> BankSnapshot {
+    snapshot_builder(unrelated_grants)
+        .build()
+        .expect("capability fixture snapshot should be valid")
+}
+
+pub(super) fn live_snapshot() -> BankSnapshot {
+    snapshot_builder(0)
+        .institution_cash_account(
+            bank_domain::model::AccountId::new(100_000).unwrap(),
+            INSTITUTION,
+        )
+        .build()
+        .expect("the live fixture includes real institution cash")
+}
+
+fn snapshot_builder(unrelated_grants: usize) -> BankSnapshotBuilder {
     let mut snapshot = BankSnapshotBuilder::new(BankSnapshotVersion::new(1).unwrap())
         .institution(INSTITUTION)
         .institution(ALTERNATE_INSTITUTION)
@@ -36,6 +52,4 @@ pub(super) fn snapshot(unrelated_grants: usize) -> BankSnapshot {
         snapshot = snapshot.principal(extra_principal(ordinal));
     }
     snapshot
-        .build()
-        .expect("capability fixture snapshot should be valid")
 }

@@ -6,6 +6,7 @@ use worth_query::facade::{domain, read, runtime};
 use super::{GeometryDomain, ReadExecutionInput, ReadFamily, ReadVertex};
 
 pub(crate) fn resource_admission_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     contract: domain::WorthQueryExecutionResourceContract,
     support: domain::WorthQueryExecutionResourceSupport,
@@ -37,7 +38,7 @@ pub(crate) fn resource_admission_workspace(
     };
     let workspace = super::configured_runtime_without_executors(package)
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, executor)
-        .workspace(name)?;
+        .workspace(request_execution, name)?;
     Ok((workspace, contacts))
 }
 

@@ -36,6 +36,7 @@ impl WorthUiInstalledDownstreamQueryState {
 
     pub(crate) fn refresh_operation_live(
         &mut self,
+        execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
         reference: &WorthUiInstalledQueryBindingReference,
         workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
     ) -> Result<crate::WorthUiOperationLiveRefreshOutcome, crate::WorthUiOperationLiveRefreshError>
@@ -50,7 +51,7 @@ impl WorthUiInstalledDownstreamQueryState {
             .ok_or(crate::WorthUiOperationLiveRefreshError::Ui(
                 crate::WorthUiOperationLiveRefreshDenial::ResourceNotRetained,
             ))?
-            .refresh(reference, workspace)
+            .refresh(execution, reference, workspace)
     }
 
     pub(crate) fn admit_operation_live_change(

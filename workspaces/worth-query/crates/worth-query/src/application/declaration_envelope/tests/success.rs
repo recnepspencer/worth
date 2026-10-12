@@ -7,7 +7,10 @@ use super::support::{
 
 #[test]
 fn envelope_common_lane_reads_like_public_crossing_story() {
-    let envelope = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let envelope = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_plan_receipt_and_envelope(EnvelopeInput::<
             RelationalEnvelopeFamily,
         >::new("edge:42"))
@@ -22,7 +25,10 @@ fn envelope_common_lane_reads_like_public_crossing_story() {
 
 #[test]
 fn explicit_and_common_envelope_paths_converge_on_one_digest() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
     let explicit = handle
         .envelope_routes_from_progressed(progressed(
             &handle,
@@ -40,7 +46,10 @@ fn explicit_and_common_envelope_paths_converge_on_one_digest() {
 
 #[test]
 fn mixed_crossing_envelopes_retain_mixed_route_truth() {
-    let envelope = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let envelope = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_plan_receipt_and_envelope(EnvelopeInput::<
             MixedEnvelopeFamily,
         >::new("edge:42"))
@@ -61,7 +70,10 @@ fn mixed_crossing_envelopes_retain_mixed_route_truth() {
 
 #[test]
 fn advanced_lane_envelopes_issue_without_checked_wrapper_loss() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match route_checked_with_intent(
         &handle,
@@ -88,7 +100,10 @@ fn advanced_lane_envelopes_issue_without_checked_wrapper_loss() {
 
 #[test]
 fn issued_receipt_checked_input_preserves_public_envelope_lane() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     let checked_receipt = handle.receipt_routes_checked(
         crate::application::WorthQueryDeclarationReceiptInput::planned(
@@ -116,15 +131,18 @@ fn issued_receipt_checked_input_preserves_public_envelope_lane() {
 
 #[test]
 fn envelope_digest_changes_when_admitted_world_changes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let primary = match envelope_checked_from_receipt(
-        &admitted_handle("primary"),
+        &admitted_handle(request_execution, "primary"),
         EnvelopeInput::<RelationalEnvelopeFamily>::new("edge:42"),
     ) {
         crate::application::WorthQueryDeclarationEnvelopeChecked::Enveloped(envelope) => envelope,
         _ => panic!("primary world should envelope"),
     };
     let alternate = match envelope_checked_from_receipt(
-        &admitted_handle("alternate"),
+        &admitted_handle(request_execution, "alternate"),
         EnvelopeInput::<RelationalEnvelopeFamily>::new("edge:42"),
     ) {
         crate::application::WorthQueryDeclarationEnvelopeChecked::Enveloped(envelope) => envelope,

@@ -66,6 +66,7 @@ fn main() {
 }
 
 pub fn create_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     name: &str,
 ) -> (
@@ -93,25 +94,22 @@ pub fn create_entity(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example entity batch must stage");
-    let outcome = tx
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("entity commit");
+    let outcome = tx.commit(execution, runtime).expect("entity commit");
     let entity_id = changed_entity(&outcome).expect("created entity id");
     (outcome, entity_id)
 }
 
 pub fn update_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     entity_id: EntityId,
     name: &str,
 ) -> worth_relational::facade::transactions::CommitResult {
-    update_entity_on_branch(runtime, entity_id, name, None)
+    update_entity_on_branch(execution, runtime, entity_id, name, None)
 }
 
 pub fn update_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     entity_id: EntityId,
     name: &str,
@@ -146,14 +144,11 @@ pub fn update_entity_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example update batch must stage");
-    tx.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("update commit")
+    tx.commit(execution, runtime).expect("update commit")
 }
 
 pub fn delete_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     entity_id: EntityId,
 ) -> worth_relational::facade::transactions::CommitResult {
@@ -173,14 +168,11 @@ pub fn delete_entity(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example delete batch must stage");
-    tx.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("delete entity commit")
+    tx.commit(execution, runtime).expect("delete entity commit")
 }
 
 pub fn create_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     source: EntityId,
     target: EntityId,
@@ -212,12 +204,7 @@ pub fn create_relation(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("example relation batch must stage");
-    let outcome = tx
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("relation commit");
+    let outcome = tx.commit(execution, runtime).expect("relation commit");
     let relation_id = changed_relation(&outcome).expect("created relation id");
     (outcome, relation_id)
 }
@@ -316,4 +303,12 @@ fn stable_contract_identity(aspect_key: &AspectKey) -> u64 {
         hash = hash.wrapping_mul(1099511628211_u64);
     }
     hash
+}
+
+pub(crate) fn serial_request() -> worth_execution::SerialRequest {
+    worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    )
 }

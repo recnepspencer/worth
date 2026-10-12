@@ -9,36 +9,64 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
         .with_application_advancement(
             &crate::domain_computation::primary_graph::tests::fixture::live_scope(),
             |active_phase| {
+                let host_custody = active_phase.test_host_request();
                 let phase = &active_phase;
-                let snapshot_baseline = world.invariant.active_snapshot_count();
-                let (left, right) = equivalent_programs(&world, "racing-equivalent");
+                let snapshot_baseline = world
+                    .invariant
+                    .active_snapshot_count(&active_phase.borrowed_request_for_test());
+                let (left, right) = equivalent_programs(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    "racing-equivalent",
+                );
                 let binding = idempotency(139, 140);
                 let left = start(phase, &world.application, left, binding);
                 let right = start(phase, &world.application, right, binding);
                 let left = progress_application_commit(
+                    &phase.borrowed_request_for_test(),
                     phase,
                     &world.application,
                     left,
                     ExecutionAllocationPolicy::SystemAllocation,
                 );
                 let right = progress_application_commit(
+                    &phase.borrowed_request_for_test(),
                     phase,
                     &world.application,
                     right,
                     ExecutionAllocationPolicy::SystemAllocation,
                 );
                 assert_eq!(
-                    world.invariant.active_snapshot_count(),
+                    world
+                        .invariant
+                        .active_snapshot_count(&active_phase.borrowed_request_for_test()),
                     snapshot_baseline + 2
                 );
-                let left = finish_application_commit(phase, &world.application, left);
+                let left = finish_application_commit(
+                    &phase.borrowed_request_for_test(),
+                    phase,
+                    &world.application,
+                    left,
+                );
                 assert_eq!(
-                    world.invariant.active_snapshot_count(),
+                    world
+                        .invariant
+                        .active_snapshot_count(&active_phase.borrowed_request_for_test()),
                     snapshot_baseline + 1,
                     "finishing one attempt must preserve its interleaved peer's snapshot lease"
                 );
-                let right = finish_application_commit(phase, &world.application, right);
-                assert_eq!(world.invariant.active_snapshot_count(), snapshot_baseline);
+                let right = finish_application_commit(
+                    &phase.borrowed_request_for_test(),
+                    phase,
+                    &world.application,
+                    right,
+                );
+                assert_eq!(
+                    world
+                        .invariant
+                        .active_snapshot_count(&active_phase.borrowed_request_for_test()),
+                    snapshot_baseline
+                );
                 assert_eq!(
                     world.application.provider_session_resource_count_for_test(),
                     0

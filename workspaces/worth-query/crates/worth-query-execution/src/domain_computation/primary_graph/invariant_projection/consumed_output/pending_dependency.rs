@@ -70,12 +70,14 @@ impl<'selected> SelectedPendingConsumedOutput<'selected> {
     /// same selected native root.
     pub(in crate::domain_computation::primary_graph) fn next_pending(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<Self>, ConsumedOutputVerificationStop> {
         ConsumedOutputEvidence::select_pending_from(
+            execution,
             &self.roots,
             self.index + 1,
             owner,
@@ -114,6 +116,7 @@ impl ConsumedOutputEvidence {
     pub(in crate::domain_computation::primary_graph) fn select_exact_pending_dependency<
         'selected,
     >(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: &Arc<[Self]>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
@@ -122,10 +125,13 @@ impl ConsumedOutputEvidence {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedPendingConsumedOutput<'selected>>, ConsumedOutputVerificationStop>
     {
-        Self::select_pending_from(roots, 0, owner, runtime, snapshot, selected, admission)
+        Self::select_pending_from(
+            execution, roots, 0, owner, runtime, snapshot, selected, admission,
+        )
     }
 
     fn select_pending_from<'selected>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: &Arc<[Self]>,
         start: usize,
         owner: &SourceInvalidationOwner,
@@ -170,6 +176,7 @@ impl ConsumedOutputEvidence {
                 ConsumedOutputCurrentness::Direct(
                     SourceSettlementCurrentness::FullVerificationRequired(_),
                 ) => match Self::verify_many_with_admission(
+                    execution,
                     std::slice::from_ref(evidence),
                     owner,
                     runtime,

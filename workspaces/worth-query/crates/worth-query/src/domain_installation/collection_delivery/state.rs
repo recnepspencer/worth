@@ -134,10 +134,11 @@ impl WorthQueryCollectionConsumerWindow {
 
     pub fn plan_patch(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admitted: &WorthQueryAdmittedConsumerInvalidation<'_>,
         workspace: &crate::runtime::WorthQueryWorkspace,
     ) -> WorthQueryCollectionDeliveryOutcome {
-        super::planning::plan(self, admitted, workspace)
+        super::planning::plan(execution, self, admitted, workspace)
     }
 
     pub fn apply_patch(

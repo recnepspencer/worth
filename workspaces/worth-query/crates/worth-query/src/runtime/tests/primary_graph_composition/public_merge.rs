@@ -41,14 +41,20 @@ const SEEDED_IDENTITY: u64 = 11;
 
 #[test]
 fn a_merge_through_the_lent_primary_graph_runtime_is_denied() {
-    let world = DuplicateWorld::new();
-    let main_before = main_head(&world.graph);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = DuplicateWorld::new(request_execution);
+    let main_before = main_head(request_execution, &world.graph);
 
     let mut denial = None;
-    world.lend(|relational| {
+    world.lend(request_execution, |relational| {
         denial = Some(
             lowered_merge(relational)
-                .execute_receipt_with(EffectExecutionAuthority::relational(relational))
+                .execute_receipt_with(
+                    request_execution,
+                    EffectExecutionAuthority::relational(relational),
+                )
                 .map(|_| ()),
         );
     });
@@ -61,7 +67,7 @@ fn a_merge_through_the_lent_primary_graph_runtime_is_denied() {
         other => panic!("a lent merge of a duplicate unique value must be denied: {other:?}"),
     }
     assert_eq!(
-        main_head(&world.graph),
+        main_head(request_execution, &world.graph),
         main_before,
         "the duplicate never reaches main"
     );
@@ -69,14 +75,20 @@ fn a_merge_through_the_lent_primary_graph_runtime_is_denied() {
 
 #[test]
 fn a_merge_through_the_owning_backend_is_denied_its_duplicate_value() {
-    let DuplicateWorld { runtime, graph } = DuplicateWorld::new();
-    let main_before = main_head(&graph);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let DuplicateWorld { runtime, graph } = DuplicateWorld::new(request_execution);
+    let main_before = main_head(request_execution, &graph);
     let mut workspace = runtime
         .workspace("primary-graph-owner-merge")
         .expect("primary-graph workspace opens");
     let declaration = declare_branch_merge("main", "candidate").expect("merge declares");
-    let context = branch_merge(&workspace, &declaration).expect("merge authority admits");
-    let outcome = declaration.using(context).run(&mut workspace);
+    let context =
+        branch_merge(request_execution, &workspace, &declaration).expect("merge authority admits");
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
 
     let stop = outcome
         .stop()
@@ -88,7 +100,7 @@ fn a_merge_through_the_owning_backend_is_denied_its_duplicate_value() {
         stop.message()
     );
     assert_eq!(
-        main_head(&graph),
+        main_head(request_execution, &graph),
         main_before,
         "the duplicate never reaches main"
     );
@@ -102,12 +114,12 @@ struct DuplicateWorld {
 }
 
 impl DuplicateWorld {
-    fn new() -> Self {
-        let runtime = primary_graph_merge_runtime();
+    fn new(request_execution: &worth_execution::ExecutionRequest<'_, '_>) -> Self {
+        let runtime = primary_graph_merge_runtime(request_execution);
         let graph = retain_primary_graph_integration_handle(&runtime.execution_runtime)
             .expect("installed runtime retains its primary graph");
         let world = Self { runtime, graph };
-        world.lend(|relational| {
+        world.lend(request_execution, |relational| {
             let (_, basis) = relational
                 .observe_fork_source(&BranchId("main".to_owned()))
                 .expect("main exposes a fork source");
@@ -115,13 +127,19 @@ impl DuplicateWorld {
                 .fork_branch(BranchId("candidate".to_owned()), basis)
                 .expect("the candidate branch forks");
         });
-        world.lend(|relational| create_duplicate_principal(relational, "candidate"));
+        world.lend(request_execution, |relational| {
+            create_duplicate_principal(request_execution, relational, "candidate")
+        });
         world
     }
 
-    fn lend(&self, mutate: impl FnOnce(&mut RelationalRuntime)) {
+    fn lend(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        mutate: impl FnOnce(&mut RelationalRuntime),
+    ) {
         self.graph
-            .execute_mutation_with_index_refresh(|relational| {
+            .execute_mutation_with_index_refresh(request_execution, |relational| {
                 mutate(relational);
                 Ok::<_, ()>(())
             })
@@ -130,8 +148,11 @@ impl DuplicateWorld {
     }
 }
 
-fn main_head(graph: &WorthQueryPrimaryGraphIntegrationHandle) -> Option<CommitId> {
-    graph.with_runtime(|relational| {
+fn main_head(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &WorthQueryPrimaryGraphIntegrationHandle,
+) -> Option<CommitId> {
+    graph.with_runtime(request_execution, |relational| {
         let identity = relational
             .branch_identity(&BranchId("main".to_owned()))
             .ok()?;
@@ -142,7 +163,11 @@ fn main_head(graph: &WorthQueryPrimaryGraphIntegrationHandle) -> Option<CommitId
 
 /// A raw create of a second principal holding the seeded identity, which a
 /// program write would be refused.
-fn create_duplicate_principal(relational: &mut RelationalRuntime, branch: &str) {
+fn create_duplicate_principal(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    relational: &mut RelationalRuntime,
+    branch: &str,
+) {
     let kind = principal_kind(relational);
     let locator = AspectFieldLocator::new(
         LocatorAuthority::Planned,
@@ -178,10 +203,7 @@ fn create_duplicate_principal(relational: &mut RelationalRuntime, branch: &str) 
         )
         .expect("the fixture batch stages");
     let committed = transaction
-        .commit(
-            relational,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, relational)
         .expect("the raw duplicate commits");
     relational
         .snapshots()

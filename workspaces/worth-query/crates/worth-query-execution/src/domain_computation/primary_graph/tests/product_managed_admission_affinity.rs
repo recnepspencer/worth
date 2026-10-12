@@ -20,7 +20,10 @@ fn direct_admission_rejects_a_same_relational_different_signal_product() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let (exact, substitute) = hostile_product_twins(&world.application);
+    let (exact, substitute) = world
+        .application
+        .with_host_advancement(|phase| hostile_product_twins(&phase, &world.application))
+        .expect("the fixture read owns its installed host call");
     let plan = admitted_plan("direct-product-affinity", 8);
     let operation =
         authority_for_product(direct_authority(&world.application.runtime, &plan), &exact);
@@ -68,7 +71,10 @@ fn workflow_admission_rejects_a_same_relational_different_signal_product() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let (exact, substitute) = hostile_product_twins(&world.application);
+    let (exact, substitute) = world
+        .application
+        .with_host_advancement(|phase| hostile_product_twins(&phase, &world.application))
+        .expect("the fixture read owns its installed host call");
     let operation_plan = admitted_plan("workflow-product-affinity", 8);
     let stage_plan = admitted_plan("workflow-product-affinity:stage", 4);
     let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
@@ -118,6 +124,7 @@ fn workflow_admission_rejects_a_same_relational_different_signal_product() {
 }
 
 fn hostile_product_twins<Schema: worth_query_installation::facade::ApplicationSchema>(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
 ) -> (
     crate::basis::WorthQueryProductBranchLease,
@@ -132,7 +139,7 @@ fn hostile_product_twins<Schema: worth_query_installation::facade::ApplicationSc
         .branches()
         .fork(root)
         .components(|components| components.reuse_exact_relational_basis().fork_signal())
-        .create()
+        .create(phase_custody)
         .expect("the hostile twin should reuse Relational and fork Signal");
     let substitute = application
         .product_runtime

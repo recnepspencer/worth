@@ -17,7 +17,7 @@ impl RequestWorkBudget {
 
     /// Validation and commit preparation dispatch these patterns in phase order.
     /// Only their top-level packet runners receive this account; kernels never
-    /// receive it, and a recursive public request builds a fresh runtime snapshot.
+    /// receive it. A validated proposal carries the account into preparation.
     /// Hold the lock through each run so no dispatch borrows unreported work.
     pub(crate) fn run<R>(
         &self,
@@ -43,12 +43,16 @@ impl RequestWorkBudget {
                         remaining,
                     ),
                 ),
+                // None and a fresh token are safe: lease/limits.rs:58-62 retains the parent deadline and :99-108 checks parent cancellation.
                 deadline: None,
                 cancellation: CancellationToken::new(),
             })
             .expect("a remaining-work child preserves its parent's policy limits");
         let outcome = run(&child);
-        *charged = charged.saturating_add(report(&outcome).charged_work());
+        let report = report(&outcome);
+        #[cfg(test)]
+        observation::record(report.charged_work());
+        *charged = charged.saturating_add(report.charged_work());
         outcome
     }
 }
@@ -61,6 +65,17 @@ pub(crate) fn run_with_remaining_request_work<R>(
 ) -> R {
     match budget {
         Some(budget) => budget.run(lease, run, report),
-        None => run(lease),
+        None => {
+            let outcome = run(lease);
+            #[cfg(test)]
+            observation::record(report(&outcome).charged_work());
+            outcome
+        }
     }
 }
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(test)]
+pub(crate) mod observation;

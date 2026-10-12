@@ -42,8 +42,12 @@ pub fn observe_head(
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .retain_read()
-        .expect("the occurrence must remain selectable")
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .retain_read(&host_phase)
+                .expect("the occurrence must remain selectable")
+        })
+        .expect("installed host call opens")
 }

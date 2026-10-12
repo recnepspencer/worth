@@ -107,6 +107,7 @@ impl ConsumedOutputEvidence {
     /// Every actor lookup and fact comparison is paid from the caller's meter.
     /// The iterative worklist visits each exact settlement at most once.
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn verify_candidate_at(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,
         source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         upstream: &[ConsumedOutputEvidence],
@@ -120,6 +121,7 @@ impl ConsumedOutputEvidence {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::verify_views(
+            execution,
             std::iter::once(EvidenceView {
                 identity,
                 source_facts,
@@ -138,6 +140,7 @@ impl ConsumedOutputEvidence {
 
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn verify_candidate_with_admission(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,
         source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         upstream: &[ConsumedOutputEvidence],
@@ -150,6 +153,7 @@ impl ConsumedOutputEvidence {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::verify_views(
+            execution,
             std::iter::once(EvidenceView {
                 identity,
                 source_facts,
@@ -167,6 +171,7 @@ impl ConsumedOutputEvidence {
     }
 
     pub(in crate::domain_computation::primary_graph) fn verify_many_with_admission(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: &[Self],
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
@@ -175,6 +180,7 @@ impl ConsumedOutputEvidence {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::verify_views(
+            execution,
             roots.iter().map(EvidenceView::from),
             owner,
             runtime,
@@ -185,6 +191,7 @@ impl ConsumedOutputEvidence {
     }
 
     fn verify_views<'a>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: impl ExactSizeIterator<Item = EvidenceView<'a>> + Clone,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
@@ -194,6 +201,7 @@ impl ConsumedOutputEvidence {
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         if !owner.invalidation_equivalence_is_armed() {
             return Self::verify_optimized_views(
+                execution,
                 roots,
                 owner,
                 runtime,
@@ -209,6 +217,7 @@ impl ConsumedOutputEvidence {
         let image = owner.capture_full_verification(runtime, snapshot, selected, admission);
         let oracle_roots = roots.clone();
         Self::verify_optimized_views(
+            execution,
             roots,
             owner,
             runtime,
@@ -217,12 +226,13 @@ impl ConsumedOutputEvidence {
             admission,
             |result, admission| {
                 owner.record_invalidation_shadow_check();
-                super::equivalence::check(oracle_roots, image, result, admission)
+                super::equivalence::check(execution, oracle_roots, image, result, admission)
             },
         )
     }
 
     fn verify_optimized_views<'a>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: impl ExactSizeIterator<Item = EvidenceView<'a>> + Clone,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
@@ -239,6 +249,7 @@ impl ConsumedOutputEvidence {
         let mut marked = Vec::new();
         let mut recovered = Vec::new();
         let marked_result = Self::verify_marked_views(
+            execution,
             roots.clone(),
             owner,
             runtime,
@@ -259,7 +270,7 @@ impl ConsumedOutputEvidence {
                     if prior != ConsumedOutputVerification::Current {
                         return Ok(prior);
                     }
-                    Self::compare_in_full(root, runtime, snapshot, selected, admission)
+                    Self::compare_in_full(execution, root, runtime, snapshot, selected, admission)
                 })
         } else {
             marked_result

@@ -172,6 +172,9 @@ where
     /// Selects the exact committed product occurrence identified by a receipt.
     pub fn at_commit(
         &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         commit: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
         maximum_history_work: std::num::NonZeroUsize,
     ) -> Result<
@@ -179,6 +182,7 @@ where
         WorthQueryApplicationHistorySelectionDenial,
     > {
         self.at_selected_commit(
+            phase,
             commit.committed_product_publication().composite_commit(),
             maximum_history_work,
         )
@@ -187,6 +191,9 @@ where
     /// Selects the exact product occurrence that issued an approved elevation.
     pub fn at_approved_elevation(
         &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         approved: &worth_query_execution::facade::primary_graph::WorthQueryApprovedElevation,
         maximum_history_work: std::num::NonZeroUsize,
     ) -> Result<
@@ -194,6 +201,7 @@ where
         WorthQueryApplicationHistorySelectionDenial,
     > {
         self.at_selected_commit(
+            phase,
             approved.approval_product_publication().composite_commit(),
             maximum_history_work,
         )
@@ -201,6 +209,9 @@ where
 
     fn at_selected_commit(
         &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         selected_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
         maximum_history_work: std::num::NonZeroUsize,
     ) -> Result<
@@ -217,7 +228,7 @@ where
             .find(|entry| entry.selected_commit() == selected_commit)
             .ok_or(WorthQueryApplicationHistorySelectionDenial::CommitUnavailable)?;
         let selected = history
-            .select(&entry)
+            .select(phase, &entry)
             .map_err(WorthQueryApplicationHistorySelectionDenial::ProductSelection)?;
         Ok(WorthQueryApplicationRetainedRequest {
             application: self.application,
@@ -230,11 +241,14 @@ where
 
     pub fn retain_read(
         &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
     ) -> Result<
         super::WorthQueryApplicationReadObservation,
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
     > {
-        let selected = self.application.on_branch(self.branch).select()?;
+        let selected = self.application.on_branch(self.branch).select(phase)?;
         Ok(super::WorthQueryApplicationReadObservation::new(
             selected.retain_application_read(),
         ))

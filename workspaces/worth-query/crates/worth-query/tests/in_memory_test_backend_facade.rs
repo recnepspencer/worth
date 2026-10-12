@@ -15,45 +15,56 @@ use support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn in_memory_test_backend_facade_builds_a_real_workspace() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = in_memory_test_runtime()
         .with_schema(task_schema())
         .invariant_catalog(InvariantCatalog::default())
-        .workspace("consumer-kit.facade.test")
+        .workspace(request_execution, "consumer-kit.facade.test")
         .expect("facade should build an in-memory test workspace");
     let tasks = workspace
-        .live_view::<WorthQueryUnrefinedLiveShape>("consumer-kit.facade.tasks", |view| {
-            view.from("Task").select([
-                worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                    "identity", "id",
-                )
-                .unwrap(),
-                worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                    "title", "value",
-                )
-                .unwrap(),
-            ])
-        })
+        .live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
+            "consumer-kit.facade.tasks",
+            |view| {
+                view.from("Task").select([
+                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                        "identity", "id",
+                    )
+                    .unwrap(),
+                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                        "title", "value",
+                    )
+                    .unwrap(),
+                ])
+            },
+        )
         .expect("facade workspace should declare a live view");
 
     workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-1"))
                 .set_aspect(touch("title.value"), authored_text("Facade proof"))
         })
         .expect("facade workspace should write through the real runtime");
 
-    assert_eq!(workspace.read(&tasks).len(), 1);
+    assert_eq!(workspace.read(request_execution, &tasks).len(), 1);
 }
 
 #[test]
 fn in_memory_test_backend_facade_admits_preview_and_invariant_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = task_schema();
     let mut preview_workspace = in_memory_test_runtime()
         .with_schema(schema.clone())
-        .workspace("consumer-kit.facade.preview")
+        .workspace(request_execution, "consumer-kit.facade.preview")
         .expect("facade should build preview workspace");
     let mut preview = preview_workspace
         .preview(
+            request_execution,
             worth_query::facade::runtime::WorthQuerySessionLabel::scoped_strs(
                 "consumer-kit-facade",
                 ["preview"],
@@ -62,7 +73,7 @@ fn in_memory_test_backend_facade_admits_preview_and_invariant_denial() {
         )
         .expect("facade should admit preview");
     preview
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-preview"))
                 .set_aspect(touch("title.value"), authored_text("Preview facade proof"))
         })
@@ -76,10 +87,10 @@ fn in_memory_test_backend_facade_admits_preview_and_invariant_denial() {
                 InvariantRule::MaxMergedIntents(0),
             )],
         })
-        .workspace("consumer-kit.facade.invariant-denial")
+        .workspace(request_execution, "consumer-kit.facade.invariant-denial")
         .expect("facade should build invariant workspace");
     let error = invariant_workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-denied"))
                 .set_aspect(touch("title.value"), authored_text("Denied"))
         })
@@ -90,18 +101,25 @@ fn in_memory_test_backend_facade_admits_preview_and_invariant_denial() {
 
 #[test]
 fn in_memory_test_backend_matches_bridge_harness_for_covered_live_write_path() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = task_schema();
     let mut in_memory_workspace = in_memory_test_runtime()
         .with_schema(schema)
-        .workspace("consumer-kit.facade.equivalence.in-memory")
+        .workspace(
+            request_execution,
+            "consumer-kit.facade.equivalence.in-memory",
+        )
         .expect("in-memory facade should build a workspace");
     let bridge_harness = PublicBridgeRuntimeHarness::new();
-    let bridge_runtime = bridge_harness.bridge_backed_runtime();
+    let bridge_runtime = bridge_harness.bridge_backed_runtime(request_execution);
     let mut bridge_workspace = bridge_runtime
         .workspace("consumer-kit.facade.equivalence.bridge")
         .expect("bridge harness should build a workspace");
     let in_memory_tasks = in_memory_workspace
         .live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "consumer-kit.facade.equivalence.in-memory.tasks",
             |view| {
                 view.from("Task")
@@ -126,6 +144,7 @@ fn in_memory_test_backend_matches_bridge_harness_for_covered_live_write_path() {
         .expect("in-memory facade should declare live view");
     let bridge_tasks = bridge_workspace
         .live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "consumer-kit.facade.equivalence.bridge.tasks",
             |view| {
                 view.from("Task")
@@ -150,13 +169,13 @@ fn in_memory_test_backend_matches_bridge_harness_for_covered_live_write_path() {
         .expect("bridge harness should declare live view");
 
     let in_memory_receipt = in_memory_workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-equivalence"))
                 .set_aspect(touch("title.value"), authored_text("Equivalent task"))
         })
         .expect("in-memory write should execute through runtime");
     let bridge_receipt = bridge_workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-equivalence"))
                 .set_aspect(touch("title.value"), authored_text("Equivalent task"))
         })
@@ -171,12 +190,12 @@ fn in_memory_test_backend_matches_bridge_harness_for_covered_live_write_path() {
         .clone();
 
     let in_memory_rows = in_memory_workspace
-        .read(&in_memory_tasks)
+        .read(request_execution, &in_memory_tasks)
         .into_iter()
         .map(|row| selected_task_scalars(&row))
         .collect::<Vec<_>>();
     let bridge_rows = bridge_workspace
-        .read(&bridge_tasks)
+        .read(request_execution, &bridge_tasks)
         .into_iter()
         .map(|row| selected_task_scalars(&row))
         .collect::<Vec<_>>();
@@ -185,23 +204,24 @@ fn in_memory_test_backend_matches_bridge_harness_for_covered_live_write_path() {
     assert_test_backend_receipt_equivalence(&in_memory_receipt, &bridge_receipt);
 
     let in_memory_update = in_memory_workspace
-        .update(in_memory_identity.clone(), |task| {
+        .update(request_execution, in_memory_identity.clone(), |task| {
             task.set_aspect(touch("title.value"), authored_text("Updated equivalently"))
         })
         .expect("in-memory update should execute");
     let bridge_update = bridge_workspace
-        .update(bridge_identity.clone(), |task| {
+        .update(request_execution, bridge_identity.clone(), |task| {
             task.set_aspect(touch("title.value"), authored_text("Updated equivalently"))
         })
         .expect("bridge update should execute");
     assert_test_backend_receipt_equivalence(&in_memory_update, &bridge_update);
     assert_eq!(
-        selected_task_scalars(&in_memory_workspace.read(&in_memory_tasks)[0]),
-        selected_task_scalars(&bridge_workspace.read(&bridge_tasks)[0])
+        selected_task_scalars(&in_memory_workspace.read(request_execution, &in_memory_tasks)[0]),
+        selected_task_scalars(&bridge_workspace.read(request_execution, &bridge_tasks)[0])
     );
 
     let in_memory_preview = in_memory_workspace
         .preview(
+            request_execution,
             worth_query::facade::runtime::WorthQuerySessionLabel::scoped_strs(
                 "consumer-kit-facade",
                 ["in-memory-equivalence-preview"],
@@ -211,6 +231,7 @@ fn in_memory_test_backend_matches_bridge_harness_for_covered_live_write_path() {
         .expect("in-memory preview should admit");
     let bridge_preview = bridge_workspace
         .preview(
+            request_execution,
             worth_query::facade::runtime::WorthQuerySessionLabel::scoped_strs(
                 "consumer-kit-facade",
                 ["bridge-equivalence-preview"],
@@ -224,14 +245,18 @@ fn in_memory_test_backend_matches_bridge_harness_for_covered_live_write_path() {
     );
 
     let in_memory_delete = in_memory_workspace
-        .delete(in_memory_identity)
+        .delete(request_execution, in_memory_identity)
         .expect("in-memory delete should execute");
     let bridge_delete = bridge_workspace
-        .delete(bridge_identity)
+        .delete(request_execution, bridge_identity)
         .expect("bridge delete should execute");
     assert_test_backend_receipt_equivalence(&in_memory_delete, &bridge_delete);
-    assert!(in_memory_workspace.read(&in_memory_tasks).is_empty());
-    assert!(bridge_workspace.read(&bridge_tasks).is_empty());
+    assert!(in_memory_workspace
+        .read(request_execution, &in_memory_tasks)
+        .is_empty());
+    assert!(bridge_workspace
+        .read(request_execution, &bridge_tasks)
+        .is_empty());
 }
 
 fn assert_test_backend_receipt_equivalence(

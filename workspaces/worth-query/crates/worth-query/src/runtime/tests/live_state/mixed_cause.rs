@@ -11,6 +11,9 @@ fn runtime_mixed_cause_delivery_replays_canonically_across_shuffled_bridge_input
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
     let truth_plus_time =
@@ -58,13 +61,23 @@ fn runtime_mixed_cause_delivery_replays_canonically_across_shuffled_bridge_input
         )
         .expect("mixed-cause delivery window should plan");
 
-    let mut runtime_a = stateful_bridge_task_runtime();
+    let mut runtime_a = stateful_bridge_task_runtime(request_execution);
     let view_a: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime_a
-        .declare_live_view("tasks.mixed-cause-a", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.mixed-cause-a",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("first live view should declare");
-    let mut runtime_b = stateful_bridge_task_runtime();
+    let mut runtime_b = stateful_bridge_task_runtime(request_execution);
     let view_b: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime_b
-        .declare_live_view("tasks.mixed-cause-b", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.mixed-cause-b",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("second live view should declare");
 
     runtime_a
@@ -117,6 +130,9 @@ fn runtime_mixed_cause_delivery_replays_canonically_across_shuffled_bridge_input
 
 #[test]
 fn runtime_mixed_cause_delivery_retains_duplicate_suppression_explicitly() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
     let ordering = bridge.order_mixed_causes(&BridgeMixedCauseOrderingRequest::new(
@@ -133,9 +149,14 @@ fn runtime_mixed_cause_delivery_retains_duplicate_suppression_explicitly() {
         )
         .expect("single ordered cause should still plan a delivery window");
 
-    let mut runtime = stateful_bridge_task_runtime();
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.mixed-duplicate", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.mixed-duplicate",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
     runtime
         .emit_mixed_cause_delivery(view.name(), &ordering, &window)
@@ -172,6 +193,9 @@ fn runtime_mixed_cause_delivery_preserves_denied_preview_boundary_without_coales
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
     let preview_cause = preview_time_only_cause(&bridge, "mixed-preview", resource_request);
@@ -189,9 +213,10 @@ fn runtime_mixed_cause_delivery_preserves_denied_preview_boundary_without_coales
         )
         .expect("authoritative truth patch should still admit a delivery window");
 
-    let mut runtime = stateful_bridge_task_runtime();
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.mixed-preview-boundary",
             task_live_request(),
             task_schema(),
@@ -229,6 +254,9 @@ fn runtime_state_and_inspection_retain_mixed_cause_delivery_projection_after_dra
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
     let truth_plus_time =
@@ -258,9 +286,10 @@ fn runtime_state_and_inspection_retain_mixed_cause_delivery_projection_after_dra
         )
         .expect("coalesced mixed-cause delivery window should plan");
 
-    let mut runtime = stateful_bridge_task_runtime();
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.mixed-state-inspection",
             task_live_request(),
             task_schema(),
@@ -272,9 +301,7 @@ fn runtime_state_and_inspection_retain_mixed_cause_delivery_projection_after_dra
     let _drained = runtime.drain_patches(&view);
 
     let snapshot =
-        <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-            &view, &runtime,
-        )
+        <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view, request_execution, &runtime)
         .expect("state snapshot should remain available after drain");
     assert!(snapshot
         .explanation()
@@ -284,7 +311,7 @@ fn runtime_state_and_inspection_retain_mixed_cause_delivery_projection_after_dra
         .contains("truth_patch,temporal_truth_plus_time,async_completion"));
 
     let inspection = runtime
-        .inspect(&view)
+        .inspect(request_execution, &view)
         .expect("inspection should remain available after drain");
     let WorthQueryInspection::LiveView(inspection) = inspection else {
         panic!("inspection should target the live-view surface");

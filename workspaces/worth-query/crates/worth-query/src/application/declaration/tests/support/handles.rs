@@ -1,12 +1,14 @@
 use super::*;
 
 pub fn admitted_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     regime: GeometryOperatingContext,
 ) -> crate::application::WorthQueryInstalledDomainDeclarationContext<
     GeometryDomain,
     GeometryOperatingContext,
 > {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         GeometryDomain,
         regime,
         [
@@ -32,11 +34,14 @@ pub fn admitted_handle(
     )
 }
 
-pub fn admitted_topology_handle() -> crate::application::WorthQueryInstalledDomainDeclarationContext<
+pub fn admitted_topology_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::application::WorthQueryInstalledDomainDeclarationContext<
     TopologyDomain,
     GeometryOperatingContext,
 > {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         TopologyDomain,
         GeometryOperatingContext::collaborative(),
         [crate::application::domain_test_support::family::<

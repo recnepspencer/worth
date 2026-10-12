@@ -27,7 +27,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
         .application
         .install_inbound_occurrence_verifier(&operation, Arc::new(TestVerifier))
         .unwrap();
-    let first = world.commit_wide_dispatch(151, "first-held-publication");
+    let first = { world.commit_wide_dispatch(151, "first-held-publication") };
     let first_record = first.dispatch_outbox().unwrap();
     let first_envelope = signed_envelope(first_record, [0xd1; 32], first_record.payload(), false);
     let WorthQueryInboundAdmission::New(first_accepted, true) = world
@@ -37,7 +37,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
     else {
         panic!("first authenticated owner must reserve the publication slot");
     };
-    let second = world.commit_wide_dispatch(152, "second-queued-publication");
+    let second = { world.commit_wide_dispatch(152, "second-queued-publication") };
     let second_record = second.dispatch_outbox().unwrap();
     let second_envelope =
         signed_envelope(second_record, [0xd2; 32], second_record.payload(), false);
@@ -52,7 +52,16 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
         Some(Reason::PublicationAtCapacity)
     );
     assert!(receipt.requires_maintenance_cue());
-    assert_eq!(completion_records(&world), 0);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                completion_records(&host_custody.borrowed_request_for_test(), &world),
+                0
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         world
             .application
@@ -69,7 +78,12 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
             assert_eq!(
                 world
                     .application
-                    .progress_accepted_inbound_occurrence(phase, first_accepted, &request)
+                    .progress_accepted_inbound_occurrence(
+                        &phase.borrowed_request_for_test(),
+                        phase,
+                        first_accepted,
+                        &request
+                    )
                     .unwrap(),
                 Posture::Performed
             );
@@ -84,6 +98,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
                 world
                     .application
                     .progress_retained_inbound_occurrence(
+                        &phase.borrowed_request_for_test(),
                         phase,
                         *second_record.correlation().bytes(),
                         &request
@@ -94,13 +109,22 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
         })
         .expect("fixture owner admits its advancement");
 
-    assert_eq!(completion_records(&world), 2);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                completion_records(&host_custody.borrowed_request_for_test(), &world),
+                2
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
 fn signed_validity_span_exceeding_installed_window_is_not_called_expired() {
     let world = installed_world();
-    let dispatched = world.commit_dispatch(153, "excess-validity-span");
+    let dispatched = { world.commit_dispatch(153, "excess-validity-span") };
     let record = dispatched.dispatch_outbox().unwrap();
     let envelope = signed_envelope_for_seconds(record, [0xd3; 32], record.payload(), false, 61);
     let request = super::super::fixture::live_scope();
@@ -121,7 +145,7 @@ fn signed_validity_span_exceeding_installed_window_is_not_called_expired() {
 #[test]
 fn retained_public_correlation_cannot_accept_after_signed_cutoff() {
     let world = installed_world();
-    let dispatched = world.commit_dispatch(155, "phase-cutoff");
+    let dispatched = { world.commit_dispatch(155, "phase-cutoff") };
     let record = dispatched.dispatch_outbox().unwrap();
     let envelope = signed_envelope_for_seconds(record, [0xd5; 32], record.payload(), false, 1);
     let correlated = world
@@ -157,7 +181,7 @@ fn dropping_admitted_public_phase_releases_publication_slot_but_keeps_custody() 
         .application
         .install_inbound_occurrence_verifier(&operation, Arc::new(TestVerifier))
         .unwrap();
-    let first = world.commit_wide_dispatch(156, "abandoned-public-phase");
+    let first = { world.commit_wide_dispatch(156, "abandoned-public-phase") };
     let record = first.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0xd6; 32], record.payload(), false);
     let admitted = world
@@ -177,7 +201,7 @@ fn dropping_admitted_public_phase_releases_publication_slot_but_keeps_custody() 
             .accepted_occurrences(),
         1
     );
-    let second = world.commit_wide_dispatch(157, "next-publication");
+    let second = { world.commit_wide_dispatch(157, "next-publication") };
     let second_record = second.dispatch_outbox().unwrap();
     let second_envelope =
         signed_envelope(second_record, [0xd7; 32], second_record.payload(), false);
@@ -198,6 +222,7 @@ fn dropping_admitted_public_phase_releases_publication_slot_but_keeps_custody() 
                 world
                     .application
                     .progress_retained_inbound_occurrence(
+                        &phase.borrowed_request_for_test(),
                         phase,
                         *record.correlation().bytes(),
                         &request
@@ -212,7 +237,7 @@ fn dropping_admitted_public_phase_releases_publication_slot_but_keeps_custody() 
 #[test]
 fn old_executed_phase_drop_cannot_release_a_new_publication_claim() {
     let world = installed_world();
-    let dispatched = world.commit_dispatch(158, "reclaimed-publication-claim");
+    let dispatched = { world.commit_dispatch(158, "reclaimed-publication-claim") };
     let record = dispatched.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0xd8; 32], record.payload(), false);
     let mut old_phase = world
@@ -259,6 +284,7 @@ fn old_executed_phase_drop_cannot_release_a_new_publication_claim() {
                 world
                     .application
                     .progress_accepted_inbound_occurrence(
+                        &phase.borrowed_request_for_test(),
                         phase,
                         accepted,
                         &super::super::fixture::live_scope()

@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_merge_execution_zero_diagnostics_budget(suite: &'static str) {
+pub(super) fn certify_merge_execution_zero_diagnostics_budget(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let merge_execution_zero_diag_samples = capture_perf_samples(
         suite,
         "merge_execution_feature_adoption_zero_diagnostics_budget",
@@ -9,7 +12,7 @@ pub(super) fn certify_merge_execution_zero_diagnostics_budget(suite: &'static st
             runtime.configure_diagnostics_for_test(|profile| {
                 profile.max_entries_per_artifact = 0;
             });
-            create_entity(&runtime, "main-anchor");
+            create_entity(execution, &runtime, "main-anchor");
             create_branch_from_main(&runtime, "feature");
             let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
                 &runtime,
@@ -31,26 +34,24 @@ pub(super) fn certify_merge_execution_zero_diagnostics_budget(suite: &'static st
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-            let _feature_only = changed_entities(
-                &txn.commit(
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("feature create"),
-            )[0];
+            let _feature_only =
+                changed_entities(&txn.commit(execution, &runtime).expect("feature create"))[0];
 
             let prepared = runtime
-                .prepare_merge_execution(MergeExecutionRequest {
-                    target_branch: BranchId("main".to_string()),
-                    source_branch: BranchId("feature".to_string()),
-                    merge_intent: MergeIntent::ReconcileIntoTarget,
-                })
+                .prepare_merge_execution(
+                    execution,
+                    MergeExecutionRequest {
+                        target_branch: BranchId("main".to_string()),
+                        source_branch: BranchId("feature".to_string()),
+                        merge_intent: MergeIntent::ReconcileIntoTarget,
+                    },
+                )
                 .expect("prepared merge");
 
             runtime.performance_access().reset_counters();
             let started_at = Instant::now();
             let outcome = runtime
-                .execute_prepared_merge(prepared)
+                .execute_prepared_merge(execution, prepared)
                 .expect("execute merge");
             let elapsed_micros = started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();

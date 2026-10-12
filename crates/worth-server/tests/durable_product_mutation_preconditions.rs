@@ -1,3 +1,5 @@
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;
 use serde_json::json;
 use worth_server::{
     WorthServerProductOperationExecutionBoundary, WorthServerProductOperationInput,

@@ -9,6 +9,8 @@
 //! `cargo test -p worth-relational`. The prose model it demonstrates is
 //! `BRANCH_LOCAL_MVCC.md`.
 
+mod support;
+
 use std::thread;
 
 use worth_relational::facade::{
@@ -62,6 +64,8 @@ impl OwnerServices {
 }
 
 fn main() {
+    let host_request = support::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .build();
@@ -72,7 +76,7 @@ fn main() {
     // the same prepare/publish/settle progression through the same services.
     // It runs before any worker exists, so no mechanical reservation can
     // contend with it; it also gives `main` the commit a fork source requires.
-    let seeded = ordinary_convenience_commit(&runtime, &main_branch);
+    let seeded = ordinary_convenience_commit(execution, &runtime, &main_branch);
     release_commit_snapshot(&runtime, &seeded);
 
     // Fork is a separate owner transition that shares an immutable root.
@@ -80,7 +84,7 @@ fn main() {
 
     // Two unrelated branch cells move at once through one runtime.
     let branches = [main_branch, reports];
-    for committed in publish_concurrently(&runtime, &services, &branches) {
+    for committed in publish_concurrently(execution, &runtime, &services, &branches) {
         release_commit_snapshot(&runtime, &committed);
     }
 }
@@ -91,15 +95,13 @@ fn main() {
 /// linearization outcome. It is not a second authority: it delegates to the
 /// same preparation, publication, and settlement services used below.
 fn ordinary_convenience_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &RelationalBranchIdentity,
 ) -> CommitResult {
     let basis = observe(runtime, branch);
     fresh_transaction(runtime, &basis, "branch-local-mvcc-seed")
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("an uncontended convenience commit settles through its owner")
 }
 
@@ -132,6 +134,7 @@ fn fork_reports_branch(
 /// is not summarized away: its panic payload is resumed on this thread so the
 /// worker's own named diagnostic is what the reader sees.
 fn publish_concurrently(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     services: &OwnerServices,
     branches: &[RelationalBranchIdentity],
@@ -141,7 +144,7 @@ fn publish_concurrently(
             .iter()
             .map(|branch| {
                 let services = services.clone();
-                scope.spawn(move || publish_one_branch(runtime, &services, branch))
+                scope.spawn(move || publish_one_branch(execution, runtime, &services, branch))
             })
             .collect();
         workers
@@ -162,6 +165,7 @@ fn publish_concurrently(
 /// observation, so a retry reuses this still-admitted basis and pays for no
 /// second observation. Every other terminal outcome is reported, not retried.
 fn publish_one_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     services: &OwnerServices,
     branch: &RelationalBranchIdentity,
@@ -179,17 +183,17 @@ fn publish_one_branch(
         // rather than a claim that preparation always succeeds.
         let candidate = services
             .preparation
-            .prepare_branch_transaction(
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .expect(concat!(
                 "preparation refused before producing a candidate; the branch ",
                 "did not move, and this example models neither a bounded ",
                 "preparation refusal nor a validation denial",
             ));
 
-        match services.publication.compare_and_publish(candidate) {
+        match services
+            .publication
+            .compare_and_publish(execution, candidate)
+        {
             RelationalPublicationOutcome::Performed(performed) => {
                 return settle(services, performed);
             }

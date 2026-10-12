@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_rocketship_hot_update_endurance(suite: &'static str) {
+pub(super) fn certify_rocketship_hot_update_endurance(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let rocketship_endurance_node_count = rocketship_node_count();
     let rocketship_hot_update_endurance_samples =
         capture_perf_samples(suite, "rocketship_hot_update_endurance", || {
@@ -19,6 +22,7 @@ pub(super) fn certify_rocketship_hot_update_endurance(suite: &'static str) {
                     rocketship_endurance_node_count * 2
             });
             let seeded = seed_pseudorealistic_rocketship_world(
+                execution,
                 &runtime,
                 rocketship_endurance_node_count,
                 query_target_count,
@@ -36,6 +40,7 @@ pub(super) fn certify_rocketship_hot_update_endurance(suite: &'static str) {
                 let target = seeded.traversal_seeds[index % seeded.traversal_seeds.len()];
                 let update_started_at = Instant::now();
                 let _ = update_entity(
+                    execution,
                     &runtime,
                     target,
                     &format!("rocket.endurance.hot-loop.{index}"),
@@ -68,7 +73,10 @@ pub(super) fn certify_rocketship_hot_update_endurance(suite: &'static str) {
                                 .read_truth()
                                 .plan_query_packet(&snapshot, packet)
                                 .expect("planned rocketship endurance explicit query"),
+                            execution,
                         )
+                        .expect("request remains live")
+                        .map(|read| read.outcome)
                         .expect("rocketship endurance explicit query outcome");
                     max_query_micros = max_query_micros.max(query_started_at.elapsed().as_micros());
                     assert!(runtime

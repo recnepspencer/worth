@@ -256,6 +256,7 @@ where
             .expect("an unfinished continuation owns its source");
         application
             .validate_discovered_program_source::<Root>(
+                phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 prepared,
                 &self.source_receipt,

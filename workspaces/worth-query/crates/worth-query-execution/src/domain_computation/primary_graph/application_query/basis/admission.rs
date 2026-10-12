@@ -9,6 +9,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 pub(in crate::domain_computation::primary_graph::application_query) fn admit_application_query_basis<
     Schema,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     basis: WorthQueryApplicationQueryBasis,
 ) -> Result<super::WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial>
@@ -19,9 +20,9 @@ where
         WorthQueryApplicationQueryBasis::Selected {
             product,
             application_basis,
-        } => super::product_admission::admit(application, product, application_basis),
+        } => super::product_admission::admit(execution, application, product, application_basis),
         WorthQueryApplicationQueryBasis::RetainedContinuation { product } => {
-            super::product_admission::admit_retained(application, product)
+            super::product_admission::admit_retained(execution, application, product)
         }
     }
 }
@@ -31,6 +32,7 @@ where
 pub(in crate::domain_computation::primary_graph::application_query) fn admit_application_query_permission_basis<
     Schema,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     basis: WorthQueryApplicationQueryBasis,
 ) -> Result<super::WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial>
@@ -42,6 +44,7 @@ where
             product,
             application_basis,
         } => super::product_admission::admit_selected_permission_basis(
+            execution,
             application,
             product,
             application_basis,
@@ -57,6 +60,7 @@ where
 
 #[cfg(test)]
 pub(super) fn register_basis<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
 ) -> Result<
@@ -68,11 +72,13 @@ where
 {
     let graph = application.primary_provider.graph.clone();
     graph
-        .with_runtime_mut(|runtime| graph.ensure_primary_indexes_for_basis(runtime, &basis))
+        .with_runtime_mut(execution, |runtime| {
+            graph.ensure_primary_indexes_for_basis(execution, runtime, &basis)
+        })
         .map_err(map_index_currency_denial)?;
     application
         .basis_leases
-        .register(basis, graph)
+        .register(execution, basis, graph)
         .map_err(map_registration_denial)
 }
 

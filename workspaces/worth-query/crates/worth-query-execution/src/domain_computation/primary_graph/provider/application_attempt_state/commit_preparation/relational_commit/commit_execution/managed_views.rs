@@ -33,6 +33,7 @@ pub(super) struct PreparedViewPublication {
 }
 
 pub(super) fn prepare(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     product: &WorthQueryProductPublicationBinding,
     before: &SnapshotHandle,
@@ -51,7 +52,7 @@ pub(super) fn prepare(
         product_branch: observation.branch_identity(),
         incarnation: observation.lifecycle_incarnation(),
     };
-    let summary = provider.graph.with_runtime(|runtime| {
+    let summary = provider.graph.with_runtime(execution, |runtime| {
         runtime.preparation_port().summarize_prepared_candidate(
             candidate,
             PreparedRelationalChangeSummaryBudget {

@@ -24,14 +24,18 @@ use super::super::{
 
 #[test]
 fn writeback_runs_the_real_effect_lifecycle_and_preserves_bridge_aftermath() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-workflow-writeback")
         .expect("workspace should open");
-    let context = writeback(&workspace).expect("writeback authority should admit");
+    let context =
+        writeback(request_execution, &workspace).expect("writeback authority should admit");
     let outcome = declare_writeback(projected_state_diff())
         .with_rich_inspection()
         .using(context)
-        .run(&mut workspace);
+        .run(request_execution, &mut workspace);
     let completion = completed_or_panic(&outcome);
 
     assert_eq!(
@@ -66,18 +70,27 @@ fn writeback_runs_the_real_effect_lifecycle_and_preserves_bridge_aftermath() {
 
 #[test]
 fn ordinary_and_explicit_writeback_paths_preserve_identical_evidence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare_writeback(projected_state_diff()).with_rich_inspection();
-    let explicit_workspace = stateful_bridge_task_runtime()
+    let explicit_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("explicit-writeback-parity")
         .expect("explicit workspace should open");
-    let (explicit_receipt, explicit_diagnostics) =
-        explicit_writeback(&declaration, explicit_workspace.snapshot_identity(), true);
+    let (explicit_receipt, explicit_diagnostics) = explicit_writeback(
+        &declaration,
+        explicit_workspace.snapshot_identity_with_request(request_execution),
+        true,
+    );
 
-    let mut ordinary_workspace = stateful_bridge_task_runtime()
+    let mut ordinary_workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-writeback-parity")
         .expect("ordinary workspace should open");
-    let context = writeback(&ordinary_workspace).expect("writeback authority should admit");
-    let outcome = declaration.using(context).run(&mut ordinary_workspace);
+    let context = writeback(request_execution, &ordinary_workspace)
+        .expect("writeback authority should admit");
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut ordinary_workspace);
     let ordinary = completed_or_panic(&outcome);
 
     assert_eq!(
@@ -111,10 +124,13 @@ fn ordinary_and_explicit_writeback_paths_preserve_identical_evidence() {
 
 #[test]
 fn operational_and_rich_writeback_differ_only_by_diagnostic_materialization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let minimal = declare_writeback(projected_state_diff());
     let rich = minimal.clone().with_rich_inspection();
-    let minimal = run_writeback("writeback-minimal", minimal);
-    let rich = run_writeback("writeback-rich", rich);
+    let minimal = run_writeback(request_execution, "writeback-minimal", minimal);
+    let rich = run_writeback(request_execution, "writeback-rich", rich);
 
     assert_eq!(
         minimal.admitted_effect().identity(),
@@ -134,10 +150,14 @@ fn operational_and_rich_writeback_differ_only_by_diagnostic_materialization() {
 
 #[test]
 fn unsupported_foreign_and_stale_writeback_deny_before_lower_runtime_execution() {
-    let unsupported = stateful_bridge_task_runtime_without_writeback()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let unsupported = stateful_bridge_task_runtime_without_writeback(request_execution)
         .workspace("unsupported-writeback")
         .expect("workspace should open");
-    let unsupported = writeback(&unsupported).expect_err("missing authority must deny");
+    let unsupported =
+        writeback(request_execution, &unsupported).expect_err("missing authority must deny");
     assert_eq!(
         unsupported
             .counters()
@@ -145,16 +165,16 @@ fn unsupported_foreign_and_stale_writeback_deny_before_lower_runtime_execution()
         0
     );
 
-    let left = stateful_bridge_task_runtime()
+    let left = stateful_bridge_task_runtime(request_execution)
         .workspace("foreign-writeback-left")
         .expect("left should open");
-    let foreign_context = writeback(&left).expect("left authority should admit");
-    let mut right = stateful_bridge_task_runtime()
+    let foreign_context = writeback(request_execution, &left).expect("left authority should admit");
+    let mut right = stateful_bridge_task_runtime(request_execution)
         .workspace("foreign-writeback-right")
         .expect("right should open");
     let foreign = declare_writeback(projected_state_diff())
         .using(foreign_context)
-        .run(&mut right);
+        .run(request_execution, &mut right);
     let foreign = foreign.stop().expect("foreign authority must stop");
     assert_eq!(
         foreign.source(),
@@ -165,9 +185,10 @@ fn unsupported_foreign_and_stale_writeback_deny_before_lower_runtime_execution()
         0
     );
 
-    let stale_context = writeback(&right).expect("writeback authority should admit");
+    let stale_context =
+        writeback(request_execution, &right).expect("writeback authority should admit");
     right
-        .insert("Task", |builder| {
+        .insert(request_execution, "Task", |builder| {
             builder.set_aspect(
                 WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
                     .expect("touch should admit"),
@@ -177,7 +198,7 @@ fn unsupported_foreign_and_stale_writeback_deny_before_lower_runtime_execution()
         .expect("mutation should advance the snapshot");
     let stale = declare_writeback(projected_state_diff())
         .using(stale_context)
-        .run(&mut right);
+        .run(request_execution, &mut right);
     let stale = stale.stop().expect("stale authority must stop");
     assert_eq!(
         stale.source(),
@@ -187,14 +208,19 @@ fn unsupported_foreign_and_stale_writeback_deny_before_lower_runtime_execution()
 }
 
 fn run_writeback(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace_name: &str,
     declaration: WorthQueryWritebackDeclaration,
 ) -> crate::ordinary::workflow::WorthQueryWritebackCompletion {
-    let mut workspace = stateful_bridge_task_runtime()
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace(workspace_name)
         .expect("workspace should open");
-    let context = writeback(&workspace).expect("writeback authority should admit");
-    match declaration.using(context).run(&mut workspace) {
+    let context =
+        writeback(request_execution, &workspace).expect("writeback authority should admit");
+    match declaration
+        .using(context)
+        .run(request_execution, &mut workspace)
+    {
         crate::ordinary::workflow::WorthQueryWritebackOutcome::Completed(completion) => completion,
         crate::ordinary::workflow::WorthQueryWritebackOutcome::Stopped(stop) => {
             panic!(

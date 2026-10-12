@@ -92,7 +92,7 @@ fn same_scope_and_stage_terminal_recovery_peers_keep_their_cleanup_owners() {
 }
 
 fn direct_cleanup_required(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> RecoveryCleanup<WorthQueryDirectConvergenceReadmissionCleanupRequired> {
     let active_request = execution;
@@ -110,32 +110,46 @@ fn direct_cleanup_required(
         .admit_direct_convergence_epoch(&operation, contract, managed, graph)
         .unwrap_or_else(|_| panic!("direct cleanup fixture authorities must admit"))
         .start();
-    let started = epoch
-        .begin_iteration(execution, call("direct-readmission-cleanup"))
-        .unwrap_or_else(|_| panic!("direct cleanup fixture iteration must start"));
-    let paused = match started.advance(execution) {
-        WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("direct cleanup fixture must reach a yield safe point"),
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_iteration(&installed_fixture_phase, call("direct-readmission-cleanup"))
+    }
+    .unwrap_or_else(|_| panic!("direct cleanup fixture iteration must start"));
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("direct cleanup fixture must reach a yield safe point"),
+        }
     };
     let yielded = match paused.yield_iteration() {
         WorthQueryDirectConvergenceYieldOutcome::Yielded(yielded) => yielded,
         _ => panic!("direct cleanup fixture must yield"),
     };
     let epoch_identity = yielded.epoch_identity().to_owned();
-    match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-        WorthQueryDirectConvergenceReadmissionOutcome::RecoveryRequired(
-            WorthQueryDirectConvergenceReadmissionRecoveryRequired::TerminalCleanup(recovery),
-        ) => RecoveryCleanup {
-            evidence: recovery.readmission_evidence(),
-            cleanup: recovery.into_cleanup(),
-            epoch_identity,
-        },
-        _ => panic!("direct restore panic must require terminal cleanup"),
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceReadmissionOutcome::RecoveryRequired(
+                WorthQueryDirectConvergenceReadmissionRecoveryRequired::TerminalCleanup(recovery),
+            ) => RecoveryCleanup {
+                evidence: recovery.readmission_evidence(),
+                cleanup: recovery.into_cleanup(),
+                epoch_identity,
+            },
+            _ => panic!("direct restore panic must require terminal cleanup"),
+        }
     }
 }
 
 fn workflow_cleanup_required(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> RecoveryCleanup<WorthQueryWorkflowConvergenceReadmissionCleanupRequired> {
     let active_request = execution;
@@ -154,31 +168,45 @@ fn workflow_cleanup_required(
     let epoch = admitted
         .start()
         .unwrap_or_else(|_| panic!("workflow cleanup fixture must start"));
-    let started = epoch
-        .begin_stage_iteration(
-            execution,
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_stage_iteration(
+            &installed_fixture_phase,
             WORKFLOW_STAGE,
             call("workflow-readmission-cleanup"),
         )
-        .unwrap_or_else(|_| panic!("workflow cleanup fixture iteration must start"));
-    let paused = match started.advance(execution) {
-        WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("workflow cleanup fixture must reach a yield safe point"),
+    }
+    .unwrap_or_else(|_| panic!("workflow cleanup fixture iteration must start"));
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("workflow cleanup fixture must reach a yield safe point"),
+        }
     };
     let yielded = match paused.yield_iteration() {
         WorthQueryWorkflowConvergenceYieldOutcome::Yielded(yielded) => yielded,
         _ => panic!("workflow cleanup fixture must yield"),
     };
     let epoch_identity = yielded.epoch_identity().to_owned();
-    match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-        WorthQueryWorkflowConvergenceReadmissionOutcome::RecoveryRequired(
-            WorthQueryWorkflowConvergenceReadmissionRecoveryRequired::TerminalCleanup(recovery),
-        ) => RecoveryCleanup {
-            evidence: recovery.readmission_evidence(),
-            cleanup: recovery.into_cleanup(),
-            epoch_identity,
-        },
-        _ => panic!("workflow restore panic must require terminal cleanup"),
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceReadmissionOutcome::RecoveryRequired(
+                WorthQueryWorkflowConvergenceReadmissionRecoveryRequired::TerminalCleanup(recovery),
+            ) => RecoveryCleanup {
+                evidence: recovery.readmission_evidence(),
+                cleanup: recovery.into_cleanup(),
+                epoch_identity,
+            },
+            _ => panic!("workflow restore panic must require terminal cleanup"),
+        }
     }
 }
 

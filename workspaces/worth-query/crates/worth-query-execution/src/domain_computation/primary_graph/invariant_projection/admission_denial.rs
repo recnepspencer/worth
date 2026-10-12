@@ -3,10 +3,13 @@
 pub enum WorthQueryInvariantProjectionDenialKind {
     /// The main branch basis could not be observed.
     BasisUnavailable,
+    ForeignPhase,
     /// The basis or snapshot belongs to a different runtime.
     ForeignBasis,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain a basis, or the evidence a read of a

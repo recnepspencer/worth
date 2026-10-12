@@ -45,6 +45,7 @@ impl<Schema, Operation, Input, Scope>
     /// Replacement fact backing is admitted before copying retained facts.
     pub(super) fn observe_created_unique_values(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         effects: &[WorthQueryApplicationRealizedEffect],
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
@@ -53,9 +54,10 @@ impl<Schema, Operation, Input, Scope>
             self.lease.layout.unique_fields(),
             effects,
             |index, kind, locator, value| {
-                self.lease.handle().with_runtime(|runtime| {
+                self.lease.handle().with_runtime(execution, |runtime| {
                     observe_indexed_entity_selection(
                         runtime,
+                        execution,
                         self.lease.snapshot(),
                         index,
                         kind,

@@ -3,6 +3,7 @@ use super::*;
 impl WorthQueryInMemoryTestBackend {
     pub(super) fn apply_backend_admissible_mutation(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         match mutation.mutation_family() {
@@ -14,7 +15,7 @@ impl WorthQueryInMemoryTestBackend {
                 })?;
                 self.ensure_declared_collection(&collection)?;
                 self.workspace
-                    .insert_portable_patch(mutation.portable_patch())
+                    .insert_portable_patch(execution, mutation.portable_patch())
             }
             WorthQueryMutationFamily::Update => {
                 let entity_identity = mutation.declared_entity_identity().ok_or_else(|| {
@@ -22,8 +23,11 @@ impl WorthQueryInMemoryTestBackend {
                         "update mutation missing declared entity after admission",
                     )
                 })?;
-                self.workspace
-                    .update_portable_patch(entity_identity, mutation.portable_patch())
+                self.workspace.update_portable_patch(
+                    execution,
+                    entity_identity,
+                    mutation.portable_patch(),
+                )
             }
             WorthQueryMutationFamily::Delete => {
                 let entity_identity = mutation.declared_entity_identity().ok_or_else(|| {
@@ -31,7 +35,7 @@ impl WorthQueryInMemoryTestBackend {
                         "delete mutation missing declared entity after admission",
                     )
                 })?;
-                self.workspace.delete(entity_identity)
+                self.workspace.delete(execution, entity_identity)
             }
             unsupported => Err(WorthQueryWorkspaceError::new(format!(
                 "write command `{}` should be rejected by admission before execution",

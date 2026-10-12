@@ -13,7 +13,10 @@ use crate::tests::support::{
 
 #[test]
 fn normalized_merge_request_equivalence_is_exact_across_authoring_lanes() {
-    let runtime = merge_ready_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = merge_ready_runtime(execution);
     let planning_request = planning_request();
     let execution_request = execution_request();
 
@@ -118,7 +121,10 @@ fn unsupported_request_posture_denies_before_history_or_planning_work() {
 
 #[test]
 fn planning_execution_and_publication_consume_normalized_request_authority() {
-    let runtime = merge_ready_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = merge_ready_runtime(execution);
     let planning_request = planning_request();
     let execution_request = execution_request();
     let normalized = runtime
@@ -128,7 +134,7 @@ fn planning_execution_and_publication_consume_normalized_request_authority() {
 
     let artifact = runtime
         .merge()
-        .inspect_planning_scope(planning_request)
+        .inspect_planning_scope(execution, planning_request)
         .expect("planning artifact");
     assert_eq!(artifact.request, normalized);
     assert_eq!(
@@ -158,7 +164,7 @@ fn planning_execution_and_publication_consume_normalized_request_authority() {
     assert_eq!(artifact.inspection_input().request(), &normalized);
 
     let prepared = runtime
-        .prepare_merge_execution(execution_request)
+        .prepare_merge_execution(execution, execution_request)
         .expect("prepared merge");
     assert_eq!(prepared.request(), &normalized);
     assert_eq!(prepared.artifact().request, normalized);
@@ -172,7 +178,7 @@ fn planning_execution_and_publication_consume_normalized_request_authority() {
     );
 
     let outcome = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
     assert_eq!(outcome.execution_summary.request, normalized);
     assert_eq!(
@@ -229,11 +235,16 @@ fn normalized_request_deserialization_revalidates_admitted_truth() {
     assert!(unsupported_result.is_err());
 }
 
-fn merge_ready_runtime() -> RelationalRuntime {
+fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
     runtime
 }
 

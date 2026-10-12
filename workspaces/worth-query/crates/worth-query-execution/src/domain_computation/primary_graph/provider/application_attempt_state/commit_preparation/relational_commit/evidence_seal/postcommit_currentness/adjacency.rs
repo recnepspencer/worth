@@ -13,16 +13,26 @@ const MAXIMUM_PAIR_REBASE_WORK: usize = 64;
 
 #[cfg(test)]
 pub(super) fn rebase_decision_adjacency(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     fact: Fact,
     admitted_work: usize,
 ) -> Fact {
     let endpoints = prepare_endpoints(&fact, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap();
-    prepare_decision_adjacency(runtime, snapshot, &fact, admitted_work, endpoints).unwrap_or(fact)
+    prepare_decision_adjacency(
+        execution,
+        runtime,
+        snapshot,
+        &fact,
+        admitted_work,
+        endpoints,
+    )
+    .unwrap_or(fact)
 }
 
 pub(super) fn prepare_decision_adjacency(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     fact: &Fact,
@@ -65,18 +75,23 @@ pub(super) fn prepare_decision_adjacency(
         }
         _ => return None,
     };
-    let view = runtime.read_truth().project_snapshot(snapshot)?;
-    let native_revision =
-        match view.bounded_adjacency_structural_revision(anchor, relation_kind, direction, limit) {
-            Ok(revision) => revision.revision(),
-            // A zero recorded limit, or a missing anchor or basis, leaves the
-            // decision fact without a native revision.
-            Err(
-                AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
-                | AdjacencyStructuralRevisionDenial::AnchorUnavailable
-                | AdjacencyStructuralRevisionDenial::BasisUnavailable,
-            ) => return None,
-        };
+    let view = runtime.read_truth().project_snapshot(snapshot, execution)?;
+    let native_revision = match view.bounded_adjacency_structural_revision(
+        execution,
+        anchor,
+        relation_kind,
+        direction,
+        limit,
+    ) {
+        Ok(revision) => revision.revision(),
+        // A zero recorded limit, or a missing anchor or basis, leaves the
+        // decision fact without a native revision.
+        Err(
+            AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
+            | AdjacencyStructuralRevisionDenial::AnchorUnavailable
+            | AdjacencyStructuralRevisionDenial::BasisUnavailable,
+        ) => return None,
+    };
     let endpoints = prepared_endpoints?;
     Some(Fact::SourceAdjacencyRevision {
         relation_kind,
@@ -135,6 +150,9 @@ mod tests {
 
     #[test]
     fn pair_rebase_requires_admitted_native_work_and_never_retains_partial_facts() {
+        let host_request = crate::test_request_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let world = installed_authorization_world(true);
         let graph = world.application.runtime.primary_graph().unwrap();
         let relation_kind = graph
@@ -142,26 +160,35 @@ mod tests {
             .relation(AccountOwner::reference().name())
             .unwrap()
             .kind;
-        let selected = world.selected_product();
-        let principal = selected
-            .resolve_entity(
-                PrincipalIdentityField::reference(),
-                1,
-                &live_scope(),
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
+        let selected = world
+            .application
+            .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+            .expect("the fixture read owns its installed host call");
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .resolve_entity(
+                        &phase,
+                        PrincipalIdentityField::reference(),
+                        1,
+                        &live_scope(),
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+            })
+            .expect("the fixture read owns its installed host call");
         let fact = Fact::Relation {
             relation_kind,
             from: principal.entity_id(),
             to: principal.entity_id(),
             matching_relations: Vec::new(),
         };
-        graph.integration_handle().with_runtime(|runtime| {
+        world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); graph.integration_handle().with_runtime(request_execution, |runtime| {
             let snapshot = selected.application_basis().snapshot_handle();
             let mut zero_work = admission(0);
             assert!(matches!(
-                rebase_decision_adjacency(runtime, snapshot, fact.clone(), 64),
+                rebase_decision_adjacency(&host_custody.borrowed_request_for_test(), runtime, snapshot, fact.clone(), 64),
                 Fact::SourceAdjacencyRevision {
                     comparison_work_limit: 64,
                     native_revision: Some(_),
@@ -170,7 +197,7 @@ mod tests {
             ));
             assert!(
                 matches!(
-                    super::super::rebase(
+                    super::super::rebase(&host_custody.borrowed_request_for_test(),
                         runtime,
                         snapshot,
                         super::super::PreparedSourceFactRebase::admit(vec![fact], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
@@ -193,7 +220,7 @@ mod tests {
             };
             let mut producer_work = admission(64);
             assert!(matches!(
-                super::super::rebase(
+                super::super::rebase(&host_custody.borrowed_request_for_test(),
                     runtime,
                     snapshot,
                     super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
@@ -206,7 +233,7 @@ mod tests {
                 super::super::RebasedSourceFacts::VerificationRequired { .. }
             ));
             let mut ordinary_work = admission(64);
-            match super::super::rebase(
+            match super::super::rebase(&host_custody.borrowed_request_for_test(),
                 runtime,
                 snapshot,
                 super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
@@ -223,6 +250,6 @@ mod tests {
                     panic!("non-output evidence must retain its comparison posture: {other:?}")
                 }
             }
-        });
+        }) }).expect("the fixture read owns its installed host call");
     }
 }

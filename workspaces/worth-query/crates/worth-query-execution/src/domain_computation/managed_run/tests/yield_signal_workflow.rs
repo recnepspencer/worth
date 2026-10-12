@@ -57,11 +57,13 @@ fn workflow_signal_terminalized_after_safe_point_preserves_exact_recovery_eviden
             resources,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let logical_run_identity = running.logical_run_identity().to_owned();
         let attempt_identity = running.identity().to_owned();
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "stage",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -70,7 +72,7 @@ fn workflow_signal_terminalized_after_safe_point_preserves_exact_recovery_eviden
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("workflow provider did not pause"),
         };

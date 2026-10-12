@@ -39,16 +39,21 @@ impl WorthUiOperationLiveTestFixture {
             &mut self.workspace,
         )
         .expect("tail fixture live settlement");
-        WorthUiOperationLiveResource::open_with_consumer(
-            crate::operation_live::WorthUiOperationLiveSources {
-                installed_reference: self.reference.clone(),
-                settlement: live,
-            },
-            consumer,
-            WorthUiCollectionAllocationPolicy::PreserveAdmittedRows,
-            &mut self.workspace,
-        )
-        .expect("tail fixture live resource")
+        self.workspace
+            .with_advancement_mut(|phase, workspace| {
+                WorthUiOperationLiveResource::open_with_consumer(
+                    &phase,
+                    crate::operation_live::WorthUiOperationLiveSources {
+                        installed_reference: self.reference.clone(),
+                        settlement: live,
+                    },
+                    consumer,
+                    WorthUiCollectionAllocationPolicy::PreserveAdmittedRows,
+                    workspace,
+                )
+                .expect("tail fixture live resource")
+            })
+            .expect("workspace host call opens")
     }
 }
 

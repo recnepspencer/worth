@@ -25,6 +25,7 @@ where
         Scope,
     >(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -70,6 +71,8 @@ where
             ));
         }
         let pending = governance.into_pending();
-        self.finish_application_query_admission(query, access, parameters, controls, pending)
+        self.finish_application_query_admission(
+            execution, query, access, parameters, controls, pending,
+        )
     }
 }

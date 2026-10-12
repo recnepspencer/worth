@@ -168,9 +168,11 @@ impl WorthQueryDeclarationInput<BindingDomain> for Input<StrictBridgeFamily> {
 }
 
 fn admitted_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &'static str,
 ) -> WorthQueryInstalledDomainDeclarationContext<BindingDomain, BindingWorld> {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         BindingDomain,
         BindingWorld(world),
         [
@@ -218,7 +220,10 @@ fn progressed_strict_bridge(
 
 #[test]
 fn declaration_context_binding_denies_when_candidates_tie() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let request = WorthQueryDeclarationBindingRequest::new(
         vec![
             WorthQueryDeclarationContextCandidate::new(
@@ -243,7 +248,10 @@ fn declaration_context_binding_denies_when_candidates_tie() {
 
 #[test]
 fn route_binding_from_context_matches_explicit_progressed_path() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let progressed = progressed_route(&handle, "edge-a");
     let explicit = match handle.plan_routes_from_progressed(progressed.clone()) {
         Ok(plan) => plan,
@@ -273,8 +281,11 @@ fn route_binding_from_context_matches_explicit_progressed_path() {
 
 #[test]
 fn route_target_binding_preserves_wrong_world() {
-    let left = admitted_handle("left");
-    let right = admitted_handle("right");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = admitted_handle(request_execution, "left");
+    let right = admitted_handle(request_execution, "right");
     let progressed = progressed_route(&left, "edge-a");
     let request = WorthQueryResolveRouteFromTargetRequest::new(
         WorthQueryRouteResolverSubject::Progression(progressed),
@@ -286,7 +297,10 @@ fn route_target_binding_preserves_wrong_world() {
 
 #[test]
 fn continuation_binding_from_envelope_produces_bridge_request() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let progressed = progressed_bridge(&handle, "face-a");
     let envelope = match handle.envelope_routes_from_progressed(progressed.clone()) {
         Ok(envelope) => envelope,
@@ -312,7 +326,10 @@ fn continuation_binding_from_envelope_produces_bridge_request() {
 
 #[test]
 fn continuation_binding_reports_authority_mismatch_when_contract_requires_hidden_bridge_slice() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let progressed = progressed_strict_bridge(&handle, "face-a");
     let envelope = match handle.envelope_routes_from_progressed(progressed) {
         Ok(envelope) => envelope,

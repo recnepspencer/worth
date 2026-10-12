@@ -177,18 +177,20 @@ impl WorthQueryApplicationBasisRegistry {
 
     pub(crate) fn register(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: AdmittedRelationalBranchBasis,
         graph: WorthQueryPrimaryGraphIntegrationHandle,
     ) -> Result<WorthQueryApplicationBasisLease, WorthQueryApplicationBasisRegistrationDenial> {
         let snapshot = graph
-            .with_runtime_mut(|runtime| {
+            .with_runtime_mut(execution, |runtime| {
                 crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                     runtime,
                     &basis,
                 )
             })
             .map_err(WorthQueryApplicationBasisRegistrationDenial::Snapshot)?;
-        let retention = graph.with_runtime(|runtime| runtime.retain_component_basis(&basis));
+        let retention =
+            graph.with_runtime(execution, |runtime| runtime.retain_component_basis(&basis));
         let retention = match retention {
             Ok(retention) => retention,
             Err(denial) => {

@@ -60,6 +60,7 @@ where
         Spec,
     >(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         published: PublishedWorkflowDefinitionRef,
         start_key_identity: [u8; 32],
@@ -75,6 +76,7 @@ where
         self.authorize_instance_start::<Capability, Spec>(installed, published.branch())?;
         let layout = self.lease.layout.workflow().clone();
         let (compiled, mut compile_facts) = reconstruct_compiled_definition(
+            execution,
             self.lease.handle(),
             self.lease.snapshot(),
             &layout,
@@ -91,15 +93,16 @@ where
         let supersession = self
             .lease
             .handle()
-            .with_runtime(|runtime| {
+            .with_runtime(execution, |runtime| {
                 crate::domain_computation::primary_graph::application_discovery::current_definition(
                     runtime,
+                    execution,
                     self.lease.snapshot(),
                     &layout,
                     published.branch(),
                     compiled.lineage(),
                 )
-            })
+            })?
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::WorkflowLineageUnavailable,
@@ -122,18 +125,20 @@ where
                     self.admission.operation(),
                 )
             })?;
-        let instances = self.lease.handle().with_runtime(|runtime| {
+        let instances = self.lease.handle().with_runtime(execution, |runtime| {
             observe_adjacency(
                 runtime,
+                execution,
                 self.lease.snapshot(),
                 layout.live_instance_lineage_relation,
                 compiled.lineage(),
                 WorthQueryApplicationAdjacencyDirection::Incoming,
                 maximum_instances.saturating_mul(2).saturating_add(1),
             )
-        });
-        let declared_deadline = self.lease.handle().with_runtime(|runtime| {
+        })?;
+        let declared_deadline = self.lease.handle().with_runtime(execution, |runtime| {
             super::workflow_deadline::definition_deadline(
+                execution,
                 runtime,
                 self.lease.snapshot(),
                 &layout,

@@ -5,11 +5,14 @@ use crate::recovery::ProductUnpublishedRetentionPosture;
 
 #[test]
 fn settlement_drop_retains_both_real_owner_results_without_binding_pins() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
     let baseline = owner.state.retention.active_component_obligation_count();
     let settlement = settled(execute_with_empty_signal(
         &owner,
-        prepare_both_owners(&fixture, &owner, &expected, "settlement-drop"),
+        prepare_both_owners(execution, &fixture, &owner, &expected, "settlement-drop"),
     ));
     let successor = settlement.successor_basis().unwrap().clone();
     let (_, results) = settlement.progress().ready_results().unwrap();
@@ -68,7 +71,13 @@ fn actual_signal_apply_unwind_keeps_the_already_settled_relational_effect() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let baseline = owner.state.retention.active_component_obligation_count();
-    let prepared = prepare_both_owners(&fixture, &owner, &expected, "signal-apply-unwind");
+    let prepared = prepare_both_owners(
+        &execution,
+        &fixture,
+        &owner,
+        &expected,
+        "signal-apply-unwind",
+    );
     let cancellation = RuntimeWorldCancellationSource::new();
     let unwind = catch_unwind(AssertUnwindSafe(|| {
         RuntimeWorldOwnerExecutionService::execute_with_signal(
@@ -121,7 +130,13 @@ fn invalid_ready_basis_unwind_preserves_the_original_exact_successor() {
     let settlement = settled(execute_without_signal(
         execution,
         &owner,
-        prepare_relational(&fixture, &owner, &expected, "invalid-ready-basis"),
+        prepare_relational(
+            &execution,
+            &fixture,
+            &owner,
+            &expected,
+            "invalid-ready-basis",
+        ),
     ));
     let successor = settlement.successor_basis().unwrap().clone();
     let (_, evidence) = settlement.progress().ready_results().unwrap();

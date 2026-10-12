@@ -61,6 +61,7 @@ impl WorthQueryPrimaryGraphProvider {
     /// in the candidate World will publish; this does not independently commit.
     pub(in crate::domain_computation::primary_graph) fn prepare_inbound_completion_candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         accepted: &WorthQueryAcceptedInboundOccurrence,
     ) -> Result<PreparedRelationalCommitCandidate, WorthQueryInboundCompletionPreparationDenial>
@@ -142,11 +143,12 @@ impl WorthQueryPrimaryGraphProvider {
             (layout.transport_attempt.clone(), string("")),
             (layout.transport_observation.clone(), string("")),
         ]);
-        self.prepare_completion_fields(basis, *original_entity, &correlation, fields)
+        self.prepare_completion_fields(execution, basis, *original_entity, &correlation, fields)
     }
 
     fn prepare_completion_fields(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         original_entity: worth_relational::facade::identity::EntityId,
         correlation: &str,
@@ -163,7 +165,7 @@ impl WorthQueryPrimaryGraphProvider {
             )),
             fields: worth_relational::facade::transactions::AspectFieldPatch::from(fields),
         }));
-        self.graph.with_runtime_mut(|runtime| {
+        self.graph.with_runtime_mut(execution, |runtime| {
             let before = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
                 .map_err(|_| Denial::SnapshotUnavailable)?;
             let result = (|| {
@@ -187,12 +189,12 @@ impl WorthQueryPrimaryGraphProvider {
                         | worth_relational::facade::mvcc::RelationalTransactionStagingDenial::MaterializationModeMismatch => Denial::StagingUnavailable,
                     })?;
                 let validated = transaction
-                    .validate(runtime, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+                    .validate(execution, runtime)
                     .map_err(|error| preparation_denial::validation_denial(&error))?;
                 let mut candidate = runtime
-                    .prepare_validated_proposal(validated)
+                    .prepare_validated_proposal(execution, validated)
                     .map_err(|error| preparation_denial::preparation_denial(&error))?;
-                crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(
+                crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(execution,
                     runtime, &mut candidate, &self.graph.primary_index_ids, &before,
                     crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
                 ).map_err(|_| Denial::IndexPreparationUnavailable)?;

@@ -100,13 +100,14 @@ pub use workflow::*;
 pub use workflow_lifecycle_runtime::failing_controlled_workflow_workspace;
 
 pub fn workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     reversed: bool,
 ) -> Result<
     runtime::WorthQueryWorkspace,
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
-    workspace_for_package(name, package(reversed, false))
+    workspace_for_package(request_execution, name, package(reversed, false))
 }
 
 pub fn configured_runtime(
@@ -115,15 +116,17 @@ pub fn configured_runtime(
 }
 
 pub fn conflicting_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
-    workspace_for_package(name, package(false, true))
+    workspace_for_package(request_execution, name, package(false, true))
 }
 
 pub fn lowering_mismatch_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -148,10 +151,11 @@ pub fn lowering_mismatch_workspace(
     .operation(operation);
     configured_runtime_without_executors(package)
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 pub fn unsupported_direct_effect_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -178,10 +182,11 @@ pub fn unsupported_direct_effect_workspace(
     .operation(operation);
     configured_runtime_without_executors(package)
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 pub fn support_dimension_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     dimension: domain::WorthQueryConsumerSupportDimension,
     posture: domain::WorthQueryConsumerSupportPosture,
@@ -209,7 +214,7 @@ pub fn support_dimension_workspace(
     configured_runtime_without_executors(package)
         .consumer_support_posture(dimension, posture)
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 fn require_support_dimension(
@@ -240,13 +245,14 @@ fn require_support_dimension(
 }
 
 fn workspace_for_package(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     package: domain::WorthQueryDomainPackage<GeometryDomain>,
 ) -> Result<
     runtime::WorthQueryWorkspace,
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
-    configured_base_runtime_for_package(package).workspace(name)
+    configured_base_runtime_for_package(package).workspace(request_execution, name)
 }
 
 pub fn configured_runtime_for_package(

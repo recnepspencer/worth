@@ -68,10 +68,13 @@ fn foreign_owner_values_keep_exact_canonical_denials() {
 
 #[test]
 fn stale_unretained_descriptor_keeps_its_canonical_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let second = empty_runtime();
     let services = second.owner_component_services();
     let identity = second.main_branch_identity();
-    let established = commit_direct(&second, "establish-committed-stale-source");
+    let established = commit_direct(execution, &second, "establish-committed-stale-source");
     second
         .snapshots()
         .release_snapshot(&established.snapshot)
@@ -82,7 +85,7 @@ fn stale_unretained_descriptor_keeps_its_canonical_denial() {
         .observe_branch(&identity)
         .expect("owner issues the descriptor before movement");
     drop(stale_basis);
-    let movement = commit_direct(&second, "stale-descriptor-movement");
+    let movement = commit_direct(execution, &second, "stale-descriptor-movement");
     second
         .snapshots()
         .release_snapshot(&movement.snapshot)
@@ -102,7 +105,10 @@ fn stale_unretained_descriptor_keeps_its_canonical_denial() {
 
 #[test]
 fn archived_retained_basis_survives_until_explicit_release() {
-    let (mut runtime, services, archived_identity) = committed_fork("retained-archive");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut runtime, services, archived_identity) = committed_fork(execution, "retained-archive");
     let (descriptor, basis) = services
         .basis_port()
         .observe_branch(&archived_identity)
@@ -155,7 +161,10 @@ fn archived_retained_basis_survives_until_explicit_release() {
 
 #[test]
 fn deleting_branch_reports_pending_then_deletes_after_active_operation_releases() {
-    let (runtime, services, identity) = committed_fork("pending-delete");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, services, identity) = committed_fork(execution, "pending-delete");
     let basis = services
         .basis_port()
         .admit_branch_basis(&identity)

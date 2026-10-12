@@ -1,12 +1,15 @@
 use super::*;
 
-pub(super) fn certify_persisted_recovery_replay_round_trip(suite: &'static str) {
+pub(super) fn certify_persisted_recovery_replay_round_trip(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let replay_recovery_samples = capture_perf_samples(
         suite,
         "persisted_recovery_replay_round_trip",
         || {
             let runtime = persisted_runtime_with_test_schema();
-            let source_created = create_entity_outcome(&runtime, "recovery-source");
+            let source_created = create_entity_outcome(execution, &runtime, "recovery-source");
             let source = changed_entities(&source_created)[0];
 
             let checkpoint_started_at = Instant::now();
@@ -17,7 +20,7 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(suite: &'static str) 
             let checkpoint_micros = checkpoint_started_at.elapsed().as_micros();
 
             let post_checkpoint_commit_started_at = Instant::now();
-            let target_created = create_entity_outcome(&runtime, "recovery-target");
+            let target_created = create_entity_outcome(execution, &runtime, "recovery-target");
             let target = changed_entities(&target_created)[0];
             let post_checkpoint_commit_micros =
                 post_checkpoint_commit_started_at.elapsed().as_micros();
@@ -31,20 +34,23 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(suite: &'static str) 
             let recover_started_at = Instant::now();
             let recovery_outcome = recovered
                 .durability_recovery()
-                .recover(recovery_plan)
+                .recover(execution, recovery_plan)
                 .expect("workflow recovery");
             let recover_micros = recover_started_at.elapsed().as_micros();
 
             let replay_started_at = Instant::now();
-            let replay_outcome =
-                recovered
-                    .replay_authority()
-                    .replay_commit(RelationalReplayRequest {
+            let replay_outcome = recovered
+                .replay_authority()
+                .replay_commit(
+                    RelationalReplayRequest {
                         commit_id: tail_commit_id,
                         branch_id: BranchId("main".to_string()),
                         execution_mode: ReplayExecutionMode::SerialDeterministic,
                         verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                    });
+                    },
+                    execution,
+                )
+                .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
 
             let recovered_snapshot = recovered.visibility_authority().snapshot();
@@ -62,7 +68,10 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(suite: &'static str) 
                         .read_truth()
                         .plan_query_packet(&recovered_snapshot, recovered_packet)
                         .expect("planned recovered workflow query"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("recovered workflow query");
             let post_recovery_query_micros = query_started_at.elapsed().as_micros();
 

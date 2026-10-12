@@ -14,12 +14,15 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
 fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     const EXPECTED_TOUCHED_REGIONS: u64 = 1;
     const RADIX_NODES_PER_PATH: u64 = 33;
     const EXPECTED_NEW_RADIX_NODES: u64 = EXPECTED_TOUCHED_REGIONS * RADIX_NODES_PER_PATH;
 
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let branch_id = BranchId("storm".to_owned());
     let (_, source) = world
         .runtime
@@ -36,6 +39,7 @@ fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
     let baseline_nodes = persistent_node_locators(&world.runtime, &identity);
     let mutation_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
     let batch = lower_supply_chain_production_delta(
+        execution,
         &world.runtime,
         &world.program,
         &world.handles,
@@ -44,7 +48,7 @@ fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
         DeltaId::StormRerouteAurora,
     )
     .expect("storm delta lowers through production intent");
-    commit_branch_batch(&world.runtime, branch_id.clone(), batch);
+    commit_branch_batch(execution, &world.runtime, branch_id.clone(), batch);
 
     let after_mutation = persistent_node_locators(&world.runtime, &identity);
     let mutation_cost = world
@@ -81,6 +85,7 @@ fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
     let before_noop = after_mutation;
     let noop_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
     commit_branch_batch(
+        execution,
         &world.runtime,
         branch_id,
         WorkerIntentBatch::new("phase5-persistent-path-noop"),

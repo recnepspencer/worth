@@ -2,6 +2,9 @@ use super::*;
 use std::num::NonZeroUsize;
 #[test]
 fn partial_recovery_preserves_movement_rejects_foreign_and_only_releases_obligations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut court = CompositeSupplyChainCourt::compile();
     let other = CompositeSupplyChainCourt::compile();
     let root = court.bootstrap();
@@ -15,7 +18,7 @@ fn partial_recovery_preserves_movement_rejects_foreign_and_only_releases_obligat
         .owner_service_cost_snapshot()
         .unwrap()
         .canonical_movements();
-    let effects = court.partial_after_relational(&root);
+    let effects = court.partial_after_relational(request_execution, &root);
     assert_eq!(effects.cause(), ProductUnpublishedCause::SiblingOwnerDenied);
     assert_eq!(effects.owner_effect_count(), 1);
     let moved = court
@@ -28,7 +31,10 @@ fn partial_recovery_preserves_movement_rejects_foreign_and_only_releases_obligat
         moved.admission_identity(),
         root.basis().relational_basis().admission_identity()
     );
-    assert_eq!(court.records.read(&moved).records["grain"], "5");
+    assert_eq!(
+        court.records.read(request_execution, &moved).records["grain"],
+        "5"
+    );
     assert_eq!(
         signal
             .owner_service_cost_snapshot()
@@ -125,7 +131,7 @@ fn performed_capability_loss_reopens_one_claim_and_consumption_closes_it() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let root = court.bootstrap();
-    let prepared = court.prepare_cargo(&root, "5");
+    let prepared = court.prepare_cargo(&execution, &root, "5");
     let RuntimeWorldPublicationOutcome::Performed(done) =
         court.world.publication_port().execute_without_signal(
             execution,

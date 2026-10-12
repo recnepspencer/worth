@@ -12,11 +12,16 @@ pub(crate) fn assert_active_attempt_slopes() {
             .map(|_| {
                 world
                     .application
-                    .branches()
-                    .fork(root)
-                    .components(|components| components.fork_relational().fork_signal())
-                    .create()
-                    .expect("each active-attempt branch must be created")
+                    .with_host_advancement(|host_phase| {
+                        world
+                            .application
+                            .branches()
+                            .fork(root)
+                            .components(|components| components.fork_relational().fork_signal())
+                            .create(&host_phase)
+                            .expect("each active-attempt branch must be created")
+                    })
+                    .expect("installed host call opens")
             })
             .collect::<Vec<_>>();
         let control = world.application.world_operation_control_for_test();
@@ -86,10 +91,13 @@ pub(crate) fn assert_active_attempt_slopes() {
         for branch in branches {
             assert!(world
                 .application
-                .on_branch(branch)
-                .close()
-                .unwrap()
-                .is_complete());
+                .with_host_advancement(|host_phase| world
+                    .application
+                    .on_branch(branch)
+                    .close(&host_phase)
+                    .unwrap()
+                    .is_complete())
+                .expect("installed host call opens"));
         }
     }
 }

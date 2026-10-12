@@ -279,7 +279,7 @@ where
             .request
             .application
             .on_branch(self.request.branch)
-            .select()
+            .select(phase)
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
         let owner = application
             .selected_program_owner(&selected)

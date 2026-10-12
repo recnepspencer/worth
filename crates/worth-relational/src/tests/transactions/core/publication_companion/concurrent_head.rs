@@ -32,6 +32,7 @@ fn register(
 }
 
 fn prepare_on_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     key: &str,
 ) -> crate::mvcc::PreparedRelationalCommitCandidate {
@@ -43,17 +44,17 @@ fn prepare_on_main(
         )
         .expect("candidate stages");
     runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares")
 }
 
 #[test]
 fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "same-head-anchor");
+    create_entity(execution, &runtime, "same-head-anchor");
     let handle = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let pending = runtime
         .publication_companion_port()
@@ -81,10 +82,11 @@ fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
         )
         .expect("the participant is active");
 
-    let winner = prepare_on_main(&runtime, "same-head-winner");
-    let loser = prepare_on_main(&runtime, "same-head-loser");
-    let RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(winner)
+    let winner = prepare_on_main(execution, &runtime, "same-head-winner");
+    let loser = prepare_on_main(execution, &runtime, "same-head-loser");
+    let RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, winner)
     else {
         panic!("the first same-head publisher performs");
     };
@@ -93,8 +95,9 @@ fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
         .expect("the winner settles");
     // The companion now selects the winner's root, so its preflight reports
     // SelectedSourceMismatch; the moved head outranks that deferral.
-    let RelationalPublicationOutcome::Stale(stale) =
-        runtime.publication_port().compare_and_publish(loser)
+    let RelationalPublicationOutcome::Stale(stale) = runtime
+        .publication_port()
+        .compare_and_publish(execution, loser)
     else {
         panic!("a same-head loser observes the stale head, not a companion deferral");
     };
@@ -109,12 +112,17 @@ fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
 
 #[test]
 fn companion_contention_on_an_unchanged_head_stays_a_retryable_deferral() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "unchanged-head-anchor");
+    create_entity(execution, &runtime, "unchanged-head-anchor");
     let _registration = register(&runtime, Arc::new(HeldReservationCompanion));
-    let candidate = prepare_on_main(&runtime, "unchanged-head-candidate");
+    let candidate = prepare_on_main(execution, &runtime, "unchanged-head-candidate");
     assert!(matches!(
-        runtime.publication_port().compare_and_publish(candidate),
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate),
         RelationalPublicationOutcome::Deferred(RelationalPublicationDeferred::CompanionPreflight(
             CompanionPreflightStop::TopologyPending
         ))

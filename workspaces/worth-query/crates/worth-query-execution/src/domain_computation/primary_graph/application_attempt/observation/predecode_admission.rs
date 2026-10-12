@@ -9,6 +9,7 @@ use worth_relational::facade::{
 
 pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed<Output>(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &SnapshotHandle,
     entity_id: EntityId,
     kind: KindId,
@@ -23,8 +24,8 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed
     let mut action = Some(action);
     runtime
         .read_truth()
-        .project_snapshot(snapshot)?
-        .entity_record_with_projection_scope(entity_id, scope, |record| {
+        .project_snapshot(snapshot, execution)?
+        .entity_record_with_projection_scope(execution, entity_id, scope, |record| {
             if record.kind_id() != kind || record.lifecycle() != RecordLifecycleState::Live {
                 return None;
             }

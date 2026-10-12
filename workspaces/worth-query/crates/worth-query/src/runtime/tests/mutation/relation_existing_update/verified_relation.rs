@@ -2,30 +2,37 @@ use super::*;
 
 #[test]
 fn update_existing_verified_relation_preserves_relation_identity_and_assertion_mode() {
-    let mut workspace = task_relation_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_relation_runtime(request_execution)
         .workspace("tasks.update-existing-verified-relation")
         .expect("workspace should open");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.update-existing-verified-relation-table", |q| {
-            q.from("TaskRelation")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-update-existing-verified-relation-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.update-existing-verified-relation-table",
+            |q| {
+                q.from("TaskRelation")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-update-existing-verified-relation-table")
+            },
+        )
         .expect("relation live view should declare");
 
     let seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -55,6 +62,7 @@ fn update_existing_verified_relation_preserves_relation_identity_and_assertion_m
 
     let receipt = workspace
         .update_existing_verified(
+            request_execution,
             binding,
             |relation| {
                 relation.set_aspect(
@@ -95,7 +103,10 @@ fn update_existing_verified_relation_preserves_relation_identity_and_assertion_m
         WorthQueryExistingTruthAssertionMode::BackendVerifiedAssertion
     );
 
-    match workspace.inspect(&receipt).expect("receipt should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect")
+    {
         WorthQueryInspection::WriteReceipt(inspection) => {
             assert_eq!(
                 inspection
@@ -118,11 +129,17 @@ fn update_existing_verified_relation_preserves_relation_identity_and_assertion_m
 
 #[test]
 fn update_existing_verified_relation_denies_unsupported_backend_typed_and_early() {
-    let runtime = bridge_runtime_with_support(WorthQueryRuntimeSupportProfile::bridge_backed(
-        "test-relation-live",
-        "test-relation-preview",
-        "test-relation-inspect",
-    ));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = bridge_runtime_with_support(
+        request_execution,
+        WorthQueryRuntimeSupportProfile::bridge_backed(
+            "test-relation-live",
+            "test-relation-preview",
+            "test-relation-inspect",
+        ),
+    );
     let mut workspace = runtime
         .workspace("tasks.update-existing-verified-relation-unsupported")
         .expect("workspace should open");
@@ -140,6 +157,7 @@ fn update_existing_verified_relation_denies_unsupported_backend_typed_and_early(
 
     let error = workspace
         .update_existing_verified(
+            request_execution,
             binding,
             |relation| {
                 relation.set_aspect(

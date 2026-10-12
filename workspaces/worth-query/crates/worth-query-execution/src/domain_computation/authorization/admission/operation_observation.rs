@@ -31,18 +31,20 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope_identity: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
         graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     ) -> Result<WorthQueryRetainedAuthorizationDecisionFacts, WorthQueryOperationAuthorizationDenial>
     {
-        self.observe_current_operation(principal, scope_identity, operation, graph_work)?
+        self.observe_current_operation(execution, principal, scope_identity, operation, graph_work)?
             .retain_for(operation)
     }
 
     fn observe_current_operation<Principal, PrincipalIdentity, Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope_identity: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -88,8 +90,9 @@ where
                         principal.binding(),
                     )
                 })?;
-        let decision_facts = handle.with_runtime_mut(|relational| {
+        let decision_facts = handle.with_runtime_mut(execution, |relational| {
             validate_freshness_at_snapshot(
+                execution,
                 relational,
                 &snapshot,
                 principal,
@@ -104,11 +107,12 @@ where
             })?;
             entity_resolution
                 .at_snapshot(
+                    execution,
                     relational,
                     &snapshot,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
-                .and_then(|truth| truth.validate_entity_freshness(scope_identity))
+                .and_then(|truth| truth.validate_entity_freshness(execution, scope_identity))
                 .map_err(|_| {
                     denial(
                         WorthQueryOperationAuthorizationDenialKind::StaleScope,
@@ -116,6 +120,7 @@ where
                     )
                 })?;
             self.observe_authorization_requirements(
+                execution,
                 WorthQueryConventionalAuthorizationObservation {
                     session_identity,
                     relational,

@@ -10,6 +10,7 @@ use super::WorthQueryEntityResolutionTruth;
 
 pub(super) fn validate<Schema, Entity>(
     truth: &WorthQueryEntityResolutionTruth<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
 ) -> Result<(), WorthQueryEntityResolutionDenial> {
     if identity.runtime_authority() != truth.installed.runtime_authority
@@ -32,7 +33,7 @@ pub(super) fn validate<Schema, Entity>(
     let lookup = truth
         .relational
         .index_access()
-        .execute_bounded_entity_field_lookup(request, parity(identity.resolution_mode()))
+        .execute_bounded_entity_field_lookup(request, parity(identity.resolution_mode()), execution)
         .map_err(|rejected| map_index_denial(rejected.kind(), identity.entity_name()))?;
     if lookup.overflowed()
         || lookup.candidate_entity_ids().len() != 1

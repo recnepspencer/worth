@@ -42,6 +42,7 @@ impl AdjacencyStructuralRevision {
 impl VisibilityProjectionView<'_> {
     pub fn bounded_adjacency_structural_revision(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         anchor: EntityId,
         relation_kind: KindId,
         direction: RelationalAdjacencyDirection,
@@ -52,6 +53,7 @@ impl VisibilityProjectionView<'_> {
         }
         if self
             .entity_record_with_projection_scope(
+                execution,
                 anchor,
                 super::ProjectionAspectScope::empty(),
                 |_| Some(()),
@@ -87,23 +89,27 @@ mod tests {
 
     #[test]
     fn selected_basis_adjacency_revision_detects_add_remove_aba() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let runtime = runtime_with_test_schema();
-        let source_commit = create_entity_outcome(&runtime, "source");
+        let source_commit = create_entity_outcome(execution, &runtime, "source");
         let source = changed_entities(&source_commit)[0];
-        let target_commit = create_entity_outcome(&runtime, "target");
+        let target_commit = create_entity_outcome(execution, &runtime, "target");
         let target = changed_entities(&target_commit)[0];
-        let relation_commit = create_relation_outcome(&runtime, source, target, "edge");
+        let relation_commit = create_relation_outcome(execution, &runtime, source, target, "edge");
         let relation = changed_relations(&relation_commit)[0];
         let deletion_commit =
-            delete_relation_on_branch(&runtime, relation, BranchId("main".to_owned()));
+            delete_relation_on_branch(execution, &runtime, relation, BranchId("main".to_owned()));
 
         let revision_at = |snapshot| {
             let view = runtime
                 .read_truth()
-                .project_snapshot(snapshot)
+                .project_snapshot(snapshot, execution)
                 .expect("commit snapshot remains readable");
             let revision = view
                 .bounded_adjacency_structural_revision(
+                    execution,
                     source,
                     KindId(2),
                     RelationalAdjacencyDirection::Outgoing,
@@ -113,6 +119,7 @@ mod tests {
                 .revision();
             assert_eq!(
                 view.exact_adjacency_structural_revision(
+                    execution,
                     source,
                     KindId(2),
                     RelationalAdjacencyDirection::Outgoing,
@@ -133,10 +140,11 @@ mod tests {
         );
         let deleted_view = runtime
             .read_truth()
-            .project_snapshot(&deletion_commit.snapshot)
+            .project_snapshot(&deletion_commit.snapshot, execution)
             .expect("deleted-relation snapshot remains readable");
         assert_eq!(
             deleted_view.bounded_adjacency_structural_revision(
+                execution,
                 source,
                 KindId(2),
                 RelationalAdjacencyDirection::Outgoing,
@@ -151,6 +159,7 @@ mod tests {
         );
         assert_eq!(
             deleted_view.bounded_adjacency_structural_revision(
+                execution,
                 missing_anchor,
                 KindId(2),
                 RelationalAdjacencyDirection::Outgoing,
@@ -161,6 +170,7 @@ mod tests {
         // An unpaid read refuses before it reads the anchor.
         assert_eq!(
             deleted_view.bounded_adjacency_structural_revision(
+                execution,
                 missing_anchor,
                 KindId(2),
                 RelationalAdjacencyDirection::Outgoing,
@@ -179,16 +189,17 @@ mod tests {
         let mut recovered = runtime_with_test_schema();
         recovered
             .durability_recovery()
-            .recover(recovery)
+            .recover(execution, recovery)
             .expect("checkpoint recovery rebuilds adjacency indexes");
         let recovered_snapshot =
             snapshot_for_owner_branch(&recovered, &BranchId("main".to_owned()));
         assert_eq!(
             recovered
                 .read_truth()
-                .project_snapshot(&recovered_snapshot)
+                .project_snapshot(&recovered_snapshot, execution)
                 .expect("recovered main basis is readable")
                 .bounded_adjacency_structural_revision(
+                    execution,
                     source,
                     KindId(2),
                     RelationalAdjacencyDirection::Outgoing,

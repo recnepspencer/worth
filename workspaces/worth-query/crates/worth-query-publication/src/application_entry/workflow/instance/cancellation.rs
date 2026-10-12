@@ -87,7 +87,7 @@ where
                     MutationInput<Schema, Intent>,
                     MutationScope<Schema, IntentBinding<Schema, Intent>>,
                     Spec,
-                >(selected, installed, instance, key, admission)
+                >(&phase, selected, installed, instance, key, admission)
             })?;
         Ok(WorthQueryWorkflowInstanceCancellationRequest {
             application,

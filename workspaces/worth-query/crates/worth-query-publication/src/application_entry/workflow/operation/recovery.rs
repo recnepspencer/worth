@@ -224,7 +224,7 @@ where
         let prepared = authorization::prepare(phase, &self, &identities, staged)
             .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Request)?;
         let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
-            application,
+            phase, application,
             &prepared.admission,
             prepared.idempotency,
             required.transition_identity_bytes(),
@@ -260,6 +260,9 @@ where
 {
     pub fn safe_retry(
         self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
     ) -> Result<
         WorthQueryRecoverySafeRetryAdmission,
         WorthQueryWorkflowOperationRecoveryDenial<'application, Schema, Binding>,
@@ -276,7 +279,7 @@ where
             }
         };
         let redispatch = match application
-            .redispatch_admitted_external_effect(&handle, &authority, &admission)
+            .redispatch_admitted_external_effect(phase, &handle, &authority, &admission)
         {
             Ok(redispatch) => redispatch,
             Err(denial) => {

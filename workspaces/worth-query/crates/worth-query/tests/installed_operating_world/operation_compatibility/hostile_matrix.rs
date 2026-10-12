@@ -17,12 +17,15 @@ const PORTABLE_OPERATION_COMPARISON_DIMENSIONS: usize = 45;
 
 #[test]
 fn all_five_relationship_oracles_are_stable_across_index_rebuild() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut controlled = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .controlled_workspace("compatibility-index-oracle")
+        .controlled_workspace(request_execution, "compatibility-index-oracle")
         .unwrap();
     let prior_domain = controlled.domain(GeometryDomain).unwrap();
     let subject = bind_read_vertex(&controlled, &prior_domain);
@@ -76,8 +79,11 @@ fn all_five_relationship_oracles_are_stable_across_index_rebuild() {
 
 #[test]
 fn same_runtime_wrong_basis_and_stale_lifecycle_deny_through_compatibility() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut controlled = no_primary_read_runtime()
-        .controlled_workspace("compatibility-basis-lifecycle")
+        .controlled_workspace(request_execution, "compatibility-basis-lifecycle")
         .unwrap();
     let prior_domain = controlled.domain(GeometryDomain).unwrap();
     let current = bind_current(&controlled, &prior_domain);
@@ -111,11 +117,14 @@ fn same_runtime_wrong_basis_and_stale_lifecycle_deny_through_compatibility() {
 
 #[test]
 fn matching_reporting_material_cannot_cross_a_foreign_runtime() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let owner = no_primary_read_runtime()
-        .workspace("compatibility-collision")
+        .workspace(request_execution, "compatibility-collision")
         .unwrap();
     let foreign = no_primary_read_runtime()
-        .workspace("compatibility-collision")
+        .workspace(request_execution, "compatibility-collision")
         .unwrap();
     let owner_bound = bind_current(&owner, &owner.domain(GeometryDomain).unwrap());
     let foreign_bound = bind_current(&foreign, &foreign.domain(GeometryDomain).unwrap());
@@ -142,8 +151,11 @@ fn matching_reporting_material_cannot_cross_a_foreign_runtime() {
 
 #[test]
 fn stale_and_current_lookalikes_cannot_claim_same_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut controlled = no_primary_read_runtime()
-        .controlled_workspace("compatibility-stale-collision")
+        .controlled_workspace(request_execution, "compatibility-stale-collision")
         .unwrap();
     let prior_domain = controlled.domain(GeometryDomain).unwrap();
     let stale = bind_current(&controlled, &prior_domain);
@@ -172,8 +184,11 @@ fn stale_and_current_lookalikes_cannot_claim_same_installation() {
 
 #[test]
 fn execution_sharing_stops_after_the_first_unsupported_profile() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let workspace = no_primary_read_runtime()
-        .workspace("compatibility-sharing-short-circuit")
+        .workspace(request_execution, "compatibility-sharing-short-circuit")
         .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let subject = bind_current(&workspace, &domain);
@@ -190,10 +205,14 @@ fn execution_sharing_stops_after_the_first_unsupported_profile() {
 
 #[test]
 fn installation_owner_mismatch_category_survives_the_query_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let plain = configured_runtime()
-        .workspace("compatibility-owner-category-plain")
+        .workspace(request_execution, "compatibility-owner-category-plain")
         .unwrap();
     let sharing = support_dimension_workspace(
+        request_execution,
         "compatibility-owner-category-sharing",
         domain::WorthQueryConsumerSupportDimension::Sharing,
         domain::WorthQueryConsumerSupportPosture::Supported,

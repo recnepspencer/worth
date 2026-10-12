@@ -6,13 +6,8 @@ use worth_runtime_bridge::facade::{RelationalCommittedPatchRequest, TruthCommitI
 
 #[test]
 fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
-    let host_request = worth_execution::SerialRequest::from_policy(
-        &worth_runtime_bridge::facade::BridgeExecutionPolicyBaseline::operational()
-            .request_policy(),
-        worth_execution::CancellationToken::new(),
-        None,
-    );
-    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let records = CargoRecords::install(true);
     let mut graph = SignalGraph::new();
@@ -27,12 +22,12 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
             .observe_branch(&records.runtime.main_branch_identity())
             .unwrap()
             .1;
-        let candidate = records.candidate(&basis, name, amount);
+        let candidate = records.candidate(request_execution, &basis, name, amount);
         let RelationalPublicationOutcome::Performed(performed) = records
             .runtime
             .owner_component_services()
             .publication_port()
-            .compare_and_publish(candidate)
+            .compare_and_publish(request_execution, candidate)
         else {
             panic!("real source commit must perform")
         };
@@ -55,7 +50,7 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
         let delivery = bridge
             .bind_signal_graph(&mut graph)
             .unwrap()
-            .deliver_installed_correspondence(&installed, request, resource_request);
+            .deliver_installed_correspondence(&installed, request, *request_execution);
         let TransitionOutcome::Success(receipt) = delivery else {
             panic!("installed Bridge delivery: {delivery:?}")
         };
@@ -100,7 +95,7 @@ fn committed_patch_delivery_changes_the_installed_graph_before_world_sealing() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let root = court.bootstrap();
-    let mut context = court.context(&root);
+    let mut context = court.context(request_execution, &root);
     assert_eq!(context.records.get().unwrap(), &oracle.records);
     let token = RuntimeWorldCancellationSource::new().token();
     let port = court.world.publication_port();

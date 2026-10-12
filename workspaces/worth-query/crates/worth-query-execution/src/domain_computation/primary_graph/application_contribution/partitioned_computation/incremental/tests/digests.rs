@@ -117,30 +117,58 @@ fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
             retention,
         );
         let request = live_scope();
-        let principal = authenticated_principal(&world, &request);
-        let root = resolved_account(&world, "open", &request);
-        let operation = world
+        world
             .application
-            .installed_schema()
-            .installed_operation(TouchAccountOperation::reference())
-            .unwrap();
-        let admitted = world
-            .selected_product()
-            .authorize_operation(&principal, &root, &operation, Default::default(), &request)
-            .unwrap();
-        INPUTS.store(0, Ordering::Relaxed);
-        ITEMS.store(0, Ordering::Relaxed);
-        ComputationPrior::hand_in_test(Some(ComputationPrior::new(
-            edition(),
-            Err(Cause::FirstRun),
-            None,
-        )));
-        let result = world.invariant.project_admitted_operation(&admitted, |reader, root| {
-            let execution = QueryRequestExecution::open(RuntimeWorldExecutionPlacement::Serial(crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, 1 << 30)), &request);
-            installed.prepare_through(reader, &execution, &Value(root.clone()))?.compute(WorthQueryManagedComputationExecution::new(&execution))?.complete()
-        }, worth_execution::ExecutionAllocationPolicy::SystemAllocation).unwrap().into_parts().0;
-        ComputationPrior::hand_in_test(None);
-        assert_eq!(result.unwrap(), (0..4).sum::<u64>());
+            .with_application_advancement(&request, |phase| {
+                let custody = phase.test_host_request();
+                let principal = authenticated_principal(&custody, &world, &request);
+                let root = resolved_account(&custody, &world, "open", &request);
+                let operation = world
+                    .application
+                    .installed_schema()
+                    .installed_operation(TouchAccountOperation::reference())
+                    .unwrap();
+                let admitted = world
+                    .selected_product(&custody)
+                    .authorize_operation(
+                        &phase,
+                        &principal,
+                        &root,
+                        &operation,
+                        Default::default(),
+                        &request,
+                    )
+                    .unwrap();
+                INPUTS.store(0, Ordering::Relaxed);
+                ITEMS.store(0, Ordering::Relaxed);
+                ComputationPrior::hand_in_test(Some(ComputationPrior::new(
+                    edition(),
+                    Err(Cause::FirstRun),
+                    None,
+                )));
+                let result = world
+                    .invariant
+                    .project_admitted_operation(
+                        &phase,
+                        &admitted,
+                        |reader, root| {
+                            let execution = phase
+                                .execution_for(&world.application.product_runtime)
+                                .expect("the installed fixture lends its computation execution");
+                            installed
+                                .prepare_through(reader, execution, &Value(root.clone()))?
+                                .compute(WorthQueryManagedComputationExecution::new(execution))?
+                                .complete()
+                        },
+                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .into_parts()
+                    .0;
+                ComputationPrior::hand_in_test(None);
+                assert_eq!(result.unwrap(), (0..4).sum::<u64>());
+            })
+            .expect("the digest computation owns its host call");
         let counts = [
             INPUTS.load(Ordering::Relaxed),
             ITEMS.load(Ordering::Relaxed),

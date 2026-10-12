@@ -32,9 +32,10 @@ impl<'runtime> CommitStrategiesFacade<'runtime> {
         &self,
         request: &CanonicalStrategyCommitRequest,
         snapshot: &SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<StrategyExecutionDraft, crate::commit_strategies::StrategyExecutionError> {
-        let bound = bind_execution(self.runtime, request, snapshot)?;
-        execute_bound_strategy(bound)
+        let bound = bind_execution(self.runtime, request, snapshot, execution)?;
+        execute_bound_strategy(execution, bound)
     }
 }
 
@@ -77,28 +78,31 @@ impl CommitStrategiesAuthorityFacade {
 
     pub fn validate_lowered_plan(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         lowered: LoweredStrategyCommitPlan,
     ) -> Result<crate::mvcc::ValidatedRelationalProposal, TransactionCommitError> {
-        validate_lowered_strategy_plan(runtime, lowered)
+        validate_lowered_strategy_plan(execution, runtime, lowered)
     }
 
     pub fn prepare_validated_commit(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         validated: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-        runtime.prepare_validated_proposal(validated)
+        runtime.prepare_validated_proposal(execution, validated)
     }
 
     #[cfg(test)]
     pub(crate) fn execute_validated_commit(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         validated: crate::mvcc::ValidatedRelationalProposal,
     ) -> Result<crate::transactions::data::CommitResult, TransactionCommitError> {
-        let candidate = self.prepare_validated_commit(runtime, validated)?;
-        runtime.publish_prepared_candidate(candidate)
+        let candidate = self.prepare_validated_commit(execution, runtime, validated)?;
+        runtime.publish_prepared_candidate(execution, candidate)
     }
 }
 
@@ -108,5 +112,5 @@ mod tests;
 
 #[cfg(test)]
 pub(crate) use tests::native_strategy_fixtures::{
-    execute_persisted_intent_strategy_commit, persisted_intent_runtime,
+    execute_persisted_intent_strategy_commit, lowered_commit_fixture, persisted_intent_runtime,
 };

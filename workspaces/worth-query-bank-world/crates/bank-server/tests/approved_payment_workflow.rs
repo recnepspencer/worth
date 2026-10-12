@@ -138,11 +138,9 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         .expect_err("unresolved external custody cannot settle the workflow operation");
     assert!(matches!(
         unresolved,
-        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
-            WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(denial) if matches!(denial.as_ref(), WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
                 WorthQueryWorkflowOperationOwnerPosture::DispatchPending
-            )
-        )
+            ))
     ));
     let still_required = match workflow
         .advance(
@@ -169,20 +167,22 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         .expect("a different workflow operation command cannot claim recovery custody");
     assert!(matches!(
         mismatched_recovery,
-        bank_server::BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(
-            WorthQueryWorkflowOperationRecoveryPreparationDenial::Owner(
+        bank_server::BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(denial) if matches!(denial.as_ref(), WorthQueryWorkflowOperationRecoveryPreparationDenial::Owner(
                 WorthQueryWorkflowOperationOwnerPosture::IntentDrift
-            )
-        )
+            ))
     ));
-    let recovery = workflow
+    let prepared_recovery = workflow
         .prepare_apply_recovery(
             &still_required,
             authority.clone(),
             &key("approved-payment:operation:perform"),
         )
-        .expect("the exact workflow-bound operation prepares recovery")
-        .safe_retry()
+        .expect("the exact workflow-bound operation prepares recovery");
+    let recovery = fixture
+        .world
+        .runtime
+        .with_application_advancement(&scope, |phase| prepared_recovery.safe_retry(&phase))
+        .expect("fixture retry owns its host call")
         .expect("fresh recovery authority re-dispatches the committed outbox");
     let denied = workflow
         .accept_recovered_applied(

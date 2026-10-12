@@ -239,7 +239,12 @@ fn refresh_fact(
     live: &mut worth_ui_query_binding::UiLiveCollectionProjection,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
 ) -> worth_ui_query_binding::UiCollectionProjectionFactReceipt {
-    match live.refresh(workspace).unwrap() {
+    match workspace
+        .with_execution_request_mut(|execution, workspace| {
+            live.refresh(execution, workspace).unwrap()
+        })
+        .expect("workspace host call opens")
+    {
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::Applied(receipt) => {
             receipt.into_fact()
         }

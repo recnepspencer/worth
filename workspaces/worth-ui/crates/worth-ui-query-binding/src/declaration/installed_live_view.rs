@@ -1,3 +1,4 @@
+use worth_query::facade::installed::operation::WorthQueryBoundExecutionDenial;
 use worth_query::facade::runtime;
 
 use crate::{
@@ -40,7 +41,15 @@ impl WorthUiInstalledLiveQueryView {
             self.installed_domain().clone(),
             self.definition().clone(),
         );
-        open_operation_live_resource(reference, request, workspace)
+        workspace
+            .with_advancement_mut(|phase, workspace| {
+                open_operation_live_resource(&phase, reference, request, workspace)
+            })
+            .unwrap_or_else(|cause| {
+                Err(WorthUiOperationLiveOpenError::Execution(Box::new(
+                    WorthQueryBoundExecutionDenial::from_advancement_denial(cause),
+                )))
+            })
     }
 }
 

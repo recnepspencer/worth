@@ -11,20 +11,27 @@ use support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn public_submission_lane_submit_replaces_direct_workspace_write() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("public.submission-lane.scalar")
         .expect("runtime should open a public workspace");
-    let tasks = task_live_view(&mut workspace, "public-submission-lane-scalar-tasks");
+    let tasks = task_live_view(
+        request_execution,
+        &mut workspace,
+        "public-submission-lane-scalar-tasks",
+    );
 
     let receipt = workspace
         .submissions()
         .expect("submission lane should mint")
-        .submit(task_insert_command(
-            "task-submit-1",
-            "Submitted scalar task",
-        ))
+        .submit(
+            request_execution,
+            task_insert_command("task-submit-1", "Submitted scalar task"),
+        )
         .expect("submission lane scalar write should execute");
 
     assert_eq!(receipt.mutation_family(), WorthQueryMutationFamily::Insert);
@@ -33,7 +40,7 @@ fn public_submission_lane_submit_replaces_direct_workspace_write() {
         Some("Task")
     );
 
-    let rows = workspace.read(&tasks);
+    let rows = workspace.read(request_execution, &tasks);
     assert_eq!(rows.len(), 1);
     assert_eq!(
         rows[0].scalar_value_at(&field_path("identity.id")),
@@ -47,20 +54,30 @@ fn public_submission_lane_submit_replaces_direct_workspace_write() {
 
 #[test]
 fn public_submission_lane_submit_batch_replaces_direct_workspace_batch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("public.submission-lane.batch")
         .expect("runtime should open a public workspace");
-    let tasks = task_live_view(&mut workspace, "public-submission-lane-batch-tasks");
+    let tasks = task_live_view(
+        request_execution,
+        &mut workspace,
+        "public-submission-lane-batch-tasks",
+    );
 
     let receipt = workspace
         .submissions()
         .expect("submission lane should mint")
-        .submit_batch(vec![
-            task_insert_command("task-batch-1", "Submitted batch one"),
-            task_insert_command("task-batch-2", "Submitted batch two"),
-        ])
+        .submit_batch(
+            request_execution,
+            vec![
+                task_insert_command("task-batch-1", "Submitted batch one"),
+                task_insert_command("task-batch-2", "Submitted batch two"),
+            ],
+        )
         .expect("submission lane batch write should execute");
 
     assert_eq!(receipt.write_count(), 2);
@@ -69,7 +86,7 @@ fn public_submission_lane_submit_batch_replaces_direct_workspace_batch() {
         .iter()
         .all(|write| write.mutation_family() == WorthQueryMutationFamily::Insert));
 
-    let rows = workspace.read(&tasks);
+    let rows = workspace.read(request_execution, &tasks);
     assert_eq!(rows.len(), 2);
     let mut titles = rows
         .iter()
@@ -93,11 +110,12 @@ fn task_insert_command(id: &str, title: &str) -> WorthQueryWriteCommand {
 }
 
 fn task_live_view(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
     name: &str,
 ) -> WorthQueryLiveView<WorthQueryUnrefinedLiveShape> {
     workspace
-        .live_view(name, |q| {
+        .live_view(request_execution, name, |q| {
             q.from("Task")
                 .select([
                     worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(

@@ -6,6 +6,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     Input,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -66,6 +67,7 @@ where
         Err(outcome) => return terminal(outcome),
     };
     if let Some(outcome) = resolve_retained_idempotency(
+        execution,
         application,
         &mut admission,
         &current_product,
@@ -89,6 +91,7 @@ where
         return terminal(outcome);
     }
     let lease = match readmit_current_basis(
+        execution,
         application,
         &mut admission,
         read_set.lease,

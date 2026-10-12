@@ -25,6 +25,7 @@ pub(in crate::domain_computation) use selected::{
 };
 
 pub(super) fn start_operation_graph_work<Schema, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -42,6 +43,7 @@ where
         )
     })?;
     let lease = WorthQueryApplicationSnapshotLease::acquire(
+        execution,
         graph.integration_handle(),
         graph.retain_layout(),
         product,
@@ -77,6 +79,7 @@ where
 }
 
 pub(super) fn start_capability_graph_work<Schema, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
@@ -93,6 +96,7 @@ where
         )
     })?;
     let lease = WorthQueryApplicationSnapshotLease::acquire(
+        execution,
         graph.integration_handle(),
         graph.retain_layout(),
         product,
@@ -122,6 +126,7 @@ where
 }
 
 pub(super) fn transition_capability_to_operation_graph_work<Schema, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     resource_binding_identity: &str,
@@ -141,6 +146,7 @@ where
         .ok_or_else(|| graph_work_denial(operation.operation()))?;
     drop(capability_graph_work);
     start_operation_graph_work(
+        execution,
         runtime,
         product,
         operation,

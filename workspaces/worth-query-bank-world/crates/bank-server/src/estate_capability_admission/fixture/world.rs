@@ -193,3 +193,7 @@ fn install_scenario_scale(
     }
     estate
 }
+
+#[path = "world/live_read.rs"]
+mod live_read;
+pub(super) use live_read::install_live_read_world;

@@ -19,6 +19,7 @@ pub(crate) enum BaselineAuditError {
 }
 
 pub(crate) fn audit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: ProductionSeededSupplyChainWorld,
 ) -> Result<CertifiedSupplyChainBaseline, BaselineAuditError> {
     let oracle = OracleBranch::genesis(OracleState::from_definition(world.program.definition()));
@@ -27,7 +28,7 @@ pub(crate) fn audit(
         .validate_complete()
         .map_err(BaselineAuditError::Oracle)?;
     let expected = ExpectedSupplyChainObservation::from_branch(&oracle);
-    let observed = observe(&world).map_err(BaselineAuditError::Observation)?;
+    let observed = observe(execution, &world).map_err(BaselineAuditError::Observation)?;
     compare(&expected, &observed)
         .map_err(|failure| BaselineAuditError::Comparison(failure.mismatch))?;
     Ok(CertifiedSupplyChainBaseline {

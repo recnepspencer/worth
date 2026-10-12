@@ -43,16 +43,21 @@ use super::scenarios::{
     setup_world_for_late_trade_correction, setup_world_with, FintechScenario,
 };
 
-pub(super) fn setup_smoke_world() -> FintechWorld {
-    let world = setup_world_for(FintechScenario::SmokeBook);
+pub(super) fn setup_smoke_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> FintechWorld {
+    let world = setup_world_for(execution, FintechScenario::SmokeBook);
     assert_fixture_shape(&world, FintechScale::smoke());
     world
 }
 
 #[test]
 fn fintech_fixture_builds_partitioned_truth_with_cross_context_relations() {
-    let world = setup_world();
-    let read = world.read_latest();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = setup_world(execution);
+    let read = world.read_latest(execution);
 
     assert_named_truth_world(&world);
     assert_partitioned_aspect_state(&read);
@@ -61,12 +66,15 @@ fn fintech_fixture_builds_partitioned_truth_with_cross_context_relations() {
 
 #[test]
 fn fintech_world_setup_helpers_build_expected_scales() {
-    let default_world = setup_world();
-    let scaled_world = setup_world_with(FintechScale::smoke());
-    let history_world = setup_world_for_historical_visibility();
-    let intraday_world = setup_world_for_intraday_risk();
-    let correction_world = setup_world_for_late_trade_correction();
-    let settlement_world = setup_world_for_failed_settlement_repair();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let default_world = setup_world(execution);
+    let scaled_world = setup_world_with(execution, FintechScale::smoke());
+    let history_world = setup_world_for_historical_visibility(execution);
+    let intraday_world = setup_world_for_intraday_risk(execution);
+    let correction_world = setup_world_for_late_trade_correction(execution);
+    let settlement_world = setup_world_for_failed_settlement_repair(execution);
 
     assert_fixture_shape(&default_world, FintechScale::smoke());
     assert_fixture_shape(&scaled_world, FintechScale::smoke());
@@ -78,7 +86,10 @@ fn fintech_world_setup_helpers_build_expected_scales() {
 
 #[test]
 fn fintech_scenario_selectors_expose_canonical_cases_and_expected_invariants() {
-    let (_world, selection) = setup_selected_world(FintechScenario::LateTradeCorrection);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (_world, selection) = setup_selected_world(execution, FintechScenario::LateTradeCorrection);
 
     assert!(matches!(
         selection.scenario,
@@ -125,20 +136,25 @@ fn fintech_scenario_selectors_expose_canonical_cases_and_expected_invariants() {
 
 #[test]
 fn fintech_snapshot_release_preserves_historical_visibility_and_invalidates_handle_reads() {
-    let mut world = setup_world_for(FintechScenario::HistoricalVisibility);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut world = setup_world_for(execution, FintechScenario::HistoricalVisibility);
     let analysis = open_analysis_branch(&mut world);
     let baseline_snapshot = capture_world_snapshot(&mut world);
     let baseline_probe = read_snapshot_probe(
+        execution,
         &world,
         super::fixture::FintechCaseRole::LateTradeCorrection,
         &baseline_snapshot,
         ProbeStage::Baseline,
     );
 
-    let _correction = correct_seeded_trade_candidate(&mut world, analysis.clone());
-    let _audit = emit_trade_correction_audit_record(&mut world, analysis);
+    let _correction = correct_seeded_trade_candidate(execution, &mut world, analysis.clone());
+    let _audit = emit_trade_correction_audit_record(execution, &mut world, analysis);
 
     let historical_after_mutation = read_snapshot_probe(
+        execution,
         &world,
         super::fixture::FintechCaseRole::LateTradeCorrection,
         &baseline_snapshot,
@@ -150,9 +166,10 @@ fn fintech_snapshot_release_preserves_historical_visibility_and_invalidates_hand
         assert!(world
             .runtime
             .read_truth()
-            .read_snapshot(&baseline_snapshot)
+            .read_snapshot(&baseline_snapshot, execution)
             .is_none());
         read_version_probe(
+            execution,
             &world,
             super::fixture::FintechCaseRole::LateTradeCorrection,
             version_id,
@@ -169,12 +186,24 @@ fn fintech_snapshot_release_preserves_historical_visibility_and_invalidates_hand
 
 #[test]
 fn fintech_world_exposes_named_domain_probes_for_correction_risk_and_settlement() {
-    let world = setup_world();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = setup_world(execution);
     let snapshot = world.latest_snapshot();
 
-    let correction = world.read_query(&snapshot, world.packet_for_correction_probe(&snapshot));
-    let risk = world.read_query(&snapshot, world.packet_for_intraday_risk_probe(&snapshot));
+    let correction = world.read_query(
+        execution,
+        &snapshot,
+        world.packet_for_correction_probe(&snapshot),
+    );
+    let risk = world.read_query(
+        execution,
+        &snapshot,
+        world.packet_for_intraday_risk_probe(&snapshot),
+    );
     let settlement = world.read_query(
+        execution,
         &snapshot,
         world.packet_for_settlement_repair_probe(&snapshot),
     );
@@ -186,10 +215,14 @@ fn fintech_world_exposes_named_domain_probes_for_correction_risk_and_settlement(
 
 #[test]
 fn fintech_analysis_workflow_preserves_branching_snapshots_and_trade_correction() {
-    let mut world = setup_smoke_world();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut world = setup_smoke_world(execution);
     let analysis = open_analysis_branch(&mut world);
     let baseline_snapshot = world.runtime.visibility_authority().snapshot();
     let baseline_probe = read_snapshot_probe(
+        execution,
         &world,
         super::fixture::FintechCaseRole::LateTradeCorrection,
         &baseline_snapshot,
@@ -197,17 +230,17 @@ fn fintech_analysis_workflow_preserves_branching_snapshots_and_trade_correction(
     );
     let baseline_observability = capture_observability_probe(&world, ProbeStage::Baseline);
 
-    let _shock = shock_market_on_branch(&mut world, analysis.clone());
-    let _correction = correct_seeded_trade_candidate(&mut world, analysis.clone());
-    let _audit = emit_trade_correction_audit_record(&mut world, analysis.clone());
-    let _risk = refresh_risk_views(&mut world, analysis.clone());
+    let _shock = shock_market_on_branch(execution, &mut world, analysis.clone());
+    let _correction = correct_seeded_trade_candidate(execution, &mut world, analysis.clone());
+    let _audit = emit_trade_correction_audit_record(execution, &mut world, analysis.clone());
+    let _risk = refresh_risk_views(execution, &mut world, analysis.clone());
 
     let main_read = world
         .runtime
         .read_truth()
-        .read_snapshot(&baseline_snapshot)
+        .read_snapshot(&baseline_snapshot, execution)
         .unwrap();
-    let analysis_read = world.read_latest();
+    let analysis_read = world.read_latest(execution);
     assert_ne!(main_read.entities().len(), 0);
     assert!(analysis_read
         .entities()
@@ -221,6 +254,7 @@ fn fintech_analysis_workflow_preserves_branching_snapshots_and_trade_correction(
         world.runtime.history().latest_commit()
     );
     let post_probe = capture_case_truth_probe(
+        execution,
         &world,
         super::fixture::FintechCaseRole::LateTradeCorrection,
         ProbeStage::PostMutation,
@@ -232,23 +266,29 @@ fn fintech_analysis_workflow_preserves_branching_snapshots_and_trade_correction(
 
 #[test]
 fn fintech_intraday_risk_workflow_exposes_open_breach_on_analysis_branch() {
-    let mut world = setup_smoke_world();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut world = setup_smoke_world(execution);
     let analysis = open_analysis_branch(&mut world);
     let baseline_probe = capture_case_truth_probe(
+        execution,
         &world,
         super::fixture::FintechCaseRole::IntradayRisk,
         ProbeStage::Baseline,
     );
 
-    let _stress = stress_seeded_intraday_risk(&mut world, analysis.clone());
+    let _stress = stress_seeded_intraday_risk(execution, &mut world, analysis.clone());
     let post_probe = capture_case_truth_probe(
+        execution,
         &world,
         super::fixture::FintechCaseRole::IntradayRisk,
         ProbeStage::PostMutation,
     );
-    let analysis_read = world.read_latest();
-    let replay_probe = capture_replay_probe(&mut world, analysis.clone());
+    let analysis_read = world.read_latest(execution);
+    let replay_probe = capture_replay_probe(execution, &mut world, analysis.clone());
     let post_replay_probe = capture_case_truth_probe(
+        execution,
         &world,
         super::fixture::FintechCaseRole::IntradayRisk,
         ProbeStage::PostReplay,
@@ -273,21 +313,26 @@ fn fintech_intraday_risk_workflow_exposes_open_breach_on_analysis_branch() {
 
 #[test]
 fn fintech_settlement_repair_workflow_exposes_repaired_settlement_on_analysis_branch() {
-    let mut world = setup_smoke_world();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut world = setup_smoke_world(execution);
     let analysis = open_analysis_branch(&mut world);
     let baseline_probe = capture_case_truth_probe(
+        execution,
         &world,
         super::fixture::FintechCaseRole::FailedSettlementRepair,
         ProbeStage::Baseline,
     );
 
-    let _repair = repair_seeded_failed_settlement(&mut world, analysis.clone());
+    let _repair = repair_seeded_failed_settlement(execution, &mut world, analysis.clone());
     let post_probe = capture_case_truth_probe(
+        execution,
         &world,
         super::fixture::FintechCaseRole::FailedSettlementRepair,
         ProbeStage::PostMutation,
     );
-    let analysis_read = world.read_latest();
+    let analysis_read = world.read_latest(execution);
 
     assert!(analysis_read.entities().iter().any(|entity| {
         read_entity_field(entity, field_key("entity_type")) == Some("settlement".into())

@@ -153,7 +153,7 @@ pub(in crate::domain_computation) use application_contribution::observe_discarde
 
 #[cfg(test)]
 pub(crate) use application_contribution::{
-    drain_test_advancement_observations, with_test_advancement,
+    drain_test_advancement_observations, with_test_advancement, TestHostRequest,
 };
 
 pub use application_contribution::with_bootstrap_advancement;
@@ -165,3 +165,5 @@ pub use crate::domain_computation::execution_runtime::product_world::installed_s
 
 #[cfg(test)]
 pub(crate) use tests::fixture::AdvancementHost;
+
+pub use observations::principal_target_reads_on_this_thread_for_test;

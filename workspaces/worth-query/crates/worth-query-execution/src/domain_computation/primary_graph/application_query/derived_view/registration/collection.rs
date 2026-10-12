@@ -94,6 +94,7 @@ where
         Value,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
         product: &WorthQueryProductBranchLease,
         key: &super::super::WorthQueryManagedDerivedViewKey,
@@ -128,7 +129,7 @@ where
             return Err(Denial::ForeignQuery);
         }
         let result = self
-            .execute_application_query_one_shot(plan)
+            .execute_application_query_one_shot_with_request(execution, plan)
             .map_err(|_| Denial::QueryExecutionDenied)?;
         self.admit_view_product(view, product)?;
         let ([row], [source]) = (result.rows(), result.observed_sources()) else {

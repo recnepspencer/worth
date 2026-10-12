@@ -4,26 +4,34 @@ use super::super::*;
 use super::SharedState;
 
 pub(super) fn capture_merge_authority(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &SharedState,
     target_branch: &crate::runtime::WorthQueryAdmittedBranchName,
     source_branch: &crate::runtime::WorthQueryAdmittedBranchName,
 ) -> Result<WorthQueryBackendMergeAuthority, WorthQueryWorkspaceError> {
-    state.borrow().relational_source.with_runtime(|runtime| {
-        WorthQueryBackendMergeAuthority::capture(runtime, target_branch, source_branch)
-    })
+    state
+        .borrow()
+        .relational_source
+        .with_runtime(request_execution, |runtime| {
+            WorthQueryBackendMergeAuthority::capture(runtime, target_branch, source_branch)
+        })
 }
 
 pub(super) fn validate_merge_authority(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &SharedState,
     authority: &WorthQueryBackendMergeAuthority,
 ) -> Result<(), WorthQueryWorkspaceError> {
     state
         .borrow()
         .relational_source
-        .with_runtime(|runtime| authority.validate_against(runtime))
+        .with_runtime(request_execution, |runtime| {
+            authority.validate_against(runtime)
+        })
 }
 
 pub(super) fn execute_merge(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &SharedState,
     authority: &WorthQueryBackendMergeAuthority,
     declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
@@ -40,8 +48,9 @@ pub(super) fn execute_merge(
     state
         .borrow()
         .relational_source
-        .with_runtime_mut(|runtime| {
+        .with_runtime_mut(request_execution, |runtime| {
             crate::effect_lifecycle::execute_lowered_merge(
+                request_execution,
                 runtime,
                 declaration,
                 crate::effect_lifecycle::MergeUniqueValueAuthority::NoApplicationSchema,

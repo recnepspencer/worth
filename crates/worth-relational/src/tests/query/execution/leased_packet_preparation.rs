@@ -28,8 +28,11 @@ fn lease(memory: u64, work: u64) -> worth_execution::ExecutionResourceLease<'sta
 
 #[test]
 fn any_of_encoding_checks_work_and_memory_before_packet_clones() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity_in_partition(&runtime, "value", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "value", PartitionId(7));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
     let plan = runtime
@@ -59,7 +62,11 @@ fn any_of_encoding_checks_work_and_memory_before_packet_clones() {
     assert!(matches!(
         runtime
             .read_truth()
-            .execute_query_plan_with_lease(plan.clone(), &lease(1 << 20, 1)),
+            .execute_query_plan(
+                plan.clone(),
+                &worth_execution::ExecutionRequest::leased(&lease(1 << 20, 1))
+            )
+            .map(|read| read.map(|read| read.outcome)),
         Err(QueryReadExecutionStop::PreparationStopped {
             reason: MapStop::WorkExhausted { .. },
             ..
@@ -68,7 +75,11 @@ fn any_of_encoding_checks_work_and_memory_before_packet_clones() {
     assert!(matches!(
         runtime
             .read_truth()
-            .execute_query_plan_with_lease(plan, &tight_lease()),
+            .execute_query_plan(
+                plan,
+                &worth_execution::ExecutionRequest::leased(&tight_lease())
+            )
+            .map(|read| read.map(|read| read.outcome)),
         Err(QueryReadExecutionStop::PreparationStopped {
             reason: MapStop::Failure {
                 cause: MapKernelFailure::ResultCapacityExceeded,
@@ -81,8 +92,11 @@ fn any_of_encoding_checks_work_and_memory_before_packet_clones() {
 
 #[test]
 fn explicit_and_traversal_packet_copies_deny_before_allocation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity_in_partition(&runtime, "seed", PartitionId(7));
+    let entity = create_entity_in_partition(execution, &runtime, "seed", PartitionId(7));
     let snapshot = runtime.visibility_authority().snapshot();
     let explicit = planned_explicit_query(
         &runtime,
@@ -92,7 +106,11 @@ fn explicit_and_traversal_packet_copies_deny_before_allocation() {
     );
     let explicit_stop = runtime
         .read_truth()
-        .execute_query_plan_with_lease(explicit, &tight_lease());
+        .execute_query_plan(
+            explicit,
+            &worth_execution::ExecutionRequest::leased(&tight_lease()),
+        )
+        .map(|read| read.map(|read| read.outcome));
     assert!(matches!(
         explicit_stop,
         Err(QueryReadExecutionStop::PreparationStopped {
@@ -128,7 +146,11 @@ fn explicit_and_traversal_packet_copies_deny_before_allocation() {
         .unwrap();
     let traversal_stop = runtime
         .read_truth()
-        .execute_query_plan_with_lease(traversal, &tight_lease());
+        .execute_query_plan(
+            traversal,
+            &worth_execution::ExecutionRequest::leased(&tight_lease()),
+        )
+        .map(|read| read.map(|read| read.outcome));
     assert!(matches!(
         traversal_stop,
         Err(QueryReadExecutionStop::PreparationStopped {
@@ -143,8 +165,11 @@ fn explicit_and_traversal_packet_copies_deny_before_allocation() {
 
 #[test]
 fn scoped_scan_does_not_charge_unrelated_partitions() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity_in_partition(&runtime, "target", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "target", PartitionId(7));
     let scoped_read = || {
         let snapshot = runtime.visibility_authority().snapshot();
         let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
@@ -173,15 +198,27 @@ fn scoped_scan_does_not_charge_unrelated_partitions() {
             .unwrap();
         runtime
             .read_truth()
-            .execute_query_plan_with_lease_report(plan, &lease(1 << 20, 100_000))
+            .execute_query_plan(
+                plan,
+                &worth_execution::ExecutionRequest::leased(&lease(1 << 20, 100_000)),
+            )
             .unwrap()
             .unwrap()
     };
     let before = scoped_read();
     for partition in 100..120 {
-        create_entity_in_partition(&runtime, "other", PartitionId(partition));
+        create_entity_in_partition(execution, &runtime, "other", PartitionId(partition));
     }
     let after = scoped_read();
-    assert_eq!(after.report.charged_work(), before.report.charged_work());
+    assert_eq!(
+        after
+            .report
+            .expect("leased read reports work")
+            .charged_work(),
+        before
+            .report
+            .expect("leased read reports work")
+            .charged_work()
+    );
     assert_eq!(after.outcome.result, before.outcome.result);
 }

@@ -3,6 +3,9 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_commit_delta_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let suite = "commit_delta_matrix";
 
     let narrow_samples = capture_perf_samples(suite, "single_partition_create_burst", || {
@@ -16,11 +19,8 @@ fn perf_commit_delta_matrix() {
                 )
                 .expect("test staging stays within configured resource budgets");
             }
-            txn.commit(
-                runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .expect("single-partition create burst commit")
+            txn.commit(execution, runtime)
+                .expect("single-partition create burst commit")
         })
     });
     assert!(narrow_samples
@@ -42,12 +42,22 @@ fn perf_commit_delta_matrix() {
             let runtime = runtime_with_test_schema();
             let sources = (0..24)
                 .map(|index| {
-                    create_entity_in_partition(&runtime, &format!("src-{index}"), PartitionId(1))
+                    create_entity_in_partition(
+                        execution,
+                        &runtime,
+                        &format!("src-{index}"),
+                        PartitionId(1),
+                    )
                 })
                 .collect::<Vec<_>>();
             let targets = (0..24)
                 .map(|index| {
-                    create_entity_in_partition(&runtime, &format!("dst-{index}"), PartitionId(7))
+                    create_entity_in_partition(
+                        execution,
+                        &runtime,
+                        &format!("dst-{index}"),
+                        PartitionId(7),
+                    )
                 })
                 .collect::<Vec<_>>();
 
@@ -73,11 +83,8 @@ fn perf_commit_delta_matrix() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("cross-partition relation burst commit")
+                txn.commit(execution, runtime)
+                    .expect("cross-partition relation burst commit")
             })
         });
     assert!(cross_partition_samples
@@ -105,11 +112,8 @@ fn perf_commit_delta_matrix() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("persisted single entity create")
+                txn.commit(execution, runtime)
+                    .expect("persisted single entity create")
             })
         });
     emit_metric_summaries(

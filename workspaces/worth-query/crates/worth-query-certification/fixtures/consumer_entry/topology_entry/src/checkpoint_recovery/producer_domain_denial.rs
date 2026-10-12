@@ -16,7 +16,7 @@ fn producer_domain_denial_preserves_reason_and_releases_claim_for_retry() {
     let application = support::install_with_domain_denial(Arc::clone(&domain_denial));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
 
     // The provider asks the real handler to verify an output that cannot yet
     // exist. The handler, not a test substitute, owns CurrentOutputMissing.
@@ -64,7 +64,9 @@ fn producer_domain_denial_preserves_reason_and_releases_claim_for_retry() {
     assert!(domain_denial.load(Ordering::SeqCst));
     assert_eq!(
         before.selected_commit(),
-        request.retain_read().unwrap().selected_commit()
+        crate::checkpoint_recovery::support::retain_read(&application, &request)
+            .unwrap()
+            .selected_commit()
     );
 
     // The failed demand cannot retain the producer claim or publish a partial

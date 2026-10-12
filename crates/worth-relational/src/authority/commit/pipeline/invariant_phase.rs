@@ -14,7 +14,7 @@ pub(super) fn enforce_commit_boundary_phase(
     merged_plan: &MergedCommitPlan,
     proposal_identity: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
     prevalidated_commit_boundary: Option<InvariantExecutionResult>,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError> {
     commit_log.begin_phase(CommitPhase::InvariantPreCheck);
@@ -29,7 +29,7 @@ pub(super) fn enforce_commit_boundary_phase(
                 proposed_version_id,
                 merged_plan,
                 proposal_identity,
-                lease,
+                execution,
                 control,
             )
             .map_err(|error| attach_rejection(commit_log, CommitPhase::InvariantPreCheck, error))?,
@@ -50,7 +50,7 @@ pub(super) fn enforce_snapshot_publication_phase(
     merged_plan: &MergedCommitPlan,
     proposal_identity: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
     prevalidated_snapshot_publication: Option<InvariantExecutionResult>,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError> {
     commit_log.begin_phase(CommitPhase::InvariantPostCheck);
@@ -65,7 +65,7 @@ pub(super) fn enforce_snapshot_publication_phase(
                 version_id,
                 merged_plan,
                 proposal_identity,
-                lease,
+                execution,
                 control,
             )
             .map_err(|error| {

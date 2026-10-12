@@ -13,6 +13,7 @@ use super::workflow_executor::{
 };
 
 pub fn evidence_workflow_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<(runtime::WorthQueryWorkspace, EvidenceWorkflowProbe), WorthQueryTestBackendError> {
     let schema = WorthQueryTestBackendSchema::single_collection("Vertex")
@@ -34,11 +35,12 @@ pub fn evidence_workflow_workspace(
             ReadFamily,
             WorkflowParallelProvider,
         )
-        .workspace(name)?;
+        .workspace(request_execution, name)?;
     Ok((workspace, probe))
 }
 
 pub fn evidence_graph_workflow_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<(runtime::WorthQueryWorkspace, EvidenceWorkflowProbe), WorthQueryTestBackendError> {
     let schema = WorthQueryTestBackendSchema::single_collection("Vertex")
@@ -62,7 +64,7 @@ pub fn evidence_graph_workflow_workspace(
             ReadFamily,
             WorkflowParallelProvider,
         )
-        .workspace(name)?;
+        .workspace(request_execution, name)?;
     Ok((workspace, probe))
 }
 

@@ -13,10 +13,14 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn one_owner_epoch_fans_exact_evidence_to_two_lease_deltas_in_k_plus_l_work() {
-    let (mut workspace, subject, candidate) = shared_native_leases("invalidation-fanout");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, subject, candidate) =
+        shared_native_leases(request_execution, "invalidation-fanout");
     consume_empty_epoch(&mut workspace, &subject, &candidate);
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "invalidation-update")
         })
         .unwrap();
@@ -114,10 +118,14 @@ fn one_owner_epoch_fans_exact_evidence_to_two_lease_deltas_in_k_plus_l_work() {
 
 #[test]
 fn consequence_authority_requires_the_exact_current_lease_and_stays_consumer_authored() {
-    let (mut workspace, subject, candidate) = shared_native_leases("invalidation-readmission");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, subject, candidate) =
+        shared_native_leases(request_execution, "invalidation-readmission");
     consume_empty_epoch(&mut workspace, &subject, &candidate);
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "readmit-update")
         })
         .unwrap();
@@ -182,7 +190,11 @@ fn consequence_authority_requires_the_exact_current_lease_and_stays_consumer_aut
 
 #[test]
 fn empty_epoch_cannot_mint_an_invalidation_delta() {
-    let (mut workspace, subject, candidate) = shared_native_leases("invalidation-empty");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, subject, candidate) =
+        shared_native_leases(request_execution, "invalidation-empty");
     let subject_delivery = subject.drain(&mut workspace).unwrap();
     let _candidate_delivery = candidate.drain(&mut workspace).unwrap();
     let stop = match subject.consumer_invalidation_delta(subject_delivery) {
@@ -200,13 +212,17 @@ fn empty_epoch_cannot_mint_an_invalidation_delta() {
 
 #[test]
 fn unsupported_invalidation_posture_stops_before_delta_translation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (mut workspace, subject, candidate) = shared_native_leases_with_invalidation(
+        request_execution,
         "invalidation-support-stop",
         domain::WorthQueryConsumerSupportPosture::Deferred,
     );
     consume_empty_epoch(&mut workspace, &subject, &candidate);
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "unsupported-invalidation")
         })
         .unwrap();

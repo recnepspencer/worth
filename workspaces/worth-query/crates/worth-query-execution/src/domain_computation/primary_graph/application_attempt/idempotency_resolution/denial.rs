@@ -87,7 +87,9 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         }
     }
 
-    pub(super) fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
+    pub(in crate::domain_computation) fn from_authorization(
+        denial: WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
         Self {
             kind: WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
                 denial.kind(),

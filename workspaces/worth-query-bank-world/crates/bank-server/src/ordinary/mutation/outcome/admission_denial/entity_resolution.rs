@@ -2,6 +2,7 @@ use worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKin
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankEntityResolutionDenialKind {
+    ForeignPhase,
     Cancelled,
     DeadlineExceeded,
     PrimaryGraphNotInstalled,
@@ -35,6 +36,7 @@ impl BankEntityResolutionDenial {
     pub const fn code(self) -> &'static str {
         use BankEntityResolutionDenialKind as Bank;
         match self.kind {
+            Bank::ForeignPhase => "foreign-phase",
             Bank::Cancelled => "cancelled",
             Bank::DeadlineExceeded => "deadline-exceeded",
             Bank::PrimaryGraphNotInstalled => "primary-graph-not-installed",
@@ -59,6 +61,7 @@ impl BankEntityResolutionDenial {
     pub(crate) const fn from_query(kind: QueryKind) -> Self {
         use BankEntityResolutionDenialKind as Bank;
         let kind = match kind {
+            QueryKind::ForeignPhase => Bank::ForeignPhase,
             QueryKind::Cancelled => Bank::Cancelled,
             QueryKind::DeadlineExceeded => Bank::DeadlineExceeded,
             QueryKind::PrimaryGraphNotInstalled => Bank::PrimaryGraphNotInstalled,

@@ -50,6 +50,7 @@ where
     /// Admit redo against fresh authority and Relational-owned history.
     pub fn admit_redo(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryRedoRecovery,
         authority: &WorthQueryRecoveryEffectAuthority,
         intent: &WorthQueryRedoIntent,
@@ -59,6 +60,8 @@ where
         // is holding (Q8.21-L11).
         let current_product_commit = self.product().selected_commit().clone();
         let (recovery, (current_head, prior_redo)) = recovery.admit_deriving(|_| {
+            let execution = phase.execution_request_for(&self.application().product_runtime)
+                .map_err(|_| WorthQueryRedoDenial::new(super::WorthQueryRedoDenialKind::ForeignPhase))?;
             let current_head = self
                 .product()
                 .relational_basis()
@@ -71,7 +74,7 @@ where
             let prior_redo = self
                 .application()
                 .primary_provider
-                .resolve_aftermath_causality_at_basis(
+                .resolve_aftermath_causality_at_basis(&execution,
                     self.product().relational_basis(),
                     &pending,
                     None,
@@ -313,6 +316,7 @@ pub(crate) fn map_recovery_denial(
         | K::CorrelationMismatch
         | K::ForeignBranchEqualOrdinal
         | K::AlreadyCompleted
+        | K::CompletionExecutionRequest(_)
         | K::CompletionPublicationPending
         | K::CompletionExecutionDenied { .. }
         | K::CompletionExecutionControlStopped { .. }

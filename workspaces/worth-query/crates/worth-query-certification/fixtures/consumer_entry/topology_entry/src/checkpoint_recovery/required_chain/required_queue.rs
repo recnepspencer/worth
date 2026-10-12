@@ -187,8 +187,12 @@ fn ready_chain_checkpoint() -> application_installation::WorthQueryApplicationCh
         let _demands = chain_with_unrelated!(application, request);
     }
     application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("the settled required chain is checkpointable")
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .expect("the settled required chain is checkpointable")
+        })
+        .expect("installed host call opens")
 }
 
 fn run_unrelated_required_advance(
@@ -224,7 +228,7 @@ fn run_unrelated_required_advance(
         .demand(PlanarOutputDemand::new("anchor-a"))
         .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
         .unwrap();
-    let basis = request.retain_read().unwrap();
+    let basis = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let before_chain = query_entries();
     let fresh = settled_in_one_advance!(fresh_root, request, "the refreshed root");
     // The open root demand follows the refresh the unrelated advance made.
@@ -263,7 +267,9 @@ fn run_unrelated_required_advance(
         "the dirty chain was already current"
     );
     assert_eq!(
-        request.retain_read().unwrap().selected_commit(),
+        crate::checkpoint_recovery::support::retain_read(&application, &request)
+            .unwrap()
+            .selected_commit(),
         basis.selected_commit(),
         "settling the refreshed chain commits nothing"
     );

@@ -91,12 +91,14 @@ where
         binding_limits
             .narrow(maximum_results, maximum_work)
             .map_err(super::super::WorthQueryApplicationLiveOpenRequestDenial::Limit)?;
-        let selected =
-            self.application.on_branch(self.branch).select().map_err(
-                super::super::WorthQueryApplicationLiveOpenRequestDenial::ProductSelection,
-            )?;
+        let selected = self
+            .application
+            .on_branch(self.branch)
+            .select(phase)
+            .map_err(super::super::WorthQueryApplicationLiveOpenRequestDenial::ProductSelection)?;
         let principal = selected
             .resolve_authenticated_principal(
+                phase,
                 binding.principal_binding(),
                 self.principal,
                 self.scope,
@@ -109,6 +111,7 @@ where
             scope_binding.into_field_parts(principal.principal_identity());
         let scope = selected
             .resolve_entity(
+                phase,
                 scope_field,
                 scope_value,
                 self.scope,

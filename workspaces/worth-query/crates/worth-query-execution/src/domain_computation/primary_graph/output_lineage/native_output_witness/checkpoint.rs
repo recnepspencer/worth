@@ -13,12 +13,13 @@ impl SealedNativeOutputWitness {
     /// fact probes conservatively require ordinary Fresh execution.
     pub(in crate::domain_computation::primary_graph) fn checkpoint_facts_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         facts: &[Fact],
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, CompanionPreflightStop> {
-        if !self.unchanged_in(relational, snapshot, admission)? {
+        if !self.unchanged_in(execution, relational, snapshot, admission)? {
             return Ok(false);
         }
         for fact in facts {
@@ -34,7 +35,7 @@ impl SealedNativeOutputWitness {
             }
             // The fact owner reserves on this carried meter before reading
             // and settles the actual probe debit on success or failure.
-            match fact.source_currentness_in(relational, snapshot, admission)? {
+            match fact.source_currentness_in(relational, execution, snapshot, admission)? {
                 Ok(movement) if movement.movement() == Movement::Unmoved => {}
                 Ok(_) | Err(_) => return Ok(false),
             }

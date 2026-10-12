@@ -110,9 +110,11 @@ fn one_variable_width_row_cannot_escape_the_retained_memory_ceiling() {
             VariableWidthProvider,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Project,
@@ -120,7 +122,7 @@ fn one_variable_width_row_cannot_escape_the_retained_memory_ceiling() {
                 ),
             )
             .expect("variable-width provider should reach its governed step");
-        let terminal = match active.advance(execution) {
+        let terminal = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("variable-width row escaped the retained-memory ceiling"),
         };
@@ -151,9 +153,11 @@ fn acknowledged_chunks_remain_cumulatively_bounded_until_receipt_seal() {
             },
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let mut outcome = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Project,
@@ -161,11 +165,13 @@ fn acknowledged_chunks_remain_cumulatively_bounded_until_receipt_seal() {
                 ),
             )
             .expect("the bounded stream should start")
-            .advance(execution);
+            .advance(&installed_running_phase);
         let terminal = loop {
             outcome = match outcome {
                 WorthQueryDirectGraphStepOutcome::ChunkReady(chunk) => chunk.acknowledge(),
-                WorthQueryDirectGraphStepOutcome::Continue(active) => active.advance(execution),
+                WorthQueryDirectGraphStepOutcome::Continue(active) => {
+                    active.advance(&installed_running_phase)
+                }
                 WorthQueryDirectGraphStepOutcome::Failed(terminal) => break terminal,
                 _ => panic!("cumulative output did not reach the retained-byte boundary"),
             };

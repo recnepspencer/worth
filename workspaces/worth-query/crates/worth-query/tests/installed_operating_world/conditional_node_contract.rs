@@ -44,7 +44,11 @@ impl domain::WorthQueryDomainConditionFamily for GeometryCondition {
 
 #[test]
 fn installed_conditional_meaning_binds_only_after_exact_lowering_is_present() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let workspace = conditional_workspace(
+        request_execution,
         "conditional-lowering-not-installed",
         node(
             "geometry",

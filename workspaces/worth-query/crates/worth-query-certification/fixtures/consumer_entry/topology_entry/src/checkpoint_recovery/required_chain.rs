@@ -166,7 +166,7 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         "the upstream producer's declared input stays equal"
     );
     drop((before_input, after_input, changed));
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let before_entries = query_entries();
     let settled = match c
         .advance(&request)
@@ -177,7 +177,7 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
             panic!("the finite required chain needs another caller advance")
         }
     };
-    let after = request.retain_read().unwrap();
+    let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     assert!(
         query_entries() > before_entries,
         "the actual dirty upstream is re-evidenced inside this advance"

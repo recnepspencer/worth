@@ -7,12 +7,15 @@ use crate::runtime::{WorthQueryReadBuiltInOperator, WorthQueryReadScopeClass};
 
 #[test]
 fn compose_read_frontier_search_detail_matches_open_coded_broad_search_detail_semantics() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.frontier-search-parity-detail")
         .expect("read-backed runtime should open a workspace");
 
     let operator_owned = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_frontier_detail(
                 "user",
                 searchable_expanded_frontier_manager_schema(),
@@ -57,7 +60,7 @@ fn compose_read_frontier_search_detail_matches_open_coded_broad_search_detail_se
         .expect("operator-owned frontier search detail should execute");
 
     let open_coded = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_detail(
                 "user",
                 searchable_expanded_frontier_manager_schema(),
@@ -133,12 +136,15 @@ fn compose_read_frontier_search_detail_matches_open_coded_broad_search_detail_se
 
 #[test]
 fn compose_read_frontier_search_collection_matches_open_coded_broad_search_collection_semantics() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.frontier-search-parity-collection")
         .expect("read-backed runtime should open a workspace");
 
     let operator_owned = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_frontier_collection(
                 "user",
                 searchable_expanded_frontier_manager_schema(),
@@ -187,7 +193,7 @@ fn compose_read_frontier_search_collection_matches_open_coded_broad_search_colle
         .expect("operator-owned frontier search collection should execute");
 
     let open_coded = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_collection(
                 "user",
                 searchable_expanded_frontier_manager_schema(),

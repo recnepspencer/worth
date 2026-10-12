@@ -13,8 +13,11 @@ use crate::tests::support::{create_entity_outcome, diagnostic_field, runtime_wit
 
 #[test]
 fn unsupported_continuation_failure_counts_current_boundary_when_no_prior_proof_exists() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let outcome = create_entity_outcome(&runtime, "a");
+    let outcome = create_entity_outcome(execution, &runtime, "a");
     let fingerprint = SchemaBoundaryFingerprint::new([7_u8; 32]);
     let envelopes = vec![envelope_with_continuation(
         outcome.envelope().clone(),
@@ -50,8 +53,11 @@ fn unsupported_continuation_failure_counts_current_boundary_when_no_prior_proof_
 
 #[test]
 fn unsupported_continuation_failure_deduplicates_boundary_already_present_in_prior_proof() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let outcome = create_entity_outcome(&runtime, "a");
+    let outcome = create_entity_outcome(execution, &runtime, "a");
     let fingerprint = SchemaBoundaryFingerprint::new([9_u8; 32]);
     let envelopes = vec![envelope_with_continuation(
         outcome.envelope().clone(),

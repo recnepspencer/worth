@@ -37,6 +37,7 @@ impl WorthQueryApplicationQueryBasisCustody {
     /// complete World occurrence and Relational owner still match that stage.
     pub(in crate::domain_computation::primary_graph) fn can_reuse_security_snapshot_at(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         current: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> bool {
         self.product.observation() == current
@@ -46,7 +47,7 @@ impl WorthQueryApplicationQueryBasisCustody {
                     .relational_basis()
                     .identity()
                     .runtime_instance_id()
-            && self.application_basis.is_live()
+            && self.application_basis.is_live(execution)
     }
 
     pub(in crate::domain_computation::primary_graph) fn reusable_security_snapshot(
@@ -86,8 +87,11 @@ impl WorthQueryApplicationQueryBasisCustody {
         self.application_basis.snapshot_handle()
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn is_live(&self) -> bool {
-        self.application_basis.is_live()
+    pub(in crate::domain_computation::primary_graph::application_query) fn is_live(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> bool {
+        self.application_basis.is_live(execution)
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn release(

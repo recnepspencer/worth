@@ -143,14 +143,16 @@ fn ignored_governed_denials_and_zero_progress_completion_cannot_advance() {
             };
             let (running, graph) =
                 managed_graph_run_with_provider(access, HostileProvider(port), resource_request);
+            let installed_running_phase = execution.phase_for_direct(&running);
+
             let active = running
                 .begin_graph_execution(
-                    execution,
+                    &installed_running_phase,
                     &graph,
                     WorthQueryManagedGraphCallRequest::new(kind, "hostile-port"),
                 )
                 .expect("hostile fixture should reach its governed step");
-            let terminal = match active.advance(execution) {
+            let terminal = match active.advance(&installed_running_phase) {
                 WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
                 _ => panic!("hostile governed port advanced the managed lane"),
             };
@@ -201,9 +203,11 @@ fn failed_provider_output_is_released_without_queue_publication() {
             HostileProvider(HostilePort::OutputThenFailure),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Project,
@@ -211,7 +215,7 @@ fn failed_provider_output_is_released_without_queue_publication() {
                 ),
             )
             .expect("hostile output provider should reach its governed step");
-        let terminal = match active.advance(execution) {
+        let terminal = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("failed provider output became a promotable chunk"),
         };

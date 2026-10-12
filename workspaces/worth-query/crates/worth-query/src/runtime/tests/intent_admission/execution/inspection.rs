@@ -1,11 +1,13 @@
 use super::*;
 
 fn derived_titles_view(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut WorthQueryRuntime,
     view_name: &str,
 ) -> WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape> {
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -13,6 +15,7 @@ fn derived_titles_view(
         .expect("live view should declare");
     runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new(view_name, test_aspect_touches(["title"]))
                 .depends_on_live(&live)
                 .produces(test_aspect_touches(["title.summary"])),
@@ -23,26 +26,36 @@ fn derived_titles_view(
 
 #[test]
 fn workspace_materialize_result_delegates_to_derived_materialization_intent_execution() {
-    let mut runtime = read_runtime();
-    let derived = derived_titles_view(&mut runtime, "computed.intent.materialize");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = read_runtime(request_execution);
+    let derived = derived_titles_view(
+        request_execution,
+        &mut runtime,
+        "computed.intent.materialize",
+    );
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("materialize-1")),
-                ("title.value", test_string_aspect_value("Materialize me")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("materialize-1")),
+                    ("title.value", test_string_aspect_value("Materialize me")),
+                ],
+            ),
+        )
         .expect("write should materialize derived output");
     let mut workspace = WorthQueryWorkspace::new("materialize-delegation", runtime)
         .expect("workspace should build");
 
     let delegated = workspace
-        .materialize_result(&derived)
+        .materialize_result(request_execution, &derived)
         .expect("derived materialization should execute");
     let canonical = workspace
         .materialize_intent(&derived)
-        .execute()
+        .execute(request_execution)
         .expect("canonical materialization should execute");
 
     assert_eq!(delegated, canonical);
@@ -58,26 +71,36 @@ fn workspace_materialize_result_delegates_to_derived_materialization_intent_exec
 
 #[test]
 fn runtime_read_derived_result_delegates_to_derived_materialization_intent_execution() {
-    let mut runtime = read_runtime();
-    let derived = derived_titles_view(&mut runtime, "computed.intent.runtime-materialize");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = read_runtime(request_execution);
+    let derived = derived_titles_view(
+        request_execution,
+        &mut runtime,
+        "computed.intent.runtime-materialize",
+    );
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                (
-                    "identity.id",
-                    test_string_aspect_value("runtime-materialize-1"),
-                ),
-                (
-                    "title.value",
-                    test_string_aspect_value("Runtime materialize me"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    (
+                        "identity.id",
+                        test_string_aspect_value("runtime-materialize-1"),
+                    ),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Runtime materialize me"),
+                    ),
+                ],
+            ),
+        )
         .expect("write should materialize derived output");
 
     let delegated = runtime
-        .read_derived_result(&derived)
+        .read_derived_result(request_execution, &derived)
         .expect("derived materialization should execute");
     let canonical = runtime
         .review_runtime_derived_materialization(derived.name().to_string())
@@ -85,7 +108,9 @@ fn runtime_read_derived_result_delegates_to_derived_materialization_intent_execu
             runtime.resolve_reviewed_admitted_derived_materialization_handoff(review)
         })
         .map(|handoff| runtime.prepare_derived_materialization_execution_binding(handoff))
-        .and_then(|binding| runtime.execute_derived_materialization_execution_binding(binding))
+        .and_then(|binding| {
+            runtime.execute_derived_materialization_execution_binding(request_execution, binding)
+        })
         .expect("canonical derived materialization should execute");
 
     assert_eq!(delegated, canonical);
@@ -101,26 +126,32 @@ fn runtime_read_derived_result_delegates_to_derived_materialization_intent_execu
 
 #[test]
 fn workspace_inspect_derived_view_delegates_to_derived_inspection_intent_execution() {
-    let mut runtime = read_runtime();
-    let derived = derived_titles_view(&mut runtime, "computed.intent.inspect");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = read_runtime(request_execution);
+    let derived = derived_titles_view(request_execution, &mut runtime, "computed.intent.inspect");
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("inspect-1")),
-                ("title.value", test_string_aspect_value("Inspect me")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("inspect-1")),
+                    ("title.value", test_string_aspect_value("Inspect me")),
+                ],
+            ),
+        )
         .expect("write should materialize derived output");
     let mut workspace =
         WorthQueryWorkspace::new("inspect-delegation", runtime).expect("workspace should build");
 
     let delegated = workspace
-        .inspect(&derived)
+        .inspect(request_execution, &derived)
         .expect("legacy derived inspection should succeed");
     let canonical = workspace
         .inspect_derived_intent(&derived)
-        .execute()
+        .execute(request_execution)
         .expect("canonical derived inspection should execute");
 
     match delegated {
@@ -140,29 +171,41 @@ fn workspace_inspect_derived_view_delegates_to_derived_inspection_intent_executi
 
 #[test]
 fn runtime_inspect_derived_view_delegates_to_derived_inspection_intent_execution() {
-    let mut runtime = read_runtime();
-    let derived = derived_titles_view(&mut runtime, "computed.intent.runtime-inspect");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = read_runtime(request_execution);
+    let derived = derived_titles_view(
+        request_execution,
+        &mut runtime,
+        "computed.intent.runtime-inspect",
+    );
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("runtime-inspect-1")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Runtime inspect me"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("runtime-inspect-1")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Runtime inspect me"),
+                    ),
+                ],
+            ),
+        )
         .expect("write should materialize derived output");
 
     let delegated = runtime
-        .inspect_derived_view(&derived)
+        .inspect_derived_view(request_execution, &derived)
         .expect("legacy runtime derived inspection should succeed");
     let canonical = runtime
         .review_runtime_derived_inspection(derived.name().to_string())
         .and_then(|review| runtime.resolve_reviewed_admitted_derived_inspection_handoff(review))
         .map(|handoff| runtime.prepare_derived_inspection_execution_binding(handoff))
-        .and_then(|binding| runtime.execute_derived_inspection_execution_binding(binding))
+        .and_then(|binding| {
+            runtime.execute_derived_inspection_execution_binding(request_execution, binding)
+        })
         .expect("canonical derived inspection should execute");
 
     assert_eq!(&delegated, canonical.evidence());
@@ -177,11 +220,14 @@ fn runtime_inspect_derived_view_delegates_to_derived_inspection_intent_execution
 
 #[test]
 fn workspace_inspection_lane_delegates_to_unified_inspection_intent_execution() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace =
         WorthQueryWorkspace::new("generic-inspect-delegation", runtime).expect("workspace build");
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.table", |q| {
+        .live_view(request_execution, "tasks.table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -201,11 +247,11 @@ fn workspace_inspection_lane_delegates_to_unified_inspection_intent_execution() 
         .inspections()
         .expect("inspection lane should be admitted");
     let delegated = inspections
-        .inspect(&live)
+        .inspect(request_execution, &live)
         .expect("inspection lane should inspect");
     let canonical = inspections
         .inspect_intent(&live)
-        .execute()
+        .execute(request_execution)
         .expect("canonical generic inspection should execute");
 
     assert_eq!(delegated, canonical.inspection().clone());
@@ -220,17 +266,25 @@ fn workspace_inspection_lane_delegates_to_unified_inspection_intent_execution() 
 
 #[test]
 fn runtime_inspect_live_view_delegates_to_unified_inspection_intent_execution() {
-    let mut runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = read_runtime(request_execution);
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.table", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.table",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
 
     let delegated = runtime
-        .inspect(&live)
+        .inspect(request_execution, &live)
         .expect("runtime generic inspection should succeed");
     let canonical = runtime
         .inspect_intent(&live)
-        .execute()
+        .execute(request_execution)
         .expect("canonical generic inspection should execute");
 
     assert_eq!(delegated, canonical.inspection().clone());
@@ -245,23 +299,29 @@ fn runtime_inspect_live_view_delegates_to_unified_inspection_intent_execution() 
 
 #[test]
 fn runtime_specific_intent_inspection_wrappers_delegate_to_unified_inspection_execution() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let receipt = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "delegated-intent-receipt",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task-1"), ("title", "Delegated intent title")]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "delegated-intent-receipt",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([("entity", "task-1"), ("title", "Delegated intent title")]),
+            ),
+        )
         .expect("intent should execute");
 
     let delegated = runtime
-        .inspect_intent_receipt(&receipt)
+        .inspect_intent_receipt(request_execution, &receipt)
         .expect("direct wrapper should inspect");
     let canonical = runtime
         .inspect_intent(&receipt)
-        .execute()
+        .execute(request_execution)
         .expect("canonical inspection should execute");
 
     match canonical.inspection() {
@@ -279,15 +339,22 @@ fn runtime_specific_intent_inspection_wrappers_delegate_to_unified_inspection_ex
 
 #[test]
 fn runtime_specific_intent_denial_wrapper_delegates_to_unified_inspection_execution() {
-    let mut runtime = intent_runtime_with_authority(InvariantViolationIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime =
+        intent_runtime_with_authority(request_execution, InvariantViolationIntentAuthority);
     let error = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "delegated-intent-denial",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task-1"), ("dependency", "cycle")]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "delegated-intent-denial",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([("entity", "task-1"), ("dependency", "cycle")]),
+            ),
+        )
         .expect_err("invariant violation must deny");
     let evidence = match error {
         WorthQueryRuntimeError::IntentCommitDenied { evidence, .. } => evidence,
@@ -295,11 +362,11 @@ fn runtime_specific_intent_denial_wrapper_delegates_to_unified_inspection_execut
     };
 
     let delegated = runtime
-        .inspect_intent_denial(&evidence)
+        .inspect_intent_denial(request_execution, &evidence)
         .expect("direct denial wrapper should inspect");
     let canonical = runtime
         .inspect_intent(&evidence)
-        .execute()
+        .execute(request_execution)
         .expect("canonical inspection should execute");
 
     match canonical.inspection() {
@@ -308,55 +375,5 @@ fn runtime_specific_intent_denial_wrapper_delegates_to_unified_inspection_execut
     }
 }
 
-#[test]
-fn runtime_specific_effect_and_preview_wrappers_delegate_to_unified_inspection_execution() {
-    let mut runtime = stateful_bridge_task_runtime();
-    let live = runtime
-        .declare_live_view::<WorthQueryUnrefinedLiveShape>(
-            "tasks.wrapper-delegation",
-            task_live_request(),
-            task_schema(),
-        )
-        .expect("live should declare");
-    let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.wrapper-delegation",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
-            "ui.preview",
-        ))
-        .expect("effect should declare");
-
-    let effect_delegated = runtime
-        .inspect_effect(&effect)
-        .expect("effect wrapper should inspect");
-    let effect_canonical = runtime
-        .inspect_intent(&effect)
-        .execute()
-        .expect("canonical effect inspection should execute");
-    match effect_canonical.inspection() {
-        WorthQueryInspection::Effect(inspection) => assert_eq!(effect_delegated, *inspection),
-        other => panic!("expected effect inspection, got {other:?}"),
-    }
-
-    let outcome = {
-        let mut preview = runtime
-            .preview(test_session_label("wrapper delegation preview"))
-            .expect("preview session should be admitted");
-        preview.use_view(&live);
-        preview.discard()
-    };
-
-    let preview_delegated = runtime
-        .inspect_preview_outcome(&outcome)
-        .expect("preview outcome wrapper should inspect");
-    let preview_canonical = runtime
-        .inspect_intent(&outcome)
-        .execute()
-        .expect("canonical preview inspection should execute");
-    match preview_canonical.inspection() {
-        WorthQueryInspection::PreviewOutcome(inspection) => {
-            assert_eq!(preview_delegated, *inspection)
-        }
-        other => panic!("expected preview outcome inspection, got {other:?}"),
-    }
-}
+#[path = "inspection/runtime_specific_effect_and_preview_wrappers_delegate_to_unified.rs"]
+mod runtime_specific_effect_and_preview_wrappers_delegate_to_unified;

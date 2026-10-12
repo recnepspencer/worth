@@ -8,18 +8,21 @@ use super::r#async::{AsyncCurrentFamily, AsyncPreviewFamily, DeferredAsyncFamily
 use super::temporal::{TemporalCurrentFamily, TemporalHistoricalFamily, TemporalPreviewFamily};
 
 pub fn handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     regime: &'static str,
 ) -> WorthQueryInstalledDomainDeclarationContext<GeometryDomain, GeometryWorld> {
-    workspace_and_handle(regime).1
+    workspace_and_handle(request_execution, regime).1
 }
 
 pub fn workspace_and_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     regime: &'static str,
 ) -> (
     crate::runtime::WorthQueryWorkspace,
     WorthQueryInstalledDomainDeclarationContext<GeometryDomain, GeometryWorld>,
 ) {
     crate::application::domain_test_support::installed_declaration_workspace(
+        request_execution,
         GeometryDomain,
         GeometryWorld(regime),
         declaration_families(),
@@ -27,9 +30,11 @@ pub fn workspace_and_handle(
 }
 
 pub fn signal_disabled_handle(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     regime: &'static str,
 ) -> WorthQueryInstalledDomainDeclarationContext<GeometryDomain, SignallessWorld> {
     crate::application::domain_test_support::installed_declaration_context(
+        request_execution,
         GeometryDomain,
         SignallessWorld(regime),
         declaration_families(),

@@ -1,4 +1,6 @@
 //! Downstream journeys through the ordinary declarative and installed-domain facades.
+#[path = "support/execution_policy.rs"]
+mod test_execution_policy;
 
 // The two downstream targets intentionally select different fixtures from the
 // same non-product support tree until Phase 6/7 gives them package ownership.

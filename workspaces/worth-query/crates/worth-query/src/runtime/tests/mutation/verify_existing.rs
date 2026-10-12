@@ -2,11 +2,14 @@ use super::super::support::*;
 
 #[test]
 fn verify_existing_preserves_backend_verified_assertion_evidence_without_mutation_deltas() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.verify-existing")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.verify-existing-table", |q| {
+        .live_view(request_execution, "tasks.verify-existing-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -23,7 +26,7 @@ fn verify_existing_preserves_backend_verified_assertion_evidence_without_mutatio
         .expect("live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -47,7 +50,7 @@ fn verify_existing_preserves_backend_verified_assertion_evidence_without_mutatio
         .expect("binding should build");
 
     let receipt = workspace
-        .verify_existing(binding, |task| {
+        .verify_existing(request_execution, binding, |task| {
             task.set_aspect(
                 test_aspect_touch("title.value"),
                 test_authored_string_aspect_value("Seed title"),
@@ -70,7 +73,10 @@ fn verify_existing_preserves_backend_verified_assertion_evidence_without_mutatio
     assert_eq!(evidence.asserted_aspect_count(), 1);
     assert!(!evidence.verification_digest().is_empty());
 
-    match workspace.inspect(&receipt).expect("receipt should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect")
+    {
         WorthQueryInspection::WriteReceipt(inspection) => {
             let evidence = inspection
                 .existing_truth_assertion_evidence()
@@ -93,27 +99,34 @@ fn verify_existing_preserves_backend_verified_assertion_evidence_without_mutatio
 
 #[test]
 fn verify_existing_denies_missing_asserted_aspect_typed_and_early() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.verify-existing-missing-aspect")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.verify-existing-missing-aspect-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-verify-existing-missing-aspect-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.verify-existing-missing-aspect-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-verify-existing-missing-aspect-table")
+            },
+        )
         .expect("live view should declare");
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -137,7 +150,7 @@ fn verify_existing_denies_missing_asserted_aspect_typed_and_early() {
         .expect("binding should build");
 
     let error = workspace
-        .verify_existing(binding, |task| {
+        .verify_existing(request_execution, binding, |task| {
             task.set_aspect(
                 test_aspect_touch("status.value"),
                 test_authored_string_aspect_value("open"),
@@ -167,27 +180,34 @@ fn verify_existing_denies_missing_asserted_aspect_typed_and_early() {
 
 #[test]
 fn verify_existing_denies_mismatched_value_typed_and_early() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.verify-existing-mismatch")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.verify-existing-mismatch-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-verify-existing-mismatch-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.verify-existing-mismatch-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-verify-existing-mismatch-table")
+            },
+        )
         .expect("live view should declare");
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -211,7 +231,7 @@ fn verify_existing_denies_mismatched_value_typed_and_early() {
         .expect("binding should build");
 
     let error = workspace
-        .verify_existing(binding, |task| {
+        .verify_existing(request_execution, binding, |task| {
             task.set_aspect(
                 test_aspect_touch("title.value"),
                 test_authored_string_aspect_value("Different title"),
@@ -243,27 +263,34 @@ fn verify_existing_denies_mismatched_value_typed_and_early() {
 
 #[test]
 fn verify_existing_reports_the_actual_failing_aspect_in_multi_aspect_requests() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.verify-existing-multi-mismatch")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.verify-existing-multi-mismatch-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-verify-existing-multi-mismatch-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.verify-existing-multi-mismatch-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-verify-existing-multi-mismatch-table")
+            },
+        )
         .expect("live view should declare");
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -287,7 +314,7 @@ fn verify_existing_reports_the_actual_failing_aspect_in_multi_aspect_requests() 
         .expect("binding should build");
 
     let error = workspace
-        .verify_existing(binding, |task| {
+        .verify_existing(request_execution, binding, |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),

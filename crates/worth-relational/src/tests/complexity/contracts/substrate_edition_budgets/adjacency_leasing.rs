@@ -4,14 +4,23 @@ const RELATION_KIND: crate::facade::identity::KindId = crate::facade::identity::
 
 #[test]
 fn complexity_budget_bounded_adjacency_leases_its_fanout_without_copying_it() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let anchor = fanned_out_anchor(&mut runtime, 64);
+    let anchor = fanned_out_anchor(execution, &mut runtime, 64);
     let version_id = runtime.current_version_id();
 
     runtime.performance_access().reset_counters();
     let refusal = runtime
         .read_truth()
-        .bounded_outgoing_relations_of_kind_at_version(anchor, RELATION_KIND, version_id, 6)
+        .bounded_outgoing_relations_of_kind_at_version(
+            execution,
+            anchor,
+            RELATION_KIND,
+            version_id,
+            6,
+        )
         .expect_err("six work units cannot admit a sixty-four edge fanout");
     let counters = runtime.performance_access().counters();
 
@@ -24,12 +33,16 @@ fn complexity_budget_bounded_adjacency_leases_its_fanout_without_copying_it() {
 
 #[test]
 fn complexity_budget_bounded_adjacency_acquires_one_edition_for_the_whole_traversal() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let anchor = fanned_out_anchor(&mut runtime, 32);
+    let anchor = fanned_out_anchor(execution, &mut runtime, 32);
     let version_id = runtime.current_version_id();
 
     runtime.performance_access().reset_counters();
     let records = runtime.read_truth().outgoing_relations_of_kind_at_version(
+        execution,
         anchor,
         RELATION_KIND,
         version_id,
@@ -45,8 +58,11 @@ fn complexity_budget_bounded_adjacency_acquires_one_edition_for_the_whole_traver
 
 #[test]
 fn complexity_budget_whole_neighborhood_read_charges_every_id_it_copies() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let anchor = fanned_out_anchor(&mut runtime, 16);
+    let anchor = fanned_out_anchor(execution, &mut runtime, 16);
     let version_id = runtime.current_version_id();
 
     runtime.performance_access().reset_counters();
@@ -66,9 +82,12 @@ fn complexity_budget_whole_neighborhood_read_charges_every_id_it_copies() {
 
 #[test]
 fn complexity_budget_frontier_adjacency_acquires_one_edition_for_the_whole_frontier() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
     let anchors = (0..8)
-        .map(|ordinal| fanned_out_anchor_named(&mut runtime, ordinal, 4))
+        .map(|ordinal| fanned_out_anchor_named(execution, &mut runtime, ordinal, 4))
         .collect::<std::collections::BTreeSet<_>>();
     let version_id = runtime.current_version_id();
 
@@ -76,6 +95,7 @@ fn complexity_budget_frontier_adjacency_acquires_one_edition_for_the_whole_front
     let frontier = runtime
         .read_truth()
         .bounded_outgoing_relations_for_frontier_at_version(
+            execution,
             &anchors,
             RELATION_KIND,
             version_id,
@@ -95,22 +115,28 @@ fn complexity_budget_frontier_adjacency_acquires_one_edition_for_the_whole_front
 
 #[test]
 fn projected_frontier_adjacency_uses_the_selected_branch_root() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "fork-source");
+    create_entity(execution, &runtime, "fork-source");
     let child = create_branch_from_main(&runtime, "projected-adjacency-child");
     let source = create_entity_in_partition_on_branch(
+        execution,
         &runtime,
         "child-source",
         crate::facade::identity::PartitionId::main(),
         child.clone(),
     );
     let target = create_entity_in_partition_on_branch(
+        execution,
         &runtime,
         "child-target",
         crate::facade::identity::PartitionId::main(),
         child.clone(),
     );
     create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         target,
@@ -120,9 +146,13 @@ fn projected_frontier_adjacency_uses_the_selected_branch_root() {
         child.clone(),
     );
     let snapshot = snapshot_for_owner_branch(&runtime, &child);
-    let projection = runtime.read_truth().project_snapshot(&snapshot).unwrap();
+    let projection = runtime
+        .read_truth()
+        .project_snapshot(&snapshot, execution)
+        .unwrap();
     let records = projection
         .bounded_outgoing_relations_for_frontier(
+            execution,
             &std::collections::BTreeSet::from([source]),
             RELATION_KIND,
             8,
@@ -135,21 +165,28 @@ fn projected_frontier_adjacency_uses_the_selected_branch_root() {
 }
 
 fn fanned_out_anchor(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::runtime::RelationalRuntime,
     degree: usize,
 ) -> crate::facade::identity::EntityId {
-    fanned_out_anchor_named(runtime, 0, degree)
+    fanned_out_anchor_named(execution, runtime, 0, degree)
 }
 
 fn fanned_out_anchor_named(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::runtime::RelationalRuntime,
     ordinal: usize,
     degree: usize,
 ) -> crate::facade::identity::EntityId {
-    let anchor = create_entity(runtime, &format!("anchor-{ordinal:04}"));
+    let anchor = create_entity(execution, runtime, &format!("anchor-{ordinal:04}"));
     for edge in 0..degree {
-        let target = create_entity(runtime, &format!("target-{ordinal:04}-{edge:04}"));
+        let target = create_entity(
+            execution,
+            runtime,
+            &format!("target-{ordinal:04}-{edge:04}"),
+        );
         let _ = create_relation(
+            execution,
             runtime,
             anchor,
             target,

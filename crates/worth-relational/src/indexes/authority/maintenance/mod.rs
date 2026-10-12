@@ -32,6 +32,7 @@ impl IndexAuthority<'_> {
     /// the root's envelope must match the requested commit and branch.
     pub fn reconstruct_for_commit(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: DerivedIndexBuildRequest,
         budget: DerivedIndexMaintenanceBudget,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
@@ -50,6 +51,7 @@ impl IndexAuthority<'_> {
                 .runtime
                 .read_truth()
                 .try_project_retained_commit(
+                    execution,
                     request.source_commit_id,
                     request.branch_id.clone(),
                     recorded.commit.version_id,
@@ -65,7 +67,7 @@ impl IndexAuthority<'_> {
             {
                 return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
             }
-            self.prepare_refresh(&request, None, &projection, &mut work)
+            self.prepare_refresh(execution, &request, None, &projection, &mut work)
         })();
         result
             .map(|prepared| DerivedIndexMaintenanceOutcome {
@@ -85,9 +87,10 @@ impl IndexAuthority<'_> {
         basis: &AdmittedRelationalBranchBasis,
         before: Option<&SnapshotHandle>,
         budget: DerivedIndexMaintenanceBudget,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
         let mut work = MaintenanceWork::new(budget);
-        let result = self.prepare_basis_refresh(&request, basis, before, &mut work);
+        let result = self.prepare_basis_refresh(&request, basis, before, &mut work, execution);
         result
             .map(|prepared| DerivedIndexMaintenanceOutcome {
                 generations: prepared.publish(self.runtime),
@@ -102,6 +105,7 @@ impl IndexAuthority<'_> {
         basis: &AdmittedRelationalBranchBasis,
         before: Option<&SnapshotHandle>,
         work: &mut MaintenanceWork,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PreparedRefresh, DerivedIndexMaintenanceDenialKind> {
         work.charge(request.index_ids.len())?;
         let branch = basis.identity().branch_id();
@@ -115,7 +119,7 @@ impl IndexAuthority<'_> {
         let after = self
             .runtime
             .read_truth()
-            .project_observation(&observation)
+            .project_observation(execution, &observation)
             .map_err(DerivedIndexMaintenanceDenialKind::Basis)?;
         let before = before
             .map(|snapshot| {
@@ -124,12 +128,12 @@ impl IndexAuthority<'_> {
                 }
                 self.runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
+                    .project_snapshot(snapshot, execution)
                     .ok_or(DerivedIndexMaintenanceDenialKind::SnapshotUnavailable)
             })
             .transpose()?;
         work.prepare(branch.0.len().min(request.branch_id.0.len()) as u64 + 1, 0)?;
         basis::validate(request, &observation, before.as_ref(), &after)?;
-        self.prepare_refresh(request, before.as_ref(), &after, work)
+        self.prepare_refresh(execution, request, before.as_ref(), &after, work)
     }
 }

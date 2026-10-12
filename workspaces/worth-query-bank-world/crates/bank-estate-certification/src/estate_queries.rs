@@ -93,7 +93,9 @@ fn emergency_details(
         ))
         .as_principal(principal)
         .controls(controls.clone())
-        .admit_historical_with_approved_elevation(inputs.approved, |admitted| admitted.execute())?;
+        .admit_historical_with_approved_elevation(inputs.approved, |phase, admitted| {
+            admitted.execute(phase)
+        })?;
     runtime
         .query(queries::estate_emergency_account_details(
             inputs.estate,
@@ -101,9 +103,11 @@ fn emergency_details(
         ))
         .as_principal(principal)
         .controls(controls.clone())
-        .admit_preview_with_approved_elevation(inputs.approved, inputs.preview, |admitted| {
-            admitted.execute()
-        })?;
+        .admit_preview_with_approved_elevation(
+            inputs.approved,
+            inputs.preview,
+            |phase, admitted| admitted.execute(phase),
+        )?;
     Ok(())
 }
 
@@ -138,17 +142,19 @@ fn bounded_emergency_activity(
             .query(request())
             .as_principal(principal)
             .controls(controls.clone())
-            .admit_historical_with_approved_elevation(inputs.approved, |admitted| {
-                admitted.execute()
+            .admit_historical_with_approved_elevation(inputs.approved, |phase, admitted| {
+                admitted.execute(phase)
             })
             .map(|_| ()),
         runtime
             .query(request())
             .as_principal(principal)
             .controls(controls.clone())
-            .admit_preview_with_approved_elevation(inputs.approved, inputs.preview, |admitted| {
-                admitted.execute()
-            })
+            .admit_preview_with_approved_elevation(
+                inputs.approved,
+                inputs.preview,
+                |phase, admitted| admitted.execute(phase),
+            )
             .map(|_| ()),
         runtime
             .query(request())
@@ -192,7 +198,7 @@ fn resumable_emergency_activity(
                 approved,
                 readmission_continuation,
                 readmission_resume,
-                |admitted| admitted.execute(),
+                |phase, admitted| admitted.execute(phase),
             )
             .map(|_| ()),
         runtime

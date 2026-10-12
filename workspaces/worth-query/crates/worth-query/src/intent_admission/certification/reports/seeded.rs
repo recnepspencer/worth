@@ -77,10 +77,11 @@ impl WorthQueryIntentAdmissionSeededCertificationReport {
 }
 
 pub fn worth_query_intent_admission_seeded_certification_report(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryIntentAdmissionSeededCertificationReport {
     let rows = [17_u64, 18_u64, 23_u64, 29_u64]
         .into_iter()
-        .map(seed_row)
+        .map(|seed| seed_row(execution, seed))
         .collect::<Vec<_>>();
     let seeded_sequence_digest = hash_parts(
         &rows
@@ -88,8 +89,8 @@ pub fn worth_query_intent_admission_seeded_certification_report(
             .map(|row| row.row_digest().to_string())
             .collect::<Vec<_>>(),
     );
-    let stable_replay = seed_row(17);
-    let changed_seed = seed_row(30);
+    let stable_replay = seed_row(execution, 17);
+    let changed_seed = seed_row(execution, 30);
     let seed_replay_digest = hash_parts(&[
         "worth_query_intent_admission_seed_replay_v1".to_string(),
         format!("primary:{}", rows[0].replay_digest),
@@ -113,8 +114,11 @@ pub fn worth_query_intent_admission_seeded_certification_report(
     }
 }
 
-fn seed_row(seed: u64) -> WorthQueryIntentAdmissionSeedReplayRow {
-    let replay_digest = executed_artifact_digest(seed);
+fn seed_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    seed: u64,
+) -> WorthQueryIntentAdmissionSeedReplayRow {
+    let replay_digest = executed_artifact_digest(execution, seed);
     let row_digest = hash_parts(&[
         "worth_query_intent_admission_seed_row_v1".to_string(),
         format!("seed:{seed}"),
@@ -132,10 +136,13 @@ fn seed_row(seed: u64) -> WorthQueryIntentAdmissionSeedReplayRow {
     }
 }
 
-fn executed_artifact_digest(seed: u64) -> String {
+fn executed_artifact_digest(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    seed: u64,
+) -> String {
     match seed % 5 {
-        0 => certified_failure_intent_fixture().failure_digest,
-        1 => certified_admitted_intent_fixture()
+        0 => certified_failure_intent_fixture(execution).failure_digest,
+        1 => certified_admitted_intent_fixture(execution)
             .receipt
             .receipt_digest()
             .to_string(),
@@ -143,7 +150,7 @@ fn executed_artifact_digest(seed: u64) -> String {
             .trace
             .trace_digest()
             .to_string(),
-        3 => legacy_delegation_parity_fixture()
+        3 => legacy_delegation_parity_fixture(execution)
             .effect_canonical
             .receipt_digest()
             .to_string(),

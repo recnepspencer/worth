@@ -29,12 +29,12 @@ pub enum BankApprovedPaymentWorkflowError {
     AssessmentPreparation(WorthQueryWorkflowAssessmentDemandPreparationDenial),
     AssessmentDemand(Box<WorthQueryApplicationOutputDemandDenial>),
     AssessmentAcceptance(WorthQueryWorkflowAssessmentAcceptanceDenial),
-    ConditionRead(WorthQueryApplicationRequestQueryDenial),
+    ConditionRead(Box<WorthQueryApplicationRequestQueryDenial>),
     ConditionAcceptance(WorthQueryWorkflowConditionAcceptanceDenial),
     OperationBinding(WorthQueryWorkflowOperationBindingDenial),
     OperationMutation(WorthQueryApplicationRequestMutationDenial),
-    OperationOwnerAcceptance(WorthQueryWorkflowOperationOwnerAcceptanceDenial),
-    OperationRecoveryPreparation(WorthQueryWorkflowOperationRecoveryPreparationDenial),
+    OperationOwnerAcceptance(Box<WorthQueryWorkflowOperationOwnerAcceptanceDenial>),
+    OperationRecoveryPreparation(Box<WorthQueryWorkflowOperationRecoveryPreparationDenial>),
 }
 
 impl BankApprovedPaymentWorkflowError {
@@ -87,11 +87,11 @@ impl std::error::Error for BankApprovedPaymentWorkflowError {
             Self::AssessmentPreparation(denial) => Some(denial),
             Self::AssessmentDemand(denial) => Some(denial.as_ref()),
             Self::AssessmentAcceptance(denial) => Some(denial),
-            Self::ConditionRead(denial) => Some(denial),
+            Self::ConditionRead(denial) => Some(denial.as_ref()),
             Self::ConditionAcceptance(denial) => Some(denial),
             Self::OperationMutation(denial) => Some(denial),
-            Self::OperationOwnerAcceptance(denial) => Some(denial),
-            Self::OperationRecoveryPreparation(denial) => Some(denial),
+            Self::OperationOwnerAcceptance(denial) => Some(denial.as_ref()),
+            Self::OperationRecoveryPreparation(denial) => Some(denial.as_ref()),
         }
     }
 }

@@ -13,14 +13,19 @@ use crate::runtime::tests::support::{
 
 #[test]
 fn current_and_retained_diff_is_unchanged_on_the_same_truth_basis() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_identity_read)
         .expect("comparison declaration should build")
         .diff();
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-comparison-diff")
         .expect("workspace should open");
-    let context = current_and_retained(&workspace);
-    let outcome = declaration.using(context).run(&mut workspace);
+    let context = current_and_retained(request_execution, &workspace);
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
     let completion = outcome.completed().expect("comparison should complete");
 
     assert_eq!(completion.change(), WorthQueryComparisonChange::Unchanged);
@@ -46,102 +51,37 @@ fn current_and_retained_diff_is_unchanged_on_the_same_truth_basis() {
     );
 }
 
-#[test]
-fn branch_pair_diff_executes_both_real_bases_and_reports_added_rows() {
-    let declaration = declare(task_collection_read)
-        .expect("comparison declaration should build")
-        .diff();
-    let mut left = stateful_bridge_task_runtime()
-        .workspace("ordinary-comparison-left-branch")
-        .expect("left workspace should open");
-    let mut right = stateful_bridge_task_runtime()
-        .workspace("ordinary-comparison-right-branch")
-        .expect("right workspace should open");
-    write_task(&mut left, "shared");
-    write_task(&mut right, "shared");
-    write_task(&mut right, "right-only");
-
-    let context = between(
-        &left,
-        test_session_label("comparison-left-branch"),
-        &right,
-        test_session_label("comparison-right-branch"),
-    )
-    .expect("branch bases should admit");
-    let outcome = declaration.using(context).run((&mut left, &mut right));
-    let completion = outcome
-        .completed()
-        .expect("branch comparison should complete");
-
-    assert_eq!(completion.change(), WorthQueryComparisonChange::Changed);
-    assert_eq!(
-        completion.basis_pair().family(),
-        WorthQueryComparisonBasisFamily::BranchToBranch
-    );
-    assert_ne!(
-        completion.basis_pair().left().branch_admission_identity(),
-        completion.basis_pair().right().branch_admission_identity()
-    );
-    assert_eq!(
-        completion.left().receipt().snapshot_identity(),
-        completion.basis_pair().left().snapshot()
-    );
-    assert_eq!(
-        completion.right().receipt().snapshot_identity(),
-        completion.basis_pair().right().snapshot()
-    );
-    assert_eq!(completion.row_changes().len(), 1);
-    assert!(completion.row_changes().iter().any(|change| {
-        change.family() == WorthQueryComparisonRowChangeFamily::Added
-            && change.left().is_none()
-            && change.right().is_some()
-    }));
-    assert_eq!(
-        completion.journey_counters().left_execution_attempt_count(),
-        1
-    );
-    assert_eq!(
-        completion
-            .journey_counters()
-            .right_execution_attempt_count(),
-        1
-    );
-    assert_eq!(
-        completion.journey_counters().left_row_scan_count(),
-        completion.left().rows().len()
-    );
-    assert_eq!(
-        completion.journey_counters().right_row_scan_count(),
-        completion.right().rows().len()
-    );
-    assert_eq!(
-        completion.journey_counters().emitted_row_change_count(),
-        completion.row_changes().len()
-    );
-}
+#[path = "comparison/branch_pair_diff_executes_both_real_bases_and_reports_added_rows.rs"]
+mod branch_pair_diff_executes_both_real_bases_and_reports_added_rows;
 
 #[test]
 fn structural_ambiguity_remains_advisory_and_exposes_no_partial_completion() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(task_collection_read)
         .expect("comparison declaration should build")
         .correspondence(4);
-    let mut left = stateful_bridge_task_runtime()
+    let mut left = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-ambiguous-left")
         .expect("left workspace should open");
-    let mut right = stateful_bridge_task_runtime()
+    let mut right = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-ambiguous-right")
         .expect("right workspace should open");
-    write_task(&mut left, "subject");
-    write_task(&mut right, "candidate-one");
-    write_task(&mut right, "candidate-two");
+    write_task(request_execution, &mut left, "subject");
+    write_task(request_execution, &mut right, "candidate-one");
+    write_task(request_execution, &mut right, "candidate-two");
     let context = between(
+        request_execution,
         &left,
         test_session_label("ambiguous-left-branch"),
         &right,
         test_session_label("ambiguous-right-branch"),
     )
     .expect("branch bases should admit");
-    let outcome = declaration.using(context).run((&mut left, &mut right));
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, (&mut left, &mut right));
 
     assert!(outcome.completed().is_none());
     assert!(outcome.stop().is_none());
@@ -171,16 +111,21 @@ fn structural_ambiguity_remains_advisory_and_exposes_no_partial_completion() {
 
 #[test]
 fn structural_correspondence_denies_multiple_left_subjects_without_partial_evidence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(task_collection_read)
         .expect("comparison declaration should build")
         .correspondence(4);
-    let mut workspace = stateful_bridge_task_runtime()
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-multiple-subjects")
         .expect("workspace should open");
-    write_task(&mut workspace, "first-subject");
-    write_task(&mut workspace, "second-subject");
-    let context = current_and_retained(&workspace);
-    let outcome = declaration.using(context).run(&mut workspace);
+    write_task(request_execution, &mut workspace, "first-subject");
+    write_task(request_execution, &mut workspace, "second-subject");
+    let context = current_and_retained(request_execution, &workspace);
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
 
     assert!(outcome.completed().is_none());
     assert!(outcome.correspondence().is_none());
@@ -204,15 +149,20 @@ fn structural_correspondence_denies_multiple_left_subjects_without_partial_evide
 
 #[test]
 fn exact_single_row_identity_can_prove_lineage_without_raw_consumer_ids() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(task_collection_read)
         .expect("comparison declaration should build")
         .lineage();
-    let mut workspace = stateful_bridge_task_runtime()
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-lineage")
         .expect("workspace should open");
-    write_task(&mut workspace, "only");
-    let context = current_and_retained(&workspace);
-    let outcome = declaration.using(context).run(&mut workspace);
+    write_task(request_execution, &mut workspace, "only");
+    let context = current_and_retained(request_execution, &workspace);
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
     let correspondence = outcome.correspondence().expect("lineage should resolve");
 
     assert_eq!(
@@ -228,15 +178,20 @@ fn exact_single_row_identity_can_prove_lineage_without_raw_consumer_ids() {
 
 #[test]
 fn stale_structural_pair_denies_before_either_query_executes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(task_collection_read)
         .expect("comparison declaration should build")
         .diff();
-    let mut workspace = stateful_bridge_task_runtime()
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-stale")
         .expect("workspace should open");
-    let context = current_and_retained(&workspace);
-    write_task(&mut workspace, "changed");
-    let outcome = declaration.using(context).run(&mut workspace);
+    let context = current_and_retained(request_execution, &workspace);
+    write_task(request_execution, &mut workspace, "changed");
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
     let stop = outcome.stop().expect("stale pair must stop");
 
     assert_eq!(
@@ -253,25 +208,31 @@ fn stale_structural_pair_denies_before_either_query_executes() {
 
 #[test]
 fn stale_right_branch_denies_before_either_query_executes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(task_collection_read)
         .expect("comparison declaration should build")
         .lineage();
-    let mut left = stateful_bridge_task_runtime()
+    let mut left = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-stale-left")
         .expect("left workspace should open");
-    let mut right = stateful_bridge_task_runtime()
+    let mut right = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-stale-right")
         .expect("right workspace should open");
     let context = between(
+        request_execution,
         &left,
         test_session_label("stale-left-branch"),
         &right,
         test_session_label("stale-right-branch"),
     )
     .expect("branch bases should admit");
-    write_task(&mut right, "advanced-after-binding");
+    write_task(request_execution, &mut right, "advanced-after-binding");
 
-    let outcome = declaration.using(context).run((&mut left, &mut right));
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, (&mut left, &mut right));
     let stop = outcome.stop().expect("stale branch pair must stop");
 
     assert_eq!(
@@ -284,16 +245,20 @@ fn stale_right_branch_denies_before_either_query_executes() {
 
 #[test]
 fn branch_context_rejects_single_workspace_execution_before_query_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(task_collection_read)
         .expect("comparison declaration should build")
         .diff();
-    let mut left = stateful_bridge_task_runtime()
+    let mut left = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-resource-left")
         .expect("left workspace should open");
-    let right = stateful_bridge_task_runtime()
+    let right = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-resource-right")
         .expect("right workspace should open");
     let context = between(
+        request_execution,
         &left,
         test_session_label("resource-left-branch"),
         &right,
@@ -301,7 +266,7 @@ fn branch_context_rejects_single_workspace_execution_before_query_work() {
     )
     .expect("branch bases should admit");
 
-    let outcome = declaration.using(context).run(&mut left);
+    let outcome = declaration.using(context).run(request_execution, &mut left);
     let stop = outcome.stop().expect("wrong execution family must stop");
 
     assert_eq!(
@@ -314,13 +279,17 @@ fn branch_context_rejects_single_workspace_execution_before_query_work() {
 
 #[test]
 fn two_resources_claiming_one_workspace_authority_are_rejected() {
-    let left = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-competing-authority")
         .expect("left workspace should open");
-    let right = stateful_bridge_task_runtime()
+    let right = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-comparison-competing-authority")
         .expect("right workspace should open");
     let stop = between(
+        request_execution,
         &left,
         test_session_label("competing-left-branch"),
         &right,
@@ -356,14 +325,21 @@ fn task_collection_read<Output>(
     )
 }
 
-fn write_task(workspace: &mut crate::runtime::WorthQueryWorkspace, label: &str) {
+fn write_task(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace: &mut crate::runtime::WorthQueryWorkspace,
+    label: &str,
+) {
     workspace
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value(label)),
-                ("title.value", test_string_aspect_value(label)),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value(label)),
+                    ("title.value", test_string_aspect_value(label)),
+                ],
+            ),
+        )
         .expect("task write should advance the snapshot");
 }

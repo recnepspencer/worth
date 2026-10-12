@@ -18,19 +18,29 @@ fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
         );
     world
         .application
-        .runtime
-        .primary_graph()
-        .unwrap()
-        .with_runtime(|runtime| {
-            let basis = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
+        .with_host_advancement(|phase| {
+            let execution = phase
+                .execution_request_for(&world.application.product_runtime)
                 .unwrap();
-            let snapshot = runtime
-                .snapshots()
-                .snapshot_for_observation(&basis.observation())
-                .unwrap();
-            std::sync::Arc::new(runtime.read_truth().positioned_snapshot(&snapshot).unwrap())
+            world
+                .application
+                .runtime
+                .primary_graph()
+                .unwrap()
+                .with_runtime(&execution, |runtime| {
+                    let basis = runtime
+                        .admit_branch_basis(&runtime.main_branch_identity())
+                        .unwrap();
+                    let snapshot = runtime
+                        .snapshots()
+                        .snapshot_for_observation(&basis.observation())
+                        .unwrap();
+                    std::sync::Arc::new(
+                        runtime.read_truth().positioned_snapshot(&snapshot).unwrap(),
+                    )
+                })
         })
+        .unwrap()
 }
 fn compute_plan() -> OwnerPlan<'static, (), ()> {
     OwnerPlan::new(

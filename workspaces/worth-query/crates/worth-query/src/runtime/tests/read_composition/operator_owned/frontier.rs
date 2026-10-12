@@ -7,12 +7,15 @@ use crate::runtime::{
 
 #[test]
 fn compose_read_executes_operator_owned_frontier_detail() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-detail")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_frontier_detail(
                 "user",
                 expanded_frontier_manager_schema(),
@@ -74,12 +77,15 @@ fn compose_read_executes_operator_owned_frontier_detail() {
 
 #[test]
 fn compose_read_executes_operator_owned_frontier_collection() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-collection")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_frontier_collection(
                 "user",
                 expanded_frontier_manager_schema(),
@@ -142,12 +148,15 @@ fn compose_read_executes_operator_owned_frontier_collection() {
 
 #[test]
 fn compose_read_denies_frontier_without_relations() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-empty")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_frontier_detail(
                 "user",
                 frontier_manager_schema(),
@@ -184,12 +193,15 @@ fn compose_read_denies_frontier_without_relations() {
 
 #[test]
 fn compose_read_denies_frontier_that_is_really_direct_edge() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-too-small")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_frontier_detail(
                 "user",
                 frontier_manager_schema(),
@@ -226,12 +238,15 @@ fn compose_read_denies_frontier_that_is_really_direct_edge() {
 
 #[test]
 fn compose_read_denies_frontier_with_zero_depth() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-zero-depth")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_frontier_detail(
                 "user",
                 frontier_manager_schema(),
@@ -268,12 +283,15 @@ fn compose_read_denies_frontier_with_zero_depth() {
 
 #[test]
 fn compose_read_denies_frontier_with_duplicate_relations() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-duplicate")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_frontier_collection(
                 "user",
                 frontier_manager_schema(),

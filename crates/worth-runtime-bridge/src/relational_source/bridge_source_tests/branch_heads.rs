@@ -45,7 +45,7 @@ fn sibling_heads_sharing_a_commit_keep_exact_branch_snapshot_bindings() {
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
     let (storm_identity, maintenance_identity) = {
         let runtime = runtime.lock().unwrap();
-        create_entity_outcome(&runtime, "shared-sibling-root");
+        create_entity_outcome(&execution, &runtime, "shared-sibling-root");
         fork_branch(
             &runtime,
             BranchId("storm".to_owned()),
@@ -237,16 +237,20 @@ fn explicit_snapshot_request_rejects_an_earlier_sibling_commit() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
-    let ancestor = create_entity_outcome(&runtime.lock().unwrap(), "shared-ancestor");
+    let ancestor = create_entity_outcome(&execution, &runtime.lock().unwrap(), "shared-ancestor");
     let feature = BranchId("feature".to_owned());
     fork_branch(
         &runtime.lock().unwrap(),
         feature.clone(),
         &BranchId("main".to_owned()),
     );
-    let sibling =
-        create_entity_outcome_on_branch(&runtime.lock().unwrap(), "feature-only", feature);
-    let main_head = create_entity_outcome(&runtime.lock().unwrap(), "main-head");
+    let sibling = create_entity_outcome_on_branch(
+        &execution,
+        &runtime.lock().unwrap(),
+        "feature-only",
+        feature,
+    );
+    let main_head = create_entity_outcome(&execution, &runtime.lock().unwrap(), "main-head");
     assert!(sibling.commit.commit_id < main_head.commit.commit_id);
 
     let source =
@@ -285,7 +289,7 @@ fn explicit_snapshot_request_admits_visible_ancestors_and_rejects_future_commits
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
-    let first = create_entity_outcome(&runtime.lock().unwrap(), "first-exact-basis");
+    let first = create_entity_outcome(&execution, &runtime.lock().unwrap(), "first-exact-basis");
     let source =
         RuntimeBridgeRelationalSource::for_shared_graph_role(Arc::clone(&runtime), "model")
             .unwrap();
@@ -294,7 +298,7 @@ fn explicit_snapshot_request_admits_visible_ancestors_and_rejects_future_commits
     let first_lease = source.retain_branch_basis_for_bridge(&first_basis).unwrap();
     let first_snapshot = first_lease.snapshot_identity().clone();
 
-    let second = create_entity_outcome(&runtime.lock().unwrap(), "second-exact-basis");
+    let second = create_entity_outcome(&execution, &runtime.lock().unwrap(), "second-exact-basis");
     let (_, second_basis) = source.observe_branch_basis(&identity).unwrap();
     let second_lease = source
         .retain_branch_basis_for_bridge(&second_basis)
@@ -348,7 +352,7 @@ fn same_branch_rebinding_survives_delayed_old_release() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
-    create_entity_outcome(&runtime.lock().unwrap(), "first-head");
+    create_entity_outcome(&execution, &runtime.lock().unwrap(), "first-head");
     let source =
         RuntimeBridgeRelationalSource::for_shared_graph_role(Arc::clone(&runtime), "model")
             .unwrap();
@@ -359,7 +363,7 @@ fn same_branch_rebinding_survives_delayed_old_release() {
         .unwrap();
     let old_snapshot = old_lease.snapshot_identity().clone();
 
-    create_entity_outcome(&runtime.lock().unwrap(), "second-head");
+    create_entity_outcome(&execution, &runtime.lock().unwrap(), "second-head");
     let (_, new_basis) = source.observe_branch_basis(&identity).unwrap();
     let new_lease = source
         .bind_branch_head_basis_for_bridge(&new_basis)

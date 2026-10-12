@@ -5,7 +5,10 @@ use super::domain::{
 
 #[test]
 fn ordinary_temporal_and_async_declarations_plan_through_the_same_public_lane() {
-    let handle = admitted_handle("future-route");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "future-route");
 
     let ordinary = handle
         .plan_routes(future_supported_route_input(
@@ -40,7 +43,10 @@ fn ordinary_temporal_and_async_declarations_plan_through_the_same_public_lane() 
 
 #[test]
 fn future_projection_digest_participates_in_route_plan_identity() {
-    let handle = admitted_handle("future-digest");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "future-digest");
 
     let temporal = handle
         .plan_routes(future_supported_route_input(

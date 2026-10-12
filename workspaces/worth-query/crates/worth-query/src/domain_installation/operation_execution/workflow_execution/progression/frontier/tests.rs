@@ -74,10 +74,15 @@ fn effects(run: &Run) -> Vec<String> {
 
 #[test]
 fn earlier_apply_failure_wins_over_later_preparation_or_compute_failure() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
     for later_mode in [1, 2] {
-        let mut reference = phased_workflow::reference_workspace("phase-first-failure");
-        let mut workspace = phased_workflow::phased_workspace("phase-first-failure");
+        let mut reference =
+            phased_workflow::reference_workspace(request_execution, "phase-first-failure");
+        let mut workspace =
+            phased_workflow::phased_workspace(request_execution, "phase-first-failure");
         let mut members = inputs();
         members[0].1 = domain::WorthQueryWorkflowValue::Text("7:4".into());
         members[2].1 = domain::WorthQueryWorkflowValue::Text(format!("9:{later_mode}"));
@@ -144,8 +149,12 @@ fn member_by_member_frontier(
 
 #[test]
 fn a_frontier_member_cannot_supply_another_members_predecessor_receipt() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
-    let mut workspace = phased_workflow::phased_workspace("phase-fixed-predecessors");
+    let mut workspace =
+        phased_workflow::phased_workspace(request_execution, "phase-fixed-predecessors");
     let run = start(&mut workspace);
     let outcome = run.advance_admitted_frontier(
         [
@@ -174,13 +183,17 @@ fn a_frontier_member_cannot_supply_another_members_predecessor_receipt() {
 
 #[test]
 fn computed_results_cannot_cross_stage_or_frontier_identities() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
     for foreign_frontier in [false, true] {
-        let mut workspace = phased_workflow::phased_workspace("phase-binding");
+        let mut workspace = phased_workflow::phased_workspace(request_execution, "phase-binding");
         let mut run = start(&mut workspace);
         // Computed products hold facts; the other owner's call ends before this one opens.
         let foreign = foreign_frontier.then(|| {
-            let mut other_workspace = phased_workflow::phased_workspace("phase-foreign-binding");
+            let mut other_workspace =
+                phased_workflow::phased_workspace(request_execution, "phase-foreign-binding");
             let other = start(&mut other_workspace);
             let owner = other_workspace.advancement_owner();
             owner

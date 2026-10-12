@@ -6,7 +6,11 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn fresh_runs_ignore_operational_artifact_identity_but_compare_canonical_meaning() {
-    let (mut workspace, probe) = artifact_move_workspace("artifact-reexecution").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, probe) =
+        artifact_move_workspace(request_execution, "artifact-reexecution").unwrap();
     let original = bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -55,7 +59,11 @@ fn fresh_runs_ignore_operational_artifact_identity_but_compare_canonical_meaning
 
 #[test]
 fn certification_replay_reexecutes_from_intent_without_retaining_an_operational_handle() {
-    let (mut workspace, probe) = artifact_move_workspace("artifact-cert-replay").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, probe) =
+        artifact_move_workspace(request_execution, "artifact-cert-replay").unwrap();
     let original = bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),

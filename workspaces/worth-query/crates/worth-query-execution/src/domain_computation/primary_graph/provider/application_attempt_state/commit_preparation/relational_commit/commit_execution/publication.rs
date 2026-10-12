@@ -28,6 +28,7 @@ pub(super) struct WorthQueryPublishedApplicationCommit {
 }
 
 pub(super) fn publish(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
@@ -38,7 +39,7 @@ pub(super) fn publish(
         PublishedSnapshotCustody::LiveOwned
     );
     let native_result = std::sync::Arc::clone(&committed.committed);
-    let publication = publish_retained(provider, runtime, committed, evidence);
+    let publication = publish_retained(execution, provider, runtime, committed, evidence);
     if release_published_snapshot {
         crate::relational_snapshot_release::release_query_snapshot(
             runtime,
@@ -49,6 +50,7 @@ pub(super) fn publish(
 }
 
 fn publish_retained(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     committed: WorthQueryCommittedApplicationSession,
@@ -69,6 +71,7 @@ fn publish_retained(
     } = committed;
     if let (Some(witness), Some(slot)) = (prepared_output_witness, prepared_lineage_slot.as_mut()) {
         if let Some(sealed) = witness.finish(
+            execution,
             evidence.output_correspondence(),
             runtime,
             &committed.snapshot,
@@ -96,6 +99,7 @@ fn publish_retained(
     };
     let application = WorthQueryPrimaryGraphCommittedApplication::from_publication(seal);
     provider.install_and_publish_application(
+        execution,
         runtime,
         recovery_reservation,
         WorthQueryPendingApplicationPublication::new(

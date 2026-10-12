@@ -60,7 +60,10 @@ fn effect_admitted_decision_materializes_family_specific_plan_and_handoff() {
 
 #[test]
 fn read_admitted_decision_materializes_read_plan_and_handoff() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace =
         WorthQueryWorkspace::new("phase-three-read", runtime).expect("workspace should build");
     let family = identity_read_family(&mut workspace, "tasks");

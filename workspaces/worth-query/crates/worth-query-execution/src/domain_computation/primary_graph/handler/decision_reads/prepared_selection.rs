@@ -46,6 +46,13 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
         self.reader.prepare_entity_selection(field)
     }
 
@@ -69,6 +76,13 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
         self.reader
             .decision_select_entities_prepared(prepared, value, candidate_limit)
     }

@@ -19,33 +19,50 @@ fn installed_profile_extends_once_without_resetting_spent_prefix_or_source_custo
     let request = world::request_scope();
     let auth = world::admit_identity_adapter(application.installed_schema());
     let external = block_on(auth.authenticate((), &request)).unwrap();
-    let observation = application
-        .request(&external, &request)
-        .retain_read()
-        .unwrap();
-    let security = observation.select_on(application).unwrap();
-    let retained = RefCell::new(observation.select_on(application).unwrap());
+    let observation = world
+        .application
+        .with_host_advancement(|phase| {
+            application
+                .request(&external, &request)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let security = application
+        .with_host_advancement(|phase| observation.select_on(&phase, application).unwrap())
+        .expect("installed host call opens");
+    let retained = RefCell::new(
+        application
+            .with_host_advancement(|phase| observation.select_on(&phase, application).unwrap())
+            .expect("installed host call opens"),
+    );
     let binding = application
         .installed_schema()
         .installed_query_binding::<TemporalIntentCurrentReadBinding>()
         .unwrap();
-    let principal = security
-        .resolve_authenticated_principal(
-            binding.principal_binding(),
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            security
+                .resolve_authenticated_principal(
+                    &phase,
+                    binding.principal_binding(),
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let limits = application.resolve_application_query_limits(binding.limits());
     let execute = |identity: &str, batch: &worth_query_host::facade::primary_graph::WorthQueryApplicationQueryBatchAdmission| {
-        let scope = security.resolve_entity(super::super::schema::IntentIdentityField::reference(), identity.to_owned(), &request, WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
+        let scope = world.application.with_host_advancement(|phase| security.resolve_entity(&phase, super::super::schema::IntentIdentityField::reference(), identity.to_owned(), &request, WorthQueryPrincipalResolutionMode::Ordinary).unwrap()).expect("installed host call opens");
         let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-        let plan = security.admit_retained_application_query_from_selection(&mut retained.borrow_mut(), binding.query(), &access, ApplicationQueryParameterSet::new(), WorthQueryProductQueryControls::new(limits.maximum_results(), limits.maximum_work(), &request), batch)?;
-        application.execute_application_query_one_shot_in_batch(plan, batch).map_err(|error| match error {
+        let plan = world.application.with_host_advancement(|phase| security.admit_retained_application_query_from_selection(&phase, &mut retained.borrow_mut(), binding.query(), &access, ApplicationQueryParameterSet::new(), WorthQueryProductQueryControls::new(limits.maximum_results(), limits.maximum_work(), &request), batch)).expect("installed host call opens")?;
+        application.with_host_advancement(|phase| application.execute_application_query_one_shot_in_batch(&phase, plan, batch).map_err(|error| match error {
             worth_query_host::facade::primary_graph::WorthQueryApplicationBatchReadDenial::Resource(error) => WorthQueryRetainedBatchQueryAdmissionDenial::Resource(error),
             error => panic!("ordinary read failed: {error:?}"),
-        })
+        })).expect("installed host call opens")
     };
     let empty = application
         .application_query_batch_from_installed_reads(&[application

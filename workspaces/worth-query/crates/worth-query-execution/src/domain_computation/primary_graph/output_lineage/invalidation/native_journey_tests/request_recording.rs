@@ -22,13 +22,22 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn a_demand_records_the_row_it_verified_on_its_own_meter() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let (entity, identity) = primed_output(&world);
+    let (entity, identity) = world
+        .application
+        .with_host_advancement(|phase| primed_output(&phase, &world))
+        .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let selected = world.selected_product();
-    handle.with_runtime(|runtime| {
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime(request_execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let positioned = runtime.read_truth().positioned_snapshot(snapshot).unwrap();
         let read = RetainedOutputCurrentnessRead {
@@ -51,7 +60,7 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
             .find(|&work| {
                 let mut request = owner.edit_admission_within(NonZeroUsize::new(work).unwrap());
                 selected
-                    .require_current_read(runtime, &read, &mut request)
+                    .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, &mut request)
                     .is_ok()
             })
             .expect("some meter verifies the output");
@@ -60,21 +69,30 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
             "the least meter that answers ({least}) has nothing left to record the row"
         );
         assert!(selected
-            .require_current_read(runtime, &read, &mut owner.edit_admission())
+            .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, &mut owner.edit_admission())
             .is_ok());
         assert!(recorded(), "a meter with room records the verified row");
-    });
+    }) }).expect("the fixture read owns its installed host call");
 }
 
 #[test]
 fn a_verification_records_the_row_it_compared_on_its_own_meter() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let (entity, identity) = primed_output(&world);
+    let (entity, identity) = world
+        .application
+        .with_host_advancement(|phase| primed_output(&phase, &world))
+        .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let selected = world.selected_product();
-    handle.with_runtime(|runtime| {
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime(request_execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let positioned = runtime.read_truth().positioned_snapshot(snapshot).unwrap();
         let witness = account_witness(&world, runtime, snapshot, entity);
@@ -95,7 +113,7 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
             )
             .expect("the row requires verification at the selected source");
         let verify = |admission: &mut InvalidationEditAdmission| {
-            ConsumedOutputEvidence::verify_at_observation(
+            ConsumedOutputEvidence::verify_at_observation(&host_custody.borrowed_request_for_test(),
                 &identity,
                 &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
                 &[],
@@ -130,17 +148,23 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
             Ok(ConsumedOutputVerification::Current)
         );
         assert!(recorded(), "a meter with room records the verified row");
-    });
+    }) }).expect("the fixture read owns its installed host call");
 }
 
 #[test]
 fn a_commit_meter_that_cannot_record_a_restored_output_stops_the_commit() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let (_, identity) = primed_output(&world);
+    let (_, identity) = world
+        .application
+        .with_host_advancement(|phase| primed_output(&phase, &world))
+        .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let (head_handle, head) = handle.with_runtime(snapshot);
+    let (head_handle, head) = handle.with_runtime(request_execution, snapshot);
     let restored = ConsumedOutputEvidence::retained_for_test(
         owner,
         identity,
@@ -154,17 +178,25 @@ fn a_commit_meter_that_cannot_record_a_restored_output_stops_the_commit() {
         .charge_external_work(exhausted.remaining_work_amount())
         .unwrap();
     assert_eq!(
-        restored.establish_restored_before_commit(&handle.source_owner, &mut exhausted),
+        restored.establish_restored_before_commit(
+            request_execution,
+            &handle.source_owner,
+            &mut exhausted
+        ),
         Err(ConsumedOutputVerificationStop::WorkExhausted),
         "the commit's answer reads the row, so its meter pays to record it"
     );
     let mut request = owner.edit_admission();
     assert_eq!(
-        restored.establish_restored_before_commit(&handle.source_owner, &mut request),
+        restored.establish_restored_before_commit(
+            request_execution,
+            &handle.source_owner,
+            &mut request
+        ),
         Ok(())
     );
     assert!(request.charged_work() > 0);
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         runtime.snapshots().release_snapshot(&head_handle).unwrap();
     });
 }
@@ -221,10 +253,14 @@ pub(super) fn account_witness(
 
 /// Publishes through the World so the companion has a selected cell at the
 /// head, and names one label output of the open account.
-fn primed_output(world: &AuthorizationWorld) -> (EntityId, Arc<RecordedSettlementIdentity>) {
+fn primed_output(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &AuthorizationWorld,
+) -> (EntityId, Arc<RecordedSettlementIdentity>) {
     let entity = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .resolve_entity(
+            phase_custody,
             AccountStatus::reference(),
             "open".to_owned(),
             &live_scope(),
@@ -240,6 +276,7 @@ fn primed_output(world: &AuthorizationWorld) -> (EntityId, Arc<RecordedSettlemen
         .unwrap()
         .clone();
     publish_relational_mutation(
+        &phase_custody.borrowed_request_for_test(),
         world,
         WorkerIntentBatch::new("request-recording-prime").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -251,7 +288,9 @@ fn primed_output(world: &AuthorizationWorld) -> (EntityId, Arc<RecordedSettlemen
             }),
         )),
     );
-    let (_, product, _) = world.selected_product().into_parts();
+    let (_, product, _) = world
+        .selected_product(&(phase_custody).test_host_request())
+        .into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),

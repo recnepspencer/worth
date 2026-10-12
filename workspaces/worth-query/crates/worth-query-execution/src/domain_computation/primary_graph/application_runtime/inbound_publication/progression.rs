@@ -23,11 +23,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// terminal completion; an unpublished Relational effect stays in custody.
     pub(in crate::domain_computation) fn publish_inbound_completion(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
         request: &WorthQueryRequestScope,
     ) -> Outcome {
+        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => return Outcome::Denied(Denial::ExecutionDenied(cause.into())),
+        };
         let owner = accepted.owner();
         let cost = self
             .inbound_cost_for_operation(accepted.operation())
@@ -88,13 +93,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         cost.cost
             .completion_candidate_prepares
             .fetch_add(1, Ordering::Relaxed);
-        let candidate = match completion_candidate(
-            self.primary_provider
-                .prepare_inbound_completion_candidate(lease.relational_basis(), &accepted),
-        ) {
-            Ok(candidate) => candidate,
-            Err(outcome) => return outcome,
-        };
+        let candidate =
+            match completion_candidate(self.primary_provider.prepare_inbound_completion_candidate(
+                execution,
+                lease.relational_basis(),
+                &accepted,
+            )) {
+                Ok(candidate) => candidate,
+                Err(outcome) => return outcome,
+            };
         let binding = lease.publication_binding();
         let recovery = binding.recovery();
         let prepared = match binding.prepare_relational_candidate(candidate, request, false) {
@@ -114,11 +121,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         cost.cost
             .world_publication_attempts
             .fetch_add(1, Ordering::Relaxed);
-        match prepared.execute(
-            phase
-                .execution_request_for(&self.product_runtime)
-                .expect("private progression uses its admitted runtime phase"),
-        ) {
+        match prepared.execute(publication_execution) {
             RuntimeWorldPublicationOutcome::Performed(publication) => {
                 cost.cost
                     .world_performed_publications

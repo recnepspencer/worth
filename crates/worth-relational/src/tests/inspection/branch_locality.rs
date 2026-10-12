@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressure() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .visibility_cache_policy(VisibilityCachePolicy {
@@ -12,7 +15,7 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
             recent_version_window: 0,
         })
         .build();
-    let created = create_entity_outcome(&runtime, "base");
+    let created = create_entity_outcome(execution, &runtime, "base");
     let entity = changed_entities(&created)[0];
     runtime
         .history_authority()
@@ -38,11 +41,7 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("main update")
+        txn.commit(execution, &runtime).expect("main update")
     };
     let feature_update = {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
@@ -63,11 +62,7 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("feature update")
+        txn.commit(execution, &runtime).expect("feature update")
     };
 
     assert!(runtime
@@ -83,9 +78,11 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
         .release_snapshot(&feature_update.snapshot)
         .is_ok());
 
-    let retained_only = runtime
-        .inspect_what_happened()
-        .open_historical_view(created.version_id, HistoricalInspectionMode::RetainedOnly);
+    let retained_only = runtime.inspect_what_happened().open_historical_view(
+        execution,
+        created.version_id,
+        HistoricalInspectionMode::RetainedOnly,
+    );
     assert!(retained_only.view.is_none());
     assert_eq!(
         retained_only.availability,
@@ -93,12 +90,14 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
     );
 
     let main = reconstructed_record_inspection(
+        execution,
         &runtime,
         &BranchId("main".to_string()),
         created.version_id,
         crate::facade::transactions::RecordRef::Entity(entity),
     );
     let feature = reconstructed_record_inspection(
+        execution,
         &runtime,
         &BranchId("feature".to_string()),
         created.version_id,
@@ -139,8 +138,11 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
 
 #[test]
 fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let base = create_entity_outcome(&runtime, "base");
+    let base = create_entity_outcome(execution, &runtime, "base");
     let entity = changed_entities(&base)[0];
     runtime
         .history_authority()
@@ -166,11 +168,7 @@ fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("main update")
+        txn.commit(execution, &runtime).expect("main update")
     };
     let feature_update = {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
@@ -191,11 +189,7 @@ fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("feature update")
+        txn.commit(execution, &runtime).expect("feature update")
     };
 
     let feature_head = runtime

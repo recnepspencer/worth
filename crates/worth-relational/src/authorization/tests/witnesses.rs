@@ -12,25 +12,33 @@ use crate::authorization::{
 
 #[test]
 fn field_comparison_cannot_join_values_from_different_path_witnesses() {
-    let runtime = runtime_with_test_schema();
-    let principal = create_entity(&runtime, "witness-principal");
-    let left_a = create_entity(&runtime, "A");
-    let right_b = create_entity(&runtime, "B");
-    let left_b = create_entity(&runtime, "B");
-    let right_a = create_entity(&runtime, "A");
-    let scope = create_entity(&runtime, "witness-scope");
-    connect_branch(&runtime, principal, left_a, right_b, scope, "first");
-    connect_branch(&runtime, principal, left_b, right_a, scope, "second");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let evidence = observe_same_witness_names(&runtime, principal, scope);
+    let runtime = runtime_with_test_schema();
+    let principal = create_entity(execution, &runtime, "witness-principal");
+    let left_a = create_entity(execution, &runtime, "A");
+    let right_b = create_entity(execution, &runtime, "B");
+    let left_b = create_entity(execution, &runtime, "B");
+    let right_a = create_entity(execution, &runtime, "A");
+    let scope = create_entity(execution, &runtime, "witness-scope");
+    connect_branch(
+        execution, &runtime, principal, left_a, right_b, scope, "first",
+    );
+    connect_branch(
+        execution, &runtime, principal, left_b, right_a, scope, "second",
+    );
+
+    let evidence = observe_same_witness_names(execution, &runtime, principal, scope);
     assert!(
         !evidence.paths()[0].matched(),
         "cross-branch A/A and B/B values must not form a synthetic witness"
     );
 
-    let matching_left = create_entity(&runtime, "same");
-    let matching_right = create_entity(&runtime, "same");
+    let matching_left = create_entity(execution, &runtime, "same");
+    let matching_right = create_entity(execution, &runtime, "same");
     connect_branch(
+        execution,
         &runtime,
         principal,
         matching_left,
@@ -38,11 +46,12 @@ fn field_comparison_cannot_join_values_from_different_path_witnesses() {
         scope,
         "matching",
     );
-    let evidence = observe_same_witness_names(&runtime, principal, scope);
+    let evidence = observe_same_witness_names(execution, &runtime, principal, scope);
     assert!(evidence.paths()[0].matched());
 }
 
 fn observe_same_witness_names(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     principal: crate::identity::data::EntityId,
     scope: crate::identity::data::EntityId,
@@ -72,11 +81,12 @@ fn observe_same_witness_names(
     )
     .expect("same-witness comparison plan is structurally valid");
     runtime
-        .observe_authorization(plan)
+        .observe_authorization(plan, execution)
         .expect("same-witness graph observation")
 }
 
 fn connect_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     principal: crate::identity::data::EntityId,
     left: crate::identity::data::EntityId,
@@ -84,7 +94,25 @@ fn connect_branch(
     scope: crate::identity::data::EntityId,
     label: &str,
 ) {
-    create_relation(runtime, principal, left, &format!("{label}-principal-left"));
-    create_relation(runtime, left, right, &format!("{label}-left-right"));
-    create_relation(runtime, right, scope, &format!("{label}-right-scope"));
+    create_relation(
+        execution,
+        runtime,
+        principal,
+        left,
+        &format!("{label}-principal-left"),
+    );
+    create_relation(
+        execution,
+        runtime,
+        left,
+        right,
+        &format!("{label}-left-right"),
+    );
+    create_relation(
+        execution,
+        runtime,
+        right,
+        scope,
+        &format!("{label}-right-scope"),
+    );
 }

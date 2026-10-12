@@ -17,6 +17,7 @@ use super::aspect_snapshot_binaries::{
 };
 
 pub(super) fn capture_snapshot(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     _adapter: &RelationalHarnessAdapter,
     runtime: &RelationalRuntime,
     fixture: &worth_harness::facade::ScenarioFixture<RelationalFixture>,
@@ -34,7 +35,9 @@ pub(super) fn capture_snapshot(
         .query_plan_context(&snapshot)
         .map(|context| context.version_id)
         .unwrap_or(snapshot.version_id);
-    let read_view = clone.read_truth().read_version(resolved_version_id);
+    let read_view = clone
+        .read_truth()
+        .read_version(execution, resolved_version_id);
     let observations = resolve_targets(request)
         .into_iter()
         .map(|target| capture_target_snapshot(&read_view, target))

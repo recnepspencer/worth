@@ -205,7 +205,7 @@ pub enum WorthQueryApplicationRequestMutationDenial {
 }
 
 impl WorthQueryApplicationRequestMutationDenial {
-    pub const fn kind(&self) -> WorthQueryApplicationRequestMutationDenialKind {
+    pub fn kind(&self) -> WorthQueryApplicationRequestMutationDenialKind {
         match self {
             Self::BindingInstallation(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::BindingInstallation
@@ -227,10 +227,8 @@ impl WorthQueryApplicationRequestMutationDenial {
             }
             Self::Idempotency(denial) => idempotency_kind(denial.kind()),
             Self::Identity(_) => WorthQueryApplicationRequestMutationDenialKind::Identity,
-            Self::Handler(MutationHandlerExecutionDenial::ForeignAdvancementPhase) => {
-                WorthQueryApplicationRequestMutationDenialKind::ExecutionRequest(
-                    worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::ForeignPhase,
-                )
+            Self::Handler(MutationHandlerExecutionDenial::ForeignAdvancementPhase(cause)) => {
+                WorthQueryApplicationRequestMutationDenialKind::ExecutionRequest((*cause).into())
             }
             Self::Handler(MutationHandlerExecutionDenial::WorkflowControl) => {
                 WorthQueryApplicationRequestMutationDenialKind::WorkflowControl

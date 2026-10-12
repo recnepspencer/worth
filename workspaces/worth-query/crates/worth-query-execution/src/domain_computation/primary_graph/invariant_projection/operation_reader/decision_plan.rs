@@ -75,6 +75,7 @@ where
 
     pub fn decision_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &mut self,
+
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Result<Option<Value>, WorthQueryInvariantDecisionPlanDenial>
@@ -84,12 +85,14 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let _execution = self.reader.execution;
         self.require_decision_field(identity, field)?;
         Ok(self.reader.field(identity, field))
     }
 
     pub fn decision_relations_from<Relation, From, To>(
         &mut self,
+
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         from: &WorthQueryInvariantEntityIdentity<Schema, From>,
     ) -> Result<
@@ -99,6 +102,7 @@ where
     where
         Relation: OperationReads<Operation>,
     {
+        let _execution = self.reader.execution;
         let target = relation_target(&relation);
         self.admit_decision_target(&target)
             .map_err(|denial| decision_traversal_denial(&denial))?;
@@ -112,6 +116,7 @@ where
 
     pub fn decision_relations_to<Relation, From, To>(
         &mut self,
+
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         to: &WorthQueryInvariantEntityIdentity<Schema, To>,
     ) -> Result<
@@ -121,6 +126,7 @@ where
     where
         Relation: OperationReads<Operation>,
     {
+        let _execution = self.reader.execution;
         let target = relation_target(&relation);
         self.admit_decision_target(&target)
             .map_err(|denial| decision_traversal_denial(&denial))?;

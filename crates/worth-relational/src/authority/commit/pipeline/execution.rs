@@ -9,12 +9,12 @@ use super::publication_execution::prepare_commit_publication_execution;
 use super::snapshot_validation::validate_snapshot_publication;
 use crate::transactions::data::{CommitResult, TransactionCommitError};
 
-pub(crate) fn prepare_authoritative_commit(
+pub(crate) fn prepare_consulted_authoritative_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    let allocation_policy = execution.allocation_policy();
     let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         &context.validation_input,
         allocation_policy,
@@ -47,15 +47,16 @@ pub(crate) fn prepare_authoritative_commit(
         .expect("admitted commit branch remains registered")
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
-    let admitted = admit_commit_execution(runtime, context)?;
-    let prepared = prepare_commit_execution(runtime, admitted, lease)?;
-    let boundary_validated = validate_commit_boundary(runtime, prepared, lease, &scope_control)?;
-    let mutated = mutate_commit_execution(runtime, boundary_validated, lease, &scope_control)?;
-    let history_bound = bind_commit_history(runtime, mutated)?;
+    let admitted = admit_commit_execution(execution, runtime, context)?;
+    let prepared = prepare_commit_execution(execution, runtime, admitted)?;
+    let boundary_validated =
+        validate_commit_boundary(execution, runtime, prepared, &scope_control)?;
+    let mutated = mutate_commit_execution(execution, runtime, boundary_validated, &scope_control)?;
+    let history_bound = bind_commit_history(execution, runtime, mutated)?;
     let snapshot_validated =
-        validate_snapshot_publication(runtime, history_bound, lease, &scope_control)?;
-    let assembled = assemble_commit_artifacts(runtime, snapshot_validated, lease)?;
-    let mut prepared = prepare_commit_publication_execution(runtime, assembled)?;
+        validate_snapshot_publication(execution, runtime, history_bound, &scope_control)?;
+    let assembled = assemble_commit_artifacts(execution, runtime, snapshot_validated)?;
+    let mut prepared = prepare_commit_publication_execution(execution, runtime, assembled)?;
     prepared.append_diagnostics(diagnostic_capture.finish());
     if let Some(interruption) =
         control.observe(crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation)
@@ -63,6 +64,7 @@ pub(crate) fn prepare_authoritative_commit(
         retention_binding.record_interruption(interruption);
         return Err(TransactionCommitError::interrupted(interruption));
     }
+    super::consult_stage(execution, super::CommitStage::CandidateRegistration)?;
     let published_snapshot_slot =
         runtime
             .reserve_published_snapshot_slot()
@@ -149,21 +151,40 @@ pub(crate) fn prepare_authoritative_commit(
     Ok(candidate)
 }
 
+/// The borrowed request proves custody through publication; it is never retained.
 pub(crate) fn publish_prepared_authoritative_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     candidate: crate::mvcc::PreparedRelationalCommitCandidate,
 ) -> Result<CommitResult, TransactionCommitError> {
-    runtime
-        .history
-        .record_publication_attempt(candidate.branch());
-    let outcome = runtime.publication_port().compare_and_publish(candidate);
+    let outcome = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate);
     let performed = match outcome {
+        crate::mvcc::RelationalPublicationOutcome::RequestStopped(stop) => {
+            return Err(TransactionCommitError::execution(stop.into()));
+        }
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         crate::mvcc::RelationalPublicationOutcome::Stale(stale) => {
             return Err(TransactionCommitError::conflict(
                 crate::transactions::data::CommitConflict::new(
                     crate::transactions::data::ConflictClass::StaleValidationBasis {
                         detail: format!("branch moved before publication: {stale:?}"),
+                    },
+                ),
+            ));
+        }
+        crate::mvcc::RelationalPublicationOutcome::Denied(
+            crate::mvcc::RelationalPublicationDenial::ForeignRuntime {
+                expected_runtime_instance_id,
+                actual_runtime_instance_id,
+            },
+        ) => {
+            return Err(TransactionCommitError::conflict(
+                crate::transactions::data::CommitConflict::new(
+                    crate::transactions::data::ConflictClass::ForeignRuntime {
+                        expected_runtime_instance_id,
+                        actual_runtime_instance_id,
                     },
                 ),
             ));
@@ -209,15 +230,19 @@ fn publication_outcome_error(detail: String) -> TransactionCommitError {
 }
 
 pub(crate) fn execute_authoritative_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     context: AuthoritativeCommitContext,
 ) -> Result<CommitResult, TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Admission)?;
     let preparation = runtime.preparation_runtime_snapshot();
-    let candidate = prepare_authoritative_commit(
-        &preparation,
-        context,
-        None,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )?;
-    publish_prepared_authoritative_commit(runtime, candidate)
+    // A detached validated proposal retains its account; merge and replay
+    // start theirs here. Every charged dispatch then spends the same ceiling.
+    let preparation = if execution.is_leased() {
+        preparation.with_commit_work_budget(context.commit_work_budget.clone())
+    } else {
+        preparation
+    };
+    let candidate = prepare_consulted_authoritative_commit(execution, &preparation, context)?;
+    publish_prepared_authoritative_commit(execution, runtime, candidate)
 }

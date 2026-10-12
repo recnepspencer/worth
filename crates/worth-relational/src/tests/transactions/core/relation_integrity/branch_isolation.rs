@@ -3,11 +3,14 @@ use crate::tests::support::*;
 
 #[test]
 fn relation_integrity_rejected_branch_local_commit_does_not_advance_truth_or_leak_to_main() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = source_max_one_runtime();
-    let source = create_entity(&runtime, "source");
-    let target_a = create_entity(&runtime, "target-a");
-    let target_b = create_entity(&runtime, "target-b");
-    let accepted = create_relation_outcome(&runtime, source, target_a, "accepted");
+    let source = create_entity(execution, &runtime, "source");
+    let target_a = create_entity(execution, &runtime, "target-a");
+    let target_b = create_entity(execution, &runtime, "target-b");
+    let accepted = create_relation_outcome(execution, &runtime, source, target_a, "accepted");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -57,12 +60,7 @@ fn relation_integrity_rejected_branch_local_commit_does_not_advance_truth_or_lea
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationCardinalityViolation);

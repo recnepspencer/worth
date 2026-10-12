@@ -84,11 +84,11 @@ where
     > {
         let request_scope = self.scope.clone();
         let runtime = self.application;
-        runtime.with_application_advancement(&request_scope, |_phase| {
+        runtime.with_application_advancement(&request_scope, |phase| {
 
         self.application
             .on_branch(self.branch)
-            .select()
+            .select(&phase, )
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
             .branch_adoption_requirements(target)
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)
@@ -108,10 +108,10 @@ where
         let request_scope = self.scope.clone();
         let runtime = self.application;
         runtime
-            .with_application_advancement(&request_scope, |_phase| {
+            .with_application_advancement(&request_scope, |phase| {
                 self.application
                     .on_branch(self.branch)
-                    .select()
+                    .select(&phase)
                     .map_err(WorthQueryApplicationProgramInspectionDenial::ProductSelection)?
                     .inspect_selected_program()
                     .map_err(WorthQueryApplicationProgramInspectionDenial::Inspection)

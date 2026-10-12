@@ -2,16 +2,21 @@ use super::super::super::support::*;
 use crate::authoring::RelationName;
 use crate::schema_view::{QuerySchemaView, SchemaRelationView};
 
-pub(crate) fn read_runtime() -> WorthQueryRuntime {
-    let mut runtime = stateful_bridge_runtime_with_collections(&["user"]);
+pub(crate) fn read_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    let mut runtime = stateful_bridge_runtime_with_collections(request_execution, &["user"]);
     runtime
-        .write(insert_command(
-            "user",
-            [
-                ("identity.id", test_string_aspect_value("user-1")),
-                ("profile.display_name", test_string_aspect_value("Ada")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "user",
+                [
+                    ("identity.id", test_string_aspect_value("user-1")),
+                    ("profile.display_name", test_string_aspect_value("Ada")),
+                ],
+            ),
+        )
         .expect("read-composition fixture should seed an authoritative user row");
     runtime
 }

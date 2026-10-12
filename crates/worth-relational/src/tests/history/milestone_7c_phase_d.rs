@@ -30,17 +30,28 @@ fn test_patch_target(aspect: &str, field: &str) -> AspectFieldLocator {
 
 #[test]
 fn derive_merge_commit_mutation_plan_emits_source_authorized_create_intent() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
 
     let plan = prepared.bind_mutation_plan_for_test(TransactionId(77));
@@ -66,6 +77,9 @@ fn derive_merge_commit_mutation_plan_emits_source_authorized_create_intent() {
 
 #[test]
 fn derive_merge_commit_mutation_plan_preserves_exact_shared_truth_without_mutation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -95,10 +109,11 @@ fn derive_merge_commit_mutation_plan_preserves_exact_shared_truth_without_mutati
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "same");
+    update_entity(execution, &runtime, shared, "same");
     crate::tests::support::update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "same",
@@ -106,11 +121,14 @@ fn derive_merge_commit_mutation_plan_preserves_exact_shared_truth_without_mutati
     );
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
 
     let plan = prepared.bind_mutation_plan_for_test(TransactionId(88));
@@ -122,6 +140,9 @@ fn derive_merge_commit_mutation_plan_preserves_exact_shared_truth_without_mutati
 
 #[test]
 fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_aspects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let name_key = AspectKey::new("name").unwrap();
     let status_key = AspectKey::new("status").unwrap();
     let registry = RelationalSchemaRegistry::new()
@@ -195,12 +216,7 @@ fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_as
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    main_txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    main_txn.commit(execution, &runtime).unwrap();
 
     create_branch_from_main(&runtime, "feature");
     let mut feature_txn = {
@@ -242,19 +258,17 @@ fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_as
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    feature_txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    feature_txn.commit(execution, &runtime).unwrap();
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
 
     let plan = prepared.bind_mutation_plan_for_test(TransactionId(99));
@@ -276,17 +290,28 @@ fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_as
 
 #[test]
 fn derive_merge_commit_mutation_plan_does_not_rely_on_raw_lowered_record_arrays() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let mut prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
     prepared.execution_ready_plan_mut_for_test().lowered_records = Arc::from([]);
 

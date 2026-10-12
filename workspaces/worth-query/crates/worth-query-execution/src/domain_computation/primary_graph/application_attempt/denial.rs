@@ -12,6 +12,10 @@
 /// and approvals.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationAttemptDenialKind {
+    ForeignPhase,
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    Cancelled,
+    DeadlineExceeded,
     ForeignApplication,
     ProjectionAdmissionMismatch,
     CurrentAuthorityDenied,
@@ -162,6 +166,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 #[derive(Debug)]
 enum AttemptDenialCause {
     None,
+    NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
     Expression(Box<worth_foundational::expression_api::ExpressionDenial>),
     Allocation(Box<worth_execution::ExecutionAllocationDenial>),
@@ -261,6 +266,25 @@ impl WorthQueryApplicationAttemptDenial {
         &self.subject
     }
 
+    /// The original Relational read refusal, including non-request causes.
+    pub fn native_query_read_stop(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::QueryReadExecutionStop> {
+        match &self.cause {
+            AttemptDenialCause::NativeQueryRead(stop) => Some(stop),
+            _ => None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn into_native_query_read_stop(
+        self,
+    ) -> Option<Box<worth_relational::facade::runtime::QueryReadExecutionStop>> {
+        match self.cause {
+            AttemptDenialCause::NativeQueryRead(stop) => Some(stop),
+            _ => None,
+        }
+    }
+
     /// The language denial behind `WorkflowConditionExpressionDenied`.
     pub const fn expression(
         &self,
@@ -297,6 +321,7 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
 impl std::error::Error for WorthQueryApplicationAttemptDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.cause {
+            AttemptDenialCause::NativeQueryRead(stop) => Some(stop.as_ref()),
             AttemptDenialCause::RetainedSource(denial) => Some(denial.as_ref()),
             AttemptDenialCause::Allocation(denial) => Some(denial.as_ref()),
             _ => None,
@@ -306,3 +331,8 @@ impl std::error::Error for WorthQueryApplicationAttemptDenial {
 
 #[cfg(test)]
 mod allocation_error_source_tests;
+
+#[cfg(test)]
+mod native_query_cause;
+
+mod request_read;

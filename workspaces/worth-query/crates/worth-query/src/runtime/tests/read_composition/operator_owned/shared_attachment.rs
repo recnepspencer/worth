@@ -10,12 +10,15 @@ use crate::runtime::{
 
 #[test]
 fn compose_read_executes_operator_owned_shared_attachment_detail() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-shared-attachment-detail")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_attachment_detail(
                 "user",
                 frontier_manager_schema(),
@@ -76,12 +79,15 @@ fn compose_read_executes_operator_owned_shared_attachment_detail() {
 
 #[test]
 fn compose_read_executes_operator_owned_shared_attachment_collection() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-shared-attachment-collection")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_attachment_collection(
                 "user",
                 frontier_manager_schema(),
@@ -130,12 +136,15 @@ fn compose_read_executes_operator_owned_shared_attachment_collection() {
 
 #[test]
 fn compose_read_keeps_identity_anchored_shared_attachment_collection_local() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-shared-attachment-identity-anchor")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_attachment_collection(
                 "user",
                 frontier_manager_schema(),
@@ -178,12 +187,15 @@ fn compose_read_keeps_identity_anchored_shared_attachment_collection_local() {
 
 #[test]
 fn compose_read_denies_shared_attachment_without_enough_relations() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-shared-attachment-too-small")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_attachment_detail(
                 "user",
                 frontier_manager_schema(),
@@ -218,12 +230,15 @@ fn compose_read_denies_shared_attachment_without_enough_relations() {
 
 #[test]
 fn compose_read_denies_shared_attachment_with_duplicate_relations() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-shared-attachment-duplicate")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_attachment_collection(
                 "user",
                 frontier_manager_schema(),

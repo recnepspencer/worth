@@ -1,7 +1,9 @@
 use super::super::super::support::*;
 use crate::runtime::async_result_state::runtime_async_checkpoint_label_identity;
 
-pub(in super::super) fn intent_commit_denied_error() -> WorthQueryRuntimeError {
+pub(in super::super) fn intent_commit_denied_error(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimeError {
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -17,11 +19,14 @@ pub(in super::super) fn intent_commit_denied_error() -> WorthQueryRuntimeError {
         })
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent runtime should build");
 
     let mut branch = runtime
-        .branch(test_session_label("derive-only branch intent"))
+        .branch(
+            request_execution,
+            test_session_label("derive-only branch intent"),
+        )
         .expect("branch should admit");
     branch
         .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
@@ -34,8 +39,11 @@ pub(in super::super) fn intent_commit_denied_error() -> WorthQueryRuntimeError {
         .expect_err("derive-only branch must deny write intents")
 }
 
-pub(in super::super) fn intent_execution_routing_failed_error() -> WorthQueryRuntimeError {
+pub(in super::super) fn intent_execution_routing_failed_error(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimeError {
     let mut runtime = bridge_runtime_with_support_and_intent_authority(
+        request_execution,
         intent_support_profile(),
         TestIntentAuthority,
     );
@@ -52,7 +60,7 @@ pub(in super::super) fn intent_execution_routing_failed_error() -> WorthQueryRun
     let binding = runtime.prepare_authoritative_intent_execution_binding(handoff.clone());
     let execution = runtime
         .backend
-        .execute_intent(binding.declaration())
+        .execute_intent(request_execution, binding.declaration())
         .expect("backend execution should succeed");
     let admitted_handoff = WorthQueryAdmittedIntentExecutionHandoff::from(handoff);
     let snapshot_evidence_identity = execution
@@ -88,7 +96,9 @@ pub(in super::super) fn intent_execution_routing_failed_error() -> WorthQueryRun
     )
 }
 
-pub(in super::super) fn preview_promotion_write_failed_error() -> WorthQueryRuntimeError {
+pub(in super::super) fn preview_promotion_write_failed_error(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimeError {
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -99,28 +109,38 @@ pub(in super::super) fn preview_promotion_write_failed_error() -> WorthQueryRunt
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("denying write backend should build");
 
     let mut preview = runtime
-        .preview(test_session_label("stop-class-write-failure"))
+        .preview(
+            request_execution,
+            test_session_label("stop-class-write-failure"),
+        )
         .expect("preview should admit");
     preview
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("denied-preview")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Denied preview write"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("denied-preview")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Denied preview write"),
+                    ),
+                ],
+            ),
+        )
         .expect("preview write should stage");
-    preview.promote().expect_err("promotion should fail")
+    preview
+        .promote(request_execution)
+        .expect_err("promotion should fail")
 }
 
-pub(in super::super) fn preview_promotion_stale_basis_error() -> WorthQueryRuntimeError {
+pub(in super::super) fn preview_promotion_stale_basis_error(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimeError {
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -131,33 +151,40 @@ pub(in super::super) fn preview_promotion_stale_basis_error() -> WorthQueryRunti
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("drifting backend should build");
     let mut preview = runtime
-        .preview(test_session_label("stop-class stale basis"))
+        .preview(
+            request_execution,
+            test_session_label("stop-class stale basis"),
+        )
         .expect("preview session should admit");
     preview
-        .write(insert_command(
-            "Task",
-            [
-                (
-                    "identity.id",
-                    test_string_aspect_value("stale-preview-stop-class"),
-                ),
-                (
-                    "title.value",
-                    test_string_aspect_value("Should not promote"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    (
+                        "identity.id",
+                        test_string_aspect_value("stale-preview-stop-class"),
+                    ),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Should not promote"),
+                    ),
+                ],
+            ),
+        )
         .expect("preview write should stage");
     preview
-        .promote()
+        .promote(request_execution)
         .expect_err("drifting basis should deny promotion")
 }
 
-pub(in super::super) fn preview_promotion_atomic_batch_unsupported_error() -> WorthQueryRuntimeError
-{
+pub(in super::super) fn preview_promotion_atomic_batch_unsupported_error(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimeError {
     let attempted_writes = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
@@ -171,52 +198,64 @@ pub(in super::super) fn preview_promotion_atomic_batch_unsupported_error() -> Wo
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("counting backend should build");
     let mut preview = runtime
-        .preview(test_session_label("stop-class atomic batch"))
+        .preview(
+            request_execution,
+            test_session_label("stop-class atomic batch"),
+        )
         .expect("preview session should admit");
     preview
-        .write(insert_command(
-            "Task",
-            [
-                (
-                    "identity.id",
-                    test_string_aspect_value("preview-batch-stop-class-1"),
-                ),
-                (
-                    "title.value",
-                    test_string_aspect_value("First staged write"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    (
+                        "identity.id",
+                        test_string_aspect_value("preview-batch-stop-class-1"),
+                    ),
+                    (
+                        "title.value",
+                        test_string_aspect_value("First staged write"),
+                    ),
+                ],
+            ),
+        )
         .expect("first preview write should stage");
     preview
-        .write(insert_command(
-            "Task",
-            [
-                (
-                    "identity.id",
-                    test_string_aspect_value("preview-batch-stop-class-2"),
-                ),
-                (
-                    "title.value",
-                    test_string_aspect_value("Second staged write"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    (
+                        "identity.id",
+                        test_string_aspect_value("preview-batch-stop-class-2"),
+                    ),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Second staged write"),
+                    ),
+                ],
+            ),
+        )
         .expect("second preview write should stage");
     let error = preview
-        .promote()
+        .promote(request_execution)
         .expect_err("multi-write promotion should deny before authority");
     assert_eq!(attempted_writes.get(), 0);
     error
 }
 
-pub(in super::super) fn preview_promotion_rebinding_required_error() -> WorthQueryRuntimeError {
-    let mut runtime = stateful_bridge_task_runtime();
+pub(in super::super) fn preview_promotion_rebinding_required_error(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntimeError {
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.preview-promotion-stop-class-mismatch",
             task_live_request(),
             task_schema(),
@@ -238,27 +277,31 @@ pub(in super::super) fn preview_promotion_rebinding_required_error() -> WorthQue
         .expect("preview mismatch should remain typed");
     let mut preview = runtime
         .preview_with_options(
+            request_execution,
             test_session_label("preview promotion stop class mismatch"),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
         .expect("preview session should admit");
     preview.use_view(&view);
     preview
-        .write(insert_command(
-            "Task",
-            [
-                (
-                    "identity.id",
-                    test_string_aspect_value("preview-promotion-stop-class-mismatch"),
-                ),
-                (
-                    "title.value",
-                    test_string_aspect_value("Should require rebinding"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    (
+                        "identity.id",
+                        test_string_aspect_value("preview-promotion-stop-class-mismatch"),
+                    ),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Should require rebinding"),
+                    ),
+                ],
+            ),
+        )
         .expect("preview write should stage");
     preview
-        .promote()
+        .promote(request_execution)
         .expect_err("crossed residue should require rebinding")
 }

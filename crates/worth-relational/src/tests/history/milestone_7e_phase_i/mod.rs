@@ -16,15 +16,18 @@ use serde_support::{strategy_witness_payload, StrategyWitnessPayloadMutator};
 
 #[test]
 fn retained_merge_strategy_witness_preserves_exact_strategy_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity_status_on_branch(&runtime, shared, "inactive", "main");
-    update_entity_status_on_branch(&runtime, shared, "active", "feature");
+    update_entity_status_on_branch(execution, &runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, &runtime, shared, "active", "feature");
 
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     let planning_witness = runtime
         .merge()
@@ -202,25 +205,28 @@ fn retained_merge_strategy_witness_differentiates_policy_topology_and_deletion_s
 
 #[test]
 fn retained_merge_strategy_witness_survives_prepared_execution_publication_and_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime =
         persisted_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity_status_on_branch(&runtime, shared, "inactive", "main");
-    update_entity_status_on_branch(&runtime, shared, "active", "feature");
+    update_entity_status_on_branch(execution, &runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, &runtime, shared, "active", "feature");
 
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     let live_witness = runtime
         .merge()
         .retain_merge_strategy_witness_from_prepared_execution(&prepared);
     let outcome = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
     let live_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
-    let (_recovery, recovered) = checkpoint_and_recover_with(&runtime, || {
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         persisted_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher)
     });
     let recovered_authority =
@@ -249,18 +255,21 @@ fn retained_merge_strategy_witness_survives_prepared_execution_publication_and_r
 
 #[test]
 fn retained_merge_strategy_witness_live_authority_denies_internal_forged_strategy_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity_status_on_branch(&runtime, shared, "inactive", "main");
-    update_entity_status_on_branch(&runtime, shared, "active", "feature");
+    update_entity_status_on_branch(execution, &runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, &runtime, shared, "active", "feature");
 
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     let outcome = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
     let honest_summary = outcome.execution_summary.clone();
     let honest_witness = honest_summary.strategy_witness.clone();

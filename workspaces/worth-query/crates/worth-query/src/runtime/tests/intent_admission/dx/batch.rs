@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn write_batch_intent_common_path_helper_executes_through_canonical_handoff() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let receipt = runtime
         .write_batch_intent(vec![
             WorthQueryAspectMutationBuilder::new()
@@ -28,7 +31,7 @@ fn write_batch_intent_common_path_helper_executes_through_canonical_handoff() {
                 .build_insert("Task")
                 .expect("batch command should build"),
         ])
-        .execute()
+        .execute(request_execution)
         .expect("batch write common-path helper should execute");
 
     assert_eq!(receipt.write_count(), 2);
@@ -49,7 +52,10 @@ fn write_batch_intent_common_path_helper_executes_through_canonical_handoff() {
 
 #[test]
 fn write_batch_intent_advanced_path_helper_exposes_request_eligibility_decision_and_handoff() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let review = runtime
         .write_batch_intent(vec![WorthQueryAspectMutationBuilder::new()
             .set_aspect(
@@ -81,7 +87,10 @@ fn write_batch_intent_advanced_path_helper_exposes_request_eligibility_decision_
 
 #[test]
 fn workspace_write_batch_intent_common_path_helper_executes_through_canonical_handoff() {
-    let mut workspace = intent_runtime_with_authority(TestIntentAuthority)
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = intent_runtime_with_authority(request_execution, TestIntentAuthority)
         .workspace("intent-admission-workspace-batch")
         .expect("workspace should open");
     let receipt = workspace
@@ -109,7 +118,7 @@ fn workspace_write_batch_intent_common_path_helper_executes_through_canonical_ha
                 .build_insert("Task")
                 .expect("batch command should build"),
         ])
-        .execute()
+        .execute(request_execution)
         .expect("workspace batch write common-path helper should execute");
 
     assert_eq!(receipt.write_count(), 2);

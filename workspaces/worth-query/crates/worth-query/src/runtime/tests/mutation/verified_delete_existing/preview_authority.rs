@@ -2,28 +2,35 @@ use super::*;
 
 #[test]
 fn preview_delete_existing_verified_requires_authoritative_lane() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.preview-delete-existing-verified")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.preview-delete-existing-verified-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-preview-delete-existing-verified-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.preview-delete-existing-verified-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-preview-delete-existing-verified-table")
+            },
+        )
         .expect("live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -35,7 +42,10 @@ fn preview_delete_existing_verified_requires_authoritative_lane() {
         })
         .expect("seed insert should execute");
     let mut preview = workspace
-        .preview(test_session_label("delete-existing-verified-preview"))
+        .preview(
+            request_execution,
+            test_session_label("delete-existing-verified-preview"),
+        )
         .expect("preview should open");
     let binding = preview
         .bind_existing_entity(
@@ -51,6 +61,7 @@ fn preview_delete_existing_verified_requires_authoritative_lane() {
 
     let error = preview
         .delete_existing_verified(
+            request_execution,
             binding,
             |task| {
                 task.set_aspect(

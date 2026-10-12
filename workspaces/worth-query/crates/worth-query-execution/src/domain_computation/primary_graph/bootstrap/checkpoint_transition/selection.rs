@@ -8,6 +8,7 @@ use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApp
 use worth_relational::facade::{identity::EntityId, runtime::VisibilityProjectionView};
 
 pub(super) fn select<Schema: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     branch: &VisibilityProjectionView<'_>,
     layout: &WorthQueryPrimaryGraphLayout,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -40,7 +41,7 @@ pub(super) fn select<Schema: ApplicationSchema>(
         workflow.evidence_dependency.entity_kind,
     ] {
         let read = branch
-            .bounded_entities_of_kind(kind, maximum_work.saturating_sub(work))
+            .bounded_entities_of_kind(execution, kind, maximum_work.saturating_sub(work))
             .map_err(|_| denial("checkpoint transition workflow selection exceeded its bound"))?;
         work = work.saturating_add(read.work_units());
         if !read.into_records().is_empty() {
@@ -52,7 +53,7 @@ pub(super) fn select<Schema: ApplicationSchema>(
     let mut entities = Vec::new();
     for kind in layout.application_entity_kinds() {
         let read = branch
-            .bounded_entities_of_kind(kind, maximum_work.saturating_sub(work))
+            .bounded_entities_of_kind(execution, kind, maximum_work.saturating_sub(work))
             .map_err(|_| denial("checkpoint transition entity selection exceeded its bound"))?;
         work = work.saturating_add(read.work_units());
         entities.extend(

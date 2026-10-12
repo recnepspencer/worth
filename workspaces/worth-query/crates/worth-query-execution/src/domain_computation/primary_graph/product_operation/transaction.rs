@@ -96,6 +96,7 @@ where
     /// that declared its exact operation type.
     pub fn commit_for_program<Program>(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admitted: WorthQueryAdmittedProgramOperation<'_, Schema, Program, Operation>,
     ) -> Result<WorthQueryApplicationCommitOutcome, WorthQueryProductTransactionCommitError>
     where
@@ -132,7 +133,7 @@ where
             ));
         };
         Ok(
-            application.compare_and_commit_application_for_program_action(&phase,
+            application.compare_and_commit_application_for_program_action(execution, &phase,
                 &presented,
                 self.change.program,
                 self.change.idempotency,

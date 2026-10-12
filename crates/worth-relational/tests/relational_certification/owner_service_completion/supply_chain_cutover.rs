@@ -17,14 +17,17 @@ use worth_relational::facade::mvcc::{
 
 #[test]
 fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
-    let (world, _baseline) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let services = world.runtime.owner_component_services();
     let storm = fork_supply_chain_branch(&services, "storm");
     let predecessor = services
         .basis_port()
         .admit_branch_basis(&storm)
         .expect("the basis port admits the exact storm predecessor");
-    let before = observe_basis(&world, &predecessor);
+    let before = observe_basis(execution, &world, &predecessor);
     compare(
         &expected_supply_chain_branch(&world.program, BranchLabel::Storm, None),
         &before,
@@ -32,6 +35,7 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
     .expect("the fork starts at the independent Supply Chain baseline");
 
     let batch = lower_supply_chain_production_delta(
+        execution,
         &world.runtime,
         &world.program,
         &world.handles,
@@ -52,12 +56,12 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
         .expect("the Supply Chain reroute remains inside its declared budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("the preparation port builds the canonical reroute candidate");
-    let performed = match services.publication_port().compare_and_publish(candidate) {
+    let performed = match services
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("the real reroute did not perform through the port: {outcome:?}"),
     };
@@ -81,8 +85,8 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
         .observe_branch(&storm)
         .expect("the port observes the same canonical movement");
     assert_eq!(direct_basis.descriptor(), port_basis.descriptor());
-    let direct_after = observe_basis(&world, &direct_basis);
-    let port_after = observe_basis(&world, &port_basis);
+    let direct_after = observe_basis(execution, &world, &direct_basis);
+    let port_after = observe_basis(execution, &world, &port_basis);
     assert_eq!(direct_after, port_after);
     assert_ne!(
         before, port_after,
@@ -106,16 +110,20 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
 
 #[test]
 fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
-    let (world, _baseline) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let services = world.runtime.owner_component_services();
     let maintenance = fork_supply_chain_branch(&services, "maintenance");
     let predecessor = services
         .basis_port()
         .admit_branch_basis(&maintenance)
         .expect("the basis port admits the maintenance predecessor");
-    let before = observe_basis(&world, &predecessor);
+    let before = observe_basis(execution, &world, &predecessor);
 
     let batch = lower_supply_chain_production_delta(
+        execution,
         &world.runtime,
         &world.program,
         &world.handles,
@@ -135,10 +143,7 @@ fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
         )
         .expect("the Supply Chain maintenance delta remains in budget");
     let committed = transaction
-        .commit(
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &world.runtime)
         .expect("the compatibility commit performs canonically");
 
     assert!(matches!(
@@ -151,7 +156,7 @@ fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
         .basis_port()
         .observe_branch(&maintenance)
         .expect("the basis port immediately observes the direct movement");
-    let after = observe_basis(&world, &port_basis);
+    let after = observe_basis(execution, &world, &port_basis);
     assert_ne!(
         before, after,
         "a success-shaped direct no-op must fail this court"
@@ -189,11 +194,18 @@ fn fork_supply_chain_branch(
 }
 
 fn observe_basis(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &ProductionSeededSupplyChainWorld,
     basis: &AdmittedRelationalBranchBasis,
 ) -> super::super::world::supply_chain::ObservedSupplyChainState {
     let observation = basis.observation();
     let handles = world.handles.for_observation(&observation);
-    observe_supply_chain_observation(&world.program, &handles, &world.runtime, &observation)
-        .expect("the owner-issued basis remains neutrally observable")
+    observe_supply_chain_observation(
+        execution,
+        &world.program,
+        &handles,
+        &world.runtime,
+        &observation,
+    )
+    .expect("the owner-issued basis remains neutrally observable")
 }

@@ -48,7 +48,7 @@ fn public_ports_complete_publication_and_consumption_permanently_closes_delivery
             expected.clone(),
             CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
                 .with_prepared_relational_candidate(
-                    fixture.prepare_relational_owner_candidate("public-relational"),
+                    fixture.prepare_relational_owner_candidate(&execution, "public-relational"),
                 ),
             &cancellation.token(),
             None,
@@ -215,7 +215,7 @@ fn public_partial_recovery_preserves_foreign_and_live_capability_denials() {
             expected,
             CompositePublicationIntent::with_signal(Some(RelationalTransactionIntent::ordinary()))
                 .with_prepared_relational_candidate(
-                    fixture.prepare_relational_owner_candidate("public-partial"),
+                    fixture.prepare_relational_owner_candidate(&execution, "public-partial"),
                 ),
             &cancellation.token(),
             None,

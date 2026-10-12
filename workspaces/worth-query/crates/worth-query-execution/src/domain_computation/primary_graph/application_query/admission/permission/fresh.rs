@@ -44,6 +44,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         E,
     >(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
         validated_principal: Option<
             &worth_query_installation::facade::WorthQueryValidatedPrincipalBinding,
@@ -75,6 +76,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let request = controls.request_scope();
         let principal = selected
             .resolve_authenticated_principal_issued(
+                execution,
                 installed.principal_binding(),
                 external,
                 request,
@@ -85,6 +87,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map_err(FreshQueryPermissionStop::Principal)?;
         let scope = selected
             .resolve_retained_query_scope_issued(
+                execution,
                 Binding::scope_field(),
                 observed.retained_scope_selector(),
                 request,
@@ -99,7 +102,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map_err(FreshQueryPermissionStop::Query)?;
         let permission = self
             .prepare_application_query_permission(
-                query, access, source, selected, request, &principal, &scope, admission,
+                execution, query, access, source, selected, request, &principal, &scope, admission,
             )
             .map_err(FreshQueryPermissionStop::Query)?;
         inspect(permission, admission).map_err(FreshQueryPermissionStop::Inspect)

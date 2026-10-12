@@ -39,6 +39,7 @@ pub(in crate::domain_computation) fn admit_capability_access<
     Operation,
     Input,
 >(
+execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
@@ -63,6 +64,7 @@ where
 {
     admit_request(request, capability.contract().operation())?;
     let prepared = prepare_capability_admission(
+        execution,
         runtime,
         product,
         principal,
@@ -71,7 +73,7 @@ where
         request,
         approved,
     )?;
-    complete_capability_admission(prepared)
+    complete_capability_admission(execution, prepared)
 }
 
 /// Admits capability access for an input the request already encoded.
@@ -87,6 +89,7 @@ pub(in crate::domain_computation) fn admit_encoded_capability_access<
     Operation,
     Input,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
@@ -105,6 +108,7 @@ where
 {
     admit_request(request, capability.contract().operation())?;
     let prepared = prepare_capability_admission(
+        execution,
         runtime,
         product,
         principal,
@@ -113,5 +117,5 @@ where
         request,
         None,
     )?;
-    complete_capability_admission(prepared)
+    complete_capability_admission(execution, prepared)
 }

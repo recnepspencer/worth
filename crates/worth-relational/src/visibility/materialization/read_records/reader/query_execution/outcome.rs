@@ -1,6 +1,6 @@
 use crate::query::data::{
-    reduce_query_fragments, CanonicalQueryResult, QueryComplexitySummary, QueryExecutionOutcome,
-    QueryWorkerFragment, SnapshotPinnedQueryPlan,
+    CanonicalQueryResult, QueryComplexitySummary, QueryExecutionOutcome, QueryWorkerFragment,
+    SnapshotPinnedQueryPlan,
 };
 use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionResourceLease;
@@ -17,24 +17,14 @@ pub(in crate::visibility::materialization::read_records::reader) fn query_execut
     touched_partitions: usize,
     target_count: usize,
     fragments: Vec<QueryWorkerFragment>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
     prior_report: Option<ExecutionReport>,
 ) -> Result<(QueryExecutionOutcome, Option<ExecutionReport>), QueryReadExecutionStop> {
-    let Some(lease) = lease else {
-        return Ok((
-            query_execution_outcome(
-                runtime,
-                plan,
-                packet_count,
-                touched_partitions,
-                target_count,
-                fragments,
-            ),
-            None,
-        ));
-    };
-    let prior = prior_report.expect("leased packet execution has a report");
-    let child = remaining_work_lease(lease, prior)?;
+    let prior = prior_report.expect("packet execution has a charged report");
+    let child = lease
+        .map(|lease| remaining_work_lease(lease, prior))
+        .transpose()?;
     let entity_count = fragments
         .iter()
         .map(|fragment| fragment.counters.authoritative_entity_records_emitted)
@@ -47,7 +37,8 @@ pub(in crate::visibility::materialization::read_records::reader) fn query_execut
         plan.packet.execution_shape,
         plan.packet.ordering,
         fragments,
-        &child,
+        execution,
+        child.as_ref(),
     )
     .map_err(|stop| match stop {
         QueryReadExecutionStop::CompletionStopped { reason, report } => {
@@ -69,36 +60,6 @@ pub(in crate::visibility::materialization::read_records::reader) fn query_execut
         result,
     );
     Ok((outcome, Some(combine_query_reports(prior, completion))))
-}
-
-pub(in crate::visibility::materialization::read_records::reader) fn query_execution_outcome(
-    runtime: &RelationalRuntime,
-    plan: SnapshotPinnedQueryPlan,
-    packet_count: usize,
-    touched_partitions: usize,
-    target_count: usize,
-    fragments: Vec<crate::query::data::QueryWorkerFragment>,
-) -> QueryExecutionOutcome {
-    let entity_count = fragments
-        .iter()
-        .map(|fragment| fragment.counters.authoritative_entity_records_emitted)
-        .sum();
-    let relation_count = fragments
-        .iter()
-        .map(|fragment| fragment.counters.authoritative_relation_records_emitted)
-        .sum();
-    let result =
-        reduce_query_fragments(plan.packet.execution_shape, plan.packet.ordering, fragments);
-    assemble_outcome(
-        runtime,
-        plan,
-        packet_count,
-        touched_partitions,
-        target_count,
-        entity_count,
-        relation_count,
-        result,
-    )
 }
 
 fn assemble_outcome(

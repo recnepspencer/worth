@@ -9,7 +9,10 @@ use super::support::domain::{
 
 #[test]
 fn signal_compatibility_exposes_dependency_and_produced_aspects() {
-    let compatibility = handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let compatibility = handle(request_execution, "primary")
         .declare_review_progress_describe_plan_receipt_envelope_and_check_signal_compatibility(
             Input::<RuntimeFamily>::new("edge:42"),
         )
@@ -29,7 +32,10 @@ fn signal_compatibility_exposes_dependency_and_produced_aspects() {
 
 #[test]
 fn signal_compatibility_denies_missing_and_conflicting_dependency_slices() {
-    let handle = handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "primary");
     let missing_envelope = handle
         .envelope_routes_from_progressed(
             handle
@@ -71,12 +77,15 @@ fn signal_compatibility_denies_missing_and_conflicting_dependency_slices() {
 
 #[test]
 fn signal_compatibility_digest_changes_with_dependency_or_produced_aspects() {
-    let base = handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let base = handle(request_execution, "primary")
         .declare_review_progress_describe_plan_receipt_envelope_and_check_signal_compatibility(
             Input::<RuntimeFamily>::new("edge:42"),
         )
         .unwrap_or_else(|_| panic!("signal compatibility should succeed"));
-    let expanded = handle("primary")
+    let expanded = handle(request_execution, "primary")
         .declare_review_progress_describe_plan_receipt_envelope_and_check_signal_compatibility(
             Input::<ExpandedAspectFamily>::new("edge:42"),
         )
@@ -90,7 +99,11 @@ fn signal_compatibility_digest_changes_with_dependency_or_produced_aspects() {
 
 #[test]
 fn signal_support_rows_expose_dependency_and_produced_aspects() {
-    let support = handle("primary").signal_compatibility_support::<Input<RuntimeFamily>>();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let support =
+        handle(request_execution, "primary").signal_compatibility_support::<Input<RuntimeFamily>>();
     let row = &support.rows()[0];
 
     assert_declaration_aspect_projections(
@@ -105,7 +118,11 @@ fn signal_support_rows_expose_dependency_and_produced_aspects() {
 
 #[test]
 fn signal_support_rows_expose_authority_mismatch_for_missing_dependencies() {
-    let support = handle("primary").signal_compatibility_support::<Input<MissingAspectFamily>>();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let support = handle(request_execution, "primary")
+        .signal_compatibility_support::<Input<MissingAspectFamily>>();
     let row = &support.rows()[0];
 
     assert_eq!(

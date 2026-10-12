@@ -23,12 +23,17 @@ where
     #[doc(hidden)]
     pub fn attempt_workflow_approval_field_update_for_test(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         instance: &crate::domain_computation::primary_graph::PublishedWorkflowInstanceRef,
         approval: EntityId,
-    ) -> Result<(), TransactionCommitError> {
+    ) -> Result<
+        Result<(), TransactionCommitError>,
+        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+    > {
+        let execution = phase.execution_request_for(&self.product_runtime)?;
         let selected = self
             .on_branch(instance.branch())
-            .select()
+            .select(phase)
             .expect("the workflow instance branch remains admitted");
         let (_, product, application_basis) = selected.into_parts();
         let handle = self
@@ -36,7 +41,7 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(|runtime, layout| {
+        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
             let fields = AspectFieldPatch::from(BTreeMap::from([(
                 layout.workflow().approval.decision.clone(),
                 AspectValue::String(InternedString::Raw("reject".to_owned())),
@@ -62,26 +67,28 @@ where
                 )
                 .expect("the approval update stays within resource budgets");
             runtime
-                .prepare_branch_transaction(
-                    transaction,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .prepare_branch_transaction(&execution, transaction)
                 .map(|_| ())
         });
         drop(application_basis);
-        candidate
+        Ok(candidate)
     }
 
     /// Attempts to remove one link from an issued approval to its evidence.
     #[doc(hidden)]
     pub fn attempt_workflow_approval_evidence_delete_for_test(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         instance: &crate::domain_computation::primary_graph::PublishedWorkflowInstanceRef,
         approval: EntityId,
-    ) -> Result<(), TransactionCommitError> {
+    ) -> Result<
+        Result<(), TransactionCommitError>,
+        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+    > {
+        let execution = phase.execution_request_for(&self.product_runtime)?;
         let selected = self
             .on_branch(instance.branch())
-            .select()
+            .select(phase)
             .expect("the workflow instance branch remains admitted");
         let (_, product, application_basis) = selected.into_parts();
         let handle = self
@@ -89,10 +96,11 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(|runtime, layout| {
+        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
             let relation = runtime
                 .read_truth()
                 .visible_relations_of_kind(
+                    &execution,
                     layout.workflow().approval_evidence_relation,
                     application_basis.snapshot_handle().version_id(),
                 )
@@ -117,13 +125,10 @@ where
                 )
                 .expect("the approval link deletion stays within resource budgets");
             runtime
-                .prepare_branch_transaction(
-                    transaction,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .prepare_branch_transaction(&execution, transaction)
                 .map(|_| ())
         });
         drop(application_basis);
-        candidate
+        Ok(candidate)
     }
 }

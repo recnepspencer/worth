@@ -56,13 +56,19 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
         let bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
         let registered = bootstrap
             .graph
-            .registered_entity_aspect("Principal", "PrincipalIdentity")
+            .registered_entity_aspect(
+                &active_phase.borrowed_request_for_test(),
+                "Principal",
+                "PrincipalIdentity",
+            )
             .unwrap();
 
         assert_eq!(&registered.contract, installed.contract());
         assert_eq!(&registered.binding, installed.binding());
         assert_eq!(
-            bootstrap.graph.registered_provider_aspect_identities(),
+            bootstrap
+                .graph
+                .registered_provider_aspect_identities(&active_phase.borrowed_request_for_test()),
             [
                 AspectIdentity(maximum_application_identity + 1),
                 AspectIdentity(maximum_application_identity + 2),

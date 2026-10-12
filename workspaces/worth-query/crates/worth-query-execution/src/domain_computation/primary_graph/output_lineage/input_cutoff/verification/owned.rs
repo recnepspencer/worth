@@ -21,6 +21,7 @@ pub(in crate::domain_computation::primary_graph) struct OwnedVerifiedInputCutoff
 impl RetainedInputCutoffCandidate {
     pub(in crate::domain_computation::primary_graph) fn verify_for_reuse_owned(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         fresh_key: PreparedInputReuseKey,
         fresh_context: PreparedDecisionReuseContext,
         matched: Option<MatchedRequiredPredecessors<'_>>,
@@ -31,6 +32,7 @@ impl RetainedInputCutoffCandidate {
         currentness: &mut InvalidationEditAdmission,
     ) -> Result<OwnedInputCutoffDecision, InputCutoffVerificationStop> {
         match self.verify_for_reuse(
+            execution,
             fresh_key,
             fresh_context,
             matched,
@@ -71,6 +73,7 @@ impl OwnedVerifiedInputCutoff {
     /// current-only source registration at a different native position.
     pub(in crate::domain_computation::primary_graph) fn recompare_for_publication(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         basis: PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
@@ -98,6 +101,7 @@ impl OwnedVerifiedInputCutoff {
             .unwrap_or(self.verified_facts.len());
         if prefix > self.verified_facts.len()
             || !facts_are_current(
+                execution,
                 self.verified_facts.iter().take(prefix).chain(source_facts),
                 runtime,
                 snapshot,
@@ -107,6 +111,7 @@ impl OwnedVerifiedInputCutoff {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
         }
         let current = ConsumedOutputEvidence::verify_many_with_admission(
+            execution,
             self.verified_consumed
                 .as_deref()
                 .unwrap_or_else(|| self.candidate.consumed_outputs()),
@@ -139,7 +144,7 @@ impl OwnedVerifiedInputCutoff {
                 .candidate
                 .native_output_witness()
                 .ok_or(InputCutoffVerificationStop::CurrentnessRaced)?
-                .unchanged_in(runtime, snapshot, admission)?
+                .unchanged_in(execution, runtime, snapshot, admission)?
         {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
         }

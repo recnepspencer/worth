@@ -213,20 +213,27 @@ impl WorthQueryRetainedCapabilityAuthorization {
 
     pub(in crate::domain_computation) fn validate_currentness_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
     ) -> Result<(), super::WorthQueryOperationAuthorizationDenialKind> {
-        if !self.principal.remains_current_in(runtime, snapshot) {
+        if !self
+            .principal
+            .remains_current_in(execution, runtime, snapshot)
+        {
             return Err(super::WorthQueryOperationAuthorizationDenialKind::StalePrincipal);
         }
-        if !self.decision.remains_current_in(runtime, snapshot, bridge) {
+        if !self
+            .decision
+            .remains_current_in(execution, runtime, snapshot, bridge)
+        {
             return Err(super::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization);
         }
         if self.supporting.as_ref().is_some_and(|supporting| {
             !supporting
                 .decision()
-                .remains_current_in(runtime, snapshot, bridge)
+                .remains_current_in(execution, runtime, snapshot, bridge)
         }) {
             return Err(super::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization);
         }

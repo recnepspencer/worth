@@ -3,11 +3,14 @@ use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[test]
 fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let shared = create_entity(&runtime, "shared");
-    let existing_neighbor = create_entity(&runtime, "existing-neighbor");
-    create_relation(&runtime, shared, existing_neighbor, "existing");
-    let new_neighbor = create_entity(&runtime, "new-neighbor");
+    let shared = create_entity(execution, &runtime, "shared");
+    let existing_neighbor = create_entity(execution, &runtime, "existing-neighbor");
+    create_relation(execution, &runtime, shared, existing_neighbor, "existing");
+    let new_neighbor = create_entity(execution, &runtime, "new-neighbor");
     let intent = MutationIntent::Create(CreateIntent::Relation(RelationSpec {
         partition_id: crate::identity::data::PartitionId::main(),
         kind_id: KindId(2),
@@ -49,11 +52,14 @@ fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
 
 #[test]
 fn proposed_retarget_direct_scope_keeps_old_and_new_endpoints() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let old_source = create_entity(&runtime, "old-source");
-    let old_target = create_entity(&runtime, "old-target");
-    let new_target = create_entity(&runtime, "new-target");
-    let relation_id = create_relation(&runtime, old_source, old_target, "edge");
+    let old_source = create_entity(execution, &runtime, "old-source");
+    let old_target = create_entity(execution, &runtime, "old-target");
+    let new_target = create_entity(execution, &runtime, "new-target");
+    let relation_id = create_relation(execution, &runtime, old_source, old_target, "edge");
     let intent = MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
         UpdateRelationEndpointsIntent {
             relation_id,
@@ -80,10 +86,13 @@ fn proposed_retarget_direct_scope_keeps_old_and_new_endpoints() {
 
 #[test]
 fn proposed_delete_direct_scope_keeps_both_old_endpoints() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_id = create_relation(&runtime, source, target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_id = create_relation(execution, &runtime, source, target, "edge");
     let intent = MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
         relation_id,
     }));
@@ -99,11 +108,14 @@ fn proposed_delete_direct_scope_keeps_both_old_endpoints() {
 
 #[test]
 fn touched_scope_tracks_planned_relation_endpoint_updates() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let old_target = create_entity(&runtime, "old-target");
-    let new_target = create_entity(&runtime, "new-target");
-    let relation_id = create_relation(&runtime, source, old_target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let old_target = create_entity(execution, &runtime, "old-target");
+    let new_target = create_entity(execution, &runtime, "new-target");
+    let relation_id = create_relation(execution, &runtime, source, old_target, "edge");
     let intent = MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
         UpdateRelationEndpointsIntent {
             relation_id,
@@ -154,10 +166,13 @@ fn touched_scope_tracks_planned_relation_endpoint_updates() {
 
 #[test]
 fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let old_target = create_entity(&runtime, "old-target");
-    let relation_id = create_relation(&runtime, source, old_target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let old_target = create_entity(execution, &runtime, "old-target");
+    let relation_id = create_relation(execution, &runtime, source, old_target, "edge");
     let created_target = CreatedEntityRef {
         partition_id: crate::identity::data::PartitionId(1),
         kind_id: KindId(1),
@@ -216,10 +231,13 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
 
 #[test]
 fn touched_scope_tracks_planned_relation_deletes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_id = create_relation(&runtime, source, target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_id = create_relation(execution, &runtime, source, target, "edge");
     let intent = MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
         relation_id,
     }));

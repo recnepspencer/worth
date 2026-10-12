@@ -8,7 +8,11 @@ use crate::runtime::tests::graph_read_access::support::graph_read_access::read_s
 
 #[test]
 fn closeout_covered_read_receipt_proves_zero_caller_owned_n_plus_one_paths() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.closeout.no-n-plus-one.ephemeral",
         profile_with_ephemeral_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
@@ -16,7 +20,7 @@ fn closeout_covered_read_receipt_proves_zero_caller_owned_n_plus_one_paths() {
     );
     let family = graph_access_family(&mut workspace, "closeout-no-n-plus-one");
     let result = workspace
-        .execute_read_family(&family)
+        .execute_read_family(request_execution, &family)
         .expect("covered read should execute through admitted access plan");
     let counters = result
         .receipt()

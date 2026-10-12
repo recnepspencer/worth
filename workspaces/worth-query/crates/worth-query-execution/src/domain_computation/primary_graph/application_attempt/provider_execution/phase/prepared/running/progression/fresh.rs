@@ -53,6 +53,7 @@ pub(super) struct WorthQueryFreshProviderAttempt<'run> {
 impl<'run> WorthQueryFreshProviderAttempt<'run> {
     pub(super) fn progress_invariant(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
         provider: &std::sync::Arc<WorthQueryPrimaryGraphProvider>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -61,6 +62,7 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
         Progression,
     > {
         super::invariant::progress_invariant_candidate(
+            execution,
             self.staged,
             self.read_set,
             &self.request,
@@ -72,6 +74,7 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
 }
 
 pub(super) fn compare_provider_read_set<'run, Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     staged: WorthQuerySessionBoundReadsAndEffects<'run>,
     requests: Vec<WorthQueryDecisionFactRequest>,
     authority: &super::WorthQueryApplicationCommitProgressionAuthority<
@@ -88,7 +91,7 @@ where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
-    if let Some(outcome) = registered_idempotency_outcome(&staged, authority) {
+    if let Some(outcome) = registered_idempotency_outcome(execution, &staged, authority) {
         let _ = staged.abort();
         return WorthQueryProviderReadSetProgression::Terminal(outcome);
     }
@@ -109,7 +112,7 @@ where
             ));
         }
     };
-    match authority.provider().compare_application_read_set(
+    match authority.provider().compare_application_read_set(execution,
         &staged.read_authority(), receipt,
         crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
             allocation_control.policy(), Some(authority.admission().publication_request()),
@@ -123,7 +126,7 @@ where
             })
         }
         Ok(WorthQueryDecisionReadSetFreshnessOutcome::Stale(stale)) => {
-            resolve_stale_provider_read_set(staged, stale.stale_fact_count(), authority)
+            resolve_stale_provider_read_set(execution, staged, stale.stale_fact_count(), authority)
         }
         Err(failure) => {
             let _ = staged.abort();
@@ -133,6 +136,7 @@ where
 }
 
 fn resolve_stale_provider_read_set<'run, Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     staged: WorthQuerySessionBoundReadsAndEffects<'run>,
     stale_fact_count: usize,
     authority: &super::WorthQueryApplicationCommitProgressionAuthority<
@@ -148,14 +152,16 @@ where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
-    let outcome = registered_idempotency_outcome(&staged, authority).unwrap_or_else(|| {
-        Progression::Stale(WorthQueryApplicationStaleAttempt::new(stale_fact_count))
-    });
+    let outcome =
+        registered_idempotency_outcome(execution, &staged, authority).unwrap_or_else(|| {
+            Progression::Stale(WorthQueryApplicationStaleAttempt::new(stale_fact_count))
+        });
     let _ = staged.abort();
     WorthQueryProviderReadSetProgression::Terminal(outcome)
 }
 
 fn registered_idempotency_outcome<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     staged: &WorthQuerySessionBoundReadsAndEffects<'_>,
     authority: &super::WorthQueryApplicationCommitProgressionAuthority<
         '_,
@@ -170,7 +176,7 @@ where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
-    let proof = match authority.authorization.authorize_application_commit(
+    let proof = match authority.authorization.authorize_application_commit(execution,
         authority.application(),
         authority.admission(),
         authority.coordination(),
@@ -190,7 +196,7 @@ where
     let resolution = proof.govern((), |()| {
         authority
             .provider()
-            .resolve_application_idempotency(&provider_session)
+            .resolve_application_idempotency(execution, &provider_session)
     });
     match resolution {
         Err(((), denial)) => Some(

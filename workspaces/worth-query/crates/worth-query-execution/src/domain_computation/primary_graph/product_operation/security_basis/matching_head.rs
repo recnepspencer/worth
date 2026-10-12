@@ -38,6 +38,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         'basis,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductObservationLease,
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
         prepared: &PreparedSelectedReadIndexes,
@@ -50,7 +51,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if !prepared.matches_basis(product.relational_basis()) {
             return Ok(None);
         }
-        self.admit_matching_head_query_permission_basis(product, query_basis, admission)
+        self.admit_matching_head_query_permission_basis(execution, product, query_basis, admission)
             .map(|sealed| {
                 sealed.map(|permission| SelectedPreparedReadSecurityBasis {
                     basis: permission.basis,
@@ -65,6 +66,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         'basis,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductObservationLease,
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
         admission: &mut InvalidationEditAdmission,
@@ -95,7 +97,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .is_none_or(|guard| guard == expected);
         if expected.owner_identity() != self.product_runtime.owner.owner_identity()
             || !guard_matches
-            || !query_basis.can_reuse_security_snapshot_at(expected)
+            || !query_basis.can_reuse_security_snapshot_at(execution, expected)
         {
             return Ok(None);
         }

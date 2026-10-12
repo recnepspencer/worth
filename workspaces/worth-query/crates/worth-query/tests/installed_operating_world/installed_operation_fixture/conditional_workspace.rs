@@ -103,6 +103,7 @@ impl domain::WorthQueryGraphParticipationProvider<ConditionalModelGraph>
 }
 
 pub fn conditional_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
 ) -> Result<
@@ -110,10 +111,17 @@ pub fn conditional_workspace(
     worth_query::facade::consumer_kit::WorthQueryTestBackendError,
 > {
     let installation = conditional_installation(&node);
-    conditional_workspace_with(name, node, installation, DirectConditionalCompute)
+    conditional_workspace_with(
+        request_execution,
+        name,
+        node,
+        installation,
+        DirectConditionalCompute,
+    )
 }
 
 pub(crate) fn conditional_workspace_with<P>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
     installation: ConditionalInstallation,
@@ -125,7 +133,8 @@ pub(crate) fn conditional_workspace_with<P>(
 where
     P: domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, ReadVertex, ReadFamily>,
 {
-    conditional_workspace_with_builder(node, installation, compute).workspace(name)
+    conditional_workspace_with_builder(node, installation, compute)
+        .workspace(request_execution, name)
 }
 
 pub(crate) fn conditional_workspace_with_builder<P>(
@@ -160,6 +169,7 @@ where
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
 }
 pub(crate) fn conditional_workspace_without_lowering(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
 ) -> Result<
@@ -168,7 +178,7 @@ pub(crate) fn conditional_workspace_without_lowering(
 > {
     conditional_workspace_builder(vec![node])
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 fn conditional_workspace_builder(
@@ -253,6 +263,7 @@ fn conditional_package_with_access(
 }
 
 pub(crate) fn shared_signal_node_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     first: domain::WorthQueryPortableConditionalNodeDeclaration,
     second: domain::WorthQueryPortableConditionalNodeDeclaration,
@@ -313,5 +324,5 @@ pub(crate) fn shared_signal_node_workspace(
             ))
         })
         .domain_operation_executor(GeometryDomain, ReadVertex, ReadFamily, ReadVertexExecutor)
-        .workspace(name)
+        .workspace(request_execution, name)
 }

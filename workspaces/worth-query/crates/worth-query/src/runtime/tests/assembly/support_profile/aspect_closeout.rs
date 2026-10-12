@@ -2,7 +2,10 @@ use super::super::super::support::*;
 
 #[test]
 fn runtime_public_aspect_api_finalization_closeout_answers_substrate_handoff_questions() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.aspect-api-closeout")
         .expect("task runtime should open a named workspace");
     let closeout = workspace.public_aspect_api_finalization_closeout();

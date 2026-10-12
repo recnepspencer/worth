@@ -1,7 +1,10 @@
 use crate::history::data::BranchId;
-fn prove_registry_lookup_work_is_population_independent(branch_population: usize) {
+fn prove_registry_lookup_work_is_population_independent(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    branch_population: usize,
+) {
     let runtime = crate::tests::support::runtime_with_test_schema();
-    crate::tests::support::create_entity(&runtime, "basis-scale-root");
+    crate::tests::support::create_entity(execution, &runtime, "basis-scale-root");
     populate_branches(&runtime, branch_population);
     let (target, retained) = retain_one_basis_per_branch(&runtime, branch_population);
     let after = prove_single_readmission_is_fixed_work(&runtime, &target, branch_population);
@@ -100,16 +103,22 @@ fn assert_exact_registry_cleanup(
 
 #[test]
 fn retained_basis_registry_cost_is_fixed_at_one_sixty_four_and_four_thousand_ninety_six_branches() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for branch_population in [1, 64, 4_096] {
-        prove_registry_lookup_work_is_population_independent(branch_population);
+        prove_registry_lookup_work_is_population_independent(execution, branch_population);
     }
 }
 
 #[test]
 fn ordinary_publication_does_not_scan_branch_or_branch_head_populations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for branch_population in [64, 4_096] {
         let runtime = crate::tests::support::runtime_with_test_schema();
-        crate::tests::support::create_entity(&runtime, "publication-scan-root");
+        crate::tests::support::create_entity(execution, &runtime, "publication-scan-root");
         populate_branches(&runtime, branch_population);
         let branch_scans_before = runtime
             .phase4_reference_cost_counters()
@@ -117,6 +126,7 @@ fn ordinary_publication_does_not_scan_branch_or_branch_head_populations() {
         let visibility_before = runtime.visibility.visibility_cache_cost_counters();
 
         crate::tests::support::create_entity(
+            execution,
             &runtime,
             &format!("publication-scan-{branch_population}"),
         );

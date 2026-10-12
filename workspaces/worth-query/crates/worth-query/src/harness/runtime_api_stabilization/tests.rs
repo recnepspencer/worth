@@ -10,8 +10,13 @@ use crate::runtime::{WorthQueryRuntimeFacadeFamily, WorthQueryRuntimeFamilySuppo
 
 #[test]
 fn runtime_api_stabilization_adapter_emits_named_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let artifact =
-        RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_artifact();
+        RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_artifact(
+            request_execution,
+        );
 
     assert_eq!(
         artifact.suite_name,
@@ -24,7 +29,12 @@ fn runtime_api_stabilization_adapter_emits_named_matrix() {
 
 #[test]
 fn runtime_api_stabilization_matrix_covers_required_rows() {
-    let matrix = RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_test();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let matrix = RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_test(
+        request_execution,
+    );
 
     for row_name in RUNTIME_API_STABILIZATION_REQUIRED_CANONICAL_ROW_NAMES {
         assert!(contains_row(&matrix, row_name), "missing {row_name}");
@@ -36,7 +46,12 @@ fn runtime_api_stabilization_matrix_covers_required_rows() {
 
 #[test]
 fn runtime_api_stabilization_rows_have_required_outputs_and_meaningful_assertions() {
-    let matrix = RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_test();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let matrix = RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_test(
+        request_execution,
+    );
 
     for row in &matrix.rows {
         for lane in [&row.control_lane, &row.hostile_lane, &row.parity_lane] {
@@ -88,7 +103,12 @@ fn runtime_api_stabilization_rows_have_required_outputs_and_meaningful_assertion
 
 #[test]
 fn runtime_api_stabilization_golden_transcripts_are_executable_and_distinct() {
-    let matrix = RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_test();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let matrix = RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_test(
+        request_execution,
+    );
     let mut digests = matrix
         .rows
         .iter()
@@ -117,7 +137,12 @@ fn runtime_api_stabilization_golden_transcripts_are_executable_and_distinct() {
 
 #[test]
 fn runtime_api_stabilization_rows_enforce_required_assertion_classes() {
-    let matrix = RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_test();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let matrix = RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_test(
+        request_execution,
+    );
     let mut covered = Vec::new();
 
     for row in &matrix.rows {
@@ -166,7 +191,12 @@ fn runtime_api_stabilization_rows_enforce_required_assertion_classes() {
 
 #[test]
 fn runtime_api_stabilization_deferred_gates_name_future_owners() {
-    let matrix = RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_test();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let matrix = RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_test(
+        request_execution,
+    );
     let expected = [
         (
             "store-backed-parity-deferred-gate",
@@ -198,8 +228,13 @@ fn runtime_api_stabilization_deferred_gates_name_future_owners() {
 
 #[test]
 fn runtime_api_stabilization_closeout_answers_required_questions() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let artifact =
-        RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_artifact();
+        RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_artifact(
+            request_execution,
+        );
     let closeout = &artifact.closeout;
 
     assert_eq!(
@@ -276,8 +311,13 @@ fn runtime_api_stabilization_closeout_answers_required_questions() {
 
 #[test]
 fn runtime_api_stabilization_closeout_carries_migration_and_verification_contract() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let artifact =
-        RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_artifact();
+        RuntimeApiStabilizationAdapter::runtime_api_golden_dx_and_async_safe_facade_artifact(
+            request_execution,
+        );
     let closeout = &artifact.closeout;
 
     assert!(closeout

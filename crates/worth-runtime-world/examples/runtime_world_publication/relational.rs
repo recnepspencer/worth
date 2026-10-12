@@ -40,7 +40,7 @@ fn patch(value: &str) -> AspectFieldPatch {
     )]))
 }
 impl CargoRecords {
-    pub fn install() -> Self {
+    pub fn install(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Self {
         let registry = RelationalSchemaRegistry::new()
             .register_entity_kind(EntityKindRegistration {
                 kind_id: KindId(1),
@@ -79,12 +79,7 @@ impl CargoRecords {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-        let result = tx
-            .commit(
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
+        let result = tx.commit(execution, &runtime).unwrap();
         let grain = result
             .changed_records
             .iter()
@@ -97,6 +92,7 @@ impl CargoRecords {
     }
     pub fn candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         value: &str,
     ) -> PreparedRelationalCommitCandidate {
@@ -116,10 +112,7 @@ impl CargoRecords {
         .unwrap();
         self.runtime
             .preparation_port()
-            .prepare_branch_transaction(
-                tx,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, tx)
             .unwrap()
     }
 }

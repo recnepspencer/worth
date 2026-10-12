@@ -27,13 +27,16 @@ use super::{
 
 #[test]
 fn workflow_conflict_inspection_materializer_builds_query_conflict_artifact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let lowered_merge = runtime_lowered_merge();
     let artifact = success(materialize_query_conflict_inspection_artifact(ready(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_merge_conflict_inspection(
             "spatial.workflow.conflict_inspection",
             "runtime merge inspection should materialize a query conflict artifact",
             lowered_merge,
-            source_addition_inspection_artifact(),
+            source_addition_inspection_artifact(request_execution),
         )
         .bind_to_declaration_target(declaration_target("intent-workflow-conflict-inspection")),
     )));
@@ -70,13 +73,16 @@ fn workflow_post_merge_inspection_materializer_builds_query_post_merge_artifact(
 
 #[test]
 fn workflow_conflict_inspection_materializer_builds_preview_promotion_artifact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let lowered_merge = preview_lowered_merge();
     let artifact = success(materialize_query_conflict_inspection_artifact(ready(
         WorthQueryWorkflowContributionAuthoring::promotion_eligible_merge_conflict_inspection(
             "spatial.workflow.preview_conflict_inspection",
             "preview promotion merge inspection should materialize a query conflict artifact",
             lowered_merge,
-            source_addition_inspection_artifact(),
+            source_addition_inspection_artifact(request_execution),
         )
         .bind_to_declaration_target(declaration_target(
             "intent-workflow-preview-conflict-inspection",

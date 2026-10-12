@@ -50,6 +50,7 @@ pub(super) fn bind_source_records<
     IdentityWrite,
     IdentityUnit,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     candidates: BTreeMap<String, WorthQueryTemporalIntentCandidate<Clock, Input>>,
     identity_field: ApplicationFieldRef<
@@ -76,7 +77,7 @@ where
     IdentityUnit: ApplicationFieldUnit,
 {
     let selected = runtime
-        .on_product(product.retained_clone())
+        .on_product(execution, product.retained_clone())
         .map_err(super::product_denial)?;
     candidates
         .into_iter()
@@ -90,7 +91,7 @@ where
                     )
                 })?;
             let record = selected
-                .resolve_entity(
+                .resolve_entity_with_request(execution,
                     identity_field,
                     value,
                     request,

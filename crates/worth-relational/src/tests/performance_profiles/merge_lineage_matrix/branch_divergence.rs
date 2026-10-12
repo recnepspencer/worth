@@ -1,10 +1,13 @@
 use super::*;
 
-pub(super) fn certify_lineage_branch_divergence_breadth(suite: &'static str) {
+pub(super) fn certify_lineage_branch_divergence_breadth(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let lineage_divergence_samples =
         capture_perf_samples(suite, "lineage_branch_divergence_breadth", || {
             let runtime = runtime_with_test_schema();
-            let created = create_entity_outcome(&runtime, "main");
+            let created = create_entity_outcome(execution, &runtime, "main");
             let start_lineage = runtime
                 .lineage_access()
                 .for_record(changed_entities(&created)[0])
@@ -12,6 +15,7 @@ pub(super) fn certify_lineage_branch_divergence_breadth(suite: &'static str) {
                 .lineage_id;
             create_branch_from_main(&runtime, "feature");
             let _ = create_entity_outcome_on_branch(
+                execution,
                 &runtime,
                 "feature",
                 BranchId("feature".to_string()),
@@ -19,14 +23,14 @@ pub(super) fn certify_lineage_branch_divergence_breadth(suite: &'static str) {
 
             runtime.performance_access().reset_counters();
             let started_at = Instant::now();
-            let divergence =
-                runtime
-                    .lineage_access()
-                    .divergence_between_branches(LineageDivergenceRequest {
-                        left_branch: BranchId("main".to_string()),
-                        right_branch: BranchId("feature".to_string()),
-                        traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
-                    });
+            let divergence = runtime.lineage_access().divergence_between_branches(
+                execution,
+                LineageDivergenceRequest {
+                    left_branch: BranchId("main".to_string()),
+                    right_branch: BranchId("feature".to_string()),
+                    traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
+                },
+            );
             let resolution =
                 runtime
                     .lineage_access()

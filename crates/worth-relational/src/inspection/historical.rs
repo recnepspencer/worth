@@ -13,6 +13,7 @@ use super::access::InspectionAccess;
 impl<'runtime> InspectionAccess<'runtime> {
     pub fn open_historical_view(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
         mode: HistoricalInspectionMode,
     ) -> HistoricalOpenResult {
@@ -30,7 +31,7 @@ impl<'runtime> InspectionAccess<'runtime> {
             HistoricalInspectionMode::RetainedOnly
             | HistoricalInspectionMode::AllowCanonicalReconstruction => {
                 let read_view = self
-                    .read_view_for_scope(&InspectionScope::Version(version_id))
+                    .read_view_for_scope(execution, &InspectionScope::Version(version_id))
                     .expect("version scope should always open a read view");
                 let availability = if direct_available {
                     InspectionAvailability::Direct
@@ -61,12 +62,13 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub fn inspect_historical_record(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         version_id: crate::identity::data::VersionId,
         target: RecordRef,
         mode: HistoricalInspectionMode,
     ) -> HistoricalRecordInspection {
-        let open_result = self.open_historical_view(version_id, mode);
+        let open_result = self.open_historical_view(execution, version_id, mode);
         let record_observation = match (&open_result.view, target) {
             (Some(view), RecordRef::Entity(entity_id)) => HistoricalRecordObservation {
                 target: RecordRef::Entity(entity_id),
@@ -123,6 +125,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         };
         let structural_identity_evidence = open_result.view.as_ref().and_then(|_| {
             self.structural_identity(
+                execution,
                 InspectionScope::Version(version_id),
                 record_observation.target.clone(),
             )

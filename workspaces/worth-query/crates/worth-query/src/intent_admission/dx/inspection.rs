@@ -48,8 +48,11 @@ impl<'a> WorthQueryWorkspaceDerivedMaterializationIntentAuthoring<'a> {
         self.review()?.admit()
     }
 
-    pub fn execute(self) -> Result<WorthQueryDerivedMaterializationResult, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryDerivedMaterializationResult, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -142,9 +145,12 @@ impl<'a> WorthQueryAdmittedWorkspaceDerivedMaterializationIntent<'a> {
         &self.execution_binding
     }
 
-    pub fn execute(self) -> Result<WorthQueryDerivedMaterializationResult, WorthQueryRuntimeError> {
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryDerivedMaterializationResult, WorthQueryRuntimeError> {
         self.workspace
-            .execute_bound_derived_materialization(self.execution_binding)
+            .execute_bound_derived_materialization(execution, self.execution_binding)
     }
 }
 
@@ -179,8 +185,11 @@ impl<'a> WorthQueryWorkspaceDerivedInspectionIntentAuthoring<'a> {
         self.review()?.admit()
     }
 
-    pub fn execute(self) -> Result<WorthQueryDerivedInspectionResult, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryDerivedInspectionResult, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -273,8 +282,11 @@ impl<'a> WorthQueryAdmittedWorkspaceDerivedInspectionIntent<'a> {
         &self.execution_binding
     }
 
-    pub fn execute(self) -> Result<WorthQueryDerivedInspectionResult, WorthQueryRuntimeError> {
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryDerivedInspectionResult, WorthQueryRuntimeError> {
         self.workspace
-            .execute_bound_derived_inspection(self.execution_binding)
+            .execute_bound_derived_inspection(execution, self.execution_binding)
     }
 }

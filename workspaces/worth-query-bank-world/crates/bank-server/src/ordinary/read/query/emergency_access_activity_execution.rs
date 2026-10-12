@@ -28,6 +28,7 @@ impl<'runtime, 'principal>
         self,
         approved: &BankApprovedEstateElevation,
         after_admission: impl for<'admitted> FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             BankAdmittedEstateEmergencyAccessActivityHistorical<'admitted>,
         )
             -> Result<Output, BankApplicationQueryDenial>,
@@ -40,6 +41,7 @@ impl<'runtime, 'principal>
         approved: &BankApprovedEstateElevation,
         session: &BankPreviewSession,
         after_admission: impl for<'admitted> FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             BankAdmittedEstateEmergencyAccessActivityPreview<'admitted>,
         )
             -> Result<Output, BankApplicationQueryDenial>,
@@ -69,6 +71,7 @@ impl<'runtime, 'principal>
         continuation: BankEstateEmergencyAccessActivityContinuation,
         controls: WorthQueryApplicationQueryResumeControls<'_>,
         after_readmission: impl for<'admitted> FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             BankAdmittedEstateEmergencyAccessActivityContinuation<'admitted>,
         )
             -> Result<Output, BankApplicationQueryDenial>,

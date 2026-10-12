@@ -28,6 +28,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
 
     pub fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         if let Some(reference) = command.symbolic_target_reference() {
@@ -47,7 +48,8 @@ impl<'a> WorthQueryPreviewSession<'a> {
             &self.label,
             self.pending_commands.len() + 1,
             &command,
-            self.runtime.current_snapshot_identity(),
+            self.runtime
+                .current_snapshot_identity_with_request(execution),
         );
         self.pending_commands.push(command);
         self.writes.push(receipt.clone());
@@ -57,56 +59,62 @@ impl<'a> WorthQueryPreviewSession<'a> {
 
     pub fn insert(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         collection: impl Into<String>,
         declaration: impl FnOnce(WorthQueryAspectMutationBuilder) -> WorthQueryAspectMutationBuilder,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         let command =
             declaration(WorthQueryAspectMutationBuilder::new()).build_insert(collection)?;
-        self.write(command)
+        self.write(execution, command)
     }
 
     pub fn update(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_identity: WorthQueryEntityIdentity,
         declaration: impl FnOnce(WorthQueryAspectMutationBuilder) -> WorthQueryAspectMutationBuilder,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         let command =
             declaration(WorthQueryAspectMutationBuilder::new()).build_update(entity_identity)?;
-        self.write(command)
+        self.write(execution, command)
     }
 
     pub fn update_existing(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryExistingTruthTargetBinding,
         declaration: impl FnOnce(WorthQueryAspectMutationBuilder) -> WorthQueryAspectMutationBuilder,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         let command =
             declaration(WorthQueryAspectMutationBuilder::new()).build_update_existing(binding)?;
-        self.write(command)
+        self.write(execution, command)
     }
 
     pub fn assert_existing(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryExistingTruthTargetBinding,
         declaration: impl FnOnce(WorthQueryAspectMutationBuilder) -> WorthQueryAspectMutationBuilder,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         let command =
             declaration(WorthQueryAspectMutationBuilder::new()).build_assert_existing(binding)?;
-        self.write(command)
+        self.write(execution, command)
     }
 
     pub fn verify_existing(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryExistingTruthTargetBinding,
         declaration: impl FnOnce(WorthQueryAspectMutationBuilder) -> WorthQueryAspectMutationBuilder,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         let command =
             declaration(WorthQueryAspectMutationBuilder::new()).build_verify_existing(binding)?;
-        self.write(command)
+        self.write(execution, command)
     }
 
     pub fn update_existing_verified(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryExistingTruthTargetBinding,
         verify: impl FnOnce(WorthQueryAspectMutationBuilder) -> WorthQueryAspectMutationBuilder,
         update: impl FnOnce(WorthQueryAspectMutationBuilder) -> WorthQueryAspectMutationBuilder,
@@ -115,54 +123,65 @@ impl<'a> WorthQueryPreviewSession<'a> {
             .finish_existing_truth_verification_aspects("backend-verified existing-truth update")?;
         let command = update(WorthQueryAspectMutationBuilder::new())
             .build_update_existing_verified(binding, asserted_aspects)?;
-        self.write(command)
+        self.write(execution, command)
     }
 
     pub fn delete(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_identity: impl Into<String>,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
-        self.write(WorthQueryWriteCommand::Delete {
-            entity_identity: crate::memory_workspace::admit_authored_entity_label(
-                entity_identity.into(),
-            ),
-        })
+        self.write(
+            execution,
+            WorthQueryWriteCommand::Delete {
+                entity_identity: crate::memory_workspace::admit_authored_entity_label(
+                    entity_identity.into(),
+                ),
+            },
+        )
     }
 
     pub fn delete_with(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_identity: WorthQueryEntityIdentity,
         declaration: impl FnOnce(WorthQueryDeleteMutationBuilder) -> WorthQueryDeleteMutationBuilder,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         let command =
             declaration(WorthQueryDeleteMutationBuilder::new()).build_delete(entity_identity)?;
-        self.write(command)
+        self.write(execution, command)
     }
 
     pub fn delete_existing(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryExistingTruthTargetBinding,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
-        self.write(WorthQueryWriteCommand::DeleteExistingAspects {
-            binding,
-            touched_aspects: Vec::new(),
-            metadata: WorthQueryMutationMetadata::default(),
-            naming_intent: None,
-        })
+        self.write(
+            execution,
+            WorthQueryWriteCommand::DeleteExistingAspects {
+                binding,
+                touched_aspects: Vec::new(),
+                metadata: WorthQueryMutationMetadata::default(),
+                naming_intent: None,
+            },
+        )
     }
 
     pub fn delete_existing_with(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryExistingTruthTargetBinding,
         declaration: impl FnOnce(WorthQueryDeleteMutationBuilder) -> WorthQueryDeleteMutationBuilder,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         let command =
             declaration(WorthQueryDeleteMutationBuilder::new()).build_delete_existing(binding)?;
-        self.write(command)
+        self.write(execution, command)
     }
 
     pub fn delete_existing_verified(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryExistingTruthTargetBinding,
         verify: impl FnOnce(WorthQueryAspectMutationBuilder) -> WorthQueryAspectMutationBuilder,
         delete: impl FnOnce(WorthQueryDeleteMutationBuilder) -> WorthQueryDeleteMutationBuilder,
@@ -171,11 +190,12 @@ impl<'a> WorthQueryPreviewSession<'a> {
             .finish_existing_truth_verification_aspects("backend-verified existing-truth delete")?;
         let command = delete(WorthQueryDeleteMutationBuilder::new())
             .build_delete_existing_verified(binding, asserted_aspects)?;
-        self.write(command)
+        self.write(execution, command)
     }
 
     pub fn batch(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         declaration: impl FnOnce(WorthQueryMutationBatchBuilder) -> WorthQueryMutationBatchBuilder,
     ) -> Result<WorthQueryBatchWriteReceipt, WorthQueryRuntimeError> {
         let commands = declaration(WorthQueryMutationBatchBuilder::new()).finish()?;
@@ -219,7 +239,8 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         &self.label,
                         self.pending_commands.len() + 1,
                         &concrete,
-                        self.runtime.current_snapshot_identity(),
+                        self.runtime
+                            .current_snapshot_identity_with_request(execution),
                     )
                     .with_symbolic_target_reference(
                         reference,
@@ -246,7 +267,8 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         &self.label,
                         self.pending_commands.len() + 1,
                         &concrete,
-                        self.runtime.current_snapshot_identity(),
+                        self.runtime
+                            .current_snapshot_identity_with_request(execution),
                     )
                     .with_symbolic_target_reference(
                         reference,
@@ -258,7 +280,8 @@ impl<'a> WorthQueryPreviewSession<'a> {
                     &self.label,
                     self.pending_commands.len() + 1,
                     &command,
-                    self.runtime.current_snapshot_identity(),
+                    self.runtime
+                        .current_snapshot_identity_with_request(execution),
                 ),
             };
             if let Some(reference) = symbolic_target_reference.as_ref() {

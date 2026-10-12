@@ -23,13 +23,24 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
     world
         .application
         .with_host_advancement(|active_phase| {
+            let host_custody = active_phase.test_host_request();
             let phase = &active_phase;
             let execution = phase;
 
             let request = live_scope();
-            let principal = authenticated_principal(&world, &request);
-            let account = resolved_account(&world, "open", &request);
+            let principal = authenticated_principal(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                &request,
+            );
+            let account = resolved_account(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                "open",
+                &request,
+            );
             let program = retained_status_program(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
                 &world,
                 &principal,
                 &account,
@@ -38,6 +49,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
                 RetentionMutationBreadth::Narrow,
             );
             let prepared = prepare_application_commit(
+                &phase.borrowed_request_for_test(),
                 phase,
                 &world.application,
                 WorthQueryApplicationCommitPreparationRequest::new(
@@ -89,6 +101,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
                 )
                 .unwrap_or_else(|_| panic!("overlay fixture must register"));
             registered::assert_second_real_overlay_is_rejected(
+                &phase.borrowed_request_for_test(),
                 registered_session.registered,
                 &world,
             );

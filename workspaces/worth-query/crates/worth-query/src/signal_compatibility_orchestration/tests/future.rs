@@ -10,7 +10,10 @@ use super::super::transcript::orchestrated_outcome_from_signal_checked_on_handle
 
 #[test]
 fn future_checked_signal_compatibility_stays_future_typed_when_orchestration_stops_at_compatible() {
-    let handle = future_signal_admitted_handle("future-compatible");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = future_signal_admitted_handle(request_execution, "future-compatible");
 
     let temporal = orchestrated_outcome_from_signal_checked_on_handle(
         &handle,
@@ -52,7 +55,10 @@ fn future_checked_signal_compatibility_stays_future_typed_when_orchestration_sto
 
 #[test]
 fn public_future_signal_posture_still_stops_before_preparation_under_orchestration() {
-    let handle = future_signal_admitted_handle("future-public");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = future_signal_admitted_handle(request_execution, "future-public");
 
     let temporal = orchestrated_outcome_from_signal_checked_on_handle(
         &handle,

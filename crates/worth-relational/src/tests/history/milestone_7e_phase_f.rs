@@ -15,8 +15,11 @@ use worth_foundational::{CanonicalBasisLocus, CanonicalBasisValue, InternedStrin
 
 #[test]
 fn merge_proof_packet_canonical_basis_parity_survives_publication_and_recovery() {
-    let runtime = merge_ready_runtime();
-    let outcome = execute_merge(&runtime);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = merge_ready_runtime(execution);
+    let outcome = execute_merge(execution, &runtime);
     let live_packet = outcome.execution_summary.proof_packet().clone();
     let live_basis = lower_packet(&runtime, &live_packet);
     let published_packet = published_merge_authority(&runtime, outcome.commit.commit.commit_id)
@@ -25,7 +28,7 @@ fn merge_proof_packet_canonical_basis_parity_survives_publication_and_recovery()
         .clone();
     let published_basis = lower_packet(&runtime, &published_packet);
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(&runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
     let recovered_packet = published_merge_authority(&recovered, outcome.commit.commit.commit_id)
         .execution_summary
         .proof_packet
@@ -40,10 +43,13 @@ fn merge_proof_packet_canonical_basis_parity_survives_publication_and_recovery()
 
 #[test]
 fn merge_proof_packet_canonical_basis_localizes_single_field_drift() {
-    let runtime = merge_ready_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = merge_ready_runtime(execution);
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     let packet = runtime
         .merge()
@@ -195,13 +201,18 @@ fn merge_proof_packet_canonical_basis_localizes_single_field_drift() {
     );
 }
 
-fn merge_ready_runtime() -> RelationalRuntime {
+fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_branch_from_main(&runtime, "alt");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
-    create_entity_outcome_on_branch(&runtime, "alt-only", BranchId("alt".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
+    create_entity_outcome_on_branch(execution, &runtime, "alt-only", BranchId("alt".to_string()));
     runtime
 }
 
@@ -213,13 +224,16 @@ fn merge_request() -> MergeExecutionRequest {
     )
 }
 
-fn execute_merge(runtime: &RelationalRuntime) -> MergeExecutionOutcome {
+fn execute_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> MergeExecutionOutcome {
     let prepared = runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge");
     runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge")
 }
 

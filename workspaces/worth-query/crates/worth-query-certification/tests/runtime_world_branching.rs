@@ -24,6 +24,8 @@ mod selected_product_lifecycle;
 mod selected_product_reads;
 #[path = "../../worth-query-host/tests/temporal_conditional_operation/shared_root_progress.rs"]
 mod shared_root_progress;
+#[path = "support/execution_policy.rs"]
+mod test_request_policy;
 #[path = "../../worth-query-host/tests/temporal_conditional_operation/world.rs"]
 mod world;
 
@@ -54,128 +56,20 @@ use courtroom_support::observe;
 use world::CourtroomWorld;
 use worth_query_host::facade::primary_graph;
 
-#[test]
-fn conditional_clock_observation_preserves_real_snapshot_capacity_denial() {
-    const MAXIMUM_ACTIVE_SNAPSHOTS: usize = 3;
-    let world =
-        CourtroomWorld::publish_with_active_snapshot_limit("ready", MAXIMUM_ACTIVE_SNAPSHOTS);
-    let (_, before) = world.application.relational_snapshot_state_for_test();
-    let branch = world.application.current_world();
-    let selected = world.application.on_branch(branch).select().unwrap();
-    let already_active = world.application.relational_snapshot_state_for_test().0;
-    let pinned = (already_active..MAXIMUM_ACTIVE_SNAPSHOTS)
-        .map(|_| {
-            world
-                .application
-                .on_branch(branch)
-                .select()
-                .expect("each basis inside the configured limit must be admitted")
-        })
-        .collect::<Vec<_>>();
-    let retained_after_failed_admission = pinned.len();
-    assert_eq!(
-        world.application.relational_snapshot_state_for_test().0,
-        MAXIMUM_ACTIVE_SNAPSHOTS
-    );
+#[path = "runtime_world_branching/conditional_clock_observation_preserves_real_snapshot_capacity_d.rs"]
+mod conditional_clock_observation_preserves_real_snapshot_capacity_d;
 
-    let denial = match selected.conditional_clock(&world.clock) {
-        Ok(_) => panic!("capacity exhaustion must deny public product admission"),
-        Err(denial) => denial,
-    };
-    assert_eq!(
-        denial.kind(),
-        primary_graph::WorthQueryConditionalClockObservationDenialKind::ProductAdmission(
-            primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::ActiveSnapshotCapacityExhausted {
-                maximum_active_snapshots: MAXIMUM_ACTIVE_SNAPSHOTS,
-            },
-        )
-    );
-    assert_eq!(world.contacts.snapshot(), (0, 0, 0, 0));
-    assert_eq!(
-        world.application.relational_snapshot_state_for_test().0,
-        retained_after_failed_admission,
-        "failed selected-product admission must release its own retained truth"
-    );
-    drop(pinned);
-    let (active, after) = world.application.relational_snapshot_state_for_test();
-    assert_eq!(active, 0);
-    assert_eq!(after, before);
-    let retry = world.conditional_clock().observe();
-    assert!(matches!(
-        retry,
-        primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(_)
-    ));
-    assert_eq!(world.application.relational_snapshot_state_for_test().0, 0);
-}
+#[path = "runtime_world_branching/application_readiness_reports_current_query_basis_without_leakin.rs"]
+mod application_readiness_reports_current_query_basis_without_leakin;
 
-#[test]
-fn application_readiness_reports_current_query_basis_without_leaking_a_lease() {
-    let world = CourtroomWorld::publish("ready");
-    let branch = world.application.current_world();
-    let observer = world.application.application_query_basis_observer();
-    let before = observer.observe();
-
-    let readiness = world
-        .application
-        .on_branch(branch)
-        .select()
-        .expect("the published product should be selectable")
-        .inspect_application_readiness()
-        .expect("the published application basis should be inspectable");
-
-    assert_eq!(
-        readiness.schema_binding(),
-        &world.application.installed_schema().binding_identity()
-    );
-    assert!(readiness
-        .basis_token()
-        .starts_with("basis:query-primary-graph-v2:"));
-    let repeated = world
-        .application
-        .on_branch(branch)
-        .select()
-        .expect("the published product should remain selectable")
-        .inspect_application_readiness()
-        .expect("repeated readiness inspection should remain available");
-    assert_eq!(
-        repeated.basis_token(),
-        readiness.basis_token(),
-        "readiness inspection must not manufacture a new optimistic basis"
-    );
-    assert_eq!(
-        world
-            .application
-            .application_basis_token(readiness.basis_identity())
-            .expect("the observed query basis should render through its owning runtime"),
-        readiness.basis_token(),
-        "a result must retain its exact observed basis instead of rediscovering head"
-    );
-    let after = observer.observe();
-    assert_eq!(after.active(), before.active());
-    assert_eq!(after.acquisitions(), before.acquisitions() + 2);
-}
-
-#[test]
-fn successor_generation_requires_fresh_typed_rebinding() {
-    let mut world = CourtroomWorld::publish("ready");
-    let successor = std::sync::Arc::new(world.installation.successor_generation());
-
-    let denial = world
-        .application
-        .reinstall_conditional_runtime_for_installation(
-            successor,
-            world.application.current_world(),
-        )
-        .unwrap_err();
-
-    assert_eq!(
-        denial.kind(),
-        primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::RebindRequired
-    );
-}
+#[path = "runtime_world_branching/successor_generation_requires_fresh_typed_rebinding.rs"]
+mod successor_generation_requires_fresh_typed_rebinding;
 
 #[test]
 fn reconstruction_panic_restores_runtime_owners_for_retry() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut world = CourtroomWorld::publish("ready");
     world.reconstruction_panic.set(true);
 
@@ -183,18 +77,24 @@ fn reconstruction_panic_restores_runtime_owners_for_retry() {
 
     world.reconstruction_panic.set(false);
     assert!(world.reinstall_conditional_runtime().is_ok());
-    let receipt = observe(&world);
+    let receipt = observe(request_execution, &world);
     assert_eq!(receipt.committed_operation_count(), 1);
 }
 
 #[test]
 fn host_installs_and_executes_a_due_temporal_application_operation() {
-    courtroom::host_installs_and_executes_due_operation();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::host_installs_and_executes_due_operation(request_execution);
 }
 
 #[test]
 fn public_product_journey_publishes_delivers_executes_and_cleans_up() {
-    public_product_journey::publishes_delivers_executes_and_cleans_up();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    public_product_journey::publishes_delivers_executes_and_cleans_up(request_execution);
 }
 
 #[test]
@@ -204,27 +104,48 @@ fn public_branch_facade_creates_and_selects_all_component_postures() {
 
 #[test]
 fn public_world_no_effect_retains_conditional_provenance() {
-    public_live_route::world_no_effect_retains_conditional_provenance();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    public_live_route::world_no_effect_retains_conditional_provenance(request_execution);
 }
 
 #[test]
 fn public_live_query_receives_a_real_conditional_world_publication() {
-    public_live_route::live_query_receives_conditional_world_publication();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    public_live_route::live_query_receives_conditional_world_publication(request_execution);
 }
 
 #[test]
 fn independent_products_advance_and_retain_exact_conditional_definitions() {
-    public_product_journey::independent_products_advance_and_retain_exact_definitions();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    public_product_journey::independent_products_advance_and_retain_exact_definitions(
+        request_execution,
+    );
 }
 
 #[test]
 fn application_commits_relational_and_signal_in_one_world_publication() {
-    public_product_journey::application_commits_relational_and_signal_in_one_world_publication();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    public_product_journey::application_commits_relational_and_signal_in_one_world_publication(
+        request_execution,
+    );
 }
 
 #[test]
 fn selected_sibling_mutation_carries_one_world_occurrence() {
-    public_product_journey::selected_sibling_mutation_carries_one_world_occurrence();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    public_product_journey::selected_sibling_mutation_carries_one_world_occurrence(
+        request_execution,
+    );
 }
 
 #[test]
@@ -239,68 +160,112 @@ fn shared_component_sibling_revalidates_its_own_security() {
 
 #[test]
 fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() {
-    courtroom_settlement::temporal_wake_settlement_repair_keeps_the_original_product_unpublished();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom_settlement::temporal_wake_settlement_repair_keeps_the_original_product_unpublished(
+        request_execution,
+    );
 }
 
 #[test]
 fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     courtroom_settlement::temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit(
+        request_execution,
     );
 }
 
 #[test]
 fn temporal_identity_work_is_cold_or_fresh_admission_only() {
-    courtroom::temporal_identity_work_is_cold_or_fresh_admission_only();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::temporal_identity_work_is_cold_or_fresh_admission_only(request_execution);
 }
 
 #[test]
 fn future_temporal_operation_waits_until_its_due_coordinate() {
-    courtroom::future_temporal_operation_waits_until_due();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::future_temporal_operation_waits_until_due(request_execution);
 }
 
 #[test]
 fn unrelated_rows_do_not_expand_conditional_observation_work() {
-    courtroom::unrelated_rows_do_not_expand_conditional_observation_work();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::unrelated_rows_do_not_expand_conditional_observation_work(request_execution);
 }
 
 #[test]
 fn cancellation_after_publication_retires_the_stale_wake_without_effects() {
-    courtroom::cancellation_after_publication_retires_stale_wake();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::cancellation_after_publication_retires_stale_wake(request_execution);
 }
 
 #[test]
 fn active_successor_revision_replaces_the_predecessor_wake() {
-    courtroom::active_successor_revision_replaces_predecessor_wake();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::active_successor_revision_replaces_predecessor_wake(request_execution);
 }
 
 #[test]
 fn busy_branch_heals_a_lagging_cursor_inside_observation() {
-    courtroom::busy_branch_heals_a_lagging_cursor_inside_observation();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::busy_branch_heals_a_lagging_cursor_inside_observation(request_execution);
 }
 
 #[test]
 fn native_writer_commit_reconsiders_a_suppressed_wake() {
-    courtroom::native_writer_commit_reconsiders_a_suppressed_wake();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::native_writer_commit_reconsiders_a_suppressed_wake(request_execution);
 }
 
 #[test]
 fn a_duplicate_clock_reading_after_a_foreign_commit_emits_its_invalidation() {
-    courtroom::a_duplicate_clock_reading_after_a_foreign_commit_emits_its_invalidation();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::a_duplicate_clock_reading_after_a_foreign_commit_emits_its_invalidation(
+        request_execution,
+    );
 }
 
 #[test]
 fn a_reordered_clock_reading_after_a_foreign_commit_keeps_its_invalidation() {
-    courtroom::a_reordered_clock_reading_after_a_foreign_commit_keeps_its_invalidation_for_the_next_accepted_observation();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::a_reordered_clock_reading_after_a_foreign_commit_keeps_its_invalidation_for_the_next_accepted_observation(request_execution);
 }
 
 #[test]
 fn a_stale_clock_reading_after_a_foreign_commit_keeps_its_invalidation() {
-    courtroom::a_stale_clock_reading_after_a_foreign_commit_keeps_its_invalidation_for_the_next_accepted_observation();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::a_stale_clock_reading_after_a_foreign_commit_keeps_its_invalidation_for_the_next_accepted_observation(request_execution);
 }
 
 #[test]
 fn reinstallation_reconstructs_active_authoritative_work() {
-    courtroom_lifecycle::reinstallation_reconstructs_active_authoritative_work();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom_lifecycle::reinstallation_reconstructs_active_authoritative_work(request_execution);
 }
 
 #[test]
@@ -310,57 +275,90 @@ fn reconstruction_work_scales_with_the_projection_not_unrelated_rows() {
 
 #[test]
 fn reinstallation_restores_no_cancelled_or_completed_work() {
-    courtroom_lifecycle::reinstallation_restores_no_terminal_work();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom_lifecycle::reinstallation_restores_no_terminal_work(request_execution);
 }
 
 #[test]
 fn reinstallation_after_eligibility_retries_freshly() {
-    courtroom_lifecycle::reinstallation_after_eligibility_retries_freshly();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom_lifecycle::reinstallation_after_eligibility_retries_freshly(request_execution);
 }
 
 #[test]
 fn reinstallation_after_commit_cannot_duplicate_the_effect() {
-    courtroom_lifecycle::reinstallation_after_commit_cannot_duplicate_effect();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom_lifecycle::reinstallation_after_commit_cannot_duplicate_effect(request_execution);
 }
 
 #[test]
 fn reinstallation_revokes_captured_granular_batches() {
-    courtroom_lifecycle::reinstallation_revokes_captured_granular_batches();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom_lifecycle::reinstallation_revokes_captured_granular_batches(request_execution);
 }
 
 #[test]
 fn closing_the_runtime_releases_conditional_inventory_and_revokes_handles() {
-    courtroom_lifecycle::closing_runtime_releases_inventory_and_revokes_handles();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom_lifecycle::closing_runtime_releases_inventory_and_revokes_handles(request_execution);
 }
 
 #[test]
 fn dropping_the_runtime_releases_exact_conditional_inventory() {
-    courtroom_lifecycle::dropping_runtime_releases_exact_inventory();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom_lifecycle::dropping_runtime_releases_exact_inventory(request_execution);
 }
 
 #[test]
 fn suppressed_wake_is_reconsidered_after_authoritative_truth_changes() {
-    courtroom::suppressed_wake_is_reconsidered_after_truth_change();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::suppressed_wake_is_reconsidered_after_truth_change(request_execution);
 }
 
 #[test]
 fn precondition_panic_isolated_and_retry_succeeds() {
-    courtroom::precondition_panic_isolated_and_retry_succeeds();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::precondition_panic_isolated_and_retry_succeeds(request_execution);
 }
 
 #[test]
 fn predicate_panic_does_not_corrupt_runtime_owners() {
-    courtroom::predicate_panic_does_not_corrupt_runtime_owners();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::predicate_panic_does_not_corrupt_runtime_owners(request_execution);
 }
 
 #[test]
 fn duplicate_reordered_and_foreign_clocks_fail_closed() {
-    courtroom::duplicate_reordered_and_foreign_clocks_fail_closed();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::duplicate_reordered_and_foreign_clocks_fail_closed(request_execution);
 }
 
 #[test]
 fn provider_replacement_requires_fresh_runtime_publication() {
-    courtroom::provider_replacement_requires_fresh_runtime_publication();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    courtroom::provider_replacement_requires_fresh_runtime_publication(request_execution);
 }
 
 #[path = "support/process_deadline.rs"]

@@ -3,6 +3,9 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_query_packet_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let suite = "query_packet_matrix";
 
     let explicit_target_samples =
@@ -17,6 +20,7 @@ fn perf_query_packet_matrix() {
                         _ => PartitionId(7),
                     };
                     RecordRef::Entity(create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("target-{index}"),
                         partition_id,
@@ -37,7 +41,9 @@ fn perf_query_packet_matrix() {
             let execution_started_at = Instant::now();
             let outcome = runtime
                 .read_truth()
-                .execute_query_plan(planned)
+                .execute_query_plan(planned, execution)
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("explicit target query outcome");
             let execution_micros = execution_started_at.elapsed().as_micros();
             let elapsed_micros = planning_micros + execution_micros;
@@ -96,8 +102,12 @@ fn perf_query_packet_matrix() {
                     2 => PartitionId(5),
                     _ => PartitionId(7),
                 };
-                let _ =
-                    create_entity_in_partition(&runtime, &format!("scan-{index}"), partition_id);
+                let _ = create_entity_in_partition(
+                    execution,
+                    &runtime,
+                    &format!("scan-{index}"),
+                    partition_id,
+                );
             }
             let snapshot = runtime.visibility_authority().snapshot();
             let context = runtime
@@ -141,7 +151,10 @@ fn perf_query_packet_matrix() {
                         .read_truth()
                         .plan_query_packet(&snapshot, packet)
                         .expect("planned query packet"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("entity kind scan outcome");
             let elapsed_micros = started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();
@@ -193,6 +206,7 @@ fn perf_query_packet_matrix() {
             let seeds = (0..12)
                 .map(|index| {
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("seed-{index}"),
                         PartitionId(10 + index as u32),
@@ -202,6 +216,7 @@ fn perf_query_packet_matrix() {
             let neighbors = (0..12)
                 .map(|index| {
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("neighbor-{index}"),
                         PartitionId(40 + index as u32),
@@ -210,6 +225,7 @@ fn perf_query_packet_matrix() {
                 .collect::<Vec<_>>();
             for (index, (seed, neighbor)) in seeds.iter().zip(neighbors.iter()).enumerate() {
                 let _ = create_relation_in_partition(
+                    execution,
                     &runtime,
                     *seed,
                     *neighbor,
@@ -249,7 +265,9 @@ fn perf_query_packet_matrix() {
             let execution_started_at = Instant::now();
             let outcome = runtime
                 .read_truth()
-                .execute_query_plan(planned)
+                .execute_query_plan(planned, execution)
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("connectivity traversal outcome");
             let execution_micros = execution_started_at.elapsed().as_micros();
             let elapsed_micros = planning_micros + execution_micros;

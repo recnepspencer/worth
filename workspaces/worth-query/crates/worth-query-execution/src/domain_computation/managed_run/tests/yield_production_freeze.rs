@@ -174,12 +174,14 @@ fn workflow_freezes_artifact_production_before_provider_suspension() {
             disposals: Arc::clone(&disposals),
         };
         let (running, graph, production) = freeze_probe_workflow(provider, resource_request);
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         *authority
             .lock()
             .expect("freeze probe authority lock remains available") = Some(production);
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "producer",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -188,7 +190,7 @@ fn workflow_freezes_artifact_production_before_provider_suspension() {
                 ),
             )
             .expect("freeze probe provider should begin");
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("freeze probe provider did not reach its safe point"),
         };

@@ -7,8 +7,11 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn prior_generation_key_is_distinct_from_runtime_and_capability_drift() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
-        .controlled_workspace("installed-native-key-generation")
+        .controlled_workspace(request_execution, "installed-native-key-generation")
         .unwrap();
     let prior_domain = workspace.domain(GeometryDomain).unwrap();
     let prior = bind(&workspace, &prior_domain);

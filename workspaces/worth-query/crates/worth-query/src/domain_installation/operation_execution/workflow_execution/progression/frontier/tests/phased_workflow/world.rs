@@ -25,7 +25,7 @@ pub(super) fn builder() -> consumer_kit::WorthQueryInMemoryTestRuntimeBuilder {
         .domain_package(super::definition::package())
 }
 
-pub(super) fn installed_read_declaration() -> &'static read::WorthQueryReadDeclaration {
+pub(crate) fn installed_read_declaration() -> &'static read::WorthQueryReadDeclaration {
     static DECLARATION: OnceLock<read::WorthQueryReadDeclaration> = OnceLock::new();
     DECLARATION.get_or_init(|| {
         read::declare(|builder| {

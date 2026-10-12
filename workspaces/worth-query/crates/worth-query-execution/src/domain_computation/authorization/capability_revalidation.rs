@@ -1,4 +1,5 @@
 //! Current capability re-admission at privileged transitions.
+mod installed_basis;
 
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -31,6 +32,7 @@ where
 {
     pub(in crate::domain_computation) fn refresh_capability_authorization_for_graph_work(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authorization: &mut WorthQueryRetainedCapabilityAuthorization,
         graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
@@ -40,11 +42,17 @@ where
                 "retained capability authorization",
             )
         })?;
-        self.refresh_capability_authorization(authorization, graph_work.identity(), product)
+        self.refresh_capability_authorization(
+            execution,
+            authorization,
+            graph_work.identity(),
+            product,
+        )
     }
 
     pub(super) fn refresh_admitted_capability_authorization<Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut super::WorthQueryAdmittedApplicationOperation<
             Schema,
             Operation,
@@ -98,6 +106,7 @@ where
                 )
             })?;
         self.refresh_capability_authorization(
+            execution,
             capability,
             session_identity,
             product.read_lease_ref(),
@@ -107,6 +116,7 @@ where
 
     fn refresh_capability_authorization(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authorization: &mut WorthQueryRetainedCapabilityAuthorization,
         session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
         product: &crate::basis::WorthQueryProductObservationLease,
@@ -118,9 +128,10 @@ where
             product,
             WorthQueryCapabilityRefreshTime::Fresh,
         )?;
-        let observed = self.observe_active_capability_refresh(authorization, &refresh)?;
+        let observed =
+            self.observe_active_capability_refresh(execution, authorization, &refresh)?;
         self.replace_active_capability_decision(authorization, &refresh, observed)?;
-        self.refresh_supporting_authorization(authorization, &refresh)
+        self.refresh_supporting_authorization(execution, authorization, &refresh)
     }
 
     fn prepare_capability_refresh<'refresh>(
@@ -159,6 +170,7 @@ where
 
     fn observe_active_capability_refresh(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authorization: &WorthQueryRetainedCapabilityAuthorization,
         refresh: &WorthQueryCapabilityRefresh<'_>,
     ) -> Result<
@@ -172,39 +184,49 @@ where
             )
         })?;
         let security = self
-            .admit_product_security_basis(refresh.product)
+            .admit_product_security_basis(execution, refresh.product)
             .map_err(|denial| {
                 super::denial::product_security_basis_denial(
                     denial,
                     refresh.installed.contract().name(),
                 )
             })?;
-        let observed = graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = security.snapshot_handle();
-            let result = self
-                .validate_active_capability_currentness(runtime, snapshot, authorization, refresh)
-                .and_then(|()| {
-                    WorthQueryCapabilityRevalidationObservation::new(
-                        refresh.session,
+        let observed = graph
+            .integration_handle()
+            .with_runtime_mut(execution, |runtime| {
+                let snapshot = security.snapshot_handle();
+                let result = self
+                    .validate_active_capability_currentness(
+                        execution,
                         runtime,
                         snapshot,
-                        self.authorization.bridge(),
-                        refresh.installed,
-                        authorization.request(),
-                        &refresh.sample,
+                        authorization,
+                        refresh,
                     )
-                    .observe_active_capability(
-                        Some(authorization.grant()),
-                        Some(authorization.decision()),
-                    )
-                });
-            result
-        })?;
+                    .and_then(|()| {
+                        WorthQueryCapabilityRevalidationObservation::new(
+                            refresh.session,
+                            runtime,
+                            snapshot,
+                            self.authorization.bridge(),
+                            refresh.installed,
+                            authorization.request(),
+                            &refresh.sample,
+                        )
+                        .observe_active_capability(
+                            execution,
+                            Some(authorization.grant()),
+                            Some(authorization.decision()),
+                        )
+                    });
+                result
+            })?;
         Ok(observed)
     }
 
     fn validate_active_capability_currentness(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         authorization: &WorthQueryRetainedCapabilityAuthorization,
@@ -215,7 +237,7 @@ where
         }
         if !authorization
             .principal()
-            .remains_current_in(runtime, snapshot)
+            .remains_current_in(execution, runtime, snapshot)
         {
             return Err(denial(
                 WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
@@ -223,6 +245,7 @@ where
             ));
         }
         if !authorization.decision().remains_current_in(
+            execution,
             runtime,
             snapshot,
             self.authorization.bridge(),
@@ -267,6 +290,7 @@ where
 
     fn refresh_supporting_authorization(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authorization: &mut WorthQueryRetainedCapabilityAuthorization,
         primary: &WorthQueryCapabilityRefresh<'_>,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
@@ -280,7 +304,8 @@ where
             primary.product,
             WorthQueryCapabilityRefreshTime::ReuseWhenTimelineMatches(&primary.sample),
         )?;
-        let observed = self.observe_supporting_capability_refresh(supporting, &refresh)?;
+        let observed =
+            self.observe_supporting_capability_refresh(execution, supporting, &refresh)?;
         let decision = observed
             .into_decision_for_grant(supporting.grant())
             .map_err(|()| inconsistent_refresh(&refresh))?;
@@ -292,6 +317,7 @@ where
 
     fn observe_supporting_capability_refresh(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         supporting: &super::WorthQueryRetainedCapabilitySupport,
         refresh: &WorthQueryCapabilityRefresh<'_>,
     ) -> Result<
@@ -305,64 +331,33 @@ where
             )
         })?;
         let security = self
-            .admit_product_security_basis(refresh.product)
+            .admit_product_security_basis(execution, refresh.product)
             .map_err(|denial| {
                 super::denial::product_security_basis_denial(
                     denial,
                     refresh.installed.contract().name(),
                 )
             })?;
-        graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = security.snapshot_handle();
-            let result = WorthQueryCapabilityRevalidationObservation::new(
-                refresh.session,
-                runtime,
-                snapshot,
-                self.authorization.bridge(),
-                refresh.installed,
-                supporting.request(),
-                &refresh.sample,
-            )
-            .observe_retained_capability(
-                supporting.posture(),
-                supporting.grant(),
-                Some(supporting.decision()),
-            );
-            result
-        })
-    }
-
-    pub(super) fn installed_capability_plan(
-        &self,
-        request: &WorthQueryRetainedCapabilityRequest,
-    ) -> Result<
-        &super::capability_registry::WorthQueryInstalledCapabilityPlan,
-        WorthQueryOperationAuthorizationDenial,
-    > {
-        self.authorization
-            .capability_plan_by_identity(&request.capability_identity())
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOperationAuthorizationDenialKind::PolicyNotInstalled,
-                    "retained-capability-request",
+        graph
+            .integration_handle()
+            .with_runtime_mut(execution, |runtime| {
+                let snapshot = security.snapshot_handle();
+                let result = WorthQueryCapabilityRevalidationObservation::new(
+                    refresh.session,
+                    runtime,
+                    snapshot,
+                    self.authorization.bridge(),
+                    refresh.installed,
+                    supporting.request(),
+                    &refresh.sample,
                 )
-            })
-    }
-
-    pub(super) fn sample_capability_time(
-        &self,
-        installed: &super::capability_registry::WorthQueryInstalledCapabilityPlan,
-    ) -> Result<
-        crate::domain_computation::authorization::WorthQueryRuntimeTimeSample,
-        WorthQueryOperationAuthorizationDenial,
-    > {
-        self.authorization_clock
-            .sample(installed.request().timeline)
-            .map_err(|_| {
-                denial(
-                    WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable,
-                    installed.contract().name(),
-                )
+                .observe_retained_capability(
+                    execution,
+                    supporting.posture(),
+                    supporting.grant(),
+                    Some(supporting.decision()),
+                );
+                result
             })
     }
 }

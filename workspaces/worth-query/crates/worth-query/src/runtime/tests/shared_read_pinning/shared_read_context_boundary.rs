@@ -2,13 +2,17 @@ use super::*;
 
 #[test]
 fn shared_read_contexts_at_same_generation_have_identical_basis_and_artifacts() {
-    let (mut workspace, derived) = shared_read_pinning_workspace("shared-read.phase13.boundary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, derived) =
+        shared_read_pinning_workspace(request_execution, "shared-read.phase13.boundary");
 
     let first = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("first context should mint");
     let second = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("second context should mint at same generation");
     let first_artifact = first
         .published_derived_artifact(&derived)
@@ -37,9 +41,9 @@ fn shared_read_contexts_at_same_generation_have_identical_basis_and_artifacts() 
         consume_display_title(&second_artifact)
     );
 
-    insert_task(&mut workspace, "task-2", "Task Two");
+    insert_task(request_execution, &mut workspace, "task-2", "Task Two");
     let newer = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("newer context should mint after commit");
 
     assert_ne!(first.inspect_basis(), newer.inspect_basis());

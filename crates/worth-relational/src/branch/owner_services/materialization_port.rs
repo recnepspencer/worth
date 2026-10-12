@@ -32,6 +32,7 @@ impl RelationalMaterializationPort {
 
     pub fn prepare_generated_materialization_suspension(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         generated_entities: &[crate::identity::data::EntityId],
     ) -> Result<PreparedRelationalMaterializationSuspension, RelationalMaterializationError> {
@@ -60,7 +61,7 @@ impl RelationalMaterializationPort {
             )
             .map_err(RelationalMaterializationError::TransactionStaging)?;
         let candidate = runtime
-            .prepare_branch_transaction(transaction, AllocationPolicy::SystemAllocation)
+            .prepare_branch_transaction(execution, transaction)
             .map_err(RelationalMaterializationError::Commit)?;
         let transaction_id = candidate.transaction_id();
         Ok(PreparedRelationalMaterializationSuspension {
@@ -77,31 +78,37 @@ impl RelationalMaterializationPort {
     #[cfg(test)]
     pub(super) fn suspend_generated_materialization(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         generated_entities: &[crate::identity::data::EntityId],
     ) -> Result<crate::branch::RelationalMaterializationSuspension, RelationalMaterializationError>
     {
-        let prepared =
-            self.prepare_generated_materialization_suspension(basis, generated_entities)?;
+        let prepared = self.prepare_generated_materialization_suspension(
+            execution,
+            basis,
+            generated_entities,
+        )?;
         let (candidate, completion) = prepared.into_parts();
         let runtime = self
             .owner
             .admitted_runtime()
             .ok_or(RelationalMaterializationError::OwnerUnavailable)?;
         let commit = runtime
-            .publish_prepared_candidate(candidate)
+            .publish_prepared_candidate(execution, candidate)
             .map_err(RelationalMaterializationError::Commit)?;
         completion.complete(commit)
     }
 
     pub fn prepare_generated_rematerialization(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         custody: RelationalMaterializationCustody,
         entities: Vec<RelationalEntityMaterialization>,
         relations: Vec<RelationalRelationMaterialization>,
     ) -> Result<PreparedRelationalRematerialization, RelationalRematerializationFailure> {
-        match self.prepare_rematerialization_inner(basis, &custody, entities, relations) {
+        match self.prepare_rematerialization_inner(execution, basis, &custody, entities, relations)
+        {
             Ok((candidate, invariant_evidence)) => {
                 let transaction_id = candidate.transaction_id();
                 Ok(PreparedRelationalRematerialization {
@@ -120,13 +127,14 @@ impl RelationalMaterializationPort {
     #[cfg(test)]
     pub(super) fn rematerialize_generated_materialization(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         custody: RelationalMaterializationCustody,
         entities: Vec<RelationalEntityMaterialization>,
         relations: Vec<RelationalRelationMaterialization>,
     ) -> Result<crate::transactions::data::CommitResult, RelationalRematerializationFailure> {
-        let prepared =
-            self.prepare_generated_rematerialization(basis, custody, entities, relations)?;
+        let prepared = self
+            .prepare_generated_rematerialization(execution, basis, custody, entities, relations)?;
         let (candidate, completion, _invariant_evidence) = prepared.into_parts();
         let Some(runtime) = self.owner.admitted_runtime() else {
             return Err(RelationalRematerializationFailure {
@@ -134,7 +142,7 @@ impl RelationalMaterializationPort {
                 error: RelationalMaterializationError::OwnerUnavailable,
             });
         };
-        match runtime.publish_prepared_candidate(candidate) {
+        match runtime.publish_prepared_candidate(execution, candidate) {
             Ok(commit) => completion.complete(commit),
             Err(error) => Err(RelationalRematerializationFailure {
                 custody: completion.into_custody(),
@@ -145,6 +153,7 @@ impl RelationalMaterializationPort {
 
     fn prepare_rematerialization_inner(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         custody: &RelationalMaterializationCustody,
         entities: Vec<RelationalEntityMaterialization>,
@@ -177,11 +186,11 @@ impl RelationalMaterializationPort {
             )
             .map_err(RelationalMaterializationError::TransactionStaging)?;
         let validated = transaction
-            .validate(&runtime, AllocationPolicy::SystemAllocation)
+            .validate(execution, &runtime)
             .map_err(RelationalMaterializationError::Commit)?;
         let invariant_evidence = validated.invariant_evidence().clone();
         let candidate = runtime
-            .prepare_validated_proposal(validated)
+            .prepare_validated_proposal(execution, validated)
             .map_err(RelationalMaterializationError::Commit)?;
         Ok((candidate, invariant_evidence))
     }

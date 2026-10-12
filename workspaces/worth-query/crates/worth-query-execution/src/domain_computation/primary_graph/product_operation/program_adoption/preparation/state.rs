@@ -45,6 +45,7 @@ fn map_relational_preparation_denial(
 }
 
 pub(super) fn prepare<Schema: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
@@ -109,10 +110,15 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     let basis = selected.product().relational_basis();
 
     // One view of the branch's own root serves both reads.
-    let (selection, workflow_inventory) = graph.with_runtime(|runtime| {
-        let view = selection::branch_view(runtime, basis)?;
-        let selection =
-            selection::select(&view, &graph.layout, &requirements, maximum_selection_work)?;
+    let (selection, workflow_inventory) = graph.with_runtime(execution, |runtime| {
+        let view = selection::branch_view(execution, runtime, basis)?;
+        let selection = selection::select(
+            execution,
+            &view,
+            &graph.layout,
+            &requirements,
+            maximum_selection_work,
+        )?;
         if source == *target {
             return Ok((selection, None));
         }
@@ -125,9 +131,10 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             target,
             maximum_work_units: maximum_selection_work.saturating_sub(selection.work_units),
         };
-        let inventory = inventory_workflows(view, &workflow_request).map_err(|denial| {
-            workflow_read_denial(denial, maximum_selection_work, selection.work_units)
-        })?;
+        let inventory =
+            inventory_workflows(execution, view, &workflow_request).map_err(|denial| {
+                workflow_read_denial(denial, maximum_selection_work, selection.work_units)
+            })?;
         Ok((selection, Some(inventory)))
     })?;
     let selected_entity_count = selection.entities.len();
@@ -145,7 +152,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             .map_or(0, WorthQueryWorkflowAdoptionInventory::work_units),
     );
     let target_rendering = program_revision_rendering(target);
-    let candidate = graph.with_runtime_mut(|runtime| {
+    let candidate = graph.with_runtime_mut(execution, |runtime| {
         let mut batch =
             WorkerIntentBatch::new("application-program-adoption").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -188,10 +195,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             )
             .map_err(WorthQueryBranchAdoptionPreparationDenial::TransactionStaging)?;
         runtime
-            .prepare_branch_transaction(
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .map_err(map_relational_preparation_denial)
     })?;
     let successor_observation_requested = false;

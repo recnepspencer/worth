@@ -1,5 +1,4 @@
 //! Recovered output expectations survive a change outside the source field.
-
 use super::*;
 mod mixed_retirement;
 use crate::domain_computation::primary_graph::{
@@ -26,20 +25,31 @@ use worth_relational::facade::{
         WorkerIntentBatch,
     },
 };
-
 #[test]
 fn recovered_witness_requires_complete_unambiguous_original_aspects() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let layout = graph.layout();
     let handle = graph.integration_handle();
@@ -71,7 +81,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    let changed_output_equal = handle.with_runtime_mut(|runtime| {
+    let changed_output_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
         let before = snapshot(runtime);
         let truth = runtime.read_truth();
         let mut facts = vec![Fact::Entity {
@@ -91,9 +101,9 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         }
         assert!(facts.len() > 1, "the real installed output has aspects");
         let original_source = truth
-            .project_snapshot(&before)
+            .project_snapshot(&before, &host_custody.borrowed_request_for_test())
             .unwrap()
-            .entity_field_revision(entity, &status)
+            .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status)
             .unwrap();
         let producer_facts = [Fact::SourceFieldRevision {
             entity_id: entity,
@@ -115,19 +125,19 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         )
         .unwrap()
         .expect("complete old native facts reconstruct the witness");
-        assert!(restored.get().unwrap().checkpoint_facts_current_in(
+        assert!(restored.get().unwrap().checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
             runtime, &before, &facts, &mut recovery_admission,
         ).unwrap());
         assert!(recovery_admission.charged_work() - reconstruction_start <= comparison_bound);
         assert!(restored
             .get()
             .unwrap()
-            .unchanged_in(runtime, &before, &mut owner.edit_admission())
+            .unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &before, &mut owner.edit_admission())
             .unwrap());
         assert!(restored
             .get()
             .unwrap()
-            .checkpoint_facts_current_in(
+            .checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
                 runtime,
                 &before,
                 &producer_facts,
@@ -137,16 +147,16 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let index = layout.equality_field(status_ref.entity(), status_ref.aspect(), status_ref.field())
             .unwrap().equality_index_id.unwrap();
         let indexed = crate::domain_computation::primary_graph::application_attempt::observe_indexed_entity_selection(
-            runtime, &before, index,
+            runtime,&host_custody.borrowed_request_for_test(),  &before, index,
             runtime.read_truth().exact_snapshot_live_entity_kind(&before, entity).unwrap(),
             planned_status.clone(), AspectValue::String("open".into()), 100_001,
         ).expect("the actual installed sparse selection supplies the checkpoint fact");
         let witness = restored.get().unwrap();
         let mut witness_only = owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
-        assert!(witness.unchanged_in(runtime, &before, &mut witness_only).unwrap());
+        assert!(witness.unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &before, &mut witness_only).unwrap());
         let witness_work = usize::try_from(witness_only.charged_work()).unwrap();
         let mut sparse = owner.edit_admission_within(std::num::NonZeroUsize::new(witness_work + 6).unwrap());
-        assert!(witness.checkpoint_facts_current_in(runtime, &before,
+        assert!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
             &[indexed.clone(), indexed.clone()], &mut sparse).unwrap());
         assert_eq!(sparse.remaining_work(), 0, "two one-row selections spend six units beyond the witness");
         let mut duplicate_facts = facts.clone();
@@ -160,7 +170,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let duplicate_witness = SealedNativeOutputWitness::from_checkpoint_facts(
             &correspondence, layout, &duplicate_facts, owner, &mut recovery_admission,
         ).unwrap().unwrap();
-        assert!(duplicate_witness.get().unwrap().checkpoint_facts_current_in(
+        assert!(duplicate_witness.get().unwrap().checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
             runtime, &before, &duplicate_facts, &mut recovery_admission,
         ).unwrap());
         let duplicate_work = recovery_admission.charged_work() - duplicate_start;
@@ -169,7 +179,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let mut exhausted = owner.edit_admission_within(std::num::NonZeroUsize::new(witness_work + 2).unwrap());
         // A cut-short indexed probe knows the spent allowance, not the work
         // a completed read would require: preserve the incoming refusal law.
-        assert!(matches!(witness.checkpoint_facts_current_in(runtime, &before,
+        assert!(matches!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
             std::slice::from_ref(&indexed), &mut exhausted),
             Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum })
                 if maximum == u64::try_from(witness_work + 2).unwrap()));
@@ -181,7 +191,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let mut selection_work =
             owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
         assert!(matches!(
-            compare_retained_output_witness(
+            compare_retained_output_witness(&host_custody.borrowed_request_for_test(),
                 runtime,
                 &before,
                 restored.get(),
@@ -226,13 +236,13 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         )
         .unwrap()
         .is_none());
-        change_label(runtime, entity, label);
+        change_label(request_execution, runtime, entity, label);
         let after = snapshot(runtime);
         let after_source = runtime
             .read_truth()
-            .project_snapshot(&after)
+            .project_snapshot(&after, &host_custody.borrowed_request_for_test())
             .unwrap()
-            .entity_field_revision(entity, &status)
+            .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status)
             .unwrap();
         assert_eq!(
             original_source, after_source,
@@ -264,11 +274,11 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         assert!(!after_restore
             .get()
             .unwrap()
-            .unchanged_in(runtime, &after, &mut owner.edit_admission())
+            .unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &after, &mut owner.edit_admission())
             .unwrap());
         assert!(
             producer_facts[0]
-                .source_currentness_within(runtime, &after, 1)
+                .source_currentness_within(runtime,&host_custody.borrowed_request_for_test(),  &after, 1)
                 .unwrap()
                 .0
                 .movement()
@@ -277,7 +287,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         assert!(!after_restore
             .get()
             .unwrap()
-            .checkpoint_facts_current_in(
+            .checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
                 runtime,
                 &after,
                 &producer_facts,
@@ -289,7 +299,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let mut selection_work =
             owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
         assert!(matches!(
-            compare_retained_output_dependencies(
+            compare_retained_output_dependencies(&host_custody.borrowed_request_for_test(),
                 runtime,
                 &after,
                 true,
@@ -299,7 +309,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             Ok(OutputDependencySelection::Reuse)
         ));
         assert!(matches!(
-            compare_retained_output_witness(
+            compare_retained_output_witness(&host_custody.borrowed_request_for_test(),
                 runtime,
                 &after,
                 after_restore.get(),
@@ -309,14 +319,14 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         ));
         // A row no sealed witness covers is decided by its source facts.
         assert!(matches!(
-            compare_retained_output_witness(runtime, &after, None, &mut selection_work),
+            compare_retained_output_witness(&host_custody.borrowed_request_for_test(), runtime, &after, None, &mut selection_work),
             Ok(OutputDependencySelection::Reuse)
         ));
         let mut no_work = owner.edit_admission();
         no_work
             .charge_external_work(no_work.remaining_work_amount())
             .unwrap();
-        let exhausted = compare_retained_output_witness(
+        let exhausted = compare_retained_output_witness(&host_custody.borrowed_request_for_test(),
             runtime,
             &before,
             restored.get(),
@@ -331,7 +341,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         runtime.snapshots().release_snapshot(&before).unwrap();
         runtime.snapshots().release_snapshot(&after).unwrap();
         changed_output_equal
-    });
+    }) }).expect("the fixture read owns its installed host call");
     assert!(
         !changed_output_equal,
         "a changed consumed output must never be equal evidence"
@@ -349,6 +359,7 @@ fn snapshot(runtime: &RelationalRuntime) -> SnapshotHandle {
 }
 
 fn change_label(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     entity: EntityId,
     locator: worth_foundational::facade::AspectFieldLocator,
@@ -376,13 +387,11 @@ fn change_label(
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    let RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("the real native edit must publish");
     };

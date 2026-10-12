@@ -7,7 +7,11 @@ use super::{
 use crate::runtime::{WorthQueryOrdinaryAuthorityDrift, WorthQueryWorkspace};
 
 impl WorthQueryWorkflowRequest {
-    pub fn run(self, workspace: &mut WorthQueryWorkspace) -> WorthQueryWorkflowOutcome {
+    pub fn run(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryWorkflowOutcome {
         let counters = WorthQueryWorkflowCounters::context_checked();
         let (identity, family, label, mutation, inspection_policy) = self.declaration.into_parts();
         if self.context.authority.session_label() != Some(&label) {
@@ -17,7 +21,7 @@ impl WorthQueryWorkflowRequest {
             ));
         }
         debug_assert_eq!(family, WorthQueryWorkflowFamily::PreviewPromotion);
-        match workspace.ordinary_authority_drift(&self.context.authority) {
+        match workspace.ordinary_authority_drift(request_execution, &self.context.authority) {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
                 return WorthQueryWorkflowOutcome::Stopped(WorthQueryWorkflowStop::denied(
                     WorthQueryWorkflowStopSource::ForeignAuthority,
@@ -58,6 +62,7 @@ impl WorthQueryWorkflowRequest {
         }
         let counters = counters.execution_attempted();
         let execution = match workspace.execute_ordinary_preview_promotion(
+            request_execution,
             basis_admission,
             identity.evidence_identity(),
             command,

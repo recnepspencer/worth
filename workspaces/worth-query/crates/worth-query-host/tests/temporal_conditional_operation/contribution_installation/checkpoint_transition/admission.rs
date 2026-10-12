@@ -62,17 +62,26 @@ fn assert_target_record(
     )
     .expect("ordinary target admission authenticates the repaired native successor");
     let selected = reopened
-        .on_branch(reopened.current_world())
-        .select()
-        .unwrap();
-    let record = selected
-        .resolve_entity(
-            UnrelatedValueField::reference(),
-            value,
-            &request_scope(),
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .expect("the actual typed migrated value survives native recovery");
+        .with_host_advancement(|host_phase| {
+            reopened
+                .on_branch(reopened.current_world())
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let record = reopened
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    UnrelatedValueField::reference(),
+                    value,
+                    &request_scope(),
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .expect("the actual typed migrated value survives native recovery")
+        })
+        .expect("installed host call opens");
     assert_eq!(record.examined_candidate_count(), 1);
 }
 
@@ -129,9 +138,11 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     let native_only = primary_graph::query_test_execution_authority_for_test()
         .request_lease(request(native_quote, CancellationToken::new()))
         .unwrap();
-    let pending = pending
-        .repair_to_checkpoint(CapturePolicy::Execution(&native_only))
-        .expect_err("the final frame is admitted while native backing remains live");
+    let pending = crate::test_request_policy::with_bootstrap(|bootstrap_phase| {
+        pending
+            .repair_to_checkpoint(&bootstrap_phase, CapturePolicy::Execution(&native_only))
+            .expect_err("the final frame is admitted while native backing remains live")
+    });
     let Some(CaptureDenial::Allocation(denied)) = pending.capture_denial() else {
         panic!("exact final-frame allocation cause must survive: {pending:?}");
     };
@@ -158,9 +169,11 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
             CancellationToken::new(),
         ))
         .unwrap();
-    let checkpoint = pending
-        .repair_to_checkpoint(CapturePolicy::Execution(&repair))
-        .expect("a different explicit admitted policy captures the existing successor");
+    let checkpoint = crate::test_request_policy::with_bootstrap(|bootstrap_phase| {
+        pending
+            .repair_to_checkpoint(&bootstrap_phase, CapturePolicy::Execution(&repair))
+            .expect("a different explicit admitted policy captures the existing successor")
+    });
     assert_eq!(checkpoint.bytes().len() as u64, frame_quote);
     assert_eq!(checkpoint.charged_payload_bytes(), Some(frame_quote));
     assert_target_record(checkpoint, 127);
@@ -170,6 +183,9 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
 #[test]
 fn checkpoint_transition_cancelled_repair_preserves_deferred_phase_and_clears_stale_capture_cause()
 {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = serial_guard();
     let (source, predecessor) = source();
     let mut calls = 0;
@@ -180,7 +196,7 @@ fn checkpoint_transition_cancelled_repair_preserves_deferred_phase_and_clears_st
         |writer, _| {
             calls += 1;
             author_record(writer, "cancelled-repair-record", 131)?;
-            writer.fail_next_durable_append_for_test();
+            writer.fail_next_durable_append_for_test(request_execution);
             Ok(())
         },
     )
@@ -192,32 +208,38 @@ fn checkpoint_transition_cancelled_repair_preserves_deferred_phase_and_clears_st
     assert!(pending.capture_denial().is_none());
     // Early policy cancellation must not consume either the deferred phase or
     // the actual next native append fault, which is exercised below.
-    pending.fail_next_durable_append_for_test();
+    pending.fail_next_durable_append_for_test(request_execution);
     let cancellation = worth_query_host::facade::runtime::CancellationSource::new();
     let lease = primary_graph::query_test_execution_authority_for_test()
         .request_lease(request(0, cancellation.token()))
         .unwrap();
     cancellation.cancel();
-    let pending = pending
-        .repair_to_checkpoint(CapturePolicy::Execution(&lease))
-        .expect_err("the explicit stopped policy cannot settle or capture");
+    let pending = crate::test_request_policy::with_bootstrap(|bootstrap_phase| {
+        pending
+            .repair_to_checkpoint(&bootstrap_phase, CapturePolicy::Execution(&lease))
+            .expect_err("the explicit stopped policy cannot settle or capture")
+    });
     let Some(CaptureDenial::Allocation(denied)) = pending.capture_denial() else {
         panic!("early stop must retain its exact current-attempt cause: {pending:?}");
     };
     assert_eq!(denied.kind(), AllocationKind::Cancelled);
     assert_eq!(denied.requested_payload_bytes(), None);
-    let pending = pending
-        .repair_to_checkpoint(CapturePolicy::SystemAllocation)
-        .expect_err(
-            "unconsumed injected append failure proves deferred custody survived cancellation",
-        );
+    let pending = crate::test_request_policy::with_bootstrap(|bootstrap_phase| {
+        pending
+            .repair_to_checkpoint(&bootstrap_phase, CapturePolicy::SystemAllocation)
+            .expect_err(
+                "unconsumed injected append failure proves deferred custody survived cancellation",
+            )
+    });
     assert!(
         pending.capture_denial().is_none(),
         "the later actual native settlement failure cannot retain an obsolete capture cause"
     );
-    let checkpoint = pending
-        .repair_to_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("native repair settles the same performed transition without authoring again");
+    let checkpoint = crate::test_request_policy::with_bootstrap(|bootstrap_phase| {
+        pending
+            .repair_to_checkpoint(&bootstrap_phase, CapturePolicy::SystemAllocation)
+            .expect("native repair settles the same performed transition without authoring again")
+    });
     assert_eq!(checkpoint.charged_payload_bytes(), None);
     assert_target_record(checkpoint, 131);
     assert_eq!(calls, 1);

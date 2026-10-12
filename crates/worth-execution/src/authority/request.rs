@@ -1,10 +1,10 @@
-//! Borrowed request carriage with closure-scoped optional-lease adaptation.
+//! Borrowed request authority with scoped execution and fixed-size backing metadata.
 
 use super::{ExecutionResourceLease, SerialRequest};
 use crate::{ExecutionWorkCeiling, WorkCeilingDenial};
 use worth_foundational::{ExecutionPosture, ExecutionReport};
 
-/// Either backing is sealed; lease absence is exposed only inside an active scope closure.
+/// Sealed serial or leased backing borrowed from the host call.
 #[derive(Clone, Copy, Debug)]
 pub struct ExecutionRequest<'request, 'authority> {
     form: RequestBacking<'request, 'authority>,
@@ -29,8 +29,43 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         }
     }
 
+    /// Inspects interruption without charging work or opening an execution scope.
+    pub fn check_live(self) -> Result<(), crate::MapKernelStop> {
+        let (cancelled, expired) = match self.form {
+            RequestBacking::Leased(lease) => {
+                let status = lease.status();
+                (status.is_cancelled(), status.deadline_elapsed())
+            }
+            RequestBacking::Serial(request) => (
+                request.cancellation.is_cancelled(),
+                request
+                    .deadline
+                    .is_some_and(|deadline| std::time::Instant::now() >= deadline),
+            ),
+        };
+        if cancelled {
+            return Err(crate::MapKernelStop::Cancelled);
+        }
+        if expired {
+            return Err(crate::MapKernelStop::DeadlineElapsed);
+        }
+        Ok(())
+    }
+
     pub fn is_leased(self) -> bool {
         matches!(self.form, RequestBacking::Leased(_))
+    }
+
+    /// Fixed-size backing metadata; commits derive their allocation authority
+    /// from this request rather than accepting an independent policy.
+    /// The policy borrows the backing, not its active scope. Use it only for
+    /// the originating host call: do not retain it after that scope closes,
+    /// carry it into another host call, or mint a request from its lease.
+    pub fn allocation_policy(self) -> super::ExecutionAllocationPolicy<'request, 'authority> {
+        match self.form {
+            RequestBacking::Leased(lease) => super::ExecutionAllocationPolicy::Execution(lease),
+            RequestBacking::Serial(_) => super::ExecutionAllocationPolicy::SystemAllocation,
+        }
     }
 
     pub fn memory_limit(self) -> u64 {

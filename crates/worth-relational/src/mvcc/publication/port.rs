@@ -19,6 +19,7 @@ pub struct RelationalPublicationPort {
     owner_binding: crate::runtime::RelationalRuntimeOwnerBinding,
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
+    history: crate::runtime::RelationalPreparationHistory,
 }
 
 pub(crate) struct PreparedCanonicalBranchMovement {
@@ -52,6 +53,7 @@ impl RelationalPublicationPort {
         owner_binding: crate::runtime::RelationalRuntimeOwnerBinding,
         publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
+        history: crate::runtime::RelationalPreparationHistory,
     ) -> Self {
         Self {
             runtime_instance_id,
@@ -59,11 +61,13 @@ impl RelationalPublicationPort {
             owner_binding,
             publication_binding,
             branch_head_versions,
+            history,
         }
     }
 
     pub fn compare_and_publish(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: PreparedRelationalCommitCandidate,
     ) -> RelationalPublicationOutcome {
         if candidate.runtime_instance_id() != self.runtime_instance_id
@@ -76,6 +80,27 @@ impl RelationalPublicationPort {
                 },
             );
         }
+        if let Err(stop) = crate::authority::commit::pipeline::consult_stage_control(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Publication,
+        ) {
+            self.history.record_candidate_discard(candidate.branch());
+            drop(candidate);
+            return RelationalPublicationOutcome::RequestStopped(stop);
+        }
+        self.history.record_publication_attempt(candidate.branch());
+        let branch = candidate.branch().clone();
+        let outcome = self.compare_and_publish_consulted(candidate);
+        if !matches!(outcome, RelationalPublicationOutcome::Performed(_)) {
+            self.history.record_candidate_discard(&branch);
+        }
+        outcome
+    }
+
+    fn compare_and_publish_consulted(
+        &self,
+        candidate: PreparedRelationalCommitCandidate,
+    ) -> RelationalPublicationOutcome {
         let Some(_owner_operation) = self.owner_binding.admit() else {
             return RelationalPublicationOutcome::denied(
                 RelationalPublicationDenial::OwnerUnavailable {
@@ -211,6 +236,7 @@ impl crate::runtime::RelationalRuntime {
             self.owner_binding(),
             self.publication_binding(),
             self.history.branch_head_version_index(),
+            self.history.preparation_binding(),
         )
     }
 

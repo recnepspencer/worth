@@ -111,6 +111,7 @@ pub struct WorthQueryCompletedGeneratedOutputReconstruction<Schema, Producer> {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn reconstruct_generated_output<Producer>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         suspended: WorthQuerySuspendedGeneratedOutput,
     ) -> Result<
         WorthQueryGeneratedOutputReconstruction<'_, Schema, Producer>,
@@ -119,6 +120,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
+        let request = match phase
+            .request_for_source(self.primary_provider.graph.relational_runtime_instance_id())
+        {
+            Ok(request) => request,
+            Err(_) => {
+                return Err(reconstruction_failure(
+                    suspended,
+                    WorthQueryGeneratedOutputReconstructionDenial::ForeignPhase,
+                ))
+            }
+        };
+        let execution = &request;
         if !Arc::ptr_eq(
             &suspended.publication.root_identity(),
             &self.product_runtime.root_identity(),
@@ -149,7 +162,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryGeneratedOutputReconstructionDenial::StaleOutputLineage,
             ));
         }
-        let retained_entities = match self.primary_provider.graph.with_runtime(|runtime| {
+        let retained_entities = match self.primary_provider.graph.with_runtime(execution, |runtime| {
             let port = runtime.owner_component_services().materialization_port();
             suspended.correspondence().checkpoint_roles().into_iter()
                 .filter(|role| role.posture ==

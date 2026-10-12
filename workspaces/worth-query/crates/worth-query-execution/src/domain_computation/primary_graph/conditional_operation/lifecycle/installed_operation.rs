@@ -40,6 +40,7 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
 
     fn select_product_binding(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &BridgeSealedRuntimeAssembly,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
@@ -57,6 +58,7 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryInstalledCondit
 
     fn prepare_derived_runtime_reinstallation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         product: &crate::basis::WorthQueryProductBranchLease,

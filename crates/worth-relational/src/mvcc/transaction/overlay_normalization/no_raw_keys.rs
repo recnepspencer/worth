@@ -10,9 +10,12 @@ use worth_execution::ExecutionAllocationPolicy as Allocation;
 
 #[test]
 fn no_raw_client_keys_preserve_staged_backing_and_exact_rollback_effects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let first = create_entity(&runtime, "retained-existing-delete");
-    let second = create_entity(&runtime, "discarded-existing-delete");
+    let first = create_entity(execution, &runtime, "retained-existing-delete");
+    let second = create_entity(execution, &runtime, "discarded-existing-delete");
     let identity = runtime.main_branch_identity();
     let (head, basis) = runtime.observe_branch(&identity).unwrap();
     let mut transaction = runtime

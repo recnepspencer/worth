@@ -35,8 +35,12 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
     drop(principal);
     drop(scope);
     let initial_checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let initial_bytes = initial_checkpoint.bytes().to_vec();
     drop((initial_checkpoint, application));
 
@@ -103,8 +107,12 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let bytes = checkpoint.bytes().to_vec();
     drop((checkpoint, application));
 

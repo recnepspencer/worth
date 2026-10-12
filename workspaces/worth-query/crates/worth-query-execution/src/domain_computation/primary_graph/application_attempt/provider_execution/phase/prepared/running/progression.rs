@@ -167,6 +167,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     Input,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
     application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
@@ -193,6 +194,7 @@ where
         aftermath_causality,
     } = running_commit;
     progress_provider_application(
+        execution,
         phase,
         WorthQueryProviderProgression {
             application,
@@ -219,6 +221,7 @@ where
 }
 
 fn progress_provider_application<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
     progression: WorthQueryProviderProgression<'_, Schema, Operation, Input, Scope>,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
@@ -300,5 +303,5 @@ where
         product: &product,
         aftermath_causality,
     };
-    registered_session.progress(&authority, allocation_policy)
+    registered_session.progress(execution, &authority, allocation_policy)
 }

@@ -72,18 +72,22 @@ pub(super) fn runtime_with_schema_declared_entity_policy(persisted: bool) -> Rel
     builder.build()
 }
 
-pub(super) fn prepared_merge(runtime: &RelationalRuntime) -> PreparedMergeExecution {
-    let shared = create_entity(runtime, "shared");
+pub(super) fn prepared_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> PreparedMergeExecution {
+    let shared = create_entity(execution, runtime, "shared");
     create_branch_from_main(runtime, "feature");
-    update_entity_status_on_branch(runtime, shared, "inactive", "main");
-    update_entity_status_on_branch(runtime, shared, "active", "feature");
+    update_entity_status_on_branch(execution, runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, runtime, shared, "active", "feature");
     runtime
         .merge()
-        .prepare_merge_execution(merge_request())
+        .prepare_merge_execution(execution, merge_request())
         .expect("prepared merge")
 }
 
 fn update_entity_status_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     status: &str,
@@ -120,11 +124,7 @@ fn update_entity_status_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("update status");
+    txn.commit(execution, runtime).expect("update status");
 }
 
 pub(super) fn published_merge_authority(

@@ -12,8 +12,11 @@ const ROWS: usize = 32;
 
 #[test]
 fn public_workflow_crosses_managed_artifact_native_evidence_and_resource_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (mut workspace, probe) =
-        artifact_integrated_workspace("artifact-phase-2-5-journey").unwrap();
+        artifact_integrated_workspace(request_execution, "artifact-phase-2-5-journey").unwrap();
     let trace = bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),

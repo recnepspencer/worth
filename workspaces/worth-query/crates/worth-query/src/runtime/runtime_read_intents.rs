@@ -109,16 +109,20 @@ impl WorthQueryWorkspace {
 
     pub(crate) fn execute_bound_read_execution(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryReadExecutionBinding,
     ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
-        self.runtime.execute_read_execution_binding(binding)
+        self.runtime
+            .execute_read_execution_binding(execution, binding)
     }
 
     pub(crate) fn execute_bound_count_read_execution(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryReadExecutionBinding,
     ) -> Result<WorthQueryCountResult, WorthQueryRuntimeError> {
-        self.runtime.execute_count_read_execution_binding(binding)
+        self.runtime
+            .execute_count_read_execution_binding(execution, binding)
     }
 }
 
@@ -202,23 +206,31 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_read_execution_binding(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryReadExecutionBinding,
     ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
-        self.execute_read_execution_product(binding, Self::execute_graph_read_binding)
+        self.execute_read_execution_product(execution, binding, Self::execute_graph_read_binding)
     }
 
     pub(crate) fn execute_count_read_execution_binding(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryReadExecutionBinding,
     ) -> Result<WorthQueryCountResult, WorthQueryRuntimeError> {
-        self.execute_read_execution_product(binding, Self::execute_count_graph_read_binding)
+        self.execute_read_execution_product(
+            execution,
+            binding,
+            Self::execute_count_graph_read_binding,
+        )
     }
 
     fn execute_read_execution_product<Product>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryReadExecutionBinding,
         execute: impl FnOnce(
             &mut Self,
+            &worth_execution::ExecutionRequest<'_, '_>,
             &WorthQueryReadExecutionBinding,
         )
             -> Result<WorthQueryExecutedReadProduct<Product>, WorthQueryRuntimeError>,
@@ -227,10 +239,12 @@ impl WorthQueryRuntime {
         Product: WorthQueryReadExecutionProduct,
     {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Read)?;
-        let snapshot_identity = self.current_snapshot_identity().evidence_identity();
+        let snapshot_identity = self
+            .current_snapshot_identity_with_request(execution)
+            .evidence_identity();
         let ephemeral_graph_index_receipt =
             provision_graph_indexes_for_read_binding(&binding, snapshot_identity.as_str())?;
-        let mut executed_read = execute(self, &binding)?;
+        let mut executed_read = execute(self, execution, &binding)?;
         executed_read.record_ephemeral_index_receipt(ephemeral_graph_index_receipt.as_ref());
 
         attach_graph_read_access_receipt(
@@ -246,22 +260,29 @@ impl WorthQueryRuntime {
 
     fn execute_graph_read_binding(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryReadExecutionBinding,
     ) -> Result<super::read_composition_runtime::WorthQueryExecutedReadGraph, WorthQueryRuntimeError>
     {
         match binding.basis_context() {
             Some(context) => execute_runtime_basis_context_read_graph(
+                execution,
                 self,
                 binding.read_family().read_graph(),
                 context,
             ),
-            None => execute_runtime_current_read_graph(self, binding.read_family().read_graph()),
+            None => execute_runtime_current_read_graph(
+                execution,
+                self,
+                binding.read_family().read_graph(),
+            ),
         }
         .map_err(WorthQueryRuntimeError::ReadCompositionDenied)
     }
 
     fn execute_count_graph_read_binding(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryReadExecutionBinding,
     ) -> Result<super::read_composition_runtime::WorthQueryExecutedCountGraph, WorthQueryRuntimeError>
     {
@@ -273,7 +294,7 @@ impl WorthQueryRuntime {
                 ),
             ));
         }
-        execute_runtime_current_count_graph(self, binding.read_family().read_graph())
+        execute_runtime_current_count_graph(execution, self, binding.read_family().read_graph())
             .map_err(WorthQueryRuntimeError::ReadCompositionDenied)
     }
 }

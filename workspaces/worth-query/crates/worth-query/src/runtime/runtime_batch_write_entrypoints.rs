@@ -3,13 +3,15 @@ use super::*;
 impl WorthQueryRuntime {
     pub fn write_batch(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commands: Vec<WorthQueryWriteCommand>,
     ) -> Result<WorthQueryBatchWriteReceipt, WorthQueryRuntimeError> {
-        self.write_batch_intent(commands).execute()
+        self.write_batch_intent(commands).execute(execution)
     }
 
     pub(crate) fn write_graph_batch(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commands: Vec<WorthQueryWriteCommand>,
         graph_composition_breadth: WorthQueryGraphCompositionBreadth,
         graph_composition_program: WorthQueryGraphCompositionProgram,
@@ -21,6 +23,6 @@ impl WorthQueryRuntime {
         )?;
         let handoff = self.resolve_reviewed_admitted_authoritative_write_batch_handoff(review)?;
         let binding = self.prepare_authoritative_mutation_batch_execution_binding(handoff);
-        self.execute_authoritative_mutation_batch_execution_binding(binding)
+        self.execute_authoritative_mutation_batch_execution_binding(execution, binding)
     }
 }

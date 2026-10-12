@@ -2,7 +2,10 @@ use super::super::super::support::*;
 
 #[test]
 fn runtime_public_downstream_delivery_contract_freezes_runtime_backed_and_durable_resume_posture() {
-    let runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = stateful_bridge_task_runtime(request_execution);
     let contract = runtime.public_downstream_delivery_contract();
 
     assert_eq!(
@@ -26,7 +29,10 @@ fn runtime_public_downstream_delivery_contract_freezes_runtime_backed_and_durabl
 
 #[test]
 fn runtime_public_support_matrix_exposes_downstream_delivery_contract_row() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.downstream-delivery-support")
         .expect("task runtime should open a named workspace");
     let matrix = workspace.public_support_matrix();

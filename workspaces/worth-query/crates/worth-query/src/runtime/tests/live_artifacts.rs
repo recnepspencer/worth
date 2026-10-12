@@ -2,18 +2,31 @@ use super::support::*;
 
 #[test]
 fn workspace_reads_live_artifact_binding_as_one_snapshot_coherent_named_pack() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("live.artifact.binding")
         .expect("task runtime should open a named workspace");
     let entities: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view_request("tasks.live-entities", task_live_request(), task_schema())
+        .live_view_request(
+            request_execution,
+            "tasks.live-entities",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("entity live view should declare");
     let names: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view_request("tasks.live-names", task_live_request(), task_schema())
+        .live_view_request(
+            request_execution,
+            "tasks.live-names",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("naming live view should declare");
 
     workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -27,6 +40,7 @@ fn workspace_reads_live_artifact_binding_as_one_snapshot_coherent_named_pack() {
 
     let binding = workspace
         .read_live_artifact_binding(
+            request_execution,
             "tasks.historical.naming-pack",
             [(&entities).into(), (&names).into()],
         )

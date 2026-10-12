@@ -42,7 +42,13 @@ impl WorthUiRuntimeQueryBinding {
             Self::QueryFree => Err(crate::WorthUiOperationLiveRefreshError::Ui(
                 crate::WorthUiOperationLiveRefreshDenial::ResourceNotRetained,
             )),
-            Self::Installed(binding) => binding.refresh_operation_live(&reference, workspace),
+            Self::Installed(binding) => {
+                workspace.with_execution_request_mut(|execution, workspace| {
+                    binding.refresh_operation_live(execution, &reference, workspace)
+                }).map_err(|error| crate::WorthUiOperationLiveRefreshError::Drain(Box::new(
+                    worth_query::facade::installed::observation::WorthQuerySharedProjectionDrainStop::new(error, Default::default())
+                )))?
+            }
         }
     }
 

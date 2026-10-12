@@ -7,7 +7,10 @@ use super::domain::{
 
 #[test]
 fn route_plan_common_lane_reads_like_intent() {
-    let plan = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let plan = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_and_plan(RouteInput::<RelationalRouteFamily>::new(
             "edge:42",
         ))
@@ -19,7 +22,10 @@ fn route_plan_common_lane_reads_like_intent() {
 
 #[test]
 fn explicit_and_common_paths_converge_on_one_route_plan_digest() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
     let explicit = handle
         .plan_routes(route_input(
             &handle,
@@ -35,7 +41,10 @@ fn explicit_and_common_paths_converge_on_one_route_plan_digest() {
 
 #[test]
 fn route_planning_keeps_plural_routes_first_class() {
-    let plan = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let plan = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_and_plan(RouteInput::<MixedRouteFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("mixed route plan should succeed"));
 
@@ -45,12 +54,15 @@ fn route_planning_keeps_plural_routes_first_class() {
 
 #[test]
 fn route_plan_digest_changes_when_admitted_world_changes() {
-    let primary = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let primary = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_and_plan(RouteInput::<RelationalRouteFamily>::new(
             "edge:42",
         ))
         .unwrap_or_else(|_| panic!("primary world should plan"));
-    let alternate = admitted_handle("alternate")
+    let alternate = admitted_handle(request_execution, "alternate")
         .declare_review_progress_describe_and_plan(RouteInput::<RelationalRouteFamily>::new(
             "edge:42",
         ))
@@ -61,7 +73,10 @@ fn route_plan_digest_changes_when_admitted_world_changes() {
 
 #[test]
 fn route_plan_explanation_preserves_route_reasoning() {
-    let plan = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let plan = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_and_plan(RouteInput::<MixedRouteFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("mixed route plan should succeed"));
 
@@ -80,7 +95,10 @@ fn route_plan_explanation_preserves_route_reasoning() {
 
 #[test]
 fn route_plan_binding_target_retains_route_scoped_aspect_state() {
-    let plan = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let plan = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_and_plan(RouteInput::<AspectRichRouteFamily>::new(
             "edge:42",
         ))

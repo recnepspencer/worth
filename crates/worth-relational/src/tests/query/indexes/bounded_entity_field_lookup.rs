@@ -6,8 +6,11 @@ use crate::facade::indexes::{
 
 #[test]
 fn entity_field_certification_rejects_a_missing_candidate() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "parity-candidate");
+    let created = create_entity_outcome(execution, &runtime, "parity-candidate");
     let entity_id = changed_entities(&created)[0];
     let field_locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let index = runtime.index_authority().register(DerivedIndexDefinition {
@@ -18,7 +21,7 @@ fn entity_field_certification_rejects_a_missing_candidate() {
         },
         branch_scoped: false,
     });
-    build_entity_field_generation(&runtime, index.index_id);
+    build_entity_field_generation(execution, &runtime, index.index_id);
     runtime
         .indexes
         .corrupt_latest_generation(index.index_id, |generation| {
@@ -39,13 +42,21 @@ fn entity_field_certification_rejects_a_missing_candidate() {
 
     let production = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup(request(), BoundedIndexParityMode::Production)
+        .execute_bounded_entity_field_lookup(
+            request(),
+            BoundedIndexParityMode::Production,
+            execution,
+        )
         .unwrap();
     assert!(production.candidate_entity_ids().is_empty());
     assert_ne!(production.candidate_entity_ids(), &[entity_id]);
     let denial = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup(request(), BoundedIndexParityMode::Certification)
+        .execute_bounded_entity_field_lookup(
+            request(),
+            BoundedIndexParityMode::Certification,
+            execution,
+        )
         .unwrap_err();
     assert_eq!(
         denial.kind(),
@@ -55,15 +66,18 @@ fn entity_field_certification_rejects_a_missing_candidate() {
 
 #[test]
 fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let entities = (0..32)
         .map(|index| {
-            let outcome = create_entity_outcome(&runtime, &format!("candidate-{index}"));
+            let outcome = create_entity_outcome(execution, &runtime, &format!("candidate-{index}"));
             changed_entities(&outcome)[0]
         })
         .collect::<Vec<_>>();
     for entity in &entities {
-        update_entity(&runtime, *entity, "shared");
+        update_entity(execution, &runtime, *entity, "shared");
     }
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(71),
@@ -74,13 +88,14 @@ fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
         branch_scoped: false,
     });
     let source_commit_id = runtime.history().latest_commit().unwrap().commit_id;
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
     let snapshot = runtime.visibility_authority().snapshot();
     let request = || {
@@ -97,11 +112,19 @@ fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
 
     let production = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup(request(), BoundedIndexParityMode::Production)
+        .execute_bounded_entity_field_lookup(
+            request(),
+            BoundedIndexParityMode::Production,
+            execution,
+        )
         .unwrap();
     let certified = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup(request(), BoundedIndexParityMode::Certification)
+        .execute_bounded_entity_field_lookup(
+            request(),
+            BoundedIndexParityMode::Certification,
+            execution,
+        )
         .unwrap();
 
     assert_eq!(production.candidate_entity_ids().len(), 2);
@@ -116,11 +139,14 @@ fn bounded_lookup_caps_ordinary_work_and_certifies_storage_parity() {
 
 #[test]
 fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let requested = create_entity_outcome(&runtime, "small");
-    let unrelated = create_entity_outcome(&runtime, "large");
+    let requested = create_entity_outcome(execution, &runtime, "small");
+    let unrelated = create_entity_outcome(execution, &runtime, "large");
     let unrelated_id = changed_entities(&unrelated)[0];
-    update_entity(&runtime, unrelated_id, &"x".repeat(32 * 1024));
+    update_entity(execution, &runtime, unrelated_id, &"x".repeat(32 * 1024));
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(76),
@@ -130,7 +156,7 @@ fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
         },
         branch_scoped: false,
     });
-    build_entity_field_generation(&runtime, index.index_id);
+    build_entity_field_generation(execution, &runtime, index.index_id);
     let requested_key = crate::facade::storage::AuthoritativeFieldComparisonKey::from_aspect_value(
         &string_aspect_value("small"),
     );
@@ -156,7 +182,7 @@ fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
     assert_ne!(changed_entities(&requested)[0], unrelated_id);
     let denial = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
+        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production, execution)
         .unwrap_err();
     assert_eq!(
         denial.kind(),
@@ -167,8 +193,11 @@ fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
 
 #[test]
 fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "alpha");
+    let created = create_entity_outcome(execution, &runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(72),
         name: "entity.name.exact-generation".to_string(),
@@ -177,13 +206,14 @@ fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
         },
         branch_scoped: false,
     });
-    runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     let empty = BoundedEntityFieldLookupRequest::new(
         created.snapshot.clone(),
         index.index_id,
@@ -198,7 +228,7 @@ fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
         BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
     );
 
-    create_entity_outcome(&runtime, "later");
+    create_entity_outcome(execution, &runtime, "later");
     let later_snapshot = runtime.visibility_authority().snapshot();
     let request = BoundedEntityFieldLookupRequest::new(
         later_snapshot,
@@ -211,7 +241,7 @@ fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
     .unwrap();
     let denial = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
+        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production, execution)
         .unwrap_err();
     assert_eq!(
         denial.kind(),
@@ -221,8 +251,11 @@ fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
 
 #[test]
 fn bounded_lookup_rebuilds_exact_historical_generation_after_truth_advances() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "historical");
+    let created = create_entity_outcome(execution, &runtime, "historical");
     let entity_id = changed_entities(&created)[0];
     let historical_snapshot = created.snapshot.clone();
     let historical_commit_id = created.commit.commit_id;
@@ -238,9 +271,11 @@ fn bounded_lookup_rebuilds_exact_historical_generation_after_truth_advances() {
         branch_scoped: false,
     });
 
-    update_entity(&runtime, entity_id, "current");
+    update_entity(execution, &runtime, entity_id, "current");
     assert_ne!(historical_version_id, runtime.current_version_id());
-    let historical_read = runtime.read_truth().read_version(historical_version_id);
+    let historical_read = runtime
+        .read_truth()
+        .read_version(execution, historical_version_id);
     let historical_record = historical_read.get_entity(entity_id).unwrap();
     assert_eq!(
         crate::visibility::materialization::read_records::entity_query_locus_comparison_key(
@@ -253,13 +288,14 @@ fn bounded_lookup_rebuilds_exact_historical_generation_after_truth_advances() {
             )
         )
     );
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: historical_commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let request = BoundedEntityFieldLookupRequest::new(
@@ -273,105 +309,31 @@ fn bounded_lookup_rebuilds_exact_historical_generation_after_truth_advances() {
     .unwrap();
     let result = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Certification)
+        .execute_bounded_entity_field_lookup(
+            request,
+            BoundedIndexParityMode::Certification,
+            execution,
+        )
         .unwrap();
 
     assert_eq!(result.candidate_entity_ids(), &[entity_id]);
     assert!(!result.overflowed());
 }
 
-#[test]
-fn exact_entity_field_lookup_uses_one_branch_root_after_both_heads_diverge() {
-    let runtime = runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "exact-field");
-    let entity_id = changed_entities(&created)[0];
-    let field_locator = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let exact_value = string_aspect_value("exact-field");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(74),
-        name: "entity.name.branch-root".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: field_locator.clone(),
-        },
-        branch_scoped: true,
-    });
-    build_entity_field_generation(&runtime, index.index_id);
-    let main_snapshot = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
-
-    runtime
-        .history_authority()
-        .fork_branch_from(
-            BranchId("field-sibling".to_owned()),
-            &BranchId("main".to_owned()),
-        )
-        .unwrap();
-    let sibling_snapshot =
-        snapshot_for_owner_branch(&runtime, &BranchId("field-sibling".to_owned()));
-    update_entity_on_branch(
-        &runtime,
-        entity_id,
-        "sibling-field",
-        BranchId("field-sibling".to_owned()),
-    );
-    update_entity(&runtime, entity_id, "main-field");
-    build_entity_field_generation(&runtime, index.index_id);
-
-    let current_main = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
-    let current = runtime
-        .index_access()
-        .execute_bounded_entity_field_lookup(
-            entity_field_request(
-                current_main,
-                index.index_id,
-                field_locator.clone(),
-                exact_value.clone(),
-            ),
-            BoundedIndexParityMode::Certification,
-        )
-        .unwrap();
-    assert!(current.candidate_entity_ids().is_empty());
-
-    for parity in [
-        BoundedIndexParityMode::Production,
-        BoundedIndexParityMode::Certification,
-    ] {
-        let outcome = runtime
-            .index_access()
-            .execute_bounded_entity_field_lookup(
-                entity_field_request(
-                    main_snapshot.clone(),
-                    index.index_id,
-                    field_locator.clone(),
-                    exact_value.clone(),
-                ),
-                parity,
-            )
-            .unwrap();
-        assert_eq!(outcome.candidate_entity_ids(), &[entity_id]);
-    }
-
-    let sibling_denial = runtime
-        .index_access()
-        .execute_bounded_entity_field_lookup(
-            entity_field_request(sibling_snapshot, index.index_id, field_locator, exact_value),
-            BoundedIndexParityMode::Certification,
-        )
-        .unwrap_err();
-    assert_eq!(
-        sibling_denial.kind(),
-        BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
-    );
-}
-
-fn build_entity_field_generation(runtime: &RelationalRuntime, index_id: DerivedIndexId) {
+fn build_entity_field_generation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    index_id: DerivedIndexId,
+) {
     let source_commit_id = runtime.history().latest_commit().unwrap().commit_id;
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 }
 
@@ -384,3 +346,6 @@ fn entity_field_request(
     BoundedEntityFieldLookupRequest::new(snapshot, index_id, KindId(1), field_locator, value, 2)
         .unwrap()
 }
+
+#[path = "bounded_entity_field_lookup/diverged_heads.rs"]
+mod diverged_heads;

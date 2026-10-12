@@ -107,6 +107,7 @@ impl ChargedBytes for PairOutput {
 impl PreparedPair<'_> {
     pub(in crate::domain_computation::primary_graph::application_query) fn run(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<PairOutput, MapKernelFailure<Denial>> {
         #[cfg(test)]
@@ -117,7 +118,7 @@ impl PreparedPair<'_> {
         let root = self.root;
         #[cfg(test)]
         let witness = self.witness.clone();
-        let outcome = self.compute(context);
+        let outcome = self.compute(execution, context);
         #[cfg(test)]
         if let Some(witness) = &witness {
             witness.complete(root);
@@ -126,6 +127,7 @@ impl PreparedPair<'_> {
     }
     fn compute(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<PairOutput, MapKernelFailure<Denial>> {
         context.checkpoint(1)?;
@@ -134,6 +136,7 @@ impl PreparedPair<'_> {
             witness.charged(self.root, 1);
         }
         let first = self.first.run(
+            execution,
             self.root,
             context,
             #[cfg(test)]
@@ -152,6 +155,7 @@ impl PreparedPair<'_> {
             witness.before_second(self.root);
         }
         let second = self.second.run(
+            execution,
             self.root,
             context,
             #[cfg(test)]
@@ -164,6 +168,7 @@ impl PreparedPair<'_> {
 impl PreparedRead<'_> {
     fn run(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: EntityId,
         context: &mut MapKernelContext<'_, '_>,
         #[cfg(test)] witness: Option<&super::dispatch_witness::DispatchWitness>,
@@ -200,10 +205,11 @@ impl PreparedRead<'_> {
         };
         let spent = OneShotReadWorkObservation::with_charge(&charge);
         let check = |subject: &str| charge(0, subject);
-        let read = session.execute(|runtime, graph| {
+        let read = session.execute(execution, |runtime, graph| {
             entered.set(true);
             super::read_prepared_root_rows(
                 runtime,
+                execution,
                 graph,
                 &plan,
                 buffer,

@@ -5,6 +5,7 @@ use super::*;
 impl WorthQueryWorkflowAdvanceAdapter {
     #[doc(hidden)]
     pub fn resolve_guarded_operation_custody<Schema, Operation, Input, Scope>(
+phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -17,7 +18,14 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Schema: ApplicationSchema,
         Input: Clone + Send + Sync + 'static,
     {
+        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "workflow-phase"))),
+        };
+        let execution = &phase_request;
+
         runtime.resolve_admitted_guarded_workflow_operation_custody(
+            execution,
             admission,
             idempotency,
             transition_identity,

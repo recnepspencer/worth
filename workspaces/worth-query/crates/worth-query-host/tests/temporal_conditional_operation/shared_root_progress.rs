@@ -45,6 +45,9 @@ impl domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode> for P
 
 #[test]
 fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contacts = ContactCounters::default();
     let (predicate, panic) = Predicate::controlled(contacts.clone());
     let (entered, entry) = mpsc::channel();
@@ -71,12 +74,16 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
     std::thread::scope(|scope| {
         let conditional = scope.spawn(|| {
             let outcome = application
-                .on_branch(application.current_world())
-                .select()
-                .unwrap()
-                .conditional_clock(clock)
-                .unwrap()
-                .observe();
+                .with_host_advancement(|phase| {
+                    application
+                        .on_branch(application.current_world())
+                        .select(&phase)
+                        .unwrap()
+                        .conditional_clock(request_execution, clock)
+                        .unwrap()
+                })
+                .expect("installed host call opens")
+                .observe(request_execution);
             let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt) =
                 outcome
             else {
@@ -99,19 +106,28 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
         let (read, completed) = mpsc::channel();
         let reader = scope.spawn(move || {
             let product = application
-                .on_branch(application.current_world())
-                .select()
-                .is_ok();
+                .with_host_advancement(|phase| {
+                    application
+                        .on_branch(application.current_world())
+                        .select(&phase)
+                        .is_ok()
+                })
+                .expect("installed host call opens");
             let entity = application
-                .on_branch(application.current_world())
-                .select()
-                .expect("the selected product branch remains admitted")
-                .resolve_entity(
-                    IntentIdentityField::reference(),
-                    "intent-1".to_string(),
-                    &request_scope(),
-                    primary_graph::WorthQueryPrincipalResolutionMode::Certification,
-                );
+                .with_host_advancement(|phase| {
+                    application
+                        .on_branch(application.current_world())
+                        .select(&phase)
+                        .expect("the selected product branch remains admitted")
+                        .resolve_entity(
+                            &phase,
+                            IntentIdentityField::reference(),
+                            "intent-1".to_string(),
+                            &request_scope(),
+                            primary_graph::WorthQueryPrincipalResolutionMode::Certification,
+                        )
+                })
+                .expect("installed host call opens");
             read.send((product, entity.is_ok())).unwrap();
         });
         let progress = completed.recv_timeout(Duration::from_secs(5));

@@ -15,6 +15,7 @@ use crate::domain_computation::application_aftermath::{
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation) fn progress_accepted_inbound_occurrence(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
         request: &WorthQueryRequestScope,
@@ -31,7 +32,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .mark_publication_retryable(&accepted);
             return Err(WorthQueryInboundAdmissionDenial::SourceRevoked);
         }
-        let outcome = self.publish_inbound_completion(phase, Arc::clone(&accepted), request);
+        let outcome =
+            self.publish_inbound_completion(execution, phase, Arc::clone(&accepted), request);
         match outcome {
             WorthQueryInboundPublicationOutcome::AlreadyCompleted => {
                 let completion_world = match self

@@ -11,8 +11,11 @@ fn replay_request(commit_id: crate::history::data::CommitId) -> RelationalReplay
 
 #[test]
 fn replay_reports_owner_create_event_drift_at_digest_layer() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "event-drift");
+    let created = create_entity_outcome(execution, &runtime, "event-drift");
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         created.commit.commit_id,
         |envelope| {
@@ -25,7 +28,8 @@ fn replay_reports_owner_create_event_drift_at_digest_layer() {
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(replay_request(created.commit.commit_id));
+        .replay_commit(replay_request(created.commit.commit_id), execution)
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(replay.mismatches.iter().any(|mismatch| {
@@ -38,8 +42,11 @@ fn replay_reports_owner_create_event_drift_at_digest_layer() {
 
 #[test]
 fn replay_reports_owner_create_decision_drift_at_digest_layer() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "decision-drift");
+    let created = create_entity_outcome(execution, &runtime, "decision-drift");
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         created.commit.commit_id,
         |envelope| {
@@ -52,7 +59,8 @@ fn replay_reports_owner_create_decision_drift_at_digest_layer() {
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(replay_request(created.commit.commit_id));
+        .replay_commit(replay_request(created.commit.commit_id), execution)
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(replay.mismatches.iter().any(|mismatch| {
@@ -65,15 +73,19 @@ fn replay_reports_owner_create_decision_drift_at_digest_layer() {
 
 #[test]
 fn replay_uses_retained_owner_envelope_only_in_normal_mode() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "retained-envelope");
+    let created = create_entity_outcome(execution, &runtime, "retained-envelope");
     assert!(runtime
         .durability_authority()
         .remove_durable_envelope_for_test(created.commit.commit_id));
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(replay_request(created.commit.commit_id));
+        .replay_commit(replay_request(created.commit.commit_id), execution)
+        .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert_eq!(
@@ -87,15 +99,21 @@ fn replay_uses_retained_owner_envelope_only_in_normal_mode() {
 
 #[test]
 fn audit_replay_rejects_retained_owner_envelope_basis() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "audit-retained-envelope");
+    let created = create_entity_outcome(execution, &runtime, "audit-retained-envelope");
     assert!(runtime
         .durability_authority()
         .remove_durable_envelope_for_test(created.commit.commit_id));
     let mut request = replay_request(created.commit.commit_id);
     request.verification_mode = ReplayVerificationMode::AuditRecoveryVerification;
 
-    let replay = runtime.replay_authority().replay_commit(request);
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(request, execution)
+        .unwrap();
 
     assert_eq!(
         replay.failure,
@@ -105,8 +123,11 @@ fn audit_replay_rejects_retained_owner_envelope_basis() {
 
 #[test]
 fn audit_replay_uses_checkpoint_owner_basis_when_tail_is_absent() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "checkpoint-basis");
+    let created = create_entity_outcome(execution, &runtime, "checkpoint-basis");
     runtime.durability_authority().checkpoint().unwrap();
     assert!(runtime
         .durability_authority()
@@ -114,7 +135,10 @@ fn audit_replay_uses_checkpoint_owner_basis_when_tail_is_absent() {
     let mut request = replay_request(created.commit.commit_id);
     request.verification_mode = ReplayVerificationMode::AuditRecoveryVerification;
 
-    let replay = runtime.replay_authority().replay_commit(request);
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(request, execution)
+        .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert_eq!(

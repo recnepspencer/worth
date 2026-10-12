@@ -90,19 +90,23 @@ fn assert_condition_path_parity(expected_positive: bool) {
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let ordinary_definition = match runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 8,
-            },
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .mutate(WorkflowDefinitionAuthoringIntent {
+                    input: WorkflowDefinitionAuthoringInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 8,
+                    },
+                })
+                .workflow(&host_phase, &ordinary, condition_terminal_draft())
+                .expect("ordinary condition draft binds")
+                .publish(WorkflowDefinitionExpectedPredecessor::Absent)
+                .idempotency(&919_010)
+                .execute()
+                .expect("ordinary condition publication prepares")
         })
-        .workflow(&ordinary, condition_terminal_draft())
-        .expect("ordinary condition draft binds")
-        .publish(WorkflowDefinitionExpectedPredecessor::Absent)
-        .idempotency(&919_010)
-        .execute()
-        .expect("ordinary condition publication prepares")
+        .expect("installed host call opens")
     {
         WorkflowDefinitionPublicationOutcome::Published(performed) => performed,
         other => panic!("ordinary definition did not publish: {other:?}"),

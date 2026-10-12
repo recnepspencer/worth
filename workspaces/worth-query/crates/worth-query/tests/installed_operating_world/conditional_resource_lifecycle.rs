@@ -7,6 +7,9 @@ use crate::support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn selected_product_turnover_releases_query_and_signal_retention_together() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = conditional_node_contract::resource_lifecycle_node();
     let installation = installed_operation_fixture::conditional_installation(&node);
     let harness = PublicBridgeRuntimeHarness::new();
@@ -19,6 +22,7 @@ fn selected_product_turnover_releases_query_and_signal_retention_together() {
         },
     );
     let mut workspace = installed_operation_fixture::conditional_resource_workspace(
+        request_execution,
         "conditional-resource-lifecycle",
         node,
         installation,
@@ -98,10 +102,14 @@ fn create_sibling(
     _ordinal: usize,
 ) -> product::WorthQueryProductBranch {
     workspace
-        .branches()
-        .fork(workspace.current_world())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
+        .with_advancement(|phase| {
+            workspace
+                .branches()
+                .fork(workspace.current_world())
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+        })
+        .expect("installed host call opens")
         .expect("World must publish the selected sibling")
 }
 

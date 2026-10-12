@@ -145,7 +145,9 @@ pub(super) struct LegacyDelegationParityFixture {
     pub(super) read_basis_canonical: crate::runtime::WorthQueryReadResult,
 }
 
-pub(super) fn certified_admitted_intent_fixture() -> CertifiedAdmittedIntentFixture {
+pub(super) fn certified_admitted_intent_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> CertifiedAdmittedIntentFixture {
     let declaration = authoritative_declaration("certification-admitted-intent");
     let request =
         WorthQueryRawIntentAdmissionRequest::authoritative_runtime_entrypoint(declaration.clone())
@@ -156,7 +158,7 @@ pub(super) fn certified_admitted_intent_fixture() -> CertifiedAdmittedIntentFixt
     let decision = admit_runtime_intent_request(request.clone());
     match &decision {
         WorthQueryIntentAdmissionDecision::Admitted(plan) => {
-            let mut runtime = certification_runtime();
+            let mut runtime = certification_runtime(execution);
             let plan = plan.clone();
             let handoff = plan.clone().into_execution_handoff();
             let authoritative_handoff = match handoff.clone() {
@@ -168,7 +170,7 @@ pub(super) fn certified_admitted_intent_fixture() -> CertifiedAdmittedIntentFixt
             let binding =
                 runtime.prepare_authoritative_intent_execution_binding(authoritative_handoff);
             let receipt = runtime
-                .execute_intent(declaration)
+                .execute_intent(execution, declaration)
                 .expect("admitted certification intent should execute");
             let trace = receipt.decision_trace_envelope().clone();
             CertifiedAdmittedIntentFixture {
@@ -240,14 +242,16 @@ pub(super) fn certified_violation_intent_fixture() -> CertifiedViolationIntentFi
     }
 }
 
-pub(super) fn certified_failure_intent_fixture() -> CertifiedFailureIntentFixture {
+pub(super) fn certified_failure_intent_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> CertifiedFailureIntentFixture {
     let declaration = authoritative_declaration("certification-failure-intent");
     let request =
         WorthQueryRawIntentAdmissionRequest::authoritative_runtime_entrypoint(declaration.clone())
             .expect("authoritative request should build");
-    let mut runtime = certification_runtime_with_invariant_violation_authority();
+    let mut runtime = certification_runtime_with_invariant_violation_authority(execution);
     let error = runtime
-        .execute_intent(declaration)
+        .execute_intent(execution, declaration)
         .expect_err("invariant violation should preserve denial evidence");
     match error {
         crate::runtime::WorthQueryRuntimeError::IntentCommitDenied { evidence, .. } => {
@@ -273,27 +277,30 @@ pub(super) fn certified_failure_intent_fixture() -> CertifiedFailureIntentFixtur
     }
 }
 
-pub(super) fn legacy_delegation_parity_fixture() -> LegacyDelegationParityFixture {
-    let read_fixture = read_delegation_parity_fixture();
+pub(super) fn legacy_delegation_parity_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> LegacyDelegationParityFixture {
+    let read_fixture = read_delegation_parity_fixture(execution);
     let declaration = authoritative_declaration("certification-authoritative-parity-intent");
-    let mut delegated_runtime = certification_runtime();
+    let mut delegated_runtime = certification_runtime(execution);
     let authoritative_legacy = delegated_runtime
-        .execute_intent(declaration.clone())
+        .execute_intent(execution, declaration.clone())
         .expect("legacy authoritative entrypoint should execute");
 
-    let mut canonical_runtime = certification_runtime();
+    let mut canonical_runtime = certification_runtime(execution);
     let canonical_handoff = canonical_runtime
         .admit_authoritative_intent_for_execution(declaration.clone())
         .expect("canonical authoritative handoff should admit");
     let canonical_binding =
         canonical_runtime.prepare_authoritative_intent_execution_binding(canonical_handoff);
     let authoritative_canonical = canonical_runtime
-        .execute_authoritative_intent_execution_binding(canonical_binding)
+        .execute_authoritative_intent_execution_binding(execution, canonical_binding)
         .expect("canonical authoritative execution should succeed");
 
-    let mut delegated_effect_runtime = certification_runtime();
+    let mut delegated_effect_runtime = certification_runtime(execution);
     let delegated_live = delegated_effect_runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            execution,
             "certification.effect-live",
             certification_task_live_request(),
             certification_task_schema(),
@@ -307,24 +314,33 @@ pub(super) fn legacy_delegation_parity_fixture() -> LegacyDelegationParityFixtur
         ))
         .expect("effect should declare");
     delegated_effect_runtime
-        .write(WorthQueryWriteCommand::UpdateAspect {
-            entity_identity: certification_entity_identity("task-1"),
-            aspect: crate::facade::runtime::WorthQueryAuthoredAspectMutation::new_set(
-                title_value_touch(),
-                crate::runtime::WorthQueryAuthoredAspectMutation::native_string_value(
-                    "title from delegated effect",
-                ),
-            )
-            .expect("delegated effect aspect should admit"),
-        })
+        .write(
+            execution,
+            WorthQueryWriteCommand::UpdateAspect {
+                entity_identity: certification_entity_identity("task-1"),
+                aspect: crate::facade::runtime::WorthQueryAuthoredAspectMutation::new_set(
+                    title_value_touch(),
+                    crate::runtime::WorthQueryAuthoredAspectMutation::native_string_value(
+                        "title from delegated effect",
+                    ),
+                )
+                .expect("delegated effect aspect should admit"),
+            },
+        )
         .expect("delegated effect write should queue");
     let effect_legacy = delegated_effect_runtime
-        .execute_next_effect_write_intent(&delegated_effect, "1.0", "effect.intent.input.v1")
+        .execute_next_effect_write_intent(
+            execution,
+            &delegated_effect,
+            "1.0",
+            "effect.intent.input.v1",
+        )
         .expect("legacy effect entrypoint should execute");
 
-    let mut canonical_effect_runtime = certification_runtime();
+    let mut canonical_effect_runtime = certification_runtime(execution);
     let canonical_live = canonical_effect_runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            execution,
             "certification.effect-live",
             certification_task_live_request(),
             certification_task_schema(),
@@ -338,16 +354,19 @@ pub(super) fn legacy_delegation_parity_fixture() -> LegacyDelegationParityFixtur
         ))
         .expect("canonical effect should declare");
     canonical_effect_runtime
-        .write(WorthQueryWriteCommand::UpdateAspect {
-            entity_identity: certification_entity_identity("task-1"),
-            aspect: crate::facade::runtime::WorthQueryAuthoredAspectMutation::new_set(
-                title_value_touch(),
-                crate::runtime::WorthQueryAuthoredAspectMutation::native_string_value(
-                    "title from delegated effect",
-                ),
-            )
-            .expect("canonical effect aspect should admit"),
-        })
+        .write(
+            execution,
+            WorthQueryWriteCommand::UpdateAspect {
+                entity_identity: certification_entity_identity("task-1"),
+                aspect: crate::facade::runtime::WorthQueryAuthoredAspectMutation::new_set(
+                    title_value_touch(),
+                    crate::runtime::WorthQueryAuthoredAspectMutation::native_string_value(
+                        "title from delegated effect",
+                    ),
+                )
+                .expect("canonical effect aspect should admit"),
+            },
+        )
         .expect("canonical effect write should queue");
     let (pending_delivery, canonical_handoff) = canonical_effect_runtime
         .admit_next_effect_write_intent_for_execution(
@@ -359,7 +378,7 @@ pub(super) fn legacy_delegation_parity_fixture() -> LegacyDelegationParityFixtur
     let canonical_binding = canonical_effect_runtime
         .prepare_effect_intent_execution_binding(canonical_handoff, &pending_delivery);
     let effect_canonical = canonical_effect_runtime
-        .execute_effect_intent_execution_binding(canonical_binding)
+        .execute_effect_intent_execution_binding(execution, canonical_binding)
         .expect("canonical effect execution should succeed");
 
     LegacyDelegationParityFixture {
@@ -374,21 +393,5 @@ pub(super) fn legacy_delegation_parity_fixture() -> LegacyDelegationParityFixtur
     }
 }
 
-pub(super) fn authoritative_declaration(name: &str) -> WorthQueryIntentDeclaration {
-    WorthQueryIntentDeclaration::strategy_commit(
-        name,
-        "strategy.intent.reconcile",
-        "1.0",
-        "intent.reconcile.input.v1",
-        crate::runtime::WorthQueryIntentInput::object([
-            (
-                "entity",
-                crate::runtime::WorthQueryIntentInput::string("task-1"),
-            ),
-            (
-                "title",
-                crate::runtime::WorthQueryIntentInput::string("Certification committed title"),
-            ),
-        ]),
-    )
-}
+mod authoritative_declaration;
+pub(super) use authoritative_declaration::authoritative_declaration;

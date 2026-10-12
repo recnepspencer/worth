@@ -941,7 +941,8 @@ runtime below works under that request.
   a *phase*: a value borrowed for the duration of one callback. It cannot be
   returned, stored, or handed to a product, and each of those is a compile
   error. A phase lends its request only to the installed runtime that opened
-  it; another runtime is refused with `ForeignPhase`. A public call that
+  it; another runtime is refused with
+  `Resource(ForeignAdvancementPhase)`. A public call that
   tries to open a second advancement on the same thread is refused with
   `NestedOpening`. Custody is per thread, so another thread's public call
   owns its own request.

@@ -17,8 +17,11 @@ use worth_relational::facade::runtime::RelationalRuntime;
 
 #[test]
 fn phase5_forked_topology_write_copies_only_touched_regions() {
-    let (mut world, baseline) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &baseline);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &baseline);
     fork_from_main(&world.runtime, "rewire");
     fork_from_main(&world.runtime, "maintenance");
 
@@ -79,6 +82,7 @@ fn phase5_forked_topology_write_copies_only_touched_regions() {
     let sibling_cost_scope =
         RelationalMvccCostScope::capture(&world.runtime, vec![sibling.clone()]);
     let batch = lower_supply_chain_production_delta(
+        execution,
         &world.runtime,
         &world.program,
         &world.handles,
@@ -87,9 +91,14 @@ fn phase5_forked_topology_write_copies_only_touched_regions() {
         delta,
     )
     .expect("the actual rewire branch pre-state lowers to production intent");
-    commit_branch_batch(&world.runtime, BranchId("rewire".to_owned()), batch);
+    commit_branch_batch(
+        execution,
+        &world.runtime,
+        BranchId("rewire".to_owned()),
+        batch,
+    );
 
-    assert_rewire_matches_oracle(&mut world, &rewire, expected);
+    assert_rewire_matches_oracle(execution, &mut world, &rewire, expected);
     let cost = world
         .runtime
         .observe_mvcc_cost(&cost_scope)
@@ -235,12 +244,14 @@ fn expected_rewire_from_pure_oracle(
 }
 
 fn assert_rewire_matches_oracle(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut super::world::supply_chain::ProductionSeededSupplyChainWorld,
     rewire: &RelationalBranchIdentity,
     expected: ExpectedSupplyChainObservation,
 ) {
     let snapshot = snapshot_for_supply_chain_identity(&world.runtime, rewire);
     let observed = observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles.for_snapshot(snapshot.clone()),
         &world.runtime,

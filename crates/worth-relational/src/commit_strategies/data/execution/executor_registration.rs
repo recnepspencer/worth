@@ -11,6 +11,7 @@ use crate::commit_strategies::data::{
 pub trait CommitStrategyExecutor: Send + Sync + 'static {
     fn execute(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &CanonicalStrategyCommitRequest,
         observation: &StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure>;

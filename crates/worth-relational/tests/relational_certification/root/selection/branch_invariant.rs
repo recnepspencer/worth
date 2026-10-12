@@ -27,6 +27,9 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn supply_chain_child_commit_uses_child_root_after_main_advances() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let original = CompiledSupplyChainProgram::compile(
         SupplyChainWorldDefinition::operating(SupplyChainScale::court())
             .expect("Court Supply Chain definition is valid"),
@@ -34,7 +37,7 @@ fn supply_chain_child_commit_uses_child_root_after_main_advances() {
     .expect("Supply Chain program compiles");
     let registry = registry_with_vessel_source_cardinality(original.schema_registry());
     let program = original.with_schema_registry_for_test(registry);
-    let world = compile_supply_chain_baseline(program).expect("Court world compiles");
+    let world = compile_supply_chain_baseline(execution, program).expect("Court world compiles");
 
     let source = world.handles.entities
         [&super::world::supply_chain::EntityKey::new(EntityKind::Vessel, 1)]
@@ -56,6 +59,7 @@ fn supply_chain_child_commit_uses_child_root_after_main_advances() {
         .expect("storm fork shares the Supply Chain root");
 
     let main_commit = commit_relation(
+        execution,
         &world.runtime,
         BranchId("main".to_owned()),
         source,
@@ -68,6 +72,7 @@ fn supply_chain_child_commit_uses_child_root_after_main_advances() {
     let main_head_before_rejection =
         head_for_supply_chain_branch(&world.runtime, &BranchId("main".to_owned())).version_id;
     let rejected_main_assignment = commit_relation(
+        execution,
         &world.runtime,
         BranchId("main".to_owned()),
         source,
@@ -83,6 +88,7 @@ fn supply_chain_child_commit_uses_child_root_after_main_advances() {
     assert_eq!(main_head_after_rejection, main_head_before_rejection);
 
     let child_commit = commit_relation(
+        execution,
         &world.runtime,
         BranchId("storm".to_owned()),
         source,
@@ -114,6 +120,9 @@ fn assert_native_cardinality_execution(
 
 #[test]
 fn supply_chain_child_custom_invariant_uses_child_selected_version() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let original = CompiledSupplyChainProgram::compile(
         SupplyChainWorldDefinition::operating(SupplyChainScale::court())
             .expect("Court Supply Chain definition is valid"),
@@ -122,6 +131,7 @@ fn supply_chain_child_custom_invariant_uses_child_selected_version() {
     let registry = registry_with_vessel_source_cardinality(original.schema_registry());
     let program = original.with_schema_registry_for_test(registry);
     let world = compile_supply_chain_baseline_with_custom_invariant(
+        execution,
         program,
         CustomInvariantRegistration::new(BranchVersionProbeRule)
             .expect("branch-version custom invariant registers"),
@@ -148,6 +158,7 @@ fn supply_chain_child_custom_invariant_uses_child_selected_version() {
         .expect("storm fork shares the Supply Chain root");
 
     let main_commit = commit_relation(
+        execution,
         &world.runtime,
         BranchId("main".to_owned()),
         source,
@@ -160,6 +171,7 @@ fn supply_chain_child_custom_invariant_uses_child_selected_version() {
     assert_ne!(child_basis_version, main_commit.version_id);
 
     let child_commit = commit_relation(
+        execution,
         &world.runtime,
         BranchId("storm".to_owned()),
         source,
@@ -258,6 +270,7 @@ impl CustomInvariantRule for BranchVersionProbeRule {
 }
 
 fn commit_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: BranchId,
     source: EntityId,
@@ -291,10 +304,7 @@ fn commit_relation(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    transaction.commit(execution, runtime)
 }
 
 fn registry_with_vessel_source_cardinality(

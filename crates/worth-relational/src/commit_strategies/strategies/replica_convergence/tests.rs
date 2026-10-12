@@ -37,6 +37,9 @@ fn replicas_patch_target() -> AspectFieldLocator {
 
 #[test]
 fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = ReplicaConvergenceStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(601),
     );
@@ -50,7 +53,7 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
             &descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "before");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -69,7 +72,7 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output = ReplicaConvergenceOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");
@@ -87,6 +90,9 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
 
 #[test]
 fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = ReplicaConvergenceStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(602),
     );
@@ -100,7 +106,7 @@ fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
             &descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "before");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
         crate::transactions::data::WorkerIntentBatch::new("seed-replicas").push(
@@ -119,11 +125,8 @@ fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("seed replicas");
+    txn.commit(request_execution, &runtime)
+        .expect("seed replicas");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -142,7 +145,7 @@ fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output = ReplicaConvergenceOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");

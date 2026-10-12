@@ -2,7 +2,10 @@ use super::certification_bundle::run_merge_ready_history_shape_certification;
 
 #[test]
 fn merge_ready_history_ancestry_queries_resolve_branch_reasoning() {
-    let certification = run_merge_ready_history_shape_certification();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let certification = run_merge_ready_history_shape_certification(execution);
     let parent_lists = &certification.parent_list_serialization;
     let ancestry = &certification.ancestry_query_matrix;
 

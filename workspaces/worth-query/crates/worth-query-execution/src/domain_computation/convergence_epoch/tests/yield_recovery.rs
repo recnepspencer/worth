@@ -224,7 +224,7 @@ fn workflow_terminal_recovery_types_double_artifact_panic_as_closed_recovery() {
 }
 
 fn direct_paused(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     fixture: DirectAdmissionFixture,
     call_identity: &str,
@@ -234,18 +234,26 @@ fn direct_paused(
 ) {
     let epoch = fixture.admit();
     let identity = epoch.identity().to_owned();
-    let started = epoch
-        .begin_iteration(execution, call(call_identity))
-        .unwrap_or_else(|_| panic!("direct recovery iteration must start"));
-    let paused = match started.advance(execution) {
-        WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("direct recovery fixture must reach a safe point"),
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_iteration(&installed_fixture_phase, call(call_identity))
+    }
+    .unwrap_or_else(|_| panic!("direct recovery iteration must start"));
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("direct recovery fixture must reach a safe point"),
+        }
     };
     (identity, paused)
 }
 
 fn workflow_paused(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     fixture: WorkflowAdmissionFixture,
     call_identity: &str,
@@ -255,12 +263,24 @@ fn workflow_paused(
 ) {
     let epoch = fixture.admit();
     let identity = epoch.identity().to_owned();
-    let started = epoch
-        .begin_stage_iteration(execution, WORKFLOW_STAGE, call(call_identity))
-        .unwrap_or_else(|_| panic!("workflow recovery iteration must start"));
-    let paused = match started.advance(execution) {
-        WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
-        _ => panic!("workflow recovery fixture must reach a safe point"),
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_stage_iteration(
+            &installed_fixture_phase,
+            WORKFLOW_STAGE,
+            call(call_identity),
+        )
+    }
+    .unwrap_or_else(|_| panic!("workflow recovery iteration must start"));
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Continue(paused) => paused,
+            _ => panic!("workflow recovery fixture must reach a safe point"),
+        }
     };
     (identity, paused)
 }

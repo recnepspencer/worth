@@ -27,6 +27,7 @@ where
 {
     fn authorize<Principal, PrincipalIdentity>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
             '_,
             Schema,
@@ -67,6 +68,7 @@ where
 {
     fn authorize<Principal, PrincipalIdentity>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
             '_,
             Schema,
@@ -87,7 +89,14 @@ where
         super::super::input_validation::validate_operation_input::<Schema, Operation, Input>(
             input, operation,
         )?;
-        product.authorize_operation(principal, scope, operation, preconditions, request)
+        product.authorize_operation_with_request(
+            execution,
+            principal,
+            scope,
+            operation,
+            preconditions,
+            request,
+        )
     }
 }
 
@@ -131,6 +140,7 @@ where
 {
     fn authorize<Principal, PrincipalIdentity>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
             '_,
             Schema,
@@ -149,9 +159,9 @@ where
         WorthQueryOperationAuthorizationDenial,
     > {
         let capability =
-            product.admit_capability_access(principal, &self.capability, input.clone(), request)?;
+            product.admit_capability_access_with_request(execution, principal, &self.capability, input.clone(), request)?;
         product
             .application()
-            .authorize_capability_operation(capability, operation, preconditions)
+            .authorize_capability_operation_with_request(execution, capability, operation, preconditions)
     }
 }

@@ -9,7 +9,8 @@ mod execution_completion;
 mod execution_preparation;
 pub(super) mod schedule_progression;
 mod source_guard;
-pub(super) use execution_preparation::{CompletionRefusal, ExecutionPreparation};
+pub(super) use execution_completion::CompletionRefusal;
+pub(super) use execution_preparation::ExecutionPreparation;
 pub(super) use schedule_progression::OwnPublication;
 use schedule_progression::{CheckpointProgress, OwnStages, ScheduleProgression};
 use source_guard::SourceGuard;
@@ -20,6 +21,7 @@ where
 {
     fn advance_ordinary_validated_output_demand<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -44,6 +46,7 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         let prepared = self.prepare_validated_output_demand_with_schedule(
+            *execution,
             phase,
             demand,
             principal,

@@ -5,10 +5,17 @@ use super::operation_sharing::settle;
 
 #[test]
 fn unsupported_and_foreign_candidates_stop_before_owner_registration() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut unsupported = configured_runtime()
-        .workspace("projection-sharing-unsupported")
+        .workspace(request_execution, "projection-sharing-unsupported")
         .unwrap();
-    let live = promote(settle(&mut unsupported), &mut unsupported);
+    let live = promote(
+        request_execution,
+        settle(&mut unsupported),
+        &mut unsupported,
+    );
     let resource_name = live.resource_name().to_string();
     let candidate = settle(&mut unsupported).into_lifecycle();
     let stop = match live.share_with(candidate, &mut unsupported) {
@@ -27,9 +34,9 @@ fn unsupported_and_foreign_candidates_stop_before_owner_registration() {
         .resolve_live_artifact_target(&resource_name)
         .unwrap();
 
-    let mut owner = sharing_workspace("projection-sharing-foreign-owner");
-    let mut foreign = sharing_workspace("projection-sharing-foreign-candidate");
-    let live = promote(settle(&mut owner), &mut owner);
+    let mut owner = sharing_workspace(request_execution, "projection-sharing-foreign-owner");
+    let mut foreign = sharing_workspace(request_execution, "projection-sharing-foreign-candidate");
+    let live = promote(request_execution, settle(&mut owner), &mut owner);
     let resource_name = live.resource_name().to_string();
     let candidate = settle(&mut foreign).into_lifecycle();
     let stop = match live.share_with(candidate, &mut owner) {
@@ -49,10 +56,17 @@ fn unsupported_and_foreign_candidates_stop_before_owner_registration() {
 
 #[test]
 fn singleton_support_denial_is_typed_and_stale_authority_takes_precedence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut unsupported = configured_runtime()
-        .workspace("projection-singleton-unsupported")
+        .workspace(request_execution, "projection-singleton-unsupported")
         .unwrap();
-    let live = promote(settle(&mut unsupported), &mut unsupported);
+    let live = promote(
+        request_execution,
+        settle(&mut unsupported),
+        &mut unsupported,
+    );
     let stop = match live.into_managed_lease(&mut unsupported) {
         domain::WorthQueryProjectionLeaseAdmissionOutcome::Stopped(stop) => stop,
         domain::WorthQueryProjectionLeaseAdmissionOutcome::Admitted(_) => {
@@ -70,9 +84,9 @@ fn singleton_support_denial_is_typed_and_stale_authority_takes_precedence() {
     assert_eq!(stop.counters().unrelated_route_scans, 0);
 
     let mut controlled = configured_runtime()
-        .controlled_workspace("projection-sharing-stale-unsupported")
+        .controlled_workspace(request_execution, "projection-sharing-stale-unsupported")
         .unwrap();
-    let live = promote(settle(&mut controlled), &mut controlled);
+    let live = promote(request_execution, settle(&mut controlled), &mut controlled);
     let candidate = settle(&mut controlled).into_lifecycle();
     controlled.advance_domain_installation_generation().unwrap();
     let stop = match live.share_with(candidate, &mut controlled) {
@@ -90,8 +104,11 @@ fn singleton_support_denial_is_typed_and_stale_authority_takes_precedence() {
 
 #[test]
 fn independently_authored_pair_order_converges_without_a_secondary_sharing_index() {
-    let forward = admit_pair("projection-sharing-order-forward", false);
-    let reverse = admit_pair("projection-sharing-order-reverse", true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let forward = admit_pair(request_execution, "projection-sharing-order-forward", false);
+    let reverse = admit_pair(request_execution, "projection-sharing-order-reverse", true);
     assert_eq!(forward, reverse);
     assert_eq!(forward.owner_registrations, 1);
     assert_eq!(forward.lease_issues, 2);
@@ -105,10 +122,13 @@ fn independently_authored_pair_order_converges_without_a_secondary_sharing_index
 
 #[test]
 fn exact_owner_lookup_remains_bounded_with_unrelated_active_owners() {
-    let mut workspace = sharing_workspace("projection-sharing-unrelated-owners");
-    let unrelated_a = singleton(&mut workspace);
-    let unrelated_b = singleton(&mut workspace);
-    let live = promote(settle(&mut workspace), &mut workspace);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = sharing_workspace(request_execution, "projection-sharing-unrelated-owners");
+    let unrelated_a = singleton(request_execution, &mut workspace);
+    let unrelated_b = singleton(request_execution, &mut workspace);
+    let live = promote(request_execution, settle(&mut workspace), &mut workspace);
     let candidate = settle(&mut workspace).into_lifecycle();
     let shared = match live.share_with(candidate, &mut workspace) {
         domain::WorthQueryProjectionSharingOutcome::Shared(shared) => shared,
@@ -138,8 +158,12 @@ fn exact_owner_lookup_remains_bounded_with_unrelated_active_owners() {
     drop((unrelated_a, unrelated_b, subject, candidate));
 }
 
-fn admit_pair(name: &str, reverse: bool) -> domain::WorthQueryProjectionSharingCounters {
-    let mut workspace = sharing_workspace(name);
+fn admit_pair(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+    reverse: bool,
+) -> domain::WorthQueryProjectionSharingCounters {
+    let mut workspace = sharing_workspace(request_execution, name);
     let first = settle(&mut workspace);
     let second = settle(&mut workspace);
     let (live_source, candidate_source) = if reverse {
@@ -147,7 +171,7 @@ fn admit_pair(name: &str, reverse: bool) -> domain::WorthQueryProjectionSharingC
     } else {
         (first, second)
     };
-    let live = promote(live_source, &mut workspace);
+    let live = promote(request_execution, live_source, &mut workspace);
     let shared = match live.share_with(candidate_source.into_lifecycle(), &mut workspace) {
         domain::WorthQueryProjectionSharingOutcome::Shared(shared) => shared,
         domain::WorthQueryProjectionSharingOutcome::Stopped(stop) => {
@@ -160,6 +184,7 @@ fn admit_pair(name: &str, reverse: bool) -> domain::WorthQueryProjectionSharingC
 }
 
 fn singleton(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut runtime::WorthQueryWorkspace,
 ) -> domain::WorthQuerySharedLiveProjectionLease<
     super::installed_operation_fixture::GeometryDomain,
@@ -167,7 +192,7 @@ fn singleton(
     super::installed_operation_fixture::ReadFamily,
     worth_query::facade::foundation::ObservationLaneWitness,
 > {
-    match promote(settle(workspace), workspace).into_managed_lease(workspace) {
+    match promote(request_execution, settle(workspace), workspace).into_managed_lease(workspace) {
         domain::WorthQueryProjectionLeaseAdmissionOutcome::Admitted(lease) => {
             let counters = lease
                 .singleton_admission_counters()
@@ -186,6 +211,7 @@ fn singleton(
 }
 
 fn promote(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     settled: super::operation_sharing::SettledProjection,
     workspace: &mut runtime::WorthQueryWorkspace,
 ) -> domain::WorthQueryLiveBoundDomainProjection<
@@ -194,18 +220,24 @@ fn promote(
     super::installed_operation_fixture::ReadFamily,
     worth_query::facade::foundation::ObservationLaneWitness,
 > {
-    match settled.into_lifecycle().promote(workspace) {
+    match settled
+        .into_lifecycle()
+        .promote(request_execution, workspace)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("projection did not promote"),
     }
 }
 
-fn sharing_workspace(name: &str) -> runtime::WorthQueryWorkspace {
+fn sharing_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> runtime::WorthQueryWorkspace {
     configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
         .unwrap()
 }

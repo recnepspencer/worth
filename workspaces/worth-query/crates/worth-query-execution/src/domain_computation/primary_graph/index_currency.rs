@@ -51,6 +51,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     /// needs a generation of its own there, built from the same exact root.
     pub(crate) fn ensure_primary_indexes_for_basis(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut RelationalRuntime,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
@@ -82,6 +83,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
             basis,
             None,
             super::index_maintenance_budget::cold_index_reconstruction_budget(),
+            execution,
         );
         require_complete_build(build, expected)
     }

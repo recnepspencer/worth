@@ -2,6 +2,9 @@ use crate::tests::support::*;
 
 #[test]
 fn relation_integrity_commit_boundary_rejects_forbidden_self_edge() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -38,7 +41,7 @@ fn relation_integrity_commit_boundary_rejects_forbidden_self_edge() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build();
-    let entity = create_entity(&runtime, "self");
+    let entity = create_entity(execution, &runtime, "self");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -56,12 +59,7 @@ fn relation_integrity_commit_boundary_rejects_forbidden_self_edge() {
     )
     .expect("test staging stays within configured resource budgets");
 
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     match error {
         TransactionCommitError::Conflict { error, .. } => {
             assert_eq!(error.code(), DiagnosticCode::RelationEndpointKindViolation);

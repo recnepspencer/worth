@@ -50,6 +50,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         request: &WorthQueryRequestScope,
     ) -> RecoveryProgress {
         use InstalledTransportPendingReason as Pending;
+        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return RecoveryProgress::Pending(
+                    prior,
+                    None,
+                    Pending::ExecutionRequest(cause.into()),
+                )
+            }
+        };
         let owner = evidence.committed();
         let incarnation = owner.committed_product_publication().product_incarnation();
         let lane = self
@@ -121,11 +131,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         );
         let world_recovery = publication.recovery();
         drop(unpublished);
-        let outcome = prepared.execute(
-            phase
-                .execution_request_for(&self.product_runtime)
-                .expect("private progression uses its admitted runtime phase"),
-        );
+        let outcome = prepared.execute(publication_execution);
         drop(publication);
         drop(lease);
         match outcome {

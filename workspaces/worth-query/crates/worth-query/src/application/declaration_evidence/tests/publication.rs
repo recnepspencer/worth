@@ -9,7 +9,10 @@ use super::domain::{admitted_handle, AspectRichFamily, ConflictingAspectFamily, 
 
 #[test]
 fn foundational_profiles_publish_semantic_slices_honestly() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progression = handle
         .declare_review_and_progress(Declaration::<AspectRichFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));
@@ -78,7 +81,10 @@ fn foundational_profiles_publish_semantic_slices_honestly() {
 
 #[test]
 fn foundational_publication_changes_without_changing_retained_truth_identity() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progression = handle
         .declare_review_and_progress(Declaration::<AspectRichFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));
@@ -105,7 +111,10 @@ fn foundational_publication_changes_without_changing_retained_truth_identity() {
 
 #[test]
 fn legality_denial_foundational_evidence_marks_support_reported_coverage_basis() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let declaration = handle
         .declare(Declaration::<super::domain::IllegalRoleFamily>::new(
             "edge:42",
@@ -130,7 +139,10 @@ fn legality_denial_foundational_evidence_marks_support_reported_coverage_basis()
 
 #[test]
 fn conflicting_aspects_stay_masked_even_on_full_foundational_publication() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progression = handle
         .declare_review_and_progress(Declaration::<ConflictingAspectFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));

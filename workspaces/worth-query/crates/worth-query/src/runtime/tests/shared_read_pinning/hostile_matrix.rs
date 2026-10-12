@@ -4,9 +4,13 @@ use super::*;
 
 #[test]
 fn shared_read_pinning_boundary_closes_only_with_all_phase_thirteen_evidence() {
-    let (mut workspace, derived) = shared_read_pinning_workspace("shared-read.phase13.matrix");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, derived) =
+        shared_read_pinning_workspace(request_execution, "shared-read.phase13.matrix");
     let stable = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("stable context should mint");
     let stable_basis = stable.inspect_basis();
     let stable_binding = stable
@@ -24,6 +28,7 @@ fn shared_read_pinning_boundary_closes_only_with_all_phase_thirteen_evidence() {
 
     for index in 0..4 {
         insert_task(
+            request_execution,
             &mut workspace,
             &format!("task-phase13-{index}"),
             if index % 2 == 0 {
@@ -33,7 +38,7 @@ fn shared_read_pinning_boundary_closes_only_with_all_phase_thirteen_evidence() {
             },
         );
         let current = workspace
-            .shared_read_context()
+            .shared_read_context(request_execution)
             .expect("current context should mint under commit pressure");
         assert!(current.published_derived_artifact(&derived).is_ok());
         assert_eq!(
@@ -61,7 +66,12 @@ fn shared_read_pinning_boundary_closes_only_with_all_phase_thirteen_evidence() {
         .invalidate_shared_read_snapshot_for_certification(stable_basis.snapshot_identity());
     let stale_denial = shared_read_stale_denial_evidence(&stable, &derived, &stable_basis);
     drop(stable);
-    insert_task(&mut workspace, "task-phase13-drain", "Task Two");
+    insert_task(
+        request_execution,
+        &mut workspace,
+        "task-phase13-drain",
+        "Task Two",
+    );
 
     let inventory = shared_read_pinning_inventory_evidence();
     let counters = shared_read_counter_evidence(&workspace.runtime);

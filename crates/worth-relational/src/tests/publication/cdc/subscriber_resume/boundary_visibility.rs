@@ -9,8 +9,11 @@ use crate::tests::support::*;
 
 #[test]
 fn subscriber_stream_reports_crossed_schema_boundary_from_in_memory_history() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     install_schema_version(&mut runtime, SchemaVersionId(2));
     let mut txn = {
@@ -31,11 +34,7 @@ fn subscriber_stream_reports_crossed_schema_boundary_from_in_memory_history() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let batch = runtime
         .publication()
@@ -73,8 +72,11 @@ fn subscriber_stream_reports_crossed_schema_boundary_from_in_memory_history() {
 
 #[test]
 fn subscriber_stream_treats_unconsumed_boundary_as_unchanged() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     install_schema_version(&mut runtime, SchemaVersionId(2));
     let mut txn = {
@@ -95,11 +97,7 @@ fn subscriber_stream_treats_unconsumed_boundary_as_unchanged() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let contract = SubscriberContractDeclaration {
         contract_id: "subscriber.contract.identity-only.v1".to_string(),

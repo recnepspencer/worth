@@ -9,6 +9,7 @@ impl WorthQueryTestBackendSchema {
     /// public backend and Bridge are assembled from that same owner.
     pub fn seeded_relational_source(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity_touch: crate::runtime::WorthQueryAspectTouch,
         rows: Vec<WorthQueryTestSeedRow>,
     ) -> Result<
@@ -28,7 +29,7 @@ impl WorthQueryTestBackendSchema {
         ).map_err(|error| WorthQueryTestBackendError::new(
             WorthQueryTestBackendErrorKind::WorkspaceBuildFailed, error.to_string(),
         ))?;
-        let receipt = apply_initial_seed(&mut memory, self.collection(), specification)?;
+        let receipt = apply_initial_seed(execution, &mut memory, self.collection(), specification)?;
         Ok((memory.relational_source_owner(), receipt))
     }
 }

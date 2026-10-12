@@ -18,20 +18,32 @@ const CREATED: u64 = 4_096;
 
 #[test]
 fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
         maximum_preparation_bytes: PREPARATION_BYTES,
         ..defaults
     });
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -55,11 +67,11 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
     let earlier = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let later = RecordedSettlementIdentity::retain(&source, coordinate, 1);
     let unwatched = unwatched_accounts(graph.layout(), CREATED, "undeclared-change");
-    handle.with_runtime_mut(|runtime| {
-        write_field(runtime, entity, status.clone(), "prime");
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
+        write_field(request_execution, runtime, entity, status.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let facts: Arc<[_]> =
-            Arc::from([field_fact(runtime, &before_handle, entity, status.clone())]);
+            Arc::from([field_fact(&host_custody.borrowed_request_for_test(), runtime, &before_handle, entity, status.clone())]);
         register(
             owner,
             earlier.clone(),
@@ -70,7 +82,7 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
 
         // No selector of this commit matches the fact the reader holds; only
         // the delivery lost its keys.
-        let committed = write_batch(runtime, unwatched);
+        let committed = write_batch(request_execution, runtime, unwatched);
         release_test_commit_snapshot(runtime, &committed);
         let (after_handle, after) = snapshot(runtime);
         let report = owner
@@ -122,7 +134,7 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
         // Full source verification at the actual new snapshot proves the
         // unchanged native field; it does not manufacture a replacement fact.
         assert_eq!(
-            field_fact(runtime, &after_handle, entity, status.clone()),
+            field_fact(&host_custody.borrowed_request_for_test(), runtime, &after_handle, entity, status.clone()),
             facts[0]
         );
         let cell = owner
@@ -191,5 +203,5 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
         for snapshot in [before_handle, after_handle] {
             runtime.snapshots().release_snapshot(&snapshot).unwrap();
         }
-    });
+    }) }).expect("the fixture read owns its installed host call");
 }

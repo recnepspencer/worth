@@ -62,6 +62,7 @@ where
 {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn admit_current_projection<Principal, PrincipalIdentity, Clock>(
         &self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &WorthQuerySelectedProductOperation<'_, Schema>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
         candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
@@ -73,7 +74,7 @@ where
             .map_err(|super::invoker_isolation::TemporalInvokerPanicked| super::super::WorthQueryConditionalReentryFailure::PreconditionInvokerPanicked)?;
         let admission = self
             .authorization
-            .authorize(
+            .authorize(execution,
                 product,
                 &fresh.principal,
                 &fresh.scope,
@@ -84,10 +85,10 @@ where
             )
             .map_err(WorthQueryTemporalReentryDenial::from_authorization)?;
         let projected = isolate_invoker(|| {
-            self.invariant.project_admitted_operation(
+            self.invariant.project_admitted_operation_with_request(execution,
                 &admission,
                 |reader, projected_scope| {
-                    let current_intent = self.observe_current_intent(
+                    let current_intent = self.observe_current_intent(execution,
                         reader,
                         current.identity_value.clone(),
                         &current.expected_revision,

@@ -2,10 +2,13 @@ use super::native_strategy_fixtures::*;
 
 #[test]
 fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_lacks_executor() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let root_path = unique_test_store_path("worth-relational-strategy-replay-missing-executor");
     let mut runtime = persisted_intent_runtime(root_path.clone(), true);
-    let entity = crate::tests::support::create_entity(&runtime, "before");
-    let commit = execute_persisted_intent_strategy_commit(&mut runtime, entity);
+    let entity = crate::tests::support::create_entity(execution, &runtime, "before");
+    let commit = execute_persisted_intent_strategy_commit(execution, &mut runtime, entity);
     let branch_head_before = runtime.history().branch_head(&BranchId("main".to_string()));
     let mut recovery_plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::AuditRecoveryVerification,
@@ -15,7 +18,7 @@ fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_la
     let mut recovered = persisted_intent_runtime(root_path, false);
     recovered
         .durability_recovery()
-        .recover(recovery_plan)
+        .recover(execution, recovery_plan)
         .expect("recovery without strategy executor");
     let branch_head_after_recovery = recovered
         .history()
@@ -23,12 +26,16 @@ fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_la
 
     let replay = recovered
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(replay
@@ -49,10 +56,13 @@ fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_la
 
 #[test]
 fn replay_commit_reports_strategy_execution_failure_when_recovered_executor_rejects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let root_path = unique_test_store_path("worth-relational-strategy-replay-failing-executor");
     let mut runtime = persisted_intent_runtime(root_path.clone(), true);
-    let entity = crate::tests::support::create_entity(&runtime, "before");
-    let commit = execute_persisted_intent_strategy_commit(&mut runtime, entity);
+    let entity = crate::tests::support::create_entity(execution, &runtime, "before");
+    let commit = execute_persisted_intent_strategy_commit(execution, &mut runtime, entity);
     let mut recovery_plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::AuditRecoveryVerification,
     );
@@ -61,7 +71,7 @@ fn replay_commit_reports_strategy_execution_failure_when_recovered_executor_reje
     recovery_plan.commit_strategy_executors = recovered.commit_strategy_executor_registry().clone();
     recovered
         .durability_recovery()
-        .recover(recovery_plan)
+        .recover(execution, recovery_plan)
         .expect("recovery with hostile failing executor");
     let branch_head_before_replay = recovered
         .history()
@@ -69,12 +79,16 @@ fn replay_commit_reports_strategy_execution_failure_when_recovered_executor_reje
 
     let replay = recovered
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(replay

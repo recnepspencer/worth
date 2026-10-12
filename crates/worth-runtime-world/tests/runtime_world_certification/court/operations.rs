@@ -3,12 +3,13 @@ use std::sync::{Arc, OnceLock};
 impl CompositeSupplyChainCourt {
     pub fn prepare_cargo(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         head: &ProductBranchObservation,
         amount: &str,
     ) -> PreparedCompositePublicationWithoutSignal {
-        let candidate = self
-            .records
-            .candidate(head.basis().relational_basis(), "grain", amount);
+        let candidate =
+            self.records
+                .candidate(execution, head.basis().relational_basis(), "grain", amount);
         self.world
             .publication_port()
             .prepare_without_signal(
@@ -38,7 +39,7 @@ impl CompositeSupplyChainCourt {
         );
         let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-        let prepared = self.prepare_cargo(head, amount);
+        let prepared = self.prepare_cargo(&execution, head, amount);
         match self.world.publication_port().execute_without_signal(
             execution,
             prepared,
@@ -48,15 +49,21 @@ impl CompositeSupplyChainCourt {
             other => panic!("World: healthy cargo publication {other:?}"),
         }
     }
-    pub fn context(&self, head: &ProductBranchObservation) -> RoutingContext {
+    pub fn context(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        head: &ProductBranchObservation,
+    ) -> RoutingContext {
         RoutingContext {
             records: Arc::new(OnceLock::from(
-                self.records.read(head.basis().relational_basis()),
+                self.records
+                    .read(request_execution, head.basis().relational_basis()),
             )),
         }
     }
     pub fn partial_after_relational(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         head: &ProductBranchObservation,
     ) -> ProductUnpublishedOwnerEffects {
         let policy = match self.world.execution_placement() {
@@ -72,9 +79,12 @@ impl CompositeSupplyChainCourt {
         );
         let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-        let candidate = self
-            .records
-            .candidate(head.basis().relational_basis(), "grain", "5");
+        let candidate = self.records.candidate(
+            request_execution,
+            head.basis().relational_basis(),
+            "grain",
+            "5",
+        );
         let token = RuntimeWorldCancellationSource::new().token();
         let port = self.world.publication_port();
         let intent =
@@ -83,12 +93,18 @@ impl CompositeSupplyChainCourt {
         let prepared = port
             .prepare_with_signal(head.clone(), intent, &token, None)
             .unwrap();
-        match port.execute_with_signal(execution, prepared, &mut self.context(head), &token, |_| {
-            Err(SignalError::InvalidInput {
-                message: "court routing denial".into(),
-                context: None,
-            })
-        }) {
+        match port.execute_with_signal(
+            execution,
+            prepared,
+            &mut self.context(request_execution, head),
+            &token,
+            |_| {
+                Err(SignalError::InvalidInput {
+                    message: "court routing denial".into(),
+                    context: None,
+                })
+            },
+        ) {
             RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => effects,
             other => {
                 panic!("World: settled Relational then denied Signal must remain partial {other:?}")

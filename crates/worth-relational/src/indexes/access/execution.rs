@@ -20,9 +20,18 @@ pub(crate) fn execute_index_backed_query_from_generation(
     runtime: &RelationalRuntime,
     plan: &SnapshotPinnedQueryPlan,
     generation_id: DerivedIndexGenerationId,
-) -> Option<QueryExecutionOutcome> {
-    let generation = runtime.indexes.generation(generation_id)?;
-    let exact_projection = runtime.read_truth().project_snapshot(&plan.snapshot)?;
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<Option<QueryExecutionOutcome>, crate::runtime::QueryReadExecutionStop> {
+    execution.check_live().map_err(request_stop)?;
+    let Some(generation) = runtime.indexes.generation(generation_id) else {
+        return Ok(None);
+    };
+    let Some(exact_projection) = runtime
+        .read_truth()
+        .project_snapshot(&plan.snapshot, execution)
+    else {
+        return Ok(None);
+    };
     let source = IndexProjectionSource::exact(&exact_projection)
         .expect("commit execution projection must carry an exact basis");
     match (&plan.packet.scope, &generation.entries) {
@@ -37,6 +46,7 @@ pub(crate) fn execute_index_backed_query_from_generation(
             let expected = query_value_comparison_key(value);
             execute_entity_index_lookup(
                 runtime,
+                execution,
                 plan,
                 &source,
                 field_locator,
@@ -53,6 +63,7 @@ pub(crate) fn execute_index_backed_query_from_generation(
                         == Some(expected.clone())
                 },
             )
+            .map(Some)
         }
         (
             QueryScope::EntityFieldAnyOf {
@@ -79,6 +90,7 @@ pub(crate) fn execute_index_backed_query_from_generation(
                 .collect::<BTreeSet<_>>();
             execute_entity_index_lookup(
                 runtime,
+                execution,
                 plan,
                 &source,
                 field_locator,
@@ -90,6 +102,7 @@ pub(crate) fn execute_index_backed_query_from_generation(
                         .is_some_and(|value| selected.contains(&value))
                 },
             )
+            .map(Some)
         }
         (
             QueryScope::RelationFieldEquals {
@@ -102,6 +115,7 @@ pub(crate) fn execute_index_backed_query_from_generation(
             let expected = query_value_comparison_key(value);
             execute_relation_index_lookup(
                 runtime,
+                execution,
                 plan,
                 &source,
                 field_locator,
@@ -118,6 +132,7 @@ pub(crate) fn execute_index_backed_query_from_generation(
                         == Some(expected.clone())
                 },
             )
+            .map(Some)
         }
         (
             QueryScope::RelationFieldAnyOf {
@@ -144,6 +159,7 @@ pub(crate) fn execute_index_backed_query_from_generation(
                 .collect::<BTreeSet<_>>();
             execute_relation_index_lookup(
                 runtime,
+                execution,
                 plan,
                 &source,
                 field_locator,
@@ -155,8 +171,9 @@ pub(crate) fn execute_index_backed_query_from_generation(
                         .is_some_and(|value| selected.contains(&value))
                 },
             )
+            .map(Some)
         }
-        _ => None,
+        _ => Ok(None),
     }
 }
 
@@ -168,6 +185,7 @@ fn query_value_comparison_key(
 
 fn execute_entity_index_lookup(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: &SnapshotPinnedQueryPlan,
     source: &IndexProjectionSource<'_, '_>,
     _field_locator: &AspectFieldLocator,
@@ -175,7 +193,7 @@ fn execute_entity_index_lookup(
     candidate_ids: BTreeSet<crate::identity::data::EntityId>,
     target_count: usize,
     include: impl Fn(&crate::storage::data::EntityReadRecord) -> bool,
-) -> Option<QueryExecutionOutcome> {
+) -> Result<QueryExecutionOutcome, crate::runtime::QueryReadExecutionStop> {
     let partition_scope =
         partition_scope.map(|partitions| partitions.iter().copied().collect::<BTreeSet<_>>());
     let runtime_id = runtime.runtime_instance_id();
@@ -183,13 +201,14 @@ fn execute_entity_index_lookup(
     let mut entities = scratch.entity_buffer(candidate_ids.len());
     let mut touched_partition_ids = BTreeSet::new();
     for entity_id in candidate_ids {
+        execution.check_live().map_err(request_stop)?;
         if partition_scope
             .as_ref()
             .is_some_and(|partitions| !partitions.contains(&entity_id.partition_id))
         {
             continue;
         }
-        let Some(record) = source.with_entity(entity_id, Clone::clone) else {
+        let Some(record) = source.with_entity(execution, entity_id, Clone::clone) else {
             continue;
         };
         if include(&record) {
@@ -201,7 +220,7 @@ fn execute_entity_index_lookup(
     let entity_count = entities.len();
     scratch.remember_entity_capacity(entity_count);
     retain_index_query_scratch(runtime_id, &scratch);
-    Some(build_index_query_execution(
+    Ok(build_index_query_execution(
         plan,
         entities,
         Vec::new(),
@@ -214,6 +233,7 @@ fn execute_entity_index_lookup(
 
 fn execute_relation_index_lookup(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: &SnapshotPinnedQueryPlan,
     source: &IndexProjectionSource<'_, '_>,
     _field_locator: &AspectFieldLocator,
@@ -221,7 +241,7 @@ fn execute_relation_index_lookup(
     candidate_ids: BTreeSet<crate::identity::data::RelationId>,
     target_count: usize,
     include: impl Fn(&crate::storage::data::RelationReadRecord) -> bool,
-) -> Option<QueryExecutionOutcome> {
+) -> Result<QueryExecutionOutcome, crate::runtime::QueryReadExecutionStop> {
     let partition_scope =
         partition_scope.map(|partitions| partitions.iter().copied().collect::<BTreeSet<_>>());
     let runtime_id = runtime.runtime_instance_id();
@@ -229,13 +249,14 @@ fn execute_relation_index_lookup(
     let mut relations = scratch.relation_buffer(candidate_ids.len());
     let mut touched_partition_ids = BTreeSet::new();
     for relation_id in candidate_ids {
+        execution.check_live().map_err(request_stop)?;
         if partition_scope
             .as_ref()
             .is_some_and(|partitions| !partitions.contains(&relation_id.partition_id))
         {
             continue;
         }
-        let Some(record) = source.with_relation(relation_id, Clone::clone) else {
+        let Some(record) = source.with_relation(execution, relation_id, Clone::clone) else {
             continue;
         };
         if include(&record) {
@@ -247,7 +268,7 @@ fn execute_relation_index_lookup(
     let relation_count = relations.len();
     scratch.remember_relation_capacity(relation_count);
     retain_index_query_scratch(runtime_id, &scratch);
-    Some(build_index_query_execution(
+    Ok(build_index_query_execution(
         plan,
         Vec::new(),
         relations,
@@ -300,4 +321,10 @@ fn build_index_query_execution(
         },
         result,
     }
+}
+
+fn request_stop(stop: worth_execution::MapKernelStop) -> crate::runtime::QueryReadExecutionStop {
+    crate::runtime::QueryReadExecutionStop::Request(worth_execution::WorkCeilingDenial::Stopped(
+        stop,
+    ))
 }

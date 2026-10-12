@@ -38,6 +38,9 @@ fn same_runtime_yield_and_readmission_preserve_the_semantic_convergence_result()
                 Ok(epoch) => epoch.start(),
                 Err(_) => panic!("yield convergence authorities must admit"),
             };
+
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let execution = &installed_fixture_phase;
         let started = match epoch.begin_iteration(
             execution,
             WorthQueryManagedGraphCallRequest::new(
@@ -56,12 +59,18 @@ fn same_runtime_yield_and_readmission_preserve_the_semantic_convergence_result()
             WorthQueryDirectConvergenceYieldOutcome::Yielded(yielded) => yielded,
             _ => panic!("eligible convergence iteration must preserve yielded authority"),
         };
-        let resumed = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-            WorthQueryDirectConvergenceReadmissionOutcome::Readmitted(readmitted) => {
-                assert_committed_readmission_evidence(readmitted.readmission_evidence());
-                readmitted.into_started()
+        let resumed = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectConvergenceReadmissionOutcome::Readmitted(readmitted) => {
+                    assert_committed_readmission_evidence(readmitted.readmission_evidence());
+                    readmitted.into_started()
+                }
+                _ => panic!("same-runtime convergence readmission must restore the provider"),
             }
-            _ => panic!("same-runtime convergence readmission must restore the provider"),
         };
         let outcome = match resumed.advance(execution) {
             WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
@@ -134,6 +143,9 @@ fn workflow_yield_and_readmission_preserve_the_semantic_convergence_result() {
             Ok(epoch) => epoch,
             Err(_) => panic!("yield-capable workflow epoch must start"),
         };
+
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let execution = &installed_fixture_phase;
         let started = match epoch.begin_stage_iteration(
             execution,
             WORKFLOW_STAGE,
@@ -153,12 +165,18 @@ fn workflow_yield_and_readmission_preserve_the_semantic_convergence_result() {
             WorthQueryWorkflowConvergenceYieldOutcome::Yielded(yielded) => yielded,
             _ => panic!("eligible workflow iteration must preserve yielded authority"),
         };
-        let resumed = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-            WorthQueryWorkflowConvergenceReadmissionOutcome::Readmitted(readmitted) => {
-                assert_committed_readmission_evidence(readmitted.readmission_evidence());
-                readmitted.into_started()
+        let resumed = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                WorthQueryWorkflowConvergenceReadmissionOutcome::Readmitted(readmitted) => {
+                    assert_committed_readmission_evidence(readmitted.readmission_evidence());
+                    readmitted.into_started()
+                }
+                _ => panic!("same-runtime workflow readmission must restore the provider"),
             }
-            _ => panic!("same-runtime workflow readmission must restore the provider"),
         };
         let outcome = match resumed.advance(execution) {
             WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,
@@ -242,7 +260,7 @@ fn admitted_chunk_schedule_preserves_the_semantic_convergence_result() {
 }
 
 fn chunked_converged_terminal(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -251,6 +269,9 @@ fn chunked_converged_terminal(
         FixtureDisposition::ChunkedConverged(width),
         resource_request,
     );
+
+    let installed_fixture_phase = epoch.fixture_phase(execution);
+    let execution = &installed_fixture_phase;
     let started = match epoch.begin_stage_iteration(
         execution,
         WORKFLOW_STAGE,

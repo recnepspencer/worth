@@ -9,27 +9,41 @@ use worth_query::facade::product::{
 
 #[test]
 fn outer_workspace_close_releases_exact_branch_and_reuses_world_capacity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
     let runtime = harness
         .bridge_backed_runtime_builder()
         .support_profile(public_graph_support_profile())
-        .build_with_product_world_resources(public_product_world_resources_with_branch_limit(2));
+        .build_with_product_world_resources(
+            request_execution,
+            public_product_world_resources_with_branch_limit(2),
+        );
     let workspace = runtime
         .workspace("public.product-branch-lifecycle")
         .expect("the public runtime opens its workspace");
     let root = workspace.current_world();
     let branch = workspace
-        .branches()
-        .fork(root)
-        .components(|components| components.reuse_exact_relational_basis().fork_signal())
-        .create()
+        .with_advancement(|phase| {
+            workspace
+                .branches()
+                .fork(root)
+                .components(|components| components.reuse_exact_relational_basis().fork_signal())
+                .create(&phase)
+        })
+        .expect("installed host call opens")
         .expect("the only non-root branch capacity publishes");
 
     let saturated = workspace
-        .branches()
-        .fork(root)
-        .components(|components| components.reuse_exact_relational_basis().fork_signal())
-        .create();
+        .with_advancement(|phase| {
+            workspace
+                .branches()
+                .fork(root)
+                .components(|components| components.reuse_exact_relational_basis().fork_signal())
+                .create(&phase)
+        })
+        .expect("installed host call opens");
     assert!(matches!(
         saturated,
         Err(WorthQueryProductBranchCreateError::Creation(_))
@@ -65,10 +79,14 @@ fn outer_workspace_close_releases_exact_branch_and_reuses_world_capacity() {
     assert!(workspace.observe_operating_world(branch).is_err());
 
     let replacement = workspace
-        .branches()
-        .fork(root)
-        .components(|components| components.reuse_exact_relational_basis().fork_signal())
-        .create()
+        .with_advancement(|phase| {
+            workspace
+                .branches()
+                .fork(root)
+                .components(|components| components.reuse_exact_relational_basis().fork_signal())
+                .create(&phase)
+        })
+        .expect("installed host call opens")
         .expect("explicit close returns the bounded branch capacity");
     assert_ne!(replacement, branch, "closed occurrences are never reused");
     let replacement_close = workspace

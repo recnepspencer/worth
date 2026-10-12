@@ -21,11 +21,13 @@ impl WorthQueryDelegationActivationDecisionFact {
     }
 
     pub(in crate::domain_computation::authorization) fn new(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         narrowing: RelationalAuthorizationObservationEvidence,
     ) -> Result<Self, ()> {
-        let native_dependencies = super::durable_dependencies::capture(runtime, &narrowing)?;
+        let native_dependencies =
+            super::durable_dependencies::capture(execution, runtime, &narrowing)?;
         Ok(Self {
             session_identity,
             narrowing: Arc::new(narrowing),
@@ -69,19 +71,21 @@ impl WorthQueryDelegationActivationDecisionFact {
 
     pub(super) fn remains_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
     ) -> bool {
         let _ = bridge;
-        observation_is_current(runtime, snapshot, &self.narrowing)
+        observation_is_current(execution, runtime, snapshot, &self.narrowing)
     }
 
     pub(super) fn remains_equal_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> bool {
-        observation_is_current(runtime, snapshot, &self.narrowing)
+        observation_is_current(execution, runtime, snapshot, &self.narrowing)
     }
 }

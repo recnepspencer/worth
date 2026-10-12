@@ -1,7 +1,9 @@
 use super::super::support::*;
 
-fn task_relation_runtime() -> WorthQueryRuntime {
-    stateful_bridge_task_relation_runtime()
+fn task_relation_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_task_relation_runtime(request_execution)
 }
 
 fn verified_profile() -> WorthQueryRuntimeSupportProfile {
@@ -21,46 +23,59 @@ fn verified_profile() -> WorthQueryRuntimeSupportProfile {
 
 #[test]
 fn compose_graph_supports_existing_target_retarget_lifecycle() {
-    let mut workspace = task_relation_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_relation_runtime(request_execution)
         .workspace("tasks.graph-composition-retarget-existing")
         .expect("runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-retarget-existing-tasks", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-retarget-existing-tasks")
-        })
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-retarget-existing-tasks",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-graph-composition-retarget-existing-tasks")
+            },
+        )
         .expect("task live view should declare");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-retarget-existing-relations", |q| {
-            q.from("TaskRelation")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("source", "id").unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("target", "id").unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-retarget-existing-relations")
-        })
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-retarget-existing-relations",
+            |q| {
+                q.from("TaskRelation")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("source", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("target", "id")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-graph-composition-retarget-existing-relations")
+            },
+        )
         .expect("relation live view should declare");
 
     let seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -93,7 +108,7 @@ fn compose_graph_supports_existing_target_retarget_lifecycle() {
         .expect("relation binding should build");
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let _ = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(test_aspect_touch("identity.id"), test_authored_string_aspect_value("task-loop-c"))
                     .set_aspect(test_aspect_touch("title.value"), test_authored_string_aspect_value("Loop successor target"))
@@ -137,7 +152,10 @@ fn compose_graph_supports_existing_target_retarget_lifecycle() {
         "components=2;symbolic_entities=1;symbolic_relations=0;symbolic_resolutions=0;affected_live_views=2;affected_derived_views=0;considered_computed_views=0;created=1;updated_identity_preserved=0;retargeted_identity_preserved=1;retired_current_truth=0;superseded_with_lineage=0;deleted_if_uncommitted=0;denied_before_execution=0"
     );
 
-    match workspace.inspect(&receipt).expect("receipt should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect")
+    {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             let component = &inspection.component_operations()[1];
             assert_eq!(
@@ -178,6 +196,9 @@ fn compose_graph_supports_existing_target_retarget_lifecycle() {
 
 #[test]
 fn compose_graph_supports_verified_existing_target_retarget_lifecycle() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let binding = WorthQueryExistingRelationTarget::new(
         crate::runtime::WorthQueryMutationAuthorityIdentity::existing_truth_binding_authority(
             crate::runtime::WorthQueryExistingTruthBindingAuthorityLabel::new("authority:rel-next")
@@ -192,6 +213,7 @@ fn compose_graph_supports_verified_existing_target_retarget_lifecycle() {
     let binding = WorthQueryExistingTruthTargetBinding::from_relation_target(binding)
         .expect("relation binding should build");
     let runtime = bridge_runtime_with_support_and_existing_truth_verification(
+        request_execution,
         verified_profile(),
         TestExistingTruthVerificationAdapter::default()
             .with_value(
@@ -210,7 +232,7 @@ fn compose_graph_supports_verified_existing_target_retarget_lifecycle() {
         .expect("workspace should open");
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             graph.retarget_existing_verified(
                 binding,
                 |verify| {
@@ -259,7 +281,10 @@ fn compose_graph_supports_verified_existing_target_retarget_lifecycle() {
         "components=1;symbolic_entities=0;symbolic_relations=0;symbolic_resolutions=0;affected_live_views=0;affected_derived_views=0;considered_computed_views=0;created=0;updated_identity_preserved=0;retargeted_identity_preserved=1;retired_current_truth=0;superseded_with_lineage=0;deleted_if_uncommitted=0;denied_before_execution=0"
     );
 
-    match workspace.inspect(&receipt).expect("receipt should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect")
+    {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             let component = &inspection.component_operations()[0];
             assert_eq!(

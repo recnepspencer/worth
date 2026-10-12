@@ -3,6 +3,7 @@ use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionA
 use super::*;
 
 pub(super) fn observe_grant_expiry(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     installed: &WorthQueryInstalledCapabilityPlan,
@@ -21,9 +22,9 @@ pub(super) fn observe_grant_expiry(
     )]);
     relational
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .and_then(|view| {
-            view.entity_record_with_projection_scope(grant, scope, |record| {
+            view.entity_record_with_projection_scope(execution, grant, scope, |record| {
                 (record.kind_id() == installed.grant_kind()
                     && record.lifecycle()
                         == worth_relational::facade::storage::RecordLifecycleState::Live)

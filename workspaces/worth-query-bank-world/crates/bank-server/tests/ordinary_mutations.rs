@@ -236,3 +236,6 @@ fn send_for(fixture: &fixture::OrdinaryReadFixture) -> SendMoney {
         amount: Money::from_minor(25).unwrap(),
     }
 }
+
+#[path = "ordinary_mutations/posting_lease.rs"]
+mod posting_lease;

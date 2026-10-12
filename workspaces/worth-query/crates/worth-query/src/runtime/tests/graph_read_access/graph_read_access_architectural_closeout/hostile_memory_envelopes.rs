@@ -15,14 +15,17 @@ use crate::runtime::tests::graph_read_access::support::public_bridge_runtime::Pu
 
 #[test]
 fn closeout_dense_broad_read_denies_before_executor_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = PublicBridgeRuntimeHarness::new()
-        .bridge_backed_runtime()
+        .bridge_backed_runtime(request_execution)
         .workspace("graph-read-access.closeout.memory.dense")
         .expect("closeout workspace should open");
     let family = dense_over_budget_family(&mut workspace, "closeout-dense-denial");
     let denial = read_composition_denial(
         workspace
-            .execute_read_family(&family)
+            .execute_read_family(request_execution, &family)
             .expect_err("dense broad read should deny before execution"),
     );
     let admission = assert_pre_execution_graph_access_denial(&denial);
@@ -40,8 +43,13 @@ fn closeout_dense_broad_read_denies_before_executor_work() {
 
 #[test]
 fn closeout_async_materialization_stops_when_observed_work_exceeds_declared_budget() {
-    let mut workspace =
-        async_materialization_workspace("graph-read-access.closeout.memory.async-artifact");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = async_materialization_workspace(
+        request_execution,
+        "graph-read-access.closeout.memory.async-artifact",
+    );
     let family = async_required_graph_read_family(&mut workspace, "closeout-async-artifact");
     let admission = workspace
         .read_family_intent(&family)
@@ -60,7 +68,7 @@ fn closeout_async_materialization_stops_when_observed_work_exceeds_declared_budg
     let estimated_resident_bytes = request.estimated_resident_bytes();
     let resource_limit = workspace
         .graph_read_materializations()
-        .admit(request)
+        .admit(request_execution, request)
         .expect("materialization request should admit")
         .start()
         .expect("materialization job should start")
@@ -80,8 +88,13 @@ fn closeout_async_materialization_stops_when_observed_work_exceeds_declared_budg
 
 #[test]
 fn closeout_async_materialization_artifact_reports_observed_memory_envelope() {
-    let mut workspace =
-        async_materialization_workspace("graph-read-access.closeout.memory.async-artifact");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = async_materialization_workspace(
+        request_execution,
+        "graph-read-access.closeout.memory.async-artifact",
+    );
     let family = async_required_graph_read_family(&mut workspace, "closeout-async-artifact");
     let admission = workspace
         .read_family_intent(&family)
@@ -101,7 +114,7 @@ fn closeout_async_materialization_artifact_reports_observed_memory_envelope() {
     let expected_touched_edges = request.estimated_touched_edges();
     let artifact = workspace
         .graph_read_materializations()
-        .admit(request)
+        .admit(request_execution, request)
         .expect("materialization request should admit")
         .start()
         .expect("materialization job should start")
@@ -124,8 +137,11 @@ fn closeout_async_materialization_artifact_reports_observed_memory_envelope() {
 
 #[test]
 fn closeout_wrong_access_plan_denies_before_executor_counters_exist() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut source = PublicBridgeRuntimeHarness::new()
-        .bridge_backed_runtime()
+        .bridge_backed_runtime(request_execution)
         .workspace("graph-read-access.closeout.memory.wrong-plan-source")
         .expect("source workspace should open");
     let source_family = dense_over_budget_family(&mut source, "closeout-source-denied");

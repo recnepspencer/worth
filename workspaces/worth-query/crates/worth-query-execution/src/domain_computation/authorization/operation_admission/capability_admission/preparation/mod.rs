@@ -68,6 +68,7 @@ pub(super) fn complete_capability_admission<
     Operation,
     Input,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     prepared: PreparedCapabilityAdmission<
         'a,
         Schema,
@@ -85,7 +86,7 @@ where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    let observed = observation::observe_current_capability(prepared)?;
+    let observed = observation::observe_current_capability(execution, prepared)?;
     Ok(observation::admit_observed_capability(observed))
 }
 
@@ -191,6 +192,7 @@ pub(super) fn prepare_capability_admission<
     Operation,
     Input,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
@@ -237,6 +239,7 @@ where
     let sample = preflight::sample_trusted_time(runtime, capability, installed)?;
     let operation_admission_identity = preflight::mint_operation_admission(capability)?;
     let graph_work = preflight::start_graph_work(
+        execution,
         runtime,
         product.retained_clone(),
         principal,

@@ -22,6 +22,7 @@ where
 {
     pub fn advance_selected_program_output_demand<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -43,6 +44,7 @@ where
     {
         let mut disclosure = Some(disclosure);
         self.advance_selected_program_output_demand_with_source(
+            execution,
             phase,
             access,
             demand,
@@ -58,6 +60,7 @@ where
     /// Reuse the source meaning retained when the public demand was admitted.
     pub fn advance_selected_program_output_demand_from_retained<Family>(
         &self,
+
         phase: &WorthQueryAdvancementPhase<'_>,
 
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -77,8 +80,15 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
+        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+        };
+        let execution = &phase_request;
+
         let limits = demand.limits;
         self.advance_selected_program_output_demand_with_source(
+            execution,
             phase,
             access,
             demand,
@@ -87,6 +97,7 @@ where
             delivery_branch,
             |retained, admission| {
                 super::retained_read::read_retained_source::<Schema, Family>(
+                    execution,
                     self,
                     retained,
                     principal,
@@ -104,6 +115,7 @@ where
 
     fn advance_selected_program_output_demand_with_source<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -143,7 +155,7 @@ where
             })?;
         let selected = self
             .on_branch(delivery_branch)
-            .select()
+            .select_with_request(execution)
             .map_err(|selection| {
                 WorthQueryOutputDemandDenial::product_selection(
                     selection,
@@ -166,6 +178,7 @@ where
         }
         self.advance_as_caller(demand, |demand, admission, performed| {
             self.advance_output_demand_with_prepared_source(
+                execution,
                 phase,
                 demand,
                 principal,

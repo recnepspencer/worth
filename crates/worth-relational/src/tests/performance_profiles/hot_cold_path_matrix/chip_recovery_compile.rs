@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_chip_hot_compile_vs_recovery_compile(suite: &'static str) {
+pub(super) fn certify_chip_hot_compile_vs_recovery_compile(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let chip_hot_vs_recovery_samples = capture_perf_samples(
         suite,
         "chip_hot_compile_vs_recovery_compile",
@@ -13,11 +16,16 @@ pub(super) fn certify_chip_hot_compile_vs_recovery_compile(suite: &'static str) 
                 profile.max_entries_per_artifact = 0;
             });
 
-            let source =
-                create_entity_in_partition(&runtime, "chip-hot-cold-source", PartitionId(7));
+            let source = create_entity_in_partition(
+                execution,
+                &runtime,
+                "chip-hot-cold-source",
+                PartitionId(7),
+            );
             let sinks = (0..8)
                 .map(|index| {
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("chip-hot-cold-sink-{index}"),
                         if index % 2 == 0 {
@@ -30,6 +38,7 @@ pub(super) fn certify_chip_hot_compile_vs_recovery_compile(suite: &'static str) 
                 .collect::<Vec<_>>();
             for (index, sink) in sinks.iter().enumerate() {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     source,
                     *sink,
@@ -40,7 +49,7 @@ pub(super) fn certify_chip_hot_compile_vs_recovery_compile(suite: &'static str) 
 
             runtime.performance_access().reset_counters();
             let hot_commit_started_at = Instant::now();
-            let hot_commit = update_entity(&runtime, source, "chip-hot-cold-updated");
+            let hot_commit = update_entity(execution, &runtime, source, "chip-hot-cold-updated");
             let hot_commit_micros = hot_commit_started_at.elapsed().as_micros();
             let latest_commit = runtime
                 .history()
@@ -79,19 +88,23 @@ pub(super) fn certify_chip_hot_compile_vs_recovery_compile(suite: &'static str) 
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
-                .recover(plan)
+                .recover(execution, plan)
                 .expect("chip hot/cold recovery");
             let recover_micros = recover_started_at.elapsed().as_micros();
 
             let replay_started_at = Instant::now();
             let replay = recovered
                 .replay_authority()
-                .replay_commit(RelationalReplayRequest {
-                    commit_id: hot_commit.commit.commit_id,
-                    branch_id: BranchId("main".to_string()),
-                    execution_mode: ReplayExecutionMode::SerialDeterministic,
-                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                });
+                .replay_commit(
+                    RelationalReplayRequest {
+                        commit_id: hot_commit.commit.commit_id,
+                        branch_id: BranchId("main".to_string()),
+                        execution_mode: ReplayExecutionMode::SerialDeterministic,
+                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                    },
+                    execution,
+                )
+                .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
 
             let recovered_commit = recovered

@@ -18,20 +18,24 @@ use worth_relational::facade::transactions::{
 #[test]
 fn handler_absence_selection_competes_at_the_real_commit_boundary() {
     let world = installed_authorization_world(true);
-    let (loser, loser_key) = execute_with_key(
-        &world,
-        OptionalOutputPlan::RequiredAfterIndexedAbsence,
-        "loser",
-    );
+    let (loser, loser_key) = {
+        execute_with_key(
+            &world,
+            OptionalOutputPlan::RequiredAfterIndexedAbsence,
+            "loser",
+        )
+    };
     let Ok(HandlerResult::Completed(loser)) = loser else {
         panic!("the installed handler must retain the absent predicate");
     };
     let (loser, _) = loser.into_parts();
-    let (winner, winner_key) = execute_with_key(
-        &world,
-        OptionalOutputPlan::RequiredAfterIndexedAbsence,
-        "winner",
-    );
+    let (winner, winner_key) = {
+        execute_with_key(
+            &world,
+            OptionalOutputPlan::RequiredAfterIndexedAbsence,
+            "winner",
+        )
+    };
     let Ok(HandlerResult::Completed(winner)) = winner else {
         panic!("both decisions see the same absence");
     };
@@ -48,24 +52,51 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
         ),
         "winner: {winner_outcome:?}"
     );
-    let committed_head = world.selected_product().product().selected_commit().clone();
+    let committed_head = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .product()
+                .selected_commit()
+                .clone()
+        })
+        .expect("the fixture metadata read owns its host call");
     let outcome = world.application.compare_and_commit_application(
         loser,
         loser_key,
         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     super::super::assert_changed_decision(outcome, "a competing indexed absence");
-    assert_eq!(
-        world.selected_product().product().selected_commit(),
-        &committed_head
-    );
-    let _published = resolved_account(&world, "pending-membership", &live_scope());
+    world
+        .application
+        .with_host_advancement(|phase| {
+            assert_eq!(
+                world
+                    .selected_product(&(phase).test_host_request(),)
+                    .product()
+                    .selected_commit(),
+                &committed_head
+            )
+        })
+        .expect("the fixture metadata read owns its host call");
+    let _published = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(
+                &(phase).test_host_request(),
+                &world,
+                "pending-membership",
+                &live_scope(),
+            )
+        })
+        .expect("the fixture entity read owns its host call");
 }
 
 #[test]
 fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world() {
     let world = installed_authorization_world(true);
-    let (execution, key) = execute(&world, OptionalOutputPlan::RequiredAfterIndexedAbsence);
+    let (execution, key) = { execute(&world, OptionalOutputPlan::RequiredAfterIndexedAbsence) };
     let Ok(HandlerResult::Completed(completed)) = execution else {
         panic!("the installed handler completes its indexed decision");
     };
@@ -100,15 +131,30 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
         if value == &StringApplicationValueBinding::encode(&"pending-membership".to_owned()).unwrap()
             && candidates == &[subject]
     )), "the precommit absence must rebase to the member this candidate publishes: {facts:?}");
-    assert!(matches!(
-        selection(&world.application, &facts),
-        OutputDependencySelection::Reuse
-    ));
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(matches!(
+                selection(
+                    &host_custody.borrowed_request_for_test(),
+                    &world.application,
+                    &facts
+                ),
+                OutputDependencySelection::Reuse
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
 
     let durable = encode_producer_facts(&facts).expect("all rebased handler reads are durable");
     let checkpoint = world
         .application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
+        })
+        .expect("installed host call opens")
         .unwrap();
     drop(world);
     let reopened = restored_world(checkpoint).expect("the real native application reopens");
@@ -118,42 +164,79 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    assert!(matches!(
-        selection(&reopened.application, &restored),
-        OutputDependencySelection::Reuse
-    ));
-    change_status(&reopened.application, subject, "left-membership");
-    assert!(matches!(
-        selection(&reopened.application, &restored),
-        OutputDependencySelection::FreshRequired
-    ));
+    reopened
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(matches!(
+                selection(
+                    &host_custody.borrowed_request_for_test(),
+                    &reopened.application,
+                    &restored
+                ),
+                OutputDependencySelection::Reuse
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
+    reopened
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            change_status(
+                &host_custody.borrowed_request_for_test(),
+                &reopened.application,
+                subject,
+                "left-membership",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    reopened
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(matches!(
+                selection(
+                    &host_custody.borrowed_request_for_test(),
+                    &reopened.application,
+                    &restored
+                ),
+                OutputDependencySelection::FreshRequired
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 fn selection(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<IdentityExecutionSchema>,
     facts: &[Fact],
 ) -> OutputDependencySelection {
     let selected = application
-        .select_product_branch(application.product_runtime().default_branch())
+        .select_product_branch(execution, application.product_runtime().default_branch())
         .unwrap();
-    application.primary_provider.graph.with_runtime(|runtime| {
-        compare_retained_output_dependencies(
-            runtime,
-            selected.application_basis().snapshot_handle(),
-            true,
-            Some(facts),
-            &mut application
-                .primary_provider
-                .graph
-                .source_owner
-                .invalidation_owner
-                .edit_admission_within(std::num::NonZeroUsize::new(32).unwrap()),
-        )
-        .unwrap()
-    })
+    application
+        .primary_provider
+        .graph
+        .with_runtime(execution, |runtime| {
+            compare_retained_output_dependencies(
+                execution,
+                runtime,
+                selected.application_basis().snapshot_handle(),
+                true,
+                Some(facts),
+                &mut application
+                    .primary_provider
+                    .graph
+                    .source_owner
+                    .invalidation_owner
+                    .edit_admission_within(std::num::NonZeroUsize::new(32).unwrap()),
+            )
+            .unwrap()
+        })
 }
 
 fn change_status(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<IdentityExecutionSchema>,
     subject: worth_relational::facade::identity::EntityId,
     value: &str,
@@ -168,6 +251,7 @@ fn change_status(
         .unwrap()
         .clone();
     publish_relational_mutation_on_application(
+        execution,
         application,
         WorkerIntentBatch::new("restored-indexed-selection").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {

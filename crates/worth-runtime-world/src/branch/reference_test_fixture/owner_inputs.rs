@@ -23,13 +23,16 @@ impl RealReferenceFixture {
             .reserve_fork_target(BranchId(target.to_owned()))
     }
 
-    pub(crate) fn perform_relational_owner_change(&self) -> PerformedRelationalCommit {
-        let candidate =
-            self.prepare_relational_owner_candidate("runtime-world-cas-loss-owner-effect");
+    pub(crate) fn perform_relational_owner_change(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> PerformedRelationalCommit {
+        let candidate = self
+            .prepare_relational_owner_candidate(execution, "runtime-world-cas-loss-owner-effect");
         match self
             ._relational_runtime
             .publication_port()
-            .compare_and_publish(candidate)
+            .compare_and_publish(execution, candidate)
         {
             RelationalPublicationOutcome::Performed(performed) => performed,
             outcome => {
@@ -40,6 +43,7 @@ impl RealReferenceFixture {
 
     pub(crate) fn prepare_relational_owner_candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         operation_name: &str,
     ) -> PreparedRelationalCommitCandidate {
         let identity = self._relational_runtime.main_branch_identity();
@@ -60,10 +64,7 @@ impl RealReferenceFixture {
             .expect("bounded empty batch stages through the production transaction path");
         services
             .preparation_port()
-            .prepare_branch_transaction(
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .expect("production Relational owner prepares the change")
     }
 

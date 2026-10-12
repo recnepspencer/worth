@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(super) fn retain_matching_targets(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
     graph: &WorthQueryPrimaryGraphLayout,
     governance: &WorthQueryApplicationQueryGovernance,
@@ -61,7 +62,7 @@ pub(super) fn retain_matching_targets(
     for entity_id in candidates {
         work.charge_relation_predicate(relation.result_path())?;
         let matches = projection
-            .entity_record_with_projection_scope(entity_id, scope.clone(), |record| {
+            .entity_record_with_projection_scope(execution, entity_id, scope.clone(), |record| {
                 (record.kind_id() == layout.entity_kind
                     && record.lifecycle() == RecordLifecycleState::Live)
                     .then(|| {

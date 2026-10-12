@@ -1,55 +1,70 @@
 use super::super::support::*;
 
-fn task_edge_runtime() -> WorthQueryRuntime {
-    stateful_bridge_task_edge_runtime()
+fn task_edge_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_task_edge_runtime(request_execution)
 }
 
 #[test]
 fn compose_graph_supports_symbolic_entity_followup_and_relation_retirement() {
-    let mut workspace = task_edge_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_edge_runtime(request_execution)
         .workspace("tasks.graph-composition-lifecycle")
         .expect("runtime should open a named workspace");
     let tasks: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-lifecycle-tasks", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-lifecycle-tasks")
-        })
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-lifecycle-tasks",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-graph-composition-lifecycle-tasks")
+            },
+        )
         .expect("task live view should declare");
     let edges: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-lifecycle-edges", |q| {
-            q.from("TaskEdge")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind").unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts(
-                        "edge",
-                        "source_identity",
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-lifecycle-edges",
+            |q| {
+                q.from("TaskEdge")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts(
+                            "edge",
+                            "source_identity",
+                        )
+                        .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts(
+                            "edge",
+                            "target_identity",
+                        )
+                        .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind")
+                            .unwrap(),
                     )
-                    .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts(
-                        "edge",
-                        "target_identity",
-                    )
-                    .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind").unwrap(),
-                )
-                .schema_basis("tasks-graph-composition-lifecycle-edges")
-        })
+                    .schema_basis("tasks-graph-composition-lifecycle-edges")
+            },
+        )
         .expect("edge live view should declare");
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let draft = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
@@ -88,9 +103,11 @@ fn compose_graph_supports_symbolic_entity_followup_and_relation_retirement() {
             Ok(())
         })
         .expect("graph composition lifecycle should execute");
-    let task_rows = workspace.read(&tasks);
-    let edge_rows = workspace.read(&edges);
-    let inspection = workspace.inspect(&receipt).expect("receipt should inspect");
+    let task_rows = workspace.read(request_execution, &tasks);
+    let edge_rows = workspace.read(request_execution, &edges);
+    let inspection = workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect");
     let program = receipt
         .graph_composition_program()
         .expect("graph composition receipt should expose composition program");

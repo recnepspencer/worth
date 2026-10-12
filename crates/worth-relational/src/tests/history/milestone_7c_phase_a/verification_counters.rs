@@ -7,23 +7,34 @@ use crate::tests::support::{
 
 #[test]
 fn verify_prepared_merge_execution_does_not_increment_planning_counters() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
     let before = runtime.performance_access().counters();
 
     runtime
         .merge()
-        .verify_prepared_merge_execution(&prepared)
+        .verify_prepared_merge_execution(execution, &prepared)
         .expect("verification should succeed");
 
     let after = runtime.performance_access().counters();
@@ -63,23 +74,34 @@ fn verify_prepared_merge_execution_does_not_increment_planning_counters() {
 
 #[test]
 fn verify_prepared_merge_execution_reports_verification_counters_without_planning_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "root");
+    create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(&runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
     runtime.performance_access().reset_counters();
 
     runtime
         .merge()
-        .verify_prepared_merge_execution(&prepared)
+        .verify_prepared_merge_execution(execution, &prepared)
         .expect("verification should succeed");
 
     let counters = runtime.performance_access().counters();

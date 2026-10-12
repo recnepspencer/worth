@@ -31,6 +31,7 @@ pub(in crate::domain_computation::authorization) fn progress_capability_operatio
     Operation,
     Input,
 >(
+execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     access: crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<
         Schema,
@@ -79,7 +80,7 @@ where
         progression,
     )?;
     let bound = authority_validation::bind_capability_preconditions(validated, preconditions)?;
-    authority_validation::transition_capability_operation(bound)
+    authority_validation::transition_capability_operation(execution, bound)
 }
 
 pub(in crate::domain_computation) fn progress_conventional_operation<
@@ -90,6 +91,7 @@ pub(in crate::domain_computation) fn progress_conventional_operation<
     Input,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
         Schema,
     >,
@@ -125,5 +127,5 @@ where
         runtime, product, principal, scope, operation, request,
     )?;
     let bound = authority_validation::bind_conventional_preconditions(validated, preconditions)?;
-    authority_validation::transition_conventional_operation(bound)
+    authority_validation::transition_conventional_operation(execution, bound)
 }

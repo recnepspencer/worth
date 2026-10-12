@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn authoritative_admitted_handoff_materializes_execution_binding() {
-    let runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let handoff = runtime
         .admit_authoritative_intent_for_execution(WorthQueryIntentDeclaration::strategy_commit(
             "phase-four-authoritative-intent",
@@ -24,9 +27,13 @@ fn authoritative_admitted_handoff_materializes_execution_binding() {
 
 #[test]
 fn effect_admitted_handoff_materializes_self_contained_execution_binding() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.phase-four-effect",
             task_live_request(),
             task_schema(),
@@ -40,11 +47,14 @@ fn effect_admitted_handoff_materializes_self_contained_execution_binding() {
         ))
         .expect("write-intent effect should declare");
     runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
-            "title.value",
-            "title from binding",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                "title.value",
+                "title from binding",
+            ),
+        )
         .expect("write should queue pending effect intent");
 
     let (pending_delivery, handoff) = runtime
@@ -72,9 +82,13 @@ fn effect_admitted_handoff_materializes_self_contained_execution_binding() {
 
 #[test]
 fn effect_receipt_surfaces_provenance_without_nested_receipt_spelunking() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.phase-four-effect-surface",
             task_live_request(),
             task_schema(),
@@ -88,15 +102,23 @@ fn effect_receipt_surfaces_provenance_without_nested_receipt_spelunking() {
         ))
         .expect("write-intent effect should declare");
     runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
-            "title.value",
-            "title from outer receipt",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                "title.value",
+                "title from outer receipt",
+            ),
+        )
         .expect("write should queue pending effect intent");
 
     let receipt = runtime
-        .execute_next_effect_write_intent(&effect, "1.0", "effect.intent.input.v1")
+        .execute_next_effect_write_intent(
+            request_execution,
+            &effect,
+            "1.0",
+            "effect.intent.input.v1",
+        )
         .expect("effect intent should execute");
 
     assert_eq!(
@@ -122,15 +144,22 @@ fn effect_receipt_surfaces_provenance_without_nested_receipt_spelunking() {
 
 #[test]
 fn execution_denial_evidence_retains_execution_provenance_artifact() {
-    let mut runtime = intent_runtime_with_authority(InvariantViolationIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime =
+        intent_runtime_with_authority(request_execution, InvariantViolationIntentAuthority);
     let error = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "phase-four-provenance-denial",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task-1"), ("dependency", "cycle")]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "phase-four-provenance-denial",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([("entity", "task-1"), ("dependency", "cycle")]),
+            ),
+        )
         .expect_err("invariant violation must deny");
 
     match error {
@@ -153,7 +182,10 @@ fn execution_denial_evidence_retains_execution_provenance_artifact() {
 
 #[test]
 fn post_execution_routing_failure_preserves_proof_chain() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let declaration = WorthQueryIntentDeclaration::strategy_commit(
         "phase-four-routing-failure",
         "strategy.intent.reconcile",
@@ -167,7 +199,7 @@ fn post_execution_routing_failure_preserves_proof_chain() {
     let binding = runtime.prepare_authoritative_intent_execution_binding(handoff.clone());
     let execution = runtime
         .backend
-        .execute_intent(binding.declaration())
+        .execute_intent(request_execution, binding.declaration())
         .expect("backend execution should succeed");
     let admitted_handoff = WorthQueryAdmittedIntentExecutionHandoff::from(handoff);
     let snapshot_evidence_identity = execution
@@ -229,9 +261,13 @@ fn post_execution_routing_failure_preserves_proof_chain() {
 
 #[test]
 fn stale_effect_execution_binding_fails_as_typed_handoff_violation() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.phase-four-stale-effect",
             task_live_request(),
             task_schema(),
@@ -245,11 +281,14 @@ fn stale_effect_execution_binding_fails_as_typed_handoff_violation() {
         ))
         .expect("write-intent effect should declare");
     runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
-            "title.value",
-            "title before stale execution",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                "title.value",
+                "title before stale execution",
+            ),
+        )
         .expect("write should queue pending effect intent");
 
     let (pending_delivery, handoff) = runtime
@@ -264,7 +303,7 @@ fn stale_effect_execution_binding_fails_as_typed_handoff_violation() {
     runtime.remove_pending_effect_delivery(&effect_target, 0, &pending_delivery);
 
     let error = runtime
-        .execute_effect_intent_execution_binding(binding)
+        .execute_effect_intent_execution_binding(request_execution, binding)
         .expect_err("stale binding should fail as a typed violation");
 
     match error {

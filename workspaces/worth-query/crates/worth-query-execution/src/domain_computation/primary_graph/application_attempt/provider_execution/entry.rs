@@ -47,6 +47,7 @@ where
     /// checked its typed root and source-binding inventory before entering here.
     fn require_occurrence_owns_output_source<Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         presented: &WorthQueryPresentedProgram<'_>,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQueryApplicationCommitOutcome> {
@@ -55,7 +56,7 @@ where
                 WorthQueryApplicationCommitDenial::application_program_required(),
             ));
         };
-        let occurrence = resolve_occurrence_program(support, program)
+        let occurrence = resolve_occurrence_program(execution, support, program)
             .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
         if occurrence.rendering() != presented.rendering() {
             return Err(WorthQueryApplicationCommitOutcome::Denied(
@@ -72,6 +73,7 @@ where
     /// Resolves the active occurrence, then checks selection and operation authority.
     fn require_occurrence_program_commit_binding<Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         selected_program: Option<(
             &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
@@ -86,7 +88,7 @@ where
                 WorthQueryApplicationCommitDenial::application_program_required(),
             ));
         };
-        let occurrence = resolve_occurrence_program(support, program)
+        let occurrence = resolve_occurrence_program(execution, support, program)
             .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
         require_selected_program_matches_occurrence(&occurrence, selected_program)
             .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
@@ -101,6 +103,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -126,10 +129,13 @@ where
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
         }
-        if let Err(outcome) = self.require_occurrence_program_commit_binding(&program, None) {
+        if let Err(outcome) =
+            self.require_occurrence_program_commit_binding(execution, &program, None)
+        {
             return outcome;
         }
         self.compare_and_commit_application_with_output_observation(
+            execution,
             phase,
             program,
             idempotency,
@@ -140,6 +146,7 @@ where
 
     fn compare_and_commit_application_with_output_observation<Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -151,6 +158,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         self.compare_and_commit_application_with_causality(
+            execution,
             phase,
             program,
             idempotency,
@@ -162,6 +170,7 @@ where
 
     pub(crate) fn compare_and_commit_application_with_causality<Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -185,6 +194,7 @@ where
             Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
         };
         self.compare_and_commit_application_inner_with_currentness_and_aftermath(
+            execution,
             phase,
             program,
             idempotency,
@@ -200,6 +210,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -210,6 +221,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         self.compare_and_commit_application_inner_with_currentness(
+            execution,
             phase,
             program,
             idempotency,
@@ -220,6 +232,7 @@ where
 
     pub(super) fn compare_and_commit_application_inner_with_currentness<Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -231,6 +244,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         self.compare_and_commit_application_inner_with_currentness_and_aftermath(
+            execution,
             phase,
             program,
             idempotency,
@@ -257,6 +271,7 @@ where
             return WorthQueryApplicationCommitOutcome::Denied(denial);
         }
         self.compare_and_commit_application_inner_with_currentness_and_aftermath(
+            &phase.borrowed_request_for_test(),
             phase,
             program,
             idempotency,

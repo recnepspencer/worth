@@ -10,9 +10,12 @@ use worth_query::facade::read::{
 };
 use worth_query::facade::runtime::{WorthQueryReadBuilder, WorthQueryWorkspace};
 
-pub fn workspace(name: &str) -> WorthQueryWorkspace {
+pub fn workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> WorthQueryWorkspace {
     PublicBridgeRuntimeHarness::new()
-        .bridge_backed_runtime()
+        .bridge_backed_runtime(request_execution)
         .workspace(name)
         .expect("product boundary workspace should open")
 }
@@ -51,9 +54,13 @@ pub fn mutation(value: &str) -> WorthQueryMutationDeclaration {
     .expect("product boundary mutation should declare")
 }
 
-pub fn write_task(workspace: &mut WorthQueryWorkspace, id: &str) {
+pub fn write_task(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace: &mut WorthQueryWorkspace,
+    id: &str,
+) {
     workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 WorthQueryAspectTouch::aspect_field_path(
                     AspectKey::new("identity").expect("identity aspect should build"),

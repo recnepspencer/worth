@@ -24,7 +24,10 @@ fn compose_certification_sequence_digest(
 
 #[test]
 fn typed_stop_class_taxonomy_phase_three_outputs_are_non_empty_and_stable() {
-    let representative_errors = representative_runtime_stop_errors();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let representative_errors = representative_runtime_stop_errors(request_execution);
     let stop_class_digest = digest_stop_class_outputs(&representative_errors);
     let support_denial_digest = digest_support_denial_output(&representative_errors);
     let preview_promotion_digest = digest_preview_promotion_output(&representative_errors);
@@ -47,13 +50,18 @@ fn typed_stop_class_taxonomy_phase_three_outputs_are_non_empty_and_stable() {
 
 #[test]
 fn typed_stop_class_matching_phase_four_outputs_are_non_empty_and_stable() {
-    let representative_errors = representative_runtime_stop_errors();
-    let runtime_generated_errors = representative_runtime_generated_stop_errors();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let representative_errors = representative_runtime_stop_errors(request_execution);
+    let runtime_generated_errors = representative_runtime_generated_stop_errors(request_execution);
     let first_public_family_error = temporal_public_family_admission_error(
+        request_execution,
         "phase-four-digest-public-family-first",
         "first temporal wording",
     );
     let second_public_family_error = temporal_public_family_admission_error(
+        request_execution,
         "phase-four-digest-public-family-second",
         "second temporal wording",
     );

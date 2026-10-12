@@ -79,15 +79,17 @@ impl WorthQueryBridgeBackedRuntimeBackend {
 impl super::WorthQueryMergeSnapshotOwner for WorthQueryBridgeBackedRuntimeBackend {
     fn release_query_merge_snapshot(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) {
-        self.release_backend_merge_snapshot(snapshot)
+        self.release_backend_merge_snapshot(execution, snapshot)
     }
 }
 
 impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
     fn prepare_product_source(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_query_execution::facade::integration::WorthQueryProductRelationalInstallation,
         super::WorthQueryProductSourceDenial,
@@ -95,7 +97,7 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
         self.relational_runtime
             .as_ref()
             .ok_or(super::WorthQueryProductSourceDenial::SourceNotInstalled)?
-            .prepare_product_source()
+            .prepare_product_source(request_execution)
     }
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
         self.support_profile.clone()
@@ -140,9 +142,12 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
         self.attach_published_graph_runtime(runtime)
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         match self.snapshot_identity.as_ref() {
-            Some(adapter) => adapter.current_snapshot_identity(),
+            Some(adapter) => adapter.current_snapshot_identity(request_execution),
             None => super::unavailable_snapshot_identity(),
         }
     }
@@ -173,16 +178,18 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
 
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
-        self.execute_backend_write(mutation)
+        self.execute_backend_write(execution, mutation)
     }
 
     fn write_batch(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutations: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
-        self.execute_backend_write_batch(mutations)
+        self.execute_backend_write_batch(execution, mutations)
     }
 
     fn admit_existing_truth_binding(
@@ -194,6 +201,7 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
 
     fn verify_existing_truth_assertion(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryExistingTruthTargetBinding,
         aspects: &[crate::runtime::WorthQueryAuthoredAspectMutation],
     ) -> Result<WorthQueryVerifiedExistingTruthAssertion, WorthQueryExistingTruthAssertionDenial>
@@ -208,11 +216,11 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
                 "this runtime backend does not admit backend-verified existing-truth assertions yet",
             ));
         };
-        adapter.verify_existing_truth_assertion(binding, aspects)?;
+        adapter.verify_existing_truth_assertion(execution, binding, aspects)?;
         WorthQueryVerifiedExistingTruthAssertion::from_snapshot_identity(
             binding,
             aspects,
-            &self.current_snapshot_identity(),
+            &self.current_snapshot_identity(execution),
         )
         .map_err(|error| {
             WorthQueryExistingTruthAssertionDenial::new(
@@ -246,9 +254,10 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
 
     fn execute_intent(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError> {
-        self.execute_backend_intent(declaration)
+        self.execute_backend_intent(execution, declaration)
     }
 
     fn admit_query_writeback_authority(&self) -> Result<(), WorthQueryWorkspaceError> {
@@ -273,28 +282,31 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
 
     fn capture_query_merge_authority(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target_branch: &crate::runtime::WorthQueryAdmittedBranchName,
         source_branch: &crate::runtime::WorthQueryAdmittedBranchName,
     ) -> Result<WorthQueryBackendMergeAuthority, WorthQueryWorkspaceError> {
-        self.capture_backend_merge_authority(target_branch, source_branch)
+        self.capture_backend_merge_authority(request_execution, target_branch, source_branch)
     }
 
     fn validate_query_merge_authority(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryBackendMergeAuthority,
     ) -> Result<(), WorthQueryWorkspaceError> {
-        self.validate_backend_merge_authority(authority)
+        self.validate_backend_merge_authority(request_execution, authority)
     }
 
     fn execute_query_merge(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryBackendMergeAuthority,
         declaration: &crate::workflow::LoweredMergeWorkflowDeclaration,
     ) -> Result<
         worth_relational::facade::transactions::MergeExecutionOutcome,
         crate::effect_lifecycle::RelationalEffectExecutionFailure,
     > {
-        self.execute_backend_merge(authority, declaration)
+        self.execute_backend_merge(execution, authority, declaration)
     }
 
     fn execute_query_causal_inspection(
@@ -310,9 +322,11 @@ impl WorthQueryRuntimeBackend for WorthQueryBridgeBackedRuntimeBackend {
 
     fn live_entities_for_target(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
-        self.source_adapter.live_entities_for_target(target)
+        self.source_adapter
+            .live_entities_for_target(_execution, target)
     }
 
     fn live_entities_for_granular_scope(

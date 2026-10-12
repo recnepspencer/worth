@@ -18,6 +18,7 @@ use super::super::surface_comparison::{
 use super::super::{SelectedPublishedLineageAuthority, ValidatedReplayContinuityEnvelope};
 
 pub(super) fn compare_replay_surfaces(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     verification_plan: &ReplayVerificationPlan,
     mismatches: &mut Vec<ReplayMismatch>,
@@ -29,7 +30,7 @@ pub(super) fn compare_replay_surfaces(
     replay_runtime: &RelationalRuntime,
     request: &RelationalReplayRequest,
     selected_lineage_authority: Option<&SelectedPublishedLineageAuthority>,
-) {
+) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
     runtime
         .performance_access()
         .count_merge_history_parent_comparisons(
@@ -211,10 +212,12 @@ pub(super) fn compare_replay_surfaces(
         },
     );
     if compared_surfaces.contains(&ReplayObservableSurface::Snapshot) {
-        let original_surface =
-            runtime.replay_snapshot_surface_at_version(envelope.commit.version_id);
-        let replayed_surface =
-            replay_runtime.replay_snapshot_surface_at_version(replayed_envelope.commit.version_id);
+        let original_surface = runtime
+            .replay_snapshot_surface_at_version(execution, envelope.commit.version_id)
+            .map_err(crate::durability::data::RelationalRecoveryStop::Request)?;
+        let replayed_surface = replay_runtime
+            .replay_snapshot_surface_at_version(execution, replayed_envelope.commit.version_id)
+            .map_err(crate::durability::data::RelationalRecoveryStop::Request)?;
         compare_replay_surface(
             runtime,
             verification_plan,
@@ -282,4 +285,5 @@ pub(super) fn compare_replay_surfaces(
             || format!("{:?}", replayed_derived_index_artifacts),
         );
     }
+    Ok(())
 }

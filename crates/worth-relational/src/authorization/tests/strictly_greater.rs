@@ -26,8 +26,11 @@ const TEXT_BOUND_FIELD: &str = "text-bound";
 
 #[test]
 fn strictly_greater_predicate_observes_the_open_numeric_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = comparison_runtime();
-    let scope = create_entity(&runtime, "predicate-scope");
+    let scope = create_entity(execution, &runtime, "predicate-scope");
     let cases = [
         ("greater", Some(5), AspectValue::UInt64(4), true),
         ("equal", Some(4), AspectValue::UInt64(4), false),
@@ -37,15 +40,16 @@ fn strictly_greater_predicate_observes_the_open_numeric_boundary() {
     ];
 
     for (case, observed, expected, should_match) in cases {
-        let principal = create_comparison_entity(&runtime, case, observed, None);
+        let principal = create_comparison_entity(execution, &runtime, case, observed, None);
         create_relation(
+            execution,
             &runtime,
             principal,
             scope,
             &format!("{case}-predicate-scope"),
         );
 
-        let evidence = observe_predicate(&runtime, principal, scope, expected);
+        let evidence = observe_predicate(execution, &runtime, principal, scope, expected);
 
         assert_eq!(
             evidence.paths()[0].matched(),
@@ -62,6 +66,9 @@ fn strictly_greater_predicate_observes_the_open_numeric_boundary() {
 
 #[test]
 fn strictly_greater_field_constraint_compares_one_complete_witness() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = comparison_runtime();
     let cases = [
         ("greater", Some(5), Some(4), None, true),
@@ -72,11 +79,22 @@ fn strictly_greater_field_constraint_compares_one_complete_witness() {
     ];
 
     for (case, left_number, right_number, right_text, should_match) in cases {
-        let principal =
-            create_comparison_entity(&runtime, &format!("{case}-left"), left_number, None);
-        let scope =
-            create_comparison_entity(&runtime, &format!("{case}-right"), right_number, right_text);
+        let principal = create_comparison_entity(
+            execution,
+            &runtime,
+            &format!("{case}-left"),
+            left_number,
+            None,
+        );
+        let scope = create_comparison_entity(
+            execution,
+            &runtime,
+            &format!("{case}-right"),
+            right_number,
+            right_text,
+        );
         create_relation(
+            execution,
             &runtime,
             principal,
             scope,
@@ -88,7 +106,7 @@ fn strictly_greater_field_constraint_compares_one_complete_witness() {
         } else {
             remaining_field()
         };
-        let evidence = observe_field_constraint(&runtime, principal, scope, right_field);
+        let evidence = observe_field_constraint(execution, &runtime, principal, scope, right_field);
 
         assert_eq!(
             evidence.paths()[0].matched(),
@@ -105,22 +123,44 @@ fn strictly_greater_field_constraint_compares_one_complete_witness() {
 
 #[test]
 fn strictly_greater_observation_stales_when_the_governing_field_reaches_equality() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = comparison_runtime();
-    let principal = create_comparison_entity(&runtime, "drifting-principal", Some(5), None);
-    let scope = create_entity(&runtime, "drift-scope");
-    create_relation(&runtime, principal, scope, "drift-predicate-scope");
-    let admitted = observe_predicate(&runtime, principal, scope, AspectValue::UInt64(4));
+    let principal =
+        create_comparison_entity(execution, &runtime, "drifting-principal", Some(5), None);
+    let scope = create_entity(execution, &runtime, "drift-scope");
+    create_relation(
+        execution,
+        &runtime,
+        principal,
+        scope,
+        "drift-predicate-scope",
+    );
+    let admitted = observe_predicate(
+        execution,
+        &runtime,
+        principal,
+        scope,
+        AspectValue::UInt64(4),
+    );
     assert!(admitted.paths()[0].matched());
     assert_eq!(admitted.counters(), predicate_counters(true));
 
-    write_comparison_fields(&runtime, principal, Some(4), None);
+    write_comparison_fields(execution, &runtime, principal, Some(4), None);
     let current = runtime.visibility_authority().snapshot();
 
     assert_eq!(
-        runtime.compare_authorization_observation(&admitted, current),
+        runtime.compare_authorization_observation(&admitted, current, execution),
         RelationalAuthorizationObservationFreshness::Stale
     );
-    let denied = observe_predicate(&runtime, principal, scope, AspectValue::UInt64(4));
+    let denied = observe_predicate(
+        execution,
+        &runtime,
+        principal,
+        scope,
+        AspectValue::UInt64(4),
+    );
     assert!(!denied.paths()[0].matched());
     assert_eq!(denied.counters(), predicate_counters(false));
 }
@@ -137,19 +177,21 @@ fn comparison_runtime() -> crate::runtime::RelationalRuntime {
 }
 
 fn create_comparison_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     name: &str,
     remaining: Option<u64>,
     text_bound: Option<&str>,
 ) -> EntityId {
-    let entity = create_entity(runtime, name);
+    let entity = create_entity(execution, runtime, name);
     if remaining.is_some() || text_bound.is_some() {
-        write_comparison_fields(runtime, entity, remaining, text_bound);
+        write_comparison_fields(execution, runtime, entity, remaining, text_bound);
     }
     entity
 }
 
 fn write_comparison_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     entity: EntityId,
     remaining: Option<u64>,
@@ -183,14 +225,12 @@ fn write_comparison_fields(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("comparison fields must be valid for the declared fixture schema");
 }
 
 fn observe_predicate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     principal: EntityId,
     scope: EntityId,
@@ -204,6 +244,7 @@ fn observe_predicate(
         expected,
     );
     observe_path(
+        execution,
         runtime,
         principal,
         scope,
@@ -212,6 +253,7 @@ fn observe_predicate(
 }
 
 fn observe_field_constraint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     principal: EntityId,
     scope: EntityId,
@@ -223,6 +265,7 @@ fn observe_field_constraint(
         RelationalAuthorizationFieldOperand::new(1, ENTITY_KIND, right_field),
     );
     observe_path(
+        execution,
         runtime,
         principal,
         scope,
@@ -232,6 +275,7 @@ fn observe_field_constraint(
 }
 
 fn observe_path(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     principal: EntityId,
     scope: EntityId,
@@ -248,7 +292,7 @@ fn observe_path(
     )
     .expect("strictly-greater observation plan must be structurally valid");
     runtime
-        .observe_authorization(plan)
+        .observe_authorization(plan, execution)
         .expect("strictly-greater fixture snapshot must be observable")
 }
 

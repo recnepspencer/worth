@@ -49,6 +49,7 @@ impl InvalidationSink for CorrespondenceSink {
 }
 
 pub(crate) fn correspondence_bridge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     registration: BridgeSemanticCorrespondenceRegistration,
 ) -> (RuntimeBridge, RelationalCommittedPatchRequest) {
     let dependency = registration.dependency();
@@ -94,10 +95,7 @@ pub(crate) fn correspondence_bridge(
         )
         .expect("test staging stays within configured resource budgets");
     let created = create
-        .commit(
-            &relational,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &relational)
         .expect("conditional entity should commit");
     let entity = created
         .changed_records
@@ -125,10 +123,7 @@ pub(crate) fn correspondence_bridge(
         )
         .expect("test staging stays within configured resource budgets");
     let updated = update
-        .commit(
-            &relational,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &relational)
         .expect("conditional identity field should commit");
     let branch_identity = relational
         .branch_identity(&updated.commit.branch_id)

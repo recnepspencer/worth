@@ -20,34 +20,39 @@ impl WorthServerQueryWorkspaceProvider for RealMutationWorkspaceProvider {
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        match request.target() {
-            WorthServerQueryWorkspaceBindingTarget::QueryHandoff { operation }
-                if matches!(
-                    operation.as_ref(),
-                    WorthServerQueryHandoffOperation::DirectMutation { .. }
-                        | WorthServerQueryHandoffOperation::QueryMutation { .. }
-                ) => {}
-            target => {
-                return Err(WorthServerQueryWorkspaceBindingError::new(
+        crate::test_execution_policy::with_bootstrap(|request_execution| {
+            match request.target() {
+                WorthServerQueryWorkspaceBindingTarget::QueryHandoff { operation }
+                    if matches!(
+                        operation.as_ref(),
+                        WorthServerQueryHandoffOperation::DirectMutation { .. }
+                            | WorthServerQueryHandoffOperation::QueryMutation { .. }
+                    ) => {}
+                target => {
+                    return Err(WorthServerQueryWorkspaceBindingError::new(
                     "workspace_target",
                     format!(
                         "real mutation workspace provider only supports mutation handoff targets, got {target:?}"
                     ),
                 ));
+                }
             }
-        }
 
-        let workspace_id = request
-            .resolved_request_context()
-            .request_context()
-            .workspace_target()
-            .workspace_id();
-        in_memory_test_runtime()
-            .with_schema(task_schema())
-            .workspace(workspace_id)
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
-            })
+            let workspace_id = request
+                .resolved_request_context()
+                .request_context()
+                .workspace_target()
+                .workspace_id();
+            in_memory_test_runtime()
+                .with_schema(task_schema())
+                .workspace(request_execution, workspace_id)
+                .map_err(|error| {
+                    WorthServerQueryWorkspaceBindingError::new(
+                        "workspace_bind",
+                        format!("{error:?}"),
+                    )
+                })
+        })
     }
 }
 

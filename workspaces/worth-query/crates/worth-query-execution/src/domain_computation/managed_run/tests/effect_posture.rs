@@ -107,9 +107,16 @@ fn touch_effect_cannot_cross_an_effect_free_step_contract() {
             resource_request,
         );
         let active = start_effect(execution, running, &graph, "effect-free");
-        let terminal = match active.advance(execution) {
-            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
-            _ => panic!("effect-free bounded step admitted an applied effect"),
+        let terminal = {
+            let fixture_phase_result = {
+                let fixture_target = active;
+                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                fixture_target.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+                _ => panic!("effect-free bounded step admitted an applied effect"),
+            }
         };
         assert_eq!(applied_effects.load(Ordering::Relaxed), 0);
         assert_eq!(terminal.provider_work().attempted_effect_count(), 0);
@@ -140,11 +147,17 @@ fn declared_partial_effect_posture_carries_exact_applied_effect_evidence() {
             },
             resource_request,
         );
-        let completion =
-            match start_effect(execution, running, &graph, "partial-effect").advance(execution) {
+        let completion = {
+            let fixture_phase_result = {
+                let fixture_target = start_effect(execution, running, &graph, "partial-effect");
+                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                fixture_target.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
                 WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
                 _ => panic!("declared partial-effect posture did not admit the governed effect"),
-            };
+            }
+        };
         assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
         assert_eq!(completion.receipt().work_report().applied_effect_count(), 1);
         let terminal = completion.into_running().completed().unwrap();
@@ -175,11 +188,17 @@ fn rejected_effect_closure_cannot_claim_an_applied_effect() {
             },
             resource_request,
         );
-        let terminal =
-            match start_effect(execution, running, &graph, "rejected-effect").advance(execution) {
+        let terminal = {
+            let fixture_phase_result = {
+                let fixture_target = start_effect(execution, running, &graph, "rejected-effect");
+                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                fixture_target.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
                 WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
                 _ => panic!("rejected provider effect advanced the managed run"),
-            };
+            }
+        };
         assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
         assert_eq!(terminal.provider_work().attempted_effect_count(), 1);
         assert_eq!(terminal.provider_work().applied_effect_count(), 0);
@@ -220,11 +239,17 @@ fn panic_after_effect_attempt_preserves_effect_uncertainty() {
             },
             resource_request,
         );
-        let terminal =
-            match start_effect(execution, running, &graph, "panicked-effect").advance(execution) {
+        let terminal = {
+            let fixture_phase_result = {
+                let fixture_target = start_effect(execution, running, &graph, "panicked-effect");
+                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                fixture_target.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
                 WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
                 _ => panic!("panicked provider effect advanced the managed run"),
-            };
+            }
+        };
         assert_eq!(applied_effects.load(Ordering::Relaxed), 1);
         assert_eq!(terminal.provider_work().attempted_effect_count(), 1);
         assert_eq!(terminal.provider_work().applied_effect_count(), 0);
@@ -244,20 +269,23 @@ fn panic_after_effect_attempt_preserves_effect_uncertainty() {
 }
 
 fn start_effect(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
     scope: &str,
 ) -> crate::domain_computation::WorthQueryActiveDirectGraphExecution {
-    running
-        .begin_graph_execution(
-            execution,
+    {
+        let fixture_target = running;
+        let installed_fixture_phase = fixture_target.fixture_phase(execution);
+        fixture_target.begin_graph_execution(
+            &installed_fixture_phase,
             graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::TouchEffect,
                 scope,
             ),
         )
-        .expect("installed touch authority should start")
+    }
+    .expect("installed touch authority should start")
 }

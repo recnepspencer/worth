@@ -2,13 +2,16 @@ use crate::tests::support::*;
 
 #[test]
 fn chunked_storage_summary_tracks_visibility_boundaries() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_and_chunks(2, 2);
-    let first = create_entity_outcome(&runtime, "e0");
+    let first = create_entity_outcome(execution, &runtime, "e0");
     let entity_a = changed_entities(&first)[0];
-    let _second = create_entity_outcome(&runtime, "e1");
+    let _second = create_entity_outcome(execution, &runtime, "e1");
     let snapshot = runtime.visibility_authority().snapshot();
-    let _third = create_entity_outcome(&runtime, "e2");
-    let _update = update_entity(&runtime, entity_a, "e0-updated");
+    let _third = create_entity_outcome(execution, &runtime, "e2");
+    let _update = update_entity(execution, &runtime, entity_a, "e0-updated");
 
     let summary_before_update = runtime
         .storage_access()
@@ -26,9 +29,12 @@ fn chunked_storage_summary_tracks_visibility_boundaries() {
 
 #[test]
 fn chunk_diagnostics_and_packet_plans_are_public_and_stable() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_and_chunks(2, 2);
-    let first = create_entity_outcome(&runtime, "e0");
-    let second = create_entity_outcome(&runtime, "e1");
+    let first = create_entity_outcome(execution, &runtime, "e0");
+    let second = create_entity_outcome(execution, &runtime, "e1");
     let entity_a = changed_entities(&first)[0];
     let entity_b = changed_entities(&second)[0];
     let snapshot = runtime.visibility_authority().snapshot();

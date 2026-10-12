@@ -12,7 +12,10 @@ use super::support::{
 
 #[test]
 fn common_lane_emits_signal_compatibility_artifact() {
-    let compatibility = handle("common")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let compatibility = handle(request_execution, "common")
         .declare_review_progress_describe_plan_receipt_envelope_and_check_signal_compatibility(
             Input::<RuntimeFamily>::new("edge:42"),
         )
@@ -27,8 +30,11 @@ fn common_lane_emits_signal_compatibility_artifact() {
 
 #[test]
 fn advanced_lane_envelope_input_routes_without_checked_wrapper_loss() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let compatibility = compatibility_from_envelope_input(
-        &handle("advanced"),
+        &handle(request_execution, "advanced"),
         Input::<RuntimeFamily>::new("edge:42"),
     );
 
@@ -40,7 +46,10 @@ fn advanced_lane_envelope_input_routes_without_checked_wrapper_loss() {
 
 #[test]
 fn equivalent_retained_envelope_truth_yields_identical_digest() {
-    let handle = handle("digest");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "digest");
 
     let left = handle
         .signal_compatibility_from_progressed(
@@ -65,12 +74,15 @@ fn equivalent_retained_envelope_truth_yields_identical_digest() {
 
 #[test]
 fn admitted_world_identity_changes_digest() {
-    let left = handle("left")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = handle(request_execution, "left")
         .declare_review_progress_describe_plan_receipt_envelope_and_check_signal_compatibility(
             Input::<RuntimeFamily>::new("edge:42"),
         )
         .unwrap_or_else(|_| panic!("signal compatibility should admit"));
-    let right = handle("right")
+    let right = handle(request_execution, "right")
         .declare_review_progress_describe_plan_receipt_envelope_and_check_signal_compatibility(
             Input::<RuntimeFamily>::new("edge:42"),
         )
@@ -84,7 +96,10 @@ fn admitted_world_identity_changes_digest() {
 
 #[test]
 fn mixed_authority_stays_modifier_not_peer_authority() {
-    let compatibility = handle("mixed")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let compatibility = handle(request_execution, "mixed")
         .declare_review_progress_describe_plan_receipt_envelope_and_check_signal_compatibility(
             Input::<MixedFamily>::new("edge:42"),
         )
@@ -102,7 +117,10 @@ fn mixed_authority_stays_modifier_not_peer_authority() {
 
 #[test]
 fn basis_family_differences_stay_distinct() {
-    let handle = handle("basis");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "basis");
 
     let historical = handle
         .declare_review_progress_describe_plan_receipt_envelope_and_check_signal_compatibility(
@@ -128,8 +146,11 @@ fn basis_family_differences_stay_distinct() {
 
 #[test]
 fn wrong_handle_envelope_is_denied_before_signal_classification() {
-    let source = handle("source");
-    let target = handle("target");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let source = handle(request_execution, "source");
+    let target = handle(request_execution, "target");
     let checked = target.signal_compatibility_checked(
         crate::application::WorthQueryDeclarationSignalCompatibilityInput::envelope_checked(
             envelope_checked_for(&source, Input::<RuntimeFamily>::new("edge:42")),

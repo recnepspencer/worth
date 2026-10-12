@@ -56,11 +56,11 @@ pub(crate) fn assert_graph_work_capacity_bounds() {
         let scope = live_scope(&below, root, &request);
         below
             .application
-            .with_application_advancement(&request, |phase| {
+            .with_host_advancement(|host_phase| {
                 below
             .application
             .on_branch(root)
-            .select()
+            .select(&host_phase)
             .unwrap()
             .open_application_query_live::<
                 TemporalIntentLiveQuery,
@@ -72,15 +72,14 @@ pub(crate) fn assert_graph_work_capacity_bounds() {
                 TemporalIntent,
                 TemporalIntentLiveCause,
             >(
-                &phase,
-                query,
+                &host_phase, query,
                 &principal,
                 scope,
                 ApplicationQueryParameterSet::new(),
                 live_controls(&request),
             )
             })
-            .unwrap()
+            .expect("installed host call opens")
     };
     let first = open().expect("the installed one-slot limit must admit exactly one lease");
     let denial = match open() {
@@ -122,11 +121,11 @@ fn with_population<Result>(
             let scope = live_scope(world, root, &request);
             world
                 .application
-                .with_application_advancement(&request, |phase| {
+                .with_host_advancement(|host_phase| {
                     world
                 .application
                 .on_branch(root)
-                .select()
+                .select(&host_phase)
                 .unwrap()
                 .open_application_query_live::<
                     TemporalIntentLiveQuery,
@@ -138,8 +137,7 @@ fn with_population<Result>(
                     TemporalIntent,
                     TemporalIntentLiveCause,
                 >(
-                    &phase,
-                    query,
+                    &host_phase, query,
                     &principal,
                     scope,
                     ApplicationQueryParameterSet::new(),
@@ -167,16 +165,22 @@ fn live_scope(
 ) -> primary_graph::WorthQueryApplicationEntityIdentity<TemporalHostSchema, TemporalIntent> {
     world
         .application
-        .on_branch(root)
-        .select()
-        .unwrap()
-        .resolve_entity(
-            IntentIdentityField::reference(),
-            "intent-1".to_owned(),
-            request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .on_branch(root)
+                .select(&host_phase)
+                .unwrap()
+                .resolve_entity(
+                    &host_phase,
+                    IntentIdentityField::reference(),
+                    "intent-1".to_owned(),
+                    request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens")
 }
 
 fn live_controls(

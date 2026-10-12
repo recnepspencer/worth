@@ -4,8 +4,11 @@ use crate::tests::support::*;
 
 #[test]
 fn subscriber_stream_composes_prior_and_new_boundaries_into_normalized_proof() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     install_schema_version(&mut runtime, SchemaVersionId(2));
     let mut txn = {
@@ -26,11 +29,7 @@ fn subscriber_stream_composes_prior_and_new_boundaries_into_normalized_proof() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
+    txn.commit(execution, &runtime).unwrap();
 
     let first_batch = runtime
         .publication()
@@ -64,12 +63,7 @@ fn subscriber_stream_composes_prior_and_new_boundaries_into_normalized_proof() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    second_txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    second_txn.commit(execution, &runtime).unwrap();
 
     let resumed = runtime
         .publication()
@@ -100,8 +94,11 @@ fn subscriber_stream_composes_prior_and_new_boundaries_into_normalized_proof() {
 
 #[test]
 fn resumed_subscriber_stream_preserves_prior_boundary_and_adds_new_boundary_trace() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     install_schema_version(&mut runtime, SchemaVersionId(2));
     let mut first_transition = {
@@ -123,12 +120,7 @@ fn resumed_subscriber_stream_preserves_prior_boundary_and_adds_new_boundary_trac
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    first_transition
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    first_transition.commit(execution, &runtime).unwrap();
 
     let first_batch = runtime
         .publication()
@@ -162,12 +154,7 @@ fn resumed_subscriber_stream_preserves_prior_boundary_and_adds_new_boundary_trac
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    second_transition
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    second_transition.commit(execution, &runtime).unwrap();
 
     let resumed = runtime
         .publication()

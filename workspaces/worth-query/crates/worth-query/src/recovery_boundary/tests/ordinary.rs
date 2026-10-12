@@ -138,8 +138,11 @@ fn ordinary_signal_basis_mismatch_maps_to_signal_repair() {
 
 #[test]
 fn grouped_wrong_world_checked_uses_grouped_recovery_family() {
-    let left = recovery_admitted_handle("left");
-    let right = recovery_admitted_handle("right");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = recovery_admitted_handle(request_execution, "left");
+    let right = recovery_admitted_handle(request_execution, "right");
     let declaration = match worth_query_grouped_declaration_checked_on_handle(
         &left,
         WorthQueryGroupedDeclarationInput::local_neighborhood(
@@ -178,8 +181,11 @@ fn grouped_wrong_world_checked_uses_grouped_recovery_family() {
 
 #[test]
 fn grouped_wrong_world_recovery_brief_matches_between_checked_and_proof_lanes() {
-    let left = recovery_admitted_handle("left");
-    let right = recovery_admitted_handle("right");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = recovery_admitted_handle(request_execution, "left");
+    let right = recovery_admitted_handle(request_execution, "right");
     let declaration = |edge_ref| match worth_query_grouped_declaration_checked_on_handle(
         &left,
         WorthQueryGroupedDeclarationInput::local_neighborhood(
@@ -220,7 +226,10 @@ fn grouped_wrong_world_recovery_brief_matches_between_checked_and_proof_lanes() 
 
 #[test]
 fn grouped_member_stop_recovery_preserves_member_aspect_context() {
-    let handle = recovery_admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = recovery_admitted_handle(request_execution, "main");
     let declaration = match worth_query_grouped_declaration_checked_on_handle(
         &handle,
         WorthQueryGroupedDeclarationInput::local_neighborhood(RecoveryInput::<
@@ -270,7 +279,10 @@ fn grouped_member_stop_recovery_preserves_member_aspect_context() {
 
 #[test]
 fn grouped_member_stop_recovery_brief_matches_between_checked_and_proof_lanes() {
-    let handle = recovery_admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = recovery_admitted_handle(request_execution, "main");
     let declaration = || match worth_query_grouped_declaration_checked_on_handle(
         &handle,
         WorthQueryGroupedDeclarationInput::local_neighborhood(RecoveryInput::<

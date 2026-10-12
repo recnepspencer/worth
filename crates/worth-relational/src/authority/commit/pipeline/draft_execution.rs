@@ -73,10 +73,12 @@ impl PreparedCommitExecution {
 }
 
 pub(super) fn prepare_commit_execution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut admitted: AdmittedCommitExecution,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<PreparedCommitExecution, crate::transactions::data::TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Draft)?;
+    let lease = super::request_lease(execution);
     let merge_parent_count = admitted
         .merge_history_plan()
         .map(|plan| plan.requested_merge_parent_count)

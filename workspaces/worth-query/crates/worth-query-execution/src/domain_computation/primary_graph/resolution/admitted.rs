@@ -48,6 +48,7 @@ pub(super) fn resolve_at_snapshot<
     PrincipalIdentity,
     PrincipalIdentityBinding,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     view: &VisibilityProjectionView<'_>,
     resolution: &WorthQueryPrincipalSnapshotResolution<'_>,
@@ -67,15 +68,16 @@ where
 {
     use AdmittedPrincipalResolutionStop as Stop;
     let checked = super::admitted_lookup::resolve_unique_mapping_candidate(
-        runtime, view, resolution, admission,
+        runtime, execution, view, resolution, admission,
     )?;
-    let mapping = super::admitted_observations::observe_mapping(&checked, admission)?;
+    let mapping = super::admitted_observations::observe_mapping(execution, &checked, admission)?;
     if !mapping.enabled {
         return Err(Stop::Semantic(
             WorthQueryPrincipalResolutionDenialKind::DisabledPrincipal,
         ));
     }
     let target = super::admitted_observations::observe_target(
+        execution,
         view,
         mapping.entity_id,
         resolution.layout,

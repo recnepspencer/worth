@@ -7,12 +7,15 @@ use crate::runtime::{
 
 #[test]
 fn compose_read_executes_operator_owned_bounded_descendant_detail() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-descendant-detail")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_bounded_descendant_detail(
                 "user",
                 expanded_manager_schema(),
@@ -66,12 +69,15 @@ fn compose_read_executes_operator_owned_bounded_descendant_detail() {
 
 #[test]
 fn compose_read_executes_operator_owned_bounded_descendant_collection() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-descendant-collection")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_bounded_descendant_collection(
                 "user",
                 expanded_manager_schema(),
@@ -126,12 +132,15 @@ fn compose_read_executes_operator_owned_bounded_descendant_collection() {
 
 #[test]
 fn compose_read_denies_zero_depth_bounded_ancestor_walk() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-ancestor-zero-depth")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_bounded_ancestor_detail(
                 "user",
                 manager_schema(),
@@ -167,12 +176,15 @@ fn compose_read_denies_zero_depth_bounded_ancestor_walk() {
 
 #[test]
 fn compose_read_denies_zero_depth_bounded_descendant_walk() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-descendant-zero-depth")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_bounded_descendant_detail(
                 "user",
                 manager_schema(),
@@ -208,12 +220,15 @@ fn compose_read_denies_zero_depth_bounded_descendant_walk() {
 
 #[test]
 fn compose_read_denies_one_hop_bounded_descendant_walk() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-descendant-one-hop")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_bounded_descendant_detail(
                 "user",
                 manager_schema(),
@@ -250,12 +265,15 @@ fn compose_read_denies_one_hop_bounded_descendant_walk() {
 
 #[test]
 fn compose_read_denies_one_hop_bounded_ancestor_walk() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-ancestor-one-hop")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_bounded_ancestor_detail(
                 "user",
                 manager_schema(),

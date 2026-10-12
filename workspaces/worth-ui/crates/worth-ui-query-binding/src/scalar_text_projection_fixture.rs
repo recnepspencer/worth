@@ -12,55 +12,73 @@ use crate::{
 pub(crate) fn projection_workspace(
     supports_async_lifecycle: bool,
 ) -> worth_query::facade::runtime::WorthQueryWorkspace {
-    projection_runtime_builder(supports_async_lifecycle)
-        .workspace("worth-ui-scalar-text-projection")
-        .expect("scalar text Query workspace")
+    crate::certification::request_custody::with_bootstrap_request(|execution| {
+        projection_runtime_builder(supports_async_lifecycle)
+            .workspace(execution, "worth-ui-scalar-text-projection")
+            .expect("scalar text Query workspace")
+    })
 }
 
 pub(crate) fn remasked_projection_workspace() -> worth_query::facade::runtime::WorthQueryWorkspace {
-    projection_runtime_builder(true)
-        .remask_projection(
-            worth_query::facade::runtime::WorthQueryRuntimeRemaskProjection::remasked(
-                worth_query::facade::runtime::WorthQueryRuntimeRemaskReasonKind::PolicyDrift,
-                "policy:drifted",
-                "tenant-truth:stable",
-                "tenant-schema:stable",
-                "relationship-proof:verified",
-                "schema-context:worth-ui-projection",
-            ),
-        )
-        .workspace("worth-ui-remasked-scalar-text-projection")
-        .expect("remasked scalar text Query workspace")
+    crate::certification::request_custody::with_bootstrap_request(|execution| {
+        projection_runtime_builder(true)
+            .remask_projection(
+                worth_query::facade::runtime::WorthQueryRuntimeRemaskProjection::remasked(
+                    worth_query::facade::runtime::WorthQueryRuntimeRemaskReasonKind::PolicyDrift,
+                    "policy:drifted",
+                    "tenant-truth:stable",
+                    "tenant-schema:stable",
+                    "relationship-proof:verified",
+                    "schema-context:worth-ui-projection",
+                ),
+            )
+            .workspace(execution, "worth-ui-remasked-scalar-text-projection")
+            .expect("remasked scalar text Query workspace")
+    })
 }
 
 pub(crate) fn collection_projection_workspace() -> worth_query::facade::runtime::WorthQueryWorkspace
 {
-    collection_projection_workspace_builder(true)
-        .workspace("worth-ui-collection-text-projection")
-        .expect("collection text Query workspace")
+    crate::certification::request_custody::with_bootstrap_request(|execution| {
+        collection_projection_workspace_builder(true)
+            .workspace(execution, "worth-ui-collection-text-projection")
+            .expect("collection text Query workspace")
+    })
 }
 
 pub(crate) fn collection_projection_workspace_without_entity_lookup(
 ) -> worth_query::facade::runtime::WorthQueryWorkspace {
-    collection_projection_workspace_builder(true)
-        .without_collection_entity_lookup()
-        .workspace("worth-ui-collection-text-projection-without-entity-lookup")
-        .expect("collection text Query workspace without entity lookup")
+    crate::certification::request_custody::with_bootstrap_request(|execution| {
+        collection_projection_workspace_builder(true)
+            .without_collection_entity_lookup()
+            .workspace(
+                execution,
+                "worth-ui-collection-text-projection-without-entity-lookup",
+            )
+            .expect("collection text Query workspace without entity lookup")
+    })
 }
 
 pub(crate) fn collection_projection_workspace_without_dependency_impact(
 ) -> worth_query::facade::runtime::WorthQueryWorkspace {
-    collection_projection_workspace_builder(false)
-        .workspace("worth-ui-collection-text-projection-without-dependency-impact")
-        .expect("collection text Query workspace without dependency-impact support")
+    crate::certification::request_custody::with_bootstrap_request(|execution| {
+        collection_projection_workspace_builder(false)
+            .workspace(
+                execution,
+                "worth-ui-collection-text-projection-without-dependency-impact",
+            )
+            .expect("collection text Query workspace without dependency-impact support")
+    })
 }
 
 pub(crate) fn partial_collection_projection_workspace(
 ) -> worth_query::facade::runtime::WorthQueryWorkspace {
     let builder = collection_projection_support(projection_runtime_base_builder(), true);
-    crate::install_worth_ui_partial_collection_test_operation_executors(builder)
-        .workspace("worth-ui-partial-collection-text-projection")
-        .expect("partial collection text Query workspace")
+    crate::certification::request_custody::with_bootstrap_request(|execution| {
+        crate::install_worth_ui_partial_collection_test_operation_executors(builder)
+            .workspace(execution, "worth-ui-partial-collection-text-projection")
+            .expect("partial collection text Query workspace")
+    })
 }
 
 pub(crate) fn seeded_collection_projection_workspace(
@@ -151,11 +169,13 @@ pub(crate) fn seeded_collection_projection_workspace_with_item_keys(
     } else {
         builder.without_collection_entity_lookup()
     };
-    builder
-        .seed_collection_rows(identity_touch, seed_rows)
-        .expect("projection seed identities")
-        .workspace_with_seed_receipt("worth-ui-seeded-collection-text-projection")
-        .expect("seeded collection text Query workspace")
+    crate::certification::request_custody::with_bootstrap_request(|execution| {
+        builder
+            .seed_collection_rows(identity_touch, seed_rows)
+            .expect("projection seed identities")
+            .workspace_with_seed_receipt(execution, "worth-ui-seeded-collection-text-projection")
+            .expect("seeded collection text Query workspace")
+    })
 }
 
 fn collection_projection_workspace_builder(
@@ -245,32 +265,40 @@ pub(crate) fn insert_collection_status(
     status: &str,
 ) -> worth_query::facade::foundation::WorthQueryEntityIdentity {
     let receipt = workspace
-        .insert("WorthUiProjectionText", |entity| {
-            entity
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
-                        .expect("identity touch"),
-                    WorthQueryAuthoredAspectValue::string(identity),
-                )
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("query_text.status")
-                        .expect("projection status touch"),
-                    WorthQueryAuthoredAspectValue::string(status),
-                )
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("collection_item.status")
-                        .expect("collection status touch"),
-                    WorthQueryAuthoredAspectValue::string(status),
-                )
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("collection_item.key")
-                        .expect("application item-key touch"),
-                    WorthQueryAuthoredAspectValue::native(worth_foundational::AspectValue::UInt64(
-                        fixture_item_key(identity),
-                    )),
-                )
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .insert(execution, "WorthUiProjectionText", |entity| {
+                    entity
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
+                                .expect("identity touch"),
+                            WorthQueryAuthoredAspectValue::string(identity),
+                        )
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text("query_text.status")
+                                .expect("projection status touch"),
+                            WorthQueryAuthoredAspectValue::string(status),
+                        )
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text(
+                                "collection_item.status",
+                            )
+                            .expect("collection status touch"),
+                            WorthQueryAuthoredAspectValue::string(status),
+                        )
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text(
+                                "collection_item.key",
+                            )
+                            .expect("application item-key touch"),
+                            WorthQueryAuthoredAspectValue::native(
+                                worth_foundational::AspectValue::UInt64(fixture_item_key(identity)),
+                            ),
+                        )
+                })
+                .expect("projection text insertion")
         })
-        .expect("projection text insertion");
+        .expect("workspace host call opens");
     receipt.deltas()[0].entity_identity().clone()
 }
 
@@ -287,20 +315,26 @@ pub(crate) fn update_status(
     status: &str,
 ) {
     workspace
-        .update(entity, |record| {
-            record
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("query_text.status")
-                        .expect("projection status touch"),
-                    WorthQueryAuthoredAspectValue::string(status),
-                )
-                .set_aspect(
-                    WorthQueryAspectTouch::from_authoring_ingress_text("collection_item.status")
-                        .expect("collection status touch"),
-                    WorthQueryAuthoredAspectValue::string(status),
-                )
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .update(execution, entity, |record| {
+                    record
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text("query_text.status")
+                                .expect("projection status touch"),
+                            WorthQueryAuthoredAspectValue::string(status),
+                        )
+                        .set_aspect(
+                            WorthQueryAspectTouch::from_authoring_ingress_text(
+                                "collection_item.status",
+                            )
+                            .expect("collection status touch"),
+                            WorthQueryAuthoredAspectValue::string(status),
+                        )
+                })
+                .expect("projection text update")
         })
-        .expect("projection text update");
+        .expect("workspace host call opens");
 }
 
 pub(crate) fn update_identity(
@@ -309,12 +343,16 @@ pub(crate) fn update_identity(
     identity: &str,
 ) {
     workspace
-        .update(entity, |record| {
-            record.set_aspect(
-                WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
-                    .expect("identity touch"),
-                WorthQueryAuthoredAspectValue::string(identity),
-            )
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .update(execution, entity, |record| {
+                    record.set_aspect(
+                        WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
+                            .expect("identity touch"),
+                        WorthQueryAuthoredAspectValue::string(identity),
+                    )
+                })
+                .expect("projection identity update")
         })
-        .expect("projection identity update");
+        .expect("workspace host call opens");
 }

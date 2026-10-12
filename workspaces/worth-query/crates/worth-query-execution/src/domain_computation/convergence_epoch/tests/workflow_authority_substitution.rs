@@ -83,7 +83,7 @@ fn foreign_workflow_run_is_denied_and_each_rightful_world_still_completes() {
 }
 
 fn admit_and_complete(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     runtime: WorthQueryExecutionRuntime,
     operation: WorthQueryExecutionBoundOperationAuthority,
@@ -100,6 +100,9 @@ fn admit_and_complete(
         Ok(epoch) => epoch,
         Err(_) => panic!("rightful workflow authority must start"),
     };
+
+    let installed_fixture_phase = epoch.fixture_phase(execution);
+    let execution = &installed_fixture_phase;
     let started = match epoch.begin_stage_iteration(
         execution,
         WORKFLOW_STAGE,

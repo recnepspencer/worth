@@ -1,25 +1,34 @@
 use super::super::support::*;
 
-fn task_edge_runtime() -> WorthQueryRuntime {
-    stateful_bridge_task_edge_runtime()
+fn task_edge_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_task_edge_runtime(request_execution)
 }
 
 #[test]
 fn ordinary_batch_does_not_claim_graph_composition_evidence() {
-    let mut workspace = task_edge_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_edge_runtime(request_execution)
         .workspace("tasks.graph-composition-ordinary-batch")
         .expect("runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-ordinary-batch-tasks", |q| {
-            q.from("Task")
-                .select([identity_id_field_key(), title_value_field_key()])
-                .order_by(title_value_field_key())
-                .schema_basis("tasks-graph-composition-ordinary-batch-tasks")
-        })
+        .live_view(
+            request_execution,
+            "tasks.graph-composition-ordinary-batch-tasks",
+            |q| {
+                q.from("Task")
+                    .select([identity_id_field_key(), title_value_field_key()])
+                    .order_by(title_value_field_key())
+                    .schema_basis("tasks-graph-composition-ordinary-batch-tasks")
+            },
+        )
         .expect("task live view should declare");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch.insert("Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
@@ -32,7 +41,9 @@ fn ordinary_batch_does_not_claim_graph_composition_evidence() {
             })
         })
         .expect("ordinary batch should execute");
-    let inspection = workspace.inspect(&receipt).expect("receipt should inspect");
+    let inspection = workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect");
 
     assert!(receipt.graph_composition_program().is_none());
     assert!(receipt.graph_composition_lifecycle_outcomes().is_none());
@@ -49,11 +60,15 @@ fn ordinary_batch_does_not_claim_graph_composition_evidence() {
 
 #[test]
 fn reconstructed_graph_composition_receipt_without_breadth_fails_closed() {
-    let mut workspace = task_edge_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_edge_runtime(request_execution)
         .workspace("tasks.graph-composition-reconstructed-boundary")
         .expect("runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
         .live_view(
+            request_execution,
             "tasks.graph-composition-reconstructed-boundary-tasks",
             |q| {
                 q.from("Task")
@@ -65,6 +80,7 @@ fn reconstructed_graph_composition_receipt_without_breadth_fails_closed() {
         .expect("task live view should declare");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
         .live_view(
+            request_execution,
             "tasks.graph-composition-reconstructed-boundary-edges",
             |q| {
                 q.from("TaskEdge")
@@ -88,7 +104,7 @@ fn reconstructed_graph_composition_receipt_without_breadth_fails_closed() {
         .expect("edge live view should declare");
 
     let composed = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let draft = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
@@ -117,7 +133,7 @@ fn reconstructed_graph_composition_receipt_without_breadth_fails_closed() {
         WorthQueryBatchWriteReceipt::from_write_receipts(composed.write_receipts().to_vec())
             .expect("reconstructing from component receipts should succeed");
     let inspection = workspace
-        .inspect(&reconstructed)
+        .inspect(request_execution, &reconstructed)
         .expect("reconstructed receipt should inspect");
 
     assert!(reconstructed.graph_composition_program().is_none());

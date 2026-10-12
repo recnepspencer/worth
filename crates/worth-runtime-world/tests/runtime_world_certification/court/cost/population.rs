@@ -60,7 +60,11 @@ pub(super) fn child(
     head
 }
 impl Population {
-    pub fn build(axis: Axis, size: usize) -> Self {
+    pub fn build(
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        axis: Axis,
+        size: usize,
+    ) -> Self {
         let court = CompositeSupplyChainCourt::compile();
         let root = court.bootstrap();
         let mut population = Self {
@@ -102,14 +106,18 @@ impl Population {
                     // Retained history keeps each distinct exact Relational
                     // pin live. H co-varies with U; B returns to one.
                 }
-                Axis::A => population
-                    .attempts
-                    .push(population.court.prepare_cargo(&population.root, "5")),
+                Axis::A => population.attempts.push(population.court.prepare_cargo(
+                    request_execution,
+                    &population.root,
+                    "5",
+                )),
                 Axis::P => {
                     let head = child(&population.court, &population.root, &name, true, false);
-                    population
-                        .partials
-                        .push(population.court.partial_after_relational(&head));
+                    population.partials.push(
+                        population
+                            .court
+                            .partial_after_relational(request_execution, &head),
+                    );
                     population.branches.push(head);
                 }
                 Axis::O => population

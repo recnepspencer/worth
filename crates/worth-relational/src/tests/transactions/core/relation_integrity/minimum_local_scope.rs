@@ -4,20 +4,28 @@ use crate::transactions::data::{CreatedEntityRef, CreatedRelationRef, EntityRefe
 
 #[test]
 fn adding_an_edge_does_not_rejudge_an_unchanged_neighbor_with_partial_counts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = commit_source_min_one_runtime();
     let (entities, _) = seed_graph(
+        execution,
         &runtime,
         &["source", "target"],
         &[("ss", 0, 0), ("tt", 1, 1)],
     );
 
-    create_relation(&runtime, entities[0], entities[1], "new-edge");
+    create_relation(execution, &runtime, entities[0], entities[1], "new-edge");
 }
 
 #[test]
 fn deleting_one_edge_preserves_a_survivors_other_outgoing_edges() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = commit_source_min_one_runtime();
     let (_, relations) = seed_graph(
+        execution,
         &runtime,
         &["source", "removed-target", "neighbor"],
         &[
@@ -41,18 +49,19 @@ fn deleting_one_edge_preserves_a_survivors_other_outgoing_edges() {
     .expect("stage one relation deletion");
 
     let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("source retains another edge");
     release_test_commit_snapshot(&runtime, &outcome);
 }
 
 #[test]
 fn deleting_an_endpoint_preserves_a_survivors_other_outgoing_edges() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = commit_source_min_one_runtime();
     let (entities, _) = seed_graph(
+        execution,
         &runtime,
         &["source", "removed", "remaining"],
         &[
@@ -76,18 +85,19 @@ fn deleting_an_endpoint_preserves_a_survivors_other_outgoing_edges() {
     .expect("stage endpoint deletion");
 
     let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("survivor retains another edge");
     release_test_commit_snapshot(&runtime, &outcome);
 }
 
 #[test]
 fn deleting_an_endpoint_preserves_a_survivors_unchanged_incoming_edges() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = commit_target_min_one_runtime();
     let (entities, _) = seed_graph(
+        execution,
         &runtime,
         &["source", "removed", "incoming-source"],
         &[
@@ -111,18 +121,19 @@ fn deleting_an_endpoint_preserves_a_survivors_unchanged_incoming_edges() {
     .expect("stage endpoint deletion");
 
     let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("survivor retains incoming edge");
     release_test_commit_snapshot(&runtime, &outcome);
 }
 
 #[test]
 fn deleting_the_only_incoming_edge_and_its_target_does_not_recheck_the_deleted_target() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = commit_target_min_one_runtime();
     let (entities, relations) = seed_graph(
+        execution,
         &runtime,
         &["survivor", "removed"],
         &[("survivor-loop", 0, 0), ("removed-edge", 0, 1)],
@@ -149,18 +160,19 @@ fn deleting_the_only_incoming_edge_and_its_target_does_not_recheck_the_deleted_t
     .expect("stage the relation and target deletion together");
 
     let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the deleted target has no remaining minimum");
     release_test_commit_snapshot(&runtime, &outcome);
 }
 
 #[test]
 fn deleting_the_only_incoming_edge_without_its_target_denies_the_target_minimum() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = commit_target_min_one_runtime();
     let (_, relations) = seed_graph(
+        execution,
         &runtime,
         &["survivor", "retained-target"],
         &[("survivor-loop", 0, 0), ("removed-edge", 0, 1)],
@@ -179,10 +191,7 @@ fn deleting_the_only_incoming_edge_without_its_target_denies_the_target_minimum(
     .expect("stage the relation deletion without the target deletion");
 
     let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("the retained target still requires an incoming edge");
     assert!(matches!(
         error,
@@ -194,6 +203,7 @@ fn deleting_the_only_incoming_edge_without_its_target_denies_the_target_minimum(
 }
 
 fn seed_graph(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     names: &[&str],
     edges: &[(&str, usize, usize)],
@@ -246,10 +256,7 @@ fn seed_graph(
     )
     .expect("stage valid graph");
     let outcome = txn
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("seed valid minimum graph");
     let entities = created_entities
         .iter()

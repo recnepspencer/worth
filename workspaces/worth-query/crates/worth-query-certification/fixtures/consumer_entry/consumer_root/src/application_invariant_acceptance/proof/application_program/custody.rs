@@ -152,11 +152,16 @@ pub(super) fn close_before_required_output_start_is_typed(
     .expect("the program application authenticates its principal");
     let branch = world
         .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the test branch is available");
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .branches()
+                .fork(world.application.current_world())
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the test branch is available")
+        })
+        .expect("installed host call opens");
     let request = world
         .application
         .request(&principal, &scope)
@@ -168,7 +173,7 @@ pub(super) fn close_before_required_output_start_is_typed(
             .prepared_required_output_source_count_for_test(),
         1
     );
-    let pending_cleanup = match world.application.on_branch(branch).close() {
+    let pending_cleanup = match world.application.with_host_advancement(|host_phase| world.application.on_branch(branch).close(&host_phase)).expect("installed host call opens") {
         Ok(_) => None,
         Err(worth_query_host::facade::primary_graph::WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending(
             failure,

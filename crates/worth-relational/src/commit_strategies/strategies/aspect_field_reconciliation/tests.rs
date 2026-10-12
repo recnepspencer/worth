@@ -68,12 +68,15 @@ fn replicas_patch_target() -> AspectFieldLocator {
 
 #[test]
 fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = AspectFieldReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(701),
     );
     let runtime = strategy_runtime(descriptor, registry_with_replicas_field());
-    let entity = create_entity(&runtime, "before");
-    crate::tests::support::update_entity(&runtime, entity, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
+    crate::tests::support::update_entity(request_execution, &runtime, entity, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -96,7 +99,7 @@ fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output = AspectFieldReconciliationOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");
@@ -123,11 +126,14 @@ fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
 
 #[test]
 fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = AspectFieldReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(703),
     );
     let runtime = strategy_runtime(descriptor, registry_with_replicas_field());
-    let entity = create_entity(&runtime, "stable");
+    let entity = create_entity(request_execution, &runtime, "stable");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -152,7 +158,7 @@ fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches()
     let snapshot = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     let output = AspectFieldReconciliationOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");
@@ -163,6 +169,9 @@ fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches()
 
 #[test]
 fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = AspectFieldReconciliationStrategy::descriptor(
         crate::commit_strategies::data::CommitStrategyId(702),
     );
@@ -179,7 +188,7 @@ fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
     }
     .build_registry();
     let runtime = strategy_runtime(descriptor, registry);
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -202,17 +211,26 @@ fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
     let snapshot = runtime.visibility_authority().snapshot();
     let error = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, execution)
         .expect_err("undeclared aspect field should be rejected");
 
     match error {
         crate::commit_strategies::StrategyExecutionError::ExecutorFailed { failure, .. } => {
-            assert_eq!(failure.class, StrategyExecutorFailureClass::DomainRejection);
-            assert!(failure.detail.contains(
+            let crate::commit_strategies::data::StrategyExecutorFailure::Domain {
+                class,
+                detail,
+                evidence,
+                ..
+            } = failure
+            else {
+                panic!("unexpected request stop: {failure:?}")
+            };
+            assert_eq!(class, StrategyExecutorFailureClass::DomainRejection);
+            assert!(detail.contains(
                 "aspect field locator is not a lowered foundational scalar entity aspect"
             ));
             assert_eq!(
-                failure.evidence,
+                evidence,
                 Some(StrategyExecutorFailureEvidence::AspectFieldLocator {
                     locator: field_locator(
                         crate::tests::support::aspect_key("replicas"),

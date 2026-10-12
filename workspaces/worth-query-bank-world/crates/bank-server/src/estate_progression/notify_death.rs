@@ -85,6 +85,7 @@ impl BankIdentityRuntime {
 
     pub(crate) fn admit_notification_operation(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         request: &WorthQueryRequestScope,
@@ -98,10 +99,10 @@ impl BankIdentityRuntime {
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
         let selected = self
-            .select_current_product()
+            .select_current_product(phase)
             .map_err(BankEstateProgressionDenial::from_product_selection)?;
         let access = selected
-            .admit_capability_access(principal.query(), &capability, action, request)
+            .admit_capability_access(phase, principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let operation = self
             .application_runtime()
@@ -109,7 +110,7 @@ impl BankIdentityRuntime {
             .installed_operation(NotifyDeathEstateOperation::reference())
             .map_err(BankEstateProgressionDenial::from_operation_installation)?;
         self.application_runtime()
-            .authorize_capability_operation(
+            .authorize_capability_operation(phase,
                 access,
                 &operation,
                 TypedMutationPreconditions::<

@@ -26,6 +26,7 @@ pub(super) fn execute_live_initial_read<
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     mut plan: crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan<
         '_, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope,
@@ -35,7 +36,7 @@ pub(super) fn execute_live_initial_read<
 where
     Schema: ApplicationSchema,
 {
-    refresh_governed_authorization(application, &mut plan)
+    refresh_governed_authorization(execution, application, &mut plan)
         .map_err(|denial| open_read_denial(denial, subject))?;
     application.runtime.primary_graph().ok_or_else(|| {
         open_denial(
@@ -44,8 +45,10 @@ where
         )
     })?;
     let ((scope_identity, initial_read_work), _, read_proof) =
-        execute_authorized_read(application, &plan, read_scope_identity)
-            .map_err(|denial| open_read_denial(denial, subject))?;
+        execute_authorized_read(execution, application, &plan, |runtime, layout, plan| {
+            read_scope_identity(execution, runtime, layout, plan)
+        })
+        .map_err(|denial| open_read_denial(denial, subject))?;
     let governance = plan.take_governance();
     let basis_release = plan.basis.release();
     if !basis_release.released() {

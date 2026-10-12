@@ -79,11 +79,18 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
 
     pub fn select(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         entry: &WorthQueryProductHistoryEntry<'_>,
     ) -> Result<
         WorthQuerySelectedProductOperation<'runtime, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
+        let phase_request = match phase.execution_request_for(&self.application.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(WorthQueryProductBranchAdmissionDenial::ForeignPhase),
+        };
+        let execution = &phase_request;
+
         let expected = self
             .history
             .commits()
@@ -96,7 +103,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
             .application
             .product_runtime
             .admit_product_history_entry(&self.history, entry.index)?;
-        self.application.on_product(product)
+        self.application.on_product(execution, product)
     }
 }
 

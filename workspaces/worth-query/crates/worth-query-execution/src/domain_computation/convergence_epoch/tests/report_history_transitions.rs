@@ -156,7 +156,7 @@ fn prepared_clear_commit_empties_incumbents_but_installs_the_report() {
 }
 
 fn run_history(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,
@@ -190,23 +190,31 @@ fn run_history(
 }
 
 fn advance(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     epoch: WorthQueryIteratingDirectConvergenceEpoch,
     call_identity: &str,
 ) -> WorthQueryDirectConvergenceIterationOutcome {
-    let started = epoch
-        .begin_iteration(
-            execution,
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_iteration(
+            &installed_fixture_phase,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
                 call_identity,
             ),
         )
-        .unwrap_or_else(|_| panic!("report history iteration must start"));
-    match started.advance(execution) {
-        WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("report history provider must complete in one step"),
+    }
+    .unwrap_or_else(|_| panic!("report history iteration must start"));
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("report history provider must complete in one step"),
+        }
     }
 }
 

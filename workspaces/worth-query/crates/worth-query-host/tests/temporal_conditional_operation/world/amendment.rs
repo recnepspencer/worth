@@ -36,17 +36,22 @@ impl CourtroomWorld {
     #[allow(dead_code)] // Shared by the certification crate's invalidation targets.
     pub fn intent_record_identity(&self) -> primary_graph::RelationalBridgeRecordIdentityParts {
         self.application
-            .on_branch(self.application.current_world())
-            .select()
-            .expect("the selected product branch remains admitted")
-            .resolve_entity(
-                IntentIdentityField::reference(),
-                "intent-1".to_string(),
-                &request_scope(),
-                primary_graph::WorthQueryPrincipalResolutionMode::Certification,
-            )
-            .expect("the courtroom intent must remain exactly resolvable")
-            .relational_record_identity_parts()
+            .with_host_advancement(|phase| {
+                self.application
+                    .on_branch(self.application.current_world())
+                    .select(&phase)
+                    .expect("the selected product branch remains admitted")
+                    .resolve_entity(
+                        &phase,
+                        IntentIdentityField::reference(),
+                        "intent-1".to_string(),
+                        &request_scope(),
+                        primary_graph::WorthQueryPrincipalResolutionMode::Certification,
+                    )
+                    .expect("the courtroom intent must remain exactly resolvable")
+                    .relational_record_identity_parts()
+            })
+            .expect("installed host call opens")
     }
 
     pub fn supersede_intent(
@@ -116,7 +121,12 @@ impl CourtroomWorld {
         input: &str,
         amendment_ordinal: u8,
     ) -> primary_graph::WorthQueryApplicationCommitOutcome {
-        let selected = self.application.on_branch(branch).select().unwrap();
+        let selected = self
+            .application
+            .with_host_advancement(|phase| {
+                self.application.on_branch(branch).select(&phase).unwrap()
+            })
+            .expect("installed host call opens");
         self.compare_amendment_program(
             selected,
             2,
@@ -167,7 +177,12 @@ impl CourtroomWorld {
         width: AmendmentWidth,
         amendment_ordinal: u8,
     ) -> primary_graph::WorthQueryApplicationCommitOutcome {
-        let selected = self.application.on_branch(branch).select().unwrap();
+        let selected = self
+            .application
+            .with_host_advancement(|phase| {
+                self.application.on_branch(branch).select(&phase).unwrap()
+            })
+            .expect("installed host call opens");
         self.compare_amendment_program(
             selected,
             revision,
@@ -199,38 +214,59 @@ impl CourtroomWorld {
         let request = request_scope();
         let external = block_on(authentication.authenticate((), &request)).unwrap();
         let branch = selected.product().product_branch();
-        let principal = selected
-            .resolve_authenticated_principal(
-                &principal_binding,
-                &external,
-                &request,
-                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        let intent = selected
-            .resolve_entity(
-                IntentIdentityField::reference(),
-                "intent-1".to_string(),
-                &request,
-                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
+        let principal = self
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .resolve_authenticated_principal(
+                        &phase,
+                        &principal_binding,
+                        &external,
+                        &request,
+                        primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
+        let intent = self
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .resolve_entity(
+                        &phase,
+                        IntentIdentityField::reference(),
+                        "intent-1".to_string(),
+                        &request,
+                        primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         let operation = schema
             .installed_operation(AmendTemporal::reference())
             .unwrap();
-        let admission = selected
-            .authorize_operation(
-                &principal,
-                &intent,
-                &operation,
-                Default::default(),
-                &request,
-            )
-            .unwrap();
+        let admission = self
+            .application
+            .with_host_advancement(|phase| {
+                selected
+                    .authorize_operation(
+                        &phase,
+                        &principal,
+                        &intent,
+                        &operation,
+                        Default::default(),
+                        &request,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         let (_, projection, _) = self
+            .application
+            .with_host_advancement(|phase| {
+                self
             .invariant
             .project_admitted_operation(
-                &admission,
+                &phase, &admission,
                 |reader, scope| {
                     reader
                         .decision_field(scope, IntentRevisionField::reference())
@@ -251,21 +287,28 @@ impl CourtroomWorld {
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap()
-            .into_parts();
+            .into_parts()
+            })
+            .expect("installed host call opens");
         let reads = self
             .application
+            .with_host_advancement(|phase| {
+                self
+            .application
             .begin_projected_application_read_attempt(
-                admission,
+                &phase, admission,
                 projection,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
-            .unwrap();
-        let mut effects = reads
+            .unwrap()
+            })
+            .expect("installed host call opens");
+        let mut effects = self.application.with_host_advancement(|phase| reads
             .complete_projected_dependencies(
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                &phase, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap()
-            .begin_effect_program();
+            .begin_effect_program()).expect("installed host call opens");
         let intent = effects.existing_entity(&intent).unwrap();
         if matches!(width, AmendmentWidth::Full) {
             effects

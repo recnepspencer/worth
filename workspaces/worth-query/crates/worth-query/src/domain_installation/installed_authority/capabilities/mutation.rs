@@ -64,6 +64,7 @@ pub struct WorthQueryInstalledDomainMutationRequest<D> {
 impl<D: 'static> WorthQueryInstalledDomainMutationRequest<D> {
     pub fn run(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<
         WorthQueryInstalledDomainMutationOutcome,
@@ -79,7 +80,7 @@ impl<D: 'static> WorthQueryInstalledDomainMutationRequest<D> {
                 )
             },
         )?;
-        Ok(match self.request.run(workspace) {
+        Ok(match self.request.run(execution, workspace) {
             WorthQueryMutationOutcome::Completed(completion) => {
                 let receipt = WorthQueryInstalledDomainExecutionReceipt::new(
                     self.witness,

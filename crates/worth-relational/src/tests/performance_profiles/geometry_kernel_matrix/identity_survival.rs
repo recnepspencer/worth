@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_topology_identity_survival_recovery_round_trip(suite: &'static str) {
+pub(super) fn certify_topology_identity_survival_recovery_round_trip(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let topology_identity_samples = capture_perf_samples(
         suite,
         "topology_identity_survival_recovery_round_trip",
@@ -8,7 +11,7 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(suite: &'st
             let runtime = persisted_runtime_with_test_schema_profile(
                 RelationalRuntimeProfile::GeometryKernel,
             );
-            let created = create_entity_outcome(&runtime, "topology-source");
+            let created = create_entity_outcome(execution, &runtime, "topology-source");
             let entity = changed_entities(&created)[0];
             let start_lineage = runtime
                 .lineage_access()
@@ -17,7 +20,7 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(suite: &'st
                 .lineage_id;
 
             let update_started_at = Instant::now();
-            let replacement = update_entity(&runtime, entity, "topology-source-updated");
+            let replacement = update_entity(execution, &runtime, entity, "topology-source-updated");
             let update_commit_micros = update_started_at.elapsed().as_micros();
             let replaced_entity = changed_entities(&replacement)[0];
             let replacement_lineage = runtime
@@ -56,7 +59,7 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(suite: &'st
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
-                .recover(plan)
+                .recover(execution, plan)
                 .expect("geometry topology recovery");
             let recover_micros = recover_started_at.elapsed().as_micros();
 

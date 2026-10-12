@@ -26,11 +26,16 @@ where
     /// no signature claim and keeps the actual dispatch proof in every result.
     pub(in crate::domain_computation::primary_graph) fn publish_installed_transport_completion(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         evidence: Arc<InstalledTransportCompletion>,
         request: &WorthQueryRequestScope,
     ) -> Outcome {
+        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => return Outcome::Denied(evidence, Denial::ExecutionDenied(cause.into())),
+        };
         let owner = evidence.committed();
         let original = owner.committed_product_publication();
         let incarnation = original.product_incarnation();
@@ -86,6 +91,7 @@ where
             Arc::clone(&evidence),
             self.primary_provider
                 .prepare_installed_transport_completion_candidate(
+                    execution,
                     lease.relational_basis(),
                     owner,
                     evidence.dispatch(),
@@ -111,11 +117,7 @@ where
         let correlation = *owner.record().correlation();
         self.primary_provider
             .mark_inbound_completion_publication_pending(&correlation);
-        match prepared.execute(
-            phase
-                .execution_request_for(&self.product_runtime)
-                .expect("private progression uses its admitted runtime phase"),
-        ) {
+        match prepared.execute(publication_execution) {
             RuntimeWorldPublicationOutcome::Performed(performed) => {
                 Outcome::Performed(PerformedInstalledTransportCompletion::new(
                     evidence,

@@ -11,12 +11,13 @@ use super::schema_snapshot::merge_schema_snapshot;
 use super::summaries::{merge_ancestry_summary, merge_request_summary};
 
 pub(crate) fn materialize_planning_artifact(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     plan: LoweredMergePlan,
 ) -> MergePlanningArtifactCore {
     let target_view = runtime
         .read_truth()
-        .read_version(plan.basis.target_head.version_id);
+        .read_version(execution, plan.basis.target_head.version_id);
     let schema_snapshot = merge_schema_snapshot(
         &runtime.runtime_config().schema.registry,
         plan.source_records.as_ref(),

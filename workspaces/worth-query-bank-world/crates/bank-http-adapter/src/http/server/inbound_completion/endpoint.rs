@@ -103,6 +103,17 @@ pub(in crate::http::server) async fn receive(
 fn status(denial: WorthQueryInboundAdmissionDenial) -> StatusCode {
     use WorthQueryInboundAdmissionDenial as Denial;
     match denial {
+        Denial::ExecutionDenied(cause) => {
+            use worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial as Cause;
+            match cause {
+                Cause::Resource(worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase) => StatusCode::INTERNAL_SERVER_ERROR,
+                Cause::Resource(_) => StatusCode::TOO_MANY_REQUESTS,
+                Cause::Interrupted(_) => StatusCode::SERVICE_UNAVAILABLE,
+                Cause::NestedOpening
+                | Cause::NestedStopped
+                | Cause::Panicked => StatusCode::INTERNAL_SERVER_ERROR,
+            }
+        }
         Denial::Oversized => StatusCode::PAYLOAD_TOO_LARGE,
         Denial::Verification(_) | Denial::Expired | Denial::ValidityWindowExceeded => {
             StatusCode::UNAUTHORIZED
@@ -147,6 +158,7 @@ fn owner_read_status(read: WorthQueryCommittedDispatchOutboxReadDenial) -> Statu
         | Read::ActiveSnapshotCapacityExhausted { .. } => StatusCode::SERVICE_UNAVAILABLE,
         Read::Missing => StatusCode::CONFLICT,
         Read::SnapshotIdentityExhausted
+        | Read::ForeignPhase
         | Read::ForeignRuntime
         | Read::AmbiguousCorrelation
         | Read::WrongRecordKind

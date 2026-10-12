@@ -49,20 +49,22 @@ impl WorthServerQueryWorkspaceProvider for StreamingDatasetWorkspaceProvider {
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        let workspace_id = request
-            .resolved_request_context()
-            .request_context()
-            .workspace_target()
-            .workspace_id();
-        let resources = worth_query::facade::consumer_kit::in_memory_test_product_world_resources();
-        let (product_source, product_bridge) =
-            worth_query::facade::consumer_kit::in_memory_test_product_world_installation(
-                &resources,
-            )
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
-            })?;
-        let mut workspace = WorthQueryRuntime::builder(resources)
+        crate::test_execution_policy::with_bootstrap(|request_execution| {
+            let workspace_id = request
+                .resolved_request_context()
+                .request_context()
+                .workspace_target()
+                .workspace_id();
+            let resources =
+                worth_query::facade::consumer_kit::in_memory_test_product_world_resources();
+            let (product_source, product_bridge) =
+                worth_query::facade::consumer_kit::in_memory_test_product_world_installation(
+                    &resources,
+                )
+                .map_err(|error| {
+                    WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
+                })?;
+            let mut workspace = WorthQueryRuntime::builder(resources)
             .backend(StreamingDatasetRuntimeBackend::new(
                 self.row_count,
                 self.payload_width,
@@ -73,7 +75,7 @@ impl WorthServerQueryWorkspaceProvider for StreamingDatasetWorkspaceProvider {
                 worth_query::facade::runtime::WorthQueryConditionalExecutionResources::development(
                 ),
             )
-            .build()
+            .build(request_execution)
             .map_err(|error| {
                 WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
             })?
@@ -81,8 +83,9 @@ impl WorthServerQueryWorkspaceProvider for StreamingDatasetWorkspaceProvider {
             .map_err(|error| {
                 WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
             })?;
-        install_requested_named_read(&mut workspace, request)?;
-        Ok(workspace)
+            install_requested_named_read(request_execution, &mut workspace, request)?;
+            Ok(workspace)
+        })
     }
 }
 
@@ -117,15 +120,16 @@ impl worth_query::facade::runtime::WorthQueryMergeSnapshotOwner for StreamingDat
 impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
     fn prepare_product_source(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_query::facade::runtime::WorthQueryProductRelationalInstallation,
         worth_query::facade::runtime::WorthQueryProductSourceDenial,
     > {
         let branch = self
             .product_source
-            .with_runtime(|runtime| runtime.main_branch_identity());
+            .with_runtime(request_execution, |runtime| runtime.main_branch_identity());
         self.product_source
-            .prepare_product_source(&branch)
+            .prepare_product_source(request_execution, &branch)
             .map_err(worth_query::facade::runtime::WorthQueryProductSourceDenial::Basis)
     }
 
@@ -157,6 +161,7 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
 
     fn write(
         &mut self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _command: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         panic!("phase four streaming runtime does not write")
@@ -164,6 +169,7 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
 
     fn write_batch(
         &mut self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _commands: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
         panic!("phase four streaming runtime does not write batches")
@@ -171,6 +177,7 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
 
     fn execute_intent(
         &mut self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError> {
         panic!("phase four streaming runtime does not execute generic intents")
@@ -178,6 +185,7 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
 
     fn live_entities_for_target(
         &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         (0..self.row_count)
@@ -218,7 +226,10 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
         Vec::new()
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
             worth_runtime_bridge::facade::TruthSnapshotIdentity::from_relational_snapshot(
                 RelationalBridgeSnapshotIdentityParts::new(1, 1),
@@ -271,6 +282,7 @@ fn field_path(path: &str) -> CanonicalFieldPath {
 }
 
 fn install_requested_named_read(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     request: &WorthServerQueryWorkspaceBindingRequest,
 ) -> Result<(), WorthServerQueryWorkspaceBindingError> {
@@ -280,7 +292,7 @@ fn install_requested_named_read(
         return Ok(());
     };
     workspace
-        .live_view::<Value>(binding_label, |q| {
+        .live_view::<Value>(request_execution, binding_label, |q| {
             q.from("User")
                 .select([
                     aspect_field_key("identity", "id"),

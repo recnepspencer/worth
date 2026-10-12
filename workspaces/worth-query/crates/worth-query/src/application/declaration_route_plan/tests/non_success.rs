@@ -10,7 +10,10 @@ use super::domain::{
 
 #[test]
 fn required_intent_is_a_typed_denial() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.plan_routes_checked(route_input(
         &handle,
@@ -31,7 +34,10 @@ fn required_intent_is_a_typed_denial() {
 
 #[test]
 fn forbidden_intent_is_a_typed_denial() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
     let progressed = progressed(&handle, RouteInput::<ForbiddenIntentFamily>::new("edge:42"));
     let evidence = handle
         .describe_foundational(
@@ -61,8 +67,11 @@ fn forbidden_intent_is_a_typed_denial() {
 
 #[test]
 fn route_planning_rejects_mismatched_admitted_world_inputs() {
-    let primary = admitted_handle("primary");
-    let alternate = admitted_handle("alternate");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let primary = admitted_handle(request_execution, "primary");
+    let alternate = admitted_handle(request_execution, "alternate");
     let primary_progressed = progressed(
         &primary,
         RouteInput::<RelationalRouteFamily>::new("edge:42"),
@@ -92,7 +101,10 @@ fn route_planning_rejects_mismatched_admitted_world_inputs() {
 
 #[test]
 fn deferred_and_failed_paths_remain_typed() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     assert!(matches!(
         handle.plan_routes_checked(route_input(

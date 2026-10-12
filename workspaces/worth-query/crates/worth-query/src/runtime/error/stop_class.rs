@@ -41,6 +41,8 @@ pub enum WorthQueryRuntimeDeclarationFailureKind {
 
 #[derive(Clone, Copy, Debug)]
 pub enum WorthQueryStopClass<'a> {
+    Advancement { denial: &'a worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial },
+    ForeignPhase { denial: &'a worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase },
     InstalledDomainAuthorityDenied {
         denial: &'a crate::domain_installation::WorthQueryDomainHandleDenial,
     },

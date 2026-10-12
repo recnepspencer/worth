@@ -80,6 +80,7 @@ fn authorize_provider_commit<'run, 'a, 'provider, Schema, Operation, Input, Scop
 }
 
 fn resolve_authorized_provider_commit<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     authorized: WorthQueryAuthorizedProviderCommit<'_, '_, '_, Schema, Operation, Input, Scope>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionOutcome
@@ -93,6 +94,7 @@ where
         dispatch_outbox,
     } = authorized;
     let proof = match authority.authorization.authorize_application_commit(
+        execution,
         authority.application(),
         authority.admission(),
         authority.coordination(),
@@ -105,6 +107,7 @@ where
     };
     match proof.govern(candidate, |candidate| {
         resolve_idempotency_under_authority(
+            execution,
             candidate,
             authority,
             dispatch_outbox,
@@ -120,6 +123,7 @@ where
 }
 
 pub(super) fn authorize_and_resolve_provider_commit<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     candidate: crate::domain_computation::WorthQueryInvariantApprovedProposedState<'_>,
     authority: &super::WorthQueryApplicationCommitProgressionAuthority<
         '_,
@@ -139,12 +143,14 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     resolve_authorized_provider_commit(
+        execution,
         authorize_provider_commit(candidate, authority, dispatch_outbox),
         allocation_policy,
     )
 }
 
 fn resolve_idempotency_under_authority<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     candidate: crate::domain_computation::WorthQueryInvariantApprovedProposedState<'_>,
     authority: &super::WorthQueryApplicationCommitProgressionAuthority<
         '_,
@@ -165,15 +171,15 @@ where
     let provider_session = candidate.provider_session_terminal_binding();
     match authority
         .provider()
-        .resolve_application_idempotency(&provider_session)
+        .resolve_application_idempotency(execution, &provider_session)
     {
         Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
             let control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(
                 authority.admission().publication_request(), allocation_policy,
             );
-            finish_authorized_compare(
+            finish_authorized_compare(execution,
             candidate.compare_and_commit_with(control.policy(), |read_authority, fresh| {
-                authority.provider().recompare_application_read_set(
+                authority.provider().recompare_application_read_set(execution,
                     read_authority, fresh,
                     crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
                         control.policy(), Some(authority.admission().publication_request()),

@@ -11,6 +11,7 @@ use super::seed_catalog::FintechCaseSeed;
 use super::{FintechWorkflowCase, LEDGER_PARTITION, MARKET_PARTITION, RISK_PARTITION};
 
 pub(super) fn seed_relations(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
     seeded: &SeededEntityState,
@@ -18,6 +19,7 @@ pub(super) fn seed_relations(
 ) -> Vec<RelationId> {
     let mut relations = Vec::new();
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "desk-book",
         LEDGER_PARTITION,
@@ -42,6 +44,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "trade-account",
         LEDGER_PARTITION,
@@ -54,6 +57,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "trade-book",
         LEDGER_PARTITION,
@@ -66,6 +70,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "trade-counterparty",
         LEDGER_PARTITION,
@@ -78,6 +83,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "trade-settlement",
         LEDGER_PARTITION,
@@ -90,6 +96,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "settlement-cash-event",
         LEDGER_PARTITION,
@@ -102,6 +109,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "trade-audit-record",
         LEDGER_PARTITION,
@@ -114,6 +122,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "trade-instrument",
         MARKET_PARTITION,
@@ -126,6 +135,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "trade-market",
         MARKET_PARTITION,
@@ -138,6 +148,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "trade-risk",
         RISK_PARTITION,
@@ -150,6 +161,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "risk-limit",
         RISK_PARTITION,
@@ -162,6 +174,7 @@ pub(super) fn seed_relations(
         }),
     ));
     relations.extend(bulk_create_relations(
+        execution,
         runtime,
         "limit-breach",
         RISK_PARTITION,
@@ -177,6 +190,7 @@ pub(super) fn seed_relations(
 }
 
 pub(super) fn bulk_create_relations<I>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     batch_name: &str,
     partition_id: PartitionId,
@@ -210,13 +224,7 @@ where
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    changed_relations(
-        &txn.commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap(),
-    )
+    changed_relations(&txn.commit(execution, runtime).unwrap())
 }
 
 fn relation_role_patch(role: &str) -> AspectFieldPatch {

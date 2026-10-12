@@ -26,30 +26,36 @@ fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
 
 #[test]
 fn checkpoint_restore_preserves_exact_field_revision() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "same");
+    let created = create_entity_outcome(execution, &runtime, "same");
     let entity = changed_entities(&created)[0];
     let name = locator("name", "name");
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap()
-        .entity_field_revision(entity, &name)
+        .entity_field_revision(execution, entity, &name)
         .expect("created field has a native owner revision");
     runtime.durability_authority().checkpoint().unwrap();
     let recovery = runtime
         .durability()
         .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
     let mut recovered = runtime_with_test_schema();
-    let outcome = recovered.durability_recovery().recover(recovery).unwrap();
+    let outcome = recovered
+        .durability_recovery()
+        .recover(execution, recovery)
+        .unwrap();
     assert_eq!(outcome.coverage.checkpoint_commits, 1);
     let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".to_owned()));
     assert_eq!(
         recovered
             .read_truth()
-            .project_snapshot(&snapshot)
+            .project_snapshot(&snapshot, execution)
             .unwrap()
-            .entity_field_revision(entity, &name),
+            .entity_field_revision(execution, entity, &name),
         Some(before)
     );
     recovered.snapshots().release_snapshot(&snapshot).unwrap();
@@ -60,15 +66,15 @@ fn checkpoint_restore_preserves_exact_field_revision() {
     let mut reopened = runtime_with_test_schema();
     reopened
         .durability_recovery()
-        .recover(second_recovery)
+        .recover(execution, second_recovery)
         .unwrap();
     let reopened_snapshot = snapshot_for_owner_branch(&reopened, &BranchId("main".to_owned()));
     assert_eq!(
         reopened
             .read_truth()
-            .project_snapshot(&reopened_snapshot)
+            .project_snapshot(&reopened_snapshot, execution)
             .unwrap()
-            .entity_field_revision(entity, &name),
+            .entity_field_revision(execution, entity, &name),
         Some(before)
     );
     reopened
@@ -80,6 +86,9 @@ fn checkpoint_restore_preserves_exact_field_revision() {
 
 #[test]
 fn checkpoint_restore_preserves_relation_field_revision() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = || {
         AspectSchemaFixture {
             relation_aspects: vec![relation_field_aspect(
@@ -91,9 +100,10 @@ fn checkpoint_restore_preserves_relation_field_revision() {
         .build_runtime()
     };
     let runtime = fixture();
-    let source = create_entity_outcome(&runtime, "source");
-    let target = create_entity_outcome(&runtime, "target");
+    let source = create_entity_outcome(execution, &runtime, "source");
+    let target = create_entity_outcome(execution, &runtime, "target");
     let created = create_relation_outcome(
+        execution,
         &runtime,
         changed_entities(&source)[0],
         changed_entities(&target)[0],
@@ -103,9 +113,9 @@ fn checkpoint_restore_preserves_relation_field_revision() {
     let label = locator("label", "label");
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap()
-        .relation_field_revision(relation, &label)
+        .relation_field_revision(execution, relation, &label)
         .unwrap();
     assert_eq!(before.presence(), RelationalFieldPresence::Present);
 
@@ -114,14 +124,17 @@ fn checkpoint_restore_preserves_relation_field_revision() {
         .durability()
         .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
     let mut recovered = fixture();
-    recovered.durability_recovery().recover(recovery).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, recovery)
+        .unwrap();
     let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".to_owned()));
     assert_eq!(
         recovered
             .read_truth()
-            .project_snapshot(&snapshot)
+            .project_snapshot(&snapshot, execution)
             .unwrap()
-            .relation_field_revision(relation, &label),
+            .relation_field_revision(execution, relation, &label),
         Some(before)
     );
     recovered.snapshots().release_snapshot(&snapshot).unwrap();
@@ -132,6 +145,9 @@ fn checkpoint_restore_preserves_relation_field_revision() {
 
 #[test]
 fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
     let contract = binding.contract.clone();
     let fixture = || {
@@ -160,18 +176,13 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let created = create
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = create.commit(execution, &runtime).unwrap();
     let entity = changed_entities(&created)[0];
     let prior_branch = create_branch_from_main(&runtime, "field-prior");
     let title = locator("summary", "title");
     let status = locator("summary", "status");
-    let initial_title = field_at(&runtime, &created.snapshot, entity, &title).unwrap();
-    let initial_absent = field_at(&runtime, &created.snapshot, entity, &status).unwrap();
+    let initial_title = field_at(execution, &runtime, &created.snapshot, entity, &title).unwrap();
+    let initial_absent = field_at(execution, &runtime, &created.snapshot, entity, &status).unwrap();
     assert_eq!(initial_absent.presence(), RelationalFieldPresence::Absent);
 
     let mut set = test_owner_begin_transaction_for_main(&runtime);
@@ -189,13 +200,9 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    let present = set
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let present_revision = field_at(&runtime, &present.snapshot, entity, &status).unwrap();
+    let present = set.commit(execution, &runtime).unwrap();
+    let present_revision =
+        field_at(execution, &runtime, &present.snapshot, entity, &status).unwrap();
     assert_eq!(
         present_revision.presence(),
         RelationalFieldPresence::Present
@@ -221,17 +228,13 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let absent_again = clear
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let final_absent = field_at(&runtime, &absent_again.snapshot, entity, &status).unwrap();
+    let absent_again = clear.commit(execution, &runtime).unwrap();
+    let final_absent =
+        field_at(execution, &runtime, &absent_again.snapshot, entity, &status).unwrap();
     assert_eq!(final_absent.presence(), RelationalFieldPresence::Absent);
     assert_ne!(initial_absent, final_absent);
     assert_eq!(
-        field_at(&runtime, &absent_again.snapshot, entity, &title),
+        field_at(execution, &runtime, &absent_again.snapshot, entity, &title),
         Some(initial_title)
     );
 
@@ -240,7 +243,10 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
         .durability()
         .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
     let mut recovered = fixture();
-    recovered.durability_recovery().recover(recovery).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, recovery)
+        .unwrap();
     for (branch, expected) in [
         (prior_branch, initial_absent),
         (present_branch, present_revision),
@@ -248,11 +254,11 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
     ] {
         let snapshot = snapshot_for_owner_branch(&recovered, &branch);
         assert_eq!(
-            field_at(&recovered, &snapshot, entity, &status),
+            field_at(execution, &recovered, &snapshot, entity, &status),
             Some(expected)
         );
         assert_eq!(
-            field_at(&recovered, &snapshot, entity, &title),
+            field_at(execution, &recovered, &snapshot, entity, &title),
             Some(initial_title)
         );
         recovered.snapshots().release_snapshot(&snapshot).unwrap();
@@ -264,8 +270,11 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
 
 #[test]
 fn checkpoint_restore_rejects_incomplete_field_revision_column() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "same");
+    let created = create_entity_outcome(execution, &runtime, "same");
     runtime.durability_authority().checkpoint().unwrap();
     let mut recovery = runtime
         .durability()
@@ -287,14 +296,16 @@ fn checkpoint_restore_rejects_incomplete_field_revision_column() {
     let mut recovered = runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(recovery)
+        .recover(execution, recovery)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("field revision length"), "{error:?}");
     release_test_commit_snapshot(&runtime, &created);
 }
 
 fn field_at(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,
@@ -302,6 +313,6 @@ fn field_at(
 ) -> Option<RelationalFieldRevision> {
     runtime
         .read_truth()
-        .project_snapshot(snapshot)?
-        .entity_field_revision(entity, locator)
+        .project_snapshot(snapshot, execution)?
+        .entity_field_revision(execution, entity, locator)
 }

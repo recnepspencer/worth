@@ -100,11 +100,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     let request = world.application.request(&principal, &scope);
     let branch = world
         .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .branches()
+                .fork(world.application.current_world())
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let wrong_branch = world
         .application
         .request(&principal, &scope)
@@ -122,7 +127,16 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             .prepared_required_output_source_count_for_test(),
         1
     );
-    world.application.on_branch(branch).close().unwrap();
+    world
+        .application
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .on_branch(branch)
+                .close(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     world
         .application
         .delay_next_output_readiness_delivery_for_test();
@@ -187,15 +201,19 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         0
     );
     assert_eq!(
-        fresh_request
-            .at_commit(&receipt, NonZeroUsize::new(128).unwrap())
-            .unwrap()
-            .query(PlanarRead {
-                body_key: "anchor-a".to_owned()
-            })
-            .execute()
-            .unwrap()
-            .rows()[0]
+        world
+            .application
+            .with_host_advancement(|host_phase| fresh_request
+                .at_commit(&host_phase, &receipt, NonZeroUsize::new(128).unwrap())
+                .unwrap()
+                .query(PlanarRead {
+                    body_key: "anchor-a".to_owned()
+                })
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .clone())
+            .expect("installed host call opens")
             .y,
         length(2)
     );

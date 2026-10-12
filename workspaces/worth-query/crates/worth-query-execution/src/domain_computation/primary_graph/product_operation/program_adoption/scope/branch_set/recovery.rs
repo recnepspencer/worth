@@ -240,14 +240,27 @@ impl WorthQueryPreparedBranchSetAdoption {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn recover_branch_set_adoption(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryBranchSetAdoptionRecovery,
         request: &WorthQueryRequestScope,
     ) -> Result<
         WorthQueryBranchSetAdoptionRecoveryOutcome,
         WorthQueryBranchSetAdoptionRecoveryFailure,
     > {
+        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(_) => {
+                return Err(
+                    WorthQueryBranchSetAdoptionRecoveryFailure::ProductSelection {
+                        denial: WorthQueryProductBranchAdmissionDenial::ForeignPhase,
+                        recovery,
+                    },
+                )
+            }
+        };
+        let execution = &phase_request;
         let (branch, mut adoption, recovery) = recovery.into_parts();
-        let selected = match self.on_branch(branch).select() {
+        let selected = match self.on_branch(branch).select_with_request(execution) {
             Ok(selected) => selected,
             Err(denial) => {
                 return Err(
@@ -260,7 +273,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 )
             }
         };
-        match selected.recover_branch_adoption(recovery, request) {
+        match selected.recover_branch_adoption_in_advancement(phase, recovery, request) {
             Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed {
                 adoption: performed,
                 cleanup,

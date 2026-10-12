@@ -136,6 +136,7 @@ impl WorthUiOperationLiveRetention {
 
     pub(crate) fn refresh(
         &mut self,
+        execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
         reference: &WorthUiInstalledQueryBindingReference,
         workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
     ) -> Result<crate::WorthUiOperationLiveRefreshOutcome, crate::WorthUiOperationLiveRefreshError>
@@ -147,7 +148,7 @@ impl WorthUiOperationLiveRetention {
             .ok_or(crate::WorthUiOperationLiveRefreshError::Ui(
                 crate::WorthUiOperationLiveRefreshDenial::ResourceNotRetained,
             ))?;
-        resource.refresh(workspace)
+        resource.refresh(execution, workspace)
     }
 
     pub(crate) fn publish_staged(&mut self) -> crate::WorthUiCollectionChangePublicationReceipt {

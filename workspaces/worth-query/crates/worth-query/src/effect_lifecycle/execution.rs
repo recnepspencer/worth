@@ -13,16 +13,18 @@ use super::RelationalEffectExecutionFailure;
 impl LoweredEffectExecutionPlan {
     pub(crate) fn execute_with(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: EffectExecutionAuthority<'_>,
     ) -> Result<ExecutedEffectPlan, EffectExecutionStop> {
-        execute_lowered_effect_plan(self, authority)
+        execute_lowered_effect_plan(execution, self, authority)
     }
 
     pub fn execute_receipt_with(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut authority: EffectExecutionAuthority<'_>,
     ) -> Result<EffectExecutionReceipt, EffectExecutionStop> {
-        let executed = execute_lowered_effect_plan_with_authority(self, &mut authority)?;
+        let executed = execute_lowered_effect_plan_with_authority(execution, self, &mut authority)?;
         let receipt = executed.receipt();
         super::receipt_snapshot_release::release_scalar(&mut authority, &executed);
         Ok(receipt)
@@ -30,13 +32,15 @@ impl LoweredEffectExecutionPlan {
 }
 
 pub(crate) fn execute_lowered_effect_plan(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     lowered: LoweredEffectExecutionPlan,
     mut authority: EffectExecutionAuthority<'_>,
 ) -> Result<ExecutedEffectPlan, EffectExecutionStop> {
-    execute_lowered_effect_plan_with_authority(lowered, &mut authority)
+    execute_lowered_effect_plan_with_authority(execution, lowered, &mut authority)
 }
 
 pub(crate) fn execute_lowered_effect_plan_with_authority(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     lowered: LoweredEffectExecutionPlan,
     authority: &mut EffectExecutionAuthority<'_>,
 ) -> Result<ExecutedEffectPlan, EffectExecutionStop> {
@@ -56,7 +60,7 @@ pub(crate) fn execute_lowered_effect_plan_with_authority(
                     "lowered relational mutation execution requires a relational runtime authority",
                 ))
             })?;
-            let commit = execute_lowered_mutation(runtime, declaration)
+            let commit = execute_lowered_mutation(runtime, execution, declaration)
                 .map_err(|failure| lower_relational_stop(&lowered, failure))?;
             Ok(ExecutedEffectPlan::new(
                 lowered,
@@ -90,6 +94,7 @@ pub(crate) fn execute_lowered_effect_plan_with_authority(
                 .relational_runtime()
                 .expect("relational authority was checked above");
             let outcome = execute_lowered_merge(
+                execution,
                 runtime,
                 declaration,
                 MergeUniqueValueAuthority::NoApplicationSchema,

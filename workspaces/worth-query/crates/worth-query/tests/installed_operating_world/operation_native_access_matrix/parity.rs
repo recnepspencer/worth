@@ -8,8 +8,12 @@ use super::samples::{
 
 #[test]
 fn installed_native_access_preserves_every_foundational_family_and_absence_posture() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let expected_struct = matrix_value(0);
     let mut workspace = matrix_workspace_with_values(
+        request_execution,
         "installed-native-family-matrix",
         std::slice::from_ref(&expected_struct),
         false,

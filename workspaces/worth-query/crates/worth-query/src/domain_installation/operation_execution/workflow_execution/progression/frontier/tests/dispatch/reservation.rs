@@ -4,8 +4,11 @@ use super::*;
 use worth_execution::{ChargedBytes, ExecutionMap};
 use worth_foundational::PartitionIdentity;
 
-pub(super) fn start_reservation(probe: &phased_workflow::fold_executor::ComputeProbe) -> u64 {
-    let mut workspace = Policy::width(0).workspace(probe);
+pub(super) fn start_reservation(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    probe: &phased_workflow::fold_executor::ComputeProbe,
+) -> u64 {
+    let mut workspace = Policy::width(0).workspace(request_execution, probe);
     let run = start(&mut workspace);
     let declaration = run.prepare_frontier_computation(vec![(
         "start".into(),

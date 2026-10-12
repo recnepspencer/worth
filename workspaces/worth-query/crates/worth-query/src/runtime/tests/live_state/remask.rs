@@ -6,7 +6,10 @@ use crate::ordinary_outcome::{
 use crate::subscription::QuerySubscriptionDeliveryCauseKind;
 use worth_runtime_bridge::facade::{BridgeAsyncCompletionClass, BridgeAsyncCompletionState};
 
-fn remasked_runtime(projection: WorthQueryRuntimeRemaskProjection) -> WorthQueryRuntime {
+fn remasked_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    projection: WorthQueryRuntimeRemaskProjection,
+) -> WorthQueryRuntime {
     test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -17,15 +20,18 @@ fn remasked_runtime(projection: WorthQueryRuntimeRemaskProjection) -> WorthQuery
         .preview_basis(TestPreviewBasis)
         .inspector_evidence(TestInspectorEvidence)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("bridge-backed runtime should build")
 }
 
 fn inspect_live_view<T>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryRuntime,
     view: &WorthQueryLiveView<T>,
 ) -> WorthQueryLiveViewInspection {
-    let inspection = runtime.inspect(view).expect("inspection should succeed");
+    let inspection = runtime
+        .inspect(request_execution, view)
+        .expect("inspection should succeed");
     let WorthQueryInspection::LiveView(inspection) = inspection else {
         panic!("inspection should target the live-view surface");
     };
@@ -34,16 +40,27 @@ fn inspect_live_view<T>(
 
 #[test]
 fn runtime_remask_posture_projects_parity_across_state_and_inspection() {
-    let mut runtime = remasked_runtime(WorthQueryRuntimeRemaskProjection::remasked(
-        WorthQueryRuntimeRemaskReasonKind::PolicyDrift,
-        "policy:drifted",
-        "tenant-truth:stable",
-        "tenant-schema:stable",
-        "relationship-proof:verified",
-        "schema-context:task-table",
-    ));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = remasked_runtime(
+        request_execution,
+        WorthQueryRuntimeRemaskProjection::remasked(
+            WorthQueryRuntimeRemaskReasonKind::PolicyDrift,
+            "policy:drifted",
+            "tenant-truth:stable",
+            "tenant-schema:stable",
+            "relationship-proof:verified",
+            "schema-context:task-table",
+        ),
+    );
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.remask-policy", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.remask-policy",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
     runtime
         .emit_time_only_delivery(
@@ -67,11 +84,9 @@ fn runtime_remask_posture_projects_parity_across_state_and_inspection() {
         )
         .expect("async current state should project");
 
-    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-        &view, &runtime,
-    )
+    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view, request_execution, &runtime)
     .expect("state should snapshot");
-    let inspection = inspect_live_view(&runtime, &view);
+    let inspection = inspect_live_view(request_execution, &runtime, &view);
     let posture = state
         .ordinary_runtime_posture()
         .expect("ordinary posture should project");
@@ -108,6 +123,9 @@ fn runtime_remask_posture_projects_parity_across_state_and_inspection() {
 
 #[test]
 fn runtime_remask_denial_stays_typed_and_does_not_collapse_into_generic_async_failure() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (view_name, reason, expected_posture) in [
         (
             "tasks.remask-tenant-denied",
@@ -125,16 +143,24 @@ fn runtime_remask_denial_stays_typed_and_does_not_collapse_into_generic_async_fa
             WorthQueryOrdinaryRuntimeRemaskPostureKind::SchemaContextDrift,
         ),
     ] {
-        let mut runtime = remasked_runtime(WorthQueryRuntimeRemaskProjection::denied(
-            reason,
-            "policy:stable",
-            "tenant-truth:drifted",
-            "tenant-schema:drifted",
-            "relationship-proof:drifted",
-            "schema-context:drifted",
-        ));
+        let mut runtime = remasked_runtime(
+            request_execution,
+            WorthQueryRuntimeRemaskProjection::denied(
+                reason,
+                "policy:stable",
+                "tenant-truth:drifted",
+                "tenant-schema:drifted",
+                "relationship-proof:drifted",
+                "schema-context:drifted",
+            ),
+        );
         let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-            .declare_live_view(view_name, task_live_request(), task_schema())
+            .declare_live_view(
+                request_execution,
+                view_name,
+                task_live_request(),
+                task_schema(),
+            )
             .expect("live view should declare");
         let (basis_digest, generation_digest) =
             live_subscription_async_identity(&runtime, view.name());
@@ -151,11 +177,9 @@ fn runtime_remask_denial_stays_typed_and_does_not_collapse_into_generic_async_fa
             .expect("async current state should project");
 
         let state =
-            <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-                &view, &runtime,
-            )
+            <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view, request_execution, &runtime)
             .expect("state should snapshot");
-        let inspection = inspect_live_view(&runtime, &view);
+        let inspection = inspect_live_view(request_execution, &runtime, &view);
         let posture = state
             .ordinary_runtime_posture()
             .expect("ordinary posture should project");

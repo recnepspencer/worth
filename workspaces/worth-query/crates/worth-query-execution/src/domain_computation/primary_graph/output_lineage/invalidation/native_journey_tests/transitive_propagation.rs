@@ -4,9 +4,12 @@ use super::*;
 #[test]
 fn native_invalidation_marks_the_second_and_third_downstream_levels() {
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
+    world.application.with_host_advancement(|phase| {
+    let execution = phase.borrowed_request_for_test();
+    let selected = world.selected_product(&phase.test_host_request());
     let entity = selected
         .resolve_entity(
+            &phase,
             AccountStatus::reference(),
             "open".to_owned(),
             &live_scope(),
@@ -46,12 +49,12 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
             0,
         )
     });
-    handle.with_runtime_mut(|runtime| {
-        write_field(runtime, entity, status.clone(), "prime");
+    handle.with_runtime_mut(&execution, |runtime| {
+        write_field(&execution, runtime, entity, status.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         for (level, identity) in identities.iter().enumerate() {
             let facts: Arc<[_]> = if level == 0 {
-                Arc::from([field_fact(runtime, &before_handle, entity, status.clone())])
+                Arc::from([field_fact(&execution, runtime, &before_handle, entity, status.clone())])
             } else {
                 Arc::from([])
             };
@@ -65,7 +68,7 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
                 SourceSettlementCurrentness::Clean
             ));
         }
-        write_field(runtime, entity, status, "closed");
+        write_field(&execution, runtime, entity, status, "closed");
         let (after_handle, after) = snapshot(runtime);
         assert!(matches!(
             currentness(owner, &after, &identities[0]),
@@ -83,4 +86,5 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
             runtime.snapshots().release_snapshot(&selected).unwrap();
         }
     });
+    }).expect("the native fixture borrows its installed host phase");
 }

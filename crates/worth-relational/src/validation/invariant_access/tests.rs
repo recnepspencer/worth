@@ -106,9 +106,12 @@ fn independent_commit_boundary_evaluations_match_canonical_results() {
 
 #[test]
 fn commit_boundary_metadata_exposes_proof_boundary_summary_for_packet_backed_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = relation_integrity_runtime();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(3),
         merged_intents: vec![MutationIntent::Create(CreateIntent::Relation(
@@ -140,9 +143,12 @@ fn commit_boundary_metadata_exposes_proof_boundary_summary_for_packet_backed_exe
 
 #[test]
 fn commit_boundary_symmetry_failure_fields_localize_missing_twin_endpoints() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = relation_symmetry_runtime(SymmetryMode::PairedTwinRequired);
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(4),
         merged_intents: vec![MutationIntent::Create(CreateIntent::Relation(
@@ -192,10 +198,13 @@ fn commit_boundary_symmetry_failure_fields_localize_missing_twin_endpoints() {
 
 #[test]
 fn commit_boundary_cardinality_failure_fields_localize_nonmanifold_like_overflow() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = relation_cardinality_runtime();
-    let source = create_entity(&runtime, "source");
-    let target_a = create_entity(&runtime, "target-a");
-    let target_b = create_entity(&runtime, "target-b");
+    let source = create_entity(execution, &runtime, "source");
+    let target_a = create_entity(execution, &runtime, "target-a");
+    let target_b = create_entity(execution, &runtime, "target-b");
     let _accepted = {
         let mut txn = {
             let transaction_validation_input =
@@ -223,11 +232,7 @@ fn commit_boundary_cardinality_failure_fields_localize_nonmanifold_like_overflow
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
     let overflow_plan = MergedCommitPlan {
         transaction_id: TransactionId(5),

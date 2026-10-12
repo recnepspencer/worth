@@ -20,13 +20,18 @@ impl VisibilityProjectionView<'_> {
     /// list visits. No kind names or read records are materialized.
     pub fn exact_adjacency_structural_revision(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         anchor: EntityId,
         kind: KindId,
         direction: RelationalAdjacencyDirection,
     ) -> Result<Option<VersionId>, RelationalBorrowedRecordReadDenial> {
-        match self.exact_adjacency_structural_revision_admitted(anchor, kind, direction, |_| {
-            Ok::<(), std::convert::Infallible>(())
-        }) {
+        match self.exact_adjacency_structural_revision_admitted(
+            _execution,
+            anchor,
+            kind,
+            direction,
+            |_| Ok::<(), std::convert::Infallible>(()),
+        ) {
             Ok(result) => result,
             Err(never) => match never {},
         }
@@ -36,6 +41,7 @@ impl VisibilityProjectionView<'_> {
     /// adjacency trees. The unrestricted entry shares this authority core.
     pub fn exact_adjacency_structural_revision_admitted<Stop>(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         anchor: EntityId,
         kind: KindId,
         direction: RelationalAdjacencyDirection,
@@ -48,7 +54,7 @@ impl VisibilityProjectionView<'_> {
             return Ok(Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired));
         };
         admit(entity_work)?;
-        match self.with_exact_entity_state(anchor, |_, _| ()) {
+        match self.with_exact_entity_state(_execution, anchor, |_, _| ()) {
             Ok(Some(())) => {}
             Ok(None) => return Ok(Ok(None)),
             Err(denial) => return Ok(Err(denial)),
@@ -77,6 +83,7 @@ impl VisibilityProjectionView<'_> {
     /// exact pinned substrate. A refusing visitor stops before the next id.
     pub fn try_visit_adjacency_ids<Stop>(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         kind: KindId,
         direction: RelationalAdjacencyDirection,

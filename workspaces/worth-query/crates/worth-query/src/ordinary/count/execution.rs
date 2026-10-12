@@ -6,7 +6,11 @@ use crate::runtime::WorthQueryWorkspace;
 use super::{WorthQueryCountCompletion, WorthQueryCountOutcome, WorthQueryCountRequest};
 
 impl WorthQueryCountRequest {
-    pub fn run(self, workspace: &mut WorthQueryWorkspace) -> WorthQueryCountOutcome {
+    pub fn run(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workspace: &mut WorthQueryWorkspace,
+    ) -> WorthQueryCountOutcome {
         let (declaration, context) = self.into_parts();
         let intent = declaration.into_declared_intent();
         let journey_counters = WorthQueryReadJourneyCounters::begin_context_admission();
@@ -33,7 +37,8 @@ impl WorthQueryCountRequest {
         };
         let journey_counters = journey_counters.record_planning_completed();
         let journey_counters = journey_counters.record_lower_runtime_execution_attempt();
-        match workspace.execute_declared_count_graph_in_authority(read_graph, &authority) {
+        match workspace.execute_declared_count_graph_in_authority(execution, read_graph, &authority)
+        {
             Ok(result) => WorthQueryCountOutcome::Completed(WorthQueryCountCompletion::new(
                 result,
                 context_receipt,

@@ -107,7 +107,7 @@ fn exercise(
         "source dependency changes without changing the producer input value"
     );
     drop((before_input, after_input, changed_source));
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let settled = direct_demand_with_controls(
         &request,
         &application,
@@ -115,7 +115,7 @@ fn exercise(
         demand_controls,
         "edited source",
     );
-    let after = request.retain_read().unwrap();
+    let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     if expect_reuse {
         assert_eq!(
             settled.posture(),
@@ -169,7 +169,8 @@ fn exercise(
             )
             .expect("the successor edit invalidates the first stable alias");
         drop(successor);
-        let second_basis = request.retain_read().unwrap();
+        let second_basis =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let repeated = direct_demand_with_controls(
             &request,
             &application,
@@ -177,7 +178,8 @@ fn exercise(
             demand_controls,
             "repeated alias",
         );
-        let repeated_basis = request.retain_read().unwrap();
+        let repeated_basis =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         assert_eq!(
             repeated.posture(),
             WorthQueryOutputSettlementPosture::StableReused

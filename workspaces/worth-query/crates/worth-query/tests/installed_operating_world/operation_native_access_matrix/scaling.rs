@@ -8,9 +8,29 @@ const TARGET_FIELD: usize = 15;
 
 #[test]
 fn native_access_work_is_invariant_to_unrelated_rows_facts_views_and_domains() {
-    let baseline = run_case("installed-native-scale-baseline", 1, false, false);
-    let world_scaled = run_case("installed-native-scale-world-pressure", 64, false, true);
-    let scaled = run_case("installed-native-scale-pressure", 64, true, true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let baseline = run_case(
+        request_execution,
+        "installed-native-scale-baseline",
+        1,
+        false,
+        false,
+    );
+    let world_scaled = run_case(
+        request_execution,
+        "installed-native-scale-world-pressure",
+        64,
+        false,
+        true,
+    );
+    let scaled = run_case(
+        request_execution,
+        "installed-native-scale-pressure",
+        64,
+        true,
+        true,
+    );
 
     assert_eq!(baseline.journey, world_scaled.journey);
     assert_eq!(baseline.access, scaled.access);
@@ -52,6 +72,52 @@ fn native_access_work_is_invariant_to_unrelated_rows_facts_views_and_domains() {
     assert_eq!(scaled.binding.lane_shape_checks, 2);
 }
 
+#[test]
+fn native_key_access_is_constant_while_declared_width_is_charged() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    // The expanded case adds unrelated world content and declares more keys
+    // and rows. Each key still has its exact access and declaration prices.
+    let baseline = run_case(request_execution, "native-one-key", 1, false, false);
+    let expanded = run_case(request_execution, "native-all-keys", 64, true, true);
+    assert_eq!(baseline.declared_width, 1);
+    assert_eq!(expanded.declared_width, scalar_samples().len());
+    assert_eq!(baseline.access, expanded.access);
+    assert_eq!(baseline.resolution, expanded.resolution);
+    for case in [&baseline, &expanded] {
+        let one_route_per_key = case.declared_width;
+        let one_layout_check_per_key = case.declared_width;
+        assert_eq!(case.binding.declared_key_routes, one_route_per_key);
+        assert_eq!(
+            case.binding.declared_key_layout_checks,
+            one_layout_check_per_key
+        );
+        assert_eq!(
+            case.journey["query.native_binding.declared_key_routes"].0,
+            one_route_per_key as u64
+        );
+        assert_eq!(
+            case.journey["query.native_binding.declared_key_layout_checks"].0,
+            one_layout_check_per_key as u64
+        );
+        assert_eq!(case.binding.fact_scans, 0);
+        assert_eq!(case.binding.row_scans, 0);
+        assert_eq!(case.binding.path_parses, 0);
+        assert_eq!(case.binding.view_registry_inspections, 0);
+        assert_eq!(case.binding.domain_registry_inspections, 0);
+        assert_eq!(case.access.view_registry_inspections, 0);
+        assert_eq!(case.access.domain_registry_inspections, 0);
+        assert_eq!(case.resolution.key_scans, 0);
+        assert_eq!(case.resolution.path_matches, 0);
+        assert_eq!(case.resolution.path_parses, 0);
+        assert_eq!(case.indexed_accesses, case.declared_width);
+        assert_eq!(case.refinement_checks, case.declared_width);
+        let two_resolution_lookups_per_key = case.declared_width * 2;
+        assert_eq!(case.resolution_lookups, two_resolution_lookups_per_key);
+        assert_eq!(case.binding.lane_shape_checks, 2);
+    }
+}
+
 #[derive(Debug)]
 struct CaseCounters {
     journey: std::collections::BTreeMap<
@@ -67,10 +133,16 @@ struct CaseCounters {
     resolution_lookups: usize,
 }
 
-fn run_case(name: &str, rows: usize, unrelated_facts: bool, unrelated_world: bool) -> CaseCounters {
-    let mut workspace = matrix_workspace(name, rows, unrelated_world);
+fn run_case(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+    rows: usize,
+    unrelated_facts: bool,
+    unrelated_world: bool,
+) -> CaseCounters {
+    let mut workspace = matrix_workspace(request_execution, name, rows, unrelated_world);
     let unrelated_views = if unrelated_world {
-        install_unrelated_views(&mut workspace, name)
+        install_unrelated_views(request_execution, &mut workspace, name)
     } else {
         Default::default()
     };
@@ -197,6 +269,7 @@ fn assert_constant_access(counters: domain::WorthQueryNativeAccessCounters) {
 }
 
 fn install_unrelated_views(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut runtime::WorthQueryWorkspace,
     prefix: &str,
 ) -> Vec<runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape>> {
@@ -208,6 +281,7 @@ fn install_unrelated_views(
         let identity_field = worth_foundational::facade::FieldKey::new("id").unwrap();
         let view = workspace
             .live_view::<runtime::WorthQueryUnrefinedLiveShape>(
+                request_execution,
                 format!("{prefix}.unrelated-view-{index}"),
                 |view| {
                     view.from(COLLECTION)

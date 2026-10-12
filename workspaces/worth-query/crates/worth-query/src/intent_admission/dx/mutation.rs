@@ -25,22 +25,29 @@ impl<'a> WorthQueryRuntimeWriteIntentAuthoring<'a> {
 
     pub fn review(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryRuntimeWriteIntentAdmissionReview<'a>, WorthQueryRuntimeError> {
         let review = self
             .runtime
-            .review_authoritative_runtime_write(self.command)?;
+            .review_authoritative_runtime_write(request_execution, self.command)?;
         Ok(WorthQueryRuntimeWriteIntentAdmissionReview {
             runtime: self.runtime,
             review,
         })
     }
 
-    pub fn admit(self) -> Result<WorthQueryAdmittedRuntimeWriteIntent<'a>, WorthQueryRuntimeError> {
-        self.review()?.admit()
+    pub fn admit(
+        self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryAdmittedRuntimeWriteIntent<'a>, WorthQueryRuntimeError> {
+        self.review(request_execution)?.admit()
     }
 
-    pub fn execute(self) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
+        self.admit(execution)?.execute(execution)
     }
 }
 
@@ -97,8 +104,11 @@ impl<'a> WorthQueryRuntimeWriteIntentAdmissionReview<'a> {
         })
     }
 
-    pub fn execute(self) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -130,8 +140,11 @@ impl<'a> WorthQueryAdmittedRuntimeWriteIntent<'a> {
         &self.execution_binding
     }
 
-    pub fn execute(self) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         self.runtime
-            .execute_authoritative_mutation_execution_binding(self.execution_binding)
+            .execute_authoritative_mutation_execution_binding(execution, self.execution_binding)
     }
 }

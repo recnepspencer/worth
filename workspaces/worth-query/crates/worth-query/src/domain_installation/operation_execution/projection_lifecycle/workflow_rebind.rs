@@ -75,6 +75,7 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundWorkflowProject
 
     pub fn rebind_with(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: WorthQueryCurrentWorkflowProjection<D, O, F, L>,
         witness: WorthQueryRebindWitness,
         workspace: &mut WorthQueryWorkspace,
@@ -86,6 +87,7 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundWorkflowProject
                 .take()
                 .expect("host call retains its projection before admission");
             current.rebind_with_in_advancement(
+                request_execution,
                 phase
                     .execution_request_for(&owner)
                     .expect("the opener lent this owner its phase"),
@@ -112,6 +114,7 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundWorkflowProject
 
     fn rebind_with_in_advancement(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         candidate: WorthQueryCurrentWorkflowProjection<D, O, F, L>,
         witness: WorthQueryRebindWitness,
@@ -153,6 +156,7 @@ impl<D: 'static, O, F, L: BasisOperationLane> WorthQueryLiveBoundWorkflowProject
             }
         };
         let admitted = match open_transition_successor(
+            request_execution,
             execution,
             candidate,
             workspace,

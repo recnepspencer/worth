@@ -6,6 +6,7 @@ use crate::domain_computation::{
 };
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression) fn assert_second_real_overlay_is_rejected(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     registered: WorthQueryRegisteredProviderAttempt<'_>,
     world: &AuthorizationWorld,
 ) {
@@ -25,7 +26,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
         .expect("real registered facts must produce a decision read set");
     let fresh = match staged
         .read_authority()
-        .compare_decision_read_set(receipt)
+        .compare_decision_read_set(execution, receipt)
         .expect("real registered facts must compare")
     {
         WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) => fresh,

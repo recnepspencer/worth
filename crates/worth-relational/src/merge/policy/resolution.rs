@@ -21,6 +21,7 @@ use super::value_strategy::{
 };
 
 pub(super) fn resolve_policy_scope(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     causal_plan: CausallyAnnotatedMergePlan,
 ) -> Result<PolicyResolvedMergePlan, MergePlanningError> {
@@ -32,13 +33,13 @@ pub(super) fn resolve_policy_scope(
         })?;
     let source_view = runtime
         .read_truth()
-        .read_version(causal_plan.basis.source_head.version_id);
+        .read_version(execution, causal_plan.basis.source_head.version_id);
     let target_view = runtime
         .read_truth()
-        .read_version(causal_plan.basis.target_head.version_id);
+        .read_version(execution, causal_plan.basis.target_head.version_id);
     let base_view = runtime
         .read_truth()
-        .read_version(base_envelope.commit.version_id);
+        .read_version(execution, base_envelope.commit.version_id);
     let source_view_index = PolicyReadViewIndex::new(&source_view);
     let target_view_index = PolicyReadViewIndex::new(&target_view);
     let base_view_index = PolicyReadViewIndex::new(&base_view);
@@ -97,7 +98,7 @@ pub(super) fn resolve_policy_scope(
                         .version_id;
                     record_base_views
                         .entry(base_commit_id)
-                        .or_insert_with(|| runtime.read_truth().read_version(version_id))
+                        .or_insert_with(|| runtime.read_truth().read_version(execution, version_id))
                 };
             let record_base_view_index =
                 if base_commit_id == causal_plan.basis.merge_base.commit.commit_id {

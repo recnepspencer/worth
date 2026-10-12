@@ -8,7 +8,11 @@ use super::execution::{admitted_receipt, evidence, inspection};
 
 #[test]
 fn honest_evidence_keeps_payload_in_its_owner_and_narrows_all_derived_copies() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let receipt = admitted_receipt(
+        request_execution,
         "domain-evidence-honest",
         EvidenceScenario::Honest,
         domain::WorthQueryArtifactRedactionPosture::NotRequired,
@@ -160,7 +164,11 @@ fn assert_certification_bundle(
 
 #[test]
 fn provider_omission_preserves_mandatory_search_and_loss_meaning() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let receipt = admitted_receipt(
+        request_execution,
         "domain-evidence-provider-omission",
         EvidenceScenario::OmitSidecars,
         domain::WorthQueryArtifactRedactionPosture::NotRequired,

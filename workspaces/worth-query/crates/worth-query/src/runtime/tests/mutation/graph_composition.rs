@@ -1,16 +1,21 @@
 use super::super::support::*;
 
-fn task_edge_runtime() -> WorthQueryRuntime {
-    stateful_bridge_task_edge_runtime()
+fn task_edge_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_task_edge_runtime(request_execution)
 }
 
 #[test]
 fn compose_graph_preserves_symbolic_resolution_and_mixed_edge_meaning() {
-    let mut workspace = task_edge_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_edge_runtime(request_execution)
         .workspace("tasks.graph-composition")
         .expect("runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-tasks", |q| {
+        .live_view(request_execution, "tasks.graph-composition-tasks", |q| {
             q.from("Task")
                 .select([identity_id_field_key(), title_value_field_key()])
                 .order_by(title_value_field_key())
@@ -18,7 +23,7 @@ fn compose_graph_preserves_symbolic_resolution_and_mixed_edge_meaning() {
         })
         .expect("task live view should declare");
     let edges: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.graph-composition-edges", |q| {
+        .live_view(request_execution, "tasks.graph-composition-edges", |q| {
             q.from("TaskEdge")
                 .select([
                     edge_kind_field_key(),
@@ -39,7 +44,7 @@ fn compose_graph_preserves_symbolic_resolution_and_mixed_edge_meaning() {
         .expect("edge live view should declare");
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let draft = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
@@ -67,8 +72,10 @@ fn compose_graph_preserves_symbolic_resolution_and_mixed_edge_meaning() {
     let draft_identity = receipt.write_receipts()[0].deltas()[0]
         .entity_identity
         .clone();
-    let edge_rows = workspace.read(&edges);
-    let inspection = workspace.inspect(&receipt).expect("receipt should inspect");
+    let edge_rows = workspace.read(request_execution, &edges);
+    let inspection = workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect");
 
     assert_eq!(receipt.write_receipts().len(), 2);
     assert_eq!(receipt.batch_mutation_evidence().component_count(), 2);

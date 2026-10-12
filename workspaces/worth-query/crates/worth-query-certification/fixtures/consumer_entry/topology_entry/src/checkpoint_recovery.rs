@@ -109,86 +109,8 @@ impl ApplicationProgramDefinition<CheckpointSchema> for CheckpointProgram {
     }
 }
 
-#[test]
-fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after_source_change() {
-    let _guard = checkpoint_recovery_test_guard();
-    super::producer::reset_provider_contacts();
-    let application = install(None);
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let settled = settle(&request, &application);
-    assert!(settled.work().producer_contact_count() > 0);
-    assert!(super::producer::provider_contacts() > 0);
-    drop(settled);
-    drop(principal);
-    drop(scope);
-
-    let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("the ready output is checkpointable");
-    drop(application);
-
-    super::producer::reset_provider_contacts();
-    let restored = install(Some(checkpoint));
-    let (scope, principal) = authenticate(&restored);
-    let request = restored.request(&principal, &scope);
-    let restored_settlement = settle(&request, &restored);
-    assert_eq!(restored_settlement.work().producer_contact_count(), 0);
-    assert_eq!(restored_settlement.work().delivery_contact_count(), 0);
-    assert_eq!(restored_settlement.work().derived_publication_count(), 0);
-    assert_eq!(super::producer::provider_contacts(), 0);
-    let retained = request
-        .retain_read()
-        .expect("the recovered root is observable");
-    request
-        .at(&retained)
-        .require_current_program_output(&restored_settlement, NonZeroUsize::new(4_096).unwrap())
-        .expect("the restored settlement is current at its recovered source");
-
-    let repeated_restored_settlement = settle(&request, &restored);
-    assert_eq!(
-        repeated_restored_settlement.work().producer_contact_count(),
-        0
-    );
-    assert_eq!(super::producer::provider_contacts(), 0);
-    drop(repeated_restored_settlement);
-
-    let observed = request
-        .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
-        })
-        .execute()
-        .expect("the recovered source is readable");
-    request
-        .mutate(PlanarSourceAdjustment {
-            scope_key: "anchor-a".to_owned(),
-            replacement_y: length(3),
-        })
-        .expect_source(observed.observed_sources()[0].clone())
-        .idempotency(&77_u64)
-        .execute_performed::<CheckpointProgram, CheckpointRoot>(
-            &restored,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the recovered source accepts a fresh edit");
-    let current = request
-        .retain_read()
-        .expect("the edited root is observable");
-    assert!(matches!(
-        request.at(&current).require_current_program_output(
-            &restored_settlement,
-            NonZeroUsize::new(4_096).unwrap(),
-        ),
-        Err(WorthQueryProgramOutputCurrentnessDenial::Output(denial))
-            if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
-    ));
-    drop(restored_settlement);
-
-    super::producer::reset_provider_contacts();
-    let recomputed = settle(&request, &restored);
-    assert!(recomputed.work().producer_contact_count() > 0);
-    assert!(super::producer::provider_contacts() > 0);
-}
+#[path = "checkpoint_recovery/checkpoint_reopens_ready_output_without_producer_contact_and_rec.rs"]
+mod checkpoint_reopens_ready_output_without_producer_contact_and_rec;
 
 #[test]
 fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact() {
@@ -200,8 +122,12 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("the ready output is checkpointable");
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .expect("the ready output is checkpointable")
+        })
+        .expect("installed host call opens");
     drop(application);
 
     let restored = install(Some(checkpoint));
@@ -243,8 +169,12 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("the ready output is checkpointable");
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .expect("the ready output is checkpointable")
+        })
+        .expect("installed host call opens");
     drop(application);
 
     let restored = install(Some(checkpoint));
@@ -286,8 +216,12 @@ fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("both parameter partitions are checkpointable");
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .expect("both parameter partitions are checkpointable")
+        })
+        .expect("installed host call opens");
     drop(application);
 
     super::producer::reset_provider_contacts();
@@ -379,3 +313,5 @@ mod advancement_custody;
 mod advancement_bootstrap;
 
 mod advancement_discovered;
+
+mod native_commit_work;

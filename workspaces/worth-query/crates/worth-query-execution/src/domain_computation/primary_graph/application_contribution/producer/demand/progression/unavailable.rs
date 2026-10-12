@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation::primary_graph) fn finish_unavailable_output_demand<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         prepared: &WorthQueryPreparedRequiredOutputSource,
@@ -47,6 +48,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         // Same exact query/request-affinity and installed-edition owner as advance;
         // validation consumes disclosure only and never enters producer execution.
         validate_disclosure(
+            execution,
             self,
             demand,
             principal,

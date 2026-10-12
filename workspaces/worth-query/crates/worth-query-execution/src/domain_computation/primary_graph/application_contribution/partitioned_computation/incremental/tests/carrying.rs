@@ -177,37 +177,46 @@ fn declared_cost(world: &AuthorizationWorld) -> (u64, u64) {
         Ok::<_, ()>(())
     };
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(TouchAccountOperation::reference())
-        .unwrap();
-    let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
     world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |_, root| {
-                application_computation_input_digest::<Input, _, _>(root, &mut declare).unwrap();
-                Ok::<_, ()>(())
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts()
-        .0
-        .unwrap();
+        .application
+        .with_application_advancement(&request, |phase| {
+            let custody = phase.test_host_request();
+            let principal = authenticated_principal(&custody, world, &request);
+            let account = resolved_account(&custody, world, "open", &request);
+            let operation = world
+                .application
+                .installed_schema()
+                .installed_operation(TouchAccountOperation::reference())
+                .unwrap();
+            let admission = world
+                .selected_product(&custody)
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap();
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |_, root| {
+                        application_computation_input_digest::<Input, _, _>(root, &mut declare)
+                            .unwrap();
+                        Ok::<_, ()>(())
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts()
+                .0
+                .unwrap();
+        })
+        .expect("the declaration reader owns its host call");
     for n in 1..=4 {
         application_computation_item_digest(&Number(n), &mut declare).unwrap();
         application_computation_partition_identity(&Parity(n % 2), &mut declare).unwrap();

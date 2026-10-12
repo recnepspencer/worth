@@ -23,6 +23,9 @@ impl Drop for Restore {
 }
 #[test]
 fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmission() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     use std::num::NonZeroUsize;
     bound(None);
@@ -31,16 +34,16 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let _restore = Restore(place(placement), bound(None));
         let (yielded, bridge, runtime) = host
             .run_provider_fixture(|phase| {
-                let bootstrap = phase.bootstrap_for_test();
-                readmission_direct::yielded_direct(&phase, bootstrap.execution_request())
+                readmission_direct::yielded_direct(&phase.test_host_request(), resource_request)
             })
             .unwrap();
         let mut direct = Some(yielded);
         let (yielded, workflow_bridge, workflow_runtime, _) = host
             .run_provider_fixture(|phase| {
-                let bootstrap = phase.bootstrap_for_test();
+                let fixture_custody = phase.test_host_request();
+                let bootstrap = fixture_custody.bootstrap_for_test();
                 readmission_workflow::yielded_workflow(
-                    &phase,
+                    &phase.test_host_request(),
                     yield_fixture::YieldProvider::installed(5),
                     bootstrap.execution_request(),
                 )
@@ -56,20 +59,17 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
             let before = restores();
             let direct_stop = host
                 .run_provider_fixture(|phase| {
-                    direct
-                        .take()
-                        .unwrap()
-                        .readmit_same_runtime(&phase, &runtime, &bridge)
+                    let yielded = direct.take().unwrap();
+                    let installed = yielded.fixture_phase(&phase.test_host_request());
+                    yielded.readmit_same_runtime(&installed, &runtime, &bridge)
                 })
                 .err()
                 .expect("zero request refuses before direct restore");
             let workflow_stop = host
                 .run_provider_fixture(|phase| {
-                    workflow.take().unwrap().readmit_same_runtime(
-                        &phase,
-                        &workflow_runtime,
-                        &workflow_bridge,
-                    )
+                    let yielded = workflow.take().unwrap();
+                    let installed = yielded.fixture_phase(&phase.test_host_request());
+                    yielded.readmit_same_runtime(&installed, &workflow_runtime, &workflow_bridge)
                 })
                 .err()
                 .expect("zero request refuses before workflow restore");
@@ -100,10 +100,9 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let before = restores();
         let direct = host
             .run_provider_fixture(|phase| {
-                direct
-                    .take()
-                    .unwrap()
-                    .readmit_same_runtime(&phase, &runtime, &bridge)
+                let yielded = direct.take().unwrap();
+                let installed = yielded.fixture_phase(&phase.test_host_request());
+                yielded.readmit_same_runtime(&installed, &runtime, &bridge)
             })
             .unwrap();
         assert!(
@@ -119,11 +118,9 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let before = restores();
         let workflow = host
             .run_provider_fixture(|phase| {
-                workflow.take().unwrap().readmit_same_runtime(
-                    &phase,
-                    &workflow_runtime,
-                    &workflow_bridge,
-                )
+                let yielded = workflow.take().unwrap();
+                let installed = yielded.fixture_phase(&phase.test_host_request());
+                yielded.readmit_same_runtime(&installed, &workflow_runtime, &workflow_bridge)
             })
             .unwrap();
         assert!(

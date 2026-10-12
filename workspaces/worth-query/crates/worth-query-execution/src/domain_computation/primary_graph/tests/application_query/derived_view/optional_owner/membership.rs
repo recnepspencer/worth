@@ -3,14 +3,16 @@ use super::*;
 use crate::domain_computation::primary_graph::tests::fixture::PublicAccountMembershipResult;
 
 pub(super) fn read(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
 ) -> WorthQueryApplicationOneShotResult<PublicAccountMembershipQuery, PublicAccountMembershipResult>
 {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let selected = world.selected_product();
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     let principal = selected
         .resolve_authenticated_principal(
+            phase_custody,
             &world.binding,
             &external,
             &request,
@@ -19,6 +21,7 @@ pub(super) fn read(
         .unwrap();
     let scope = selected
         .resolve_entity(
+            phase_custody,
             AccountStatus::reference(),
             "open".to_owned(),
             &request,
@@ -33,6 +36,7 @@ pub(super) fn read(
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let plan = selected
         .admit_application_query(
+            phase_custody,
             &query,
             &access,
             ApplicationQueryParameterSet::new(),
@@ -41,6 +45,6 @@ pub(super) fn read(
         .unwrap();
     world
         .application
-        .execute_application_query_one_shot(plan)
+        .execute_application_query_one_shot(phase_custody, plan)
         .unwrap()
 }

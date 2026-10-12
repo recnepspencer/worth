@@ -19,6 +19,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// allocating a tracked snapshot handle.
     pub fn project_observation(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &crate::mvcc::RelationalBranchObservation,
     ) -> Result<VisibilityProjectionView<'runtime>, crate::branch::RelationalBranchBasisDenial>
     {

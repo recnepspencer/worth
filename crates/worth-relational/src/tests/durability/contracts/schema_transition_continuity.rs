@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn durable_recovery_and_schema_mismatch_test() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    let _baseline = create_entity_outcome(&runtime, "main-a");
+    let _baseline = create_entity_outcome(execution, &runtime, "main-a");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -36,12 +39,7 @@ fn durable_recovery_and_schema_mismatch_test() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let transitioned = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let transitioned = txn.commit(execution, &runtime).unwrap();
 
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -76,7 +74,7 @@ fn durable_recovery_and_schema_mismatch_test() {
         .build();
     let _outcome = recovered
         .durability_recovery()
-        .recover(plan.clone())
+        .recover(execution, plan.clone())
         .unwrap();
     let recovered_envelope = recovered
         .replay()
@@ -130,7 +128,11 @@ fn durable_recovery_and_schema_mismatch_test() {
     let mut mismatched = RelationalRuntimeApi::builder()
         .schema_registry(mismatched_registry)
         .build();
-    let error = mismatched.durability_recovery().recover(plan).unwrap_err();
+    let error = mismatched
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::SchemaMismatch);
     assert!(matches!(
@@ -156,9 +158,12 @@ fn durable_recovery_and_schema_mismatch_test() {
 
 #[test]
 fn durability_contract_failure_aspect_plan_mismatch_is_explicit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity_outcome(&runtime, "main-a");
+    create_entity_outcome(execution, &runtime, "main-a");
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -197,7 +202,11 @@ fn durability_contract_failure_aspect_plan_mismatch_is_explicit() {
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(mismatched_registry)
         .build();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_ne!(expected_revision, mismatched_revision);
     assert_eq!(error.class, RecoveryFailureClass::SchemaMismatch);
@@ -214,6 +223,9 @@ fn durability_contract_failure_aspect_plan_mismatch_is_explicit() {
 
 #[test]
 fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let base_registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -261,9 +273,9 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
         .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
         .durable_store_layout(store_layout.clone())
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    create_relation_outcome(&runtime, source, target, "guarded");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    create_relation_outcome(execution, &runtime, source, target, "guarded");
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -311,7 +323,11 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
         .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
         .durable_store_layout(store_layout)
         .build();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::SchemaMismatch);
     assert!(matches!(

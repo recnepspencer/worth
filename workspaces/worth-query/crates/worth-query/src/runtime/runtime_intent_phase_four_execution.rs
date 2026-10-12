@@ -27,6 +27,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_authoritative_intent_execution_binding(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryAuthoritativeIntentExecutionBinding,
     ) -> Result<WorthQueryIntentReceipt, WorthQueryRuntimeError> {
         self.admit_facade_family(intent_runtime_facade_family(
@@ -36,7 +37,7 @@ impl WorthQueryRuntime {
         let declaration = binding.declaration().clone();
         let execution = self
             .backend
-            .execute_intent(&declaration)?
+            .execute_intent(request_execution, &declaration)?
             .admit_runtime_authority();
         admit_authoritative_execution(binding.handoff(), &execution).map_err(|violation| {
             let handoff = WorthQueryAdmittedIntentExecutionHandoff::from(binding.handoff().clone());
@@ -58,6 +59,7 @@ impl WorthQueryRuntime {
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
         let write_receipt = self.route_admitted_intent_execution(
+            request_execution,
             &declaration,
             &execution,
             &execution_provenance,
@@ -73,6 +75,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_effect_intent_execution_binding(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryEffectTriggeredIntentExecutionBinding,
     ) -> Result<WorthQueryEffectIntentReceipt, WorthQueryRuntimeError> {
         self.admit_facade_family(intent_runtime_facade_family(
@@ -92,7 +95,7 @@ impl WorthQueryRuntime {
         let declaration = binding.declaration().clone();
         let execution = self
             .backend
-            .execute_intent(&declaration)?
+            .execute_intent(request_execution, &declaration)?
             .admit_runtime_authority();
         admit_effect_execution(binding.handoff(), &execution).map_err(|violation| {
             let decision_trace_envelope =
@@ -112,6 +115,7 @@ impl WorthQueryRuntime {
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
         let write_receipt = self.route_admitted_intent_execution(
+            request_execution,
             &declaration,
             &execution,
             &execution_provenance,
@@ -155,6 +159,7 @@ impl WorthQueryRuntime {
 
     fn route_admitted_intent_execution(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         declaration: &WorthQueryIntentDeclaration,
         execution: &WorthQueryIntentExecution,
         provenance: &WorthQueryIntentExecutionProvenance,
@@ -162,6 +167,7 @@ impl WorthQueryRuntime {
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         let summary = classify_receipt_mutation_summary(execution.mutation_receipt());
         self.route_authoritative_mutation_receipt(
+            request_execution,
             WorthQueryAuthoritativeMutationRoutingInput::from_intent_execution(
                 execution.mutation_receipt().clone(),
                 summary,

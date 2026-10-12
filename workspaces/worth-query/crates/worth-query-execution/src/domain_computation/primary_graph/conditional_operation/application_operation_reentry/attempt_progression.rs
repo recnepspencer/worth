@@ -56,6 +56,7 @@ pub(super) fn try_reentry<
     Authorization,
     Clock,
 >(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -155,10 +156,11 @@ where
         super::super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {
     let selected = runtime
-        .on_product(product.retained_clone())
+        .on_product(request_execution, product.retained_clone())
         .map_err(super::super::WorthQueryConditionalReentryFailure::ProductSelection)?;
-    let fresh = access.resolve_fresh_operation_access(&selected)?;
+    let fresh = access.resolve_fresh_operation_access(request_execution, &selected)?;
     let Some(current) = execution.resolve_current_intent(
+        request_execution,
         &selected,
         candidate.record_identity(),
         candidate.revision(),
@@ -167,12 +169,19 @@ where
     else {
         return Ok(WorthQueryTemporalReentryOutcome::Obsolete);
     };
-    let Some(projected) =
-        execution.admit_current_projection(&selected, operation, candidate, &fresh, &current)?
+    let Some(projected) = execution.admit_current_projection(
+        request_execution,
+        &selected,
+        operation,
+        candidate,
+        &fresh,
+        &current,
+    )?
     else {
         return Ok(WorthQueryTemporalReentryOutcome::Obsolete);
     };
     Ok(execution.commit_projected_temporal_effect(
+        request_execution,
         phase,
         runtime,
         candidate,

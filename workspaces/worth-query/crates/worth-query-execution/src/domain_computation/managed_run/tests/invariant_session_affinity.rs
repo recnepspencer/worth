@@ -86,7 +86,7 @@ fn interleaved_sessions_load_their_own_provisional_overlays() {
 }
 
 fn proposed_inspection<'run>(
-    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &'run crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: &'run mut super::WorthQueryRunningDirectRun,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,

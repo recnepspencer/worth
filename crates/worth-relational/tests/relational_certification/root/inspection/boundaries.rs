@@ -8,8 +8,11 @@ use worth_relational::facade::inspection::RelationalMvccCostScope;
 
 #[test]
 fn phase5_inspection_rejects_foreign_and_rootless_identities() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let foreign_runtime = world.runtime.fork().expect("settled runtime forks");
     assert!(matches!(
         foreign_runtime.observe_branch_sharing(&[world.runtime.main_branch_identity()]),
@@ -24,8 +27,11 @@ fn phase5_inspection_rejects_foreign_and_rootless_identities() {
 
 #[test]
 fn phase5_inspection_rejects_duplicate_branch_scope() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let identity = world.runtime.main_branch_identity();
     assert!(matches!(
         world
@@ -37,8 +43,11 @@ fn phase5_inspection_rejects_duplicate_branch_scope() {
 
 #[test]
 fn phase5_region_locators_are_runtime_affine_even_when_storage_is_shared() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let source = inspect_main_regions(&world.runtime);
     let foreign = inspect_main_regions(&world.runtime.fork().expect("settled runtime forks"));
     assert_ne!(source, foreign);
@@ -60,8 +69,11 @@ fn phase5_region_locators_are_runtime_affine_even_when_storage_is_shared() {
 
 #[test]
 fn phase5_public_inspection_artifacts_are_read_only_complete_root_evidence() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     let identity = world.runtime.main_branch_identity();
     let sharing = world
         .runtime

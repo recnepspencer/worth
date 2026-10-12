@@ -6,6 +6,9 @@ use crate::tests::support::{
 
 #[test]
 fn rootless_selected_publication_fails_before_movement_and_releases_preflight_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
     runtime.set_retention_capacity_for_test(8, 1);
     let branch = BranchId("main".to_owned());
@@ -35,10 +38,7 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate preparation succeeds before the injected owner fault");
     assert_eq!(candidate.reservation_count(), 1);
     let prepared_symbols = runtime.services.symbols.clone();
@@ -55,7 +55,10 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         .branch_reference_state(&branch)
         .expect("the injected rootless branch reference remains observable");
 
-    let failure = match runtime.publication_port().compare_and_publish(candidate) {
+    let failure = match runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         RelationalPublicationOutcome::Failed(failure) => failure,
         outcome => panic!("rootlessness must be a typed no-movement failure: {outcome:?}"),
     };

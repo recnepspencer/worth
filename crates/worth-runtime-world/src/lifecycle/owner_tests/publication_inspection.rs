@@ -4,11 +4,14 @@ use crate::publication::{CompositeLateCancellationPosture, RuntimeWorldPublicati
 
 #[test]
 fn performed_publication_page_resumes_and_protects_canonical_owner_evidence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use std::num::NonZeroUsize;
 
     let (fixture, owner, expected) = setup();
     let cell = owner.state.branches.root_cell().expect("bootstrapped cell");
-    let ready = ready_relational_publication(&fixture, &owner, expected.clone());
+    let ready = ready_relational_publication(execution, &fixture, &owner, expected.clone());
     let performed = match ready.publish(&cell, CompositeLateCancellationPosture::NotRequested) {
         RuntimeWorldPublicationOutcome::Performed(performed) => performed,
         other => panic!("publication performs: {other:?}"),
@@ -75,12 +78,15 @@ fn performed_publication_page_resumes_and_protects_canonical_owner_evidence() {
 
 #[test]
 fn performed_publication_lease_blocks_explicit_reclamation_after_branch_retirement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use crate::history::CompositeHistoryReclamationRequest;
     use crate::lifecycle::RuntimeWorldBranchService;
 
     let (fixture, owner, expected) = setup();
     let cell = owner.state.branches.root_cell().expect("bootstrapped cell");
-    let ready = ready_relational_publication(&fixture, &owner, expected.clone());
+    let ready = ready_relational_publication(execution, &fixture, &owner, expected.clone());
     let performed = match ready.publish(&cell, CompositeLateCancellationPosture::NotRequested) {
         RuntimeWorldPublicationOutcome::Performed(performed) => performed,
         other => panic!("publication performs: {other:?}"),
@@ -129,6 +135,9 @@ fn performed_publication_lease_blocks_explicit_reclamation_after_branch_retireme
 
 #[test]
 fn publication_frontier_rejects_later_history_reservation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use std::num::NonZeroUsize;
 
     let (fixture, owner, expected) = setup();
@@ -142,7 +151,7 @@ fn publication_frontier_rejects_later_history_reservation() {
         .history
         .publication_frontier_is_current(page.frontier())
         .unwrap());
-    let _prepared = prepare_relational(&fixture, &owner, expected, "frontier");
+    let _prepared = prepare_relational(execution, &fixture, &owner, expected, "frontier");
     assert!(!owner
         .state
         .history

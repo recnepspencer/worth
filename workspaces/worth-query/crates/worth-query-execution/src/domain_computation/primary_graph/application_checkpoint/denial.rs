@@ -7,6 +7,7 @@ use worth_relational::facade::durability::{
 /// An allocation refusal never authorizes a different capture policy.
 #[derive(Debug)]
 pub enum WorthQueryCheckpointCaptureDenial {
+    ForeignPhase(super::super::WorthQueryForeignAdvancementPhase),
     Durability(DurabilityError),
     Allocation(ExecutionAllocationDenial),
 }
@@ -35,6 +36,7 @@ impl From<ExecutionAllocationDenial> for WorthQueryCheckpointCaptureDenial {
 impl std::fmt::Display for WorthQueryCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ForeignPhase(error) => write!(formatter, "checkpoint phase: {error:?}"),
             Self::Durability(error) => write!(formatter, "checkpoint durability: {error:?}"),
             Self::Allocation(error) => write!(formatter, "checkpoint allocation: {error:?}"),
         }
@@ -42,3 +44,9 @@ impl std::fmt::Display for WorthQueryCheckpointCaptureDenial {
 }
 
 impl std::error::Error for WorthQueryCheckpointCaptureDenial {}
+
+impl From<super::super::WorthQueryForeignAdvancementPhase> for WorthQueryCheckpointCaptureDenial {
+    fn from(error: super::super::WorthQueryForeignAdvancementPhase) -> Self {
+        Self::ForeignPhase(error)
+    }
+}

@@ -20,16 +20,22 @@ pub(super) fn principal(
     let external = block_on(authentication.authenticate((), request)).unwrap();
     world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &binding,
-            &external,
-            request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &binding,
+                    &external,
+                    request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens")
 }
 
 pub(super) fn fork_relational_product(
@@ -40,11 +46,16 @@ pub(super) fn fork_relational_product(
 ) -> product::WorthQueryProductBranch {
     world
         .application
-        .branches()
-        .fork(source.product().product_branch())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("fork must publish an exact sibling product")
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(source.product().product_branch())
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+                .expect("fork must publish an exact sibling product")
+        })
+        .expect("installed host call opens")
 }
 
 pub(super) fn fork_independent_product(
@@ -56,11 +67,16 @@ pub(super) fn fork_independent_product(
 ) -> product::WorthQueryProductBranch {
     world
         .application
-        .branches()
-        .fork(source.product().product_branch())
-        .components(|components| components.fork_relational().fork_signal())
-        .create()
-        .expect("independent fork must publish both product components")
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(source.product().product_branch())
+                .components(|components| components.fork_relational().fork_signal())
+                .create(&phase)
+                .expect("independent fork must publish both product components")
+        })
+        .expect("installed host call opens")
 }
 
 pub(super) fn reuse_exact_product(
@@ -70,15 +86,20 @@ pub(super) fn reuse_exact_product(
 ) -> product::WorthQueryProductBranch {
     world
         .application
-        .branches()
-        .fork(source.product().product_branch())
-        .components(|components| {
-            components
-                .reuse_exact_relational_basis()
-                .reuse_exact_signal_basis()
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(source.product().product_branch())
+                .components(|components| {
+                    components
+                        .reuse_exact_relational_basis()
+                        .reuse_exact_signal_basis()
+                })
+                .create(&phase)
+                .expect("exact reuse must publish a product sibling")
         })
-        .create()
-        .expect("exact reuse must publish a product sibling")
+        .expect("installed host call opens")
 }
 
 pub(super) fn controls(

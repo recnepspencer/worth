@@ -22,6 +22,7 @@ impl RelationalAuthorizationDurableDependencies {
     pub fn source_revisions_match(
         &self,
         runtime: &RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
     ) -> Result<bool, Denial> {
         if self.version != DURABLE_DEPENDENCY_VERSION {
@@ -33,14 +34,16 @@ impl RelationalAuthorizationDurableDependencies {
         }
         let view = runtime
             .read_truth()
-            .project_snapshot(snapshot)
+            .project_snapshot(snapshot, execution)
             .ok_or(Denial::SnapshotUnavailable)?;
         if !view.is_exact_basis() {
             return Err(Denial::InexactSnapshot);
         }
         let mut remaining = MAXIMUM_AUTHORIZATION_DEPENDENCIES;
-        if capture::capture_entity(&view, self.principal.entity, &mut remaining)? != self.principal
-            || capture::capture_entity(&view, self.scope.entity, &mut remaining)? != self.scope
+        if capture::capture_entity(execution, &view, self.principal.entity, &mut remaining)?
+            != self.principal
+            || capture::capture_entity(execution, &view, self.scope.entity, &mut remaining)?
+                != self.scope
         {
             return Ok(false);
         }
@@ -50,12 +53,15 @@ impl RelationalAuthorizationDurableDependencies {
                 capture::consume_many(&mut remaining, witness.len())?;
             }
             for entity in &path.entities {
-                if capture::capture_entity(&view, entity.entity, &mut remaining)? != *entity {
+                if capture::capture_entity(execution, &view, entity.entity, &mut remaining)?
+                    != *entity
+                {
                     return Ok(false);
                 }
             }
             for relation in &path.relations {
-                if capture::capture_relation(&view, relation.relation, &mut remaining)? != *relation
+                if capture::capture_relation(execution, &view, relation.relation, &mut remaining)?
+                    != *relation
                 {
                     return Ok(false);
                 }
@@ -72,6 +78,7 @@ impl RelationalAuthorizationDurableDependencies {
                 };
                 let revision = view
                     .bounded_adjacency_structural_revision(
+                        execution,
                         adjacency.entity,
                         adjacency.relation_kind,
                         direction,
@@ -85,7 +92,7 @@ impl RelationalAuthorizationDurableDependencies {
             }
             for field in &path.fields {
                 capture::consume(&mut remaining)?;
-                if !field_revision_matches(&view, field)? {
+                if !field_revision_matches(execution, &view, field)? {
                     return Ok(false);
                 }
             }
@@ -95,6 +102,7 @@ impl RelationalAuthorizationDurableDependencies {
 }
 
 fn field_revision_matches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &crate::visibility::materialization::read_records::VisibilityProjectionView<'_>,
     field: &FieldDependency,
 ) -> Result<bool, Denial> {
@@ -104,7 +112,7 @@ fn field_revision_matches(
         CanonicalFieldPath::single(FieldKey::new(&field.field).ok_or(Denial::MalformedWire)?),
     );
     Ok(view
-        .entity_field_revision(field.entity, &locator)
+        .entity_field_revision(execution, field.entity, &locator)
         .ok_or(Denial::DependencyUnavailable)?
         == field.revision)
 }

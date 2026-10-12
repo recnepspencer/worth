@@ -117,7 +117,7 @@ where
         if !std::ptr::eq(application, workflow.runtime()) {
             return Err(WorthQueryWorkflowProposalPreparationDenial::RuntimeMismatch);
         }
-        let selected = application.on_branch(self.product_branch()).select()
+        let selected = application.on_branch(self.product_branch()).select(&phase, )
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
         let staged = self.stage().map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
@@ -129,7 +129,7 @@ where
         if instance.branch() != request_branch {
             return Err(WorthQueryWorkflowProposalPreparationDenial::InstanceBranchMismatch);
         }
-        if let Some(outcome) = WorthQueryWorkflowProposalAdapter::resolve_replay(
+        if let Some(outcome) = WorthQueryWorkflowProposalAdapter::resolve_replay(&phase,
             application,
             &mutation.admission,
             mutation.idempotency,
@@ -141,7 +141,7 @@ where
                 execution: WorkflowProposalRequestExecution::Resolved(outcome),
             });
         }
-        let prepared = WorthQueryWorkflowProposalAdapter::prepare(
+        let prepared = WorthQueryWorkflowProposalAdapter::prepare(&phase,
             &selected,
             workflow.workflow_spec_for(&selected),
             instance,

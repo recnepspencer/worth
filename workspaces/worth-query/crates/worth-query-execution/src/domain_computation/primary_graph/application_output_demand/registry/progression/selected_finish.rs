@@ -31,7 +31,12 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         mut performed_source: Option<WorthQueryPerformedOutputDemandSource>,
         result: &mut Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial>,
     ) {
-        let interrupted = scheduling_was_interrupted(result);
+        let interrupted = match result {
+            Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
+                !required_stop::fails_row(denial)
+            }
+            Ok(_) => false,
+        };
         let terminal_kind = match result {
             Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
                 use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;

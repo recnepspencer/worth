@@ -2,7 +2,11 @@ use super::super::support::*;
 
 #[test]
 fn intent_execution_routing_stop_class_preserves_stage_evidence_and_source() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = bridge_runtime_with_support_and_intent_authority(
+        request_execution,
         intent_support_profile(),
         TestIntentAuthority,
     );
@@ -19,7 +23,7 @@ fn intent_execution_routing_stop_class_preserves_stage_evidence_and_source() {
     let binding = runtime.prepare_authoritative_intent_execution_binding(handoff.clone());
     let execution = runtime
         .backend
-        .execute_intent(binding.declaration())
+        .execute_intent(request_execution, binding.declaration())
         .expect("backend execution should succeed");
     let admitted_handoff = WorthQueryAdmittedIntentExecutionHandoff::from(handoff);
     let snapshot_evidence_identity = execution

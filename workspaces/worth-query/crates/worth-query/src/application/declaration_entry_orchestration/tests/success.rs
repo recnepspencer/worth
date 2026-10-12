@@ -15,7 +15,10 @@ use super::explicit_paths::{explicit_deferred_route_path_parity, explicit_succes
 
 #[test]
 fn explicit_and_orchestrated_success_paths_produce_matching_parity_receipt() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let explicit = explicit_success_path_parity(&handle);
     let orchestrated =
         handle.orchestrate_declaration_entry_checked(Input::<AdmittedFamily>::new("edge:42"));
@@ -53,7 +56,10 @@ fn explicit_and_orchestrated_success_paths_produce_matching_parity_receipt() {
 
 #[test]
 fn explicit_and_orchestrated_deferred_route_paths_agree_on_receipt_stop() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let explicit = explicit_deferred_route_path_parity(&handle);
     let orchestrated =
         handle.orchestrate_declaration_entry_checked(Input::<DeferredRouteFamily>::new("edge:42"));

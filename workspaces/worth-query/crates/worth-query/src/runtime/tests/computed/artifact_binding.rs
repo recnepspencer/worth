@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn derived_materialization_bundle_binds_one_exact_retained_artifact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     struct TitleRowMaintainer {
         tasks: WorthQueryLiveView<WorthQueryUnrefinedLiveShape>,
     }
@@ -107,10 +110,10 @@ fn derived_materialization_bundle_binds_one_exact_retained_artifact() {
         }
     }
 
-    let runtime = stateful_bridge_task_runtime();
+    let runtime = stateful_bridge_task_runtime(request_execution);
     let mut workspace = runtime.workspace("computed-bundle-binding").unwrap();
     let tasks: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("computed.bundle.binding.tasks", |q| {
+        .live_view(request_execution, "computed.bundle.binding.tasks", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -127,6 +130,7 @@ fn derived_materialization_bundle_binds_one_exact_retained_artifact() {
         .expect("task live view should declare");
     let title_row: WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape> = workspace
         .computed_view(
+            request_execution,
             WorthQueryDerivedView::new("computed.bundle.binding.title_row", touches(["title"]))
                 .depends_on_live(&tasks)
                 .produces(touches(["title.row"]))
@@ -138,6 +142,7 @@ fn derived_materialization_bundle_binds_one_exact_retained_artifact() {
         .expect("title-row computed should declare");
     let count_row: WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape> = workspace
         .computed_view(
+            request_execution,
             WorthQueryDerivedView::new("computed.bundle.binding.count_row", touches(["title.row"]))
                 .depends_on_derived(&title_row)
                 .produces(touches(["count.row"]))
@@ -149,7 +154,7 @@ fn derived_materialization_bundle_binds_one_exact_retained_artifact() {
         .expect("count-row computed should declare");
 
     workspace
-        .insert("Task", |builder| {
+        .insert(request_execution, "Task", |builder| {
             builder.set_aspect(
                 touch("title.value"),
                 test_authored_string_aspect_value("Artifact proof"),
@@ -159,6 +164,7 @@ fn derived_materialization_bundle_binds_one_exact_retained_artifact() {
 
     let binding = workspace
         .materialize_derived_artifact_binding(
+            request_execution,
             "computed.bundle.binding.artifact",
             [(&title_row).into(), (&count_row).into()],
         )
@@ -196,7 +202,7 @@ fn derived_materialization_bundle_binds_one_exact_retained_artifact() {
     assert_eq!(retained_u64_field(count, "count"), 1);
 
     let mismatch = workspace
-        .materialize_derived_artifact_bundle([(&title_row).into()])
+        .materialize_derived_artifact_bundle(request_execution, [(&title_row).into()])
         .expect("bundle should materialize retained title row")
         .bind_retained_artifact(
             "computed.bundle.binding.mismatch",

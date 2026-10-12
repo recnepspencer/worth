@@ -1,6 +1,8 @@
+use crate::durability::data::RelationalRecoveryStop;
 mod branch_readmission;
 mod checkpoint_restore;
 mod envelope_replay;
+pub(crate) use envelope_replay::replay_commit_stop;
 mod history_parity;
 mod merge_plan;
 mod recovered_counter_capacity;
@@ -45,6 +47,7 @@ fn unshared_state(
 }
 
 pub(super) fn rebuild_runtime_from_plan(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     admitted: super::recovery::admission::AdmittedRecoveryPlan,
 ) -> Result<
     (
@@ -52,8 +55,9 @@ pub(super) fn rebuild_runtime_from_plan(
         crate::durability::data::RecoveryPlan,
         Option<crate::durability::data::CheckpointRestoreWork>,
     ),
-    DurabilityError,
+    RelationalRecoveryStop,
 > {
+    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let mut plan = admitted.into_plan();
     let tail_envelopes = plan.tail_envelopes_in_stream_order();
     validate_tail_lineage_allocator_capacity(tail_envelopes.iter().copied())?;
@@ -102,6 +106,7 @@ pub(super) fn rebuild_runtime_from_plan(
         let commit_id = pending.envelope().commit.commit_id;
         let restore_authoritative_envelope = plan.should_restore_authoritative_envelope(commit_id);
         let positioned = replay_readmitted_envelope(
+            execution,
             &mut restored,
             pending,
             &available_commit_ids,
@@ -149,7 +154,7 @@ pub(super) fn rebuild_runtime_from_plan(
     refresh_checkpoint_counters(&mut restored)?;
     restored.durability.set_log(finalized_tail);
 
-    finalize_restored_runtime(&mut restored, original_durability_mode)?;
+    finalize_restored_runtime(execution, &mut restored, original_durability_mode)?;
     recovered_roots.finish();
     Ok((restored, plan, checkpoint_work))
 }

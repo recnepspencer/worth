@@ -63,12 +63,16 @@ impl WorthQueryPrimaryGraph {
 impl WorthQueryInstalledEntityResolutionContext {
     pub(in crate::domain_computation) fn at_snapshot<'truth>(
         &'truth self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &'truth worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &'truth worth_relational::facade::snapshots::SnapshotHandle,
         mode: WorthQueryPrincipalResolutionMode,
     ) -> Result<WorthQueryEntityResolutionTruth<'truth>, WorthQueryEntityResolutionDenial> {
         if snapshot.runtime_instance_id() != self.relational_runtime_instance_id
-            || relational.read_truth().project_snapshot(snapshot).is_none()
+            || relational
+                .read_truth()
+                .project_snapshot(snapshot, execution)
+                .is_none()
         {
             return Err(entity_denial(
                 WorthQueryEntityResolutionDenialKind::ForeignResolutionTruth,
@@ -87,16 +91,19 @@ impl WorthQueryInstalledEntityResolutionContext {
 impl WorthQueryEntityResolutionTruth<'_> {
     pub(in crate::domain_computation) fn resolve(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: &str,
         aspect: &str,
         field: &str,
         expected: worth_foundational::facade::AspectValue,
     ) -> Result<WorthQueryResolvedEntity, WorthQueryEntityResolutionDenial> {
-        self.resolve_with_work(entity, aspect, field, expected).0
+        self.resolve_with_work(execution, entity, aspect, field, expected)
+            .0
     }
 
     pub(in crate::domain_computation) fn resolve_with_work(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: &str,
         aspect: &str,
         field: &str,
@@ -135,7 +142,7 @@ impl WorthQueryEntityResolutionTruth<'_> {
             let lookup = self
                 .relational
                 .index_access()
-                .execute_bounded_entity_field_lookup(request, parity(self.mode))
+                .execute_bounded_entity_field_lookup(request, parity(self.mode), execution)
                 .map_err(|denial| {
                     examined_candidate_count = denial.examined_entry_count();
                     map_index_denial(denial.kind(), field)
@@ -162,9 +169,10 @@ impl WorthQueryEntityResolutionTruth<'_> {
 
     pub(in crate::domain_computation) fn validate_entity_freshness<Schema, Entity>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
     ) -> Result<(), WorthQueryEntityResolutionDenial> {
-        freshness::validate(self, identity)
+        freshness::validate(self, execution, identity)
     }
 }
 

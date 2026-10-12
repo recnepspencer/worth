@@ -20,6 +20,7 @@ fn a_committed_struct_field_patch_publishes_one_field_precise_target() {
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let execution = &resource_request;
 
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![entity_summary_struct_aspect(
@@ -46,14 +47,7 @@ fn a_committed_struct_field_patch_publishes_one_field_precise_target() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let entity = changed_entities(
-        &create
-            .commit(
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap(),
-    )[0];
+    let entity = changed_entities(&create.commit(execution, &runtime).unwrap())[0];
     let mut update = test_owner_begin_transaction_for_main(&runtime);
     update
         .push_batch(
@@ -70,14 +64,7 @@ fn a_committed_struct_field_patch_publishes_one_field_precise_target() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let commit_id = update
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .commit
-        .commit_id;
+    let commit_id = update.commit(execution, &runtime).unwrap().commit.commit_id;
 
     let envelopes = bridge_envelopes_at_current_observation(runtime, [commit_id], resource_request);
 

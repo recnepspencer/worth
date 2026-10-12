@@ -147,15 +147,18 @@ pub(crate) fn installed_workspace() -> worth_query::facade::runtime::WorthQueryW
         .unwrap()
         .aspect("measurement.value", "measurement.value")
         .unwrap();
-    let mut workspace = crate::install_worth_ui_test_operation_executors(
-        in_memory_test_runtime()
-            .with_schema(schema)
-            .domain_package(worth_ui_domain_package()),
-    )
-    .workspace("snapshot-refresh-isolation")
-    .unwrap();
-    workspace
-        .insert("WorthUiMeasurement", |measurement| {
+    let mut workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            crate::install_worth_ui_test_operation_executors(
+                in_memory_test_runtime()
+                    .with_schema(schema)
+                    .domain_package(worth_ui_domain_package()),
+            )
+            .workspace(execution, "snapshot-refresh-isolation")
+            .unwrap()
+        });
+    workspace.with_execution_request_mut(|execution, workspace| workspace
+        .insert(execution, "WorthUiMeasurement", |measurement| {
             measurement
                 .set_aspect(
                     worth_query::facade::runtime::WorthQueryAspectTouch::from_authoring_ingress_text(
@@ -178,6 +181,6 @@ pub(crate) fn installed_workspace() -> worth_query::facade::runtime::WorthQueryW
                     ),
                 )
         })
-        .unwrap();
+        .unwrap()).expect("workspace host call opens");
     workspace
 }

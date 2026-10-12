@@ -253,9 +253,13 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
     }
     let before_fresh_head = application.runtime().workflow_instance_progress_counters();
     let fresh_head_cost = application
-        .runtime()
-        .capture_certification_cost_scope(started.instance().branch())
-        .expect("the workflow branch admits cost observation");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .capture_certification_cost_scope(&host_phase, started.instance().branch())
+                .expect("the workflow branch admits cost observation")
+        })
+        .expect("installed host call opens");
     match advance_instance(&application, started.instance().clone(), 454)
         .expect("the successor must remain reconstructible after the join settles")
     {
@@ -269,9 +273,13 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         other => panic!("expected the exact approval requirement, got {other:?}"),
     }
     let fresh_head_cost = application
-        .runtime()
-        .observe_certification_cost(&fresh_head_cost)
-        .expect("the workflow branch remains available for cost observation");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .observe_certification_cost(&host_phase, &fresh_head_cost)
+                .expect("the workflow branch remains available for cost observation")
+        })
+        .expect("installed host call opens");
     assert_eq!(
         fresh_head_cost.application_work().retained_resolutions(),
         1,

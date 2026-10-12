@@ -3,10 +3,13 @@
 /// Typed redo denial. Each variant is a distinct cause — no shared fallback.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRedoDenialKind {
+    ForeignPhase,
     /// Binding or intent is stale against current truth.
     Stale,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     /// No capacity remains to retain the basis the redo needs.
     RetentionCapacityExhausted,
     /// The runtime ran out of basis-retention identities.

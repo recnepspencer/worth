@@ -13,15 +13,21 @@ mod completeness_rule;
 
 #[test]
 fn retained_root_required_child_suspends_without_authorizing_relation_deletion() {
-    run(false);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    run(execution, false);
 }
 
 #[test]
 fn retained_root_custom_child_completeness_survives_suspension() {
-    run(true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    run(execution, true);
 }
 
-fn run(custom: bool) {
+fn run(execution: &worth_execution::ExecutionRequest<'_, '_>, custom: bool) {
     let (runtime, evaluations) = runtime(custom);
     let root_ref = created(KindId(1), "retained-root");
     let child_ref = created(KindId(3), "generated-child");
@@ -52,21 +58,18 @@ fn run(custom: bool) {
         )
         .unwrap();
     let publication = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("required topology publishes together");
     let root = publication.created_entity(&root_ref).unwrap();
     let child = publication.created_entity(&child_ref).unwrap();
     let relation = publication.created_relation(&relation_ref).unwrap();
     let expected = runtime
         .read_truth()
-        .read_snapshot(&publication.snapshot)
+        .read_snapshot(&publication.snapshot, execution)
         .unwrap();
 
     if custom {
-        completeness_rule::deny_invalid_child_value(&runtime, child);
+        completeness_rule::deny_invalid_child_value(execution, &runtime, child);
     }
 
     let mut deletion = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -83,10 +86,7 @@ fn run(custom: bool) {
         )
         .unwrap();
     let denied = deletion
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("ordinary deletion violates the root minimum");
     assert!(matches!(denied,
         crate::transactions::data::TransactionCommitError::Conflict { error, .. }
@@ -103,7 +103,7 @@ fn run(custom: bool) {
         .map(|count| count.load(Ordering::SeqCst));
     let suspended = services
         .materialization_port()
-        .suspend_generated_materialization(&basis, &[child])
+        .suspend_generated_materialization(execution, &basis, &[child])
         .expect("suspension keeps required incidence while withholding generated payload");
     if custom {
         for (phase, (count, before)) in evaluations.iter().zip(before_suspension).enumerate() {
@@ -116,7 +116,7 @@ fn run(custom: bool) {
     assert_eq!(suspended.custody.records().len(), 2);
     assert!(runtime
         .read_truth()
-        .read_snapshot(&suspended.commit.snapshot)
+        .read_snapshot(&suspended.commit.snapshot, execution)
         .is_none());
     let (_, unavailable) = services
         .basis_port()
@@ -133,6 +133,7 @@ fn run(custom: bool) {
         let rejected = services
             .materialization_port()
             .rematerialize_generated_materialization(
+                execution,
                 &unavailable,
                 suspended.custody,
                 vec![RelationalEntityMaterialization {
@@ -155,7 +156,7 @@ fn run(custom: bool) {
         completeness_rule::assert_custom_violation(error);
         assert!(runtime
             .read_truth()
-            .read_snapshot(&suspended.commit.snapshot)
+            .read_snapshot(&suspended.commit.snapshot, execution)
             .is_none());
         rejected.custody
     } else {
@@ -164,6 +165,7 @@ fn run(custom: bool) {
     let restored = services
         .materialization_port()
         .rematerialize_generated_materialization(
+            execution,
             &unavailable,
             custody,
             vec![RelationalEntityMaterialization {
@@ -182,7 +184,7 @@ fn run(custom: bool) {
         .expect("exact required child and edge restore under owner custody");
     let actual = runtime
         .read_truth()
-        .read_snapshot(&restored.snapshot)
+        .read_snapshot(&restored.snapshot, execution)
         .unwrap();
     assert_eq!(expected.entities(), actual.entities());
     assert_eq!(expected.relations(), actual.relations());

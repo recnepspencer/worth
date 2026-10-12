@@ -116,6 +116,17 @@ struct WorthQueryBoundExecutionDenialEvidence {
 }
 
 impl WorthQueryBoundExecutionDenial {
+    /// Retains a refused host opening in the direct-execution error topology.
+    pub fn from_advancement_denial(
+        cause: worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ) -> Self {
+        Self::new(
+            WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause),
+            "request admission",
+            Default::default(),
+        )
+    }
+
     pub(super) fn new(
         kind: WorthQueryBoundExecutionDenialKind,
         detail: impl Into<String>,

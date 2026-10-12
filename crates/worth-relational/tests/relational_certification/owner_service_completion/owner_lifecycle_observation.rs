@@ -14,6 +14,9 @@ const OWNER_CLOSE_START_FAIL_SAFE: Duration = Duration::from_secs(6);
 
 #[test]
 fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authority() {
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = empty_runtime();
     let services = runtime.owner_component_services();
     let lifecycle_port = services.lifecycle_port();
@@ -44,16 +47,18 @@ fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authorit
         .expect("lifecycle observation batch stays in budget");
     let candidate = services
         .preparation_port()
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("controlled candidate prepares canonically");
 
     let (publication_tx, publication_rx) = sync_channel(1);
     let publication_port = services.publication_port();
-    std::thread::spawn(move || {
-        let _ = publication_tx.send(publication_port.compare_and_publish(candidate));
+    std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+
+            let _ = publication_tx.send(publication_port.compare_and_publish(execution, candidate));
+        }
     });
 
     let (owner_close_start_tx, owner_close_start_rx) = sync_channel(1);

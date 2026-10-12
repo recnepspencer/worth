@@ -34,6 +34,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             | Kind::ComputationResultCapacity { .. }
             | Kind::ComputationNestedStopped { .. } => (false, false, true),
             Kind::ExecutionRequest(_)
+            | Kind::StageExecutionRequest { .. }
             | Kind::UnknownStage
             | Kind::StageAlreadyCompleted
             | Kind::PredecessorIncomplete(_)

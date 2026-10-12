@@ -71,6 +71,7 @@ impl RootPathSourceBuilder {
 
     pub(super) fn observe_guard_field(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         projection: &VisibilityProjectionView<'_>,
         graph: &WorthQueryPrimaryGraphLayout,
         entity: EntityId,
@@ -92,7 +93,7 @@ impl RootPathSourceBuilder {
                     aspect.clone(),
                     worth_foundational::facade::CanonicalFieldPath::single(field.clone()),
                 );
-                let native_revision = projection.entity_field_revision(entity, &locator);
+                let native_revision = projection.entity_field_revision(execution, entity, &locator);
                 Ok(entry
                     .insert(WorthQueryObservedFieldRevision {
                         entity,
@@ -109,6 +110,7 @@ impl RootPathSourceBuilder {
 
     pub(super) fn observe_adjacencies(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         projection: &VisibilityProjectionView<'_>,
         anchor: EntityId,
         relation_kind: KindId,
@@ -128,7 +130,13 @@ impl RootPathSourceBuilder {
             std::collections::btree_map::Entry::Vacant(entry) => {
                 work.charge_source_observation(subject)?;
                 let revision = projection
-                    .bounded_adjacency_structural_revision(anchor, relation_kind, direction, 1)
+                    .bounded_adjacency_structural_revision(
+                        execution,
+                        anchor,
+                        relation_kind,
+                        direction,
+                        1,
+                    )
                     .map_err(|unavailable| match unavailable {
                         AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
                             read_execution_denial(

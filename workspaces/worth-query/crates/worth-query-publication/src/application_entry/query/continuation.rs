@@ -56,7 +56,7 @@ where
         let application = self.application;
         let request_scope = self.scope;
         application
-            .with_application_advancement(request_scope, |_phase| {
+            .with_application_advancement(request_scope, |phase| {
                 if self.retained.is_some() || self.limits.is_some() {
                     return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
                 }
@@ -74,10 +74,11 @@ where
                 let selected = self
                     .application
                     .on_branch(self.branch)
-                    .select()
+                    .select(&phase)
                     .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
                 let principal = selected
                     .resolve_authenticated_principal(
+                        &phase,
                         binding.principal_binding(),
                         self.principal,
                         self.scope,
@@ -88,6 +89,7 @@ where
                     scope_binding.into_field_parts(principal.principal_identity());
                 let scope = selected
                     .resolve_entity(
+                        &phase,
                         scope_field,
                         scope_value,
                         self.scope,
@@ -99,10 +101,12 @@ where
                 let controls =
                     WorthQueryProductQueryControls::new(page_width, maximum_work, self.scope);
                 let plan = selected
-                    .admit_application_query_continuation(&query, &access, parameters, controls)
+                    .admit_application_query_continuation(
+                        &phase, &query, &access, parameters, controls,
+                    )
                     .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
                 self.application
-                    .execute_application_query_continuation_page(plan)
+                    .execute_application_query_continuation_page(&phase, plan)
                     .map_err(WorthQueryApplicationRequestQueryDenial::ContinuationExecution)
             })
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
@@ -117,7 +121,7 @@ where
         let application = self.application;
         let request_scope = self.scope;
         application
-            .with_application_advancement(request_scope, |_phase| {
+            .with_application_advancement(request_scope, |phase| {
                 if self.retained.is_some() || self.limits.is_some() {
                     return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
                 }
@@ -135,10 +139,11 @@ where
                 let selected = self
                     .application
                     .on_branch(self.branch)
-                    .select()
+                    .select(&phase)
                     .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
                 let principal = selected
                     .resolve_authenticated_principal(
+                        &phase,
                         binding.principal_binding(),
                         self.principal,
                         self.scope,
@@ -149,6 +154,7 @@ where
                     scope_binding.into_field_parts(principal.principal_identity());
                 let scope = selected
                     .resolve_entity(
+                        &phase,
                         scope_field,
                         scope_value,
                         self.scope,
@@ -165,6 +171,7 @@ where
                 let plan = self
                     .application
                     .readmit_application_query_continuation(
+                        &phase,
                         &query,
                         &access,
                         parameters,
@@ -173,7 +180,7 @@ where
                     )
                     .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
                 self.application
-                    .execute_application_query_continuation_page(plan)
+                    .execute_application_query_continuation_page(&phase, plan)
                     .map_err(WorthQueryApplicationRequestQueryDenial::ContinuationExecution)
             })
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?

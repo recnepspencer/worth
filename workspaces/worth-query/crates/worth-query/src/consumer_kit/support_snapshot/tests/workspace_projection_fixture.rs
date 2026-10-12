@@ -9,11 +9,13 @@ pub(in super::super::tests) fn live_support_matrix() -> WorthQueryRuntimePublicS
     )
 }
 
-pub(in super::super::tests) fn support_snapshot_workspace() -> WorthQueryWorkspace {
+pub(in super::super::tests) fn support_snapshot_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryWorkspace {
     crate::consumer_kit::test_backend::in_memory_test_runtime()
         .with_schema(crate::consumer_kit::test_backend::task_schema())
         .support_profile(primary_support_profile())
-        .workspace("support-snapshot-real-workspace")
+        .workspace(request_execution, "support-snapshot-real-workspace")
         .expect("support snapshot workspace should build from the real in-memory Product owner")
 }
 

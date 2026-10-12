@@ -40,6 +40,7 @@ pub(super) const fn minimum_seeded_scenario_count() -> usize {
 }
 
 pub(super) fn seeded_rows(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     seed: u64,
     scenario_count: usize,
 ) -> Vec<EffectLifecycleSeededCertificationRow> {
@@ -47,26 +48,27 @@ pub(super) fn seeded_rows(
     (0..scenario_count)
         .map(|index| {
             let template = ScenarioTemplate::from_index(((seed as usize) + index) % TEMPLATE_COUNT);
-            materialize_row(template, index, &mut stepper)
+            materialize_row(execution, template, index, &mut stepper)
         })
         .collect()
 }
 
 fn materialize_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     template: ScenarioTemplate,
     index: usize,
     stepper: &mut SeedStepper,
 ) -> EffectLifecycleSeededCertificationRow {
     match template {
         ScenarioTemplate::MutationExecuted => {
-            scenarios_executed::scalar_mutation_row(index, stepper)
+            scenarios_executed::scalar_mutation_row(execution, index, stepper)
         }
         ScenarioTemplate::WritebackExecuted => {
-            scenarios_executed::scalar_writeback_row(index, stepper)
+            scenarios_executed::scalar_writeback_row(execution, index, stepper)
         }
         ScenarioTemplate::MergeLowered => scenarios_executed::merge_lowered_row(index, stepper),
         ScenarioTemplate::BatchMutationExecuted => {
-            scenarios_executed::batch_mutation_row(index, stepper)
+            scenarios_executed::batch_mutation_row(execution, index, stepper)
         }
         ScenarioTemplate::PreviewMutationRebind => {
             scenarios_non_admitted::preview_mutation_rebind_row(index, stepper)
