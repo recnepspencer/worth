@@ -186,20 +186,11 @@ impl AdmittedCommitExecution {
     }
 }
 
-/// Required request borrow proves this work belongs to the caller, without retaining it.
+/// Admit the selected context after its caller's Admission stage consult.
 pub(super) fn admit_commit_execution(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
 ) -> Result<AdmittedCommitExecution, TransactionCommitError> {
-    crate::execution::check_request(execution).map_err(
-        |cause| {
-            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
-                partition_identity: None,
-            })
-        },
-    )?;
     let complexity_before = context
         .complexity_baseline
         .clone()

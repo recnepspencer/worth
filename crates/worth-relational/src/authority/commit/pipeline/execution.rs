@@ -47,7 +47,7 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         .expect("admitted commit branch remains registered")
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
-    let admitted = admit_commit_execution(execution, runtime, context)?;
+    let admitted = admit_commit_execution(runtime, context)?;
     let prepared = prepare_commit_execution(execution, runtime, admitted)?;
     let boundary_validated =
         validate_commit_boundary(execution, runtime, prepared, &scope_control)?;
