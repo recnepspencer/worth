@@ -294,17 +294,22 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank
 
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/reuse_opt_out/every_consult.rs
 
-workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/read_observation.rs workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/counted_read_stops.rs
-crates/worth-execution/src/authority/request/consult_observation.rs workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
-workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls.rs workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/counted_read_stops.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
 
-workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/discard_fault.rs workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/counted_read_stops.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/counted_read_stops.rs
 
-workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/read_observation.rs workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/read_ceiling_terminal.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/read_ceiling_terminal.rs
 
-workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/adoption_preparation.rs workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
-workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fault_controller/cleanup.rs workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/terminal_failures/aftermath_sealing_interruption.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/terminal_failures/aftermath_sealing_interruption.rs
 
-workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/read_consult.rs workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/counted_read_stops.rs
-workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/read_consult.rs workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
-workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/observed.rs workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/comparison_read_stop.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/speculation/counted_read_stops.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/suspension_recovery_read_stop.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/comparison_read_stop.rs
+
+# Full-value charge proofs borrow the SDK observer through the Query test oracle.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/commit_outcome/denial/execution/authority_cause.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/counted_read_stops.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/read_ceiling_terminal.rs

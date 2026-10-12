@@ -82,20 +82,43 @@ pub(crate) fn selected_consult_answers<T: Eq + Debug, E: Eq + Debug>(
                     }
                 }
             });
-            let (answer, report) = request
-                .run(ExecutionWorkCeiling::new(ceiling), |_| door(&request))
+            let ((answer, answer_origins), report) = request
+                .run(ExecutionWorkCeiling::new(ceiling), |_| {
+                    let answer = door(&request);
+                    (answer, observation.stop_origins_for_test())
+                })
                 .unwrap();
             *quotes.borrow_mut() = charged_prefixes_for_test(&observation);
             let indices = selected_indices.borrow();
-            let origin = observation
-                .stop_origins_for_test()
-                .into_iter()
-                .rev()
-                .find(|(emitted, _)| indices.contains(emitted))
-                .and_then(|(_, origin)| indices.iter().position(|at| *at == origin))
-                .map(|origin| origin + 1);
-            let answered_at = if k.is_some() && answer.is_err() {
-                origin.expect("the selected stop has an observed cause consult")
+            let origins = observation.stop_origins_for_test();
+            let answered_at = if let Some(at) = k.filter(|_| answer.is_err()) {
+                let injected = indices[at - 1];
+                let first = *answer_origins
+                    .first()
+                    .expect("the door emitted its stopped cause");
+                assert_eq!(
+                    first,
+                    (injected, injected),
+                    "the first stop is emitted at the injected consult"
+                );
+                assert!(
+                    origins.starts_with(&answer_origins),
+                    "no emission before the answer is dropped"
+                );
+                for (emitted, origin) in &origins {
+                    assert_eq!(
+                        *origin, injected,
+                        "every emission retains the injected cause"
+                    );
+                    assert!(
+                        *emitted >= injected,
+                        "a re-report follows the original emission"
+                    );
+                }
+                // The trace proves the first emission, not the returned value:
+                // a stop returned at selected consult 15 and a swallowed result
+                // re-reported by the same-meter latch at 16 are indistinguishable.
+                indices.iter().position(|index| *index == first.0).unwrap() + 1
             } else {
                 count.get()
             };
