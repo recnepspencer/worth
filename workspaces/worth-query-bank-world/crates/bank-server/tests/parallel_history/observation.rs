@@ -1,5 +1,4 @@
-//! Part-two plug-in points: posture, advancement report, and ordered commits.
-//! Until aggregate reports exist, observe typed outcomes and committed facts.
+//! The host policy or sealed request placement accompanies the same real transfers.
 //! Runtime-created IDs are opaque symbols: preserve their exact native identity
 //! and independently enforce one symbol per command and one command per journal.
 use super::{
@@ -24,14 +23,15 @@ use worth_query_host::facade::{
         WorthQueryApplicationCommitReceipt, WorthQueryOperationAuthorizationDenialKind,
     },
 };
+#[derive(Clone, Copy, Debug)]
 pub(super) enum Posture {
     Serial,
+    Leased(std::num::NonZeroUsize),
 }
 pub(super) struct AdvancementReport {
     pub observed_read_work: usize,
 }
-// Aggregate ordered commits wait for 7.7; current journal observations prove
-// posting identity and content, not request-level semantic commit positions.
+// Native journal symbols are bound from the authoritative receipts.
 pub(super) struct Bindings {
     pub accounts: BTreeMap<AccountId, u64>,
     journals: BTreeMap<JournalEntryId, u64>,
@@ -73,6 +73,12 @@ impl Bindings {
         Outcome::Committed(self.journals[&native])
     }
     pub fn postings(&self, raw: &[NativePosting]) -> Vec<Posting> {
+        let mut last = BTreeMap::new();
+        for posting in raw {
+            let previous = last.entry(posting.account).or_insert(0);
+            assert_eq!(posting.sequence,*previous+1,"native postings arrive in each account's declared sequence, before any group normalization");
+            *previous = posting.sequence;
+        }
         let mut postings = raw
             .iter()
             .map(|posting| Posting {
@@ -87,12 +93,13 @@ impl Bindings {
         postings
     }
 }
-pub(super) struct SerialObserver<'a> {
+pub(super) struct Observer<'a> {
     world: &'a World,
     pub bindings: Bindings,
     receipts: BTreeMap<u64, WorthQueryApplicationCommitReceipt>,
+    pub last: Vec<worth_query_host::facade::primary_graph::WorthQueryAdvancementObservationForTest>,
 }
-impl<'a> SerialObserver<'a> {
+impl<'a> Observer<'a> {
     pub fn new(world: &'a World) -> Self {
         let mut bindings = Bindings::new([
             (world.accounts[0], 11),
@@ -104,6 +111,7 @@ impl<'a> SerialObserver<'a> {
             world,
             bindings,
             receipts: BTreeMap::new(),
+            last: Vec::new(),
         }
     }
     pub fn transfer(
@@ -111,7 +119,17 @@ impl<'a> SerialObserver<'a> {
         input: &Transfer,
         posture: Posture,
     ) -> Result<Outcome, Box<bank_server::BankMoneyMovementExecution>> {
-        let Posture::Serial = posture;
+        use worth_query_host::facade::primary_graph::{
+            advancement_observations_on_this_thread_for_test as observations,
+            place_managed_computations_on_this_thread_for_test as place,
+            WorthQueryExecutionPlacementForTest as Placement,
+        };
+        let placement = match posture {
+            Posture::Serial => Placement::World,
+            Posture::Leased(width) => Placement::Leased(width),
+        };
+        let previous = place(placement);
+        observations();
         let actor = self.world.authenticate(input.actor);
         let recipient = if input.to == 12 { 2 } else { 1 };
         let result = self
@@ -129,8 +147,24 @@ impl<'a> SerialObserver<'a> {
                 key(input.command),
             ))
             .execute();
+        self.last = observations();
+        place(previous);
         match result {
             Ok(WorthQueryApplicationMutationOutcome::Committed { result, receipt }) => {
+                use worth_query_host::facade::primary_graph::WorthQueryAdvancementIdentityForTest as Identity;
+                let binding = receipt.idempotency_binding();
+                let expected = Identity::Mutation {
+                    operation: *receipt.installed_operation(),
+                    key: *binding.key_identity(),
+                    intent: *binding.intent_identity(),
+                };
+                assert!(
+                    self.last
+                        .iter()
+                        .flat_map(|r| &r.applied)
+                        .all(|event| event.identity == expected),
+                    "Bank commit events carry this command's authoritative receipt by value"
+                );
                 self.receipts.insert(input.command, receipt);
                 Ok(self.bindings.committed(input.command, result.journal))
             }

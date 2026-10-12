@@ -33,9 +33,14 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
         let installed = setup
             .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals, _>(HistoryOwner)?;
+        let reuse = REUSE_ON.get();
         let handler = RegionOutputHandler::running(move |reader, set| {
             super::super::decision_plan::begin();
-            let prepared = installed.prepare(reader, set);
+            let prepared = if reuse {
+                installed.prepare(reader, set)
+            } else {
+                installed.prepare_without_reuse_for_test(reader, set)
+            };
             super::super::decision_plan::prepared(prepared, |observations| {
                 REPORTS.with(|reports| reports.borrow_mut().extend(observations));
             })
@@ -206,3 +211,5 @@ pub(super) fn adjust(
 thread_local! {
     static REPORTS: std::cell::RefCell<Vec<Option<u64>>> = const { std::cell::RefCell::new(Vec::new()) };
 }
+
+thread_local! {pub(super) static REUSE_ON:std::cell::Cell<bool>=const{std::cell::Cell::new(true)};}

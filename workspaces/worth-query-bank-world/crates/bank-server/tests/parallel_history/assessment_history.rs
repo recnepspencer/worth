@@ -26,7 +26,23 @@ fn key(label: &str) -> BankIdempotencyKey {
     BankIdempotencyKey::new(label).unwrap()
 }
 #[test]
-fn serial_assessment_history_settles_real_sources_and_answers_retries() {
+fn assessment_history_settles_at_each_request_width() {
+    let _owned=worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    if let Ok(width) = std::env::var("WORTH_BANK_ASSESSMENT_WIDTH") {
+        let width = width.parse().unwrap();
+        worth_query_host::facade::primary_graph::place_managed_computations_on_this_thread_for_test(NonZeroUsize::new(width).map_or(worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest::World,worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest::Leased));
+    } else {
+        for width in [0, 1, 2, 5] {
+            let output=std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact","parallel_history::assessment_history::assessment_history_settles_at_each_request_width","--nocapture"]).env("WORTH_BANK_ASSESSMENT_WIDTH",width.to_string()).output().unwrap();
+            assert!(
+                output.status.success(),
+                "assessment width {width}: {}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        return;
+    }
     let fixture = fixture::ordinary_read_world_with_payment_amount(
         "independent-assessment-history",
         authentication::approval_configuration(),

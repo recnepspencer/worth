@@ -10,6 +10,7 @@ mod computation;
 mod declaration;
 mod execution;
 mod seeded_world;
+mod worker_matrix;
 use execution::{adjust, demand, edit, install};
 use seeded_world::{facts, seed, Change};
 
@@ -35,7 +36,32 @@ fn fresh(model: &ReuseFacts) -> (OracleRun, Option<u64>) {
     only_run(demand(&request, &application))
 }
 fn case(change: Change) {
+    case_at(change, 1, 1, true);
+}
+fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
+    struct ReuseRestore(bool);
+    impl Drop for ReuseRestore {
+        fn drop(&mut self) {
+            execution::REUSE_ON.set(self.0);
+        }
+    }
+    let _reuse = ReuseRestore(execution::REUSE_ON.replace(reuse));
     let _guard = checkpoint_recovery_test_guard();
+    use worth_query_host::facade::primary_graph::{
+        advancement_observations_on_this_thread_for_test as observations,
+        place_managed_computations_on_this_thread_for_test as place,
+        WorthQueryExecutionPlacementForTest as Placement,
+    };
+    let previous = place(Placement::Leased(
+        std::num::NonZeroUsize::new(prior).unwrap(),
+    ));
+    struct Restore(Placement);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            place(self.0);
+        }
+    }
+    let _restore = Restore(previous);
     let mut model = facts();
     let application = install(|graph| seed(&model, graph));
     let (scope, principal) = authenticate(&application);
@@ -69,8 +95,27 @@ fn case(change: Change) {
             "membership and item-digest edits change modeled compute work"
         );
     }
+    place(Placement::Leased(
+        std::num::NonZeroUsize::new(current).unwrap(),
+    ));
+    observations();
     let (retained, retained_work) = only_run(demand(&request, &application));
+    let retained_total = observations().iter().fold((0, 0), |sum, r| {
+        (
+            sum.0 + r.report.charged_work(),
+            sum.1 + r.report.charged_span(),
+        )
+    });
     let (reference, fresh_work) = fresh(&model);
+    let fresh_total = observations().iter().fold((0, 0), |sum, r| {
+        (
+            sum.0 + r.report.charged_work(),
+            sum.1 + r.report.charged_span(),
+        )
+    });
+    println!(
+        "REUSE_TOTAL:retained={retained_total:?}:fresh={fresh_total:?}:declared={declared_work}"
+    );
     for (label, run, charge) in [
         ("retained", &retained, retained_work),
         ("fresh", &reference, fresh_work),
@@ -81,6 +126,7 @@ fn case(change: Change) {
                 bits,
                 "{label}: declared operation value model"
             );
+
             if let Some(charge) = charge {
                 assert_eq!(
                     charge, declared_work,
@@ -94,6 +140,17 @@ fn case(change: Change) {
                 );
             }
         }
+    }
+    if model.expected_value().is_some() {
+        assert_eq!(
+            retained.outcome.as_ref().unwrap().1,
+            reference.outcome.as_ref().unwrap().1,
+            "reuse-on and reuse-off charge the same declared amount including preparation"
+        );
+        println!(
+            "REUSE_LOGICAL_REMAINDER:{}",
+            retained.outcome.as_ref().unwrap().1 - declared_work
+        );
     }
     if model.expected_value().is_none() {
         let item = model.members().find(|item| item.fault).unwrap();
@@ -116,15 +173,23 @@ fn case(change: Change) {
         } else {
             Run::Incremental
         };
-        assert_eq!(retained.runs, [expected], "sensitive run kind");
+        if reuse {
+            assert_eq!(retained.runs, [expected], "sensitive run kind");
+        } else {
+            assert_eq!(
+                retained.runs,
+                [Run::Full(Cause::Unretained)],
+                "reuse-off does not retain a prior"
+            );
+        }
     }
-    if matches!(change, Change::Gather) {
+    if reuse && matches!(change, Change::Gather) {
         assert_eq!(
             retained.calls.kernels, 1,
             "only the changed partition is recomputed"
         );
     }
-    if matches!(change, Change::Shared) {
+    if reuse && matches!(change, Change::Shared) {
         assert_eq!(
             retained.calls.kernels, 2,
             "every partition sharing the moved fact is recomputed"
