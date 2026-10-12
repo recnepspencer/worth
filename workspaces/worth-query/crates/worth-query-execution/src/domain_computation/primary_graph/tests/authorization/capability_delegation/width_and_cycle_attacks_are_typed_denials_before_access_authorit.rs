@@ -1,5 +1,6 @@
 //! width and cycle attacks are typed denials before access authority.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn width_and_cycle_attacks_are_typed_denials_before_access_authority() {
@@ -40,7 +41,9 @@ fn width_and_cycle_attacks_are_typed_denials_before_access_authority() {
         };
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::DelegationRejected
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DelegationRejected
+            )
         );
 
         let cycle = installed_delegated_capability_world();
@@ -78,7 +81,9 @@ fn width_and_cycle_attacks_are_typed_denials_before_access_authority() {
         };
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::DelegationCycle
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DelegationCycle
+            )
         );
 
         let depth = installed_delegated_capability_world();
@@ -116,7 +121,9 @@ fn width_and_cycle_attacks_are_typed_denials_before_access_authority() {
         };
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::DelegationDepthExceeded
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DelegationDepthExceeded
+            )
         );
     }
 }

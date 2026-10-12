@@ -1,11 +1,12 @@
 //! Typed authorization denial topology.
 
 use crate::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod capacity;
 mod relational_read;
 pub(super) use relational_read::denial as relational_read_denial;
+pub(super) use relational_read::kernel_stop_kind;
 pub(in crate::domain_computation) use relational_read::principal_currentness;
-pub(super) use relational_read::{is_request_stop, kernel_stop_kind};
 
 /// The specific reason authorization refused an operation or query.
 ///
@@ -16,13 +17,19 @@ pub(super) use relational_read::{is_request_stop, kernel_stop_kind};
 /// any effect.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperationAuthorizationDenialKind {
-    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    Stopped(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
+    Refused(WorthQueryOperationAuthorizationRefusalKind),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryOperationAuthorizationRefusalKind {
     /// The supplied phase belongs to another installed runtime.
     ForeignPhase,
-    /// The authorization check was cancelled.
-    Cancelled,
-    /// The authorization check reached its deadline.
-    DeadlineExceeded,
     /// The principal's authentication has expired.
     ExpiredAuthentication,
     /// The authorization material belongs to a different runtime.
@@ -106,13 +113,11 @@ pub enum WorthQueryOperationAuthorizationDenialKind {
     /// Previously admitted authorization is no longer current.
     StaleAuthorization,
     /// The security basis on the product branch could not be admitted.
-    ProductSecurityBasis(crate::basis::WorthQueryProductBranchAdmissionDenial),
+    ProductSecurityBasis(crate::basis::WorthQueryProductBranchAdmissionRefusalKind),
     /// The runtime ran out of admission identities.
     AdmissionIdentityExhausted,
     /// The installed limit on concurrently active snapshots was reached.
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
+    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
     /// The runtime ran out of snapshot identities.
     SnapshotIdentityExhausted,
     /// No capacity remains to retain the authorization basis.
@@ -159,11 +164,15 @@ impl WorthQueryAdmissionLapse {
         self,
     ) -> WorthQueryOperationAuthorizationDenialKind {
         match self {
-            Self::Cancelled => WorthQueryOperationAuthorizationDenialKind::Cancelled,
-            Self::DeadlineExceeded => WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded,
-            Self::AuthenticationExpired => {
-                WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication
-            }
+            Self::Cancelled => WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            )),
+            Self::DeadlineExceeded => WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            )),
+            Self::AuthenticationExpired => WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ExpiredAuthentication,
+            ),
         }
     }
 }
@@ -198,30 +207,42 @@ impl WorthQueryApplicationAuthorizationExplanationCause {
     const fn from_denial_kind(kind: WorthQueryOperationAuthorizationDenialKind) -> Option<Self> {
         use WorthQueryOperationAuthorizationDenialKind as Denial;
         match kind {
-            Denial::CapabilityGrantMissing
-            | Denial::CapabilityAuthorizationMissing
-            | Denial::CapabilityRequired => Some(Self::MissingCapability),
-            Denial::ExplicitDenyRuleMatched => Some(Self::ExplicitPolicyDenial),
-            Denial::ScopeMismatch => Some(Self::ScopeMismatch),
-            Denial::PurposeMismatch => Some(Self::PurposeMismatch),
-            Denial::ConflictRuleMatched => Some(Self::Conflict),
-            Denial::SeparationOfDutyRuleMatched | Denial::DistinctActorRuleMatched => {
+            Denial::Refused(AuthorizationRefusal::CapabilityGrantMissing)
+            | Denial::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
+            | Denial::Refused(AuthorizationRefusal::CapabilityRequired) => {
+                Some(Self::MissingCapability)
+            }
+            Denial::Refused(AuthorizationRefusal::ExplicitDenyRuleMatched) => {
+                Some(Self::ExplicitPolicyDenial)
+            }
+            Denial::Refused(AuthorizationRefusal::ScopeMismatch) => Some(Self::ScopeMismatch),
+            Denial::Refused(AuthorizationRefusal::PurposeMismatch) => Some(Self::PurposeMismatch),
+            Denial::Refused(AuthorizationRefusal::ConflictRuleMatched) => Some(Self::Conflict),
+            Denial::Refused(AuthorizationRefusal::SeparationOfDutyRuleMatched)
+            | Denial::Refused(AuthorizationRefusal::DistinctActorRuleMatched) => {
                 Some(Self::SeparationOfDuty)
             }
-            Denial::ElevationRequired => Some(Self::ElevationRequired),
-            Denial::CapabilityExpired | Denial::ElevationExpired => Some(Self::ElevationExpired),
-            Denial::ElevationProjectionRejected
-            | Denial::ElevationInactive
-            | Denial::ElevationSelfApproval
-            | Denial::ElevationApproverConflict
-            | Denial::ElevationTransitionRequired
-            | Denial::ElevationLifecycleRoleMismatch
-            | Denial::ElevationRequestRejected
-            | Denial::ElevationApprovalRejected
-            | Denial::ElevationCloseRejected
-            | Denial::MandatoryReviewRejected
-            | Denial::ElevationDurationExceeded => Some(Self::ElevationDenied),
-            _ => None,
+            Denial::Refused(AuthorizationRefusal::ElevationRequired) => {
+                Some(Self::ElevationRequired)
+            }
+            Denial::Refused(AuthorizationRefusal::CapabilityExpired)
+            | Denial::Refused(AuthorizationRefusal::ElevationExpired) => {
+                Some(Self::ElevationExpired)
+            }
+            Denial::Refused(AuthorizationRefusal::ElevationProjectionRejected)
+            | Denial::Refused(AuthorizationRefusal::ElevationInactive)
+            | Denial::Refused(AuthorizationRefusal::ElevationSelfApproval)
+            | Denial::Refused(AuthorizationRefusal::ElevationApproverConflict)
+            | Denial::Refused(AuthorizationRefusal::ElevationTransitionRequired)
+            | Denial::Refused(AuthorizationRefusal::ElevationLifecycleRoleMismatch)
+            | Denial::Refused(AuthorizationRefusal::ElevationRequestRejected)
+            | Denial::Refused(AuthorizationRefusal::ElevationApprovalRejected)
+            | Denial::Refused(AuthorizationRefusal::ElevationCloseRejected)
+            | Denial::Refused(AuthorizationRefusal::MandatoryReviewRejected)
+            | Denial::Refused(AuthorizationRefusal::ElevationDurationExceeded) => {
+                Some(Self::ElevationDenied)
+            }
+            Denial::Stopped(_) | Denial::Refused(_) => None,
         }
     }
 }
@@ -279,7 +300,9 @@ impl WorthQueryOperationAuthorizationDenial {
     ) -> Self {
         let mut causes = causes.into_iter().collect::<Vec<_>>();
         if causes.is_empty() {
-            causes.push(WorthQueryOperationAuthorizationDenialKind::InconsistentDecision);
+            causes.push(WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::InconsistentDecision,
+            ));
         }
         let kind = causes[0];
         Self {
@@ -295,7 +318,9 @@ impl WorthQueryOperationAuthorizationDenial {
 
     pub(in crate::domain_computation) fn inconsistent(subject: impl Into<String>) -> Self {
         Self::new(
-            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::InconsistentDecision,
+            ),
             subject,
         )
     }
@@ -340,7 +365,24 @@ pub(super) fn product_security_basis_denial(
     subject: impl Into<String>,
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial),
+        WorthQueryOperationAuthorizationDenialKind::from(denial),
         subject,
     )
+}
+
+impl From<crate::basis::WorthQueryProductBranchAdmissionDenial>
+    for WorthQueryOperationAuthorizationDenialKind
+{
+    fn from(denial: crate::basis::WorthQueryProductBranchAdmissionDenial) -> Self {
+        match denial {
+            crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop) => {
+                Self::Stopped(stop)
+            }
+            crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(refusal) => {
+                Self::Refused(
+                    WorthQueryOperationAuthorizationRefusalKind::ProductSecurityBasis(refusal),
+                )
+            }
+        }
+    }
 }

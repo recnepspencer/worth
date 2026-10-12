@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_capability::{
         ApplicationCapabilityDelegationRequest, ApplicationCapabilityRequest,
@@ -68,7 +69,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         self.replay_capability_delegation_after_fresh_denial_with_request(
             &execution,
@@ -135,12 +136,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             observation.resolve_delegation_replay_target(execution, target, &proposed)
         }) {
             Some(Ok(resolved)) => resolved,
-            Some(Err(denial)) if super::super::denial::is_request_stop(denial.kind()) => {
+            Some(Err(denial)) => match denial.kind() {
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
                 return Err(
                     WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial),
                 )
-            }
-            Some(Err(_)) | None => return Ok(None),
+                }
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Ok(None),
+            },
+            None => return Ok(None),
         };
         let Ok(prepared) = super::binding::bind_activation(
             self, installed, &proposed, resolved, target, operation,
@@ -156,12 +160,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             WorthQueryCapabilityOperationProgression::DelegationActivation,
         ) {
             Ok(admission) => admission,
-            Err(denial) if super::super::denial::is_request_stop(denial.kind()) => {
+            Err(denial) => match denial.kind() {
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
                 return Err(
                     WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial),
                 )
-            }
-            Err(_) => return Ok(None),
+                }
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Ok(None),
+            },
         };
         let Ok(admission) = prepared.finish(admission) else {
             return Ok(None);

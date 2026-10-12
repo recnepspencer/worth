@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
@@ -113,20 +114,22 @@ pub(super) fn authorization_denial(
     query: &str,
 ) -> WorthQueryApplicationOneShotDenial {
     let kind = match denial.kind() {
-        WorthQueryOperationAuthorizationDenialKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        } => WorthQueryApplicationOneShotDenialKind::ActiveSnapshotCapacityExhausted {
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots,
+            },
+        ) => WorthQueryApplicationOneShotDenialKind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         },
-        WorthQueryOperationAuthorizationDenialKind::RetentionCapacityExhausted => {
-            WorthQueryApplicationOneShotDenialKind::RetentionCapacityExhausted
-        }
-        WorthQueryOperationAuthorizationDenialKind::RetentionIdentityExhausted => {
-            WorthQueryApplicationOneShotDenialKind::RetentionIdentityExhausted
-        }
-        WorthQueryOperationAuthorizationDenialKind::SnapshotIdentityExhausted => {
-            WorthQueryApplicationOneShotDenialKind::SnapshotIdentityExhausted
-        }
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::RetentionCapacityExhausted,
+        ) => WorthQueryApplicationOneShotDenialKind::RetentionCapacityExhausted,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::RetentionIdentityExhausted,
+        ) => WorthQueryApplicationOneShotDenialKind::RetentionIdentityExhausted,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::SnapshotIdentityExhausted,
+        ) => WorthQueryApplicationOneShotDenialKind::SnapshotIdentityExhausted,
         kind => WorthQueryApplicationOneShotDenialKind::Authorization(kind),
     };
     WorthQueryApplicationOneShotDenial {

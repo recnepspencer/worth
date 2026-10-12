@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationCounters;
 use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 
@@ -147,11 +148,15 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         bridge: &BridgeAuthorizationRuntime,
     ) -> Result<(), super::WorthQueryOperationAuthorizationDenialKind> {
         if !self.principal_remains_current_in(execution, runtime, snapshot)? {
-            return Err(super::WorthQueryOperationAuthorizationDenialKind::StalePrincipal);
+            return Err(super::WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StalePrincipal,
+            ));
         }
         self.decisions_remain_current_in(execution, runtime, snapshot, bridge)?
             .then_some(())
-            .ok_or(super::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization)
+            .ok_or(super::WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleAuthorization,
+            ))
     }
 
     pub(super) fn principal_remains_current_in(
@@ -174,8 +179,10 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
             Self::Capability(authorization) => {
                 match authorization.validate_currentness_in(execution, runtime, snapshot, bridge) {
                     Ok(()) => Ok(true),
-                    Err(kind) if super::denial::is_request_stop(kind) => Err(kind),
-                    Err(_) => Ok(false),
+                    Err(kind @ super::WorthQueryOperationAuthorizationDenialKind::Stopped(_)) => {
+                        Err(kind)
+                    }
+                    Err(super::WorthQueryOperationAuthorizationDenialKind::Refused(_)) => Ok(false),
                 }
             }
             Self::Principal(_) | Self::Abilities { .. } => {

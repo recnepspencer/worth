@@ -1,6 +1,7 @@
 use super::super::super::fixture::capability::{CapabilityGrant, CapabilityStatusField};
 use super::super::capability_delegation_mutation::grant;
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::{
     RelationalAuthorizationObservationPlan, RelationalAuthorizationPathPlan,
     RelationalAuthorizationPredicate,
@@ -49,7 +50,9 @@ fn copied_primary_dependencies_cannot_forge_delegation_target_support() {
                 .unwrap_err();
             assert_eq!(
                 denial.kind(),
-                WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleAuthorization
+                )
             );
         })
         .expect("the fixture block owns its installed host call")
@@ -140,7 +143,9 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                     .unwrap_err();
                 assert_eq!(
                     denial.kind(),
-                    WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::StaleAuthorization
+                    )
                 );
             }
             let mut wrong_resource: serde_json::Value = serde_json::from_str(&support).unwrap();
@@ -160,7 +165,9 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 .unwrap_err();
             assert_eq!(
                 denial.kind(),
-                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::RelationalObservationRejected
+                )
             );
 
             update_grant_field(
@@ -222,7 +229,9 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 .unwrap_err();
             assert_eq!(
                 denial.kind(),
-                WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleAuthorization
+                )
             );
         })
         .expect("the fixture block owns its installed host call")
@@ -353,7 +362,7 @@ let principal = authenticated_principal(
             .unwrap_err();
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::CapabilityExpired
+            WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired)
         );
 
 }).expect("the fixture block owns its installed host call")

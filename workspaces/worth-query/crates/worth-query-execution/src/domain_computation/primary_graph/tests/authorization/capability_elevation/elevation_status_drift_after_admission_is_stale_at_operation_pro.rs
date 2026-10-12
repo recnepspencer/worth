@@ -1,5 +1,6 @@
 //! elevation status drift after admission is stale at operation progression.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn elevation_status_drift_after_admission_is_stale_at_operation_progression() {
@@ -64,6 +65,8 @@ fn elevation_status_drift_after_admission_is_stale_at_operation_progression() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
 }

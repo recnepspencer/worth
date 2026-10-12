@@ -8,6 +8,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowAdvancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind;
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 const SECOND_APPROVER: usize = STRANGER;
 
@@ -102,7 +103,7 @@ fn revoked_starter_cannot_advance_but_second_actor_commits_attributed_payment() 
             Err(bank_server::BankApprovedPaymentWorkflowError::Advance(
                 WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(required)
             )) if required.instance() == instance.entity_id()
-                && required.denial().kind() == WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+                && required.denial().kind() == WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
         ),
         "the revoked starter must lose current capability authority: {denied:?}"
     );

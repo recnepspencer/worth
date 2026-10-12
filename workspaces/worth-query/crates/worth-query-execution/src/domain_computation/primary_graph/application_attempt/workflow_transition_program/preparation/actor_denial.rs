@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
@@ -40,12 +41,12 @@ fn actor_permission_denial(denial: &WorthQueryOperationAuthorizationDenial) -> b
         && denial.causes().iter().all(|kind| {
             matches!(
                 kind,
-                Kind::CapabilityGrantMissing
-                    | Kind::CapabilityAuthorizationMissing
-                    | Kind::ExplicitDenyRuleMatched
-                    | Kind::ConflictRuleMatched
-                    | Kind::SeparationOfDutyRuleMatched
-                    | Kind::DistinctActorRuleMatched
+                Kind::Refused(AuthorizationRefusal::CapabilityGrantMissing)
+                    | Kind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
+                    | Kind::Refused(AuthorizationRefusal::ExplicitDenyRuleMatched)
+                    | Kind::Refused(AuthorizationRefusal::ConflictRuleMatched)
+                    | Kind::Refused(AuthorizationRefusal::SeparationOfDutyRuleMatched)
+                    | Kind::Refused(AuthorizationRefusal::DistinctActorRuleMatched)
             )
         })
 }
@@ -58,23 +59,27 @@ mod tests {
     fn only_actor_permission_denials_can_become_actor_waits() {
         use WorthQueryOperationAuthorizationDenialKind as Kind;
         for kind in [
-            Kind::CapabilityGrantMissing,
-            Kind::ExplicitDenyRuleMatched,
-            Kind::SeparationOfDutyRuleMatched,
+            Kind::Refused(AuthorizationRefusal::CapabilityGrantMissing),
+            Kind::Refused(AuthorizationRefusal::ExplicitDenyRuleMatched),
+            Kind::Refused(AuthorizationRefusal::SeparationOfDutyRuleMatched),
         ] {
             assert!(actor_permission_denial(
                 &WorthQueryOperationAuthorizationDenial::new(kind, "actor")
             ));
         }
         for kind in [
-            Kind::Cancelled,
-            Kind::DeadlineExceeded,
-            Kind::ExpiredAuthentication,
-            Kind::CapabilityExpired,
-            Kind::PurposeMismatch,
-            Kind::PermissionDenied,
-            Kind::ScopeMismatch,
-            Kind::RelationalObservationRejected,
+            Kind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            )),
+            Kind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            )),
+            Kind::Refused(AuthorizationRefusal::ExpiredAuthentication),
+            Kind::Refused(AuthorizationRefusal::CapabilityExpired),
+            Kind::Refused(AuthorizationRefusal::PurposeMismatch),
+            Kind::Refused(AuthorizationRefusal::PermissionDenied),
+            Kind::Refused(AuthorizationRefusal::ScopeMismatch),
+            Kind::Refused(AuthorizationRefusal::RelationalObservationRejected),
         ] {
             assert!(!actor_permission_denial(
                 &WorthQueryOperationAuthorizationDenial::new(kind, "not actor permission")

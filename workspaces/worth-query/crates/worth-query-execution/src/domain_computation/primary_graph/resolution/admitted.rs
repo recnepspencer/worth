@@ -1,5 +1,6 @@
 //! Fresh installed principal decode from one bounded selected native image.
 
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_query_installation::facade::{
     ApplicationIdentityScalarValueBinding, WorthQueryInstalledPrincipalBinding,
 };
@@ -73,7 +74,7 @@ where
     let mapping = super::admitted_observations::observe_mapping(execution, &checked, admission)?;
     if !mapping.enabled {
         return Err(Stop::Semantic(
-            WorthQueryPrincipalResolutionDenialKind::DisabledPrincipal,
+            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::DisabledPrincipal),
         ));
     }
     let target = super::admitted_observations::observe_target(
@@ -87,7 +88,9 @@ where
     let principal_identity = installed_binding
         .decode_principal_identity(&target.principal_identity)
         .map_err(|_| {
-            Stop::Semantic(WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof)
+            Stop::Semantic(WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::StalePrincipalProof,
+            ))
         })?;
     let text_bytes = u64::try_from(resolution.binding.len())
         .map_err(|_| Stop::Admission(CompanionPreflightStop::WorkCounterOverflow))?;

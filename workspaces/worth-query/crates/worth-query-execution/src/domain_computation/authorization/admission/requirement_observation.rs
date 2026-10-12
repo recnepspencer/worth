@@ -6,6 +6,7 @@ use super::{
     WorthQueryConventionalAuthorizationObservation,
 };
 use crate::domain_computation::authorization::installed_policy::WorthQueryInstalledAuthorizationPolicy;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
     bridge_observation::lower_bridge_observation, WorthQueryAuthorizationDecisionFact,
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
@@ -124,7 +125,9 @@ where
             .evaluate(bridge_observation)
             .map_err(|_| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::BridgeEvaluationRejected,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::BridgeEvaluationRejected,
+                    ),
                     requirement.policy(),
                 )
             })?;
@@ -153,7 +156,9 @@ where
             Ok(())
         } else {
             Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::ScopeMismatch,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::ScopeMismatch,
+                ),
                 requirement.scope_entity(),
             ))
         }
@@ -167,7 +172,9 @@ where
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         if installed.scope_kind() != self.scope_identity.entity_kind() {
             return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::ScopeMismatch,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::ScopeMismatch,
+                ),
                 requirement.scope_entity(),
             ));
         }
@@ -187,7 +194,9 @@ where
             Ok(())
         } else {
             Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::PolicyNotInstalled,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::PolicyNotInstalled,
+                ),
                 requirement.policy(),
             ))
         }
@@ -213,7 +222,9 @@ where
         )
         .map_err(|_| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InvalidInstalledPolicy,
+                ),
                 requirement.policy(),
             )
         })?;
@@ -221,7 +232,9 @@ where
             .observe_authorization(plan, execution)
             .map_err(|_| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::RelationalObservationRejected,
+                    ),
                     requirement.policy(),
                 )
             })

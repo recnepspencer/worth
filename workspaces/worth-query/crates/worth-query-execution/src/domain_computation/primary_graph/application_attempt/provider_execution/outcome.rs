@@ -73,8 +73,12 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn progres
 ) -> WorthQueryProviderProgressionOutcome {
     use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
     match denial.kind() {
-        Kind::Cancelled => WorthQueryProviderProgressionOutcome::Cancelled,
-        Kind::DeadlineExceeded => WorthQueryProviderProgressionOutcome::TimedOut,
+        Kind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )) => WorthQueryProviderProgressionOutcome::Cancelled,
+        Kind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )) => WorthQueryProviderProgressionOutcome::TimedOut,
         _ => WorthQueryProviderProgressionOutcome::Denied(
             WorthQueryApplicationCommitDenial::request_authority_denied(stage, &denial),
         ),
@@ -87,8 +91,12 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn commit_
 ) -> WorthQueryApplicationCommitOutcome {
     use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
     match denial.kind() {
-        Kind::Cancelled => WorthQueryApplicationCommitOutcome::Cancelled,
-        Kind::DeadlineExceeded => WorthQueryApplicationCommitOutcome::TimedOut,
+        Kind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )) => WorthQueryApplicationCommitOutcome::Cancelled,
+        Kind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )) => WorthQueryApplicationCommitOutcome::TimedOut,
         _ => WorthQueryApplicationCommitOutcome::Denied(
             WorthQueryApplicationCommitDenial::request_authority_denied(stage, &denial),
         ),

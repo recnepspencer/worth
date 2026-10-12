@@ -1,5 +1,6 @@
 //! unknown disabled cancelled and cross runtime resolution fail closed.
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 
 #[test]
 fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
@@ -22,7 +23,9 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
                     )
                     .unwrap_err()
                     .kind(),
-                WorthQueryPrincipalResolutionDenialKind::UnknownPrincipal
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::UnknownPrincipal
+                )
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -46,7 +49,9 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
                     )
                     .unwrap_err()
                     .kind(),
-                WorthQueryPrincipalResolutionDenialKind::DisabledPrincipal
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::DisabledPrincipal
+                )
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -74,7 +79,9 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
                     )
                     .unwrap_err()
                     .kind(),
-                WorthQueryPrincipalResolutionDenialKind::Cancelled
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Err(
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+                ))
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -97,7 +104,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
                     )
                     .unwrap_err()
                     .kind(),
-                WorthQueryPrincipalResolutionDenialKind::ForeignRuntime
+                WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignRuntime)
             )
         })
         .expect("the fixture read owns its installed host call");

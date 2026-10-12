@@ -1,5 +1,6 @@
 //! every parent currentness drift stales retained authority.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn every_parent_currentness_drift_stales_retained_authority() {
@@ -77,7 +78,9 @@ fn every_parent_currentness_drift_stales_retained_authority() {
         };
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleAuthorization
+            ),
             "drift {drift:?} did not invalidate the composite fact"
         );
     }

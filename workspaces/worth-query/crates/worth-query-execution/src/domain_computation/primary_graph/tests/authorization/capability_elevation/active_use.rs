@@ -1,6 +1,7 @@
 use super::super::super::application_attempt::authenticated_principal;
 use super::super::super::fixture::CapabilityAction;
 use super::super::capability_progression::time;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind;
 
 #[test]
@@ -40,7 +41,9 @@ fn approved_receipt_rejects_another_elevation_and_a_narrowed_amount() {
             .expect("the fixture read owns its installed host call");
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::ElevationApprovalRejected
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationApprovalRejected
+            )
         );
     }
 }
@@ -79,7 +82,9 @@ fn approved_receipt_from_another_runtime_cannot_open_active_use() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationApprovalRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationApprovalRejected
+        )
     );
 }
 
@@ -120,7 +125,9 @@ fn approved_touch_elevation_cannot_authorize_a_disbursement_request() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityProjectionRejected
+        )
     );
 }
 
@@ -170,7 +177,9 @@ fn missing_direct_elevation_resource_denies_active_admission() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationInactive
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationInactive
+        )
     );
 }
 
@@ -218,7 +227,9 @@ fn additional_foreign_elevation_resource_denies_fresh_active_admission() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationInactive
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationInactive
+        )
     );
 }
 
@@ -290,7 +301,9 @@ fn retargeted_direct_elevation_resource_stales_admitted_authority() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
 }
 
@@ -360,6 +373,8 @@ fn additional_foreign_elevation_resource_stales_admitted_authority() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
 }

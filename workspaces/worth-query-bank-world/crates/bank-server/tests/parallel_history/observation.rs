@@ -16,6 +16,7 @@ use bank_server::{
     BankReadControls,
 };
 use std::collections::BTreeMap;
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_host::facade::{
     application_entry::{
         WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
@@ -148,7 +149,9 @@ impl<'a> SerialObserver<'a> {
             Err(WorthQueryApplicationRequestMutationDenial::Authorization(denial)) => {
                 assert_eq!(
                     denial.kind(),
-                    WorthQueryOperationAuthorizationDenialKind::PermissionDenied,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::PermissionDenied
+                    ),
                     "typed authorization cause"
                 );
                 Ok(Outcome::Unauthorized)

@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn selected_release_refuses_before_running_then_releases_without_new_allowance() {
@@ -91,20 +92,19 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
     let demand_key = key("selected-execution-failure", 1, 1);
     let product_occurrence = occurrence();
     crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
-        use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Authorization;
         use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Read;
         use WorthQueryOutputDemandDenialKind as Kind;
         for (kind, peer_executes) in [
             (Kind::WorkBudgetExceeded, true),
             (
-                Kind::RequestAuthorization(Authorization::StalePrincipal),
+                Kind::RequestAuthorization(AuthorizationRefusal::StalePrincipal),
                 true,
             ),
             (Kind::SourceQueryExecution(Read::StaleScope), true),
             (Kind::ProducerUnavailable, false),
             (Kind::SourceQueryExecution(Read::CardinalityMismatch), false),
             (
-                Kind::RequestAuthorization(Authorization::MutationPreconditionRejected),
+                Kind::RequestAuthorization(AuthorizationRefusal::MutationPreconditionRejected),
                 true,
             ),
             (Kind::SourceQueryExecution(Read::BasisUnavailable), true),
@@ -215,7 +215,7 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
     ));
     let mut denial = WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::RequestAuthorization(
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::PermissionDenied,
+            AuthorizationRefusal::PermissionDenied,
         ),
         "",
     );

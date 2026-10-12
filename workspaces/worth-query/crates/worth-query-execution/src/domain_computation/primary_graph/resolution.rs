@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_foundational::facade::AspectValue;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestInterruption, WorthQueryRequestScope,
@@ -71,7 +72,9 @@ fn principal_graph_binding<'a>(
 > {
     let graph = runtime.primary_graph().ok_or_else(|| {
         resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::PrimaryGraphNotInstalled,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::PrimaryGraphNotInstalled,
+            ),
             binding,
         )
     })?;
@@ -81,7 +84,9 @@ fn principal_graph_binding<'a>(
         .cloned()
         .ok_or_else(|| {
             resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::BindingNotInstalled,
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::BindingNotInstalled,
+                ),
                 binding,
             )
         })?;
@@ -101,13 +106,15 @@ fn principal_graph_binding_admitted<'a>(
 > {
     let graph = runtime.primary_graph().ok_or_else(|| {
         resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::PrimaryGraphNotInstalled,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::PrimaryGraphNotInstalled,
+            ),
             binding,
         )
     })?;
     let work = graph.layout.principal_lookup_work(binding).ok_or_else(|| {
         resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
+            WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow, partition_identity: None, policy_ancestor: None })),
             binding,
         )
     })?;
@@ -116,7 +123,7 @@ fn principal_graph_binding_admitted<'a>(
         .map_err(|stop| principal_admission_denial(stop, binding))?;
     let layout = graph.layout.principal_binding(binding).ok_or_else(|| {
         resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::BindingNotInstalled,
+            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::BindingNotInstalled),
             binding,
         )
     })?;
@@ -127,13 +134,13 @@ fn principal_admission_denial(
     stop: worth_relational::facade::mvcc::CompanionPreflightStop,
     binding: &str,
 ) -> WorthQueryPrincipalResolutionDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop;
-    let kind = match stop {
-        CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        | CompanionPreflightStop::PreparationMemoryCounterOverflow => {
-            WorthQueryPrincipalResolutionDenialKind::ProjectionPreparationMemoryExhausted
-        }
-        _ => WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
+    let kind = match super::provider::relational_execution_denial::preflight_execution_cause(stop) {
+        Ok(cause) => WorthQueryPrincipalResolutionDenialKind::Stopped(
+            super::provider::relational_execution_denial::relational_execution_kind(cause, None),
+        ),
+        Err(_) => WorthQueryPrincipalResolutionDenialKind::Refused(
+            PrincipalRefusal::IdentityIndexUnavailable,
+        ),
     };
     resolution_denial(kind, binding)
 }
@@ -190,7 +197,9 @@ where
         .decode_principal_identity(&target.principal_identity)
         .map_err(|_| {
             resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::StalePrincipalProof,
+                ),
                 resolution.binding,
             )
         })?;
@@ -232,13 +241,13 @@ fn resolve_unique_mapping_candidate(
         .map_err(|denial| entity_lookup_resolution_denial(denial.kind(), resolution.binding))?;
     if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
         return Err(resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipal,
+            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::AmbiguousPrincipal),
             resolution.binding,
         ));
     }
     let mapping_id = *lookup.candidate_entity_ids().first().ok_or_else(|| {
         resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::UnknownPrincipal,
+            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::UnknownPrincipal),
             resolution.binding,
         )
     })?;
@@ -252,13 +261,15 @@ fn validate_resolved_mapping(
 ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
     if &mapping.identity != expected_identity {
         return Err(resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::CorruptIdentityIndex,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::CorruptIdentityIndex,
+            ),
             binding,
         ));
     }
     if !mapping.enabled {
         return Err(resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::DisabledPrincipal,
+            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::DisabledPrincipal),
             binding,
         ));
     }
@@ -276,7 +287,9 @@ where
 {
     let declaration = Schema::declaration().map_err(|_| {
         resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::StaleInstalledSchema,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::StaleInstalledSchema,
+            ),
             binding,
         )
     })?;
@@ -285,7 +298,9 @@ where
         .bind_application_schema(declaration)
         .map_err(|_| {
             resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::StaleInstalledSchema,
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::StaleInstalledSchema,
+                ),
                 binding,
             )
         })?;
@@ -295,7 +310,9 @@ where
         Ok(())
     } else {
         Err(resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::StaleInstalledSchema,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::StaleInstalledSchema,
+            ),
             binding,
         ))
     }
@@ -309,13 +326,17 @@ fn admit_resolution_request(
     match scope.interruption() {
         Some(WorthQueryRequestInterruption::Cancelled) => {
             return Err(resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::Cancelled,
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Err(
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                )),
                 binding,
             ));
         }
         Some(WorthQueryRequestInterruption::DeadlineExceeded) => {
             return Err(resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded,
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Err(
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                )),
                 binding,
             ));
         }
@@ -323,7 +344,9 @@ fn admit_resolution_request(
     }
     if authentication_expired {
         return Err(resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::ExpiredAuthentication,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::ExpiredAuthentication,
+            ),
             binding,
         ));
     }

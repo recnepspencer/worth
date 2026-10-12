@@ -1,5 +1,6 @@
 //! approver reenable does not revive older approval.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn approver_reenable_does_not_revive_older_approval() {
@@ -62,6 +63,6 @@ fn approver_reenable_does_not_revive_older_approval() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StalePrincipal
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal)
     );
 }

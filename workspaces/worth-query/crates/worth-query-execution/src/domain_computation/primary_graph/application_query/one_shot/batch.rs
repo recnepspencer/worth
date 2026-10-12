@@ -3,6 +3,7 @@ use super::super::{
     WorthQueryApplicationQueryBatchResourceDenial,
 };
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 mod result;
 pub use result::WorthQueryApplicationBatchResult;
@@ -53,7 +54,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         let request = match phase.execution_request_for(&self.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(WorthQueryApplicationBatchReadDenial::Execution(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"), plan.query.name()))),
+            Err(_) => return Err(WorthQueryApplicationBatchReadDenial::Execution(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"), plan.query.name()))),
         };
         let execution = &request;
         self.execute_application_query_one_shot_in_batch_with_request(execution, plan, batch)

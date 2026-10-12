@@ -12,6 +12,7 @@ use super::capability_composition_mutation::{
     add_action_policy_relation, add_policy_relation, remove_policy_relation,
 };
 use super::capability_progression::time;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationCapabilityAccess,
     WorthQueryApplicationAuthorizationExplanationCause, WorthQueryApplicationCommitDenialKind,
@@ -247,7 +248,9 @@ fn assert_stale_at_operation(
         .expect("composition drift must deny at operation progression");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        ),
     );
 }
 

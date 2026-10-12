@@ -1,4 +1,5 @@
 //! authorization refusal at conditional reentry.
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use super::WorthQueryTemporalReentryDenial;
 use crate::domain_computation::primary_graph::{WorthQueryOperationAuthorizationDenialKind as Kind, WorthQueryOperationAuthorizationDenial as Failure};
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure as Terminal;
@@ -14,75 +15,80 @@ impl WorthQueryTemporalReentryDenial {
         refused: impl FnOnce(Kind) -> Terminal,
     ) -> Self {
         match kind {
-            Kind::ActiveSnapshotCapacityExhausted {
+            Kind::Refused(AuthorizationRefusal::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
-            } => Self::ActiveSnapshotCapacityExhausted {
+            }) => Self::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
             },
-            Kind::RetentionCapacityExhausted => Self::RetentionCapacityExhausted,
-            Kind::ExecutionRequest(cause) => Self::from_read_stop(Ok(cause)),
-            Kind::Cancelled => Self::from_native_stop(Native::Cancelled),
-            Kind::DeadlineExceeded => Self::from_native_stop(Native::DeadlineElapsed),
-            Kind::ProductSecurityBasis(
-                crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop),
-            ) => Self::from_read_stop(stop),
-            kind @ Kind::ProductSecurityBasis(
-                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_),
-            ) => Self::Terminal(refused(kind)),
-            kind @ (Kind::ForeignPhase
-            | Kind::ExpiredAuthentication
-            | Kind::ForeignRuntime
-            | Kind::StaleInstalledSchema
-            | Kind::StaleInstalledOperation
-            | Kind::StalePrincipal
-            | Kind::StaleScope
-            | Kind::MutationPreconditionRejected
-            | Kind::CanonicalWorkDenied
-            | Kind::TrustedTimeUnavailable
-            | Kind::InvalidOperationInput
-            | Kind::CapabilityProjectionRejected
-            | Kind::CapabilityGrantMissing
-            | Kind::CapabilityAuthorizationMissing
-            | Kind::PurposeMismatch
-            | Kind::ExplicitDenyRuleMatched
-            | Kind::ConflictRuleMatched
-            | Kind::SeparationOfDutyRuleMatched
-            | Kind::DistinctActorRuleMatched
-            | Kind::CapabilityRequired
-            | Kind::CapabilityNotRequired
-            | Kind::CapabilityExpired
-            | Kind::ElevationRequired
-            | Kind::ElevationNotApplicable
-            | Kind::ElevationProjectionRejected
-            | Kind::ElevationExpired
-            | Kind::ElevationInactive
-            | Kind::ElevationSelfApproval
-            | Kind::ElevationApproverConflict
-            | Kind::ElevationTransitionRequired
-            | Kind::ElevationLifecycleRoleMismatch
-            | Kind::ElevationRequestRejected
-            | Kind::ElevationApprovalRejected
-            | Kind::ElevationCloseRejected
-            | Kind::MandatoryReviewRejected
-            | Kind::ElevationDurationExceeded
-            | Kind::DelegationRejected
-            | Kind::DelegationTransitionRequired
-            | Kind::DelegationDepthExceeded
-            | Kind::DelegationCycle
-            | Kind::DelegationLineageChanged
-            | Kind::StaleAuthorization
-            | Kind::AdmissionIdentityExhausted
-            | Kind::SnapshotIdentityExhausted
-            | Kind::RetentionIdentityExhausted
-            | Kind::GraphWorkAdmissionUnavailable
-            | Kind::ScopeMismatch
-            | Kind::PolicyNotInstalled
-            | Kind::InvalidInstalledPolicy
-            | Kind::RelationalObservationRejected
-            | Kind::GrantSelectionLimitExceeded
-            | Kind::BridgeEvaluationRejected
-            | Kind::InconsistentDecision
-            | Kind::PermissionDenied) => Self::Terminal(refused(kind)),
+            Kind::Refused(AuthorizationRefusal::RetentionCapacityExhausted) => {
+                Self::RetentionCapacityExhausted
+            }
+            Kind::Stopped(Ok(cause)) => Self::from_read_stop(Ok(cause)),
+            Kind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            )) => Self::from_native_stop(Native::Cancelled),
+            Kind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            )) => Self::from_native_stop(Native::DeadlineElapsed),
+            kind @ Kind::Refused(AuthorizationRefusal::ProductSecurityBasis(_)) => {
+                Self::Terminal(refused(kind))
+            }
+            kind @ (Kind::Refused(AuthorizationRefusal::ForeignPhase)
+            | Kind::Refused(AuthorizationRefusal::ExpiredAuthentication)
+            | Kind::Refused(AuthorizationRefusal::ForeignRuntime)
+            | Kind::Refused(AuthorizationRefusal::StaleInstalledSchema)
+            | Kind::Refused(AuthorizationRefusal::StaleInstalledOperation)
+            | Kind::Refused(AuthorizationRefusal::StalePrincipal)
+            | Kind::Refused(AuthorizationRefusal::StaleScope)
+            | Kind::Refused(AuthorizationRefusal::MutationPreconditionRejected)
+            | Kind::Refused(AuthorizationRefusal::CanonicalWorkDenied)
+            | Kind::Refused(AuthorizationRefusal::TrustedTimeUnavailable)
+            | Kind::Refused(AuthorizationRefusal::InvalidOperationInput)
+            | Kind::Refused(AuthorizationRefusal::CapabilityProjectionRejected)
+            | Kind::Refused(AuthorizationRefusal::CapabilityGrantMissing)
+            | Kind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
+            | Kind::Refused(AuthorizationRefusal::PurposeMismatch)
+            | Kind::Refused(AuthorizationRefusal::ExplicitDenyRuleMatched)
+            | Kind::Refused(AuthorizationRefusal::ConflictRuleMatched)
+            | Kind::Refused(AuthorizationRefusal::SeparationOfDutyRuleMatched)
+            | Kind::Refused(AuthorizationRefusal::DistinctActorRuleMatched)
+            | Kind::Refused(AuthorizationRefusal::CapabilityRequired)
+            | Kind::Refused(AuthorizationRefusal::CapabilityNotRequired)
+            | Kind::Refused(AuthorizationRefusal::CapabilityExpired)
+            | Kind::Refused(AuthorizationRefusal::ElevationRequired)
+            | Kind::Refused(AuthorizationRefusal::ElevationNotApplicable)
+            | Kind::Refused(AuthorizationRefusal::ElevationProjectionRejected)
+            | Kind::Refused(AuthorizationRefusal::ElevationExpired)
+            | Kind::Refused(AuthorizationRefusal::ElevationInactive)
+            | Kind::Refused(AuthorizationRefusal::ElevationSelfApproval)
+            | Kind::Refused(AuthorizationRefusal::ElevationApproverConflict)
+            | Kind::Refused(AuthorizationRefusal::ElevationTransitionRequired)
+            | Kind::Refused(AuthorizationRefusal::ElevationLifecycleRoleMismatch)
+            | Kind::Refused(AuthorizationRefusal::ElevationRequestRejected)
+            | Kind::Refused(AuthorizationRefusal::ElevationApprovalRejected)
+            | Kind::Refused(AuthorizationRefusal::ElevationCloseRejected)
+            | Kind::Refused(AuthorizationRefusal::MandatoryReviewRejected)
+            | Kind::Refused(AuthorizationRefusal::ElevationDurationExceeded)
+            | Kind::Refused(AuthorizationRefusal::DelegationRejected)
+            | Kind::Refused(AuthorizationRefusal::DelegationTransitionRequired)
+            | Kind::Refused(AuthorizationRefusal::DelegationDepthExceeded)
+            | Kind::Refused(AuthorizationRefusal::DelegationCycle)
+            | Kind::Refused(AuthorizationRefusal::DelegationLineageChanged)
+            | Kind::Refused(AuthorizationRefusal::StaleAuthorization)
+            | Kind::Refused(AuthorizationRefusal::AdmissionIdentityExhausted)
+            | Kind::Refused(AuthorizationRefusal::SnapshotIdentityExhausted)
+            | Kind::Refused(AuthorizationRefusal::RetentionIdentityExhausted)
+            | Kind::Refused(AuthorizationRefusal::GraphWorkAdmissionUnavailable)
+            | Kind::Refused(AuthorizationRefusal::ScopeMismatch)
+            | Kind::Refused(AuthorizationRefusal::PolicyNotInstalled)
+            | Kind::Refused(AuthorizationRefusal::InvalidInstalledPolicy)
+            | Kind::Refused(AuthorizationRefusal::RelationalObservationRejected)
+            | Kind::Refused(AuthorizationRefusal::GrantSelectionLimitExceeded)
+            | Kind::Refused(AuthorizationRefusal::BridgeEvaluationRejected)
+            | Kind::Refused(AuthorizationRefusal::InconsistentDecision)
+            | Kind::Refused(AuthorizationRefusal::PermissionDenied)) => {
+                Self::Terminal(refused(kind))
+            }
         }
     }
 }

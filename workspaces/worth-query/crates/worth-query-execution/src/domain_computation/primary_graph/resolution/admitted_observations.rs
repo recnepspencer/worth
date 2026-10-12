@@ -1,5 +1,6 @@
 //! Fresh principal observations at one issued native root and one request meter.
 
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, AuthoritativeRecordAspectState, ContractValidatedAspectValue,
     ContractValidatedAspectValueView, FieldKey, LocatorAuthority,
@@ -29,9 +30,9 @@ pub(super) enum AdmittedPrincipalObservationStop {
 type ObservationResult<T> = Result<T, AdmittedPrincipalObservationStop>;
 
 fn stale() -> AdmittedPrincipalObservationStop {
-    AdmittedPrincipalObservationStop::Semantic(
-        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
-    )
+    AdmittedPrincipalObservationStop::Semantic(WorthQueryPrincipalResolutionDenialKind::Refused(
+        PrincipalRefusal::StalePrincipalProof,
+    ))
 }
 
 fn prepare(
@@ -244,7 +245,7 @@ pub(super) fn observe_mapping(
         mapping,
         layout.mapping_kind,
         &layout.status_locator,
-        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StalePrincipalProof),
         admission,
     )?;
     let AspectValue::Bool(enabled) = status else {
@@ -309,7 +310,9 @@ pub(super) fn observe_target(
                         && selected.replace(relation).is_some()
                     {
                         return Err(AdmittedPrincipalObservationStop::Semantic(
-                            WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipalTarget,
+                            WorthQueryPrincipalResolutionDenialKind::Refused(
+                                PrincipalRefusal::AmbiguousPrincipalTarget,
+                            ),
                         ));
                     }
                 }
@@ -324,7 +327,7 @@ pub(super) fn observe_target(
         )
     })??;
     let relation = selected.ok_or(AdmittedPrincipalObservationStop::Semantic(
-        WorthQueryPrincipalResolutionDenialKind::MissingPrincipalTarget,
+        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::MissingPrincipalTarget),
     ))?;
     let (principal, principal_identity) = selected_value(
         execution,
@@ -332,7 +335,9 @@ pub(super) fn observe_target(
         relation.target,
         layout.principal_kind,
         &layout.principal_identity_locator,
-        WorthQueryPrincipalResolutionDenialKind::WrongPrincipalTargetKind,
+        WorthQueryPrincipalResolutionDenialKind::Refused(
+            PrincipalRefusal::WrongPrincipalTargetKind,
+        ),
         admission,
     )?;
     let principal_identity_revision = revision(

@@ -4,6 +4,7 @@
 
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial;
 use worth_query_host::facade::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryEntityResolutionDenialKind,
     WorthQueryOperationAuthorizationDenialKind,
@@ -30,14 +31,18 @@ fn revocation_after_preparation_refuses_the_acceptance() {
             assert_eq!(
                 denial.kind(),
                 WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
-                    WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::StaleAuthorization
+                    )
                 )
             );
             assert_eq!(
                 denial
                     .authorization()
                     .map(|authorization| authorization.kind()),
-                Some(WorthQueryOperationAuthorizationDenialKind::StaleAuthorization)
+                Some(WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleAuthorization
+                ))
             );
         }
         other => panic!("a revoked actor must not settle the condition: {other:?}"),

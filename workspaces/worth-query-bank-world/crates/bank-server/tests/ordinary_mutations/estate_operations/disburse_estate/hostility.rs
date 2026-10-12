@@ -3,6 +3,7 @@ use bank_domain::{proposals::BankProposalDenial, schema::AccountStatus};
 use bank_server::{
     BankEstateDisbursementProjectionDenial, BankEstateProgressionDenial, BankMutationCommitOutcome,
 };
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn exact_beneficiary_and_destination_joint_ownership_are_required() {
@@ -172,10 +173,10 @@ fn beneficiary_and_executor_actors_deny_at_capability_composition() {
         };
         let kind = match actor_conflict {
             ActorConflict::Beneficiary => {
-                worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched
+                worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ConflictRuleMatched)
             }
             ActorConflict::Executor => {
-                worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::SeparationOfDutyRuleMatched
+                worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::SeparationOfDutyRuleMatched)
             }
             ActorConflict::None => unreachable!(),
         };

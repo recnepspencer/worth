@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_installation::facade::ApplicationSchema;
 
 #[path = "idempotency_resolution/denial.rs"]
@@ -193,7 +194,7 @@ where
         let execution = phase.execution_request_for(&self.product_runtime).map_err(|_| {
             WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
-                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase,
+                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase),
                     "idempotency-resolution",
                 ),
             )

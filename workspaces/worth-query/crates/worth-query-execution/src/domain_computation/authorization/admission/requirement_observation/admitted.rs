@@ -1,5 +1,6 @@
 //! Fresh Ability observation under the retained request's one preparation meter.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::mem::size_of;
 
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
@@ -156,7 +157,9 @@ where
             .evaluate(bridge_observation)
             .map_err(|_| {
                 AdmittedQueryAuthorizationStop::Authorization(denial(
-                    WorthQueryOperationAuthorizationDenialKind::BridgeEvaluationRejected,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::BridgeEvaluationRejected,
+                    ),
                     requirement.policy(),
                 ))
             })?;
@@ -269,7 +272,9 @@ where
             }
             RelationalAuthorizationPlanAdmissionStop::Plan(_) => {
                 AdmittedQueryAuthorizationStop::Authorization(denial(
-                    WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InvalidInstalledPolicy,
+                    ),
                     requirement.policy(),
                 ))
             }
@@ -298,7 +303,9 @@ where
                 RelationalAuthorizationBudgetedObservationStop::Native(_)
                 | RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired => {
                     AdmittedQueryAuthorizationStop::Authorization(denial(
-                        WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+                        WorthQueryOperationAuthorizationDenialKind::Refused(
+                            AuthorizationRefusal::RelationalObservationRejected,
+                        ),
                         requirement.policy(),
                     ))
                 }

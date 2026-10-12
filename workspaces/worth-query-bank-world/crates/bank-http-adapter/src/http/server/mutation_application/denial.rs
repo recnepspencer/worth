@@ -1,4 +1,6 @@
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind;
+#[cfg(test)]
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 use super::{BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
 
@@ -154,6 +156,7 @@ pub(in crate::http::server) fn unresolved_execution_stop(
 
 #[cfg(test)]
 mod tests {
+    use super::AuthorizationRefusal;
     use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind as Denial;
 
     use super::{request_mutation_denial, BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
@@ -184,17 +187,17 @@ mod tests {
         use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind as Authorization;
         let cases = [
             (
-                Denial::Authorization(Authorization::DeadlineExceeded),
+                Denial::Authorization(Authorization::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut))),
                 BankHttpDenialKind::DeadlineExceeded,
                 BankHttpNextAction::Retry,
             ),
             (
-                Denial::Authorization(Authorization::ExpiredAuthentication),
+                Denial::Authorization(Authorization::Refused(AuthorizationRefusal::ExpiredAuthentication)),
                 BankHttpDenialKind::Unauthenticated,
                 BankHttpNextAction::Authenticate,
             ),
             (
-                Denial::Authorization(Authorization::PermissionDenied),
+                Denial::Authorization(Authorization::Refused(AuthorizationRefusal::PermissionDenied)),
                 BankHttpDenialKind::PermissionDenied,
                 BankHttpNextAction::None,
             ),

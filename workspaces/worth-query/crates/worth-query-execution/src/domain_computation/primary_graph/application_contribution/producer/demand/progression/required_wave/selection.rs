@@ -95,8 +95,8 @@ where
         .on_branch(branch)
         .select_with_request(execution)
         .map_err(|stop| {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::ProductSelection(stop),
+            WorthQueryOutputDemandDenial::product_selection(
+                stop,
                 "required output Product basis could not be selected",
             )
         })?;
@@ -143,3 +143,6 @@ pub(super) fn committed_ready(
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(_)
     ))
 }
+
+#[cfg(test)]
+mod read_stop_tests;

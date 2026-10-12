@@ -1,5 +1,6 @@
 //! Conventional-operation admission phases.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -136,7 +137,9 @@ where
     } = validated;
     let admission_identity = WorthQueryOperationAdmissionIdentity::mint().ok_or_else(|| {
         WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::AdmissionIdentityExhausted,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::AdmissionIdentityExhausted,
+            ),
             operation.operation(),
         )
     })?;
@@ -211,7 +214,9 @@ where
     )?;
     if preparation.principal.is_expired() {
         return Err(WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ExpiredAuthentication,
+            ),
             preparation.principal.binding(),
         ));
     }

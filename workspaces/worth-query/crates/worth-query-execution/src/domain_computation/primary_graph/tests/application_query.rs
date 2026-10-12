@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
@@ -325,7 +326,7 @@ fn mapped_stranger_cannot_admit_a_valid_foreign_account_scope() {
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationQueryAdmissionDenialKind::Authorization(
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::PermissionDenied,
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied),
         )
     );
 }

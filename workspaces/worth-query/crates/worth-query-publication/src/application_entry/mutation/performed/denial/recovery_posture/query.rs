@@ -1,4 +1,6 @@
 use worth_query_execution::facade::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_execution::facade::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationOneShotDenialKind as ExecutionKind,
     WorthQueryApplicationQueryAdmissionDenialKind as AdmissionKind,
@@ -41,114 +43,124 @@ pub(super) fn query_posture(
 }
 
 fn product_posture(kind: ProductKind) -> WorthQueryRequiredOutputRecoveryPosture {
-    if kind.is_transient() {
-        WorthQueryRequiredOutputRecoveryPosture::Retryable
-    } else {
-        WorthQueryRequiredOutputRecoveryPosture::Terminal
+    match kind {
+        ProductKind::Stopped(_) => WorthQueryRequiredOutputRecoveryPosture::Terminal,
+        ProductKind::Refused(refusal) => {
+            if refusal.is_transient() {
+                WorthQueryRequiredOutputRecoveryPosture::Retryable
+            } else {
+                WorthQueryRequiredOutputRecoveryPosture::Terminal
+            }
+        }
     }
 }
 
 fn authorization_posture(kind: AuthorizationKind) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
-        AuthorizationKind::ProductSecurityBasis(product) => product_posture(product),
-        AuthorizationKind::Cancelled
-        | AuthorizationKind::DeadlineExceeded
-        | AuthorizationKind::TrustedTimeUnavailable
-        | AuthorizationKind::ActiveSnapshotCapacityExhausted { .. }
-        | AuthorizationKind::RetentionCapacityExhausted
-        | AuthorizationKind::GraphWorkAdmissionUnavailable => Retryable,
-        AuthorizationKind::ExecutionRequest(..)
-        | AuthorizationKind::ForeignPhase
-        | AuthorizationKind::ExpiredAuthentication
-        | AuthorizationKind::ForeignRuntime
-        | AuthorizationKind::StaleInstalledSchema
-        | AuthorizationKind::StaleInstalledOperation
-        | AuthorizationKind::StalePrincipal
-        | AuthorizationKind::StaleScope
-        | AuthorizationKind::MutationPreconditionRejected
-        | AuthorizationKind::CanonicalWorkDenied
-        | AuthorizationKind::InvalidOperationInput
-        | AuthorizationKind::CapabilityProjectionRejected
-        | AuthorizationKind::CapabilityGrantMissing
-        | AuthorizationKind::CapabilityAuthorizationMissing
-        | AuthorizationKind::PurposeMismatch
-        | AuthorizationKind::ExplicitDenyRuleMatched
-        | AuthorizationKind::ConflictRuleMatched
-        | AuthorizationKind::SeparationOfDutyRuleMatched
-        | AuthorizationKind::DistinctActorRuleMatched
-        | AuthorizationKind::CapabilityRequired
-        | AuthorizationKind::CapabilityNotRequired
-        | AuthorizationKind::CapabilityExpired
-        | AuthorizationKind::ElevationRequired
-        | AuthorizationKind::ElevationNotApplicable
-        | AuthorizationKind::ElevationProjectionRejected
-        | AuthorizationKind::ElevationExpired
-        | AuthorizationKind::ElevationInactive
-        | AuthorizationKind::ElevationSelfApproval
-        | AuthorizationKind::ElevationApproverConflict
-        | AuthorizationKind::ElevationTransitionRequired
-        | AuthorizationKind::ElevationLifecycleRoleMismatch
-        | AuthorizationKind::ElevationRequestRejected
-        | AuthorizationKind::ElevationApprovalRejected
-        | AuthorizationKind::ElevationCloseRejected
-        | AuthorizationKind::MandatoryReviewRejected
-        | AuthorizationKind::ElevationDurationExceeded
-        | AuthorizationKind::DelegationRejected
-        | AuthorizationKind::DelegationTransitionRequired
-        | AuthorizationKind::DelegationDepthExceeded
-        | AuthorizationKind::DelegationCycle
-        | AuthorizationKind::DelegationLineageChanged
-        | AuthorizationKind::StaleAuthorization
-        | AuthorizationKind::AdmissionIdentityExhausted
-        | AuthorizationKind::SnapshotIdentityExhausted
-        | AuthorizationKind::RetentionIdentityExhausted
-        | AuthorizationKind::ScopeMismatch
-        | AuthorizationKind::PolicyNotInstalled
-        | AuthorizationKind::InvalidInstalledPolicy
-        | AuthorizationKind::RelationalObservationRejected
-        | AuthorizationKind::GrantSelectionLimitExceeded
-        | AuthorizationKind::BridgeEvaluationRejected
-        | AuthorizationKind::InconsistentDecision
-        | AuthorizationKind::PermissionDenied => Terminal,
+        AuthorizationKind::Refused(AuthorizationRefusal::ProductSecurityBasis(refusal)) => product_posture(ProductKind::Refused(refusal)),
+        AuthorizationKind::Stopped(Err(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled))
+        | AuthorizationKind::Stopped(Err(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut))
+        | AuthorizationKind::Refused(AuthorizationRefusal::TrustedTimeUnavailable)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ActiveSnapshotCapacityExhausted{ .. })
+        | AuthorizationKind::Refused(AuthorizationRefusal::RetentionCapacityExhausted)
+        | AuthorizationKind::Refused(AuthorizationRefusal::GraphWorkAdmissionUnavailable) => Retryable,
+        AuthorizationKind::Stopped(Ok(..))
+        | AuthorizationKind::Refused(AuthorizationRefusal::ForeignPhase)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ExpiredAuthentication)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ForeignRuntime)
+        | AuthorizationKind::Refused(AuthorizationRefusal::StaleInstalledSchema)
+        | AuthorizationKind::Refused(AuthorizationRefusal::StaleInstalledOperation)
+        | AuthorizationKind::Refused(AuthorizationRefusal::StalePrincipal)
+        | AuthorizationKind::Refused(AuthorizationRefusal::StaleScope)
+        | AuthorizationKind::Refused(AuthorizationRefusal::MutationPreconditionRejected)
+        | AuthorizationKind::Refused(AuthorizationRefusal::CanonicalWorkDenied)
+        | AuthorizationKind::Refused(AuthorizationRefusal::InvalidOperationInput)
+        | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityProjectionRejected)
+        | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityGrantMissing)
+        | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
+        | AuthorizationKind::Refused(AuthorizationRefusal::PurposeMismatch)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ExplicitDenyRuleMatched)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ConflictRuleMatched)
+        | AuthorizationKind::Refused(AuthorizationRefusal::SeparationOfDutyRuleMatched)
+        | AuthorizationKind::Refused(AuthorizationRefusal::DistinctActorRuleMatched)
+        | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityRequired)
+        | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityNotRequired)
+        | AuthorizationKind::Refused(AuthorizationRefusal::CapabilityExpired)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationRequired)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationNotApplicable)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationProjectionRejected)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationExpired)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationInactive)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationSelfApproval)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationApproverConflict)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationTransitionRequired)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationLifecycleRoleMismatch)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationRequestRejected)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationApprovalRejected)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationCloseRejected)
+        | AuthorizationKind::Refused(AuthorizationRefusal::MandatoryReviewRejected)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ElevationDurationExceeded)
+        | AuthorizationKind::Refused(AuthorizationRefusal::DelegationRejected)
+        | AuthorizationKind::Refused(AuthorizationRefusal::DelegationTransitionRequired)
+        | AuthorizationKind::Refused(AuthorizationRefusal::DelegationDepthExceeded)
+        | AuthorizationKind::Refused(AuthorizationRefusal::DelegationCycle)
+        | AuthorizationKind::Refused(AuthorizationRefusal::DelegationLineageChanged)
+        | AuthorizationKind::Refused(AuthorizationRefusal::StaleAuthorization)
+        | AuthorizationKind::Refused(AuthorizationRefusal::AdmissionIdentityExhausted)
+        | AuthorizationKind::Refused(AuthorizationRefusal::SnapshotIdentityExhausted)
+        | AuthorizationKind::Refused(AuthorizationRefusal::RetentionIdentityExhausted)
+        | AuthorizationKind::Refused(AuthorizationRefusal::ScopeMismatch)
+        | AuthorizationKind::Refused(AuthorizationRefusal::PolicyNotInstalled)
+        | AuthorizationKind::Refused(AuthorizationRefusal::InvalidInstalledPolicy)
+        | AuthorizationKind::Refused(AuthorizationRefusal::RelationalObservationRejected)
+        | AuthorizationKind::Refused(AuthorizationRefusal::GrantSelectionLimitExceeded)
+        | AuthorizationKind::Refused(AuthorizationRefusal::BridgeEvaluationRejected)
+        | AuthorizationKind::Refused(AuthorizationRefusal::InconsistentDecision)
+        | AuthorizationKind::Refused(AuthorizationRefusal::PermissionDenied) => Terminal,
     }
 }
 
 fn principal_posture(kind: PrincipalKind) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
-        PrincipalKind::ExecutionRequest(_) => Retryable,
-        PrincipalKind::ExpiredAuthentication
-        | PrincipalKind::Cancelled
-        | PrincipalKind::DeadlineExceeded
-        | PrincipalKind::BranchMaterializationSuspended
-        | PrincipalKind::IdentityIndexUnavailable
-        | PrincipalKind::ActiveSnapshotCapacityExhausted { .. }
-        | PrincipalKind::RetentionCapacityExhausted => Retryable,
-        PrincipalKind::PrimaryGraphNotInstalled
-        | PrincipalKind::BindingNotInstalled
-        | PrincipalKind::ForeignRuntime
-        | PrincipalKind::StaleInstalledSchema
-        | PrincipalKind::CorruptIdentityIndex
-        | PrincipalKind::UnknownPrincipal
-        | PrincipalKind::DisabledPrincipal
-        | PrincipalKind::AmbiguousPrincipal
-        | PrincipalKind::MissingPrincipalTarget
-        | PrincipalKind::AmbiguousPrincipalTarget
-        | PrincipalKind::WrongPrincipalTargetKind
-        | PrincipalKind::StalePrincipalProof
-        | PrincipalKind::SnapshotIdentityExhausted
-        | PrincipalKind::RetentionIdentityExhausted => Terminal,
-        PrincipalKind::ForeignPhase
-        | PrincipalKind::ProjectionWorkBudgetExceeded
-        | PrincipalKind::ProjectionPreparationMemoryExhausted => Terminal,
+        PrincipalKind::Stopped(Ok(_)) => Terminal,
+        PrincipalKind::Refused(PrincipalRefusal::ExpiredAuthentication)
+        | PrincipalKind::Stopped(Err(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled))
+        | PrincipalKind::Stopped(Err(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut))
+        | PrincipalKind::Refused(PrincipalRefusal::BranchMaterializationSuspended)
+        | PrincipalKind::Refused(PrincipalRefusal::IdentityIndexUnavailable)
+        | PrincipalKind::Refused(PrincipalRefusal::ActiveSnapshotCapacityExhausted{ .. })
+        | PrincipalKind::Refused(PrincipalRefusal::RetentionCapacityExhausted) => Retryable,
+        PrincipalKind::Refused(PrincipalRefusal::PrimaryGraphNotInstalled)
+        | PrincipalKind::Refused(PrincipalRefusal::BindingNotInstalled)
+        | PrincipalKind::Refused(PrincipalRefusal::ForeignRuntime)
+        | PrincipalKind::Refused(PrincipalRefusal::StaleInstalledSchema)
+        | PrincipalKind::Refused(PrincipalRefusal::CorruptIdentityIndex)
+        | PrincipalKind::Refused(PrincipalRefusal::UnknownPrincipal)
+        | PrincipalKind::Refused(PrincipalRefusal::DisabledPrincipal)
+        | PrincipalKind::Refused(PrincipalRefusal::AmbiguousPrincipal)
+        | PrincipalKind::Refused(PrincipalRefusal::MissingPrincipalTarget)
+        | PrincipalKind::Refused(PrincipalRefusal::AmbiguousPrincipalTarget)
+        | PrincipalKind::Refused(PrincipalRefusal::WrongPrincipalTargetKind)
+        | PrincipalKind::Refused(PrincipalRefusal::StalePrincipalProof)
+        | PrincipalKind::Refused(PrincipalRefusal::SnapshotIdentityExhausted)
+        | PrincipalKind::Refused(PrincipalRefusal::RetentionIdentityExhausted) => Terminal,
+        PrincipalKind::Refused(PrincipalRefusal::ForeignPhase) => Terminal,
     }
 }
 
 fn scope_posture(kind: ScopeKind) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
-        ScopeKind::Stopped(_) => Retryable,
+        ScopeKind::Stopped(cause) => {
+            match worth_query_execution::facade::primary_graph::relational_execution_kind(
+                cause, None,
+            ) {
+                Err(_) => Retryable,
+                Ok(_) => Terminal,
+            }
+        }
         ScopeKind::Refused(ResolutionRefusal::EqualityIndexUnavailable)
         | ScopeKind::Refused(ResolutionRefusal::ActiveSnapshotCapacityExhausted { .. })
         | ScopeKind::Refused(ResolutionRefusal::RetentionCapacityExhausted) => Retryable,
@@ -253,17 +265,17 @@ mod tests {
     #[test]
     fn nested_world_capacity_is_retryable_but_foreign_authority_is_terminal() {
         assert_eq!(
-            admission_posture(AdmissionKind::Authorization(
-                AuthorizationKind::ProductSecurityBasis(ProductKind::Refused(
+            admission_posture(AdmissionKind::Authorization(AuthorizationKind::Refused(
+                AuthorizationRefusal::ProductSecurityBasis(
                     AdmissionRefusal::ObservationCapacityExhausted
-                ),),
-            )),
+                )
+            ),)),
             WorthQueryRequiredOutputRecoveryPosture::Retryable,
         );
         assert_eq!(
-            execution_posture(ExecutionKind::Authorization(
-                AuthorizationKind::ForeignRuntime,
-            )),
+            execution_posture(ExecutionKind::Authorization(AuthorizationKind::Refused(
+                AuthorizationRefusal::ForeignRuntime
+            ),)),
             WorthQueryRequiredOutputRecoveryPosture::Terminal,
         );
     }
@@ -273,21 +285,28 @@ mod tests {
 mod currency_request_tests {
     use super::*;
     #[test]
-    fn currency_stop_has_the_execution_twins_retry_posture() {
-        use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
-        use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
-        let kind = Kind::ExecutionResource {
-            denial: Resource::WorkExhausted,
-            partition_identity: None,
-            policy_ancestor: None,
-        };
-        assert_eq!(
-            admission_posture(AdmissionKind::ExecutionRequest(kind)),
-            WorthQueryRequiredOutputRecoveryPosture::Retryable
-        );
-        assert_eq!(
-            principal_posture(PrincipalKind::ExecutionRequest(kind)),
-            WorthQueryRequiredOutputRecoveryPosture::Retryable
-        );
+    fn currency_request_ceilings_keep_master_terminal_posture() {
+        use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
+        for cause in [
+            Native::WorkExhausted,
+            Native::DeclaredMemoryExhausted {
+                requested: 43,
+                admitted: 17,
+            },
+        ] {
+            let stop = worth_query_execution::facade::primary_graph::relational_execution_kind(
+                cause, None,
+            );
+            assert_eq!(
+                (
+                    principal_posture(PrincipalKind::Stopped(stop)),
+                    scope_posture(ScopeKind::Stopped(cause))
+                ),
+                (
+                    WorthQueryRequiredOutputRecoveryPosture::Terminal,
+                    WorthQueryRequiredOutputRecoveryPosture::Terminal
+                )
+            );
+        }
     }
 }

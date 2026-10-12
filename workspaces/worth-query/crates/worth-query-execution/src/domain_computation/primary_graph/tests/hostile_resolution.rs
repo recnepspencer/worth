@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use std::collections::BTreeMap;
 use std::time::Duration;
 
@@ -52,7 +53,9 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
                     )
                     .unwrap_err()
                     .kind(),
-                WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipal
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::AmbiguousPrincipal
+                )
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -95,7 +98,9 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
                     .validate_authenticated_principal(&phase, &principal, &fresh_scope)
                     .unwrap_err()
                     .kind(),
-                WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::StalePrincipalProof
+                )
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -131,7 +136,9 @@ fn application_principal_proof_expires_with_its_external_authentication() {
                     .validate_authenticated_principal(&phase, &principal, &scope)
                     .unwrap_err()
                     .kind(),
-                WorthQueryPrincipalResolutionDenialKind::ExpiredAuthentication
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::ExpiredAuthentication
+                )
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -179,7 +186,9 @@ fn changed_typed_principal_identity_revokes_the_resolved_proof() {
                     .validate_authenticated_principal(&phase, &principal, &scope)
                     .unwrap_err()
                     .kind(),
-                WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::StalePrincipalProof
+                )
             )
         })
         .expect("the fixture read owns its installed host call");

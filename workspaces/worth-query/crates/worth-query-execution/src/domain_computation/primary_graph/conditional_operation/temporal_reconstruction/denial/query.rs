@@ -1,4 +1,5 @@
 //! Reconstruction query admission preserves stops, capacity, and ordinary refusal.
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use super::*;
 use crate::domain_computation::primary_graph::{WorthQueryApplicationQueryAdmissionDenialKind as Query, WorthQueryOperationAuthorizationDenialKind as Authorization};
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::{WorthQueryTemporalReentryDenial as Reentry, WorthQueryTemporalControlStop as Control};
@@ -63,10 +64,10 @@ pub(super) fn authorization(
     kind: Authorization,
     detail: String,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
-    if kind == Authorization::RetentionIdentityExhausted {
+    if kind == Authorization::Refused(AuthorizationRefusal::RetentionIdentityExhausted) {
         return retention_identity_reconstruction_denial();
     }
-    if kind == Authorization::SnapshotIdentityExhausted {
+    if kind == Authorization::Refused(AuthorizationRefusal::SnapshotIdentityExhausted) {
         return snapshot_identity_reconstruction_denial();
     }
     match Reentry::authorization_kind(kind, crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure::Authorization) {

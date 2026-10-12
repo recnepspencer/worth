@@ -1,5 +1,6 @@
 //! exact request commits query derived state and returns one requested receipt.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt() {
@@ -83,7 +84,9 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
             .expect("the fixture read owns its installed host call");
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationTransitionRequired
+            )
         );
     }
 }

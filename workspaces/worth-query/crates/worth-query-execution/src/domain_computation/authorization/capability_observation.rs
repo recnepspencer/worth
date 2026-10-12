@@ -1,5 +1,6 @@
 //! Capability observation across Relational and Runtime Bridge authority.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
 use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 
@@ -192,7 +193,9 @@ pub(super) fn observe_capability_policy(
     let grant = extract_exact_grant(installed, &evidence)?;
     if exact_grant != grant {
         return Err(WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::InconsistentDecision,
+            ),
             installed.contract().name(),
         ));
     }
@@ -209,7 +212,9 @@ pub(super) fn observe_capability_policy(
         )
         .map_err(|()| {
             WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 installed.contract().name(),
             )
         })?
@@ -273,7 +278,9 @@ fn observe_exact_policy(
         .observe_authorization(observation_plan, execution)
         .map_err(|_| {
             WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::RelationalObservationRejected,
+                ),
                 installed.contract().name(),
             )
         })
@@ -297,7 +304,9 @@ fn evaluate_exact_policy(
     )?;
     let bridge_evidence = bridge.evaluate(bridge_observation).map_err(|_| {
         WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::BridgeEvaluationRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::BridgeEvaluationRejected,
+            ),
             installed.contract().name(),
         )
     })?;
@@ -305,7 +314,9 @@ fn evaluate_exact_policy(
         || !bridge.retains(&bridge_evidence)
     {
         return Err(WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::InconsistentDecision,
+            ),
             installed.contract().name(),
         ));
     }
@@ -337,7 +348,9 @@ fn extract_exact_grant(
 
 pub(super) fn invalid_policy(subject: &str) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidInstalledPolicy,
+        ),
         subject,
     )
 }

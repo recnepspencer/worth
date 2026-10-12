@@ -5,6 +5,7 @@
 //! verifier; this court does not claim an OIDC payment entry route.
 
 use std::time::{Duration, Instant};
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 use bank_domain::queries::payment;
 use bank_domain::schema::{ApprovePayment, PaymentStatus};
@@ -204,7 +205,7 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
             WorthQueryWorkflowAdvancePreparationDenial::AwaitingActor(ref required)
         )) if required.instance() == instance.entity_id()
             && required.denial().kind()
-                == WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+                == WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
     ));
     tokio::task::block_in_place(|| {
         authority::restore_approver(

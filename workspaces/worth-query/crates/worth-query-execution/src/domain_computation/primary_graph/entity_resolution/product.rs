@@ -170,16 +170,17 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .ok_or_else(|| {
                     entity_denial(
                         WorthQueryEntityResolutionDenialKind::Stopped(
-                            NativeReadStop::WorkExhausted,
+                            NativeReadStop::MemoryOverflow,
                         ),
                         field,
                     )
                 })?;
-            admission.admit_read_scratch(bounded_ids).map_err(|_| {
-                entity_denial(
-                    WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
-                    field,
-                )
+            admission.admit_read_scratch(bounded_ids).map_err(|stop| {
+                let kind = match super::super::provider::relational_execution_denial::preflight_execution_cause(stop) {
+                    Ok(cause) => WorthQueryEntityResolutionDenialKind::Stopped(cause),
+                    Err(_) => WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
+                };
+                entity_denial(kind, field)
             })?;
         }
         let installed = graph.retain_entity_resolution_context();

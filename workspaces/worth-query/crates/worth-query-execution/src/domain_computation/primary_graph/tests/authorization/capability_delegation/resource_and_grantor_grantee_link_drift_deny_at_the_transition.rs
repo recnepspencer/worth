@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn resource_and_grantor_grantee_link_drift_deny_at_the_transition() {
@@ -33,7 +34,9 @@ fn resource_and_grantor_grantee_link_drift_deny_at_the_transition() {
         };
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::DelegationRejected
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DelegationRejected
+            )
         );
 
         let actors = installed_delegated_capability_world();
@@ -69,7 +72,9 @@ fn resource_and_grantor_grantee_link_drift_deny_at_the_transition() {
         };
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::DelegationRejected
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DelegationRejected
+            )
         );
     }
 }

@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     application_query::{
         graph_read_plan_binding::WorthQueryQueryIndexPosture,
@@ -84,7 +85,7 @@ where
         |denial| {
             WorthQueryAuthorizedApplicationReadDenial::Authorization(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial),
+                    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::from(denial),
                     plan.query.name(),
                 ),
             )
@@ -233,7 +234,7 @@ where
     plan.authorization
         .validate_currentness_in(execution, runtime, current, application.authorization.bridge())
         .map_err(|kind| match kind {
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::StalePrincipal => {
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal) => {
                 WorthQueryAuthorizedApplicationReadDenial::StalePrincipal
             }
             kind => WorthQueryAuthorizedApplicationReadDenial::Authorization(

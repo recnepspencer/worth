@@ -1,5 +1,6 @@
 //! Exact request-shape validation for installed elevation meaning.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityElevationRule, ApplicationCapabilityFieldBinding,
     ApplicationCapabilityRequestProjection, ErasedApplicationCapabilityContract,
@@ -15,11 +16,15 @@ pub(in crate::domain_computation) fn validate_elevation_projection<Schema, Scope
     match (contract.elevation(), projection.elevation_selector()) {
         (ApplicationCapabilityElevationRule::NotApplicable, None) => Ok(()),
         (ApplicationCapabilityElevationRule::NotApplicable, Some(_)) => Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationNotApplicable,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationNotApplicable,
+            ),
             contract.name(),
         )),
         (ApplicationCapabilityElevationRule::Governed(_), None) => Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationRequired,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationRequired,
+            ),
             contract.name(),
         )),
         (ApplicationCapabilityElevationRule::Governed(definition), Some(selector))
@@ -28,7 +33,9 @@ pub(in crate::domain_computation) fn validate_elevation_projection<Schema, Scope
             Ok(())
         }
         (ApplicationCapabilityElevationRule::Governed(_), Some(_)) => Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationProjectionRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationProjectionRejected,
+            ),
             contract.name(),
         )),
     }

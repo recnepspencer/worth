@@ -19,3 +19,6 @@ worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+worth-relational = { path = "../../../../crates/worth-relational" }

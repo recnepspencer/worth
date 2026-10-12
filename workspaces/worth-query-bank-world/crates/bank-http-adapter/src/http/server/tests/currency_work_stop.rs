@@ -49,7 +49,7 @@ async fn one_unit_short_at_currency_has_the_execution_http_status() {
         .expect("one short cannot rebuild currency");
     match &denied {
         bank_server::BankApplicationQueryDenial::PrincipalResolution(
-            worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(kind),
+            worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(kind)),
         ) => assert!(matches!(kind, worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
             denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted, ..
         })),

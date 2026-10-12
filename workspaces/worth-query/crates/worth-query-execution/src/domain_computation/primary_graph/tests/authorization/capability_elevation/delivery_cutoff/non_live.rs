@@ -2,6 +2,7 @@ use super::super::super::super::fixture::{
     elevated_account_activity_parameters, AuthorizationWorld,
 };
 use super::context::{assert_resources_released, buffer_limit, context, one};
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryResumeControls,
@@ -108,7 +109,9 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationQueryAdmissionDenialKind::Authorization(
-            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleAuthorization
+            ),
         )
     );
     assert_resources_released(&context.world);
@@ -178,7 +181,9 @@ fn assert_stale_authorization(kind: WorthQueryApplicationOneShotDenialKind) {
     assert_eq!(
         kind,
         WorthQueryApplicationOneShotDenialKind::Authorization(
-            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleAuthorization
+            ),
         )
     );
 }

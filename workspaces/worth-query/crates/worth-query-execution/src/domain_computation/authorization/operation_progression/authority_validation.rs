@@ -1,5 +1,6 @@
 //! Exact operation-authority validation phase owner.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
@@ -88,7 +89,7 @@ where
     )?;
     if operation.contracts().authorization().requires_capability() {
         return Err(WorthQueryOperationAuthorizationDenial::new(
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::CapabilityRequired,
+            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityRequired),
             operation.operation(),
         ));
     }

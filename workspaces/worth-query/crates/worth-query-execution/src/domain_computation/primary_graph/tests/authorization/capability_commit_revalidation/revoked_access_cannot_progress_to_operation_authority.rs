@@ -1,5 +1,6 @@
 //! revoked access cannot progress to operation authority.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn revoked_access_cannot_progress_to_operation_authority() {
@@ -52,6 +53,8 @@ fn revoked_access_cannot_progress_to_operation_authority() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
 }

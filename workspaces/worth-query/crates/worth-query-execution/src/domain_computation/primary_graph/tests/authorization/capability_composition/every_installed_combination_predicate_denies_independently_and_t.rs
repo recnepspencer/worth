@@ -1,41 +1,60 @@
 //! every installed combination predicate denies independently and together.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn every_installed_combination_predicate_denies_independently_and_together() {
     for (scenario, expected_causes, expected_explanation) in [
         (
             CapabilityCompositionScenario::MissingAssignment,
-            vec![WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing],
+            vec![WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityAuthorizationMissing,
+            )],
             WorthQueryApplicationAuthorizationExplanationCause::MissingCapability,
         ),
         (
             CapabilityCompositionScenario::ExplicitDeny,
-            vec![WorthQueryOperationAuthorizationDenialKind::ExplicitDenyRuleMatched],
+            vec![WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ExplicitDenyRuleMatched,
+            )],
             WorthQueryApplicationAuthorizationExplanationCause::ExplicitPolicyDenial,
         ),
         (
             CapabilityCompositionScenario::ConflictingBeneficiary,
-            vec![WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched],
+            vec![WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ConflictRuleMatched,
+            )],
             WorthQueryApplicationAuthorizationExplanationCause::Conflict,
         ),
         (
             CapabilityCompositionScenario::RequestActor,
-            vec![WorthQueryOperationAuthorizationDenialKind::SeparationOfDutyRuleMatched],
+            vec![WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::SeparationOfDutyRuleMatched,
+            )],
             WorthQueryApplicationAuthorizationExplanationCause::SeparationOfDuty,
         ),
         (
             CapabilityCompositionScenario::PriorActor,
-            vec![WorthQueryOperationAuthorizationDenialKind::DistinctActorRuleMatched],
+            vec![WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DistinctActorRuleMatched,
+            )],
             WorthQueryApplicationAuthorizationExplanationCause::SeparationOfDuty,
         ),
         (
             CapabilityCompositionScenario::AccumulatedProhibitions,
             vec![
-                WorthQueryOperationAuthorizationDenialKind::ExplicitDenyRuleMatched,
-                WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched,
-                WorthQueryOperationAuthorizationDenialKind::SeparationOfDutyRuleMatched,
-                WorthQueryOperationAuthorizationDenialKind::DistinctActorRuleMatched,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::ExplicitDenyRuleMatched,
+                ),
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::ConflictRuleMatched,
+                ),
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::SeparationOfDutyRuleMatched,
+                ),
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::DistinctActorRuleMatched,
+                ),
             ],
             WorthQueryApplicationAuthorizationExplanationCause::ExplicitPolicyDenial,
         ),

@@ -1,4 +1,5 @@
 //! Workflow approval readmission keeps request stops distinct from authority refusal.
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryOperationAuthorizationDenial,
@@ -8,97 +9,182 @@ pub(super) fn denial(
 ) -> WorthQueryApplicationAttemptDenial {
     use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
     let kind = match denial.kind() {
-        WorthQueryOperationAuthorizationDenialKind::StalePrincipal => {
-            WorthQueryApplicationAttemptDenialKind::WorkflowApprovalPrincipalStale
-        }
-        WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing => {
-            WorthQueryApplicationAttemptDenialKind::WorkflowApprovalGrantUnavailable
-        }
-        WorthQueryOperationAuthorizationDenialKind::CapabilityExpired => {
-            WorthQueryApplicationAttemptDenialKind::WorkflowApprovalExpired
-        }
-        WorthQueryOperationAuthorizationDenialKind::DelegationLineageChanged
-        | WorthQueryOperationAuthorizationDenialKind::DelegationRejected => {
-            WorthQueryApplicationAttemptDenialKind::WorkflowApprovalDelegationChanged
-        }
-        WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable => {
-            WorthQueryApplicationAttemptDenialKind::WorkflowTrustedTimeUnavailable
-        }
-        WorthQueryOperationAuthorizationDenialKind::ExecutionRequest(kind) => {
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StalePrincipal,
+        ) => WorthQueryApplicationAttemptDenialKind::WorkflowApprovalPrincipalStale,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing,
+        ) => WorthQueryApplicationAttemptDenialKind::WorkflowApprovalGrantUnavailable,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityExpired,
+        ) => WorthQueryApplicationAttemptDenialKind::WorkflowApprovalExpired,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::DelegationLineageChanged,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::DelegationRejected,
+        ) => WorthQueryApplicationAttemptDenialKind::WorkflowApprovalDelegationChanged,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::TrustedTimeUnavailable,
+        ) => WorthQueryApplicationAttemptDenialKind::WorkflowTrustedTimeUnavailable,
+        WorthQueryOperationAuthorizationDenialKind::Stopped(Ok(kind)) => {
             WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind)
         }
-        WorthQueryOperationAuthorizationDenialKind::Cancelled => {
-            WorthQueryApplicationAttemptDenialKind::Cancelled
-        }
-        WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded => {
-            WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
-        }
-        WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(
-            crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop),
-        ) => match stop {
-            Ok(kind) => WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind),
-            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => {
-                WorthQueryApplicationAttemptDenialKind::Cancelled
-            }
-            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => {
-                WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
-            }
-        },
-        WorthQueryOperationAuthorizationDenialKind::ForeignPhase
-        | WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication
-        | WorthQueryOperationAuthorizationDenialKind::ForeignRuntime
-        | WorthQueryOperationAuthorizationDenialKind::StaleInstalledSchema
-        | WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation
-        | WorthQueryOperationAuthorizationDenialKind::StaleScope
-        | WorthQueryOperationAuthorizationDenialKind::MutationPreconditionRejected
-        | WorthQueryOperationAuthorizationDenialKind::CanonicalWorkDenied
-        | WorthQueryOperationAuthorizationDenialKind::InvalidOperationInput
-        | WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected
-        | WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
-        | WorthQueryOperationAuthorizationDenialKind::PurposeMismatch
-        | WorthQueryOperationAuthorizationDenialKind::ExplicitDenyRuleMatched
-        | WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched
-        | WorthQueryOperationAuthorizationDenialKind::SeparationOfDutyRuleMatched
-        | WorthQueryOperationAuthorizationDenialKind::DistinctActorRuleMatched
-        | WorthQueryOperationAuthorizationDenialKind::CapabilityRequired
-        | WorthQueryOperationAuthorizationDenialKind::CapabilityNotRequired
-        | WorthQueryOperationAuthorizationDenialKind::ElevationRequired
-        | WorthQueryOperationAuthorizationDenialKind::ElevationNotApplicable
-        | WorthQueryOperationAuthorizationDenialKind::ElevationProjectionRejected
-        | WorthQueryOperationAuthorizationDenialKind::ElevationExpired
-        | WorthQueryOperationAuthorizationDenialKind::ElevationInactive
-        | WorthQueryOperationAuthorizationDenialKind::ElevationSelfApproval
-        | WorthQueryOperationAuthorizationDenialKind::ElevationApproverConflict
-        | WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired
-        | WorthQueryOperationAuthorizationDenialKind::ElevationLifecycleRoleMismatch
-        | WorthQueryOperationAuthorizationDenialKind::ElevationRequestRejected
-        | WorthQueryOperationAuthorizationDenialKind::ElevationApprovalRejected
-        | WorthQueryOperationAuthorizationDenialKind::ElevationCloseRejected
-        | WorthQueryOperationAuthorizationDenialKind::MandatoryReviewRejected
-        | WorthQueryOperationAuthorizationDenialKind::ElevationDurationExceeded
-        | WorthQueryOperationAuthorizationDenialKind::DelegationTransitionRequired
-        | WorthQueryOperationAuthorizationDenialKind::DelegationDepthExceeded
-        | WorthQueryOperationAuthorizationDenialKind::DelegationCycle
-        | WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
-        | WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(
-            crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_),
+        WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )) => WorthQueryApplicationAttemptDenialKind::Cancelled,
+        WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ExpiredAuthentication,
         )
-        | WorthQueryOperationAuthorizationDenialKind::AdmissionIdentityExhausted
-        | WorthQueryOperationAuthorizationDenialKind::ActiveSnapshotCapacityExhausted { .. }
-        | WorthQueryOperationAuthorizationDenialKind::SnapshotIdentityExhausted
-        | WorthQueryOperationAuthorizationDenialKind::RetentionCapacityExhausted
-        | WorthQueryOperationAuthorizationDenialKind::RetentionIdentityExhausted
-        | WorthQueryOperationAuthorizationDenialKind::GraphWorkAdmissionUnavailable
-        | WorthQueryOperationAuthorizationDenialKind::ScopeMismatch
-        | WorthQueryOperationAuthorizationDenialKind::PolicyNotInstalled
-        | WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy
-        | WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected
-        | WorthQueryOperationAuthorizationDenialKind::GrantSelectionLimitExceeded
-        | WorthQueryOperationAuthorizationDenialKind::BridgeEvaluationRejected
-        | WorthQueryOperationAuthorizationDenialKind::InconsistentDecision
-        | WorthQueryOperationAuthorizationDenialKind::PermissionDenied => {
-            WorthQueryApplicationAttemptDenialKind::WorkflowApprovalAuthorityDenied
-        }
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ForeignRuntime,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleInstalledSchema,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleInstalledOperation,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleScope)
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::MutationPreconditionRejected,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CanonicalWorkDenied,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidOperationInput,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityProjectionRejected,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::PurposeMismatch,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ExplicitDenyRuleMatched,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ConflictRuleMatched,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::SeparationOfDutyRuleMatched,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::DistinctActorRuleMatched,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityRequired,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityNotRequired,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationRequired,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationNotApplicable,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationProjectionRejected,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationExpired,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationInactive,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationSelfApproval,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationApproverConflict,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationTransitionRequired,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationLifecycleRoleMismatch,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationRequestRejected,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationApprovalRejected,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationCloseRejected,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::MandatoryReviewRejected,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationDurationExceeded,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::DelegationTransitionRequired,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::DelegationDepthExceeded,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::DelegationCycle,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ProductSecurityBasis(_),
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::AdmissionIdentityExhausted,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ActiveSnapshotCapacityExhausted { .. },
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::SnapshotIdentityExhausted,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::RetentionCapacityExhausted,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::RetentionIdentityExhausted,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ScopeMismatch,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::PolicyNotInstalled,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidInstalledPolicy,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::RelationalObservationRejected,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::GrantSelectionLimitExceeded,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::BridgeEvaluationRejected,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InconsistentDecision,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::PermissionDenied,
+        ) => WorthQueryApplicationAttemptDenialKind::WorkflowApprovalAuthorityDenied,
     };
     WorthQueryApplicationAttemptDenial::new(kind, denial.to_string())
 }

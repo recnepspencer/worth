@@ -173,10 +173,38 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                     BranchDenial::Refused(AdmissionRefusal::RetiredBranch)
                     | BranchDenial::Refused(AdmissionRefusal::IncarnationChanged),
                 ) => continue,
-                Err(_) => {
+                Err(BranchDenial::Stopped(stop)) => {
+                    let policy = retirement.inventory_unavailable(retained_program_bytes);
+                    return Err(WorthQueryProgramSupportRetirementFailure::ReadExecution {
+                        stop,
+                        inventory: policy
+                            .partial_inventory()
+                            .expect("partial inventory was recorded")
+                            .clone(),
+                    });
+                }
+                Err(BranchDenial::Refused(
+                    AdmissionRefusal::ForeignPhase
+                    | AdmissionRefusal::ObservationStatePoisoned
+                    | AdmissionRefusal::OwnerUnavailable
+                    | AdmissionRefusal::ForeignOwner
+                    | AdmissionRefusal::ObservationRejected
+                    | AdmissionRefusal::ObservationStaleSourceHead
+                    | AdmissionRefusal::ObservationCapacityExhausted
+                    | AdmissionRefusal::CustodyCapacityExhausted
+                    | AdmissionRefusal::ObservationIdentityExhausted
+                    | AdmissionRefusal::ProductActivationUnavailable
+                    | AdmissionRefusal::RelationalBasisUnavailable
+                    | AdmissionRefusal::RelationalSnapshotUnavailable
+                    | AdmissionRefusal::ActiveSnapshotCapacityExhausted { .. }
+                    | AdmissionRefusal::RetentionCapacityExhausted
+                    | AdmissionRefusal::RetentionIdentityExhausted
+                    | AdmissionRefusal::SnapshotIdentityExhausted
+                    | AdmissionRefusal::BridgeSourceUnavailable,
+                )) => {
                     return Err(retirement
                         .inventory_unavailable(retained_program_bytes)
-                        .into());
+                        .into())
                 }
             };
             let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution,
@@ -188,7 +216,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                         let policy = retirement.inventory_unavailable(retained_program_bytes);
                         return Err(WorthQueryProgramSupportRetirementFailure::ReadExecution { stop, inventory: policy.partial_inventory().expect("partial inventory was recorded").clone() });
                     }
-                    Err(_) => return Err(retirement.inventory_unavailable(retained_program_bytes).into()),
+                    Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered) => return Err(retirement.inventory_unavailable(retained_program_bytes).into()),
                 };
             if inspection.revision() == revision {
                 current_branches = match current_branches.checked_add(1) {

@@ -1,5 +1,6 @@
 //! Each idempotency cause reaches the request kind whose instruction fits it.
 
+use worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationIdempotencyResolutionDenialKind as Resolution,
     WorthQueryOperationAuthorizationDenialKind as Authorization,
@@ -11,12 +12,12 @@ use super::{idempotency_kind, WorthQueryApplicationRequestMutationDenialKind as 
 fn every_idempotency_cause_keeps_its_own_request_kind() {
     let cases = [
         (
-            Resolution::Authorization(Authorization::DeadlineExceeded),
-            Request::Authorization(Authorization::DeadlineExceeded),
+            Resolution::Authorization(Authorization::Stopped(Err(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut))),
+            Request::Authorization(Authorization::Stopped(Err(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut))),
         ),
         (
-            Resolution::Authorization(Authorization::PermissionDenied),
-            Request::Authorization(Authorization::PermissionDenied),
+            Resolution::Authorization(Authorization::Refused(AuthorizationRefusal::PermissionDenied)),
+            Request::Authorization(Authorization::Refused(AuthorizationRefusal::PermissionDenied)),
         ),
         (
             Resolution::ForeignAdmission,

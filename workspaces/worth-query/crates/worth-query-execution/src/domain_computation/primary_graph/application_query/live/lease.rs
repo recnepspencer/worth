@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod basis_interruption;
 use std::marker::PhantomData;
 use std::rc::Rc;
@@ -148,7 +149,7 @@ where
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
-            Err(_) => return WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+            Err(_) => return WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         let execution = &phase_request;
 

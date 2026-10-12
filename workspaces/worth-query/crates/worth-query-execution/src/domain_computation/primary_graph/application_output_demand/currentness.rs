@@ -287,14 +287,15 @@ fn require_witnessed_output(
         Err(
             CompanionPreflightStop::WorkExhausted { .. }
             | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-            | CompanionPreflightStop::WorkCounterOverflow,
+            ,
         ) => Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)),
         Err(CompanionPreflightStop::Interrupted(event)) => {
             Err(super::super::output_reuse::interruption_denial(event))
         }
-        Err(_) => Err(denial(
-            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-        )),
+        Err(CompanionPreflightStop::WorkCounterOverflow) => Err(super::super::output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)),
+        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow) => Err(super::super::output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)),
+        Err(CompanionPreflightStop::PreparationMemoryExhausted { .. } | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => Err(super::super::output_reuse::memory_denial()),
+        Err(CompanionPreflightStop::TopologyPending | CompanionPreflightStop::SelectedSourceMismatch | CompanionPreflightStop::SelectedPositionUnavailable { .. } | CompanionPreflightStop::ForeignCell | CompanionPreflightStop::RegistrationChanged) => Err(denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)),
     }
 }
 

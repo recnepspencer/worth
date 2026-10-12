@@ -1,5 +1,6 @@
 //! typed reconstruction preserves query authority.
 use super::*;
+use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 
 pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     application: &ProgramApplication,
@@ -156,7 +157,9 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     match unavailable {
         Err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution(denial)) => assert_eq!(
             denial.kind(),
-            WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::BranchMaterializationSuspended
+            ),
         ),
         Err(denial) => panic!("suspended generated materialization reported {denial:?}"),
         Ok(_) => panic!("suspended generated materialization must not be currently readable"),

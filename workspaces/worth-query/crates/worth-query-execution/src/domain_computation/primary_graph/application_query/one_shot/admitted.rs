@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// A required cue reserves the Query read's maximum, plus its retained
@@ -197,7 +198,7 @@ fn map_selected_read_stop(
             crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop::World,
         ) | SelectedAuthorizedReadStop::StaleSecurity => {
             WorthQueryApplicationOneShotDenialKind::Authorization(
-                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+                crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleAuthorization),
             )
         }
         SelectedAuthorizedReadStop::Currentness(
@@ -205,7 +206,7 @@ fn map_selected_read_stop(
             | SelectedAuthorizationCurrentnessStop::StaleDecision
             | SelectedAuthorizationCurrentnessStop::UnsupportedGovernance,
         ) => WorthQueryApplicationOneShotDenialKind::Authorization(
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleAuthorization),
         ),
         SelectedAuthorizedReadStop::Currentness(
             SelectedAuthorizationCurrentnessStop::Interrupted(

@@ -1,5 +1,6 @@
 //! zero or overlong duration and invalid storage key fail before commit.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn zero_or_overlong_duration_and_invalid_storage_key_fail_before_commit() {
@@ -52,7 +53,9 @@ fn zero_or_overlong_duration_and_invalid_storage_key_fail_before_commit() {
             .expect("the fixture read owns its installed host call");
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::ElevationDurationExceeded
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationDurationExceeded
+            )
         );
     }
 
@@ -104,6 +107,8 @@ fn zero_or_overlong_duration_and_invalid_storage_key_fail_before_commit() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationRequestRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationRequestRejected
+        )
     );
 }

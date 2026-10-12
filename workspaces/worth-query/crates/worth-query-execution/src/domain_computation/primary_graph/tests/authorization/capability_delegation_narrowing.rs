@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, StringApplicationValueBinding, U64ApplicationValueBinding,
 };
@@ -85,7 +86,9 @@ fn every_stored_narrowing_axis_is_enforced_by_production_admission() {
         };
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DelegationRejected
+            ),
             "axis {axis:?} escaped the installed narrowing transition"
         );
     }

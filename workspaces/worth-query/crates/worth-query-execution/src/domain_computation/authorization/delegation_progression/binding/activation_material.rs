@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
@@ -154,7 +155,7 @@ fn bind_optional(
         }
         (None, None) => Ok(()),
         _ => Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
+            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::DelegationRejected),
             "delegated capability optional dimension",
         )),
     }

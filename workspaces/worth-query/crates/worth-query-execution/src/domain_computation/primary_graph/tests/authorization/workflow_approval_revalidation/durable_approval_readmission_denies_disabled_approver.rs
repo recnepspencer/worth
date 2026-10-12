@@ -1,5 +1,6 @@
 //! durable approval readmission denies disabled approver.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn durable_approval_readmission_denies_disabled_approver() {
@@ -65,6 +66,6 @@ fn durable_approval_readmission_denies_disabled_approver() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StalePrincipal
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal)
     );
 }

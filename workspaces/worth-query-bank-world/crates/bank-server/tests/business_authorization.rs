@@ -1,3 +1,4 @@
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 #[path = "business_authorization/fixture.rs"]
 mod business_authorization_fixture;
 mod support;
@@ -87,7 +88,9 @@ fn real_graph_allows_distinct_approver_and_deny_precedence_blocks_initiator() {
             },
             "initiator",
         ),
-        WorthQueryOperationAuthorizationDenialKind::ExplicitDenyRuleMatched,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ExplicitDenyRuleMatched,
+        ),
     );
 }
 
@@ -128,7 +131,9 @@ fn viewer_cross_business_and_employee_roles_do_not_combine_into_approval() {
             },
             "cross-business",
         ),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing,
+        ),
     );
 }
 
@@ -183,7 +188,9 @@ fn revoked_approver_membership_is_absent_from_current_authorization_graph() {
             },
             "revoked",
         ),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing,
+        ),
     );
 }
 

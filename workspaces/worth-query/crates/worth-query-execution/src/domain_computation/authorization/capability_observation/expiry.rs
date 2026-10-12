@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 
 use super::*;
@@ -46,7 +47,9 @@ pub(super) fn observe_grant_expiry(
         .flatten()
         .ok_or_else(|| {
             WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 installed.contract().name(),
             )
         })

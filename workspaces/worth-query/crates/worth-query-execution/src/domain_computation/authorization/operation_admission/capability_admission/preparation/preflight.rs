@@ -1,5 +1,6 @@
 //! Named preflight checks for capability admission preparation.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRequest, ApplicationCapabilityRequestProjection,
 };
@@ -55,13 +56,17 @@ where
 {
     if principal.is_expired() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ExpiredAuthentication,
+            ),
             principal.binding(),
         ));
     }
     if principal.runtime_authority() != runtime.runtime.authority_identity() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
             capability.contract().name(),
         ));
     }
@@ -69,7 +74,9 @@ where
         || runtime.installed_schema.binding_identity() != *capability.binding_identity()
     {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::StaleInstalledSchema,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleInstalledSchema,
+            ),
             capability.contract().name(),
         ));
     }
@@ -78,7 +85,9 @@ where
         .validate_installed_capability(capability)
         .map_err(|rejection| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleInstalledOperation,
+                ),
                 rejection.subject(),
             )
         })
@@ -127,7 +136,9 @@ where
 {
     let projection = input.capability_request().map_err(|rejection| {
         denial(
-            WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityProjectionRejected,
+            ),
             rejection.subject(),
         )
     })?;
@@ -158,7 +169,9 @@ where
         CapabilityAdmissionInput::Derive(input) => {
             ApplicationEncodedInput::encode(input).map_err(|_| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::InvalidOperationInput,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InvalidOperationInput,
+                    ),
                     capability.contract().name(),
                 )
             })
@@ -184,7 +197,7 @@ where
     <Operation::InputBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::validate(input)
         .map_err(|_| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::InvalidOperationInput,
+                WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::InvalidOperationInput),
                 operation.operation(),
             )
         })
@@ -200,7 +213,9 @@ pub(super) fn sample_trusted_time<Schema, Capability, Operation, Input>(
         .sample(installed.request().timeline)
         .map_err(|_| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::TrustedTimeUnavailable,
+                ),
                 capability.contract().name(),
             )
         })
@@ -230,7 +245,9 @@ where
         .installed_operation_for_capability(capability)
         .map_err(|_| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleInstalledOperation,
+                ),
                 capability.contract().operation(),
             )
         })
@@ -241,7 +258,9 @@ pub(super) fn mint_operation_admission<Schema, Capability, Operation, Input>(
 ) -> Result<WorthQueryOperationAdmissionIdentity, WorthQueryOperationAuthorizationDenial> {
     WorthQueryOperationAdmissionIdentity::mint().ok_or_else(|| {
         denial(
-            WorthQueryOperationAuthorizationDenialKind::AdmissionIdentityExhausted,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::AdmissionIdentityExhausted,
+            ),
             capability.contract().operation(),
         )
     })
@@ -277,7 +296,9 @@ fn validate_approved_applicability<Schema, Capability, Operation, Input>(
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
     if installed.elevation().is_none() && approved.is_some() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationNotApplicable,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationNotApplicable,
+            ),
             capability.contract().name(),
         ));
     }
@@ -291,7 +312,9 @@ fn require_approved_transition<Schema, Capability, Operation, Input>(
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
     if installed.elevation().is_some() && approved.is_none() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationTransitionRequired,
+            ),
             capability.contract().name(),
         ));
     }
@@ -302,7 +325,9 @@ fn policy_not_installed<Schema, Capability, Operation, Input>(
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
 ) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::PolicyNotInstalled,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::PolicyNotInstalled,
+        ),
         capability.contract().name(),
     )
 }

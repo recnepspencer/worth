@@ -3,6 +3,7 @@ use super::super::{
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) fn bridge_reconstruction_denial(
     detail: impl Into<String>,
@@ -60,34 +61,36 @@ pub(super) fn principal(
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
     use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Kind;
     match denial.kind() {
-        Kind::ExecutionRequest(kind) => read_stopped(Ok(kind)),
-        Kind::Cancelled => read_stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)),
-        Kind::DeadlineExceeded => read_stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut)),
-        Kind::ProjectionWorkBudgetExceeded => read_stopped(crate::facade::primary_graph::relational_execution_kind(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted, None)),
-        Kind::ProjectionPreparationMemoryExhausted => read_stopped(crate::facade::primary_graph::relational_execution_kind(worth_relational::facade::transactions::RelationalExecutionDenialCause::MemoryLimitExceedsParent, None)),
+        Kind::Stopped(stop) => read_stopped(stop),
 
-        Kind::ActiveSnapshotCapacityExhausted {
+        Kind::Refused(PrincipalRefusal::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
-        } => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
-        Kind::RetentionCapacityExhausted => retention_capacity_reconstruction_denial(),
-        Kind::RetentionIdentityExhausted => retention_identity_reconstruction_denial(),
-        Kind::SnapshotIdentityExhausted => snapshot_identity_reconstruction_denial(),
-        Kind::ForeignPhase
-            | Kind::PrimaryGraphNotInstalled
-            | Kind::BindingNotInstalled
-            | Kind::ForeignRuntime
-            | Kind::StaleInstalledSchema
-            | Kind::ExpiredAuthentication
-            | Kind::BranchMaterializationSuspended
-            | Kind::IdentityIndexUnavailable
-            | Kind::CorruptIdentityIndex
-            | Kind::UnknownPrincipal
-            | Kind::DisabledPrincipal
-            | Kind::AmbiguousPrincipal
-            | Kind::MissingPrincipalTarget
-            | Kind::AmbiguousPrincipalTarget
-            | Kind::WrongPrincipalTargetKind
-            | Kind::StalePrincipalProof => reconstruction_denial(
+        }) => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
+        Kind::Refused(PrincipalRefusal::RetentionCapacityExhausted) => {
+            retention_capacity_reconstruction_denial()
+        }
+        Kind::Refused(PrincipalRefusal::RetentionIdentityExhausted) => {
+            retention_identity_reconstruction_denial()
+        }
+        Kind::Refused(PrincipalRefusal::SnapshotIdentityExhausted) => {
+            snapshot_identity_reconstruction_denial()
+        }
+        Kind::Refused(PrincipalRefusal::ForeignPhase)
+        | Kind::Refused(PrincipalRefusal::PrimaryGraphNotInstalled)
+        | Kind::Refused(PrincipalRefusal::BindingNotInstalled)
+        | Kind::Refused(PrincipalRefusal::ForeignRuntime)
+        | Kind::Refused(PrincipalRefusal::StaleInstalledSchema)
+        | Kind::Refused(PrincipalRefusal::ExpiredAuthentication)
+        | Kind::Refused(PrincipalRefusal::BranchMaterializationSuspended)
+        | Kind::Refused(PrincipalRefusal::IdentityIndexUnavailable)
+        | Kind::Refused(PrincipalRefusal::CorruptIdentityIndex)
+        | Kind::Refused(PrincipalRefusal::UnknownPrincipal)
+        | Kind::Refused(PrincipalRefusal::DisabledPrincipal)
+        | Kind::Refused(PrincipalRefusal::AmbiguousPrincipal)
+        | Kind::Refused(PrincipalRefusal::MissingPrincipalTarget)
+        | Kind::Refused(PrincipalRefusal::AmbiguousPrincipalTarget)
+        | Kind::Refused(PrincipalRefusal::WrongPrincipalTargetKind)
+        | Kind::Refused(PrincipalRefusal::StalePrincipalProof) => reconstruction_denial(
             WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionPrincipal,
             format!("{:?}: {}", denial.kind(), denial.binding()),
         ),

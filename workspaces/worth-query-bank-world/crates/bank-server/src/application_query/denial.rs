@@ -281,9 +281,9 @@ impl BankApplicationQueryDenial {
             Query::SourceQueryInstallation(kind) => {
                 Bank::SourceQueryInstallation(query_installation(kind))
             }
-            Query::SourcePrincipal(kind) => Bank::SourcePrincipal(kind),
+            Query::SourcePrincipal(kind) => Bank::SourcePrincipal(WorthQueryPrincipalResolutionDenialKind::Refused(kind)),
             Query::SourceScope(kind) => {
-                Bank::SourceScope(BankEntityResolutionDenial::from_query(kind).kind())
+                Bank::SourceScope(BankEntityResolutionDenial::from_query(worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(kind)).kind())
             }
             Query::SourceQueryAdmission(kind) => Bank::SourceQueryAdmission(admission(kind)),
             Query::SourceQueryExecution(kind) => Bank::SourceQueryExecution(one_shot(kind)),
@@ -292,8 +292,8 @@ impl BankApplicationQueryDenial {
             Query::AmbiguousApplicableProducer => Bank::AmbiguousApplicableProducer,
             Query::ProducerUnavailable => Bank::ProducerUnavailable,
             Query::ProducerDomainDenied => Bank::ProducerDomainDenied,
-            Query::RequestAuthorization(kind) => Bank::RequestAuthorization(authorization(kind)),
-            Query::ProductSelection(denial) => Bank::ProductSelection(product_selection(denial)),
+            Query::RequestAuthorization(kind) => Bank::RequestAuthorization(authorization(worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(kind))),
+            Query::ProductSelection(refusal) => Bank::ProductSelection(product_selection(worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::Refused(refusal))),
             Query::SchedulingRejected => Bank::SchedulingRejected,
             Query::SchedulingDeferred => Bank::SchedulingDeferred,
             Query::PublicationStale => Bank::PublicationStale,

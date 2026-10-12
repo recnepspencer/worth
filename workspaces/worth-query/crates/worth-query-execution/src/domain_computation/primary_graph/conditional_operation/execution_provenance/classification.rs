@@ -53,8 +53,6 @@ pub enum WorthQueryConditionalExecutionTerminal {
 /// Why processing a due wake ended as it did, when a specific cause is known.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalExecutionCause {
-    /// An equality-index or projection read stopped under the execution request.
-    ReadExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// A reentry retry or unresolved outcome retains the original typed cause.
     Reentry(super::super::WorthQueryConditionalReentryFailure),
     /// Bridge refused the retained conditional decision with this native cause.

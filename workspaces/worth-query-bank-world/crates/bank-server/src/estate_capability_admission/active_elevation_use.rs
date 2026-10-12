@@ -1,4 +1,5 @@
 use std::time::Duration;
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 use bank_domain::{
     estate::{
@@ -235,7 +236,9 @@ fn real_approved_elevation_cannot_enter_the_bank_disbursement_operation() {
         .expect("DisburseEstate does not admit approved-elevation authority");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationNotApplicable
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationNotApplicable
+        )
     );
     let ordinary = fixture.runtime.disburse_estate_with_key(
         &requester,

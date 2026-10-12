@@ -1,5 +1,6 @@
 //! parent reactivation does not revive delegated approval.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn parent_reactivation_does_not_revive_delegated_approval() {
@@ -62,6 +63,8 @@ fn parent_reactivation_does_not_revive_delegated_approval() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
 }

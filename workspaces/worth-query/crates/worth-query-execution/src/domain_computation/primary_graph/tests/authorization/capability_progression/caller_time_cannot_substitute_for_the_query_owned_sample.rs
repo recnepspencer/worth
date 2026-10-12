@@ -1,5 +1,6 @@
 //! caller time cannot substitute for the query owned sample.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn caller_time_cannot_substitute_for_the_query_owned_sample() {
@@ -31,11 +32,15 @@ fn caller_time_cannot_substitute_for_the_query_owned_sample() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        )
     );
     assert!(denial.identity().is_some());
     assert_eq!(
         denial.causes(),
-        [WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing]
+        [WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        )]
     );
 }

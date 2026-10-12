@@ -248,15 +248,18 @@ mod cancellation_spelling {
         primary_graph::WorthQueryOperationAuthorizationDenialKind as Authorization,
     };
 
+    use worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+
     #[test]
     fn authorization_interruption_uses_the_opening_cause() {
         for (reader, opening) in [
-            (Authorization::Cancelled, Interruption::Cancelled),
+            (Authorization::Stopped(Err(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled)), Interruption::Cancelled),
             (
-                Authorization::DeadlineExceeded,
+                Authorization::Stopped(Err(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut)),
                 Interruption::DeadlineExceeded,
             ),
         ] {
+            assert_eq!(authorization_interruption(reader), Some(Denial::Interrupted(opening)));
             let mapped = WorthQueryApplicationRecoveryRequestDenial::advancement(
                 authorization_interruption(reader).unwrap(),
             );
@@ -265,6 +268,9 @@ mod cancellation_spelling {
                     WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(
                         Denial::Interrupted(cause))) if cause == opening));
         }
-        assert!(authorization_interruption(Authorization::ExplicitDenyRuleMatched).is_none());
+        assert!(authorization_interruption(Authorization::Refused(
+            AuthorizationRefusal::ExplicitDenyRuleMatched
+        ))
+        .is_none());
     }
 }

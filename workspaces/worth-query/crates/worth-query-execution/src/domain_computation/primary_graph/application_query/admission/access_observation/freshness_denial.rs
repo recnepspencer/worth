@@ -1,4 +1,5 @@
 //! Admission freshness reads retain request stops and ordinary staleness separately.
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAdmissionDenialKind as Admission,
     WorthQueryEntityResolutionDenialKind as Entity,
@@ -7,31 +8,35 @@ use crate::domain_computation::primary_graph::{
 use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
 pub(super) fn principal(cause: Principal) -> Admission {
     match cause {
-        Principal::ExecutionRequest(kind) => Admission::ExecutionRequest(kind),
-        Principal::Cancelled => Admission::Cancelled,
-        Principal::DeadlineExceeded => Admission::DeadlineExceeded,
-        Principal::ForeignPhase
-        | Principal::PrimaryGraphNotInstalled
-        | Principal::BindingNotInstalled
-        | Principal::ForeignRuntime
-        | Principal::StaleInstalledSchema
-        | Principal::ExpiredAuthentication
-        | Principal::BranchMaterializationSuspended
-        | Principal::IdentityIndexUnavailable
-        | Principal::ProjectionWorkBudgetExceeded
-        | Principal::ProjectionPreparationMemoryExhausted
-        | Principal::CorruptIdentityIndex
-        | Principal::UnknownPrincipal
-        | Principal::DisabledPrincipal
-        | Principal::AmbiguousPrincipal
-        | Principal::MissingPrincipalTarget
-        | Principal::AmbiguousPrincipalTarget
-        | Principal::WrongPrincipalTargetKind
-        | Principal::StalePrincipalProof
-        | Principal::ActiveSnapshotCapacityExhausted { .. }
-        | Principal::SnapshotIdentityExhausted
-        | Principal::RetentionCapacityExhausted
-        | Principal::RetentionIdentityExhausted => Admission::StalePrincipal,
+        Principal::Stopped(Ok(kind)) => Admission::ExecutionRequest(kind),
+        Principal::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )) => Admission::Cancelled,
+        Principal::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )) => Admission::DeadlineExceeded,
+        Principal::Refused(PrincipalRefusal::ForeignPhase)
+        | Principal::Refused(PrincipalRefusal::PrimaryGraphNotInstalled)
+        | Principal::Refused(PrincipalRefusal::BindingNotInstalled)
+        | Principal::Refused(PrincipalRefusal::ForeignRuntime)
+        | Principal::Refused(PrincipalRefusal::StaleInstalledSchema)
+        | Principal::Refused(PrincipalRefusal::ExpiredAuthentication)
+        | Principal::Refused(PrincipalRefusal::BranchMaterializationSuspended)
+        | Principal::Refused(PrincipalRefusal::IdentityIndexUnavailable)
+        | Principal::Refused(PrincipalRefusal::CorruptIdentityIndex)
+        | Principal::Refused(PrincipalRefusal::UnknownPrincipal)
+        | Principal::Refused(PrincipalRefusal::DisabledPrincipal)
+        | Principal::Refused(PrincipalRefusal::AmbiguousPrincipal)
+        | Principal::Refused(PrincipalRefusal::MissingPrincipalTarget)
+        | Principal::Refused(PrincipalRefusal::AmbiguousPrincipalTarget)
+        | Principal::Refused(PrincipalRefusal::WrongPrincipalTargetKind)
+        | Principal::Refused(PrincipalRefusal::StalePrincipalProof)
+        | Principal::Refused(PrincipalRefusal::ActiveSnapshotCapacityExhausted { .. })
+        | Principal::Refused(PrincipalRefusal::SnapshotIdentityExhausted)
+        | Principal::Refused(PrincipalRefusal::RetentionCapacityExhausted)
+        | Principal::Refused(PrincipalRefusal::RetentionIdentityExhausted) => {
+            Admission::StalePrincipal
+        }
     }
 }
 pub(super) fn entity(cause: Entity) -> Admission {

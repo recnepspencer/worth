@@ -1,5 +1,6 @@
 //! Delegation progression consumes one access-bound exact support observation.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityDelegationRequest, ApplicationCapabilityRequest,
 };
@@ -79,7 +80,9 @@ impl WorthQueryObservedDelegationSupport {
             .retain_observed_support(self.supporting)
             .map_err(|()| {
                 WorthQueryOperationAuthorizationDenial::new(
-                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InconsistentDecision,
+                    ),
                     access.operation(),
                 )
             })?;
@@ -127,7 +130,9 @@ where
         })
         .ok_or_else(|| {
             WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 access.operation(),
             )
         })?

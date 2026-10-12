@@ -1,3 +1,5 @@
+mod preflight;
+pub(in crate::domain_computation::primary_graph) use preflight::preflight_execution_cause;
 /// The only conversion from Relational execution causes to Query denial kinds.
 pub fn relational_execution_kind(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,

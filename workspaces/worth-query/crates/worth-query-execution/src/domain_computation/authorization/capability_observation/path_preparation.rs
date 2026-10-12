@@ -1,5 +1,6 @@
 //! Exact request anchors and trusted-time predicates for installed policy paths.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::{
     RelationalAuthorizationEntityAnchor, RelationalAuthorizationExactAdjacencyConstraint,
     RelationalAuthorizationTraversal, RelationalAuthorizationTraversalDirection,
@@ -164,14 +165,18 @@ pub(super) fn context_key(
 
 fn projection_denial(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityProjectionRejected,
+        ),
         subject,
     )
 }
 
 fn invalid_policy(subject: &str) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidInstalledPolicy,
+        ),
         subject,
     )
 }

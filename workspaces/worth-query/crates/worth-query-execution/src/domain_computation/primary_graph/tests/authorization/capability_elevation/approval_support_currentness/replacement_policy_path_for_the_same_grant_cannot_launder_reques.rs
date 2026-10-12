@@ -1,5 +1,6 @@
 //! replacement policy path for the same grant cannot launder request support.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn replacement_policy_path_for_the_same_grant_cannot_launder_request_support() {
@@ -71,7 +72,9 @@ fn replacement_policy_path_for_the_same_grant_cannot_launder_request_support() {
 
     assert_eq!(
         denial.denial().kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
     world
         .application

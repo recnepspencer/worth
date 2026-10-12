@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::Duration;
 
 use worth_query_declaration::facade::application_schema::{
@@ -134,7 +135,9 @@ fn assert_precondition_rejected<T>(
     let denial = outcome.err().unwrap_or_else(|| panic!("{message}"));
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::MutationPreconditionRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::MutationPreconditionRejected
+        ),
         "{message}"
     );
 }

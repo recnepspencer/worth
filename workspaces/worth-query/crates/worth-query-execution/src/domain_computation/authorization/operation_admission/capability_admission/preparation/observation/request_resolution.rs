@@ -1,5 +1,6 @@
 //! Exact typed capability-request resolution owned by capability admission.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::{
@@ -268,7 +269,9 @@ impl WorthQueryCapabilityEntitySelector for ErasedApplicationCapabilityEntitySel
 
 fn denial(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityProjectionRejected,
+        ),
         subject,
     )
 }

@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_capability::{
         ApplicationCapabilityDelegationRequest, ApplicationCapabilityRequest,
@@ -78,7 +79,7 @@ where
     {
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody")),
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
         self.authorize_capability_delegation_with_request(
             &execution,
@@ -139,7 +140,9 @@ where
             .delegation_request()
             .map_err(|rejection| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::DelegationRejected,
+                    ),
                     rejection.subject(),
                 )
             })?;
@@ -191,7 +194,9 @@ fn validate_activation_operation<Schema, Operation, Input>(
 
 fn stale(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleInstalledOperation,
+        ),
         subject,
     )
 }
@@ -200,7 +205,9 @@ fn delegation_denial(
     installed: &super::capability_registry::WorthQueryInstalledCapabilityPlan,
 ) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::DelegationRejected,
+        ),
         installed.contract().name(),
     )
 }

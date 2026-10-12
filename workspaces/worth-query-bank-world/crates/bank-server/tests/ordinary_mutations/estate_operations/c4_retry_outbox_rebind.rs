@@ -4,6 +4,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 use bank_domain::estate::DeathNoticeStatus;
 use bank_external_rail::test_control::FaultScript;
@@ -111,7 +112,7 @@ fn equivalent_binding_does_not_bypass_fresh_authorization_currentness() {
             if matches!(
                 denial.kind(),
                 worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization(
-                    worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+                    worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
                 )
             )
     ));

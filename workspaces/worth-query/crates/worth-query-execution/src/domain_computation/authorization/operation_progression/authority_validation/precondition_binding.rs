@@ -1,5 +1,6 @@
 //! Operation-precondition binding phase owner.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_schema::TypedMutationPreconditions,
@@ -89,7 +90,7 @@ where
     let operation = validated.operation;
     let graph = runtime.runtime.primary_graph().ok_or_else(|| {
         WorthQueryOperationAuthorizationDenial::new(
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignRuntime),
             operation.operation(),
         )
     })?;
@@ -102,7 +103,7 @@ where
     )
     .map_err(|()| {
         WorthQueryOperationAuthorizationDenial::new(
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::MutationPreconditionRejected,
+            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::MutationPreconditionRejected),
             operation.operation(),
         )
     })?;

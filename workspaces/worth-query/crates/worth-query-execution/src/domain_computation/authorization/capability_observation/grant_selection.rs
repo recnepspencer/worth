@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::{
     RelationalAuthorizationEntityAnchor, RelationalAuthorizationFieldComparison,
     RelationalAuthorizationObservationCounters, RelationalAuthorizationObservationPlan,
@@ -79,20 +80,24 @@ fn lookup_candidate_grants(
                 return super::super::denial::relational_read_denial(cause,installed.contract().name());
             }
             denial(
-                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+                WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::RelationalObservationRejected),
                 installed.contract().name(),
             )
         })?;
     if lookup.overflowed() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::GrantSelectionLimitExceeded,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::GrantSelectionLimitExceeded,
+            ),
             installed.contract().name(),
         ));
     }
     let candidates = lookup.candidate_entity_ids();
     if candidates.is_empty() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityGrantMissing,
+            ),
             installed.contract().name(),
         ));
     }
@@ -144,7 +149,9 @@ fn observe_candidate_paths(
         .observe_authorization(plan, execution)
         .map_err(|_| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::RelationalObservationRejected,
+                ),
                 installed.contract().name(),
             )
         })
@@ -161,7 +168,9 @@ fn selected_grant(
         .and_then(|witness| witness.entity_at(installed.grant_witness().entity_ordinal()))
         .ok_or_else(|| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::CapabilityAuthorizationMissing,
+                ),
                 installed.contract().name(),
             )
         })
@@ -262,7 +271,9 @@ fn append_grant_predicates(
 
 fn invalid_policy(subject: &str) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidInstalledPolicy,
+        ),
         subject,
     )
 }

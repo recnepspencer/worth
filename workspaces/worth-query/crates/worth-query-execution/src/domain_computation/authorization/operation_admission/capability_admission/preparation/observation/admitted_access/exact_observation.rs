@@ -1,5 +1,6 @@
 //! Runtime-, schema-, plan-, session-, and snapshot-bound capability observation.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityFieldBinding, ApplicationCapabilityRequestProjection,
@@ -215,7 +216,9 @@ impl<Schema> WorthQueryExactCapabilityObservationContext<'_, Schema> {
 
 fn denial(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityProjectionRejected,
+        ),
         subject,
     )
 }

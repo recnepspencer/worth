@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::cell::Cell;
 use std::time::{Duration, Instant};
 
@@ -145,7 +146,9 @@ fn commit_basis_cannot_be_paired_with_a_different_admitted_operation() {
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InconsistentDecision
+        )
     );
 }
 
@@ -204,6 +207,6 @@ fn commit_basis_cannot_be_revalidated_by_a_foreign_runtime() {
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ForeignRuntime
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignRuntime)
     );
 }

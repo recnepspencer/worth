@@ -81,7 +81,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
             .map_err(|denial| WorthQueryApplicationQueryAdmissionDenial::from_authorization(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial), query.name(),
+                    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::from(denial), query.name(),
                 ),
             ))?;
         let (authorization, authorization_work) =

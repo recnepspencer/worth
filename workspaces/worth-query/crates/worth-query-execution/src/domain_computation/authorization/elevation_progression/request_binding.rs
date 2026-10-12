@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
@@ -110,7 +111,7 @@ fn inconsistent_support(
     subject: &str,
 ) -> crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial {
     crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::InconsistentDecision),
         subject,
     )
 }

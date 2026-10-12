@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, StringApplicationValueBinding, U64ApplicationValueBinding,
 };
@@ -100,7 +101,9 @@ fn exact_parent_policy_cannot_borrow_an_alternate_grant_path() {
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        ),
     );
 }
 

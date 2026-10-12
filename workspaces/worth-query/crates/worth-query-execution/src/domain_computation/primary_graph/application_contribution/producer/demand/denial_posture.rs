@@ -1,6 +1,7 @@
 //! Retry meaning of typed output-demand stops.
 
 use super::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 impl WorthQueryOutputDemandDenialKind {
     pub(super) fn default_recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
@@ -79,67 +80,13 @@ impl WorthQueryOutputDemandDenialKind {
         kind: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
     ) -> Self {
         use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
         match kind {
-            Kind::Cancelled => Self::Cancelled,
-            Kind::DeadlineExceeded => Self::TimedOut,
-            Kind::ProductSecurityBasis(admission) => Self::ProductSelection(admission),
-            other @ (Kind::ExecutionRequest(..)
-            | Kind::ForeignPhase
-            | Kind::ExpiredAuthentication
-            | Kind::ForeignRuntime
-            | Kind::StaleInstalledSchema
-            | Kind::StaleInstalledOperation
-            | Kind::StalePrincipal
-            | Kind::StaleScope
-            | Kind::MutationPreconditionRejected
-            | Kind::CanonicalWorkDenied
-            | Kind::TrustedTimeUnavailable
-            | Kind::InvalidOperationInput
-            | Kind::CapabilityProjectionRejected
-            | Kind::CapabilityGrantMissing
-            | Kind::CapabilityAuthorizationMissing
-            | Kind::PurposeMismatch
-            | Kind::ExplicitDenyRuleMatched
-            | Kind::ConflictRuleMatched
-            | Kind::SeparationOfDutyRuleMatched
-            | Kind::DistinctActorRuleMatched
-            | Kind::CapabilityRequired
-            | Kind::CapabilityNotRequired
-            | Kind::CapabilityExpired
-            | Kind::ElevationRequired
-            | Kind::ElevationNotApplicable
-            | Kind::ElevationProjectionRejected
-            | Kind::ElevationExpired
-            | Kind::ElevationInactive
-            | Kind::ElevationSelfApproval
-            | Kind::ElevationApproverConflict
-            | Kind::ElevationTransitionRequired
-            | Kind::ElevationLifecycleRoleMismatch
-            | Kind::ElevationRequestRejected
-            | Kind::ElevationApprovalRejected
-            | Kind::ElevationCloseRejected
-            | Kind::MandatoryReviewRejected
-            | Kind::ElevationDurationExceeded
-            | Kind::DelegationRejected
-            | Kind::DelegationTransitionRequired
-            | Kind::DelegationDepthExceeded
-            | Kind::DelegationCycle
-            | Kind::DelegationLineageChanged
-            | Kind::StaleAuthorization
-            | Kind::AdmissionIdentityExhausted
-            | Kind::ActiveSnapshotCapacityExhausted { .. }
-            | Kind::SnapshotIdentityExhausted
-            | Kind::RetentionCapacityExhausted
-            | Kind::RetentionIdentityExhausted
-            | Kind::GraphWorkAdmissionUnavailable
-            | Kind::ScopeMismatch
-            | Kind::PolicyNotInstalled
-            | Kind::InvalidInstalledPolicy
-            | Kind::RelationalObservationRejected
-            | Kind::GrantSelectionLimitExceeded
-            | Kind::BridgeEvaluationRejected
-            | Kind::InconsistentDecision
-            | Kind::PermissionDenied) => Self::RequestAuthorization(other),
+            Kind::Stopped(Err(Control::Cancelled)) => Self::Cancelled,
+            Kind::Stopped(Err(Control::TimedOut)) => Self::TimedOut,
+            Kind::Stopped(Ok(kind)) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)),
+            Kind::Refused(AuthorizationRefusal::ProductSecurityBasis(refusal)) => Self::ProductSelection(refusal),
+            Kind::Refused(refusal) => Self::RequestAuthorization(refusal),
         }
     }
 
@@ -149,32 +96,12 @@ impl WorthQueryOutputDemandDenialKind {
         kind: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind,
     ) -> Self {
         use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Kind;
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
         match kind {
-            Kind::Cancelled => Self::Cancelled,
-            Kind::DeadlineExceeded => Self::TimedOut,
-            Kind::ProjectionWorkBudgetExceeded => Self::WorkBudgetExceeded,
-            Kind::ProjectionPreparationMemoryExhausted => Self::RetentionBudgetExceeded,
-            other @ (Kind::ForeignPhase
-            | Kind::ExecutionRequest(..)
-            | Kind::PrimaryGraphNotInstalled
-            | Kind::BindingNotInstalled
-            | Kind::ForeignRuntime
-            | Kind::StaleInstalledSchema
-            | Kind::ExpiredAuthentication
-            | Kind::BranchMaterializationSuspended
-            | Kind::IdentityIndexUnavailable
-            | Kind::CorruptIdentityIndex
-            | Kind::UnknownPrincipal
-            | Kind::DisabledPrincipal
-            | Kind::AmbiguousPrincipal
-            | Kind::MissingPrincipalTarget
-            | Kind::AmbiguousPrincipalTarget
-            | Kind::WrongPrincipalTargetKind
-            | Kind::StalePrincipalProof
-            | Kind::ActiveSnapshotCapacityExhausted { .. }
-            | Kind::SnapshotIdentityExhausted
-            | Kind::RetentionCapacityExhausted
-            | Kind::RetentionIdentityExhausted) => Self::SourcePrincipal(other),
+            Kind::Stopped(Err(Control::Cancelled)) => Self::Cancelled,
+            Kind::Stopped(Err(Control::TimedOut)) => Self::TimedOut,
+            Kind::Stopped(Ok(kind)) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)),
+            Kind::Refused(refusal) => Self::SourcePrincipal(refusal),
         }
     }
 
@@ -185,7 +112,7 @@ impl WorthQueryOutputDemandDenialKind {
         use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind as Kind;
         match kind {
             Kind::Stopped(cause) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(match crate::facade::primary_graph::relational_execution_kind(cause, None) { Ok(kind) => kind, Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => return Self::Cancelled, Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => return Self::TimedOut })),
-            Kind::Refused(_) => Self::SourceScope(kind),
+            Kind::Refused(refusal) => Self::SourceScope(refusal),
         }
     }
 

@@ -1,5 +1,6 @@
 //! Spare capacity and the nested boxed payload are part of memory custody.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_execution::ChargedBytes;
 #[test]
 fn boxed_authorization_and_spare_string_capacity_are_charged() {
@@ -10,12 +11,14 @@ fn boxed_authorization_and_spare_string_capacity_are_charged() {
     let mut authorization_subject = String::with_capacity(256);
     authorization_subject.push('a');
     let authorization = WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::PermissionDenied,
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied),
         authorization_subject,
     );
     let denial = WorthQueryApplicationOneShotDenial {
         kind: WorthQueryApplicationOneShotDenialKind::Authorization(
-            WorthQueryOperationAuthorizationDenialKind::PermissionDenied,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::PermissionDenied,
+            ),
         ),
         payload: std::sync::Arc::new(OneShotDenialPayload {
             authorization_denial: Some(Box::new(authorization)),

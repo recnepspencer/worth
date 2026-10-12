@@ -1,5 +1,6 @@
 //! approval after the exact request window returns the request receipt.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn approval_after_the_exact_request_window_returns_the_request_receipt() {
@@ -42,7 +43,7 @@ fn approval_after_the_exact_request_window_returns_the_request_receipt() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.denial().kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationExpired
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ElevationExpired)
     );
     assert_eq!(
         denial.into_requested().elevation_identity(),

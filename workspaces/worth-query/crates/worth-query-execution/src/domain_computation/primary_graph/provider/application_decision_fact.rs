@@ -142,11 +142,11 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
                     Ok(current) => current,
                     Err(kind) => {
                         let stop = match kind {
-                            Authorization::ExecutionRequest(kind) => {
+                            Authorization::Stopped(Ok(kind)) => {
                                 Some(Attempt::ExecutionRequest(kind))
                             }
-                            Authorization::Cancelled => Some(Attempt::Cancelled),
-                            Authorization::DeadlineExceeded => Some(Attempt::DeadlineExceeded),
+                            Authorization::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)) => Some(Attempt::Cancelled),
+                            Authorization::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut)) => Some(Attempt::DeadlineExceeded),
                             _ => None,
                         };
                         match stop {

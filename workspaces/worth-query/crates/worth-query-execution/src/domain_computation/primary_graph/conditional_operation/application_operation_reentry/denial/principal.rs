@@ -1,8 +1,8 @@
 //! principal refusal at conditional reentry.
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use super::WorthQueryTemporalReentryDenial;
 use crate::domain_computation::primary_graph::{WorthQueryPrincipalResolutionDenialKind as Kind, WorthQueryPrincipalResolutionDenial as Failure};
 use crate::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalAdmissionTerminalFailure as Terminal;
-use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
 impl WorthQueryTemporalReentryDenial {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn from_principal(
         denial: Failure,
@@ -11,37 +11,35 @@ impl WorthQueryTemporalReentryDenial {
     }
     pub(super) fn principal_kind(kind: Kind, refused: impl FnOnce(Kind) -> Terminal) -> Self {
         match kind {
-            Kind::ActiveSnapshotCapacityExhausted {
+            Kind::Refused(PrincipalRefusal::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
-            } => Self::ActiveSnapshotCapacityExhausted {
+            }) => Self::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
             },
-            Kind::RetentionCapacityExhausted => Self::RetentionCapacityExhausted,
-            Kind::ExecutionRequest(cause) => Self::from_read_stop(Ok(cause)),
-            Kind::Cancelled => Self::from_native_stop(Native::Cancelled),
-            Kind::DeadlineExceeded => Self::from_native_stop(Native::DeadlineElapsed),
-            Kind::ProjectionWorkBudgetExceeded => Self::from_native_stop(Native::WorkExhausted),
-            Kind::ProjectionPreparationMemoryExhausted => {
-                Self::from_native_stop(Native::MemoryLimitExceedsParent)
+            Kind::Refused(PrincipalRefusal::RetentionCapacityExhausted) => {
+                Self::RetentionCapacityExhausted
             }
-            kind @ (Kind::ForeignPhase
-            | Kind::PrimaryGraphNotInstalled
-            | Kind::BindingNotInstalled
-            | Kind::ForeignRuntime
-            | Kind::StaleInstalledSchema
-            | Kind::ExpiredAuthentication
-            | Kind::BranchMaterializationSuspended
-            | Kind::IdentityIndexUnavailable
-            | Kind::CorruptIdentityIndex
-            | Kind::UnknownPrincipal
-            | Kind::DisabledPrincipal
-            | Kind::AmbiguousPrincipal
-            | Kind::MissingPrincipalTarget
-            | Kind::AmbiguousPrincipalTarget
-            | Kind::WrongPrincipalTargetKind
-            | Kind::StalePrincipalProof
-            | Kind::SnapshotIdentityExhausted
-            | Kind::RetentionIdentityExhausted) => Self::Terminal(refused(kind)),
+            Kind::Stopped(stop) => Self::from_read_stop(stop),
+            kind @ (Kind::Refused(PrincipalRefusal::ForeignPhase)
+            | Kind::Refused(PrincipalRefusal::PrimaryGraphNotInstalled)
+            | Kind::Refused(PrincipalRefusal::BindingNotInstalled)
+            | Kind::Refused(PrincipalRefusal::ForeignRuntime)
+            | Kind::Refused(PrincipalRefusal::StaleInstalledSchema)
+            | Kind::Refused(PrincipalRefusal::ExpiredAuthentication)
+            | Kind::Refused(PrincipalRefusal::BranchMaterializationSuspended)
+            | Kind::Refused(PrincipalRefusal::IdentityIndexUnavailable)
+            | Kind::Refused(PrincipalRefusal::CorruptIdentityIndex)
+            | Kind::Refused(PrincipalRefusal::UnknownPrincipal)
+            | Kind::Refused(PrincipalRefusal::DisabledPrincipal)
+            | Kind::Refused(PrincipalRefusal::AmbiguousPrincipal)
+            | Kind::Refused(PrincipalRefusal::MissingPrincipalTarget)
+            | Kind::Refused(PrincipalRefusal::AmbiguousPrincipalTarget)
+            | Kind::Refused(PrincipalRefusal::WrongPrincipalTargetKind)
+            | Kind::Refused(PrincipalRefusal::StalePrincipalProof)
+            | Kind::Refused(PrincipalRefusal::SnapshotIdentityExhausted)
+            | Kind::Refused(PrincipalRefusal::RetentionIdentityExhausted)) => {
+                Self::Terminal(refused(kind))
+            }
         }
     }
 }

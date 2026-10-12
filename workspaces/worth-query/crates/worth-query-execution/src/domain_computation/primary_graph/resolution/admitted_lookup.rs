@@ -1,5 +1,6 @@
 //! One exact-root principal identity lookup under the carried request meter.
 
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::indexes::{
     BoundedEntityFieldLookupAdmissionStop, BoundedEntityFieldLookupDenialKind,
@@ -96,7 +97,7 @@ pub(super) fn resolve_unique_mapping_candidate<'view, 'basis, 'resolution, 'iden
         })?;
     if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
         return Err(Stop::Semantic(
-            WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipal,
+            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::AmbiguousPrincipal),
         ));
     }
     let mapping = lookup
@@ -104,7 +105,7 @@ pub(super) fn resolve_unique_mapping_candidate<'view, 'basis, 'resolution, 'iden
         .first()
         .copied()
         .ok_or(Stop::Semantic(
-            WorthQueryPrincipalResolutionDenialKind::UnknownPrincipal,
+            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::UnknownPrincipal),
         ))?;
     let carrier = u64::try_from(std::mem::size_of::<CheckedMappingCandidate<'_, '_, '_, '_>>())
         .map_err(|_| Stop::Admission(CompanionPreflightStop::WorkCounterOverflow))?;

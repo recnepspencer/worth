@@ -138,7 +138,7 @@ impl WorthQueryPrimaryGraphProvider {
                 dependency.remains_current_in(&reader, runtime, &snapshot)
             })
         });
-        assert_eq!(direct, Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Cancelled));
+        assert_eq!(direct, Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled))));
         self.graph.release_query_snapshot(&snapshot);
     }
 }

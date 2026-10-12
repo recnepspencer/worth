@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeSet;
 
 use worth_query_declaration::facade::application_capability::{
@@ -56,7 +57,7 @@ where
     {
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody")),
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
         self.authorize_elevation_request_with_request(&execution, access, operation, preconditions)
     }
@@ -100,7 +101,9 @@ where
             .elevation_request()
             .map_err(|rejection| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::ElevationRequestRejected,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::ElevationRequestRejected,
+                    ),
                     rejection.subject(),
                 )
             })?;
@@ -119,7 +122,9 @@ where
             .retain_observed_support(binding.supporting().retained_for_operation())
             .map_err(|()| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InconsistentDecision,
+                    ),
                     installed.contract().name(),
                 )
             })?;
@@ -157,7 +162,9 @@ where
         .map_err(|()| stale_operation(operation.operation()))?
     else {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationLifecycleRoleMismatch,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationLifecycleRoleMismatch,
+            ),
             operation.operation(),
         ));
     };
@@ -165,7 +172,9 @@ where
         || access.installed_capability_identity() != command_capability
     {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationLifecycleRoleMismatch,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationLifecycleRoleMismatch,
+            ),
             operation.operation(),
         ));
     }
@@ -222,7 +231,9 @@ where
         .maximum_duration;
     if duration.is_zero() || duration > maximum_duration {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationDurationExceeded,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationDurationExceeded,
+            ),
             installed.contract().name(),
         ));
     }
@@ -304,14 +315,18 @@ pub(super) fn projection_denial(
     subject: impl Into<String>,
 ) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::ElevationRequestRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationRequestRejected,
+        ),
         subject,
     )
 }
 
 fn stale_operation(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleInstalledOperation,
+        ),
         subject,
     )
 }

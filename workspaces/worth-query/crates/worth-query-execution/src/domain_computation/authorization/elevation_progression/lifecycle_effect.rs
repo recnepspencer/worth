@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::any::Any;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityTransitionBinding;
@@ -23,7 +24,9 @@ pub(super) fn derive_lifecycle_effect<Input: 'static>(
             derive_application_capability_lifecycle_effect(binding, input as &dyn Any).ok_or_else(
                 || {
                     WorthQueryOperationAuthorizationDenial::new(
-                        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                        WorthQueryOperationAuthorizationDenialKind::Refused(
+                            AuthorizationRefusal::InconsistentDecision,
+                        ),
                         subject,
                     )
                 },

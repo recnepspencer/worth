@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
@@ -56,7 +57,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     {
         let request = match phase.execution_request_for(&self.application().product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(WorthQueryApplicationLiveOpenDenial::with_authorization(WorthQueryApplicationLiveOpenDenialKind::AuthorizationDenied(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+            Err(_) => return Err(WorthQueryApplicationLiveOpenDenial::with_authorization(WorthQueryApplicationLiveOpenDenialKind::AuthorizationDenied(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         let execution = &request;
 

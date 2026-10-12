@@ -2,6 +2,7 @@
 
 use crate::domain_computation::authorization::graph_work_session::transition_capability_to_operation_graph_work;
 use crate::domain_computation::authorization::operation_progression::WorthQueryCapabilityOperationProgression;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
     WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
@@ -68,7 +69,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody")),
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
         let execution = &phase_request;
         self.authorize_capability_operation_with_request(
@@ -282,7 +283,9 @@ where
         );
     if !authorization.belongs_to_session(session) {
         return Err(WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::InconsistentDecision,
+            ),
             subject,
         ));
     }
@@ -300,7 +303,9 @@ where
 {
     let current = access.input.capability_request().map_err(|rejection| {
         denial(
-            WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityProjectionRejected,
+            ),
             rejection.subject(),
         )
     })?;
@@ -308,7 +313,9 @@ where
         Ok(())
     } else {
         Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityProjectionRejected,
+            ),
             access.operation.as_ref(),
         ))
     }

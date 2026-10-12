@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_query::ApplicationQueryLiveCauseBinding, application_schema::ApplicationSchema,
 };
@@ -76,7 +77,9 @@ where
             | WorthQueryApplicationQueryAdmissionDenialKind::DisclosureAuthorizationMismatch
             | WorthQueryApplicationQueryAdmissionDenialKind::InternalComputationDenied => {
                 let denial = WorthQueryOperationAuthorizationDenial::new(
-                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InconsistentDecision,
+                    ),
                     self.query.name(),
                 );
                 self.authorization_denied_outcome(denial)
@@ -136,16 +139,38 @@ where
         denial: WorthQueryOperationAuthorizationDenial,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         match denial.kind() {
-            WorthQueryOperationAuthorizationDenialKind::ExecutionRequest(kind) => {
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Ok(kind)) => {
                 self.execution_denied_outcome(kind)
             }
-            WorthQueryOperationAuthorizationDenialKind::Cancelled => self.cancelled_outcome(),
-            WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded => {
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            )) => self.cancelled_outcome(),
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            )) => self.deadline_exceeded_outcome(),
+            WorthQueryOperationAuthorizationDenialKind::Refused(_) => self
+                .acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::AuthorizationDenied(
+                    Box::new(denial),
+                )),
+        }
+    }
+
+    /// Ends this lease with the read's own request cause, retaining any failed termination.
+    pub fn end_with_read_stop(
+        &mut self,
+        cause: Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        match cause {
+            Ok(kind) => self.execution_denied_outcome(kind),
+            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => {
+                self.cancelled_outcome()
+            }
+            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => {
                 self.deadline_exceeded_outcome()
             }
-            _ => self.acknowledge_and_terminate(
-                WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(denial)),
-            ),
         }
     }
 

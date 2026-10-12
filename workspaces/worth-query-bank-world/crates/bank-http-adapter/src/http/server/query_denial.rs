@@ -26,7 +26,7 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         | BankApplicationQueryDenial::ContinuationExecution(_)
         | BankApplicationQueryDenial::LiveOpen(_) => unavailable(),
         BankApplicationQueryDenial::PrincipalResolution(
-            worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(kind),
+            worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(kind)),
         ) => super::mutation_application::pending_execution_denial(kind),
         BankApplicationQueryDenial::PrincipalResolution(_) => stale(),
         BankApplicationQueryDenial::Limit(_) => exhausted(),

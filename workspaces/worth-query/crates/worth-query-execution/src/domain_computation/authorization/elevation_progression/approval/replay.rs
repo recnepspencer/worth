@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
@@ -39,7 +40,9 @@ where
                     Some(
                         WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
                             WorthQueryOperationAuthorizationDenial::new(
-                                WorthQueryOperationAuthorizationDenialKind::ForeignPhase,
+                                WorthQueryOperationAuthorizationDenialKind::Refused(
+                                    AuthorizationRefusal::ForeignPhase,
+                                ),
                                 "phase-custody",
                             ),
                         ),
@@ -87,11 +90,8 @@ where
     {
         let draft = match bind_approval(execution, self, &requested, &access, operation) {
             Ok(draft) => draft,
-            Err(denial)
-                if crate::domain_computation::authorization::denial::is_request_stop(
-                    denial.kind(),
-                ) =>
-            {
+            Err(denial) => match denial.kind() {
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
                 return Err((
                     Some(
                         WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
@@ -100,8 +100,9 @@ where
                     ),
                     requested,
                 ))
-            }
-            Err(_) => return Err((None, requested)),
+                }
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Err((None, requested)),
+            },
         };
         let admission = match progress_capability_operation(
             execution,
@@ -112,11 +113,8 @@ where
             WorthQueryCapabilityOperationProgression::ElevationLifecycle,
         ) {
             Ok(admission) => admission,
-            Err(denial)
-                if crate::domain_computation::authorization::denial::is_request_stop(
-                    denial.kind(),
-                ) =>
-            {
+            Err(denial) => match denial.kind() {
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
                 return Err((
                     Some(
                         WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
@@ -125,8 +123,9 @@ where
                     ),
                     requested,
                 ))
-            }
-            Err(_) => return Err((None, requested)),
+                }
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Err((None, requested)),
+            },
         };
         let mut admission = admission
             .bind_elevation_approval(draft.bind(requested))

@@ -6,6 +6,7 @@ use super::observations::{
 use super::resolution_denial::{resolution_denial, WorthQueryPrincipalResolutionDenialKind};
 use super::schema_layout::WorthQueryPrimaryPrincipalBindingLayout;
 use super::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
@@ -244,9 +245,9 @@ fn comparison_observation<T>(
         Err(denial)
             if matches!(
                 denial.kind(),
-                WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(_)
-                    | WorthQueryPrincipalResolutionDenialKind::Cancelled
-                    | WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(_))
+                    | WorthQueryPrincipalResolutionDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled))
+                    | WorthQueryPrincipalResolutionDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut))
             ) =>
         {
             Err(denial)
@@ -291,7 +292,7 @@ pub(in crate::domain_computation) fn validate_freshness_at_snapshot<
         || !principal.freshness().matches(&mapping, &target)
     {
         return Err(resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StalePrincipalProof),
             principal.binding(),
         ));
     }

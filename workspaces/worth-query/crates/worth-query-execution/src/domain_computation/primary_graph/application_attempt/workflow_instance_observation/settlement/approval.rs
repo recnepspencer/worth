@@ -107,9 +107,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Principal;
         use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as Attempt;
         WorthQueryApplicationAttemptDenial::new(match denial.kind() {
-            Principal::ExecutionRequest(kind) => Attempt::ExecutionRequest(kind),
-            Principal::Cancelled => Attempt::Cancelled,
-            Principal::DeadlineExceeded => Attempt::DeadlineExceeded,
+            Principal::Stopped(Ok(kind)) => Attempt::ExecutionRequest(kind),
+            Principal::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)) => Attempt::Cancelled,
+            Principal::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut)) => Attempt::DeadlineExceeded,
             _ => Attempt::WorkflowApprovalPrincipalStale,
         }, "workflow approval principal")
     })? {

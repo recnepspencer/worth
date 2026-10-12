@@ -1,5 +1,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::resolution_denial::principal_index_currency_denial;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 
 #[path = "selected_product/admitted.rs"]
 mod admitted;
@@ -44,7 +45,9 @@ where
             .execution_request_for(&self.application().product_runtime)
             .map_err(|_| {
                 resolution_denial(
-                    WorthQueryPrincipalResolutionDenialKind::ForeignPhase,
+                    WorthQueryPrincipalResolutionDenialKind::Refused(
+                        PrincipalRefusal::ForeignPhase,
+                    ),
                     installed_binding.binding(),
                 )
             })?;
@@ -98,7 +101,7 @@ where
             || external.binding_identity() != installed_binding.binding_identity()
         {
             return Err(resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::ForeignRuntime,
+                WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignRuntime),
                 installed_binding.binding(),
             ));
         }
@@ -107,7 +110,9 @@ where
         )
         .map_err(|_| {
             resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::StalePrincipalProof,
+                ),
                 installed_binding.binding(),
             )
         })?;
@@ -151,7 +156,9 @@ where
             .execution_request_for(&self.application().product_runtime)
             .map_err(|_| {
                 resolution_denial(
-                    WorthQueryPrincipalResolutionDenialKind::ForeignPhase,
+                    WorthQueryPrincipalResolutionDenialKind::Refused(
+                        PrincipalRefusal::ForeignPhase,
+                    ),
                     principal.binding(),
                 )
             })?;
@@ -171,7 +178,7 @@ where
         let runtime = &self.application().runtime;
         if principal.runtime_authority() != runtime.authority_identity() {
             return Err(resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::ForeignRuntime,
+                WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignRuntime),
                 principal.binding(),
             ));
         }
@@ -186,7 +193,9 @@ where
             WorthQueryExternalPrincipalIdentityBinding::encode(principal.external_identity())
                 .map_err(|_| {
                     resolution_denial(
-                        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+                        WorthQueryPrincipalResolutionDenialKind::Refused(
+                            PrincipalRefusal::StalePrincipalProof,
+                        ),
                         principal.binding(),
                     )
                 })?;

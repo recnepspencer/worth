@@ -166,7 +166,7 @@ impl WorthQueryOutputDemandDenial {
             Branch::Stopped(Err(Control::TimedOut)) => WorthQueryOutputDemandDenialKind::TimedOut,
             Branch::Stopped(Ok(cause)) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
                 crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause)),
-            refused @ Branch::Refused(_) => WorthQueryOutputDemandDenialKind::ProductSelection(refused),
+            Branch::Refused(refused) => WorthQueryOutputDemandDenialKind::ProductSelection(refused),
         };
         Self::new(kind, subject)
     }

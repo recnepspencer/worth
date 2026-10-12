@@ -1,6 +1,7 @@
 use super::super::super::application_attempt::idempotency;
 use super::super::super::fixture::{CapabilityReviewStatus, CompleteElevationReviewInput};
 use super::super::capability_progression::time;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryMandatoryReviewOutcome,
     WorthQueryOperationAuthorizationDenialKind,
@@ -85,7 +86,9 @@ fn requester_and_approver_are_denied_by_installed_review_actor_composition() {
             .expect("the fixture read owns its installed host call");
         assert_eq!(
             denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityAuthorizationMissing
+            )
         );
     }
 }
@@ -225,7 +228,9 @@ fn mandatory_review_receipt_cannot_cross_runtime_authority() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.denial().kind(),
-        WorthQueryOperationAuthorizationDenialKind::MandatoryReviewRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::MandatoryReviewRejected
+        )
     );
 }
 
@@ -288,6 +293,8 @@ fn mandatory_review_receipt_rejects_a_different_selected_review() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.denial().kind(),
-        WorthQueryOperationAuthorizationDenialKind::MandatoryReviewRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::MandatoryReviewRejected
+        )
     );
 }

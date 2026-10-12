@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 mod principal_target_read_observation;
 pub use principal_target_read_observation::principal_target_reads_on_this_thread_for_test;
 use std::sync::Arc;
@@ -137,13 +138,17 @@ pub(super) fn resolve_principal_target(
     });
     let relation = relations.next().ok_or_else(|| {
         WorthQueryPrincipalResolutionDenial::new(
-            WorthQueryPrincipalResolutionDenialKind::MissingPrincipalTarget,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::MissingPrincipalTarget,
+            ),
             binding,
         )
     })?;
     if relations.next().is_some() {
         return Err(WorthQueryPrincipalResolutionDenial::new(
-            WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipalTarget,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::AmbiguousPrincipalTarget,
+            ),
             binding,
         ));
     }
@@ -156,7 +161,9 @@ pub(super) fn resolve_principal_target(
         .ok_or_else(|| stale_proof_denial(binding))?;
     if principal.kind.kind_id != layout.principal_kind {
         return Err(WorthQueryPrincipalResolutionDenial::new(
-            WorthQueryPrincipalResolutionDenialKind::WrongPrincipalTargetKind,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::WrongPrincipalTargetKind,
+            ),
             binding,
         ));
     }
@@ -333,7 +340,7 @@ fn principal_adjacency_revision(
         worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::Execution(cause) => super::resolution_denial::relational_read_denial(cause, binding),
         worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
             WorthQueryPrincipalResolutionDenial::new(
-                WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
                 binding,
             )
         }
@@ -371,7 +378,7 @@ fn target_plan_key(mapping_id: EntityId, relation_kind: KindId) -> Deterministic
 
 fn stale_proof_denial(binding: &str) -> WorthQueryPrincipalResolutionDenial {
     WorthQueryPrincipalResolutionDenial::new(
-        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StalePrincipalProof),
         binding,
     )
 }

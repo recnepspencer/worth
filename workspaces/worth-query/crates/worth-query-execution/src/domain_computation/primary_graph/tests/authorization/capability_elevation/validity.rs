@@ -2,6 +2,7 @@ use super::super::super::application_attempt::authenticated_principal;
 use super::super::super::fixture::{CapabilityElevationStatus, ElevatedCapabilityTouchOperation};
 use super::super::capability_progression::time;
 use super::admit;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAuthorizationExplanationCause, WorthQueryOperationAuthorizationDenialKind,
 };
@@ -51,7 +52,7 @@ fn explicitly_expired_elevation_has_a_typed_denial() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationExpired
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ElevationExpired)
     );
     assert_eq!(
         denial.explanation_cause(),
@@ -91,7 +92,7 @@ fn trusted_time_denies_active_status_past_the_elevation_expiry() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationExpired
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ElevationExpired)
     );
 }
 
@@ -127,7 +128,9 @@ fn active_status_before_elevation_issue_is_inactive_not_expired() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationInactive
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationInactive
+        )
     );
 }
 
@@ -181,6 +184,6 @@ fn expiry_between_access_and_operation_denies_fresh_progression() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationExpired
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ElevationExpired)
     );
 }

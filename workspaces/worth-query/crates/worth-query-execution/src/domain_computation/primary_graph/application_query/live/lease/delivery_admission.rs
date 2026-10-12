@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_query::ApplicationQueryLiveCauseBinding, application_schema::ApplicationSchema,
 };
@@ -163,7 +164,9 @@ where
             | WorthQueryApplicationQueryAdmissionDenialKind::InternalComputationDenied => self
                 .terminate_delivery_outcome(Outcome::AuthorizationDenied(Box::new(
                     WorthQueryOperationAuthorizationDenial::new(
-                        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                        WorthQueryOperationAuthorizationDenialKind::Refused(
+                            AuthorizationRefusal::InconsistentDecision,
+                        ),
                         self.query.name(),
                     ),
                 ))),
@@ -206,13 +209,15 @@ where
     ) -> super::super::outcome::WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         use super::super::outcome::WorthQueryApplicationLiveOutcome as Outcome;
         let outcome = match denial.kind() {
-            WorthQueryOperationAuthorizationDenialKind::ExecutionRequest(kind) => {
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Ok(kind)) => {
                 Outcome::ExecutionRequest(kind)
             }
-            WorthQueryOperationAuthorizationDenialKind::Cancelled => Outcome::Cancelled,
-            WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded => {
-                Outcome::DeadlineExceeded
-            }
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            )) => Outcome::Cancelled,
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            )) => Outcome::DeadlineExceeded,
             _ => Outcome::AuthorizationDenied(Box::new(denial)),
         };
         self.terminate_delivery_outcome(outcome)

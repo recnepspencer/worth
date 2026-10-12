@@ -2,6 +2,7 @@ use bank_domain::model::{AccountName, BankPrincipalId, InstitutionId, Money};
 use bank_domain::schema::{CreatePersonalAccount, SendMoney};
 use bank_server::{mutations, BankMutationControls, BankPrincipalSeed, BankWorldSeed};
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind;
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 use super::fixture::{funded_personal_world, id, key};
 use crate::support::{block_on, request_scope, runtime, CausalCredential, DynamicIdentity};
@@ -60,7 +61,7 @@ fn program_entry_denies_unauthorized_account_mutations() {
     assert!(matches!(
         creation_denial.kind(),
         WorthQueryApplicationRequestMutationDenialKind::Authorization(
-            worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::PermissionDenied
+            worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied)
         )
     ));
     let send_denial = world
@@ -80,7 +81,7 @@ fn program_entry_denies_unauthorized_account_mutations() {
     assert!(matches!(
         send_denial.kind(),
         WorthQueryApplicationRequestMutationDenialKind::Authorization(
-            worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::PermissionDenied
+            worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied)
         )
     ));
 }

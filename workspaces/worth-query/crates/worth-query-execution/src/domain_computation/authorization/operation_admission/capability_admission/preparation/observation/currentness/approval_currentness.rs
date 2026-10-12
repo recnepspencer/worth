@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 pub(super) fn validate_approval_lifecycle<
     Schema,
@@ -32,7 +33,9 @@ where
         prepared.installed().capability_authority_identity(),
     ) {
         return Err(denial::authorization_denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationApprovalRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationApprovalRejected,
+            ),
             capability.contract().name(),
         ));
     }
@@ -72,7 +75,9 @@ where
             })?
         {
             return Err(denial::authorization_denial(
-                WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleAuthorization,
+                ),
                 prepared.capability().contract().name(),
             ));
         }
@@ -104,7 +109,9 @@ where
     };
     let elevation = observed.resolved.elevation().ok_or_else(|| {
         denial::authorization_denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationProjectionRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationProjectionRejected,
+            ),
             prepared.capability().contract().name(),
         )
     })?;
@@ -119,7 +126,9 @@ where
     );
     if !admitted {
         return Err(denial::authorization_denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationApprovalRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationApprovalRejected,
+            ),
             prepared.capability().contract().name(),
         ));
     }

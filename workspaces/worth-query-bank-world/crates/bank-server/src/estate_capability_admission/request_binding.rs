@@ -12,6 +12,7 @@ use bank_domain::{
     },
 };
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind;
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 use super::{
     current_admission::view_action,
@@ -63,12 +64,14 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         .expect("the wrong purpose must deny");
     assert_eq!(
         wrong_purpose_denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::PurposeMismatch
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PurposeMismatch)
     );
     assert!(wrong_purpose_denial.identity().is_some());
     assert_eq!(
         wrong_purpose_denial.causes(),
-        [WorthQueryOperationAuthorizationDenialKind::PurposeMismatch]
+        [WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::PurposeMismatch
+        )]
     );
     let wrong_field = EstateAction::ViewRestrictedEstate {
         estate: ESTATE,
@@ -88,7 +91,9 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         .err()
         .expect("the wrong field must deny")
         .kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        )
     );
     let missing_resource = EstateAction::ViewRestrictedEstate {
         estate: bank_domain::estate::EstateCaseId::new(99_999).unwrap(),
@@ -108,7 +113,9 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         .err()
         .expect("the missing resource must deny")
         .kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityProjectionRejected
+        )
     );
     assert_eq!(
         crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
@@ -126,7 +133,9 @@ fn purpose_field_resource_and_input_variant_cannot_understate_the_view_request()
         .err()
         .expect("the wrong action variant must deny")
         .kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityProjectionRejected
+        )
     );
 }
 
@@ -177,12 +186,16 @@ fn separation_of_duty_is_anchored_to_the_exact_action_authority() {
         .expect("the selected self-held authority must deny");
     assert_eq!(
         self_recognition_denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::SeparationOfDutyRuleMatched
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::SeparationOfDutyRuleMatched
+        )
     );
     assert!(self_recognition_denial.identity().is_some());
     assert_eq!(
         self_recognition_denial.causes(),
-        [WorthQueryOperationAuthorizationDenialKind::SeparationOfDutyRuleMatched]
+        [WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::SeparationOfDutyRuleMatched
+        )]
     );
 
     let other_authority = EstateAction::RecognizeExecutor {
@@ -242,8 +255,11 @@ fn installed_capability_authority_is_runtime_affine() {
         .expect("a foreign installed capability must deny");
     assert!(matches!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleInstalledSchema
-            | WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleInstalledSchema
+        ) | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleInstalledOperation
+        )
     ));
 }
 
@@ -284,7 +300,9 @@ fn assert_wrong_account_denied() {
         .err()
         .expect("the wrong related account must deny")
         .kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        )
     );
 }
 
@@ -339,6 +357,8 @@ fn assert_amount_over_ceiling_denied() {
         .err()
         .expect("an amount over the grant ceiling must deny")
         .kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        )
     );
 }

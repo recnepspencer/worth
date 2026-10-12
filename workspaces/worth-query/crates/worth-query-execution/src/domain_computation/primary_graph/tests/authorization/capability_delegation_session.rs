@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::num::NonZeroUsize;
 
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
@@ -115,7 +116,9 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationQueryAdmissionDenialKind::Authorization(
-            WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityGrantMissing
+            ),
         )
     );
     let authorization = denial
@@ -124,6 +127,8 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
     assert!(authorization.identity().is_some());
     assert_eq!(
         authorization.causes(),
-        [WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing]
+        [WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing
+        )]
     );
 }

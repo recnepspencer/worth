@@ -1,4 +1,5 @@
 //! Exact-snapshot currentness observation for one prepared capability admission.
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod approval_currentness;
 use approval_currentness::{
     validate_approval_lifecycle, validate_approval_support, validate_approved_use,
@@ -109,7 +110,9 @@ where
 {
     let graph = prepared.runtime().runtime.primary_graph().ok_or_else(|| {
         denial::authorization_denial(
-            WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
             prepared.capability().contract().operation(),
         )
     })?;
@@ -264,7 +267,9 @@ where
     )?;
     if prepared.principal().is_expired() {
         return Err(denial::authorization_denial(
-            WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ExpiredAuthentication,
+            ),
             prepared.principal().binding(),
         ));
     }

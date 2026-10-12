@@ -1,5 +1,6 @@
 //! capability governed operation rejects conventional authorization.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn capability_governed_operation_rejects_conventional_authorization() {
@@ -45,6 +46,8 @@ fn capability_governed_operation_rejects_conventional_authorization() {
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityRequired
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityRequired
+        )
     );
 }

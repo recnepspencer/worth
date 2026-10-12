@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::{
@@ -102,7 +103,7 @@ where
     {
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return Err(close_denial(approved, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+            Err(_) => return Err(close_denial(approved, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         self.authorize_elevation_close_with_request(
             &execution,
@@ -240,7 +241,9 @@ where
         .sample(lifecycle.temporal.timeline)
         .map_err(|_| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::TrustedTimeUnavailable,
+                ),
                 installed.contract().name(),
             )
         })?;
@@ -267,7 +270,9 @@ fn close_denial(
 
 fn close_rejected(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::ElevationCloseRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationCloseRejected,
+        ),
         subject,
     )
 }

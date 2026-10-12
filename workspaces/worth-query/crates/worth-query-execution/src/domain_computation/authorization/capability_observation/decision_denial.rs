@@ -7,6 +7,7 @@ use super::super::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
 use super::invalid_policy;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 pub(super) fn decision_denial_causes(
     bindings: &WorthQueryCapabilityDecisionRuleBindings,
@@ -23,14 +24,18 @@ pub(super) fn decision_denial_causes(
     };
     let mut causes = Vec::new();
     if !matched(bindings.grant)? {
-        causes.push(WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing);
+        causes.push(WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing,
+        ));
     }
     append_prohibition_causes(bindings, &matched, &mut causes)?;
     if let Some(elevation) = elevation {
         causes.push(elevation);
     }
     if causes.is_empty() && !matched(bindings.allow)? {
-        causes.push(WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing);
+        causes.push(WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing,
+        ));
     }
     if causes.is_empty() {
         return Err(invalid_policy(
@@ -48,19 +53,27 @@ fn append_prohibition_causes(
     for (index, kind) in [
         (
             bindings.deny,
-            WorthQueryOperationAuthorizationDenialKind::ExplicitDenyRuleMatched,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ExplicitDenyRuleMatched,
+            ),
         ),
         (
             bindings.conflict,
-            WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ConflictRuleMatched,
+            ),
         ),
         (
             bindings.separation_of_duty,
-            WorthQueryOperationAuthorizationDenialKind::SeparationOfDutyRuleMatched,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::SeparationOfDutyRuleMatched,
+            ),
         ),
         (
             bindings.distinct_actor,
-            WorthQueryOperationAuthorizationDenialKind::DistinctActorRuleMatched,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DistinctActorRuleMatched,
+            ),
         ),
     ] {
         if let Some(index) = index {
@@ -87,15 +100,23 @@ pub(super) fn elevation_denial_kind(
     let expired = evidence.paths().get(elevation.expired_path_index)?;
     let self_approval = evidence.paths().get(elevation.self_approval_path_index)?;
     if self_approval.matched() {
-        Some(WorthQueryOperationAuthorizationDenialKind::ElevationSelfApproval)
+        Some(WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationSelfApproval,
+        ))
     } else if requirements_match(evidence, &elevation.approver_conflict_requirements) {
-        Some(WorthQueryOperationAuthorizationDenialKind::ElevationApproverConflict)
+        Some(WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationApproverConflict,
+        ))
     } else if expired.matched()
         || (active.matched() && not_before.matched() && !not_after.matched())
     {
-        Some(WorthQueryOperationAuthorizationDenialKind::ElevationExpired)
+        Some(WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationExpired,
+        ))
     } else if !active.matched() || !not_before.matched() {
-        Some(WorthQueryOperationAuthorizationDenialKind::ElevationInactive)
+        Some(WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationInactive,
+        ))
     } else {
         None
     }

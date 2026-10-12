@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::{Duration, UNIX_EPOCH};
 
 use super::super::{
@@ -323,11 +324,15 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
     assert!(denial.identity().is_some());
     assert_eq!(
         denial.causes(),
-        [WorthQueryOperationAuthorizationDenialKind::StaleAuthorization]
+        [WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )]
     );
 }

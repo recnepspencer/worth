@@ -1,4 +1,8 @@
 //! Fresh principal resolution at the already selected Product/native basis.
+#[path = "admitted/issued_principal.rs"]
+mod issued_principal;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+pub(in crate::domain_computation) use issued_principal::WorthQueryIssuedSelectedPrincipal;
 #[path = "admitted/principal_admission_denial.rs"]
 mod principal_admission_denial;
 use principal_admission_denial::unfunded_principal_admission_denial;
@@ -13,57 +17,6 @@ use crate::domain_computation::primary_graph::authenticated_principal::Principal
 use crate::domain_computation::primary_graph::index_currency::{
     ensure_selected_field_indexes_admitted, SelectedFieldIndexAdmissionStop,
 };
-
-/// Principal accepted by the installed decoder on this exact selected root.
-/// The selected operation remains borrowed for the whole scoped Query read.
-pub(in crate::domain_computation) struct WorthQueryIssuedSelectedPrincipal<
-    'selected,
-    'runtime,
-    Schema,
-    Principal,
-    PrincipalIdentity,
-> {
-    principal: WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    selected:
-        &'selected crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
-            'runtime,
-            Schema,
-        >,
-    request: WorthQueryRequestScope,
-}
-
-impl<Schema, Principal, PrincipalIdentity>
-    WorthQueryIssuedSelectedPrincipal<'_, '_, Schema, Principal, PrincipalIdentity>
-{
-    pub(in crate::domain_computation) fn principal(
-        &self,
-    ) -> &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
-        &self.principal
-    }
-
-    pub(in crate::domain_computation) fn issued_root(
-        &self,
-    ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
-        self.selected.product().relational_basis()
-    }
-
-    pub(in crate::domain_computation) fn issued_snapshot(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
-        self.selected.application_basis().snapshot_handle()
-    }
-
-    pub(in crate::domain_computation) fn request(&self) -> &WorthQueryRequestScope {
-        &self.request
-    }
-
-    pub(in crate::domain_computation) fn selected(
-        &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'_, Schema>
-    {
-        self.selected
-    }
-}
 
 impl<'runtime, Schema> super::super::super::WorthQuerySelectedProductOperation<'runtime, Schema>
 where
@@ -229,7 +182,9 @@ where
                 .retains_validated_principal_binding(validated, installed_binding)
             {
                 return Err(resolution_denial(
-                    WorthQueryPrincipalResolutionDenialKind::ForeignRuntime,
+                    WorthQueryPrincipalResolutionDenialKind::Refused(
+                        PrincipalRefusal::ForeignRuntime,
+                    ),
                     binding,
                 ));
             }
@@ -260,7 +215,7 @@ where
             || external.binding_identity() != installed_binding.binding_identity()
         {
             return Err(resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::ForeignRuntime,
+                WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignRuntime),
                 binding,
             ));
         }
@@ -286,7 +241,9 @@ where
         )
         .map_err(|_| {
             resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+                WorthQueryPrincipalResolutionDenialKind::Refused(
+                    PrincipalRefusal::StalePrincipalProof,
+                ),
                 binding,
             )
         })?;
@@ -317,7 +274,7 @@ where
                 })?
                 .ok_or_else(|| {
                     resolution_denial(
-                        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+                        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StalePrincipalProof),
                         binding,
                     )
                 })?;
@@ -353,7 +310,7 @@ where
                             principal_admission_denial(stop, binding)
                         }
                         SelectedFieldIndexAdmissionStop::Native => resolution_denial(
-                            WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable,
+                            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::IdentityIndexUnavailable),
                             binding,
                         ),
                     })?;

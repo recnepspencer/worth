@@ -1,5 +1,6 @@
 //! Commit-snapshot readmission of an approval from its durable, descriptive basis.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -64,7 +65,7 @@ where
         }
         if *now > authority.expiry() {
             return Err(WorthQueryOperationAuthorizationDenial::new(
-                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::CapabilityExpired,
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired),
                 "workflow approval",
             ));
         }
@@ -124,7 +125,7 @@ where
                 }
                 if *support_now > support.expiry() {
                     return Err(WorthQueryOperationAuthorizationDenial::new(
-                        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::CapabilityExpired,
+                        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired),
                         "workflow approval support",
                     ));
                 }

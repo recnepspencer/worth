@@ -1,29 +1,34 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 pub(super) fn foreign_runtime() -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignRuntime),
         "application-authorization",
     )
 }
 
 pub(super) fn inconsistent_authorization() -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InconsistentDecision,
+        ),
         "application-authorization",
     )
 }
 
 pub(super) fn stale_authorization() -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization,
+        ),
         "application-authorization",
     )
 }
 
 pub(super) fn stale_principal() -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal),
         "application-authorization",
     )
 }

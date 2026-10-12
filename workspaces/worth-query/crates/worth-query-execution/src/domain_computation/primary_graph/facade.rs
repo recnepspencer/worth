@@ -320,6 +320,7 @@ pub use super::provider::{
 pub use super::resolution::WorthQueryPrincipalResolutionMode;
 pub use super::resolution_denial::{
     WorthQueryPrincipalResolutionDenial, WorthQueryPrincipalResolutionDenialKind,
+    WorthQueryPrincipalResolutionRefusalKind,
 };
 pub use super::root::{WorthQueryPrimaryGraph, WorthQueryPrimaryGraphIntegrationHandle};
 pub use super::settlement_repair::WorthQueryApplicationSettlementRecoveryError;
@@ -352,7 +353,8 @@ pub use crate::domain_computation::authorization::{
     WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationCloseAuthorizationDenial,
     WorthQueryMandatoryReviewAuthorizationDenial, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryOperationScopeBinding, WorthQueryOperationScopeEntityBinding,
+    WorthQueryOperationAuthorizationRefusalKind, WorthQueryOperationScopeBinding,
+    WorthQueryOperationScopeEntityBinding,
 };
 pub use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
