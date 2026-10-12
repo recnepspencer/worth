@@ -104,7 +104,7 @@ where
         >,
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
-        performed: &mut super::super::required_wave::performed::PerformedMembers,
+        performed: &std::cell::RefCell<super::super::required_wave::performed::PerformedMembers>,
         request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         CallerPass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
@@ -118,8 +118,7 @@ where
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
         let waiting = || CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending);
         let wave_authority = commit_authority.clone();
-        let checkpoint_progress = match self.advance_validated_output_demand_with_schedule(
-            execution,
+        let checkpoint_progress = match self.advance_ordinary_validated_output_demand(
             phase,
             demand,
             principal,
@@ -128,7 +127,6 @@ where
             disclosure,
             entry,
             commit_authority,
-            ScheduleProgression::Ordinary,
             request_admission,
             performed,
         )? {
@@ -161,7 +159,7 @@ where
                 _ => return Ok(waiting()),
             }
         };
-        performed.capture_ordinary(
+        performed.borrow_mut().capture_ordinary(
             demand
                 .interest
                 .as_ref()
@@ -204,65 +202,6 @@ where
             &completion,
             delivery_branch,
             checkpoint_progress,
-        )
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn advance_validated_required_fresh_on_selected<
-        Family,
-    >(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        readiness: super::super::required_wave::performed::PublicationReadiness,
-
-        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request_scope: &WorthQueryRequestScope,
-        delivery_branch: crate::basis::WorthQueryProductBranch,
-        disclosure: ValidatedOutputDisclosure<
-            FamilySourceQuery<Schema, Family>,
-            FamilySourceValue<Schema, Family>,
-        >,
-        entry: &InstalledProducerProvider<Schema>,
-        commit_authority: WorthQueryProducerCommitAuthority,
-        shared: &crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation<'_, Schema>,
-        matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
-        request_admission: &mut InvalidationEditAdmission,
-        performed: &mut PerformedMembers,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-        FamilySourceValue<Schema, Family>: 'static,
-        FamilySourceQuery<Schema, Family>: 'static,
-    {
-        // The wave rejoins the successor this call published and drives its
-        // checkpoint itself.
-        Ok(
-            match self.advance_validated_output_demand_with_schedule(
-                execution,
-                phase,
-                demand,
-                principal,
-                request_scope,
-                delivery_branch,
-                disclosure,
-                entry,
-                commit_authority,
-                ScheduleProgression::Selected {
-                    shared,
-                    matched_predecessors,
-                    readiness,
-                },
-                request_admission,
-                performed,
-            )? {
-                OwnStages::Answer(advance) => advance,
-                // A selected pass never refreshes: its Ready waits on the
-                // wave that selected it.
-                OwnStages::Checkpoint(_) | OwnStages::Refreshed(_) => {
-                    WorthQueryOutputDemandAdvance::Pending
-                }
-            },
         )
     }
 }

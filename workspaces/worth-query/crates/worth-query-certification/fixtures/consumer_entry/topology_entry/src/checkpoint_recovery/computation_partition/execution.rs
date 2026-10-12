@@ -1,7 +1,6 @@
 //! The partitioned owner binding executes: every partition's kernel, the
 //! canonical reduction and the completion, under a real request.
 
-use worth_foundational::facade::ExecutionFallbackCause;
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_decl::facade::application_operation::application_computation_partition_identity;
 use worth_query_host::facade::application_contribution::{
@@ -101,11 +100,11 @@ fn keyed_floating_point_sum_keeps_its_bits_and_its_charged_work_on_every_run() {
     with_region_totals(&[("sensitive", &entries), ("exact", &exact)], |demand| {
         let first = total(demand("sensitive"));
         assert!(f64::from_bits(first.bits).is_finite());
-        // No lease reaches a managed computation, so the serial backend ran.
+        // The serial policy now carries a lease; its lineage resolves serial.
         {
             assert_eq!(
                 first.report.fallback(),
-                Some(ExecutionFallbackCause::NoLease)
+                super::worker_axis::serial_fallback()
             );
             assert!(first.charged_work > first.report.charged_work());
         }

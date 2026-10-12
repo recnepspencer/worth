@@ -164,7 +164,7 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
                     )
                     .map(|read| read.unwrap().into_records().len()),
                 12..=17 => {
-                    let view = truth.project_snapshot(&edge.snapshot).unwrap();
+                    let view = truth.project_snapshot(&edge.snapshot, &execution).unwrap();
                     match seam {
                         12 => view
                             .authoritative_entity_records(request, KindId(1))

@@ -11,7 +11,7 @@ use crate::visibility::materialization::read_records::reader::{
     BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded,
 };
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     pub fn bounded_outgoing_relations_for_frontier(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -113,7 +113,7 @@ impl VisibilityProjectionView<'_> {
             let mut examined = 0_usize;
             for entity_id in entity_ids {
                 if let Err(exceeded) = charge(maximum_work_units, lists, examined, records.len()) {
-                    ledger.settle(self.runtime);
+                    ledger.settle_instrumentation(&self.instrumentation);
                     return Err(exceeded);
                 }
                 lists += 1;
@@ -129,7 +129,7 @@ impl VisibilityProjectionView<'_> {
                     if let Err(exceeded) =
                         charge(maximum_work_units, lists, examined, records.len())
                     {
-                        ledger.settle(self.runtime);
+                        ledger.settle_instrumentation(&self.instrumentation);
                         return Err(exceeded);
                     }
                     examined += 1;
@@ -147,13 +147,13 @@ impl VisibilityProjectionView<'_> {
                     if let Err(exceeded) =
                         charge(maximum_work_units, lists, examined, records.len())
                     {
-                        ledger.settle(self.runtime);
+                        ledger.settle_instrumentation(&self.instrumentation);
                         return Err(exceeded);
                     }
                     records.push(record);
                 }
             }
-            ledger.settle(self.runtime);
+            ledger.settle_instrumentation(&self.instrumentation);
             records.sort_by_key(relation_identity_order_key);
             Ok(BoundedFrontierAdjacencyTruthRead {
                 records,

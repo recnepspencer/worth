@@ -17,6 +17,7 @@ use crate::domain_computation::primary_graph::{
 };
 mod derived_view;
 mod disclosure_noninterference;
+mod freshness_stops;
 mod graph_work_capacity;
 mod identity_convergence;
 mod lifecycle;

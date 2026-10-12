@@ -3,10 +3,9 @@
 //! together with their invalidation rows, never before them: a live dependent
 //! row still resolves its upstream demand through this index.
 //!
-//! Retirement is an owner derived edit after the effect has committed. It runs
-//! under the owner's own edit admission, so it can neither fail nor starve the
-//! request that published; a denied retirement waits for the next one. A
-//! superseded settlement waits in this index, which names it again. A
+//! Discovery after publication is an infallible occurrence walk. Derived
+//! owner edits use a later owner admission; refusal retains the retry holder.
+//! A superseded settlement waits in this index, which names it again. A
 //! released one has left this index and waits with the invalidation owner.
 //!
 //! A row retired for custody drops its postings and keeps its lineage, so a
@@ -24,7 +23,6 @@
 
 use std::sync::Arc;
 
-use super::refreshed_rejoin::occurrence_rows;
 use super::{DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry};
 use crate::domain_computation::primary_graph::output_lineage::{
     invalidation::{InvalidationEditAdmission, SourceInvalidationOwner},
@@ -32,6 +30,7 @@ use crate::domain_computation::primary_graph::output_lineage::{
 };
 
 type Identity = Arc<RecordedSettlementIdentity>;
+use super::post_commit::discovery;
 
 /// Returned by a settlement publication. Retiring needs the newest row
 /// registered with the invalidation owner, so the publisher calls it after.
@@ -58,7 +57,7 @@ impl SupersededSettlements {
     ) {
         let named = self
             .registry
-            .retire_superseded_settlements(&self.key, owner);
+            .retire_superseded_settlements(&self.key, owner, &self);
         // A named settlement is retried by the next supersession. One no row
         // of this occurrence posts retires as a released settlement does.
         if let Some(displaced) = displaced.filter(|displaced| !named.contains(displaced)) {
@@ -94,6 +93,7 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         key: &WorthQueryOutputDemandKey,
         owner: &SourceInvalidationOwner,
+        published: &SupersededSettlements,
     ) -> Vec<Identity> {
         let mut admission = owner.edit_admission();
         let candidates = {
@@ -101,32 +101,7 @@ impl WorthQueryOutputDemandRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if state.charge_record_lookup(key, &mut admission).is_err()
-                || !state.records.contains_key(key)
-            {
-                return Vec::new();
-            }
-            let mut candidates = Vec::new();
-            for (other, record) in occurrence_rows(&state.records, key) {
-                let superseded = if other == key {
-                    record.settlements.len().saturating_sub(1)
-                } else if key.replacement_order(other) == Some(std::cmp::Ordering::Greater) {
-                    record.settlements.len()
-                } else {
-                    0
-                };
-                if admission.charge_external_work(1).is_err()
-                    || admit_slots(superseded, &mut admission).is_err()
-                {
-                    return Vec::new();
-                }
-                candidates.extend(
-                    record.settlements[..superseded]
-                        .iter()
-                        .map(|(identity, _)| Arc::clone(identity)),
-                );
-            }
-            candidates
+            discovery::after_publication(&state, key, published)
         };
         if !candidates.is_empty() {
             drop(self.retire_settlements(&candidates, owner, &mut admission));
@@ -206,7 +181,7 @@ impl DemandRegistryState {
             let posting_bytes = self
                 .records
                 .get_mut(key.as_ref())
-                .and_then(|record| {
+                .and_then(|mut record| {
                     let at = record
                         .settlements
                         .iter()
@@ -227,16 +202,4 @@ impl DemandRegistryState {
                 .saturating_sub(index_bytes.saturating_add(posting_bytes));
         }
     }
-}
-
-fn admit_slots(
-    count: usize,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
-    let bytes = count
-        .checked_mul(std::mem::size_of::<Identity>())
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or(worth_relational::facade::mvcc::CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-    admission.admit_read_scratch(bytes)?;
-    admission.charge_external_work(count as u64)
 }

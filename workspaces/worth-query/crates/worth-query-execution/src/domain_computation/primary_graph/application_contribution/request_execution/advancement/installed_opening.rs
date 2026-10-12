@@ -36,7 +36,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 
     /// The higher-ranked callback prevents a phase from escaping in its result.
-    /// Custody is per thread: another thread's public call owns its own request.
+    /// Custody covers the host call and its descendant workers; unrelated calls own theirs.
     /// Zero memory reports `PolicyMemoryLimit` in serial placement and a policy
     /// `MemoryLimit` in leased placement; both refuse before any read.
     pub fn with_application_advancement<R>(
@@ -62,7 +62,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
 impl crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime {
     /// Runs one host call inside the installed World's request policy.
-    /// Custody is per thread; another thread's public call owns its own request.
+    /// Custody follows the owner into descendant workers; unrelated calls own theirs.
     /// Zero memory is `PolicyMemoryLimit` at serial placement and a policy
     /// `MemoryLimit` at leased placement, before the callback begins.
     pub fn with_advancement<R>(

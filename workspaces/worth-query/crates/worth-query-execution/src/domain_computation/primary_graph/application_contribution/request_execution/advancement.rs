@@ -15,7 +15,8 @@ use worth_query_installation::facade::ApplicationSchema;
 pub enum WorthQueryAdvancementDenial {
     Resource(Resource),
     Interrupted(WorthQueryManagedComputationInterruption),
-    /// A public call tried to open a second advancement on the same thread.
+    /// A public call tried to open an advancement from an active host call or
+    /// a member compute.
     NestedOpening,
     NestedStopped,
     Panicked,
@@ -82,11 +83,10 @@ impl QueryRequestExecution<'_> {
         &self,
     ) -> Result<ExecutionRequest<'_, '_>, Resource> {
         match &self.form {
-            Form::Leased { lease, .. } => lease
+            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
                 .map(ExecutionRequest::leased)
                 .map_err(|denial| execution_denial::lease_denial(*denial)),
-            Form::Serial(request) => Ok(ExecutionRequest::serial(request)),
         }
     }
 
@@ -96,6 +96,12 @@ impl QueryRequestExecution<'_> {
         source_instance: Option<u64>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        observation::begin(match &self.form {
+            Form::Leased { lease, policy } | Form::Serial { lease, policy } => lease
+                .as_ref()
+                .map(|lease| lease.resolved_posture())
+                .unwrap_or(policy.posture()),
+        });
         let result = self.run_admitted_advancement(owner, source_instance, body);
         observation::record_result(&result);
         result
@@ -115,13 +121,16 @@ impl QueryRequestExecution<'_> {
                 Resource::WorkExhausted,
             ));
         }
-        if matches!(&self.form, Form::Serial(_)) && request.memory_limit() == 0 {
+        if matches!(&self.form, Form::Serial { .. }) && request.memory_limit() == 0 {
             return Err(WorthQueryAdvancementDenial::Resource(
                 Resource::PolicyMemoryLimit,
             ));
         }
         let mut body_unwind = None;
-        let outcome = request.run(ExecutionWorkCeiling::new(self.declared_work), |_| {
+        let outcome = request.run(ExecutionWorkCeiling::new(self.declared_work), |lease| {
+            observation::record_workers(
+                lease.map_or(1, |lease| lease.policy().budget().max_workers().get()),
+            );
             let active = ActiveAdvancement { execution: self };
             let source = match (source_instance, owner) {
                 (Some(source), _) => phase_custody::AdvancementSource::Relational(source),
@@ -145,6 +154,7 @@ impl QueryRequestExecution<'_> {
         // The execution owner catches unwinds to close its accounting scope.
         // Preserve the host body's original unwind and its existing posture.
         if let Some(payload) = body_unwind {
+            observation::record_panicked(outcome.as_ref().ok().map(|(_, report)| *report));
             std::panic::resume_unwind(payload);
         }
         outcome
@@ -195,11 +205,8 @@ pub fn with_bootstrap_advancement<R>(
         cancellation: cancellation.clone(),
         deadline: None,
         declared_work: policy.budget().work_ceiling(),
-        form: Form::Serial(worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::from_policy(&policy),
-            cancellation,
-            None,
-        )),
+        certified_seed: super::test_placement::certifying(),
+        form: super::serial_placement::form(policy, cancellation, None),
     };
     execution.run_advancement(None, None, |phase| {
         body(WorthQueryBootstrapAdvancementPhase {
@@ -223,11 +230,8 @@ pub(in crate::domain_computation::primary_graph) fn with_serial_host_advancement
         cancellation: cancellation.clone(),
         deadline,
         declared_work: policy.budget().work_ceiling(),
-        form: Form::Serial(worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::from_policy(&policy),
-            cancellation,
-            deadline,
-        )),
+        certified_seed: super::test_placement::certifying(),
+        form: super::serial_placement::form(policy, cancellation, deadline),
     };
     execution.run_advancement(Some(owner), None, body)
 }
@@ -284,9 +288,13 @@ impl WorthQueryAdvancementDenial {
     }
 }
 
-mod observation;
+pub(in crate::domain_computation::primary_graph) mod observation;
+
 pub use observation::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
 };
 
 #[cfg(test)]
@@ -310,6 +318,10 @@ mod tests;
 
 pub(in crate::domain_computation::primary_graph) use observation::record_caller_pass_for_test;
 
+#[cfg(test)]
+pub(crate) fn drain_test_advancement_observations() {
+    drop(observation::advancement_observations_on_this_thread_for_test());
+}
 #[cfg(test)]
 mod test_host_policy;
 #[cfg(test)]

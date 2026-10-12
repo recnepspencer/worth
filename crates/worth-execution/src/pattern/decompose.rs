@@ -16,11 +16,13 @@ use super::{
 
 mod back;
 mod certify;
+mod changed_input;
 mod reuse;
 mod scope;
 mod stages;
 use back::admit_back_map;
 pub use certify::DecomposeCertificationFailure;
+use changed_input::CheckedChangedInput;
 use reuse::{changed_back_identities, same_encoding};
 
 /// Interior result and its contribution to the canonical interface problem.
@@ -264,33 +266,6 @@ where
             reducer_storage_bytes,
             snapshot: None,
         })
-    }
-
-    fn check_changed(
-        &self,
-        identities: &[PartitionIdentity],
-        editions: DecomposeKernelEditions,
-    ) -> Result<(), DecomposeInputDenial> {
-        if identities.windows(2).any(|pair| pair[0] >= pair[1]) {
-            return Err(DecomposeInputDenial::ChangedIdentitiesNotCanonical);
-        }
-        if self.snapshot.is_none() && identities != self.identities.as_slice() {
-            return Err(DecomposeInputDenial::InitialCoverageMismatch);
-        }
-        if self
-            .snapshot
-            .as_ref()
-            .is_some_and(|previous| previous.editions.interior != editions.interior)
-            && identities != self.identities.as_slice()
-        {
-            return Err(DecomposeInputDenial::InteriorKernelCoverageMismatch);
-        }
-        for identity in identities {
-            if self.identities.as_slice().binary_search(identity).is_err() {
-                return Err(DecomposeInputDenial::UnknownIdentity(*identity));
-            }
-        }
-        Ok(())
     }
 
     fn merge_interiors(

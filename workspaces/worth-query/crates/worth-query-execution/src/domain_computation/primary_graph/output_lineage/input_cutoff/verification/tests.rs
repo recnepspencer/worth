@@ -62,7 +62,7 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
                         .unwrap();
                     let revision = runtime
                         .read_truth()
-                        .project_snapshot(&snapshot)
+                        .project_snapshot(&snapshot, &execution)
                         .unwrap()
                         .entity_field_revision(&execution, entity, &locator)
                         .expect("fixture read request remains live")
@@ -240,7 +240,7 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                 let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
                 let revision = runtime
                     .read_truth()
-                    .project_snapshot(&snapshot)
+                    .project_snapshot(&snapshot, &execution)
                     .unwrap()
                     .entity_field_revision(&execution, entity, &locator)
                     .expect("fixture read request remains live")

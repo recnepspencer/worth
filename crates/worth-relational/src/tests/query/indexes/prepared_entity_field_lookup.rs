@@ -33,7 +33,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
     assert!(build.failed_indexes.is_empty());
     let view = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap();
     let before = runtime.index_access().generation_selection_counters();
     let prepared = runtime
@@ -187,7 +187,7 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
     assert!(build.failed_indexes.is_empty());
     let view = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap();
     let prepared = runtime
         .index_access()

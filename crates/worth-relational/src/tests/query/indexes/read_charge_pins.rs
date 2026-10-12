@@ -17,7 +17,7 @@ fn admitted_field_revision_keeps_its_parent_charge_pin() {
     let entity = changed_entities(&made)[0];
     let view = runtime
         .read_truth()
-        .project_snapshot(&made.snapshot)
+        .project_snapshot(&made.snapshot, &request)
         .unwrap();
     let locator = worth_foundational::facade::AspectFieldLocator::new(
         worth_foundational::facade::LocatorAuthority::Authoritative,

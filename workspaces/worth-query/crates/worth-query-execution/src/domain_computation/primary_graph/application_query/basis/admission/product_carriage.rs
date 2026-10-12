@@ -26,7 +26,7 @@ fn primary_product_selection_composes_one_exact_application_snapshot() {
         .graph
         .with_runtime(execution, |runtime| runtime
             .read_truth()
-            .project_snapshot(selected.application_basis().snapshot_handle())
+            .project_snapshot(selected.application_basis().snapshot_handle(), &execution)
             .is_some()));
     drop(selected);
     assert_eq!(observer.observe().active(), before.active());

@@ -15,6 +15,13 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Stable(graph::output_lineage::PublishedStableLineage),
 }
 
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) type PreparedProducerExecutionPlan<
+    'owner,
+> = super::prepared_plan::OwnerPlan<
+    'owner,
+    PreparedProducerExecutionOutcome,
+    super::ProducerExecutionStop,
+>;
 /// The commit owner distinguishes a new effect from a descriptive replay.
 /// Only this conversion constructs the fact used to mark the advance.
 #[derive(Debug)]

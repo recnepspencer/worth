@@ -2,7 +2,7 @@
 use super::*;
 pub(super) fn read(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+    view: &worth_relational::facade::runtime::VisibilityProjectionView,
     entity: worth_relational::facade::identity::EntityId,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
     view.entity_record_with_projection_scope(

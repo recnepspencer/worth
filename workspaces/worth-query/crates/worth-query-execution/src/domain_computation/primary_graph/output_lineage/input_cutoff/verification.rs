@@ -1,5 +1,8 @@
 //! Exact prior-output checks before a producer may omit its handler.
 
+mod owned;
+pub(in crate::domain_computation::primary_graph) use owned::OwnedInputCutoffDecision;
+
 use worth_relational::facade::{
     mvcc::CompanionPreflightStop,
     runtime::{PositionedRelationalSnapshot, RelationalRuntime},
@@ -342,14 +345,10 @@ impl RetainedInputCutoffCandidate {
     }
 }
 
-/// Whether the marked facts, or the full-verification prefix, still permit
-/// reuse. An exhausted currentness allowance proves nothing about the prior
-/// output, so it answers `false` and the demand executes fresh instead of
-/// stopping; every other stop stays a stop.
 mod matched_roots;
 mod pending_upstream;
 #[cfg(test)]
 mod tests;
 
 mod source_facts;
-use source_facts::marked_facts_permit_reuse;
+use source_facts::{facts_are_current, marked_facts_permit_reuse};

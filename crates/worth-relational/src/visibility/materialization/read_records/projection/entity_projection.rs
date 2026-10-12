@@ -6,7 +6,7 @@ use crate::visibility::snapshot_states::SnapshotStateBasis;
 
 use super::{EntityProjectionRecord, ProjectionAspectScope, VisibilityProjectionView};
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     pub(super) fn project_entity_record<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

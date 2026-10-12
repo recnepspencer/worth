@@ -11,7 +11,7 @@ use crate::visibility::snapshot_states::SnapshotStateBasis;
 use super::historical_basis_reads::HistoricalProjectionReader;
 use super::VisibilityProjectionView;
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     /// The entities of one kind in this view, refused before spending more
     /// than `maximum_work_units` on examined slots and materialized records.
     pub fn bounded_entities_of_kind(
@@ -42,7 +42,10 @@ impl VisibilityProjectionView<'_> {
                         &historical.storage(),
                         historical.registry(),
                         kind_id,
-                        KindScanVisibility::for_version(self.runtime, self.version_id()),
+                        KindScanVisibility::for_selected_version(
+                            self.current_version,
+                            self.version_id(),
+                        ),
                         maximum_work_units,
                         &mut |units| context.checkpoint(units),
                     )
@@ -82,7 +85,10 @@ impl VisibilityProjectionView<'_> {
                         &historical.storage(),
                         historical.registry(),
                         kind_id,
-                        KindScanVisibility::for_version(self.runtime, self.version_id()),
+                        KindScanVisibility::for_selected_version(
+                            self.current_version,
+                            self.version_id(),
+                        ),
                         maximum_work_units,
                         &mut |units| context.checkpoint(units),
                     )

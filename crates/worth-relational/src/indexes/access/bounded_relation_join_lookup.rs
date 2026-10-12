@@ -6,28 +6,33 @@ use crate::indexes::data::{
     BoundedRelationJoinLookupWork, DerivedIndexEntries, DerivedIndexKind, RelationJoinEntry,
     RelationJoinKey,
 };
-use crate::visibility::snapshot_states::resolve_snapshot_handle;
+use crate::runtime::RelationalPinnedRead;
 
-use super::IndexAccess;
-
-impl IndexAccess<'_> {
+impl RelationalPinnedRead {
+    /// Verify the relation join selected at pin time without an installed owner.
     pub fn execute_bounded_relation_join_lookup(
         &self,
         request: BoundedRelationJoinLookupRequest,
         parity_mode: BoundedIndexParityMode,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupDenial> {
-        let runtime = self.runtime;
-        runtime.performance_access().count_query_index_attempt();
-        let snapshot = resolve_snapshot_handle(runtime, request.snapshot()).ok_or_else(|| {
+        self.performance_access().count_query_index_attempt();
+        self.lookup_pinned_relation_join(request, parity_mode, execution)
+    }
+    pub(super) fn lookup_pinned_relation_join(
+        &self,
+        request: BoundedRelationJoinLookupRequest,
+        parity_mode: BoundedIndexParityMode,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupDenial> {
+        crate::execution::check_request(execution).map_err(|cause| {
             denial(
-                BoundedRelationJoinLookupDenialKind::SnapshotUnavailable,
+                BoundedRelationJoinLookupDenialKind::Execution(cause),
                 &request,
             )
         })?;
-        let projection = runtime
-            .read_truth()
-            .project_snapshot(&snapshot)
+        let projection = self
+            .project_snapshot(request.snapshot(), execution)
             .ok_or_else(|| {
                 denial(
                     BoundedRelationJoinLookupDenialKind::SnapshotUnavailable,
@@ -36,8 +41,13 @@ impl IndexAccess<'_> {
             })?;
         let source =
             super::super::projected_field_values::IndexProjectionSource::exact(&projection)
-                .expect("resolved snapshot projection must carry an exact basis");
-        let prepared = prepare_relation_join_lookup(runtime, &snapshot, &request)?;
+                .ok_or_else(|| {
+                    denial(
+                        BoundedRelationJoinLookupDenialKind::SnapshotUnavailable,
+                        &request,
+                    )
+                })?;
+        let prepared = prepare_relation_join_lookup(self, &request)?;
         let indexed_entries = prepared.indexed_entries();
         let overflowed = indexed_entries.len() > request.candidate_limit();
         let examined_entry_count = indexed_entries.len().min(request.candidate_limit());
@@ -65,11 +75,10 @@ impl IndexAccess<'_> {
                 &request,
                 &outcome,
             )?;
-            runtime
-                .performance_access()
+            self.performance_access()
                 .count_query_index_parity_verification();
         }
-        runtime.performance_access().count_query_index_path();
+        self.performance_access().count_query_index_path();
         Ok(outcome)
     }
 }
@@ -93,28 +102,22 @@ impl PreparedRelationJoinLookup {
 }
 
 fn prepare_relation_join_lookup(
-    runtime: &crate::runtime::RelationalRuntime,
-    snapshot: &crate::snapshots::data::SnapshotHandle,
+    read: &RelationalPinnedRead,
     request: &BoundedRelationJoinLookupRequest,
 ) -> Result<PreparedRelationJoinLookup, BoundedRelationJoinLookupDenial> {
-    let definition = runtime
-        .indexes
-        .definition(request.index_id())
-        .ok_or_else(|| {
-            denial(
-                BoundedRelationJoinLookupDenialKind::IndexNotInstalled,
-                request,
-            )
-        })?;
-    let verification = RelationJoinVerification::new(&definition, request)?;
-    let generation =
-        super::generation_selection::exact_published_generation(runtime, snapshot, &definition)
-            .ok_or_else(|| {
-                denial(
-                    BoundedRelationJoinLookupDenialKind::ExactGenerationUnavailable,
-                    request,
-                )
-            })?;
+    let selected = read.selected_index(request.index_id()).ok_or_else(|| {
+        denial(
+            BoundedRelationJoinLookupDenialKind::IndexNotInstalled,
+            request,
+        )
+    })?;
+    let verification = RelationJoinVerification::new(&selected.definition, request)?;
+    let generation = selected.generation.clone().ok_or_else(|| {
+        denial(
+            BoundedRelationJoinLookupDenialKind::ExactGenerationUnavailable,
+            request,
+        )
+    })?;
     if !matches!(generation.entries, DerivedIndexEntries::RelationJoin(_)) {
         return Err(denial(
             BoundedRelationJoinLookupDenialKind::WrongIndexKind,
@@ -155,7 +158,7 @@ impl RelationJoinVerification {
     fn verify_external_endpoints(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
+        source: &super::super::projected_field_values::IndexProjectionSource<'_>,
     ) -> Result<(), BoundedRelationJoinLookupDenial> {
         let left = source
             .with_entity(execution, self.left_entity_id, Clone::clone)
@@ -187,7 +190,7 @@ impl RelationJoinVerification {
     fn verify_entries(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
+        source: &super::super::projected_field_values::IndexProjectionSource<'_>,
         entries: &[RelationJoinEntry],
     ) -> Result<Vec<crate::identity::data::EntityId>, BoundedRelationJoinLookupDenial> {
         self.verify_external_endpoints(execution, source)?;
@@ -206,7 +209,7 @@ impl RelationJoinVerification {
     fn verify_entry(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
+        source: &super::super::projected_field_values::IndexProjectionSource<'_>,
         entry: &RelationJoinEntry,
     ) -> Result<crate::identity::data::EntityId, BoundedRelationJoinLookupDenial> {
         let shared = source
@@ -275,7 +278,7 @@ impl RelationJoinVerification {
 
 fn certify_storage_parity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
+    source: &super::super::projected_field_values::IndexProjectionSource<'_>,
     verification: &RelationJoinVerification,
     request: &BoundedRelationJoinLookupRequest,
     indexed: &BoundedRelationJoinLookupOutcome,

@@ -66,6 +66,14 @@ impl PartialEq for ConsumedOutputEvidence {
 impl Eq for ConsumedOutputEvidence {}
 
 impl ConsumedOutputEvidence {
+    /// The exact native basis on which the read sealed this current input.
+    pub(in crate::domain_computation::primary_graph) fn current_read_basis(&self) -> (u64, u64) {
+        (
+            self.selected_native_root.runtime_instance_id(),
+            self.selected_native_root.root_id(),
+        )
+    }
+
     pub(super) fn new(
         computation: crate::domain_computation::primary_graph::output_lineage::CurrentComputation,
         identity: Arc<RecordedSettlementIdentity>,

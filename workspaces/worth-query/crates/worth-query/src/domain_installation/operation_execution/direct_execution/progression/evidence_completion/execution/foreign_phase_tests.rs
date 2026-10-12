@@ -18,13 +18,21 @@ fn direct_request_refuses_foreign_phase_without_panicking() {
             .workspace(&resource_request, name)
             .unwrap()
     };
+    let counters = crate::domain_installation::WorthQueryOperationExecutionCounters {
+        runtime_authority_checks: 1,
+        graph_provider_contacts: 2,
+        ..Default::default()
+    };
     let first = workspace("direct-phase-owner");
     let second = workspace("direct-phase-foreign");
     first
         .advancement_owner()
         .with_advancement(|phase| {
-            assert!(admit_direct_request(&phase, &first).is_ok());
-            let refusal = admit_direct_request(&phase, &second).err().unwrap();
+            assert!(admit_direct_request(&phase, &first, counters).is_ok());
+            let refusal = admit_direct_request(&phase, &second, counters)
+                .err()
+                .unwrap();
+            assert_eq!(refusal.counters(), counters);
             assert_eq!(
                 refusal.kind(),
                 &WorthQueryBoundExecutionDenialKind::ExecutionRequest(

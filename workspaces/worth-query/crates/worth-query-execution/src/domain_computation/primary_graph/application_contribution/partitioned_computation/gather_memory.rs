@@ -82,3 +82,9 @@ impl GatheredMemory {
 
 #[cfg(test)]
 mod tests;
+
+impl GatheredMemory {
+    pub(super) fn held_bytes(&self) -> u64 {
+        self.held.bytes()
+    }
+}

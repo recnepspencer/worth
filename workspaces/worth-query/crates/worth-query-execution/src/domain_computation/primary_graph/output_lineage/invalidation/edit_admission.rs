@@ -5,6 +5,7 @@ use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPrefligh
 use super::super::super::request_local::{assert_request_local, RequestLocal};
 use super::admission::{IndexAdmission, RetainedIndexAdmission};
 
+mod optional_cleanup_quote;
 mod retained_checkpoint;
 use super::{index_capacity, retention, SourceInvalidationOwner};
 use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
@@ -26,7 +27,7 @@ assert_request_local!(
     ReservedExternalWork<'static>,
 );
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 struct AdmissionTotals {
     work: u64,
     bytes: u64,

@@ -27,7 +27,7 @@ pub(super) fn capture(
     }
     let view = runtime
         .read_truth()
-        .project_snapshot(evidence.snapshot())
+        .project_snapshot(evidence.snapshot(), execution)
         .ok_or(Denial::SnapshotUnavailable)?;
     if !view.is_exact_basis() {
         return Err(Denial::InexactSnapshot);
@@ -153,7 +153,7 @@ pub(super) fn capture(
 
 pub(super) fn capture_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     entity: EntityId,
     remaining: &mut usize,
 ) -> Result<EntityDependency, Denial> {
@@ -176,7 +176,7 @@ pub(super) fn capture_entity(
 
 pub(super) fn capture_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     relation: RelationId,
     remaining: &mut usize,
 ) -> Result<RelationDependency, Denial> {

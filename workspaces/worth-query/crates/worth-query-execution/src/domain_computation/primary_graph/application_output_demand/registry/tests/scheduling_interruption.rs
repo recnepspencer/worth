@@ -133,7 +133,7 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                             panic!("a reopened Ready is given back, not discarded");
                         };
                         assert!(matches!(
-                            output.advancement,
+                            output.advancement(),
                             WorthQueryOutputAdvancement::Idle
                         ));
                         let Some(WorthQueryOutputCheckpoint::Ready(ready)) = &output.checkpoint

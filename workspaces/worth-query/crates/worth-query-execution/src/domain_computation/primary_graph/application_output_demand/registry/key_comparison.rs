@@ -24,6 +24,12 @@ pub(super) fn comparison_work<'a>(
     )
 }
 
+/// The pinned ordered node compares at most eleven demand keys per level.
+/// Both occurrence seeks and selected-record navigation use this bound.
+pub(super) fn ordered_comparisons(levels: usize, count: usize) -> Option<usize> {
+    levels.checked_mul(count.min(11))
+}
+
 impl KeyComparisonWork {
     pub(super) fn sort_bound(&self, count: usize) -> Option<usize> {
         count

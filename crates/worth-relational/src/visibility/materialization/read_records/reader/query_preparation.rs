@@ -48,23 +48,26 @@ impl QueryPreparationBudget<'_, '_, '_> {
 pub(super) fn consult_query_preparation_request(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), QueryReadExecutionStop> {
-    execution.consult().map_err(|denial| match denial {
-        worth_execution::WorkCeilingDenial::Stopped(stop) => {
-            QueryReadExecutionStop::PreparationStopped {
-                reason: worth_execution::MapStop::Failure {
-                    identity: PartitionIdentity::new(1),
-                    cause: MapKernelFailure::Stop(stop),
-                },
-                report: ExecutionReport::new(
-                    execution.resolved_posture(),
-                    0,
-                    0,
-                    ExecutionPhysicalReport::new(0, 0, None, 0, 0),
-                ),
-            }
-        }
-        denial => QueryReadExecutionStop::Request(denial),
-    })
+    execution
+        .check_live()
+        .map_err(|stop| query_preparation_request_stop(stop, execution))
+}
+pub(super) fn query_preparation_request_stop(
+    stop: worth_execution::MapKernelStop,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> QueryReadExecutionStop {
+    QueryReadExecutionStop::PreparationStopped {
+        reason: worth_execution::MapStop::Failure {
+            identity: PartitionIdentity::new(1),
+            cause: MapKernelFailure::Stop(stop),
+        },
+        report: ExecutionReport::new(
+            execution.resolved_posture(),
+            0,
+            0,
+            ExecutionPhysicalReport::new(0, 0, None, 0, 0),
+        ),
+    }
 }
 
 pub(super) fn prepare_query_packets(

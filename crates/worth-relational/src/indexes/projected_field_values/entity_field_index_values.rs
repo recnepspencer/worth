@@ -19,7 +19,7 @@ use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_entity_aspect_field_index(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
 ) -> Result<
     BTreeMap<AuthoritativeFieldComparisonKey, Vec<EntityId>>,
@@ -42,7 +42,7 @@ pub(in crate::indexes) fn build_entity_aspect_field_index(
 
 pub(in crate::indexes) fn build_entity_aspect_field_index_checked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
 ) -> Result<BTreeMap<AuthoritativeFieldComparisonKey, Vec<EntityId>>, IndexKernelStop> {
@@ -102,7 +102,7 @@ pub(in crate::indexes) fn entity_aspect_field_index_entry(
 
 pub(in crate::indexes) fn entity_aspect_field_ordering_value(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     entity_id: EntityId,
     field_locator: &AspectFieldLocator,
 ) -> Result<

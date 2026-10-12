@@ -200,7 +200,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     }
 }
 
-fn query_schema_context_for_root(
+pub(super) fn query_schema_context_for_root(
     root: &crate::branch::RelationalBranchRoot,
 ) -> (
     crate::schema::data::SchemaVersionId,

@@ -71,3 +71,7 @@ pub(crate) mod publication_denial;
 mod adoption_preparation;
 
 pub(crate) mod read_consult;
+#[cfg(test)]
+mod read_lock_probe;
+#[cfg(test)]
+pub(in crate::domain_computation) use read_lock_probe::ReadLockProbeForTest;

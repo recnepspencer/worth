@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 
 pub(super) fn entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     id: EntityId,
     work: &mut MaintenanceWork,
 ) -> Result<Option<EntityReadRecord>, Denial> {
@@ -23,7 +23,7 @@ pub(super) fn entity(
 
 pub(super) fn relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     id: RelationId,
     work: &mut MaintenanceWork,
 ) -> Result<Option<RelationReadRecord>, Denial> {
@@ -46,7 +46,7 @@ pub(super) fn relation(
 
 pub(super) fn adjacency(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     entity: EntityId,
     kind: KindId,
     outgoing: bool,

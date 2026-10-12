@@ -164,7 +164,7 @@ fn prove_shapes(shapes: impl IntoIterator<Item = (usize, usize)>) {
         }
         let view = runtime
             .read_truth()
-            .project_snapshot(&created.snapshot)
+            .project_snapshot(&created.snapshot, execution)
             .unwrap();
         for (field, generation) in paid.generations.iter().enumerate() {
             let key = if field == 0 {

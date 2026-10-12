@@ -147,10 +147,10 @@ fn affected_sources(
     let truth = runtime.read_truth();
     let views = [
         truth
-            .project_snapshot(before)
+            .project_snapshot(before, &execution)
             .ok_or(RefreshReadDenial::Unavailable)?,
         truth
-            .project_snapshot(after)
+            .project_snapshot(after, &execution)
             .ok_or(RefreshReadDenial::Unavailable)?,
     ];
     let mut sources = BTreeSet::new();
@@ -194,7 +194,7 @@ fn source_contributions(
 ) -> Result<BTreeMap<EntityId, i64>, RefreshReadDenial> {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, &execution)
         .ok_or(RefreshReadDenial::Unavailable)?;
     if live_entity_kind(execution, &view, source)? != Some(key.source_kind) {
         return Ok(BTreeMap::new());
@@ -229,7 +229,7 @@ fn source_contributions(
 /// The kind of a live entity on the view's own branch root.
 fn live_entity_kind(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     entity: EntityId,
 ) -> Result<Option<KindId>, RefreshReadDenial> {
     view.entity_record_with_projection_scope(

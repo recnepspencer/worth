@@ -10,7 +10,7 @@ mod admitted_entity;
 #[path = "field_revisions/relation_revision.rs"]
 mod relation_revision;
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     /// Native field status and revision at an exact immutable root. `None`
     /// means unavailable provenance; it never means an absent field. Current
     /// checkpoint images retain native revisions, including absent revisions.

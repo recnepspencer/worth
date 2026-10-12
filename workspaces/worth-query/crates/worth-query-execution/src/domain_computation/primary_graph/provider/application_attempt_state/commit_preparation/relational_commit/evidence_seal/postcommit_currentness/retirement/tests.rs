@@ -131,7 +131,7 @@ fn reads(
         .with_runtime(execution, |runtime| {
             let view = runtime
                 .read_truth()
-                .project_snapshot(selected.application_basis().snapshot_handle())
+                .project_snapshot(selected.application_basis().snapshot_handle(), &execution)
                 .unwrap();
             (
                 view.entity_aspect_version(entity, locator.aspect().aspect_key()),

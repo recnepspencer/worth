@@ -105,7 +105,7 @@ fn write_unique_entity_aspect_field_index_entries(
 
 fn collect_all_unique_entity_aspect_field_entries(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &crate::runtime::VisibilityProjectionView<'_>,
+    projection: &crate::runtime::VisibilityProjectionView,
     tracked_fields: &BTreeSet<AspectFieldLocator>,
 ) -> Result<
     Vec<(

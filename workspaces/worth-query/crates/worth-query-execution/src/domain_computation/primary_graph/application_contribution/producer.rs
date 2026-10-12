@@ -11,12 +11,14 @@ use worth_query_installation::facade::ApplicationSchema;
 
 mod demand;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
+pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};
 pub use demand::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
     WorthQuerySelectedApplicationProducer,
 };
 mod execution;
+pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
 mod input_reuse_contract;
 pub use input_reuse_contract::{

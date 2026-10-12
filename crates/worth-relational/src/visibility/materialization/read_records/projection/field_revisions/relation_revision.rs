@@ -6,7 +6,7 @@ use crate::storage::data::{
 };
 use crate::storage::overlay::PartitionAccess;
 use worth_foundational::facade::{AspectFieldLocator, AspectShape, LocatorAuthority};
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     pub(super) fn read_relation_field_revision_funded(
         &self,
         relation: RelationId,
@@ -82,11 +82,10 @@ impl VisibilityProjectionView<'_> {
         // symbol-pair B-tree lookup. No string is cloned on this read.
         let text_work = aspect_text.len().saturating_add(field_text.len());
         admit_work((text_work as u64).saturating_add(2))?;
-        let (aspect_symbol, field_symbol) = self
-            .runtime
-            .services
-            .symbols
-            .with_read(|symbols| (symbols.symbol(aspect_text), symbols.symbol(field_text)));
+        let (aspect_symbol, field_symbol) = (
+            self.symbols.symbol(aspect_text),
+            self.symbols.symbol(field_text),
+        );
         let explicit = if let Some(key) = aspect_symbol.zip(field_symbol) {
             admit_work(super::admitted_entity::btree_navigation_work(
                 revisions.len(),

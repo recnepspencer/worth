@@ -354,3 +354,6 @@ pub(super) fn invalid_policy(subject: &str) -> WorthQueryOperationAuthorizationD
         subject,
     )
 }
+
+#[cfg(test)]
+pub(in crate::domain_computation) use grant_selection::late_cancellation::CancelGrantSelectionGuardForTest;

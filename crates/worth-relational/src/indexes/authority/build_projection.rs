@@ -1,13 +1,14 @@
 use super::{IndexProjectionSource, RelationalRuntime};
 
-pub(super) enum IndexBuildProjection<'runtime> {
-    Exact(crate::runtime::VisibilityProjectionView<'runtime>),
-    Historical(crate::runtime::VisibilityProjectionView<'runtime>),
+pub(super) enum IndexBuildProjection {
+    Exact(crate::runtime::VisibilityProjectionView),
+    Historical(crate::runtime::VisibilityProjectionView),
 }
 
-impl<'runtime> IndexBuildProjection<'runtime> {
+impl IndexBuildProjection {
     pub(super) fn select(
-        runtime: &'runtime RelationalRuntime,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
         branch_id: &crate::history::data::BranchId,
         version_id: crate::identity::data::VersionId,
     ) -> Result<Option<Self>, crate::branch::RelationalBranchBasisDenial> {
@@ -23,7 +24,7 @@ impl<'runtime> IndexBuildProjection<'runtime> {
             .map(|projection| Some(Self::Historical(projection)))
     }
 
-    pub(super) fn source(&self) -> Option<IndexProjectionSource<'_, 'runtime>> {
+    pub(super) fn source(&self) -> Option<IndexProjectionSource<'_>> {
         match self {
             Self::Exact(projection) => IndexProjectionSource::exact(projection),
             Self::Historical(projection) => IndexProjectionSource::historical(projection),

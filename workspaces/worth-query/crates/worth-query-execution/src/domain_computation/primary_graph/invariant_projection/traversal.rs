@@ -212,12 +212,12 @@ where
     /// a sibling branch's commits made at older versions.
     fn branch_view(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         subject: &str,
-    ) -> Result<VisibilityProjectionView<'_>, WorthQueryInvariantProjectionTraversalDenial> {
+    ) -> Result<VisibilityProjectionView, WorthQueryInvariantProjectionTraversalDenial> {
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot)
+            .project_snapshot(self.snapshot, &execution)
             .ok_or_else(|| endpoint_unavailable(subject))
     }
 

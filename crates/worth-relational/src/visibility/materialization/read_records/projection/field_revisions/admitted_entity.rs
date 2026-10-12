@@ -10,7 +10,7 @@ use crate::storage::overlay::PartitionAccess;
 
 use super::super::VisibilityProjectionView;
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     /// Admission covers the selected catalog walk, text comparisons and
     /// revision lookup before each read. There is no owned record projection.
     /// `None` retains the unrestricted read's unavailable/undeclared meaning.
@@ -24,7 +24,7 @@ impl VisibilityProjectionView<'_> {
         Result<Option<RelationalFieldRevision>, Stop>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::visibility::materialization::read_records::read_request::checked(execution, || {
+        super::super::super::read_request::checked(execution, || {
             admit_work(1)?;
             if !self.is_exact_basis()
                 || locator.aspect().authority() != LocatorAuthority::Authoritative
@@ -66,12 +66,17 @@ impl VisibilityProjectionView<'_> {
                     AspectShape::Struct(shape) => shape.fields().len(),
                     _ => 0,
                 };
-                let field_comparisons = (struct_fields as u64).saturating_add(1);
+                let field_comparisons = u64::try_from(struct_fields)
+                    .unwrap_or(u64::MAX)
+                    .saturating_add(1);
                 let work = 2_u64
-                    .saturating_add(aspect_text.len() as u64)
+                    .saturating_add(u64::try_from(aspect_text.len()).unwrap_or(u64::MAX))
                     .saturating_add(
-                        field_comparisons
-                            .saturating_mul((field_text.len() as u64).saturating_add(1)),
+                        field_comparisons.saturating_mul(
+                            u64::try_from(field_text.len())
+                                .unwrap_or(u64::MAX)
+                                .saturating_add(1),
+                        ),
                     );
                 admit_work(work)?;
                 if binding.aspect_key() == locator.aspect().aspect_key()
@@ -95,12 +100,15 @@ impl VisibilityProjectionView<'_> {
             // StringInterner hashes both borrowed UTF-8 keys before the fixed
             // symbol-pair B-tree lookup. No string is cloned on this read.
             let text_work = aspect_text.len().saturating_add(field_text.len());
-            admit_work((text_work as u64).saturating_add(2))?;
-            let (aspect_symbol, field_symbol) = self
-                .runtime
-                .services
-                .symbols
-                .with_read(|symbols| (symbols.symbol(aspect_text), symbols.symbol(field_text)));
+            admit_work(
+                u64::try_from(text_work)
+                    .unwrap_or(u64::MAX)
+                    .saturating_add(2),
+            )?;
+            let (aspect_symbol, field_symbol) = (
+                self.symbols.symbol(aspect_text),
+                self.symbols.symbol(field_text),
+            );
             let explicit = if let Some(key) = aspect_symbol.zip(field_symbol) {
                 admit_work(btree_navigation_work(revisions.len()))?;
                 revisions.get(&key).copied()

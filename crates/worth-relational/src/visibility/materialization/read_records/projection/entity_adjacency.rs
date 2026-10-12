@@ -19,7 +19,7 @@ use crate::visibility::materialization::read_records::reader::{
     AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead,
 };
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     /// Reads the selected adjacency under the request, without a second ceiling.
     pub fn outgoing_relations_of_kind(
         &self,
@@ -171,7 +171,7 @@ impl VisibilityProjectionView<'_> {
             records.sort_by_key(relation_identity_order_key);
             Ok(BoundedAdjacencyTruthRead::new(records, examined))
         })();
-        ledger.settle(self.runtime);
+        ledger.settle_instrumentation(&self.instrumentation);
         answer
     }
 }

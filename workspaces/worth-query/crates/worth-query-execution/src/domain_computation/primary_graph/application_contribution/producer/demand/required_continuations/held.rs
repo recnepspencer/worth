@@ -9,16 +9,16 @@ use crate::domain_computation::primary_graph::application_output_demand::{
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 /// The registry's copy of one frame successor and the custody it is funded by.
-struct HeldFrameSuccessor<Schema>
+pub(super) struct HeldFrameSuccessor<Schema>
 where
     Schema: ApplicationSchema,
 {
-    progress: RequiredFreshProgress<Schema>,
+    pub(super) progress: RequiredFreshProgress<Schema>,
     // Declared after `progress`: the ticket refunds after its storage frees.
     _capacity: RequiredOutputCustodyCapacity,
 }
 
-fn held_key<Schema>(held: &HeldRequiredSuccessor) -> &WorthQueryOutputDemandKey
+pub(super) fn held_key<Schema>(held: &HeldRequiredSuccessor) -> &WorthQueryOutputDemandKey
 where
     Schema: ApplicationSchema + 'static,
 {
@@ -58,8 +58,9 @@ where
     ) {
         for progress in std::mem::take(&mut self.entries) {
             let bytes = std::mem::size_of::<HeldFrameSuccessor<Schema>>();
-            // Without custody the successor ends here, as it would have.
             let Ok(capacity) = registry.reserve_held_successor_capacity(bytes) else {
+                // Typed successor Drop preserves another delivery entry, or
+                // closes its otherwise orphaned Published checkpoint.
                 continue;
             };
             let held: HeldRequiredSuccessor = Box::new(HeldFrameSuccessor {
@@ -107,7 +108,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     custody: ContinuationCustody<'_, Schema>,
     key: &WorthQueryOutputDemandKey,
     admission: &mut InvalidationEditAdmission,
-    performed: &mut PerformedMembers,
+    performed: &std::cell::RefCell<PerformedMembers>,
 ) -> Result<HeldUpstream, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -149,16 +150,38 @@ where
             Err(stop) => Err(stop),
         };
     }
-    let Some(held) = runtime.output_demands.take_held_successor(key, admission)? else {
+    let Some(held) = runtime
+        .output_demands
+        .take_published_held_successor(key, admission)?
+    else {
         return Ok(HeldUpstream::Unfinished);
     };
+    resume_registry_successor(
+        phase, runtime, principal, request, branch, custody, held, admission, performed,
+    )
+}
+
+// Both ordinary required-upstream resume and frozen thaw move the same successor.
+pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
+    phase: &WorthQueryAdvancementPhase<'_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request: &WorthQueryRequestScope,
+    branch: crate::basis::WorthQueryProductBranch,
+    custody: &mut RequiredContinuations<Schema>,
+    held: HeldRequiredSuccessor,
+    admission: &mut InvalidationEditAdmission,
+    performed: &std::cell::RefCell<PerformedMembers>,
+) -> Result<HeldUpstream, WorthQueryOutputDemandDenial> {
     let mut held = held
         .downcast::<HeldFrameSuccessor<Schema>>()
         .unwrap_or_else(|_| unreachable!("the registry holds only this runtime's successors"));
+
     let result = held.progress.resume(
         phase, runtime, principal, request, branch, admission, performed,
     );
     held.progress.report_caller_contacts(None);
+    let key = held.progress.interest().key();
     let ready = match result {
         Ok(Some(ready)) => ready,
         Err(stop)
@@ -171,7 +194,8 @@ where
             drop(held);
             return Ok(HeldUpstream::GaveBack);
         }
-        // Refused custody, the successor ends instead of holding its own.
+        // Refused custody ends the frame, retaining a real delivery owner or
+        // closing an undelivered row that no entry can now finish.
         Err(stop) if super::progress::refused_custody(&stop) => {
             drop(held);
             return Err(stop);
@@ -207,8 +231,9 @@ where
     Schema: ApplicationSchema + 'static,
 {
     /// Run the successor's row again and drive its checkpoint to Ready. A
-    /// row already Ready is not run again.
-    fn resume(
+    /// row already Ready is not run again. Unlike wave_execution's fresh-slot
+    /// loop, this resumes existing continuation custody; both use paid turns.
+    pub(super) fn resume(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -217,7 +242,7 @@ where
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
-        performed: &mut PerformedMembers,
+        performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
         let registry = &runtime.output_demands;
         if registry
@@ -239,10 +264,14 @@ where
             )?;
         }
         loop {
-            if let Some(ready) = registry.interest_ready_readmission(self.interest(), admission)? {
-                return Ok(Some(ready));
-            }
-            if !self.advance_checkpoint(phase, runtime, request, admission)? {
+            let stage = match self
+                .checkpoint(admission, super::super::progression::admission_denial)
+                .inspect(registry)?
+            {
+                WaveCheckpointTurn::Current(ready) => return Ok(Some(ready.into_readmission())),
+                WaveCheckpointTurn::Awaiting(stage) => stage,
+            };
+            if !stage.advance(phase, runtime, request)? {
                 return Ok(None);
             }
         }
@@ -269,7 +298,7 @@ where
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
         admission: &mut InvalidationEditAdmission,
-        performed: &mut PerformedMembers,
+        performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let demand = self
             .demand
@@ -292,3 +321,6 @@ where
         )
     }
 }
+
+#[cfg(test)]
+mod lifetime_fixture;

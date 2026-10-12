@@ -146,7 +146,10 @@ fn projected_frontier_adjacency_uses_the_selected_branch_root() {
         child.clone(),
     );
     let snapshot = snapshot_for_owner_branch(&runtime, &child);
-    let projection = runtime.read_truth().project_snapshot(&snapshot).unwrap();
+    let projection = runtime
+        .read_truth()
+        .project_snapshot(&snapshot, &execution)
+        .unwrap();
     let records = projection
         .bounded_outgoing_relations_for_frontier(
             execution,

@@ -11,7 +11,7 @@ use worth_query_host::facade::primary_graph::{
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy as Allocation;
 
 fn zero_work() {
-    let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         policy.charged_memory_bytes(),
@@ -93,7 +93,7 @@ fn unpublished_recovery_opens_before_authorization_for_all_three_entries() {
             .with_host_advancement(|phase| {
                 application.fail_next_durable_append_for_test(
                     &phase
-                        .execution_request_for(application.product_runtime())
+                        .checked_execution_request_for(application.product_runtime())
                         .expect("matching installed phase"),
                 )
             })
@@ -132,7 +132,7 @@ fn unpublished_recovery_opens_before_authorization_for_all_three_entries() {
             .with_host_advancement(|phase| {
                 application.fail_next_durable_append_for_test(
                     &phase
-                        .execution_request_for(application.product_runtime())
+                        .checked_execution_request_for(application.product_runtime())
                         .expect("matching installed phase"),
                 )
             })
@@ -171,7 +171,7 @@ fn unpublished_recovery_opens_before_authorization_for_all_three_entries() {
             .with_host_advancement(|phase| {
                 application.fail_next_durable_append_for_test(
                     &phase
-                        .execution_request_for(application.product_runtime())
+                        .checked_execution_request_for(application.product_runtime())
                         .expect("matching installed phase"),
                 )
             })
@@ -247,7 +247,7 @@ fn discovered_promotion_opens_before_its_receipt_reader_and_returns_custody_on_r
             .with_host_advancement(|phase| {
                 application.fail_next_durable_append_for_test(
                     &phase
-                        .execution_request_for(application.product_runtime())
+                        .checked_execution_request_for(application.product_runtime())
                         .expect("matching installed phase"),
                 )
             })
@@ -300,7 +300,7 @@ fn required_promotion_opens_before_its_receipt_reader_and_returns_custody_on_ref
             .with_host_advancement(|phase| {
                 application.fail_next_durable_append_for_test(
                     &phase
-                        .execution_request_for(application.product_runtime())
+                        .checked_execution_request_for(application.product_runtime())
                         .expect("matching installed phase"),
                 )
             })

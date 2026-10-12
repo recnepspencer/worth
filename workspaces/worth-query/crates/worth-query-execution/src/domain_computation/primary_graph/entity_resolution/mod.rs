@@ -4,6 +4,8 @@ use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalK
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 mod admitted_scope;
 mod freshness;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) mod interruption_control;
 mod preflight;
 mod product;
 pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
@@ -66,13 +68,16 @@ impl WorthQueryPrimaryGraph {
 impl WorthQueryInstalledEntityResolutionContext {
     pub(in crate::domain_computation) fn at_snapshot<'truth>(
         &'truth self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &'truth worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &'truth worth_relational::facade::snapshots::SnapshotHandle,
         mode: WorthQueryPrincipalResolutionMode,
     ) -> Result<WorthQueryEntityResolutionTruth<'truth>, WorthQueryEntityResolutionDenial> {
         if snapshot.runtime_instance_id() != self.relational_runtime_instance_id
-            || relational.read_truth().project_snapshot(snapshot).is_none()
+            || relational
+                .read_truth()
+                .project_snapshot(snapshot, &execution)
+                .is_none()
         {
             return Err(entity_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(

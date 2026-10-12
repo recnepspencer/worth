@@ -6,8 +6,9 @@ fn refused_basis_advancement_fails_the_slot_and_closes_the_lane() {
     use worth_query_host::facade::primary_graph::{
         bound_advancement_requests_on_this_thread_for_test as bound,
         place_managed_computations_on_this_thread_for_test as place,
-        WorthQueryExecutionPlacementForTest as Placement,
+        WorthQueryExecutionObservation, WorthQueryExecutionPlacementForTest as Placement,
     };
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let server = scheduler_server();
     let first = lower_product_mutation_plan(&server, "session-alpha", "", "task-refused");
     let basis = first

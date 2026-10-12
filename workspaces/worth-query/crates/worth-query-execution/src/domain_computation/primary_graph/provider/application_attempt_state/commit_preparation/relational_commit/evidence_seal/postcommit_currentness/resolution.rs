@@ -138,7 +138,7 @@ impl PreparedFactRebase {
                     locator.aspect().aspect_key().clone(),
                     locator.field_path().clone(),
                 );
-                let revision = match runtime.read_truth().project_snapshot(snapshot) {
+                let revision = match runtime.read_truth().project_snapshot(snapshot, &execution) {
                     Some(view) => view
                         .entity_field_revision(execution, *entity_id, &locator)
                         .map_err(RebaseVerificationReason::Execution)?,
@@ -155,7 +155,7 @@ impl PreparedFactRebase {
             } => {
                 match runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
+                    .project_snapshot(snapshot, &execution)
                     .and_then(|view| view.entity_aspect_version(*entity_id, aspect))
                 {
                     Some(revision) => Ok(Self::Aspect(revision)),
@@ -170,7 +170,7 @@ impl PreparedFactRebase {
                 comparison_work_limit,
                 ..
             } => {
-                let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+                let Some(view) = runtime.read_truth().project_snapshot(snapshot, &execution) else {
                     return if producer_output {
                         Err(unavailable)
                     } else {

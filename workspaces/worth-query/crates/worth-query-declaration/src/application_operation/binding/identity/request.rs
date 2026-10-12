@@ -1,5 +1,8 @@
 //! Both identities of one mutation request, encoded once beside the request.
 
+mod owned;
+pub use owned::ApplicationOwnedMutationIdentities;
+
 use std::{fmt::Debug, marker::PhantomData};
 
 use super::{

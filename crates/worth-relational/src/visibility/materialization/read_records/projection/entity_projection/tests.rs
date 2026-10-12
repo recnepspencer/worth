@@ -48,7 +48,10 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
     let entity = changed_entities(&created)[0];
     let updated = update_entity(execution, &runtime, entity, "after");
     for (snapshot, expected_name) in [(&created.snapshot, "before"), (&updated.snapshot, "after")] {
-        let view = runtime.read_truth().project_snapshot(snapshot).unwrap();
+        let view = runtime
+            .read_truth()
+            .project_snapshot(snapshot, &execution)
+            .unwrap();
         assert_borrowed_title(execution, &view, entity);
         let name = view
             .entity_record_with_projection_scope(
@@ -70,7 +73,7 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
 
 fn assert_borrowed_title(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     entity: EntityId,
 ) {
     let root = view.basis.root().unwrap();
@@ -118,11 +121,11 @@ fn projection_preserves_identity_kind_and_lifecycle_across_exact_and_historical_
     let deleted = delete_entity(execution, &runtime, entity);
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap();
     let after = runtime
         .read_truth()
-        .project_snapshot(&deleted.snapshot)
+        .project_snapshot(&deleted.snapshot, execution)
         .unwrap();
     let historical_before = runtime
         .read_truth()
@@ -137,8 +140,8 @@ fn projection_preserves_identity_kind_and_lifecycle_across_exact_and_historical_
 
 fn assert_projection_lifecycle(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    before: &VisibilityProjectionView<'_>,
-    after: &VisibilityProjectionView<'_>,
+    before: &VisibilityProjectionView,
+    after: &VisibilityProjectionView,
     entity: EntityId,
 ) {
     let scope = ProjectionAspectScope::whole_aspects([aspect_key("name")]);
@@ -196,7 +199,7 @@ fn borrowed_projection_cannot_bypass_installed_mask_contract() {
     let created = create_entity_outcome(execution, &runtime, "masked");
     runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap()
         .entity_record_with_projection_scope(
             execution,

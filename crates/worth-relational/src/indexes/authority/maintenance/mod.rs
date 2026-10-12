@@ -133,7 +133,7 @@ impl IndexAuthority<'_> {
                 }
                 self.runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
+                    .project_snapshot(snapshot, execution)
                     .ok_or(DerivedIndexMaintenanceDenialKind::SnapshotUnavailable)
             })
             .transpose()?;

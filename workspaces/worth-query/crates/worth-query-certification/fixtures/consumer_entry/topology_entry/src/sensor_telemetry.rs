@@ -7,7 +7,10 @@ use worth_query_host::facade::{
         application_operation::ApplicationMutationBinding, application_program::*,
         application_schema::ApplicationSchema,
     },
-    primary_graph::{DecisionReader, WorthQueryPrimaryGraphInstallationDenial},
+    primary_graph::{
+        DecisionReader, HandlerResult, WorthQueryDecisionPlan,
+        WorthQueryPrimaryGraphInstallationDenial,
+    },
 };
 
 #[derive(Clone, Serialize)]
@@ -160,11 +163,15 @@ where
     setup.partitioned_computation::<F, PeakReading<A>, _>(PeakOwner(PhantomData))
 }
 
-pub fn run_peak<S, F, A, Op, B>(
+pub fn run_peak<S, F, A, Op, B, Value: 'static, Domain: 'static>(
     installed: &WorthQueryInstalledPartitionedComputation<S, F, PeakReading<A>, PeakOwner<Op>>,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<Reading>,
-) -> Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>
+    complete: impl FnOnce(
+            Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
+        ) -> HandlerResult<Value, Domain>
+        + 'static,
+) -> WorthQueryDecisionPlan<Value, Domain>
 where
     S: ApplicationSchema,
     F: ApplicationFeature<S>,
@@ -172,11 +179,15 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    let computed = installed
-        .prepare(reader, input)?
-        .compute(reader.managed_computation_execution())?;
-    let charged_work = computed.charged_work();
-    Ok((computed.complete()?, charged_work))
+    match installed.prepare(reader, input) {
+        Ok(prepared) => prepared.into_decision_plan(move |computed| {
+            complete(computed.and_then(|computed| {
+                let charged_work = computed.charged_work();
+                computed.complete().map(|value| (value, charged_work))
+            }))
+        }),
+        Err(denial) => WorthQueryDecisionPlan::immediate(complete(Err(denial))),
+    }
 }
 // compiled-example: end
 

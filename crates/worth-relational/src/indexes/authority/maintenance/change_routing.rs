@@ -29,8 +29,8 @@ impl ChangeRouting {
     pub(super) fn classify(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         changes: &ChangedRecords,
-        before: Option<&VisibilityProjectionView<'_>>,
-        after: &VisibilityProjectionView<'_>,
+        before: Option<&VisibilityProjectionView>,
+        after: &VisibilityProjectionView,
         work: &mut MaintenanceWork,
     ) -> Result<Self, Denial> {
         let mut routed = Self {

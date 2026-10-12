@@ -31,12 +31,17 @@ impl WorthQueryOutputDemandRegistry {
                 "product occurrence retired before custody transfer",
             ));
         }
-        if state.source_custody.contains_key(&commit) {
+        if super::super::post_commit::custody_reader::visible(&state, &commit) {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
                 "performed source is already retained",
             ));
         }
+        super::super::post_commit::custody_reader::prune_invisible_slot(
+            &mut state,
+            &commit,
+            &source.receipt,
+        );
         let scope = source.receipt.principal_scope().scope();
         let direct_root = matches!(root_kind, PreparedOutputRootKind::Required(_));
         if direct_root
@@ -90,7 +95,7 @@ impl WorthQueryOutputDemandRegistry {
                 abandoned.push(prior.clone());
             }
         }
-        for (prior, candidate) in &mut state.source_custody {
+        state.note_custody_changes(|prior, candidate| {
             if direct_root
                 && prior.ordinal() < commit.ordinal()
                 && candidate.retired.is_none()
@@ -105,8 +110,10 @@ impl WorthQueryOutputDemandRegistry {
                     WorthQueryOutputDemandDenialKind::Superseded,
                     "a newer source publication replaced this preparation",
                 ));
+                return true;
             }
-        }
+            false
+        });
         if matches!(root_kind, PreparedOutputRootKind::Discovered(_)) {
             for prior in abandoned {
                 if let Some(candidate) = state.source_custody.get_mut(&prior) {
@@ -115,8 +122,8 @@ impl WorthQueryOutputDemandRegistry {
                         "a newer discovered publication replaced abandoned source custody",
                     ));
                 }
+                state.note_custody(&prior);
             }
-            state.prune_completed_custody();
         }
         let recovery = discovery.map(|discovery| super::super::DiscoveredSourceRecovery {
             receipt: source.receipt.clone(),
@@ -135,6 +142,7 @@ impl WorthQueryOutputDemandRegistry {
                 retired_sources: Vec::new(),
                 retired: None,
                 token_count: 1,
+                cleanup: Default::default(),
                 completed: false,
             },
         );
@@ -158,9 +166,14 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let visible = super::super::post_commit::custody_reader::visible(
+            &state,
+            receipt.committed_product_publication().composite_commit(),
+        );
         let custody = state
             .source_custody
             .get_mut(receipt.committed_product_publication().composite_commit())
+            .filter(|_| visible)
             .filter(|custody| custody.retired.is_none())
             .filter(|custody| custody.root_kind == PreparedOutputRootKind::Discovered(root_type))
             .ok_or_else(|| {

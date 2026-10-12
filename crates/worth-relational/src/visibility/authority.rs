@@ -113,7 +113,7 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         let projection = self
             .runtime
             .read_truth()
-            .project_snapshot(&snapshot)
+            .project_snapshot(&snapshot, execution)
             .ok_or_else(projection_binding_denial)
             .and_then(|view| {
                 view.entity_record_of_expected_kind_with_projection_scope(

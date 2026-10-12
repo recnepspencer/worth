@@ -76,6 +76,12 @@ pub(crate) fn kernel_stop(stop: MapKernelStop) -> Cause {
     }
 }
 
+impl From<MapKernelStop> for Cause {
+    fn from(stop: MapKernelStop) -> Self {
+        kernel_stop(stop)
+    }
+}
+
 fn map_kernel_failure<E, R>(
     failure: &MapKernelFailure<E>,
     native: impl FnOnce(Cause) -> R,

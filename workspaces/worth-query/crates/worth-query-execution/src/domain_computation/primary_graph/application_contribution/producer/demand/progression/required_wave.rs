@@ -30,24 +30,15 @@ use super::super::super::{
 use super::super::RequiredFreshProgress;
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 
-/// A caller's Ready or an exactly requested upstream Ready anchors the wave.
-/// `shared` and `positioned` retain its admitted Product/native proof basis.
-pub(super) struct RequiredWaveSelection<'runtime, Schema> {
-    pub(super) shared: SharedSelectedProductOperation<'runtime, Schema>,
-    pub(super) positioned: PositionedRelationalSnapshot,
-    pub(super) anchor_ready: SelectedReadyReadmission,
-    pub(super) branch: WorthQueryProductBranch,
-    pub(super) target: RequiredWaveTarget,
-}
-
+pub(in crate::domain_computation::primary_graph) use performed::{CurrentBasis, CurrentProof};
 mod caller;
 mod requested;
 pub(super) use requested::advance_requested_output;
 mod cycles;
 mod drive;
-mod frame;
+mod frontier;
+mod member_key;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod performed;
-use frame::{FrameRole, RequiredWaveFrame};
 mod queued;
 mod resolved;
 mod selection;
@@ -55,7 +46,7 @@ use resolved::ResolvedOnWave;
 pub(in crate::domain_computation::primary_graph) use resolved::{
     MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
 };
-use selection::{reselect_required_wave, select_required_wave};
+use selection::{select_required_wave, RequiredWaveSelection};
 
 pub(super) use caller::advance_required_before_caller;
 
@@ -68,119 +59,19 @@ pub(super) enum RequiredWaveTarget {
 
 /// A cue is only scheduling custody. A Current result comes from the exact
 /// accepted row, its installed producer, and the selected Product/native proof.
-pub(super) enum RequiredWaveStep<Schema: ApplicationSchema> {
-    Current(Arc<WorthQueryOutputDemandSettlement>),
+enum RequiredWaveStep<'owner, Schema: ApplicationSchema> {
+    Current(performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>),
     Upstream(SelectedReadyReadmission),
     /// The upstream row is still refreshing.
     Held(WorthQueryOutputDemandKey),
     Pending,
-    Fresh(RequiredFreshProgress<Schema>),
-}
-
-/// Only the exact dependency chain currently being resolved is held here.
-/// It never enumerates unrelated required or clean records.
-struct RequiredWaveStack {
-    frames: Vec<RequiredWaveFrame>,
-}
-
-impl RequiredWaveStack {
-    fn new() -> Self {
-        Self { frames: Vec::new() }
-    }
-
-    /// Preserve role and contact attribution while a prerequisite runs.
-    fn suspend_current(
-        &mut self,
-        current: &mut Option<SelectedReadyReadmission>,
-        role: FrameRole,
-        contacts: usize,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        match current.take() {
-            Some(ready) => self.push(
-                RequiredWaveFrame {
-                    ready,
-                    role,
-                    contacts,
-                },
-                admission,
-            ),
-            None => Ok(true),
-        }
-    }
-
-    /// A repeated live registry member is a pending cycle, not authority to
-    /// discharge any edge. The caller keeps its original interest for retry.
-    fn push(
-        &mut self,
-        next: RequiredWaveFrame,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(3)
-            .map_err(|_| work_denial())?;
-        for prior in &self.frames {
-            if prior.ready.same_record(&next.ready, admission)? {
-                return Ok(false);
-            }
-        }
-        let old_bytes = self
-            .frames
-            .capacity()
-            .checked_mul(std::mem::size_of::<RequiredWaveFrame>())
-            .ok_or_else(capacity_denial)?;
-        let next_len = self
-            .frames
-            .len()
-            .checked_add(1)
-            .ok_or_else(capacity_denial)?;
-        if self.frames.len() == self.frames.capacity() {
-            // A chain grows geometrically so successive prerequisites do not
-            // repeatedly relocate the whole stack. The old and new buffers
-            // coexist during reserve; the selected pin is then written once.
-            let next_capacity = self.frames.capacity().saturating_mul(2).max(next_len);
-            let new_bytes = next_capacity
-                .checked_mul(std::mem::size_of::<RequiredWaveFrame>())
-                .ok_or_else(capacity_denial)?;
-            let peak = old_bytes
-                .checked_add(new_bytes)
-                .ok_or_else(capacity_denial)?;
-            admission
-                .admit_read_scratch(u64::try_from(peak).map_err(|_| capacity_denial())?)
-                .map_err(admission_denial)?;
-            let moved_and_written = old_bytes
-                .checked_mul(2)
-                .ok_or_else(work_denial)?
-                .checked_add(std::mem::size_of::<RequiredWaveFrame>())
-                .and_then(|work| work.checked_add(3))
-                .ok_or_else(work_denial)?;
-            admission
-                .charge_external_work(u64::try_from(moved_and_written).map_err(|_| work_denial())?)
-                .map_err(|_| work_denial())?;
-            let mut replacement = Vec::new();
-            replacement
-                .try_reserve_exact(next_capacity)
-                .map_err(|_| capacity_denial())?;
-            if replacement.capacity() != next_capacity {
-                return Err(capacity_denial());
-            }
-            replacement.append(&mut self.frames);
-            self.frames = replacement;
-        } else {
-            admission
-                .charge_external_work(
-                    u64::try_from(std::mem::size_of::<RequiredWaveFrame>() + 1)
-                        .map_err(|_| work_denial())?,
-                )
-                .map_err(|_| work_denial())?;
-        }
-        self.frames.push(next);
-        Ok(true)
-    }
-
-    fn pop(&mut self) -> Option<RequiredWaveFrame> {
-        self.frames.pop()
-    }
+    Fresh(
+        super::super::super::execution::prepared_plan::OwnerPlan<
+            'owner,
+            RequiredFreshProgress<Schema>,
+            WorthQueryOutputDemandDenial,
+        >,
+    ),
 }
 
 /// Dispatch by the selected registry row's producer identity. The installed
@@ -220,99 +111,7 @@ pub(super) fn installed_for_selected_cue<'runtime, Schema>(
         })
 }
 
-/// Certify one exact Ready cell while the wave retains one selected Product.
-/// The registry's exact consumed-ID join converts PendingExact to owned
-/// scheduling custody before the candidate's borrowed proof leaves scope.
-pub(super) fn certify_required_ready<Schema>(
-    phase: &WorthQueryAdvancementPhase<'_>,
-
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-    request_scope: &WorthQueryRequestScope,
-    wave: &RequiredWaveSelection<'_, Schema>,
-    selected: &SelectedReadyReadmission,
-    caller_installed: Option<&InstalledProducerProvider<Schema>>,
-    resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
-    producer_contacts_in_this_demand: usize,
-    refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
-    performed: &mut performed::PerformedMembers,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<RequiredWaveStep<Schema>, WorthQueryOutputDemandDenial>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    preclaim_required_settlement_arguments(admission)?;
-    let candidate = runtime
-        .primary_provider
-        .graph
-        .output_lineage
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .resolve_required_settlement(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
-            selected.completion(),
-            admission,
-        );
-    // Without an exact candidate, Ready takes Fresh; this advance's record
-    // refuses a published member unless there is evidence of change.
-    let candidate = candidate.map_err(required_settlement_denial)?;
-    admission
-        .charge_external_work(1)
-        .map_err(admission_denial)?;
-    // Only the caller's exact Interest→Ready join may reuse the installed
-    // entry retained when that same demand was admitted. Other cues still
-    // resolve their own producer through the installed table.
-    performed.capture(selected.key(), &candidate, admission)?;
-    let candidate = candidate.ok().flatten();
-    let installed = match caller_installed {
-        Some(entry) => entry,
-        None => installed_for_selected_cue(runtime, selected.producer_identity(), admission)?,
-    };
-    let result = installed
-        .executor
-        .advance_ready_on_selected(
-            phase,
-            runtime,
-            principal,
-            request_scope,
-            &wave.shared,
-            &wave.positioned,
-            selected,
-            candidate.as_ref(),
-            resolved,
-            installed,
-            wave.branch,
-            producer_contacts_in_this_demand,
-            refresh_permission,
-            performed,
-            admission,
-        )
-        .map_err(|stop| match stop {
-            ProducerExecutionStop::RequestAdmissionDenied(rejection) => rejection.into_denial(),
-            ProducerExecutionStop::ExecutionStopped(denial) => denial,
-            ProducerExecutionStop::LiveOutputNotReused { producer, reason } => {
-                ProducerExecutionStop::live_output_not_reused(producer, reason)
-            }
-        })?;
-    match result {
-        RequiredCueProgress::Current(settlement) => Ok(RequiredWaveStep::Current(settlement)),
-        RequiredCueProgress::PendingExact(pending) => {
-            let upstream = runtime.output_demands.pending_exact_ready_readmission(
-                &pending,
-                &wave.positioned,
-                admission,
-            )?;
-            Ok(match upstream {
-                PendingUpstream::Ready(ready) => RequiredWaveStep::Upstream(ready),
-                PendingUpstream::Held(head) => RequiredWaveStep::Held(head),
-                PendingUpstream::Unavailable(_) => RequiredWaveStep::Pending,
-            })
-        }
-        RequiredCueProgress::PendingUnresolved => Ok(RequiredWaveStep::Pending),
-        RequiredCueProgress::Fresh(progress) => Ok(RequiredWaveStep::Fresh(progress)),
-    }
-}
+use performed::certify_required_ready;
 
 /// The schema getter materializes its inline identity before the lineage
 /// owner receives it. Pay that copy and the caller's fixed owner/getter visits.
@@ -365,7 +164,9 @@ fn foreign_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-fn admission_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn admission_denial(
+    stop: CompanionPreflightStop,
+) -> WorthQueryOutputDemandDenial {
     use CompanionPreflightStop as Stop;
     match stop {
         Stop::WorkExhausted { .. }

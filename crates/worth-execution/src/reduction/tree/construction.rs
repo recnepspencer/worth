@@ -300,7 +300,7 @@ impl<T: Clone + ChargedBytes + CanonicalBits> Shape<T> {
                 .map_or(0, |item| item.span)
                 .max(right.as_ref().map_or(0, |item| item.span))
                 .checked_add(4)
-                .ok_or(ReductionRunStop::WorkCounterOverflow)?;
+                .ok_or_else(ReductionRunStop::work_counter_overflow)?;
             let root = engine.build(
                 node.identity,
                 node.value.clone(),

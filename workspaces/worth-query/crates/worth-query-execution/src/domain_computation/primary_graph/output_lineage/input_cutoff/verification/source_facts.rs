@@ -23,7 +23,7 @@ pub(super) fn marked_facts_permit_reuse<'fact>(
 
 /// Re-verifies marked facts, or the full-verification prefix, on the
 /// host-bounded source-currentness allowance.
-fn facts_are_current<'fact>(
+pub(super) fn facts_are_current<'fact>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
     runtime: &RelationalRuntime,

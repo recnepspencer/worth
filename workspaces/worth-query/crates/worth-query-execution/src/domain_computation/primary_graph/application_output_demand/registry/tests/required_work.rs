@@ -78,7 +78,9 @@ impl super::WorthQueryOutputDemandRegistry {
 
 fn selected(queue: &RequiredWorkQueue) -> SelectedRequiredWork {
     match queue.pop() {
-        RequiredWorkPop::Selected(selected) => selected,
+        RequiredWorkPop::Claimed(claim) => claim
+            .select_without_advance()
+            .expect("a live claim selects its current cause"),
         RequiredWorkPop::Empty | RequiredWorkPop::Stale => panic!("expected selected work"),
     }
 }
@@ -103,13 +105,13 @@ fn activation_and_newer_hint_survive_an_older_selected_ack() {
     ));
     // A newer cutover must survive the older worker's acknowledgement.
     drop(member.mark_local_required(Arc::clone(&later)));
-    assert!(first.acknowledge().is_none());
+    assert!(first.acknowledge_fixture().is_none());
     let selected = selected(&queue);
     assert!(matches!(
         selected.kind(),
         SelectedRequiredWorkKind::Local { settlement } if Arc::ptr_eq(settlement, &later)
     ));
-    assert!(selected.acknowledge().is_some());
+    assert!(selected.acknowledge_fixture().is_some());
     assert!(matches!(queue.pop(), RequiredWorkPop::Empty));
 }
 
@@ -127,7 +129,7 @@ fn new_required_record_selects_unresolved_work_without_a_settlement_identity() {
         selected.kind(),
         SelectedRequiredWorkKind::UnresolvedInitial
     ));
-    assert!(selected.acknowledge().is_some());
+    assert!(selected.acknowledge_fixture().is_some());
     assert!(matches!(queue.pop(), RequiredWorkPop::Empty));
 }
 
@@ -153,14 +155,14 @@ fn duplicate_selected_version_cannot_acknowledge_the_next_cause() {
         second.kind(),
         SelectedRequiredWorkKind::Local { .. }
     ));
-    assert!(first.acknowledge().is_some());
-    assert!(second.acknowledge().is_none());
+    assert!(first.acknowledge_fixture().is_some());
+    assert!(second.acknowledge_fixture().is_none());
     let remaining = selected(&queue);
     assert!(matches!(
         remaining.kind(),
         SelectedRequiredWorkKind::UnresolvedInitial
     ));
-    assert!(remaining.acknowledge().is_some());
+    assert!(remaining.acknowledge_fixture().is_some());
     assert!(matches!(queue.pop(), RequiredWorkPop::Empty));
 }
 
@@ -175,9 +177,43 @@ fn requeued_last_cause_becomes_one_stale_pop() {
     member.set_required(true);
     let first = selected(&queue);
     member.set_required(true);
-    assert!(first.acknowledge().is_some());
+    assert!(first.acknowledge_fixture().is_some());
     assert!(matches!(queue.pop(), RequiredWorkPop::Stale));
     assert!(matches!(queue.pop(), RequiredWorkPop::Empty));
+}
+
+#[test]
+fn a_claim_selects_newer_causes_and_current_acknowledges_the_row_once() {
+    let (_lineage, [earlier, later]) = registry_fixture::recorded_settlement_pair();
+    let queue = Arc::new(RequiredWorkQueue::new(Arc::new(test_record_capacity())));
+    let member = Arc::new(RequiredWorkMembership::new(
+        Arc::new(key("claimed-output", 1, 1)),
+        &queue,
+        test_record_capacity(),
+    ));
+    member.set_required(true);
+    drop(member.mark_local_required(earlier));
+    let RequiredWorkPop::Claimed(mut claim) = queue.pop() else {
+        panic!("a marked row is claimed")
+    };
+    drop(member.mark_local_required(Arc::clone(&later)));
+    assert!(
+        matches!(queue.pop(), RequiredWorkPop::Empty),
+        "a live claim prevents another visit in this advance"
+    );
+    let selected = claim.select().unwrap();
+    assert!(
+        matches!(selected.kind(), SelectedRequiredWorkKind::Local { settlement } if Arc::ptr_eq(settlement, &later)),
+        "inspection selects the live cause, not the popped one"
+    );
+    crate::domain_computation::primary_graph::application_contribution::CurrentProof::with_current_fixture_basis(&member, |proof| {
+        assert!(selected.acknowledge_current_admitted(proof, &mut super::record_admission()).unwrap().is_some());
+    });
+    drop(claim);
+    assert!(
+        matches!(queue.pop(), RequiredWorkPop::Empty),
+        "one Current proof covers this row's local and initial causes"
+    );
 }
 
 #[test]
@@ -214,7 +250,7 @@ fn discontinuity_selects_the_first_declared_family_member() {
             .clone()
             .unwrap();
         for _ in 0..2 {
-            assert!(selected(&queue).acknowledge().is_some());
+            assert!(selected(&queue).acknowledge_fixture().is_some());
         }
         registry
             .state

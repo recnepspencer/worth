@@ -1,10 +1,9 @@
 //! A value correction retains the exact value its inverse restores.
-mod capability;
+pub(super) mod capability;
 use super::{
     facts::{EntryNumber, EntryValueBits, SetEntry},
     *,
 };
-pub(super) use capability::{seed as seed_correction_grant, CorrectEntryCapability};
 use std::marker::PhantomData;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{

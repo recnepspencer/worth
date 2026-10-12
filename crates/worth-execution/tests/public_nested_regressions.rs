@@ -18,6 +18,9 @@ use worth_foundational::{
 static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
 static TEST_LOCK: Mutex<()> = Mutex::new(());
 
+#[path = "public_nested_regressions/decompose_scope.rs"]
+mod decompose_scope;
+
 fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {

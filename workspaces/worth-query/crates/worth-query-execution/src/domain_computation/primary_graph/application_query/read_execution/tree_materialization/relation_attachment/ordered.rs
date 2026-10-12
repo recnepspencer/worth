@@ -21,8 +21,8 @@ use crate::domain_computation::primary_graph::application_query::{
 #[allow(clippy::too_many_arguments)]
 pub(super) fn attach_ordered_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
@@ -60,7 +60,6 @@ pub(super) fn attach_ordered_relation(
     }
     work.checkpoint(relation.result_path())?;
     let page = runtime
-        .index_access()
         .execute_bounded_related_entity_ordered_lookup(
             lookup,
             BoundedIndexParityMode::Production,
@@ -121,6 +120,9 @@ pub(super) fn ordered_lookup_denial(
     subject: impl Into<String>,
 ) -> WorthQueryApplicationReadExecutionDenial {
     let kind = match kind {
+        BoundedRelatedEntityOrderedLookupDenialKind::Execution(cause) => {
+            return super::super::super::denial::relational_read_denial(cause, subject)
+        }
         BoundedRelatedEntityOrderedLookupDenialKind::InvalidPageWidth => {
             WorthQueryApplicationReadExecutionDenialKind::ContinuationPageWidthInvalid
         }

@@ -262,11 +262,7 @@ where
                 .map_err(Denial::ProviderAdmission)?;
             let world_recovery = binding.recovery();
             drop(unpublished);
-            let outcome = prepared.execute(
-                phase
-                    .execution_request_for(&self.product_runtime)
-                    .expect("private progression uses its admitted runtime phase"),
-            );
+            let outcome = prepared.execute(request);
             drop(binding);
             drop(lease);
             match outcome {

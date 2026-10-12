@@ -98,7 +98,7 @@ pub(super) fn observe_progress(
     let relation_kind = layout.instance_transition_relation;
     let revision = runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, &execution)
         .ok_or_else(|| denial("workflow instance snapshot is unavailable"))?
         .bounded_adjacency_structural_revision(
             execution,

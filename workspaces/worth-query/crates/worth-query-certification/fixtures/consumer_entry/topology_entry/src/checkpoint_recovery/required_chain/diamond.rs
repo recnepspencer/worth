@@ -10,7 +10,7 @@ use worth_query_host::facade::primary_graph::{
 
 /// Three separate rings: each root's source reads only its own ring, and the
 /// shared dependent's source reads only its own.
-fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
+pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
     for (ring, offset) in [("left", 1), ("right", 50), ("join", 100)] {
         let keys = [
             format!("diamond-{ring}"),
@@ -129,11 +129,13 @@ macro_rules! output_lengths {
 }
 
 mod dropped_dependency;
+mod dropped_plan;
 mod initial_dependency;
 
 #[test]
 fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     let _guard = checkpoint_recovery_test_guard();
+    take_decisions("diamond-join");
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
     let application = support::install_program_with_seed::<program::ChainProgram>(

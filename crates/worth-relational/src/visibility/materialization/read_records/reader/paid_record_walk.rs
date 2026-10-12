@@ -1,7 +1,7 @@
 //! Request-funded record walks have no independent work limit.
 use super::super::read_prices::{EXAMINE_SLOT, RESERVE_RECORD};
 use super::*;
-impl VisibilityReadContext<'_> {
+impl ProjectionRecordReader<'_> {
     pub(crate) fn paid_entities_in_partition(
         &self,
         state: &(impl PartitionAccess + ?Sized),
@@ -31,7 +31,7 @@ impl VisibilityReadContext<'_> {
                         partition_id,
                         slot,
                     ) {
-                        self.runtime.services.instrumentation.count(|counters| {
+                        self.instrumentation.count(|counters| {
                             counters.visible_authoritative_entity_records_materialized += 1;
                         });
                         records.push(record);
@@ -41,7 +41,7 @@ impl VisibilityReadContext<'_> {
             KindScanVisibility::AtVersion(version) => {
                 for slot in partition.entity_arena.occupied_slots_iter() {
                     charge(EXAMINE_SLOT)?;
-                    self.runtime.services.instrumentation.count(|counters| {
+                    self.instrumentation.count(|counters| {
                         counters.visibility_entity_slot_scans += 1;
                     });
                     let visible = kind.map_or_else(
@@ -56,7 +56,7 @@ impl VisibilityReadContext<'_> {
                                 slot,
                                 kind,
                                 version,
-                                self.runtime.current_version_id(),
+                                self.current_version,
                             )
                         },
                     );
@@ -71,7 +71,7 @@ impl VisibilityReadContext<'_> {
                         slot,
                         version,
                     ) {
-                        self.runtime.services.instrumentation.count(|counters| {
+                        self.instrumentation.count(|counters| {
                             counters.visible_authoritative_entity_records_materialized += 1;
                         });
                         records.push(record);
@@ -110,7 +110,7 @@ impl VisibilityReadContext<'_> {
                         partition_id,
                         slot,
                     ) {
-                        self.runtime.services.instrumentation.count(|counters| {
+                        self.instrumentation.count(|counters| {
                             counters.visible_authoritative_relation_records_materialized += 1;
                         });
                         records.push(record);
@@ -120,7 +120,7 @@ impl VisibilityReadContext<'_> {
             KindScanVisibility::AtVersion(version) => {
                 for slot in partition.relation_arena.occupied_slots_iter() {
                     charge(EXAMINE_SLOT)?;
-                    self.runtime.services.instrumentation.count(|counters| {
+                    self.instrumentation.count(|counters| {
                         counters.visibility_relation_slot_scans += 1;
                     });
                     let visible = kind.map_or_else(
@@ -135,7 +135,7 @@ impl VisibilityReadContext<'_> {
                                 slot,
                                 kind,
                                 version,
-                                self.runtime.current_version_id(),
+                                self.current_version,
                             )
                         },
                     );
@@ -150,7 +150,7 @@ impl VisibilityReadContext<'_> {
                         slot,
                         version,
                     ) {
-                        self.runtime.services.instrumentation.count(|counters| {
+                        self.instrumentation.count(|counters| {
                             counters.visible_authoritative_relation_records_materialized += 1;
                         });
                         records.push(record);
@@ -177,7 +177,7 @@ mod tests {
         let relation = create_relation_outcome(&execution, &runtime, left, right, "edge");
         let later = create_entity_outcome(&execution, &runtime, "later");
         let truth = runtime.read_truth();
-        let current = truth.project_snapshot(&later.snapshot).unwrap();
+        let current = truth.project_snapshot(&later.snapshot, &execution).unwrap();
         let historical = truth.project_historical_version(relation.version_id);
         for (view, entities, entity_scans, relation_scans) in
             [(&current, 3, 0, 0), (&historical, 2, 2, 1)]
@@ -209,5 +209,38 @@ mod tests {
         }
         release_test_commit_snapshot(&runtime, &relation);
         release_test_commit_snapshot(&runtime, &later);
+    }
+}
+
+impl VisibilityReadContext<'_> {
+    pub(crate) fn paid_entities_in_partition(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        partition: crate::identity::data::PartitionId,
+        kind: Option<crate::identity::data::KindId>,
+        visibility: KindScanVisibility,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .paid_entities_in_partition(state, registry, partition, kind, visibility, charge)
+    }
+    pub(crate) fn paid_relations_in_partition(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        partition: crate::identity::data::PartitionId,
+        kind: Option<crate::identity::data::KindId>,
+        visibility: KindScanVisibility,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .paid_relations_in_partition(state, registry, partition, kind, visibility, charge)
     }
 }

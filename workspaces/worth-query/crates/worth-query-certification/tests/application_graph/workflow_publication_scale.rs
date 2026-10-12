@@ -220,10 +220,10 @@ fn cold_compilation_of_large_definition_uses_bounded_start_facts() {
                 .expect("large definition validates")
                 .publish(WorkflowDefinitionExpectedPredecessor::Absent)
                 .idempotency(&918_401)
-                .execute()
-                .expect("large definition publishes")
         })
-        .expect("installed host call opens");
+        .expect("installed host call opens")
+        .execute()
+        .expect("large definition publishes");
     let WorkflowDefinitionPublicationOutcome::Published(published) = publication else {
         panic!("expected publication, got {publication:?}");
     };

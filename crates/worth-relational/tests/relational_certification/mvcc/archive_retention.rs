@@ -113,7 +113,7 @@ fn snapshot_contains_entity(
 ) -> bool {
     runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .unwrap()
         .entity_record_with_projection_scope(
             execution,

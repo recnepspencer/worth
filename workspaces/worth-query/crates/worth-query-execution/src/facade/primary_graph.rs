@@ -163,7 +163,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,
     WorthQueryCorrelatedInboundOccurrence, WorthQueryCurrentOutputDenial,
     WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
-    WorthQueryCustomInvariantDenial, WorthQueryDelegationActivationProgram,
+    WorthQueryCustomInvariantDenial, WorthQueryDecisionPlan, WorthQueryDelegationActivationProgram,
     WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationApprovalOutcome,
     WorthQueryElevationApprovalProgram, WorthQueryElevationCloseAuthorizationDenial,
     WorthQueryElevationCloseOutcome, WorthQueryElevationCloseProgram,
@@ -291,7 +291,10 @@ pub use crate::domain_computation::{
 };
 
 pub use crate::domain_computation::primary_graph::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
 };
 
 pub use worth_signal::facade::{

@@ -51,7 +51,7 @@ pub(super) fn resolve_at_snapshot<
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     resolution: &WorthQueryPrincipalSnapshotResolution<'_>,
     installed_binding: &WorthQueryInstalledPrincipalBinding<
         Schema,

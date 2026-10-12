@@ -1,6 +1,7 @@
 use super::*;
 
-pub(super) fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn occurrence(
+) -> worth_runtime_world::facade::ProductBranchIncarnation {
     static OCCURRENCE: std::sync::OnceLock<worth_runtime_world::facade::ProductBranchIncarnation> =
         std::sync::OnceLock::new();
     *OCCURRENCE.get_or_init(|| {
@@ -17,7 +18,11 @@ pub(super) fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnat
     })
 }
 
-pub(super) fn key(producer: &str, revision: u64, tail: u8) -> WorthQueryOutputDemandKey {
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn key(
+    producer: &str,
+    revision: u64,
+    tail: u8,
+) -> WorthQueryOutputDemandKey {
     key_with_identity(producer, revision, tail, revision)
 }
 
@@ -70,7 +75,7 @@ pub(super) fn root(slot: u8) -> worth_relational::facade::identity::EntityId {
     )
 }
 
-pub(super) fn record(
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn record(
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     state: DemandState,
     interests: usize,
@@ -84,10 +89,12 @@ pub(super) fn record(
         performed_obligations: Vec::new(),
         framework_required_count: 0,
         prerequisites: Vec::new(),
+        claim_batch: None,
         checkpoint_prerequisites: None,
         prepared_prerequisite_claims: 0,
         pending_cleanup_next: None,
         pending_cleanup_queued: false,
+        closed_cleanup: Default::default(),
         pending_cleanup_key_bytes: 0,
         settlements: Vec::new(),
         product_occurrence: occurrence,
@@ -137,4 +144,25 @@ fn interest_with_requirement(
         },
         owner: registry.clone(),
     }
+}
+
+/// Retain the owned key exactly as prepare_new_record does, without activating work.
+pub(in super::super) fn retain_owned_key(
+    state: &mut DemandRegistryState,
+    key: &WorthQueryOutputDemandKey,
+) {
+    if state.records[key].work_membership.is_some() {
+        return;
+    }
+    let queue = state.required_work_queue.get_or_insert_with(|| {
+        Arc::new(super::super::required_work::RequiredWorkQueue::new(
+            Arc::new(test_record_capacity()),
+        ))
+    });
+    let member = Arc::new(super::super::required_work::RequiredWorkMembership::new(
+        Arc::new(key.clone()),
+        queue,
+        test_record_capacity(),
+    ));
+    state.records.get_mut(key).unwrap().work_membership = Some(member);
 }

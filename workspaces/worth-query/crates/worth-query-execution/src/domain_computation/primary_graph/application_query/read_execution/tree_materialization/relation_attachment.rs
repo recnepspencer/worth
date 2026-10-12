@@ -28,8 +28,8 @@ use ordered::attach_ordered_relation;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn attach_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
@@ -206,8 +206,8 @@ pub(super) fn attach_relation(
 #[allow(clippy::too_many_arguments)]
 fn attach_targeted_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,

@@ -39,6 +39,20 @@ pub enum ApplicationValueEncodeDenial {
 }
 
 impl ApplicationValueEncodeDenial {
+    /// Heap storage of the encoding refusal's owned identity metadata.
+    pub fn retained_heap_bytes(&self) -> usize {
+        match self {
+            Self::Validation(ApplicationValueValidationDenial {
+                binding_identity,
+                reason: _,
+            })
+            | Self::CodecRejected {
+                binding_identity,
+                reason: _,
+            } => binding_identity.retained_heap_bytes(),
+        }
+    }
+
     pub const fn binding_identity(&self) -> &WorthQueryPortableTypeIdentity {
         match self {
             Self::Validation(denial) => denial.binding_identity(),

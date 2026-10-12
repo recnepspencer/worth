@@ -7,10 +7,53 @@ use crate::visibility::materialization::read_records::visibility::{
     visible_metadata, visible_relation_metadata,
 };
 
-use super::VisibilityProjectionView;
+pub(crate) trait ProjectionRecordSource {
+    fn selected_root(&self) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>>;
+    fn is_exact_basis(&self) -> bool;
+    fn version_id(&self) -> crate::identity::data::VersionId;
+    fn selected_schema_authority(
+        &self,
+    ) -> Option<&crate::branch::RelationalBranchRootSchemaAuthority> {
+        self.selected_root().map(|root| root.schema_authority())
+    }
+    fn authoritative_entity_record(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: EntityId,
+    ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        super::super::read_work::point(
+            execution,
+            || {
+                let root = self.selected_root()?;
+                super::super::reader::record_identity_materialization::authoritative_entity_record_for_id_from_exact_state(root.as_ref(), root.schema_authority().registry(), id)
+            },
+            |record| {
+                record
+                    .as_ref()
+                    .map_or(0, |record| super::super::read_footprint::entity(record))
+            },
+        )
+    }
+    fn authoritative_relation_record(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: RelationId,
+    ) -> Result<Option<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        super::super::read_work::point(
+            execution,
+            || {
+                let root = self.selected_root()?;
+                super::super::reader::record_identity_materialization::authoritative_relation_record_for_id_from_exact_state(root.as_ref(), root.schema_authority().registry(), id)
+            },
+            |record| {
+                record
+                    .as_ref()
+                    .map_or(0, |record| super::super::read_footprint::relation(record))
+            },
+        )
+    }
 
-impl VisibilityProjectionView<'_> {
-    pub(crate) fn try_for_each_entity_record_in<E>(
+    fn try_for_each_entity_record_in<E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
@@ -50,7 +93,7 @@ impl VisibilityProjectionView<'_> {
         Ok(())
     }
 
-    pub(crate) fn try_for_each_relation_record_in<E>(
+    fn try_for_each_relation_record_in<E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
@@ -93,7 +136,7 @@ impl VisibilityProjectionView<'_> {
         Ok(())
     }
 
-    pub(crate) fn try_for_each_entity_record<E>(
+    fn try_for_each_entity_record<E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: Option<KindId>,
@@ -115,7 +158,7 @@ impl VisibilityProjectionView<'_> {
         })
     }
 
-    pub(crate) fn try_for_each_relation_record<E>(
+    fn try_for_each_relation_record<E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: Option<KindId>,
@@ -137,7 +180,7 @@ impl VisibilityProjectionView<'_> {
         })
     }
 
-    pub(crate) fn candidate_entity_bytes_for_id(&self, entity_id: EntityId) -> u64 {
+    fn candidate_entity_bytes_for_id(&self, entity_id: EntityId) -> u64 {
         self.selected_root()
             .and_then(|root| root.get_partition(entity_id.partition_id))
             .map_or(0, |partition| {
@@ -145,7 +188,7 @@ impl VisibilityProjectionView<'_> {
             })
     }
 
-    pub(crate) fn candidate_relation_bytes_for_id(&self, relation_id: RelationId) -> u64 {
+    fn candidate_relation_bytes_for_id(&self, relation_id: RelationId) -> u64 {
         self.selected_root()
             .and_then(|root| root.get_partition(relation_id.partition_id))
             .map_or(0, |partition| {

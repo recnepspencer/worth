@@ -37,7 +37,10 @@ fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
     );
     assert!(build.failed_indexes.is_empty());
     let snapshot = runtime.visibility_authority().snapshot();
-    let view = runtime.read_truth().project_snapshot(&snapshot).unwrap();
+    let view = runtime
+        .read_truth()
+        .project_snapshot(&snapshot, &execution)
+        .unwrap();
     let prepared = runtime
         .index_access()
         .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator, execution)

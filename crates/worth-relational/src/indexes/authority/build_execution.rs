@@ -67,7 +67,7 @@ pub(super) fn record_index_preparation_strategy_counters(
 
 pub(super) fn execute_index_packets(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     packets: Vec<IndexPreparationPacket>,
     lease: Option<&ExecutionResourceLease<'_>>,
     work_budget: Option<&RequestWorkBudget>,
@@ -96,7 +96,7 @@ pub(super) fn execute_index_packets(
 
 pub(super) fn execute_index_inputs(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     inputs: Vec<ReadOnlyPacket<IndexPreparationPacket>>,
     lease: Option<&ExecutionResourceLease<'_>>,
     work_budget: Option<&RequestWorkBudget>,
@@ -148,7 +148,7 @@ pub(super) fn execute_index_inputs(
 
 fn index_packet_result_checked(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     packet: &IndexPreparationPacket,
     context: &mut PacketKernelContext<'_, '_, '_>,
 ) -> Result<IndexResultStream, worth_execution::MapKernelFailure<PacketBudgetDenial>> {
@@ -213,7 +213,7 @@ fn index_packet_result_checked(
 
 fn index_packet_result(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     packet: &IndexPreparationPacket,
 ) -> Result<IndexResultStream, crate::execution::RelationalExecutionDenialCause> {
     let entries = match &packet.definition.kind {

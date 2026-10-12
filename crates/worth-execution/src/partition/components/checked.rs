@@ -37,7 +37,7 @@ impl ComponentPartitioner {
             return Ok(PartitionWork::default());
         }
         let bytes = u64::try_from(MEMBER_SCRATCH_BYTES)
-            .map_err(|_| PartitionUpdateDenial::Admission(LeaseDenial::ChargedBytesOverflow))?;
+            .map_err(|_| PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow()))?;
         let _reservation = lease
             .reserve_retained_memory(bytes)
             .map_err(PartitionUpdateDenial::Admission)?;
@@ -77,9 +77,9 @@ impl ComponentPartitioner {
             .checked_mul(MEMBER_SCRATCH_BYTES)
             .and_then(|value| value.checked_add(2 * DEGREE_SCRATCH_BYTES))
             .and_then(|value| u64::try_from(value).ok())
-            .ok_or(PartitionUpdateDenial::Admission(
-                LeaseDenial::ChargedBytesOverflow,
-            ))?;
+            .ok_or_else(|| {
+                PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
+            })?;
         let _reservation = lease
             .reserve_retained_memory(bytes)
             .map_err(PartitionUpdateDenial::Admission)?;
@@ -94,14 +94,14 @@ impl ComponentPartitioner {
         // extension. It performs at most two member traversals plus two
         // adjacency insertions; admit that entire atomic commit in advance.
         let moved_units = u64::try_from(moved).map_err(|_| {
-            PartitionUpdateDenial::Stop(crate::backend::KernelStop::WorkCounterOverflow)
+            PartitionUpdateDenial::Stop(crate::backend::KernelStop::work_counter_overflow())
         })?;
         let commit_units = moved_units
             .checked_mul(2)
             .and_then(|value| value.checked_add(2))
-            .ok_or(PartitionUpdateDenial::Stop(
-                crate::backend::KernelStop::WorkCounterOverflow,
-            ))?;
+            .ok_or_else(|| {
+                PartitionUpdateDenial::Stop(crate::backend::KernelStop::work_counter_overflow())
+            })?;
         context
             .checkpoint(commit_units)
             .map_err(PartitionUpdateDenial::Stop)?;
@@ -176,11 +176,13 @@ impl ComponentPartitioner {
         for item in old {
             context.checkpoint(1).map_err(PartitionUpdateDenial::Stop)?;
             work.members_visited += 1;
-            degrees = degrees.checked_add(self.adjacent[item].len()).ok_or(
-                PartitionUpdateDenial::Admission(
-                    crate::authority::LeaseDenial::ChargedBytesOverflow,
-                ),
-            )?;
+            degrees = degrees
+                .checked_add(self.adjacent[item].len())
+                .ok_or_else(|| {
+                    PartitionUpdateDenial::Admission(
+                        crate::authority::LeaseDenial::charged_bytes_overflow(),
+                    )
+                })?;
         }
         // Parent links, rebuilt membership, and the transient candidate are
         // conservatively reserved before the first candidate allocation.
@@ -189,9 +191,11 @@ impl ComponentPartitioner {
             .checked_mul(MEMBER_SCRATCH_BYTES)
             .and_then(|value| value.checked_add(degrees.checked_mul(DEGREE_SCRATCH_BYTES)?))
             .and_then(|value| u64::try_from(value).ok())
-            .ok_or(PartitionUpdateDenial::Admission(
-                crate::authority::LeaseDenial::ChargedBytesOverflow,
-            ))?;
+            .ok_or_else(|| {
+                PartitionUpdateDenial::Admission(
+                    crate::authority::LeaseDenial::charged_bytes_overflow(),
+                )
+            })?;
         let _reservation = lease
             .reserve_retained_memory(bytes)
             .map_err(PartitionUpdateDenial::Admission)?;
@@ -245,11 +249,11 @@ impl ComponentPartitioner {
         // rebuilt membership sets. Edge/item cleanup is a second bounded
         // atomic phase, admitted here before any retained state changes.
         let members = u64::try_from(old.len()).map_err(|_| {
-            PartitionUpdateDenial::Stop(crate::backend::KernelStop::WorkCounterOverflow)
+            PartitionUpdateDenial::Stop(crate::backend::KernelStop::work_counter_overflow())
         })?;
         let cleanup_edges = if let Some(item) = excluded_item {
             u64::try_from(self.adjacent[&item].len()).map_err(|_| {
-                PartitionUpdateDenial::Stop(crate::backend::KernelStop::WorkCounterOverflow)
+                PartitionUpdateDenial::Stop(crate::backend::KernelStop::work_counter_overflow())
             })?
         } else {
             2
@@ -257,9 +261,9 @@ impl ComponentPartitioner {
         let commit_units = members
             .checked_mul(2)
             .and_then(|value| value.checked_add(cleanup_edges))
-            .ok_or(PartitionUpdateDenial::Stop(
-                crate::backend::KernelStop::WorkCounterOverflow,
-            ))?;
+            .ok_or_else(|| {
+                PartitionUpdateDenial::Stop(crate::backend::KernelStop::work_counter_overflow())
+            })?;
         context
             .checkpoint(commit_units)
             .map_err(PartitionUpdateDenial::Stop)?;

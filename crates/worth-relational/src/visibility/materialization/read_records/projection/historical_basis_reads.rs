@@ -9,8 +9,8 @@ use crate::visibility::snapshot_states::HistoricalVisibilityBasis;
 use super::read_record_identity_ordering::relation_identity_order_key;
 use super::VisibilityProjectionView;
 
-pub(super) struct HistoricalProjectionReader<'view, 'runtime> {
-    view: &'view VisibilityProjectionView<'runtime>,
+pub(super) struct HistoricalProjectionReader<'view> {
+    view: &'view VisibilityProjectionView,
     basis: &'view HistoricalVisibilityBasis,
 }
 
@@ -42,9 +42,9 @@ impl PartitionAccess for HistoricalProjectionStorage<'_> {
     }
 }
 
-impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
+impl<'view> HistoricalProjectionReader<'view> {
     pub(super) const fn new(
-        view: &'view VisibilityProjectionView<'runtime>,
+        view: &'view VisibilityProjectionView,
         basis: &'view HistoricalVisibilityBasis,
     ) -> Self {
         Self { view, basis }
@@ -98,8 +98,8 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
             self.registry(),
             partition,
             kind,
-            super::super::reader::KindScanVisibility::for_version(
-                self.view.runtime,
+            super::super::reader::KindScanVisibility::for_selected_version(
+                self.view.current_version,
                 self.view.version_id(),
             ),
             charge,
@@ -163,8 +163,8 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
             self.registry(),
             partition,
             kind,
-            super::super::reader::KindScanVisibility::for_version(
-                self.view.runtime,
+            super::super::reader::KindScanVisibility::for_selected_version(
+                self.view.current_version,
                 self.view.version_id(),
             ),
             charge,
@@ -193,7 +193,7 @@ impl<'view, 'runtime> HistoricalProjectionReader<'view, 'runtime> {
     pub(super) fn registry(&self) -> &crate::schema::data::RelationalSchemaRegistry {
         self.basis
             .root()
-            .map_or(&self.view.runtime.config.schema.registry, |root| {
+            .map_or(self.view.schema.registry(), |root| {
                 root.schema_authority().registry()
             })
     }

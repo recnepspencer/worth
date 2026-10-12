@@ -1,5 +1,4 @@
 use crate::identity::data::{PartitionId, VersionId};
-use crate::runtime::RelationalRuntime;
 use crate::storage::overlay::{PartitionAccess, PartitionState};
 use crate::storage::partition::DenseSlotBitSet;
 use crate::storage::substrate::{HistoricalMetadata, RecordArena, RecordKind};
@@ -27,14 +26,13 @@ pub(in super::super) fn relation_visible_in_partition_at_version(
 }
 
 pub(in super::super) fn visible_relation_slots_in_partition_from_state(
-    runtime: &RelationalRuntime,
+    current_version: VersionId,
     state: &(impl PartitionAccess + ?Sized),
     partition_id: PartitionId,
     version_id: VersionId,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    count_scans: impl Fn(&RelationalRuntime, usize),
+    count_scans: impl Fn(usize),
 ) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop> {
-    let current_version = runtime.current_version_id();
     let Some(partition) = state.get_partition(partition_id) else {
         return Ok(None);
     };
@@ -47,7 +45,7 @@ pub(in super::super) fn visible_relation_slots_in_partition_from_state(
             visible_slots.set(slot, true);
         }
     } else {
-        count_scans(runtime, arena.slot_count());
+        count_scans(arena.slot_count());
         for slot in arena.occupied_slots_iter() {
             charge(super::super::read_prices::EXAMINE_SLOT)?;
             if visible_relation_metadata(partition, slot, version_id).is_some() {
@@ -74,17 +72,16 @@ where
 }
 
 pub(in super::super) fn visible_slots_in_partition_from_state<K: RecordKind>(
-    runtime: &RelationalRuntime,
+    current_version: VersionId,
     state: &(impl PartitionAccess + ?Sized),
     partition_id: PartitionId,
     version_id: VersionId,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    count_scans: impl Fn(&RelationalRuntime, usize),
+    count_scans: impl Fn(usize),
 ) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop>
 where
     K::Meta: HistoricalMetadata,
 {
-    let current_version = runtime.current_version_id();
     let Some(partition) = state.get_partition(partition_id) else {
         return Ok(None);
     };
@@ -97,7 +94,7 @@ where
             visible_slots.set(slot, true);
         }
     } else {
-        count_scans(runtime, arena.slot_count());
+        count_scans(arena.slot_count());
         for slot in arena.occupied_slots_iter() {
             charge(super::super::read_prices::EXAMINE_SLOT)?;
             if record_visible_in_arena_at_version(arena, slot, version_id) {

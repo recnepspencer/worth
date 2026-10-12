@@ -143,3 +143,10 @@ impl std::fmt::Display for WorthQueryInvariantProjectionTraversalDenial {
 }
 
 impl std::error::Error for WorthQueryInvariantProjectionTraversalDenial {}
+
+impl worth_execution::ChargedBytes for WorthQueryInvariantProjectionTraversalDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self { kind: _, relation } = self;
+        relation.capacity() as u64
+    }
+}

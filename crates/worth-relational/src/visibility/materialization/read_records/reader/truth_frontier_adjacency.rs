@@ -72,79 +72,24 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         direction: AdjacencyDirection,
         maximum_work_units: usize,
     ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
-        let basis =
-            AdjacencyKindBasis::of_current_version(version_id == self.runtime.current_version_id());
-        // One edition for the whole frontier. A width-W frontier of degree D
-        // costs one substrate acquisition, not W of them, and every entity in
-        // the frontier is expanded against the same substrate.
         let edition = self.runtime.acquire_partition_edition();
-        let mut ledger = AdjacencyLeaseLedger::default();
-        let mut records = Vec::new();
-        let mut adjacency_lists_read = 0_usize;
-        let mut relation_records_examined = 0_usize;
-        for entity_id in entity_ids {
-            if let Err(exceeded) = charge_frontier_work(
-                maximum_work_units,
-                adjacency_lists_read,
-                relation_records_examined,
-                records.len(),
-            ) {
-                ledger.settle(self.runtime);
-                return Err(exceeded);
-            }
-            adjacency_lists_read += 1;
-            // Leased per frontier entity and never copied, so an entity whose
-            // fanout dwarfs the remaining budget still costs only the units
-            // actually spent walking it.
-            let relation_ids = ledger.lease(
-                edition
-                    .partition(entity_id.partition_id)
-                    .and_then(|partition| direction.table(partition).get(entity_id.slot_index())),
-                basis,
-                kind_id,
-            );
-            for relation_id in relation_ids.iter().copied() {
-                if let Err(exceeded) = charge_frontier_work(
-                    maximum_work_units,
-                    adjacency_lists_read,
-                    relation_records_examined,
-                    records.len(),
-                ) {
-                    ledger.settle(self.runtime);
-                    return Err(exceeded);
-                }
-                relation_records_examined += 1;
-                let Some(record) = self.authoritative_relation_record_for_id_at_version(
-                    &edition,
-                    relation_id,
-                    version_id,
-                ) else {
-                    continue;
-                };
-                if record.kind.kind_id != kind_id
-                    || record.lifecycle != crate::storage::data::RecordLifecycleState::Live
-                    || !direction.matches_endpoint(&record, *entity_id)
-                {
-                    continue;
-                }
-                if let Err(exceeded) = charge_frontier_work(
-                    maximum_work_units,
-                    adjacency_lists_read,
-                    relation_records_examined,
-                    records.len(),
-                ) {
-                    ledger.settle(self.runtime);
-                    return Err(exceeded);
-                }
-                records.push(record);
-            }
-        }
-        ledger.settle(self.runtime);
-        sort_authoritative_relation_records(&mut records);
-        Ok(BoundedFrontierAdjacencyTruthRead {
-            records,
-            adjacency_lists_read,
-            relation_records_examined,
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .bounded_relations_for_frontier_in_state(
+            &edition,
+            &self.runtime.config.schema.registry,
+            || Ok::<_, std::convert::Infallible>(()),
+            entity_ids,
+            kind_id,
+            version_id,
+            direction,
+            maximum_work_units,
+        )
+        .map_err(|stop| match stop {
+            BoundedFrontierReadStop::Limit(limit) => limit,
+            BoundedFrontierReadStop::Admission(never) => match never {},
         })
     }
 }
@@ -223,5 +168,110 @@ fn charge_frontier_work(
         ))
     } else {
         Ok(())
+    }
+}
+
+impl ProjectionRecordReader<'_> {
+    pub(crate) fn bounded_relations_for_frontier_in_state<E>(
+        &self,
+        edition: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        mut check_live: impl FnMut() -> Result<(), E>,
+        entity_ids: &BTreeSet<crate::identity::data::EntityId>,
+        kind_id: crate::identity::data::KindId,
+        version_id: crate::identity::data::VersionId,
+        direction: AdjacencyDirection,
+        maximum_work_units: usize,
+    ) -> Result<
+        BoundedFrontierAdjacencyTruthRead,
+        BoundedFrontierReadStop<FrontierAdjacencyTruthReadLimitExceeded, E>,
+    > {
+        let basis = AdjacencyKindBasis::of_current_version(version_id == self.current_version);
+        // One edition for the whole frontier. A width-W frontier of degree D
+        // costs one substrate acquisition, not W of them, and every entity in
+        // the frontier is expanded against the same substrate.
+        let mut ledger = AdjacencyLeaseLedger::default();
+        let mut records = Vec::new();
+        let mut adjacency_lists_read = 0_usize;
+        let mut relation_records_examined = 0_usize;
+        for entity_id in entity_ids {
+            if let Err(exceeded) = charge_frontier_work(
+                maximum_work_units,
+                adjacency_lists_read,
+                relation_records_examined,
+                records.len(),
+            ) {
+                ledger.settle_instrumentation(self.instrumentation);
+                return Err(BoundedFrontierReadStop::Limit(exceeded));
+            }
+            if let Err(stop) = check_live() {
+                ledger.settle_instrumentation(self.instrumentation);
+                return Err(BoundedFrontierReadStop::Admission(stop));
+            }
+            adjacency_lists_read += 1;
+            // Leased per frontier entity and never copied, so an entity whose
+            // fanout dwarfs the remaining budget still costs only the units
+            // actually spent walking it.
+            let relation_ids = ledger.lease(
+                edition
+                    .get_partition(entity_id.partition_id)
+                    .and_then(|partition| direction.table(partition).get(entity_id.slot_index())),
+                basis,
+                kind_id,
+            );
+            for relation_id in relation_ids.iter().copied() {
+                if let Err(exceeded) = charge_frontier_work(
+                    maximum_work_units,
+                    adjacency_lists_read,
+                    relation_records_examined,
+                    records.len(),
+                ) {
+                    ledger.settle_instrumentation(self.instrumentation);
+                    return Err(BoundedFrontierReadStop::Limit(exceeded));
+                }
+                if let Err(stop) = check_live() {
+                    ledger.settle_instrumentation(self.instrumentation);
+                    return Err(BoundedFrontierReadStop::Admission(stop));
+                }
+                relation_records_examined += 1;
+                let Some(record) = self
+                    .authoritative_relation_record_for_id_at_version_with_registry(
+                        edition,
+                        registry,
+                        relation_id,
+                        version_id,
+                    )
+                else {
+                    continue;
+                };
+                if record.kind.kind_id != kind_id
+                    || record.lifecycle != crate::storage::data::RecordLifecycleState::Live
+                    || !direction.matches_endpoint(&record, *entity_id)
+                {
+                    continue;
+                }
+                if let Err(exceeded) = charge_frontier_work(
+                    maximum_work_units,
+                    adjacency_lists_read,
+                    relation_records_examined,
+                    records.len(),
+                ) {
+                    ledger.settle_instrumentation(self.instrumentation);
+                    return Err(BoundedFrontierReadStop::Limit(exceeded));
+                }
+                if let Err(stop) = check_live() {
+                    ledger.settle_instrumentation(self.instrumentation);
+                    return Err(BoundedFrontierReadStop::Admission(stop));
+                }
+                records.push(record);
+            }
+        }
+        ledger.settle_instrumentation(self.instrumentation);
+        sort_authoritative_relation_records(&mut records);
+        Ok(BoundedFrontierAdjacencyTruthRead {
+            records,
+            adjacency_lists_read,
+            relation_records_examined,
+        })
     }
 }

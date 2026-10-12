@@ -108,7 +108,7 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
         // This oracle reads Native revisions directly; it does not call the
         // marking verifier or derive expected ordinals from actor postings.
         let old_revisions: Vec<_> = entities.iter().map(|entity| {
-            let truth = runtime.read_truth().project_snapshot(&before_handle).unwrap();
+            let truth = runtime.read_truth().project_snapshot(&before_handle, &execution).unwrap();
             [truth.entity_field_revision(execution, *entity, &label).unwrap(),
              truth.entity_field_revision(execution, *entity, &status).unwrap()]
         }).collect();
@@ -134,7 +134,7 @@ fn run_population(population: usize) -> LogicalMarkingCounts {
             panic!("the actual declared field change must have exact logical counts");
         };
         for ((entity, output), old) in entities.iter().zip(&identities).zip(old_revisions) {
-            let truth = runtime.read_truth().project_snapshot(&after_handle).unwrap();
+            let truth = runtime.read_truth().project_snapshot(&after_handle, &execution).unwrap();
             let now = [truth.entity_field_revision(execution, *entity, &label).unwrap(),
                 truth.entity_field_revision(execution, *entity, &status).unwrap()];
             let changed: OrdSet<_> = old.iter().zip(now).enumerate()

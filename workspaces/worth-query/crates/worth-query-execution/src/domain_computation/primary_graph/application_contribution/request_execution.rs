@@ -3,14 +3,14 @@
 //!
 //! The form is chosen here and nowhere else. A leased request owns the lease
 //! it drew from the World's authority, and each dispatch runs on a child of
-//! it, so no run consumes the request's lease. A serial request carries its
-//! cancellation, its deadline and, with a policy, the policy's memory.
+//! it, so no run consumes the request's lease. Serial placement draws a
+//! bounded one-worker lease from an inline ledger with no worker pool.
 
 use worth_execution::{
     CanonicalBits, ChargedBytes, ExecutionMap, ExecutionMemoryReservation, ExecutionResourceLease,
     ExecutionWorkCeiling, LeaseDenial, LeaseRequest, MapKernelContext, MapKernelFailure,
     MapKernelStop, MapOutcome, ReduceInputDenial, ReductionMetrics, ReductionTree,
-    SerialMemoryBudget, SerialRequest, WorkCeilingDenial,
+    WorkCeilingDenial,
 };
 use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -29,12 +29,16 @@ pub use test_placement::{
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
+mod serial_placement;
 mod test_authority;
 pub use test_authority::query_test_execution_authority_for_test;
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
-mod advancement;
+mod descendants;
+mod tree_charge;
+pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
+pub(in crate::domain_computation::primary_graph) mod advancement;
 pub(in crate::domain_computation::primary_graph) use advancement::{
     advancement_denial, with_serial_host_advancement, with_world_advancement,
 };
@@ -49,6 +53,7 @@ pub(in crate::domain_computation::primary_graph) struct QueryRequestExecution<'a
     cancellation: worth_execution::CancellationToken,
     deadline: Option<std::time::Instant>,
     declared_work: u64,
+    certified_seed: Option<u64>,
     form: Form<'a>,
 }
 
@@ -59,7 +64,10 @@ enum Form<'a> {
         lease: Result<ExecutionResourceLease<'a>, LeaseDenial>,
         policy: ExecutionRequestPolicy,
     },
-    Serial(SerialRequest),
+    Serial {
+        lease: Result<ExecutionResourceLease<'a>, LeaseDenial>,
+        policy: ExecutionRequestPolicy,
+    },
 }
 
 impl<'a> QueryRequestExecution<'a> {
@@ -89,11 +97,7 @@ impl<'a> QueryRequestExecution<'a> {
         };
         let form = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy) => {
-                Form::Serial(SerialRequest::from_memory(
-                    SerialMemoryBudget::from_policy(&policy),
-                    cancellation.clone(),
-                    deadline,
-                ))
+                serial_placement::form(policy, cancellation.clone(), deadline)
             }
             RuntimeWorldExecutionPlacement::Leased { authority, policy } => Form::Leased {
                 lease: authority.request_lease(LeaseRequest {
@@ -108,6 +112,7 @@ impl<'a> QueryRequestExecution<'a> {
             cancellation,
             deadline,
             declared_work,
+            certified_seed: test_placement::certifying(),
             form,
         }
     }
@@ -137,22 +142,20 @@ impl<'a> QueryRequestExecution<'a> {
     /// Holds `bytes` on the request's memory until the reservation drops.
     pub(super) fn reserve(&self, bytes: u64) -> Result<QueryMemoryReservation, Resource> {
         let held = match &self.form {
-            Form::Leased { lease, .. } => lease
+            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
                 .map_err(|denial| lease_denial(*denial))?
                 .reserve_memory(bytes)
                 .map(Some),
-            Form::Serial(request) => request.memory().reserve(bytes).map(Some),
         };
         held.map(|held| QueryMemoryReservation { held, bytes })
             .map_err(memory_denial)
     }
 
-    /// The placement for one run: a child of the request's lease, or the
-    /// serial request itself.
+    /// Every run, including serial placement, descends from the request's lease.
     pub(super) fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
         let form = match &self.form {
-            Form::Leased { lease, policy } => {
+            Form::Leased { lease, policy } | Form::Serial { lease, policy } => {
                 let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;
                 DispatchForm::Leased(
                     lease
@@ -164,14 +167,15 @@ impl<'a> QueryRequestExecution<'a> {
                         .map_err(lease_denial)?,
                 )
             }
-            Form::Serial(request) => DispatchForm::Serial(request),
         };
-        Ok(QueryDispatch { form })
+        Ok(QueryDispatch {
+            form,
+            certified_seed: self.certified_seed,
+        })
     }
 }
 
-/// Bytes held on the request's memory. A request with no memory bound holds
-/// nothing and refuses nothing, but still counts what it would hold.
+/// Bytes held against the request's lease lineage until the reservation drops.
 pub(super) struct QueryMemoryReservation {
     held: Option<ExecutionMemoryReservation>,
     bytes: u64,
@@ -213,12 +217,12 @@ pub(super) fn kept_tree_bytes<R: ChargedBytes, Combine>(
 
 enum DispatchForm<'d> {
     Leased(ExecutionResourceLease<'d>),
-    Serial(&'d SerialRequest),
 }
 
 /// One run's placement. Each pattern runs inside a work ceiling on it.
 pub(super) struct QueryDispatch<'d> {
     form: DispatchForm<'d>,
+    certified_seed: Option<u64>,
 }
 
 /// What a reduction produced, as `run_reduce` returns it.
@@ -226,6 +230,11 @@ pub(super) type Reduced<R, Combine, E> =
     Result<(ReductionTree<R, Combine>, ExecutionReport, ReductionMetrics), ReduceInputDenial<E>>;
 
 impl QueryDispatch<'_> {
+    #[cfg(test)]
+    pub(in super::super) fn native_lease_for_test(&self) -> &ExecutionResourceLease<'_> {
+        let DispatchForm::Leased(lease) = &self.form;
+        lease
+    }
     /// Maps every partition of `map` inside `ceiling`. The map's admission
     /// takes over `inputs`, the request memory held for its partitions, in
     /// one ledger step: no byte of them is unreserved between the two holds.
@@ -249,7 +258,6 @@ impl QueryDispatch<'_> {
         };
         match &self.form {
             DispatchForm::Leased(lease) => ceiling.run(lease, || run(Some(lease))),
-            DispatchForm::Serial(request) => ceiling.run_serial(request, || run(None)),
         }
         .map(|(outcome, _)| outcome)
     }
@@ -260,13 +268,13 @@ impl QueryDispatch<'_> {
     /// to `tree` in one ledger step, so the tree is held from its build until
     /// `tree` drops. Where a test chose certification, a completed reduction
     /// is then certified outside the ceiling.
-    pub(super) fn reduce<T, K, R, E, Kernel, Combine>(
+    pub(super) fn reduce<T, K, R, E, Kernel, Diagnostic, Combine>(
         &self,
         ceiling: u64,
         map: &ExecutionMap<T, K>,
         inputs: QueryMemoryReservation,
         tree: &mut QueryMemoryReservation,
-        kernel: Kernel,
+        (kernel, diagnostic): (Kernel, Diagnostic),
         identity: R,
         combine: Combine,
         max_value_bytes: u64,
@@ -278,10 +286,13 @@ impl QueryDispatch<'_> {
         E: Send + ChargedBytes,
         Kernel:
             Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
+        Diagnostic:
+            Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
         Combine: Fn(&R, &R) -> R + Clone + Sync,
     {
-        let certification = test_placement::certifying()
-            .map(|seed| (seed, kernel.clone(), identity.clone(), combine.clone()));
+        let certification = self
+            .certified_seed
+            .map(|seed| (seed, diagnostic, identity.clone(), combine.clone()));
         let ceiling = ExecutionWorkCeiling::new(ceiling);
         let held = tree.held.as_mut();
         let mapped = super::partitioned_computation::FullTreeMapWork::default();
@@ -301,7 +312,6 @@ impl QueryDispatch<'_> {
         };
         let reduced = match &self.form {
             DispatchForm::Leased(lease) => ceiling.run(lease, || run(Some(lease))),
-            DispatchForm::Serial(request) => ceiling.run_serial(request, || run(None)),
         }
         .map(|(reduced, _)| reduced);
         // The request counts the memory its retained tree keeps.
@@ -325,21 +335,34 @@ impl QueryDispatch<'_> {
                 combine,
                 max_value_bytes,
                 (tree, report),
-            );
+            )?;
         }
         reduced
     }
 }
 
 pub use advancement::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
 };
 
 #[cfg(test)]
-pub(crate) use advancement::{with_test_advancement, TestHostRequest};
+pub(crate) use advancement::{
+    drain_test_advancement_observations, with_test_advancement, TestHostRequest,
+};
 
 pub use advancement::with_bootstrap_advancement;
 
 pub use advancement::WorthQueryBootstrapAdvancementPhase;
 
 pub(in crate::domain_computation::primary_graph) use advancement::record_caller_pass_for_test;
+
+pub(in crate::domain_computation::primary_graph) use advancement::observation::record_event;
+
+pub(in crate::domain_computation::primary_graph) fn certified_wave_seed_for_test(
+    request: &QueryRequestExecution<'_>,
+) -> Option<u64> {
+    request.certified_seed
+}

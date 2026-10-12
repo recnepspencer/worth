@@ -90,7 +90,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
         handle.with_runtime(&borrowed_execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let read = runtime.read_truth();
-        let view = read.project_snapshot(snapshot).unwrap();
+        let view = read.project_snapshot(snapshot, &execution).unwrap();
         let original_metadata = view.entity_retirement( original).unwrap();
         let unrelated_metadata = view.entity_retirement( unrelated).unwrap();
         assert_eq!(original_metadata.kind_id(), unrelated_metadata.kind_id());

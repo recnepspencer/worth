@@ -32,16 +32,16 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowAdoptionReadDenial
     },
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionTruth<'runtime> {
-    view: VisibilityProjectionView<'runtime>,
+pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionTruth {
+    view: VisibilityProjectionView,
     maximum_work_units: usize,
     // Shared with the entities it lends out, which charge each field read.
     consumed_work_units: Cell<usize>,
 }
 
-impl<'runtime> WorkflowAdoptionTruth<'runtime> {
+impl WorkflowAdoptionTruth {
     pub(in crate::domain_computation::primary_graph) const fn new(
-        view: VisibilityProjectionView<'runtime>,
+        view: VisibilityProjectionView,
         maximum_work_units: usize,
     ) -> Self {
         Self {
@@ -142,7 +142,7 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         kind: KindId,
-    ) -> Result<WorkflowAdoptionEntity<'_, 'runtime>, WorkflowAdoptionReadDenial> {
+    ) -> Result<WorkflowAdoptionEntity<'_>, WorkflowAdoptionReadDenial> {
         self.charge_one()?;
         self.view
             .entity_record_with_projection_scope(
@@ -165,12 +165,12 @@ impl<'runtime> WorkflowAdoptionTruth<'runtime> {
 
 /// A live entity on the branch, whose fields are read from the same root,
 /// each charged one unit of the same allowance.
-pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionEntity<'truth, 'runtime> {
-    truth: &'truth WorkflowAdoptionTruth<'runtime>,
+pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionEntity<'truth> {
+    truth: &'truth WorkflowAdoptionTruth,
     entity: EntityId,
 }
 
-impl WorkflowAdoptionEntity<'_, '_> {
+impl WorkflowAdoptionEntity<'_> {
     fn value(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

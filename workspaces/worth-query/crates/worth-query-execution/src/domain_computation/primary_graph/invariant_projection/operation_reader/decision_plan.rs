@@ -334,3 +334,10 @@ impl std::fmt::Display for WorthQueryInvariantDecisionPlanDenial {
 }
 
 impl std::error::Error for WorthQueryInvariantDecisionPlanDenial {}
+
+impl worth_execution::ChargedBytes for WorthQueryInvariantDecisionPlanDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self { kind: _, subject } = self;
+        subject.capacity() as u64
+    }
+}

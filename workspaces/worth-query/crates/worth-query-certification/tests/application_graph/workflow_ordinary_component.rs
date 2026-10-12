@@ -182,10 +182,10 @@ fn public_component_ports_validate_and_compile_into_ordinary_progression() {
                 .expect("the component binds to installed vocabulary")
                 .publish(WorkflowDefinitionExpectedPredecessor::Absent)
                 .idempotency(&918_300)
-                .execute()
-                .expect("the ordinary publication prepares")
         })
-        .expect("installed host call opens");
+        .expect("installed host call opens")
+        .execute()
+        .expect("the ordinary publication prepares");
     let definition = match published {
         WorkflowDefinitionPublicationOutcome::Published(performed) => {
             performed.definition().clone()

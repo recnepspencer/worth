@@ -13,7 +13,7 @@ fn undo_after_an_output_publication_refuses_without_losing_the_retained_prior() 
         Default::default(),
         |graph| {
             case.before.seed(graph);
-            super::super::super::super::entry_correction::seed_correction_grant(graph, SCOPE);
+            crate::checkpoint_recovery::computation_partition::oracle::courtroom::correction_grant::seed(graph, SCOPE);
         },
     );
     let (scope, principal) = authenticate(&application);

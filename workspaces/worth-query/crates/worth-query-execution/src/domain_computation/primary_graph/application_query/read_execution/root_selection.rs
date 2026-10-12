@@ -39,7 +39,7 @@ mod work;
 use work::RootSelectionWork;
 
 pub(super) fn select_bounded_roots(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
@@ -111,7 +111,7 @@ pub(super) fn select_bounded_roots(
 }
 
 fn select_indexed_root(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
@@ -204,8 +204,7 @@ fn select_indexed_root(
         ));
     }
     let projection = runtime
-        .read_truth()
-        .project_snapshot(plan.snapshot)
+        .project_snapshot(plan.snapshot, execution)
         .ok_or_else(|| {
             read_execution_denial(
                 WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
@@ -247,7 +246,7 @@ fn select_indexed_root(
 }
 
 fn execute_governed_predicate_lookup(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     _projection: super::super::disclosure::WorthQueryApplicationInternalProjectionAdmission<'_>,
     request: BoundedEntityFieldLookupRequest,
@@ -255,7 +254,7 @@ fn execute_governed_predicate_lookup(
     worth_relational::facade::indexes::BoundedEntityFieldLookupOutcome,
     worth_relational::facade::indexes::BoundedEntityFieldLookupDenial,
 > {
-    runtime.index_access().execute_bounded_entity_field_lookup(
+    runtime.execute_bounded_entity_field_lookup(
         request,
         BoundedIndexParityMode::Production,
         execution,

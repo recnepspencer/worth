@@ -10,12 +10,84 @@ use crate::domain_computation::primary_graph::{
     application_output_demand::{RetainedOutputReadmissionSource, SelectedReadyReadmission},
     output_lineage::AcceptedCurrentCandidate,
 };
-use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+mod execution_plan;
 
-#[path = "selected/contract.rs"]
-mod contract;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use contract::InstalledSelectedProducerExecutor;
+/// The selected Execute entry is a separate object-safe installed executor
+/// obligation. Its owner implementation can use the retained mutation binding
+/// and cold graph template without changing ordinary producer execution.
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) trait InstalledSelectedProducerExecutor<
+    Schema,
+>:
+    Send + Sync
+{
+    #[allow(clippy::too_many_arguments)]
+    fn advance_ready_on_selected<'basis, 'owner>(
+        &self,
+        phase: &'owner WorthQueryAdvancementPhase<'owner>,
+
+        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
+            'owner,
+            Schema,
+        >,
+        positioned: &'basis PositionedRelationalSnapshot,
+        selected: &SelectedReadyReadmission,
+        candidate: Option<&'basis AcceptedCurrentCandidate>,
+        resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
+        installed: &super::super::registry::InstalledProducerProvider<Schema>,
+        delivery_branch: WorthQueryProductBranch,
+        producer_contacts_in_this_demand: usize,
+        refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
+        performed: &'owner std::cell::RefCell<PerformedMembers>,
+        request_admission: &mut InvalidationEditAdmission,
+    ) -> Result<
+        super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
+        ProducerExecutionStop,
+    >
+    where
+        'owner: 'basis,
+        Schema: ApplicationSchema;
+
+    fn inspect_frozen_ready<'basis>(
+        &self,
+        inspection: super::required_cue::FrozenInspection<'basis, '_, Schema>,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<super::required_cue::FrozenCurrentInspection<'basis>, ProducerExecutionStop>
+    where
+        Schema: ApplicationSchema;
+
+    #[allow(clippy::too_many_arguments)]
+    fn execute_on_selected<'owner>(
+        &self,
+        phase: &'owner WorthQueryAdvancementPhase<'owner>,
+
+        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
+            '_,
+            Schema,
+        >,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
+        required_output: RequiredOutputExecution,
+        input: ValidatedProducerInput<'_>,
+        successor_of: Option<[u8; 32]>,
+        commit_authority: WorthQueryProducerCommitAuthority,
+        edition: super::super::InstalledProducerEdition,
+        limits: WorthQueryOutputDemandLimits,
+        request_admission: &mut InvalidationEditAdmission,
+        producer_contacts: &mut usize,
+    ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop>;
+
+    fn preserved_readiness_output_admitted(
+        &self,
+        receipt: &WorthQueryApplicationCommitReceipt,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<bool, WorthQueryOutputDemandDenial>;
+}
 
 impl<Schema, Binding> InstalledSelectedProducerExecutor<Schema>
     for TypedInstalledProducer<Schema, Binding>
@@ -63,15 +135,15 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn advance_ready_on_selected<'basis>(
+    fn advance_ready_on_selected<'basis, 'owner>(
         &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
+        phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
-        shared: &'basis crate::domain_computation::primary_graph::SharedSelectedProductOperation<
-            '_,
+        shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
+            'owner,
             Schema,
         >,
         positioned: &'basis PositionedRelationalSnapshot,
@@ -82,9 +154,14 @@ where
         delivery_branch: WorthQueryProductBranch,
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
-        performed: &mut PerformedMembers,
+        performed: &'owner std::cell::RefCell<PerformedMembers>,
         request_admission: &mut InvalidationEditAdmission,
-    ) -> Result<super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
+    ) -> Result<
+        super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
+        ProducerExecutionStop,
+    >
+    where
+        'owner: 'basis,
     {
         use super::required_cue::RequiredCueProgress;
         let execution = phase
@@ -123,7 +200,7 @@ where
                 )
             })?
             .source();
-        source_readmission::certify_ready_on_selected_with_disclosure::<Schema, Binding>(
+        source_readmission::certify_ready_on_selected_with_disclosure::<_, Schema, Binding>(
             &execution,
             runtime,
             &self.source_query,
@@ -172,7 +249,7 @@ where
                     installed.edition,
                     admission,
                 )?;
-                let Some(readiness) = performed.fresh(
+                let Some(readiness) = performed.borrow_mut().fresh(
                     &execution,
                     selected.key(),
                     fresh.source().output_source_epoch().ok_or_else(|| {
@@ -192,8 +269,7 @@ where
                     return Ok(RequiredCueProgress::PendingUnresolved);
                 };
                 let progress = runtime
-                    .continue_required_fresh::<Binding::OutputFamily>(
-                        &execution,
+                    .prepare_required_fresh::<Binding::OutputFamily>(
                         phase,
                         fresh,
                         readiness,
@@ -213,15 +289,79 @@ where
         )
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn execute_on_selected(
+    fn inspect_frozen_ready<'basis>(
         &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
+        inspection: super::required_cue::FrozenInspection<'basis, '_, Schema>,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<super::required_cue::FrozenCurrentInspection<'basis>, ProducerExecutionStop> {
+        let super::required_cue::FrozenInspection {
+            execution,
+            runtime,
+            principal,
+            request: request_scope,
+            shared,
+            positioned,
+            selected,
+            candidate,
+            contacts: producer_contacts,
+        } = inspection;
+        admission
+            .charge_external_work(4)
+            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+        let same_ready = candidate
+            .map(|candidate| {
+                candidate
+                    .matches_ready_admitted(selected.completion(), admission)
+                    .map_err(|stop| source_readmission::ready_resource_denial("", stop))
+            })
+            .transpose()?
+            .unwrap_or(true);
+        if !same_ready {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                Binding::IDENTITY,
+            )
+            .into());
+        }
+        let retained = selected
+            .source()
+            .downcast_ref::<RetainedOutputReadmissionSource<SourceQuery<Schema, Binding>>>()
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Binding::IDENTITY,
+                )
+            })?
+            .source();
+        // The same native certification as Live. Its disclosure continuation
+        // only reports not-current: no refresh claim, source read or plan.
+        source_readmission::certify_ready_on_selected_with_disclosure::<_, Schema, Binding>(
+            execution,
+            runtime,
+            &self.source_query,
+            &self.principal_validation,
+            principal,
+            request_scope,
+            shared,
+            positioned,
+            retained,
+            candidate,
+            None,
+            selected.limits(),
+            producer_contacts,
+            admission,
+            |_, _, _| Ok(super::required_cue::FrozenCurrentInspection::NotCurrent),
+        )
+    }
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    fn execute_on_selected<'owner>(
+        &self,
+        phase: &'owner WorthQueryAdvancementPhase<'owner>,
+
+        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
-        shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<
+        shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
             '_,
             Schema,
         >,
@@ -234,123 +374,23 @@ where
         limits: WorthQueryOutputDemandLimits,
         request_admission: &mut InvalidationEditAdmission,
         producer_contacts: &mut usize,
-    ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
-        use super::super::demand::disclosure::FreshDisclosureAdmissionStop;
-        let execution = phase
-            .execution_request_for(&runtime.product_runtime)
-            .map_err(|cause| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
-                    "producer advancement phase",
-                )
-            })?;
-
-        // Fund the typed edition/type checks and the move-only execution split
-        // before any early refusal. Producer subjects are borrowed statics.
-        let entry_work = u64::try_from(
-            std::mem::size_of::<RequiredOutputExecution>()
-                .checked_add(std::mem::size_of::<super::super::InstalledProducerEdition>() * 2)
-                .and_then(|work| work.checked_add(std::mem::size_of::<TypeId>() * 8))
-                .and_then(|work| work.checked_add(8))
-                .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?,
-        )
-        .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
-        request_admission
-            .charge_external_work(entry_work)
-            .map_err(|stop| source_readmission::ready_resource_denial("", stop))?;
-        let (required_output, ready_backing) = required_output.into_parts();
-        if !edition.admits_binding::<Schema, Binding>() {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                Binding::IDENTITY,
-            )
-            .into());
-        }
-        let proof = input
-            .take::<SourceQuery<Schema, Binding>, SourceValue<Schema, Binding>>(edition)
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    Binding::IDENTITY,
-                )
-            })?;
-        let ValidatedOutputDisclosure::Fresh(proof) = proof else {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                Binding::IDENTITY,
-            )
-            .into());
-        };
-        // A disclosure affinity expires on interruption too. Preserve the
-        // request's typed cause before testing the selected proof's identity.
-        if let Some(interruption) = request_scope.interruption() {
-            return Err(super::denial::request_admission_rejected(denial(
-                match interruption {
-                    worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
-                    worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
-                }, Binding::IDENTITY)));
-        }
-        let admits = proof
-            .admits_selected_admitted(
-                principal,
-                request_scope,
-                shared.selected().product().observation(),
-                request_admission,
-            )
-            .map_err(|stop| match stop {
-                FreshDisclosureAdmissionStop::Admission(stop) => {
-                    source_readmission::ready_resource_denial("", stop)
-                }
-                FreshDisclosureAdmissionStop::AccountingOverflow => {
-                    denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "").into()
-                }
-            })?;
-        if !admits {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::Superseded,
-                Binding::IDENTITY,
-            )
-            .into());
-        }
-        let (source, observed_source) = proof.into_parts();
-        let resources = self.provider.demand_resources(&source);
-        super::super::demand::validate_retained_resources(resources, Binding::IDENTITY, limits)?;
-        let input = self.provider.operation_input(&source);
-        let prepared = super::selected_public::prepare_selected_public_mutation::<Schema, Binding>(
-            &execution,
+    ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop> {
+        execution_plan::prepare_selected_execution::<Schema, Binding>(
             self,
-            runtime,
-            shared,
-            principal,
-            request_scope,
-            &input,
-            request_admission,
-        )
-        .map_err(|stop| super::selected_public::preparation_stop::<Schema, Binding>(stop))?;
-        let outcome = super::post_authorization::execute_authorized::<Schema, Binding>(
-            &execution,
             phase,
             runtime,
-            shared.selected(),
-            prepared.principal.principal(),
-            prepared.operation,
-            required_output,
-            self.provider.as_ref(),
-            source,
-            observed_source,
-            input,
+            principal,
+            request_scope,
+            shared,
             matched_predecessors,
-            resources,
+            required_output,
+            input,
             successor_of,
             commit_authority,
             edition,
             limits,
             request_admission,
             producer_contacts,
-        )?;
-        Ok(PreparedProducerExecutionOutcome::new(
-            outcome,
-            ready_backing,
-        ))
+        )
     }
 }

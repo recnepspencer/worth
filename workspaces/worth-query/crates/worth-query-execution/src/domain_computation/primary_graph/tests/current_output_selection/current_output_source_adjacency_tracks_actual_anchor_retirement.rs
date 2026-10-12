@@ -32,7 +32,7 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement_and_budget() 
     let fact = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); graph.integration_handle().with_runtime(request_execution, |runtime| {
         let revision = runtime
             .read_truth()
-            .project_snapshot(original.application_basis().snapshot_handle())
+            .project_snapshot(original.application_basis().snapshot_handle(), request_execution)
             .unwrap()
             .bounded_adjacency_structural_revision(&host_custody.borrowed_request_for_test(),
                 account.entity_id(),

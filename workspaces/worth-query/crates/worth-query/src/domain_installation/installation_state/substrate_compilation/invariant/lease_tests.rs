@@ -131,6 +131,7 @@ fn commit(
     ceiling: u64,
     cancel: bool,
 ) -> (Result<CommitResult, TransactionCommitError>, u64) {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let (runtime, entity_id) = installed_rule_world();
     let mut candidate = transaction(&runtime);
     candidate
@@ -142,8 +143,7 @@ fn commit(
         )
         .unwrap();
     let cancellation = CancellationSource::new();
-    let authority =
-        worth_query_execution::facade::primary_graph::query_test_execution_authority_for_test();
+    let authority = crate::test_execution_authority::authority();
     let lease = authority
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(

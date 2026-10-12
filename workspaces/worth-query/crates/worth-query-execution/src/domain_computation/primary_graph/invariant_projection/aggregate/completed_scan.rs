@@ -154,14 +154,14 @@ impl AggregateScanReader<'_, '_> {
     /// has no readable source field, as `observe_field_value` also reports.
     fn branch_view(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
-        worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+        worth_relational::facade::runtime::VisibilityProjectionView,
         WorthQueryInvariantAggregateDenial,
     > {
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot)
+            .project_snapshot(self.snapshot, &execution)
             .ok_or_else(|| {
                 denial(
                     WorthQueryInvariantAggregateDenialKind::InvalidScalar,

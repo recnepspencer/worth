@@ -39,7 +39,7 @@ pub(super) fn require_stale_source_denial(
     source: WorthQueryObservedSource<PlanarQuery>,
 ) {
     let selected = application
-        .with_host_advancement(|phase| {
+        .with_host_advancement(|host_phase| {
             application
                 .on_branch(branch)
                 .select(&phase)
@@ -52,7 +52,8 @@ pub(super) fn require_stale_source_denial(
         Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
             WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
         )) => {}
-        _ => panic!("a predecessor source proof must not suspend current output"),
+        Err(failure) => panic!("the predecessor source refusal had the wrong cause: {failure:?}"),
+        Ok(_) => panic!("a predecessor source proof must not suspend current output"),
     }
 }
 

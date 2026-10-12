@@ -10,6 +10,8 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
+mod freshness_denial;
+use freshness_denial::freshness_denial;
 mod selected_currentness;
 mod selected_read;
 pub(in crate::domain_computation::primary_graph::application_query) use selected_currentness::{
@@ -117,7 +119,12 @@ where
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .and_then(|truth| truth.validate_entity_freshness(execution, plan.scope))
-                .map_err(|_| WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope)?;
+                .map_err(|denial| {
+                    freshness_denial(
+                        denial,
+                        WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope,
+                    )
+                })?;
             let output = read(runtime, layout, plan)
                 .map_err(WorthQueryAuthorizedApplicationReadDenial::Read)?;
             Ok((output, authorization_work))
@@ -278,7 +285,12 @@ where
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .and_then(|truth| truth.validate_entity_freshness(execution, plan.scope))
-        .map_err(|_| WorthQueryAuthorizedApplicationReadDenial::StaleScope)?;
+        .map_err(|denial| {
+            freshness_denial(
+                denial,
+                WorthQueryAuthorizedApplicationReadDenial::StaleScope,
+            )
+        })?;
     Ok(plan.authorization_work)
 }
 

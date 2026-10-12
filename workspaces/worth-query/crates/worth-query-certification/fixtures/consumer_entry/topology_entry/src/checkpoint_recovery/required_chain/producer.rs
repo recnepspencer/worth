@@ -38,7 +38,21 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputDemand<Schema> fo
 }
 
 pub(super) struct ChainProducer<Schema>(PhantomData<fn() -> Schema>);
-pub(super) struct ChainProvider;
+pub(super) struct ChainProvider {
+    key_mask: u64,
+}
+impl ChainProvider {
+    pub fn new(uniform_decimal_key_width: bool) -> Self {
+        Self {
+            // Every key has twenty decimal digits, independent of source hashing.
+            key_mask: if uniform_decimal_key_width {
+                3 << 62
+            } else {
+                0
+            },
+        }
+    }
+}
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     for ChainProducer<Schema>
@@ -75,6 +89,10 @@ impl<Schema: TopologySchemaBinding>
                 upstream("diamond-left", true),
                 upstream("diamond-right", true),
             ],
+            "diamond-tail" => vec![
+                upstream("diamond-join", false),
+                upstream("diamond-right", true),
+            ],
             ring => vec![super::ring_world::upstream_of(ring)
                 .expect("the courtroom declares no other downstream node")],
         };
@@ -85,7 +103,7 @@ impl<Schema: TopologySchemaBinding>
         }
     }
     fn idempotency_key(&self, _: &PlanarOutputReadResult, identity: &[u8; 32]) -> u64 {
-        planar_source_key(identity) ^ 0x9176_3000
+        (planar_source_key(identity) ^ 0x9176_3000) | self.key_mask
     }
     fn demand_resources(&self, _: &PlanarOutputReadResult) -> WorthQueryProducerDemandResources {
         planar_producer_resources()

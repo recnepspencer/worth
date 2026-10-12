@@ -146,7 +146,7 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
             authentication::WorthQueryRequestScope::new(None, cancellation.token());
         super::super::binding::cancel_during_next_decision("diamond-join", cancellation);
         let cancelled = application.request(&principal, &cancelled_scope);
-        crate::handler::take_decision_entries();
+        take_decision_entries();
         let stopped = join.advance(&cancelled);
         assert!(
             matches!(
@@ -172,14 +172,14 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         }
         if !held_child {
             assert_eq!(
-                crate::handler::take_decision_entries(),
+                take_decision_entries(),
                 1,
                 "one changed child completes before the canceled consumer"
             );
         }
         crate::producer::reset_provider_contacts();
     }
-    let refreshed = if held_child {
+    let refreshed = if superseded_child {
         match join.advance(&request) {
             Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
             Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded)
@@ -229,12 +229,10 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
             take_decisions("diamond-join"),
             if superseded_child {
                 vec![vec![8, 51]]
-            } else if held_child {
-                vec![vec![6, 51], vec![6, 51]]
             } else {
                 vec![vec![6, 51]]
             },
-            "the completed decision retries after readiness changes its publication basis"
+            "the held dependency is delivered before the consumer decides once per changed basis"
         );
         if cancel_decision {
             assert_eq!(
@@ -267,4 +265,9 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         0
     );
     assert!(take_decisions("diamond-join").is_empty());
+}
+
+/// Counts actual handler entries; source-input preparation does not enter here.
+fn take_decision_entries() -> usize {
+    crate::handler::DECISION_ENTRIES.swap(0, std::sync::atomic::Ordering::SeqCst)
 }

@@ -25,7 +25,7 @@ pub struct RelationalRelationMetadata {
     pub target: EntityId,
 }
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     /// One owner-issued Work bound for the exact borrowed entity probe below.
     /// The selected schema count is read from the pinned root without a walk.
     pub fn exact_entity_state_read_work_bound(&self) -> Option<u64> {

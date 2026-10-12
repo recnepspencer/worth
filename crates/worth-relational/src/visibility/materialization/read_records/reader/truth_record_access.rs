@@ -7,16 +7,11 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         registry: &crate::schema::data::RelationalSchemaRegistry,
         entity_id: crate::identity::data::EntityId,
     ) -> Option<EntityReadRecord> {
-        let slot = entity_id.slot_index();
-        materialize_current_authoritative_entity_record(
-            registry,
-            state.get_partition(entity_id.partition_id)?,
-            entity_id.partition_id,
-            slot,
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
         )
-        .filter(|record| {
-            entity_id.generation.is_zero() || record.entity_id.generation == entity_id.generation
-        })
+        .authoritative_entity_record_for_id_from_exact_state(state, registry, entity_id)
     }
 
     pub(crate) fn authoritative_relation_record_for_id_from_exact_state(
@@ -25,17 +20,15 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         registry: &crate::schema::data::RelationalSchemaRegistry,
         relation_id: crate::identity::data::RelationId,
     ) -> Option<RelationReadRecord> {
-        let slot = relation_id.slot_index();
-        materialize_current_authoritative_relation_record(
-            registry,
-            state.get_partition(relation_id.partition_id)?,
-            relation_id.partition_id,
-            slot,
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
         )
-        .filter(|record| {
-            relation_id.generation.is_zero()
-                || record.relation_id.generation == relation_id.generation
-        })
+        .authoritative_relation_record_for_id_from_exact_state(
+            state,
+            registry,
+            relation_id,
+        )
     }
 
     pub(crate) fn authoritative_entity_record_at_version(
@@ -77,32 +70,13 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         entity_id: crate::identity::data::EntityId,
         version_id: crate::identity::data::VersionId,
     ) -> Option<EntityReadRecord> {
-        let partition = state.get_partition(entity_id.partition_id)?;
-        let slot = entity_id.slot_index();
-        if version_id == self.runtime.current_version_id() {
-            materialize_current_authoritative_entity_record(
-                registry,
-                partition,
-                entity_id.partition_id,
-                slot,
-            )
-            .filter(|record| {
-                entity_id.generation.is_zero()
-                    || record.entity_id.generation == entity_id.generation
-            })
-        } else {
-            materialize_authoritative_entity_record_at_version(
-                registry,
-                partition,
-                entity_id.partition_id,
-                slot,
-                version_id,
-            )
-            .filter(|record| {
-                entity_id.generation.is_zero()
-                    || record.entity_id.generation == entity_id.generation
-            })
-        }
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .authoritative_entity_record_for_id_at_version_with_registry(
+            state, registry, entity_id, version_id,
+        )
     }
 
     pub(crate) fn authoritative_relation_record_for_id_at_version(
@@ -126,32 +100,16 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         relation_id: crate::identity::data::RelationId,
         version_id: crate::identity::data::VersionId,
     ) -> Option<RelationReadRecord> {
-        let partition = state.get_partition(relation_id.partition_id)?;
-        let slot = relation_id.slot_index();
-        if version_id == self.runtime.current_version_id() {
-            materialize_current_authoritative_relation_record(
-                registry,
-                partition,
-                relation_id.partition_id,
-                slot,
-            )
-            .filter(|record| {
-                relation_id.generation.is_zero()
-                    || record.relation_id.generation == relation_id.generation
-            })
-        } else {
-            materialize_authoritative_relation_record_at_version(
-                registry,
-                partition,
-                relation_id.partition_id,
-                slot,
-                version_id,
-            )
-            .filter(|record| {
-                relation_id.generation.is_zero()
-                    || record.relation_id.generation == relation_id.generation
-            })
-        }
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .authoritative_relation_record_for_id_at_version_with_registry(
+            state,
+            registry,
+            relation_id,
+            version_id,
+        )
     }
 
     pub(crate) fn visible_entity_slots_from_state(
@@ -163,20 +121,13 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
         worth_execution::MapKernelStop,
     > {
-        let mut partitions = Vec::new();
-        for partition_id in state.partition_ids() {
-            if let Some(entity_slots) = self.visible_entity_slots_in_partition_from_state(
-                state,
-                partition_id,
-                version_id,
-                charge,
-            )? {
-                partitions.push((partition_id, entity_slots));
-            }
-        }
-        Ok(partitions)
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .visible_entity_slots_from_state(state, version_id, charge)
     }
-
+    #[cfg(test)]
     pub(crate) fn visible_entity_slots_in_partition_from_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),
@@ -184,20 +135,17 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     ) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop> {
-        visible_slots_in_partition_from_state::<crate::storage::substrate::EntityRecordKind>(
-            self.runtime,
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .visible_entity_slots_in_partition_from_state(
             state,
             partition_id,
             version_id,
             charge,
-            |runtime, scanned| {
-                runtime.services.instrumentation.count(|counters| {
-                    counters.visibility_entity_slot_scans += scanned;
-                });
-            },
         )
     }
-
     pub(crate) fn visible_relation_slots_from_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),
@@ -207,20 +155,13 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
         worth_execution::MapKernelStop,
     > {
-        let mut partitions = Vec::new();
-        for partition_id in state.partition_ids() {
-            if let Some(relation_slots) = self.visible_relation_slots_in_partition_from_state(
-                state,
-                partition_id,
-                version_id,
-                charge,
-            )? {
-                partitions.push((partition_id, relation_slots));
-            }
-        }
-        Ok(partitions)
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .visible_relation_slots_from_state(state, version_id, charge)
     }
-
+    #[cfg(test)]
     pub(crate) fn visible_relation_slots_in_partition_from_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),
@@ -228,20 +169,17 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     ) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop> {
-        visible_relation_slots_in_partition_from_state(
-            self.runtime,
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .visible_relation_slots_in_partition_from_state(
             state,
             partition_id,
             version_id,
             charge,
-            |runtime, scanned| {
-                runtime.services.instrumentation.count(|counters| {
-                    counters.visibility_relation_slot_scans += scanned;
-                });
-            },
         )
     }
-
     /// Whether a relation is visible, resolved against a pinned edition.
     ///
     /// There is deliberately no acquiring twin of this: a per-candidate

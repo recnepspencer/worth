@@ -21,10 +21,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         handle: &SnapshotHandle,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,
-    ) -> Result<
-        Option<VisibilityProjectionView<'runtime>>,
-        RelationalSnapshotProjectionAdmissionStop<Stop>,
-    > {
+    ) -> Result<Option<VisibilityProjectionView>, RelationalSnapshotProjectionAdmissionStop<Stop>>
+    {
         use RelationalSnapshotProjectionAdmissionStop as Denial;
         crate::execution::check_request(execution).map_err(Denial::Execution)?;
         admit(3, 0).map_err(Denial::Admission)?;
@@ -50,6 +48,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             u64::try_from(bytes).map_err(|_| Denial::AccountingOverflow)?,
         )
         .map_err(Denial::Admission)?;
-        Ok(self.project_snapshot(handle))
+        Ok(self.project_snapshot(handle, execution))
     }
 }

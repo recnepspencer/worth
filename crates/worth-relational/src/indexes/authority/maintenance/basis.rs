@@ -5,8 +5,8 @@ use crate::runtime::VisibilityProjectionView;
 pub(super) fn validate(
     request: &DerivedIndexBuildRequest,
     observation: &RelationalBranchObservation,
-    before: Option<&VisibilityProjectionView<'_>>,
-    after: &VisibilityProjectionView<'_>,
+    before: Option<&VisibilityProjectionView>,
+    after: &VisibilityProjectionView,
 ) -> Result<(), Denial> {
     if observation.commit_id() != Some(request.source_commit_id)
         || observation.identity().branch_id() != &request.branch_id
@@ -23,8 +23,8 @@ pub(super) fn validate(
 
 pub(super) fn validate_prepared(
     request: &DerivedIndexBuildRequest,
-    before: Option<&VisibilityProjectionView<'_>>,
-    after: &VisibilityProjectionView<'_>,
+    before: Option<&VisibilityProjectionView>,
+    after: &VisibilityProjectionView,
 ) -> Result<(), Denial> {
     let root = after.selected_root().ok_or(Denial::CommitMismatch)?;
     let envelope = root.canonical_envelope().ok_or(Denial::CommitMismatch)?;
@@ -39,7 +39,7 @@ pub(super) fn validate_prepared(
 
 fn validate_before(
     envelope: &crate::history::data::CanonicalCommitEnvelope,
-    before: Option<&VisibilityProjectionView<'_>>,
+    before: Option<&VisibilityProjectionView>,
 ) -> Result<(), Denial> {
     if let Some(before) = before {
         let prior = before.selected_root().ok_or(Denial::BeforeRootMismatch)?;

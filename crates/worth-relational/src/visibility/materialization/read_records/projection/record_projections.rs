@@ -4,7 +4,7 @@ use super::{
 };
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     pub fn entities<T: EntityRecordProjection>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

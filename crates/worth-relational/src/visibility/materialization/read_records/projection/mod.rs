@@ -5,6 +5,7 @@ mod basis_reads;
 mod borrowed_adjacency;
 mod borrowed_records;
 mod contracts;
+mod creation;
 mod entity_adjacency;
 mod entity_projection;
 mod entity_retirement;
@@ -14,9 +15,12 @@ mod field_revisions;
 mod frontier_adjacency;
 mod historical_basis_reads;
 mod kind_scans;
+mod pinned;
 mod projection_records;
 mod query_locus_projection;
 mod read_record_identity_ordering;
+mod record_source;
+mod schema_custody;
 mod streamed_basis_reads;
 mod view;
 
@@ -45,3 +49,4 @@ pub(crate) use query_locus_projection::{
 pub use view::VisibilityProjectionView;
 
 mod record_projections;
+pub(crate) use streamed_basis_reads::ProjectionRecordSource;

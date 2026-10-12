@@ -112,7 +112,7 @@ fn read_idempotency_record(
     let view = context
         .runtime
         .read_truth()
-        .project_snapshot(context.snapshot)
+        .project_snapshot(context.snapshot, &execution)
         .ok_or(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
     view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
         (record.kind_id() == context.layout.entity_kind

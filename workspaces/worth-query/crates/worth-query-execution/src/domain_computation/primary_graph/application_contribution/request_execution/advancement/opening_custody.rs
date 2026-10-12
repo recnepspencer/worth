@@ -9,9 +9,9 @@ pub(super) struct OpeningCustody {
 impl OpeningCustody {
     pub(super) fn enter() -> Result<Self, WorthQueryAdvancementDenial> {
         ACTIVE.with(|active| {
-            if active.replace(true) {
+            if crate::domain_computation::primary_graph::application_contribution::computation::worker_custody::active()
+                || active.replace(true) {
                 let denial = WorthQueryAdvancementDenial::NestedOpening;
-                super::observation::record_result::<()>(&Err(denial));
                 Err(denial)
             } else {
                 Ok(Self {

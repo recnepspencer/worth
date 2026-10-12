@@ -54,7 +54,7 @@ pub(super) fn observe_lineage(
         let status_revision = observation
             .relational
             .read_truth()
-            .project_snapshot(observation.snapshot)
+            .project_snapshot(observation.snapshot, &execution)
             .map(|view| {
                 view.entity_field_revision(
                     execution,

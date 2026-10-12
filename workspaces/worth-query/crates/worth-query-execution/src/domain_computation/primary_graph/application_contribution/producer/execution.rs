@@ -34,31 +34,32 @@ mod input_cutoff;
 mod input_identity;
 mod input_reuse;
 mod installed;
-mod outcome;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod outcome;
 mod post_authorization;
+pub(in crate::domain_computation::primary_graph) mod prepared_plan;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use prepared_plan::canonical_apply;
 mod readiness;
 mod required_cue;
 mod selected;
 mod selected_public;
 mod source_readmission;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use source_readmission::ready_currentness_denial;
-use selected::InstalledSelectedProducerExecutor;
 use super::demand::disclosure::{
     FreshOutputDisclosure, ValidatedOutputDisclosure, ValidatedProducerInput,
 };
 use admitted::execute_fresh;
 pub(super) use denial::ProducerExecutionStop;
 use denial::{
-    denial, execution_failed, failed, identity_unavailable, query_admission_denied,
-    principal_rejected, query_execution_denied, request_authority_denied,
-    scope_rejected,
+    denial, execution_failed, failed, identity_unavailable, principal_rejected,
+    query_admission_denied, query_execution_denied, request_authority_denied, scope_rejected,
 };
-use input_identity::encode_input;
+use selected::InstalledSelectedProducerExecutor;
+
 use input_reuse::{prepared_key, require_selected_program};
 pub(super) use installed::TypedInstalledProducer;
 use outcome::PreparedProducerExecutionOutcome;
 pub(super) use outcome::{ProducerCommitReceipt, ProducerExecutionOutcome};
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_cue::RequiredCueProgress;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_cue::{RequiredCueProgress, FrozenCurrentInspection, FrozenInspection};
 pub(super) use outcome::commit_receipt;
 use outcome::completed_handler;
 use source_readmission::readmit_source;
@@ -215,7 +216,7 @@ where
                 request_scope,
                 branch,
                 required_output,
-                self.provider.as_ref(),
+                &self.provider,
                 proof,
                 successor_of,
                 commit_authority,
@@ -255,7 +256,7 @@ where
                     request_scope,
                     branch,
                     required_output,
-                    self.provider.as_ref(),
+                    &self.provider,
                     fresh,
                     successor_of,
                     commit_authority,
@@ -272,3 +273,6 @@ where
         ))
     }
 }
+
+#[cfg(test)]
+pub(super) mod lifetime_fixture;

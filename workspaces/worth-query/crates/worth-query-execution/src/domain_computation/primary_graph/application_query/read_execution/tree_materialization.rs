@@ -54,7 +54,7 @@ pub(super) struct MaterializedApplicationResultTree {
 
 pub(super) fn materialize_result_tree(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
@@ -70,8 +70,7 @@ pub(super) fn materialize_result_tree(
     spent: Option<&OneShotReadWorkObservation<'_>>,
 ) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
-        .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| projection_denial(contract.root_entity()))?;
     let mut work = ResultTreeWork::new(maximum_work, interruption, spent);
     work.checkpoint("root")?;
@@ -128,8 +127,8 @@ pub(super) fn materialize_result_tree(
 #[allow(clippy::too_many_arguments)]
 fn project_nodes(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,

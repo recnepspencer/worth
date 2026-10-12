@@ -37,12 +37,16 @@ impl AdjacencyLeaseLedger {
 
     /// Settle the traversal's leases in one instrumentation visit.
     pub(crate) fn settle(self, runtime: &RelationalRuntime) {
+        self.settle_instrumentation(&runtime.services.instrumentation);
+    }
+    pub(crate) fn settle_instrumentation(
+        self,
+        instrumentation: &crate::runtime::RuntimeInstrumentation,
+    ) {
         if self.kind_views_leased == 0 {
             return;
         }
-        runtime
-            .services
-            .instrumentation
+        instrumentation
             .count(|counters| counters.adjacency_kind_slices_leased += self.kind_views_leased);
     }
 }

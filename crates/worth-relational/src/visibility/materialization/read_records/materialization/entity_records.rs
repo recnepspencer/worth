@@ -13,6 +13,8 @@ pub(crate) fn materialize_current_authoritative_entity_record(
     partition_id: crate::identity::data::PartitionId,
     slot: usize,
 ) -> Option<EntityReadRecord> {
+    #[cfg(test)]
+    super::row_reads_for_test::record();
     let entity_slot = partition.entity_arena.get_slot(slot)?;
     if entity_slot.lifecycle() != RecordLifecycleState::Live {
         return None;
@@ -44,6 +46,8 @@ pub(crate) fn materialize_authoritative_entity_record_at_version(
     slot: usize,
     version_id: crate::identity::data::VersionId,
 ) -> Option<EntityReadRecord> {
+    #[cfg(test)]
+    super::row_reads_for_test::record();
     if !entity_visible_in_partition_at_version(partition, slot, version_id) {
         return None;
     }

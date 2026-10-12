@@ -14,7 +14,10 @@ fn fact_comparison_preserves_stops_at_every_consult() {
             unreachable!()
         };
         let entity = candidates[0];
-        let view = runtime.read_truth().project_snapshot(snapshot).unwrap();
+        let view = runtime
+            .read_truth()
+            .project_snapshot(snapshot, &execution)
+            .unwrap();
         let revision = view
             .entity_field_revision(execution, entity, locator)
             .unwrap();

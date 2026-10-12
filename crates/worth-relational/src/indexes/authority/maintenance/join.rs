@@ -19,8 +19,8 @@ pub(super) fn refresh(
     entries: &mut DerivedIndexEntryMap<RelationJoinKey, RelationJoinEntry>,
     definition: RelationJoinDefinition,
     changes: &ChangeRouting,
-    before: Option<&VisibilityProjectionView<'_>>,
-    after: &VisibilityProjectionView<'_>,
+    before: Option<&VisibilityProjectionView>,
+    after: &VisibilityProjectionView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     let mut allocation = UngroupedAllocation::new();
@@ -46,8 +46,8 @@ fn affected_shared(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     definition: RelationJoinDefinition,
     changes: &ChangeRouting,
-    before: Option<&VisibilityProjectionView<'_>>,
-    after: &VisibilityProjectionView<'_>,
+    before: Option<&VisibilityProjectionView>,
+    after: &VisibilityProjectionView,
     work: &mut MaintenanceWork,
 ) -> Result<BTreeSet<EntityId>, Denial> {
     let mut affected = BTreeSet::new();
@@ -117,7 +117,7 @@ fn affected_shared(
 
 fn rows_for_shared(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     shared: EntityId,
     definition: RelationJoinDefinition,
     work: &mut MaintenanceWork,
@@ -148,7 +148,7 @@ fn rows_for_shared(
 
 fn leg_relations(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     shared: EntityId,
     leg: RelationJoinLeg,
     work: &mut MaintenanceWork,
@@ -165,7 +165,7 @@ fn leg_relations(
 fn insert_leg(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     selected: &mut BTreeMap<EntityId, RelationId>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     shared: EntityId,
     leg: RelationJoinLeg,
     relation: &RelationReadRecord,

@@ -50,7 +50,7 @@ impl EquivalencePredicate {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub(super) struct EquivalenceRegistry {
     predicates: BTreeMap<EquivalenceContractId, EquivalencePredicate>,
 }

@@ -14,7 +14,7 @@ use worth_query_decl::facade::{
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryInvariantEntityIdentity, WorthQueryInvariantMutationTarget,
+    WorthQueryDecisionPlan, WorthQueryInvariantEntityIdentity, WorthQueryInvariantMutationTarget,
 };
 
 use super::facts::{
@@ -28,13 +28,7 @@ use super::*;
 /// A set of 200 is refused at seeding: the planar turn invariant's work
 /// budget pays for every entity the bootstrap touches, of any kind.
 pub(super) const LARGEST_SET: usize = 160;
-const DECISION_FACTS_PER_ENTRY: usize = 8;
 const PROJECTION_WORK_PER_ENTRY: usize = 16;
-/// The scope, the set, its weight and the entry an armed decision writes.
-const DECISION_FACTS_BESIDE_ENTRIES: usize = 32;
-/// The facts the largest set's decision may read.
-pub(super) const DECISION_FACT_BUDGET: usize =
-    DECISION_FACTS_PER_ENTRY * LARGEST_SET + DECISION_FACTS_BESIDE_ENTRIES;
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub(super) struct RegionOutputInput {
@@ -138,7 +132,7 @@ type Run<Schema> = Box<
     dyn Fn(
             &mut Decision<'_, '_, '_, Schema>,
             &WorthQueryInvariantEntityIdentity<Schema, EntrySet>,
-        ) -> Option<u64>
+        ) -> WorthQueryDecisionPlan<Option<u64>, PlanarMutationDenial>
         + Send
         + Sync,
 >;
@@ -190,7 +184,7 @@ impl<Schema: TopologySchemaBinding> RegionOutputHandler<Schema> {
         run: impl Fn(
                 &mut Decision<'_, '_, '_, Schema>,
                 &WorthQueryInvariantEntityIdentity<Schema, EntrySet>,
-            ) -> Option<u64>
+            ) -> WorthQueryDecisionPlan<Option<u64>, PlanarMutationDenial>
             + Send
             + Sync
             + 'static,
@@ -231,12 +225,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionOutputBinding
                 };
                 Some(length)
             };
-            let generated_value = if let Some(run) = &self.0 {
-                let set = reader.resolve_entity(EntrySetKey::reference(), input.entries.clone())?;
-                run(reader, &set)
-            } else {
-                None
-            };
+            let generated_value = None;
             let own_write = match own_write() {
                 Some(write) => {
                     let entry = reader.resolve_entity(EntryNumber::reference(), write.number)?;
@@ -258,6 +247,35 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionOutputBinding
             Ok(None) => HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
+    }
+
+    fn prepare_decision(
+        &self,
+        input: &RegionOutputInput,
+        reader: &mut Decision<'_, '_, '_, Schema>,
+    ) -> WorthQueryDecisionPlan<RegionOutputDecision<Schema>, PlanarMutationDenial> {
+        let decided = self.decide(input, reader);
+        let plan = if let Some(run) = &self.0 {
+            let set = match reader.resolve_entity(EntrySetKey::reference(), input.entries.clone()) {
+                Ok(set) => set,
+                Err(error) => {
+                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error))
+                }
+            };
+            run(reader, &set)
+        } else {
+            WorthQueryDecisionPlan::immediate(HandlerResult::Completed(None))
+        };
+        plan.and_then(move |value| match decided {
+            HandlerResult::Completed(mut decision) => {
+                decision.generated_value = value;
+                HandlerResult::Completed(decision)
+            }
+            HandlerResult::DomainDenied(cause) => HandlerResult::DomainDenied(cause),
+            HandlerResult::ExecutionDenied(cause) => HandlerResult::ExecutionDenied(cause),
+            HandlerResult::Cancelled => HandlerResult::Cancelled,
+            HandlerResult::DeadlineExceeded => HandlerResult::DeadlineExceeded,
+        })
     }
 
     fn candidate_requirements(

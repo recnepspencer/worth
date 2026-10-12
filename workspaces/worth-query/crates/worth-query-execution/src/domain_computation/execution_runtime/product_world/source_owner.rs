@@ -20,13 +20,21 @@ pub enum WorthQueryRelationalSourceInstallationDenial {
 #[doc(hidden)]
 #[derive(Clone)]
 pub struct WorthQueryRelationalSourceOwner {
-    pub(super) runtime: Arc<Mutex<RelationalRuntime>>,
+    runtime: Arc<Mutex<RelationalRuntime>>,
     pub(in crate::domain_computation) runtime_instance_id: u64,
     pub(super) source: RuntimeBridgeRelationalSource,
     pub(super) bridge_head: Arc<Mutex<Option<RelationalBridgeBranchHeadLease>>>,
     pub(in crate::domain_computation) invalidation_owner:
         Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
     canonical_subscription: RelationalBridgeCanonicalSubscription,
+    #[cfg(test)]
+    read_acquisitions: Arc<std::sync::atomic::AtomicU64>,
+    #[cfg(test)]
+    bridge_lock_observations: Arc<
+        Mutex<
+            Vec<worth_relational::facade::change_source::RelationalRuntimeLockObservationForTest>,
+        >,
+    >,
 }
 
 impl WorthQueryRelationalSourceOwner {
@@ -58,6 +66,17 @@ impl WorthQueryRelationalSourceOwner {
                 invalidation_resources.preflight_budget(),
             )
             .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionRegistration)?;
+        #[cfg(test)]
+        let read_acquisitions = Arc::new(std::sync::atomic::AtomicU64::new(0));
+        #[cfg(test)]
+        let bridge_lock_observations = {
+            let count = Arc::clone(&read_acquisitions);
+            Arc::new(Mutex::new(vec![source.observe_runtime_locks_for_test(
+                move || {
+                    count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                },
+            )]))
+        };
         Ok(Self {
             runtime,
             runtime_instance_id,
@@ -65,7 +84,31 @@ impl WorthQueryRelationalSourceOwner {
             bridge_head: Arc::new(Mutex::new(None)),
             invalidation_owner,
             canonical_subscription: subscription,
+            #[cfg(test)]
+            read_acquisitions,
+            #[cfg(test)]
+            bridge_lock_observations,
         })
+    }
+
+    fn lock_runtime(&self) -> std::sync::MutexGuard<'_, RelationalRuntime> {
+        let runtime = self
+            .runtime
+            .lock()
+            .expect("Relational source owner is available");
+        #[cfg(test)]
+        self.read_acquisitions
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        runtime
+    }
+    #[cfg(test)]
+    pub(super) fn lock_is_held_for_test(&self) -> bool {
+        self.runtime.try_lock().is_err()
+    }
+    #[cfg(test)]
+    pub(super) fn lock_acquisitions_for_test(&self) -> u64 {
+        self.read_acquisitions
+            .load(std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Construction reads only the owner's stable branch identity.
@@ -97,10 +140,7 @@ impl WorthQueryRelationalSourceOwner {
         &self,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) {
-        let mut runtime = self
-            .runtime
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut runtime = self.lock_runtime();
         crate::relational_snapshot_release::release_query_snapshot(&mut runtime, snapshot);
     }
 
@@ -111,10 +151,7 @@ impl WorthQueryRelationalSourceOwner {
         worth_relational::facade::branch::RelationalBranchRetentionReleaseReceipt,
         worth_relational::facade::branch::RelationalBranchRetentionReleaseDenial,
     > {
-        let runtime = self
-            .runtime
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let runtime = self.lock_runtime();
         runtime.release_component_basis(retention)
     }
 
@@ -122,9 +159,7 @@ impl WorthQueryRelationalSourceOwner {
     pub(in crate::domain_computation) fn custom_invariant_candidate_input_counters(
         &self,
     ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
-        self.runtime
-            .lock()
-            .expect("Relational source owner is available")
+        self.lock_runtime()
             .custom_invariant_candidate_input_counters()
     }
 
@@ -134,10 +169,7 @@ impl WorthQueryRelationalSourceOwner {
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce(&RelationalRuntime) -> T,
     ) -> T {
-        let runtime = self
-            .runtime
-            .lock()
-            .expect("Relational source owner is available");
+        let runtime = self.lock_runtime();
         super::read_observation::record_read_for_test();
         read(&runtime)
     }
@@ -148,23 +180,9 @@ impl WorthQueryRelationalSourceOwner {
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutate: impl FnOnce(&mut RelationalRuntime) -> T,
     ) -> T {
-        let mut runtime = self
-            .runtime
-            .lock()
-            .expect("Relational source owner is available");
+        let mut runtime = self.lock_runtime();
         super::read_observation::record_read_for_test();
         mutate(&mut runtime)
-    }
-
-    /// The prepared read needs immutable access, while the installed owner's
-    /// mutex remains exclusive. Freeing this lock requires a native pinned
-    /// read capability; cloning a runtime would create a second owner.
-    pub(crate) fn with_runtime_unwind_isolated<T>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        read: impl FnOnce(&RelationalRuntime) -> T,
-    ) -> T {
-        self.with_runtime_mut_unwind_isolated(execution, |runtime| read(runtime))
     }
 
     pub(crate) fn with_runtime_mut_unwind_isolated<T>(
@@ -173,10 +191,7 @@ impl WorthQueryRelationalSourceOwner {
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutate: impl FnOnce(&mut RelationalRuntime) -> T,
     ) -> T {
-        let mut runtime = self
-            .runtime
-            .lock()
-            .expect("Relational source owner is available");
+        let mut runtime = self.lock_runtime();
         super::read_observation::record_read_for_test();
         let outcome =
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| mutate(&mut runtime)));
@@ -203,6 +218,15 @@ impl WorthQueryRelationalSourceOwner {
             partition,
             role,
         )?;
+        #[cfg(test)]
+        {
+            let count = Arc::clone(&self.read_acquisitions);
+            self.bridge_lock_observations.lock().unwrap().push(
+                self.source.observe_runtime_locks_for_test(move || {
+                    count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                }),
+            );
+        }
         Ok(())
     }
 }

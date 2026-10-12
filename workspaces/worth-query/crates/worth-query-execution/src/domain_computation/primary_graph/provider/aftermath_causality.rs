@@ -265,7 +265,7 @@ impl WorthQueryAftermathCausalityRead<'_> {
             )]);
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot)
+            .project_snapshot(self.snapshot, &execution)
             .map(|view| {
                 view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
                     (record.kind_id() == self.layout.entity_kind

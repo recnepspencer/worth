@@ -133,7 +133,7 @@ pub(super) fn observe_adjacency_with_work(
     }
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, &execution)
         .ok_or(AdjacencyObservationDenial::SnapshotUnavailable)?;
     let frontier = std::collections::BTreeSet::from([anchor]);
     // This scalar API budgets examined relations plus returned endpoints. The

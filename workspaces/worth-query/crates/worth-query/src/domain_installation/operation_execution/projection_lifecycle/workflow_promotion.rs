@@ -26,18 +26,16 @@ where
     ) -> WorthQueryWorkflowProjectionPromotionOutcome<D, O, F, L> {
         let owner = workspace.advancement_owner();
         let mut retained = Some(self);
-        match owner.with_advancement(|phase| {
-            let current = retained
-                .take()
-                .expect("host call retains its projection before admission");
-            current.promote_in_advancement(
-                request_execution,
-                phase
-                    .execution_request_for(&owner)
-                    .expect("the opener lent this owner its phase"),
-                workspace,
-            )
-        }) {
+        match owner
+            .with_advancement(|phase| {
+                let execution = phase.checked_execution_request_for(&owner)?;
+                let current = retained
+                    .take()
+                    .expect("host call retains its projection before admission");
+                Ok(current.promote_in_advancement(request_execution, execution, workspace))
+            })
+            .and_then(std::convert::identity)
+        {
             Ok(outcome) => outcome,
             Err(denial) => {
                 let current = retained

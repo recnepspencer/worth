@@ -111,7 +111,7 @@ impl IndexAuthority<'_> {
                 }
                 self.runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
+                    .project_snapshot(snapshot, execution)
                     .ok_or(Denial::SnapshotUnavailable)
             })
             .transpose()?;
@@ -154,7 +154,7 @@ fn prepared_projection(
     runtime: &crate::runtime::RelationalRuntime,
     branch_id: BranchId,
     root: Arc<RelationalBranchRoot>,
-) -> VisibilityProjectionView<'_> {
+) -> VisibilityProjectionView {
     VisibilityProjectionView::new(
         runtime,
         SnapshotStateBasis::Exact(VisibilitySnapshotBasis::from_prepared_root(branch_id, root)),
@@ -163,7 +163,7 @@ fn prepared_projection(
 
 fn validate_expected_root(
     expected: &Arc<RelationalBranchRoot>,
-    before: Option<&VisibilityProjectionView<'_>>,
+    before: Option<&VisibilityProjectionView>,
 ) -> Result<(), Denial> {
     if let Some(before) = before {
         let selected = before.selected_root().ok_or(Denial::BeforeRootMismatch)?;

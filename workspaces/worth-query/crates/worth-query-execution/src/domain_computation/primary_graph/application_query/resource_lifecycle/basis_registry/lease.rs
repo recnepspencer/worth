@@ -237,7 +237,10 @@ impl WorthQueryApplicationBasisLease {
         self.core().basis.is_some()
             && self.core().snapshot.as_ref().is_some_and(|snapshot| {
                 self.core().graph.with_runtime(execution, |runtime| {
-                    runtime.read_truth().project_snapshot(snapshot).is_some()
+                    runtime
+                        .read_truth()
+                        .project_snapshot(snapshot, &execution)
+                        .is_some()
                 })
             })
     }

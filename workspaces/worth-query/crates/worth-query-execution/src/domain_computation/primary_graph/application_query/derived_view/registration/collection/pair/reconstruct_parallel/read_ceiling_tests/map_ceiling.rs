@@ -127,7 +127,9 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
                 .unwrap()
                 .unwrap();
             let capacity = plans.result_capacity().unwrap();
-            let input = plans.worker(&world.application, root.entity_id()).unwrap();
+            let input = plans
+                .worker(execution, &world.application, root.entity_id())
+                .unwrap();
             let map = ExecutionMap::<_, ()>::from_keyless_partitions(BTreeMap::from([(
                 PartitionIdentity::new(1),
                 KeylessPartition {

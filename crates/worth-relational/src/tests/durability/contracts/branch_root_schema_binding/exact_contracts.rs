@@ -134,11 +134,11 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
 
     let legacy_projection = recovered
         .read_truth()
-        .project_snapshot(&legacy_snapshot)
+        .project_snapshot(&legacy_snapshot, execution)
         .expect("legacy exact projection remains bound");
     let current_projection = recovered
         .read_truth()
-        .project_snapshot(&main_snapshot)
+        .project_snapshot(&main_snapshot, execution)
         .expect("current exact projection remains bound");
     let name_scope =
         crate::facade::runtime::ProjectionAspectScope::whole_aspects([aspect_key("name")]);

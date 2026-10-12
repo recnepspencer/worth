@@ -64,7 +64,7 @@ impl PreparedSelections {
         }
         let key = (*index_id, *entity_kind, locator.clone());
         if !self.selectors.contains_key(&key) {
-            let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+            let Some(view) = runtime.read_truth().project_snapshot(snapshot, &execution) else {
                 return Ok(false);
             };
             let prepared = match runtime.index_access().prepare_entity_field_lookup(

@@ -15,7 +15,7 @@ pub enum RelationalAdjacencyVisit {
     Relation(RelationId),
 }
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     /// Exact selected list revision; the caller admits the anchor metadata and
     /// list visits. No kind names or read records are materialized.
     pub fn exact_adjacency_structural_revision(
@@ -124,7 +124,7 @@ impl VisibilityProjectionView<'_> {
                 }
                 Ok(())
             })();
-            ledger.settle(self.runtime);
+            ledger.settle_instrumentation(&self.instrumentation);
             result
         })
     }

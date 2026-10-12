@@ -77,7 +77,7 @@ pub(super) fn relational_lookup_denial(
 
 pub(in crate::domain_computation::primary_graph::application_query) fn relational_read_denial(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
-    subject: &str,
+    subject: impl Into<String>,
 ) -> WorthQueryApplicationReadExecutionDenial {
     use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
     let kind = match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
@@ -86,4 +86,27 @@ pub(in crate::domain_computation::primary_graph::application_query) fn relationa
         Err(Control::TimedOut) => WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded,
     };
     read_execution_denial(kind, subject)
+}
+
+/// Both native pinning and prepared execution forward the complete managed stop.
+/// Interruption remains a map stop instead of becoming an application read error.
+pub(in crate::domain_computation::primary_graph::application_query) fn managed_read_denial(
+    cause: crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial,
+    plan: &super::read_plan::ReadPlan<'_>,
+) -> Result<
+    super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial,
+    worth_execution::MapKernelStop,
+> {
+    use super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial as Denial;
+    use crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial as Cause;
+    match cause {
+        Cause::SnapshotUnavailable => Ok(Denial::Read(plan.snapshot_unavailable_denial())),
+        Cause::IndexNotInstalled(_) => Ok(Denial::Read(plan.predicate_unavailable_denial())),
+        Cause::RequestStop(stop) => Err(stop),
+        Cause::MutationSession
+        | Cause::ForeignBasis
+        | Cause::ForeignGraph
+        | Cause::ForeignReadProof
+        | Cause::TerminalReleaseMismatch => Ok(Denial::Session),
+    }
 }

@@ -1,13 +1,12 @@
+use crate::visibility::materialization::read_records::ProjectionRecordSource;
 use worth_foundational::facade::AspectValue;
 
 use crate::indexes::data::{
     BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenial,
     BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupOutcome,
 };
-use crate::runtime::{RelationalRuntime, VisibilityProjectionView};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::visibility::materialization::read_records::entity_query_locus_comparison_key;
-use crate::visibility::snapshot_states::SnapshotStateBasis;
 
 use super::PreparedEntityFieldLookup;
 
@@ -15,15 +14,13 @@ use super::PreparedEntityFieldLookup;
 /// retained root. Production never constructs this materialized comparison.
 pub(super) fn certify<E>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
     prepared: &PreparedEntityFieldLookup,
     value: &AspectValue,
     limit: usize,
     outcome: &BoundedEntityFieldLookupOutcome,
     admission: &mut impl FnMut() -> Result<(), E>,
 ) -> Result<(), Stop<E>> {
-    let view =
-        VisibilityProjectionView::new(runtime, SnapshotStateBasis::Exact(prepared.basis().clone()));
+    let view = prepared;
     let expected = AuthoritativeFieldComparisonKey::from_aspect_value(value);
     let mut storage_ids = Vec::new();
     view.try_for_each_entity_record(

@@ -1,7 +1,6 @@
 //! Borrow the exact successor and predecessor while caller custody is live.
 
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 impl<Schema> RequiredFreshProgress<Schema>
 where
@@ -19,18 +18,6 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn producer_contacts(&self) -> usize {
         self.successor.producer_contacts()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn advance_checkpoint(
-        &mut self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        request: &WorthQueryRequestScope,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        self.successor
-            .advance_checkpoint(phase, runtime, request, admission)
     }
 
     pub(in crate::domain_computation::primary_graph) fn is_family<Family>(&self) -> bool
@@ -59,10 +46,6 @@ where
 {
     pub(in super::super) fn installation_work(&self) -> u64 {
         self.installation_work
-    }
-
-    pub(in super::super) fn entries(&self) -> &[RequiredFreshProgress<Schema>] {
-        &self.caller.entries
     }
 
     /// Install `progress` as the last entry, ending any it supersedes.
@@ -95,23 +78,6 @@ where
         let caller = self.caller;
         caller.entries.push(progress);
         caller
-    }
-}
-
-impl<Schema> PreparedRequiredContinuationSlot<'_, Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    /// Install `progress` and take its outcome.
-    pub(in super::super) fn install(
-        self,
-        progress: RequiredFreshProgress<Schema>,
-    ) -> RequiredFreshOutcome {
-        self.push(progress)
-            .entries
-            .last_mut()
-            .expect("prepared slot installs one successor")
-            .take_outcome()
     }
 }
 

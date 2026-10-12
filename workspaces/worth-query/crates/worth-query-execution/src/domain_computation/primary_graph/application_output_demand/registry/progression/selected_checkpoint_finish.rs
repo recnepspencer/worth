@@ -96,7 +96,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(record) = state.records.get_mut(&self.interest.key) else {
+        let Some(mut record) = state.records.get_mut(&self.interest.key) else {
             return Ok(None);
         };
         if !record
@@ -105,14 +105,15 @@ impl PreparedSelectedCheckpointFinish<'_> {
             .is_some_and(|member| Arc::ptr_eq(member, &self.member))
             || !matches!(&record.state,
                 DemandState::Output(output)
-                    if matches!(output.advancement, WorthQueryOutputAdvancement::Idle)
+                    if matches!(output.advancement(), WorthQueryOutputAdvancement::Idle)
                         && matches!(&output.checkpoint,
                             Some(WorthQueryOutputCheckpoint::Published { .. }
                                 | WorthQueryOutputCheckpoint::Delivered { .. })))
         {
             return Ok(None);
         }
-        let next = super::begin_record(record, "");
+        let next = super::begin_record(&mut record, "");
+        record.finish();
         drop(state);
         match next {
             WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint } => {
@@ -134,7 +135,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(record) = state.records.get_mut(&self.interest.key) else {
+        let Some(mut record) = state.records.get_mut(&self.interest.key) else {
             return Err(SelectedCheckpointFinishStop::Returned(
                 empty_denial(WorthQueryOutputDemandDenialKind::Closed),
                 checkpoint,
@@ -156,7 +157,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 checkpoint,
             ));
         };
-        match &output.advancement {
+        match output.advancement() {
             WorthQueryOutputAdvancement::Stopped {
                 denial: stopped,
                 interrupted_claim: Some(active),
@@ -165,31 +166,27 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 if output.checkpoint.is_some() {
                     return Err(SelectedCheckpointFinishStop::Returned(stopped, checkpoint));
                 }
-                output.checkpoint = Some(checkpoint);
-                output.advancement = WorthQueryOutputAdvancement::Stopped {
-                    denial: retained_denial(&stopped),
-                    interrupted_claim: None,
-                };
+                output.install_checkpoint(checkpoint);
+                output.finish_stopped(retained_denial(&stopped));
                 record.wake.notify();
+                record.finish();
                 state.defer_terminal_cleanup(self.member.key_arc(), 0);
                 drop(state);
                 Err(SelectedCheckpointFinishStop::Restored(stopped))
             }
             WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {
-                output.checkpoint = Some(checkpoint);
+                output.install_checkpoint(checkpoint);
                 // The shared required row stops only for a stop intrinsic to
                 // it; any other stays with the advance that met it, and the
                 // row's checkpoint waits for a later claim.
                 let terminal = denial.is_some_and(super::super::required_stop::fails_row);
-                output.advancement = if terminal {
-                    WorthQueryOutputAdvancement::Stopped {
-                        denial: retained_denial(denial.expect("terminal cause exists")),
-                        interrupted_claim: None,
-                    }
+                if terminal {
+                    output.finish_stopped(retained_denial(denial.expect("terminal cause exists")));
                 } else {
-                    WorthQueryOutputAdvancement::Idle
-                };
+                    output.reopen();
+                }
                 record.wake.notify();
+                record.finish();
                 if terminal {
                     // Existing admitted cleanup destroys variable obligations
                     // and refunds their final owner after this guarded step.

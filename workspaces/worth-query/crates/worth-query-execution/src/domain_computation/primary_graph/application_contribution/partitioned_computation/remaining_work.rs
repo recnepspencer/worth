@@ -15,6 +15,8 @@ use super::super::WorthQueryManagedComputationResourceDenial;
 /// The declared work left and the work spent from it. Work is only ever
 /// spent, and only by `spend`, so the two always sum to the declared work.
 /// It is request-local: no kernel or concurrent compute spends it.
+/// Compute spends use execution's admitted receipts: the same amount settles
+/// on the enclosing member meter, including retained kernels and tree work.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct RemainingWork {
     remaining: u64,
@@ -47,6 +49,10 @@ impl RemainingWork {
             request_local: PhantomData,
         };
         Ok(())
+    }
+
+    pub(super) fn restrict(&mut self, ceiling: u64) {
+        self.remaining = self.remaining.min(ceiling);
     }
 
     /// The work a ceiling may still admit.

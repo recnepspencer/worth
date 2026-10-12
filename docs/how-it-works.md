@@ -944,8 +944,8 @@ runtime below works under that request.
   it; another runtime is refused with
   `Resource(ForeignAdvancementPhase)`. A public call that
   tries to open a second advancement on the same thread is refused with
-  `NestedOpening`. Custody is per thread, so another thread's public call
-  owns its own request.
+  `NestedOpening`. Descendant workers carry the active host's owner marker
+  and also refuse nested openings; an unrelated thread owns its own request.
 - **Seams.** A seam is a function where one runtime calls another. Every
   seam that starts computation takes the request as a required argument.
   Publishing or settling an already prepared candidate takes neither request

@@ -12,7 +12,7 @@ use worth_query_decl::facade::{
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    WorthQueryInvariantEntityIdentity, WorthQueryInvariantMutationTarget,
+    WorthQueryDecisionPlan, WorthQueryInvariantEntityIdentity, WorthQueryInvariantMutationTarget,
 };
 
 use super::facts::{
@@ -111,7 +111,10 @@ pub(super) type Decision<'borrow, 'reader, 'runtime, Schema> =
 
 /// What the handler runs over the demanded set inside its decision.
 type Run<Schema> = Box<
-    dyn Fn(&mut Decision<'_, '_, '_, Schema>, &WorthQueryInvariantEntityIdentity<Schema, EntrySet>)
+    dyn Fn(
+            &mut Decision<'_, '_, '_, Schema>,
+            &WorthQueryInvariantEntityIdentity<Schema, EntrySet>,
+        ) -> WorthQueryDecisionPlan<(), PlanarMutationDenial>
         + Send
         + Sync,
 >;
@@ -130,7 +133,8 @@ impl<Schema: TopologySchemaBinding> RegionTotalsHandler<Schema> {
         run: impl Fn(
                 &mut Decision<'_, '_, '_, Schema>,
                 &WorthQueryInvariantEntityIdentity<Schema, EntrySet>,
-            ) + Send
+            ) -> WorthQueryDecisionPlan<(), PlanarMutationDenial>
+            + Send
             + Sync
             + 'static,
     ) -> Self {
@@ -147,10 +151,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         reader: &mut Decision<'_, '_, '_, Schema>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial> {
         let decided = (|| {
-            if let Some(run) = &self.0 {
-                let set = reader.resolve_entity(EntrySetKey::reference(), input.entries.clone())?;
-                run(reader, &set);
-            }
             let scope = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
             if reader.field(&scope, PositionY::reference())?.is_none() {
                 return Ok(None);
@@ -162,6 +162,27 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
             Ok(None) => HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
+    }
+
+    fn prepare_decision(
+        &self,
+        input: &RegionTotalsDemand,
+        reader: &mut Decision<'_, '_, '_, Schema>,
+    ) -> WorthQueryDecisionPlan<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial>
+    {
+        let plan = if let Some(run) = &self.0 {
+            let set = match reader.resolve_entity(EntrySetKey::reference(), input.entries.clone()) {
+                Ok(set) => set,
+                Err(error) => {
+                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error))
+                }
+            };
+            run(reader, &set)
+        } else {
+            WorthQueryDecisionPlan::immediate(HandlerResult::Completed(()))
+        };
+        let decided = self.decide(input, reader);
+        plan.and_then(move |()| decided)
     }
 
     fn candidate_requirements(

@@ -6,16 +6,20 @@ mod aspect_version_read;
 mod aspect_versions;
 mod context;
 mod diagnostics;
+mod frontier_admission;
 mod kind_scan_visibility;
 mod native_output_probe;
 mod paid_record_walk;
+mod pinned_read;
 mod positioned_snapshot;
+mod projection_record_reader;
 mod query_execution;
 mod query_packetization;
 mod query_plan_execution;
 mod query_planning;
 mod query_preparation;
 mod query_preparation_packetization;
+pub(crate) mod record_identity_materialization;
 mod snapshot_reads;
 mod truth_access;
 mod truth_adjacency;
@@ -67,6 +71,7 @@ use super::ProjectionAspectFilter;
 const TARGET_TRAVERSAL_SEEDS_PER_PACKET: usize = 4;
 pub use context::VisibilityReadContext;
 pub(crate) use kind_scan_visibility::KindScanVisibility;
+pub use pinned_read::{RelationalPinnedRead, RelationalPinnedReadAdmissionDenial};
 pub use positioned_snapshot::{
     PositionedRelationalSnapshot, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
 };
@@ -85,3 +90,6 @@ pub use truth_relation_kind_scan::{
 
 #[cfg(test)]
 mod request_paid_truth;
+pub(crate) use projection_record_reader::ProjectionRecordReader;
+
+pub use frontier_admission::BoundedFrontierReadStop;

@@ -34,6 +34,7 @@ impl OnBusy for ClaimSlot {
     type Refusal = SlotRefusal;
 
     fn busy() -> Result<(), SlotRefusal> {
+        // The dispatcher absorbs this answer by running with fewer workers.
         Err(SlotRefusal::WorkersBusy)
     }
 }

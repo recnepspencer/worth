@@ -22,7 +22,10 @@ fn exhausted_native_fact_reads_preserve_the_request_stop() {
                 unreachable!()
             };
             let entity = candidates[0];
-            let view = runtime.read_truth().project_snapshot(snapshot).unwrap();
+            let view = runtime
+                .read_truth()
+                .project_snapshot(snapshot, &execution)
+                .unwrap();
             let revision = view
                 .entity_field_revision(execution, entity, locator)
                 .unwrap();

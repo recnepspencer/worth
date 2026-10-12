@@ -196,7 +196,7 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
     let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".to_owned()));
     let projected = recovered
         .read_truth()
-        .project_snapshot(&snapshot)
+        .project_snapshot(&snapshot, execution)
         .unwrap()
         .bounded_outgoing_relations_for_frontier(
             execution,

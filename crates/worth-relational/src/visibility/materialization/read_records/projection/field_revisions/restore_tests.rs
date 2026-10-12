@@ -35,7 +35,7 @@ fn checkpoint_restore_preserves_exact_field_revision() {
     let name = locator("name", "name");
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap()
         .entity_field_revision(execution, entity, &name)
         .expect("read request remains live")
@@ -54,7 +54,7 @@ fn checkpoint_restore_preserves_exact_field_revision() {
     assert_eq!(
         recovered
             .read_truth()
-            .project_snapshot(&snapshot)
+            .project_snapshot(&snapshot, execution)
             .unwrap()
             .entity_field_revision(execution, entity, &name)
             .expect("read request remains live"),
@@ -74,7 +74,7 @@ fn checkpoint_restore_preserves_exact_field_revision() {
     assert_eq!(
         reopened
             .read_truth()
-            .project_snapshot(&reopened_snapshot)
+            .project_snapshot(&reopened_snapshot, execution)
             .unwrap()
             .entity_field_revision(execution, entity, &name)
             .expect("read request remains live"),
@@ -116,7 +116,7 @@ fn checkpoint_restore_preserves_relation_field_revision() {
     let label = locator("label", "label");
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap()
         .relation_field_revision(execution, relation, &label)
         .expect("read request remains live")
@@ -136,7 +136,7 @@ fn checkpoint_restore_preserves_relation_field_revision() {
     assert_eq!(
         recovered
             .read_truth()
-            .project_snapshot(&snapshot)
+            .project_snapshot(&snapshot, execution)
             .unwrap()
             .relation_field_revision(execution, relation, &label)
             .expect("read request remains live"),
@@ -318,7 +318,7 @@ fn field_at(
 ) -> Option<RelationalFieldRevision> {
     runtime
         .read_truth()
-        .project_snapshot(snapshot)?
+        .project_snapshot(snapshot, execution)?
         .entity_field_revision(execution, entity, locator)
         .expect("read request remains live")
 }

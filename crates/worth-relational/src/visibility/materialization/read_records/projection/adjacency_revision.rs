@@ -40,7 +40,7 @@ impl AdjacencyStructuralRevision {
     }
 }
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     pub fn bounded_adjacency_structural_revision(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -107,7 +107,7 @@ mod tests {
         let revision_at = |snapshot| {
             let view = runtime
                 .read_truth()
-                .project_snapshot(snapshot)
+                .project_snapshot(snapshot, execution)
                 .expect("commit snapshot remains readable");
             let revision = view
                 .bounded_adjacency_structural_revision(
@@ -141,7 +141,7 @@ mod tests {
         );
         let deleted_view = runtime
             .read_truth()
-            .project_snapshot(&deletion_commit.snapshot)
+            .project_snapshot(&deletion_commit.snapshot, execution)
             .expect("deleted-relation snapshot remains readable");
         assert_eq!(
             deleted_view.bounded_adjacency_structural_revision(
@@ -197,7 +197,7 @@ mod tests {
         assert_eq!(
             recovered
                 .read_truth()
-                .project_snapshot(&recovered_snapshot)
+                .project_snapshot(&recovered_snapshot, execution)
                 .expect("recovered main basis is readable")
                 .bounded_adjacency_structural_revision(
                     execution,

@@ -3,7 +3,7 @@ use std::mem::size_of;
 use worth_foundational::{ExecutionPhysicalReport, ExecutionReport};
 
 use crate::{
-    authority::ExecutionResourceLease,
+    authority::{ExecutionResourceLease, LeaseDenial},
     backend::{enter_certification_activity, enter_retained_memory, run_scope, BackendKind},
     oracle::{compare_canonical_values, CanonicalBits, OracleMismatch},
     report::ChargedBytes,
@@ -59,6 +59,8 @@ where
             + Clone
             + Sync,
     {
+        self.check_changed(changed, editions)
+            .map_err(DecomposeCertificationFailure::Run)?;
         let activity = enter_certification_activity();
         let snapshot_bytes = self
             .snapshot
@@ -85,9 +87,8 @@ where
                         .checked_mul(if self.snapshot.is_some() { 2 } else { 1 })?,
                 )
             })
-            .ok_or(DecomposeCertificationFailure::Mismatch(
-                OracleMismatch::Stop,
-            ))?;
+            .ok_or_else(LeaseDenial::charged_bytes_overflow)
+            .map_err(|_| DecomposeCertificationFailure::Mismatch(OracleMismatch::Stop))?;
         let oracle_retention = lease
             .reserve_retained_memory(clone_bytes)
             .map_err(|_| DecomposeCertificationFailure::Mismatch(OracleMismatch::Stop))?;

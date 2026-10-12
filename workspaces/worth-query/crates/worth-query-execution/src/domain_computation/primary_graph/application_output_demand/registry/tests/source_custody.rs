@@ -6,7 +6,8 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
     source_custody::root_revision_order, BoundOutputSource, PreparedOutputRootKind, SourceCustody,
 };
 
-fn real_scope_and_occurrence() -> (
+pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn real_scope_and_occurrence(
+) -> (
     crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     worth_runtime_world::facade::ProductBranchIncarnation,
 ) {
@@ -63,6 +64,7 @@ fn newer_root_retires_only_its_matching_source() {
         retired_sources: Vec::new(),
         retired: None,
         token_count: 0,
+        cleanup: Default::default(),
         completed: false,
     };
     custody.retire_superseded_roots(&[newer, sibling.clone()]);
@@ -78,99 +80,117 @@ fn newer_root_retires_only_its_matching_source() {
 }
 
 #[test]
-fn completed_multi_root_custody_waits_for_token_and_active_record() {
-    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
-    let commit = receipt
-        .committed_product_publication()
-        .composite_commit()
-        .clone();
-    let occurrence = receipt.product_branch().occurrence();
-    let (scope, _) = real_scope_and_occurrence();
-    let first = BoundOutputSource {
-        scope,
-        identity: key("producer", 5, 1).source,
-    };
-    let second = BoundOutputSource {
-        scope,
-        identity: key("producer", 5, 2).source,
-    };
-    let mut state = DemandRegistryState::default();
-    state.source_custody.insert(
-        commit.clone(),
-        SourceCustody {
-            occurrence,
-            root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
-            source: None,
-            discovery: None,
-            bound_sources: Some(vec![first.clone(), second.clone()]),
-            consumed_sources: vec![first.identity.clone(), second.identity.clone()],
-            retired_sources: Vec::new(),
-            retired: None,
-            token_count: 1,
-            completed: true,
-        },
-    );
-    state.prune_completed_custody();
-    assert_eq!(state.source_custody.len(), 1);
-    state.source_custody.get_mut(&commit).unwrap().token_count = 0;
-    let demand_key = key("producer", 5, 1);
-    let mut active = record(occurrence, DemandState::Admitted, 1);
-    active.source_commits.push(commit.clone());
-    state.records.insert(demand_key.clone(), active);
-    state.prune_completed_custody();
-    assert_eq!(state.source_custody.len(), 1);
-    let record = state.records.get_mut(&demand_key).unwrap();
-    record.interests = 0;
-    record.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::NoEffect,
-        "terminal source",
-    ));
-    state.prune_completed_custody();
-    assert!(state.source_custody.is_empty());
+fn registry_custody_waits_for_its_token_without_an_active_record() {
+    for superseded in [false, true] {
+        custody_wait(superseded, true);
+    }
 }
 
 #[test]
-fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
-    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+fn registry_custody_waits_for_its_active_record_without_a_token() {
+    for superseded in [false, true] {
+        custody_wait(superseded, false);
+    }
+}
+
+fn custody_wait(superseded: bool, token: bool) {
+    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support
+        ::committed_recoverable_application();
     let commit = receipt
         .committed_product_publication()
         .composite_commit()
         .clone();
     let (scope, _) = real_scope_and_occurrence();
-    let first = BoundOutputSource {
-        scope,
-        identity: key("producer", 5, 1).source,
-    };
-    let second = BoundOutputSource {
-        scope,
-        identity: key("producer", 5, 2).source,
-    };
-    let superseded = WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::Superseded,
-        "newer source owns this root",
-    );
-    let mut state = DemandRegistryState::default();
-    state.source_custody.insert(
-        commit.clone(),
-        SourceCustody {
-            occurrence: receipt.product_branch().occurrence(),
-            root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
-            source: None,
-            discovery: None,
-            bound_sources: Some(vec![first.clone(), second.clone()]),
-            consumed_sources: Vec::new(),
-            retired_sources: vec![
-                (first.identity.clone(), superseded.clone()),
-                (second.identity.clone(), superseded),
-            ],
-            retired: None,
-            token_count: 1,
-            completed: false,
+    let registry = WorthQueryOutputDemandRegistry::default();
+    let selected = key("producer", 5, 1);
+    let sources = vec![
+        BoundOutputSource {
+            scope,
+            identity: selected.source.clone(),
         },
-    );
-    state.prune_completed_custody();
-    assert_eq!(state.source_custody.len(), 1);
-    state.source_custody.get_mut(&commit).unwrap().token_count = 0;
-    state.prune_completed_custody();
+        BoundOutputSource {
+            scope,
+            identity: key("producer", 5, 2).source,
+        },
+    ];
+    {
+        let mut state = registry.state.lock().unwrap();
+        state.source_custody.insert(
+            commit.clone(),
+            SourceCustody {
+                occurrence: receipt.product_branch().occurrence(),
+                root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
+                source: None,
+                discovery: None,
+                consumed_sources: sources
+                    .iter()
+                    .map(|source| source.identity.clone())
+                    .collect(),
+                retired_sources: if superseded {
+                    sources
+                        .iter()
+                        .map(|source| {
+                            (
+                                source.identity.clone(),
+                                WorthQueryOutputDemandDenial::new(
+                                    WorthQueryOutputDemandDenialKind::Superseded,
+                                    "newer source",
+                                ),
+                            )
+                        })
+                        .collect()
+                } else {
+                    Vec::new()
+                },
+                bound_sources: Some(sources),
+                retired: None,
+                token_count: usize::from(token),
+                cleanup: Default::default(),
+                completed: !superseded,
+            },
+        );
+        let mut active = record(
+            receipt.product_branch().occurrence(),
+            DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::NoEffect,
+                "terminal source",
+            )),
+            usize::from(!token),
+        );
+        active.source_commits.push(commit.clone());
+        state.records.insert(selected.clone(), active);
+    }
+    registry.complete_prepared_source(&receipt);
+    registry
+        .state
+        .lock()
+        .unwrap()
+        .drain_completed_custody(&mut record_admission())
+        .unwrap();
+    {
+        let state = registry.state.lock().unwrap();
+        assert_eq!(state.source_custody.len(), 1);
+        assert!(state.source_custody[&commit].cleanup.queued);
+    }
+    if token {
+        registry.release_prepared_token(&commit);
+    } else {
+        let notifications = Arc::clone(&registry.state.lock().unwrap().records[&selected].wake);
+        drop(interest(&registry, selected.clone(), notifications));
+    }
+    registry
+        .state
+        .lock()
+        .unwrap()
+        .drain_completed_custody(&mut record_admission())
+        .unwrap();
+    let state = registry.state.lock().unwrap();
     assert!(state.source_custody.is_empty());
+    assert!(state
+        .records
+        .values()
+        .all(|row| row.source_commits.is_empty()));
+    assert!(!state.pending_custody_prune());
 }
+
+mod retained_proofs;

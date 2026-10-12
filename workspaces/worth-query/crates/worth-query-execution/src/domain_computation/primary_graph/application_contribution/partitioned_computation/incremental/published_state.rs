@@ -155,7 +155,7 @@ impl WorthQueryPublishedComputationStateForTest {
                 b.partitions.get(identity).is_some_and(|next| {
                     same_key(&partition.key, &next.key)
                         && partition.key_bytes == next.key_bytes
-                        && partition.kernel_units == next.kernel_units
+                        && partition.kernel_steps == next.kernel_steps
                         && a.tree.leaf(*identity).map(bits) == b.tree.leaf(*identity).map(bits)
                 })
             })

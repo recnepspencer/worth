@@ -40,7 +40,7 @@ pub(super) fn ceiling() -> u64 {
         bits: 2.5_f64.to_bits(),
         read: OwnWriteRead::Blind,
     }));
-    let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         policy.charged_memory_bytes(),

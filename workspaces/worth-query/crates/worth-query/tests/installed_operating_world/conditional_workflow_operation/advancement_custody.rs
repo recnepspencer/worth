@@ -44,13 +44,22 @@ fn deferred_start_retry_opens_before_the_same_condition_reader() {
             };
             (workspace, deferred)
         },
-        |deferred, workspace| match deferred.retry(workspace) {
-            TransitionOutcome::Deferred(_) => None,
-            TransitionOutcome::Denied(denial) => match denial.kind() {
-                domain::WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause) => Some(*cause),
-                other => panic!("unexpected retry denial: {other:?}"),
-            },
-            _ => panic!("the same admitted condition remains deferred"),
+        |deferred, workspace| {
+            let counters = deferred.counters();
+            assert_ne!(counters, Default::default());
+            match deferred.retry(workspace) {
+                TransitionOutcome::Deferred(_) => None,
+                TransitionOutcome::Denied(denial) => {
+                    assert_eq!(denial.counters(), counters);
+                    match denial.kind() {
+                        domain::WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause) => {
+                            Some(*cause)
+                        }
+                        other => panic!("unexpected retry denial: {other:?}"),
+                    }
+                }
+                _ => panic!("the same admitted condition remains deferred"),
+            }
         },
     );
 }

@@ -209,7 +209,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
                 .query(PlanarRead {
                     body_key: "anchor-a".to_owned()
                 })
-                .execute()
+                .execute_in_advancement(&host_phase)
                 .unwrap()
                 .rows()[0]
                 .clone())

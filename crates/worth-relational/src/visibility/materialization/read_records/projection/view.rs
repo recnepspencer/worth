@@ -7,19 +7,16 @@ use super::contracts::{assert_declared_projection_aspects, ProjectionAspectScope
 use super::projection_records::{EntityRecordProjection, RelationRecordProjection};
 
 #[derive(Debug, Clone)]
-pub struct VisibilityProjectionView<'runtime> {
-    pub(super) runtime: &'runtime RelationalRuntime,
+pub struct VisibilityProjectionView {
+    pub(super) runtime_identity: u64,
+    pub(super) current_version: VersionId,
+    pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
+    pub(super) symbols: crate::symbols::data::StringInterner,
+    pub(super) schema: super::schema_custody::ProjectionSchemaCustody,
     pub(super) basis: crate::visibility::snapshot_states::SnapshotStateBasis,
 }
 
-impl<'runtime> VisibilityProjectionView<'runtime> {
-    pub(crate) fn new(
-        runtime: &'runtime RelationalRuntime,
-        basis: crate::visibility::snapshot_states::SnapshotStateBasis,
-    ) -> Self {
-        Self { runtime, basis }
-    }
-
+impl VisibilityProjectionView {
     pub const fn version_id(&self) -> VersionId {
         self.basis.version_id()
     }
@@ -38,11 +35,7 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
     }
 
     pub(crate) fn is_from_runtime(&self, runtime: &RelationalRuntime) -> bool {
-        std::ptr::eq(self.runtime, runtime)
-    }
-
-    pub(crate) fn selected_branch_id(&self) -> &crate::history::data::BranchId {
-        self.basis.branch_id()
+        self.runtime_identity == runtime.runtime_instance_id()
     }
 
     pub(crate) fn selected_schema_authority(
@@ -51,8 +44,11 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         self.basis.root().map(|root| root.schema_authority())
     }
 
-    pub(super) fn reader(&self) -> VisibilityReadContext<'runtime> {
-        VisibilityReadContext::new(self.runtime)
+    pub(super) fn reader(&self) -> super::super::reader::ProjectionRecordReader<'_> {
+        super::super::reader::ProjectionRecordReader::new(
+            self.current_version,
+            &self.instrumentation,
+        )
     }
 
     pub(super) fn assert_entity_projection_contract<T: EntityRecordProjection>(
@@ -144,10 +140,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         branch_id: &crate::history::data::BranchId,
         version_id: VersionId,
-    ) -> Result<
-        Option<VisibilityProjectionView<'runtime>>,
-        crate::branch::RelationalBranchBasisDenial,
-    > {
+    ) -> Result<Option<VisibilityProjectionView>, crate::branch::RelationalBranchBasisDenial> {
         let basis = crate::visibility::snapshot_states::VisibilitySnapshotBasis::capture_current(
             self.runtime(),
             branch_id,
@@ -164,7 +157,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub(crate) fn project_historical_version(
         &self,
         version_id: VersionId,
-    ) -> VisibilityProjectionView<'runtime> {
+    ) -> VisibilityProjectionView {
         self.try_project_historical_version(version_id)
             .expect("internal historical projection requires retained MVCC coverage")
     }
@@ -174,8 +167,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn try_project_historical_version(
         &self,
         version_id: VersionId,
-    ) -> Result<VisibilityProjectionView<'runtime>, crate::branch::RelationalBranchBasisDenial>
-    {
+    ) -> Result<VisibilityProjectionView, crate::branch::RelationalBranchBasisDenial> {
         let basis = crate::visibility::cache_state::historical_basis_for_retained_version(
             self.runtime(),
             version_id,
@@ -192,8 +184,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         commit_id: crate::history::data::CommitId,
         branch_id: crate::history::data::BranchId,
         version_id: VersionId,
-    ) -> Result<VisibilityProjectionView<'runtime>, crate::branch::RelationalBranchBasisDenial>
-    {
+    ) -> Result<VisibilityProjectionView, crate::branch::RelationalBranchBasisDenial> {
         let basis =
             crate::visibility::snapshot_states::HistoricalVisibilityBasis::resolve_retained_commit(
                 self.runtime(),
@@ -211,7 +202,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn project_snapshot(
         &self,
         handle: &SnapshotHandle,
-    ) -> Option<VisibilityProjectionView<'runtime>> {
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Option<VisibilityProjectionView> {
         let basis =
             crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime(), handle)?;
         if basis.root().has_materialization_unavailable() {

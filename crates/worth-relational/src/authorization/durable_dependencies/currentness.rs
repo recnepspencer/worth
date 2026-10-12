@@ -34,7 +34,7 @@ impl RelationalAuthorizationDurableDependencies {
         }
         let view = runtime
             .read_truth()
-            .project_snapshot(snapshot)
+            .project_snapshot(snapshot, execution)
             .ok_or(Denial::SnapshotUnavailable)?;
         if !view.is_exact_basis() {
             return Err(Denial::InexactSnapshot);
@@ -103,7 +103,7 @@ impl RelationalAuthorizationDurableDependencies {
 
 fn field_revision_matches(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &crate::visibility::materialization::read_records::VisibilityProjectionView<'_>,
+    view: &crate::visibility::materialization::read_records::VisibilityProjectionView,
     field: &FieldDependency,
 ) -> Result<bool, Denial> {
     let locator = AspectFieldLocator::new(

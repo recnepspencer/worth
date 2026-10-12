@@ -39,12 +39,17 @@ impl DemandRegistryState {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let levels = ordered_levels(count)?;
-        let comparisons = levels.checked_mul(count.min(11)).ok_or_else(work_denial)?;
-        // The installed ledger bounds payload comparisons independently of occupancy.
-        let comparison_work = key.comparison_work().ok_or_else(work_denial)?;
-        let payload_comparisons = ordered_levels(self.record_budget_bytes.max(1))?
-            .checked_mul(11)
+        let comparisons = super::super::key_comparison::ordered_comparisons(levels, count)
             .ok_or_else(work_denial)?;
+        // The installed ledger bounds payload comparisons independently of occupancy.
+        let comparison_work = super::super::key_comparison::comparison_work([key])
+            .ok_or_else(work_denial)?
+            .maximum;
+        let payload_comparisons = super::super::key_comparison::ordered_comparisons(
+            ordered_levels(self.record_budget_bytes.max(1))?,
+            usize::MAX,
+        )
+        .ok_or_else(work_denial)?;
         let work = payload_comparisons
             .checked_mul(comparison_work.saturating_sub(1))
             .ok_or_else(work_denial)?;

@@ -11,7 +11,7 @@ use worth_foundational::facade::{
 
 pub(super) fn live<A: RelationalAuthorizationObservationAdmission>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    context: &Context<'_, '_, '_>,
+    context: &Context<'_, '_>,
     entity: EntityId,
     kind: KindId,
     state: &mut State<'_, A>,
@@ -31,7 +31,7 @@ pub(super) fn live<A: RelationalAuthorizationObservationAdmission>(
 
 pub(super) fn observe<A: RelationalAuthorizationObservationAdmission>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    context: &Context<'_, '_, '_>,
+    context: &Context<'_, '_>,
     entity: EntityId,
     kind: KindId,
     locator: &AspectFieldLocator,

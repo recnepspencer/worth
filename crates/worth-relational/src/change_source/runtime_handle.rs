@@ -1,4 +1,6 @@
 use std::sync::{Arc, Mutex};
+mod lock_observation;
+pub use lock_observation::RelationalRuntimeLockObservationForTest;
 
 use crate::runtime::RelationalRuntime;
 
@@ -22,6 +24,7 @@ use crate::runtime::RelationalRuntime;
 pub struct RelationalRuntimeHandle {
     ownership: RuntimeOwnership,
     runtime_instance_id: u64,
+    lock_observation: Arc<lock_observation::LockObservationSlot>,
 }
 
 #[derive(Clone)]
@@ -36,6 +39,7 @@ impl RelationalRuntimeHandle {
         Self {
             runtime_instance_id: runtime.runtime_instance_id(),
             ownership: RuntimeOwnership::Immutable(runtime),
+            lock_observation: Arc::default(),
         }
     }
 
@@ -47,6 +51,7 @@ impl RelationalRuntimeHandle {
             .runtime_instance_id();
         Self {
             ownership: RuntimeOwnership::Shared(runtime),
+            lock_observation: Arc::default(),
             runtime_instance_id,
         }
     }
@@ -60,9 +65,20 @@ impl RelationalRuntimeHandle {
                 let runtime = runtime
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
+                self.lock_observation.record();
                 read(&runtime)
             }
         }
+    }
+
+    /// Observe acquisitions made through this handle and all its clones.
+    /// The returned guard owns the listener; dropping it ends observation.
+    #[doc(hidden)]
+    pub fn observe_locks_for_test(
+        &self,
+        acquired: impl Fn() + Send + Sync + 'static,
+    ) -> RelationalRuntimeLockObservationForTest {
+        self.lock_observation.install(acquired)
     }
 
     /// The instance id of the handled runtime. Read once when the handle is

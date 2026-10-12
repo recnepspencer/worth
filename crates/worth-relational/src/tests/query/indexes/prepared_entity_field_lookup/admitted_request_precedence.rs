@@ -6,7 +6,7 @@ use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, 
 
 pub(super) fn assert_admitted_request_precedence(
     runtime: &RelationalRuntime,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     prepared: &PreparedEntityFieldLookup,
     parity: BoundedIndexParityMode,
     expected: &[EntityId],

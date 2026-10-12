@@ -191,16 +191,6 @@ where
     ) -> &'borrow QueryRequestExecution<'borrow> {
         self.execution
     }
-
-    pub fn managed_computation_execution(
-        &self,
-    ) -> crate::domain_computation::primary_graph::WorthQueryManagedComputationExecution<'_> {
-        self.context_use
-            .set(self.context_use.get().managed_computation());
-        crate::domain_computation::primary_graph::WorthQueryManagedComputationExecution::new(
-            self.execution,
-        )
-    }
 }
 use std::cell::Cell;
 

@@ -32,7 +32,7 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
         crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let current = request.at(&retained);
     let maximum_work = NonZeroUsize::new(4_096).unwrap();
-    let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         for zero_memory in [false, true] {
@@ -90,3 +90,5 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
         }
     }
 }
+
+// Custody probes share this module's existing observer boundary.

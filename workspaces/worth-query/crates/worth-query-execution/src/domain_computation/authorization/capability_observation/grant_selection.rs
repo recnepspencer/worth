@@ -68,6 +68,8 @@ fn lookup_candidate_grants(
         MAX_BOUNDED_INDEX_CANDIDATES,
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
+    #[cfg(test)]
+    late_cancellation::cancel_at_join();
     let lookup = relational
         .index_access()
         .execute_bounded_relation_join_lookup(
@@ -75,12 +77,9 @@ fn lookup_candidate_grants(
             BoundedIndexParityMode::Production,
             execution,
         )
-        .map_err(|denied| {
-            if let worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind::Execution(cause)=denied.kind() {
-                return super::super::denial::relational_read_denial(cause,installed.contract().name());
-            }
+        .map_err(|refusal| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::RelationalObservationRejected),
+                grant_lookup_denial_kind(refusal.kind()),
                 installed.contract().name(),
             )
         })?;
@@ -284,3 +283,31 @@ fn denial(
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(kind, subject)
 }
+
+#[cfg(test)]
+#[path = "grant_selection/late_cancellation.rs"]
+pub(in crate::domain_computation) mod late_cancellation;
+
+fn grant_lookup_denial_kind(
+    refusal: worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind,
+) -> WorthQueryOperationAuthorizationDenialKind {
+    use worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind as Kind;
+    use WorthQueryOperationAuthorizationDenialKind as Denial;
+    match refusal {
+        Kind::Execution(cause) => Denial::Stopped(
+            crate::facade::primary_graph::relational_execution_kind(cause, None),
+        ),
+        Kind::InvalidCandidateLimit
+        | Kind::SnapshotUnavailable
+        | Kind::IndexNotInstalled
+        | Kind::WrongIndexKind
+        | Kind::ExactGenerationUnavailable
+        | Kind::CorruptIndexEntries
+        | Kind::StorageParityMismatch => {
+            Denial::Refused(AuthorizationRefusal::RelationalObservationRejected)
+        }
+    }
+}
+#[cfg(test)]
+#[path = "grant_selection/denial_tests.rs"]
+mod denial_tests;

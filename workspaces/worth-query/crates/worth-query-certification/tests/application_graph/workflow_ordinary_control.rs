@@ -103,10 +103,10 @@ fn assert_condition_path_parity(expected_positive: bool) {
                 .expect("ordinary condition draft binds")
                 .publish(WorkflowDefinitionExpectedPredecessor::Absent)
                 .idempotency(&919_010)
-                .execute()
-                .expect("ordinary condition publication prepares")
         })
         .expect("installed host call opens")
+        .execute()
+        .expect("ordinary condition publication prepares")
     {
         WorkflowDefinitionPublicationOutcome::Published(performed) => performed,
         other => panic!("ordinary definition did not publish: {other:?}"),

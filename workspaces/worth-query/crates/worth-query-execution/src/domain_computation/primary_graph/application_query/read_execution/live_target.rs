@@ -46,6 +46,22 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
             plan.query.name(),
         )
     })?;
+    let identity = live.target_identity();
+    let (entity, aspect, field) = (identity.entity(), identity.aspect(), identity.field());
+    let extra = graph
+        .equality_field(entity, aspect, field)
+        .and_then(|layout| layout.equality_index_id)
+        .into_iter()
+        .collect::<Vec<_>>();
+    let pinned = super::pin_runtime_read(
+        runtime,
+        execution,
+        graph,
+        &super::read_plan::ReadPlan::of(plan),
+        &extra,
+        WorthQueryApplicationReadExecutionDenialKind::TargetIdentityIndexUnavailable,
+    )?;
+    let runtime = &pinned;
     let selection = select_bounded_roots(
         runtime,
         execution,
@@ -177,7 +193,7 @@ fn resolve_live_target<
     PrincipalIdentity,
     Scope,
 >(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
@@ -268,7 +284,7 @@ fn resolve_live_target<
 }
 
 fn execute_governed_live_target_lookup(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     _projection: crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationInternalProjectionAdmission<'_>,
     request: BoundedEntityFieldLookupRequest,
@@ -276,7 +292,7 @@ fn execute_governed_live_target_lookup(
     worth_relational::facade::indexes::BoundedEntityFieldLookupOutcome,
     worth_relational::facade::indexes::BoundedEntityFieldLookupDenial,
 > {
-    runtime.index_access().execute_bounded_entity_field_lookup(
+    runtime.execute_bounded_entity_field_lookup(
         request,
         BoundedIndexParityMode::Production,
         execution,

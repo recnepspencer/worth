@@ -72,7 +72,7 @@ impl RootPathSourceBuilder {
     pub(super) fn observe_guard_field(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        projection: &VisibilityProjectionView<'_>,
+        projection: &VisibilityProjectionView,
         graph: &WorthQueryPrimaryGraphLayout,
         entity: EntityId,
         entity_name: &str,
@@ -111,7 +111,7 @@ impl RootPathSourceBuilder {
     pub(super) fn observe_adjacencies(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        projection: &VisibilityProjectionView<'_>,
+        projection: &VisibilityProjectionView,
         anchor: EntityId,
         relation_kind: KindId,
         direction: RelationalAdjacencyDirection,

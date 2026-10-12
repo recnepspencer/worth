@@ -13,11 +13,11 @@ fn exact_snapshot_retirement_is_metadata_only_and_does_not_change_live_projectio
     let deleted = delete_entity(execution, &runtime, entity);
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot)
+        .project_snapshot(&created.snapshot, execution)
         .unwrap();
     let after = runtime
         .read_truth()
-        .project_snapshot(&deleted.snapshot)
+        .project_snapshot(&deleted.snapshot, execution)
         .unwrap();
     assert!(before.entity_retirement(entity).is_none());
     let retirement = after.entity_retirement(entity).unwrap();
@@ -56,6 +56,6 @@ fn exact_snapshot_retirement_is_metadata_only_and_does_not_change_live_projectio
     let foreign = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     assert!(foreign
         .read_truth()
-        .project_snapshot(&deleted.snapshot)
+        .project_snapshot(&deleted.snapshot, execution)
         .is_none());
 }

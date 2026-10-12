@@ -31,6 +31,8 @@ pub(super) fn validate<Schema, Entity>(
         2,
     )
     .map_err(|rejected| super::map_index_denial(rejected.kind(), identity.entity_name()))?;
+    #[cfg(test)]
+    super::interruption_control::cancel_before_lookup_for_test();
     let lookup = truth
         .relational
         .index_access()

@@ -167,9 +167,9 @@ impl WorthQueryRuntime {
         >,
     ) -> Result<
         WorthQuerySnapshotIdentity,
-        worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     > {
-        let execution = phase.execution_request_for(&self.installed_product.world)?;
+        let execution = phase.checked_execution_request_for(&self.installed_product.world)?;
         Ok(self.current_snapshot_identity_with_request(&execution))
     }
 
@@ -201,8 +201,8 @@ impl WorthQueryRuntime {
         inputs: Vec<WorthQueryOperationInput>,
     ) -> Result<WorthQueryRunReceipt, WorthQueryRuntimeError> {
         let execution = phase
-            .execution_request_for(&self.installed_product.world)
-            .map_err(WorthQueryRuntimeError::ForeignPhase)?;
+            .checked_execution_request_for(&self.installed_product.world)
+            .map_err(WorthQueryRuntimeError::Advancement)?;
         self.run_operation_with_request(&execution, operation, inputs)
     }
 

@@ -30,7 +30,7 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
     );
     let created_record = runtime
         .read_truth()
-        .project_snapshot(created_observation.snapshot_handle())
+        .project_snapshot(created_observation.snapshot_handle(), execution)
         .expect("retained handle resolves")
         .all_authoritative_entity_records(execution)
         .expect("read request remains live")
@@ -46,7 +46,7 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
         .expect("updated commit publication remains retained after deletion");
     let updated_record = runtime
         .read_truth()
-        .project_snapshot(updated_observation.snapshot_handle())
+        .project_snapshot(updated_observation.snapshot_handle(), execution)
         .expect("retained update handle resolves")
         .all_authoritative_entity_records(execution)
         .expect("read request remains live")
@@ -154,7 +154,7 @@ fn exact_commit_snapshot_capacity_defers_movement_until_explicit_release() {
     assert_eq!(runtime.current_version_id(), version_before);
     runtime
         .read_truth()
-        .project_snapshot(&first.snapshot)
+        .project_snapshot(&first.snapshot, execution)
         .expect("capacity denial cannot invalidate the retained publication");
 
     runtime

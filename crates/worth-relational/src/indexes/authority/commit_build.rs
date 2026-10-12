@@ -74,19 +74,23 @@ impl<'runtime> IndexAuthority<'runtime> {
             choose_index_preparation_strategy(self.runtime, lease, present_indexes.len());
         record_index_preparation_strategy_counters(self.runtime, present_indexes.len(), &strategy);
 
-        let selected_projection =
-            match IndexBuildProjection::select(self.runtime, &source_branch_id, version_id) {
-                Ok(projection) => projection,
-                Err(denial) => {
-                    failed_indexes.extend(present_indexes.iter().copied());
-                    return failed_build_outcome(
-                        request.source_commit_id,
-                        generations,
-                        failed_indexes,
-                        Some(denial),
-                    );
-                }
-            };
+        let selected_projection = match IndexBuildProjection::select(
+            execution,
+            self.runtime,
+            &source_branch_id,
+            version_id,
+        ) {
+            Ok(projection) => projection,
+            Err(denial) => {
+                failed_indexes.extend(present_indexes.iter().copied());
+                return failed_build_outcome(
+                    request.source_commit_id,
+                    generations,
+                    failed_indexes,
+                    Some(denial),
+                );
+            }
+        };
         let Some(projection) = selected_projection
             .as_ref()
             .and_then(IndexBuildProjection::source)

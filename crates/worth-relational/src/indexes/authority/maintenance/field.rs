@@ -55,8 +55,8 @@ pub(super) fn refresh(
     pending: &mut [PendingField],
     patch_changes: Option<&ChangedRecords>,
     cold_changes: Option<&ChangedRecords>,
-    before: Option<&VisibilityProjectionView<'_>>,
-    after: &VisibilityProjectionView<'_>,
+    before: Option<&VisibilityProjectionView>,
+    after: &VisibilityProjectionView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     for (patch, changes, old) in [(true, patch_changes, before), (false, cold_changes, None)] {
@@ -123,8 +123,8 @@ fn refresh_entities(
     pending: &mut [PendingField],
     patch: bool,
     changed: &std::collections::BTreeSet<EntityId>,
-    before: Option<&VisibilityProjectionView<'_>>,
-    after: &VisibilityProjectionView<'_>,
+    before: Option<&VisibilityProjectionView>,
+    after: &VisibilityProjectionView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     work.prepare(pending.len() as u64, 0)?;
@@ -197,8 +197,8 @@ fn refresh_relations(
     pending: &mut [PendingField],
     patch: bool,
     changed: &std::collections::BTreeSet<RelationId>,
-    before: Option<&VisibilityProjectionView<'_>>,
-    after: &VisibilityProjectionView<'_>,
+    before: Option<&VisibilityProjectionView>,
+    after: &VisibilityProjectionView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     work.prepare(pending.len() as u64, 0)?;
@@ -303,7 +303,7 @@ fn prepare_key_comparison(
 }
 
 fn entity_key(
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     record: Option<&EntityReadRecord>,
     locator: &AspectFieldLocator,
 ) -> Option<(AuthoritativeFieldComparisonKey, EntityId)> {
@@ -319,7 +319,7 @@ fn entity_key(
 }
 
 fn relation_key(
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     record: Option<&RelationReadRecord>,
     locator: &AspectFieldLocator,
 ) -> Option<(AuthoritativeFieldComparisonKey, RelationId)> {

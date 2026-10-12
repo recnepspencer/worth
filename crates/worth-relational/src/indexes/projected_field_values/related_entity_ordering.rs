@@ -37,7 +37,7 @@ impl<'definition> RelatedEntityOrderingProjection<'definition> {
 
 pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     contract: &RelatedEntityOrderingProjection<'_>,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
 ) -> Result<
@@ -147,7 +147,7 @@ pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
 
 pub(in crate::indexes) fn build_related_entity_ordering_index(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &IndexProjectionSource<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
     contract: &RelatedEntityOrderingProjection<'_>,
 ) -> Result<
     BTreeMap<crate::identity::data::EntityId, Vec<RelatedEntityOrderingEntry>>,

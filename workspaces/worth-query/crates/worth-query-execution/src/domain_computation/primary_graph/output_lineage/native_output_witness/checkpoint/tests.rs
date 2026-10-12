@@ -101,7 +101,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         }
         assert!(facts.len() > 1, "the real installed output has aspects");
         let original_source = truth
-            .project_snapshot(&before)
+            .project_snapshot(&before, request_execution)
             .unwrap()
             .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status).expect("fixture read request remains live")
             .unwrap();
@@ -240,7 +240,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let after = snapshot(runtime);
         let after_source = runtime
             .read_truth()
-            .project_snapshot(&after)
+            .project_snapshot(&after, request_execution)
             .unwrap()
             .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status).expect("fixture read request remains live")
             .unwrap();

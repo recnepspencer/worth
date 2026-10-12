@@ -4,10 +4,13 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
+mod completion;
+mod preparation;
+pub(in crate::domain_computation::primary_graph) use completion::PreparedMutationHandler;
+
 use super::{
-    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult,
-    WorthQueryCompletedMutationCandidate, WorthQueryMutationHandlerExecutionReport,
-    WorthQueryMutationHandlerWork,
+    HandlerExecutionDenial, HandlerResult, WorthQueryCompletedMutationCandidate,
+    WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerWork,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
@@ -138,42 +141,9 @@ where
         )
     }
 
-    /// Observe the actual installed handler invocation, after all entry and
-    /// projection denials. The observer carries accounting only.
-    pub(in crate::domain_computation::primary_graph) fn execute_mutation_handler_observing_contact<
+    pub(in crate::domain_computation::primary_graph) fn execute_mutation_handler_report_observing_contact<
         Binding,
     >(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
-        principal_identity: &Binding::PrincipalIdentity,
-        admission: WorthQueryAdmittedApplicationOperation<
-            Schema,
-            Binding::Operation,
-            Binding::Input,
-            <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
-        >,
-        on_contact: impl FnOnce(),
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        HandlerResult<WorthQueryCompletedMutationCandidate<Schema, Binding>, Binding::Denial>,
-        MutationHandlerExecutionDenial,
-    >
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-    {
-        self.execute_mutation_handler_report_observing_contact::<Binding>(
-            phase,
-            identities,
-            principal_identity,
-            admission,
-            on_contact,
-            allocation_policy,
-        )
-        .into_outcome()
-    }
-
-    fn execute_mutation_handler_report_observing_contact<Binding>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
@@ -193,154 +163,16 @@ where
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        let execution = match phase.execution_for(&self.product_runtime) {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return WorthQueryMutationHandlerExecutionReport::new(
-                    Err(MutationHandlerExecutionDenial::ForeignAdvancementPhase(
-                        cause,
-                    )),
-                    WorthQueryMutationHandlerWork::NotStarted,
-                )
-            }
-        };
-        if admission
-            .governed_input_identity()
-            .is_some_and(|admitted| admitted != identities.input_identity())
-        {
-            return WorthQueryMutationHandlerExecutionReport::new(
-                Err(MutationHandlerExecutionDenial::InputNotAdmitted),
-                WorthQueryMutationHandlerWork::NotStarted,
-            );
-        }
-        let (handler, installed_ceiling) = match self.mutation_handler_for_attempt::<Binding>() {
-            Ok(installed) => installed,
-            Err(denial) => {
-                return WorthQueryMutationHandlerExecutionReport::new(
-                    Err(denial),
-                    WorthQueryMutationHandlerWork::NotStarted,
-                )
-            }
-        };
-
-        let input = identities.mutation_input();
-        let request = admission.publication_request();
-        let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(
-            request,
+        match self.prepare_mutation_handler_plan::<Binding>(
+            phase,
+            identities,
+            principal_identity,
+            admission,
+            on_contact,
             allocation_policy,
-        );
-        let operation_scope_binding = admission.operation_scope_binding().clone();
-        let context_use = std::cell::Cell::new(
-            crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
-        );
-        let mut handler_contacted = false;
-        let phase_request = match phase.execution_request_for(&self.product_runtime) {
-            Ok(request) => request,
-            Err(cause) => {
-                return WorthQueryMutationHandlerExecutionReport::new(
-                    Err(MutationHandlerExecutionDenial::ForeignAdvancementPhase(
-                        cause,
-                    )),
-                    WorthQueryMutationHandlerWork::NotStarted,
-                )
-            }
-        };
-        let projected = {
-            self.mutation_projection
-                .project_admitted_operation_with_request(
-                    &phase_request,
-                    &admission,
-                    |reader, scope| {
-                        let mut decision_reader = DecisionReader::<Schema, Binding>::new(
-                            reader,
-                            scope,
-                            principal_identity,
-                            &operation_scope_binding,
-                            identities,
-                            execution,
-                            &context_use,
-                        );
-                        on_contact();
-                        handler_contacted = true;
-                        handler.decide(input, &mut decision_reader)
-                    },
-                    allocation_control.policy(),
-                )
-        };
-        let projected = match projected {
-            Ok(projected) => projected,
-            Err(denial) => {
-                let work = denial
-                    .projection_work()
-                    .map_or(WorthQueryMutationHandlerWork::NotStarted, |work| {
-                        WorthQueryMutationHandlerWork::captured(work, handler_contacted)
-                    });
-                return WorthQueryMutationHandlerExecutionReport::new(
-                    Err(MutationHandlerExecutionDenial::Projection(denial)),
-                    work,
-                );
-            }
-        };
-        let (decision, projection, work) = projected.into_parts();
-        let outcome = (|| {
-            let request = phase
-                .execution_request_for(&self.product_runtime)
-                .map_err(MutationHandlerExecutionDenial::ForeignAdvancementPhase)?;
-            let decision = match decision {
-                HandlerResult::Completed(decision) => decision,
-                HandlerResult::DomainDenied(denial) => {
-                    return Ok(HandlerResult::DomainDenied(denial));
-                }
-                HandlerResult::ExecutionDenied(denial) => {
-                    return Err(MutationHandlerExecutionDenial::Handler(denial));
-                }
-                HandlerResult::Cancelled => return Ok(HandlerResult::Cancelled),
-                HandlerResult::DeadlineExceeded => return Ok(HandlerResult::DeadlineExceeded),
-            };
-            let mut admission = admission;
-            admission.record_decision_context_use(context_use.get());
-            let reads = self
-                .begin_projected_application_read_attempt_with_request(
-                    &request,
-                    admission,
-                    projection,
-                    allocation_control.policy(),
-                )
-                .map_err(MutationHandlerExecutionDenial::Attempt)?
-                .complete_projected_dependencies_with_request(&request, allocation_control.policy())
-                .map_err(MutationHandlerExecutionDenial::Attempt)?;
-            let requirements = handler.candidate_requirements(input, &decision);
-            let mut candidate = reads
-                .begin_reserved_effect_program(requirements, installed_ceiling)
-                .map_err(MutationHandlerExecutionDenial::Attempt)?;
-            candidate
-                .prepare_output_contract::<Binding>()
-                .map_err(MutationHandlerExecutionDenial::Attempt)?;
-            let built = {
-                let mut writer = CandidateWriter::<Schema, Binding>::new(&mut candidate);
-                handler.build_candidate(input, decision, &mut writer)
-            };
-            match built {
-                HandlerResult::Completed(result) => candidate
-                    .finish()
-                    .map(|program| {
-                        HandlerResult::Completed(WorthQueryCompletedMutationCandidate::new(
-                            program.bind_mutation_handler_input(identities),
-                            result,
-                        ))
-                    })
-                    .map_err(MutationHandlerExecutionDenial::Attempt),
-                HandlerResult::DomainDenied(denial) => Ok(HandlerResult::DomainDenied(denial)),
-                HandlerResult::ExecutionDenied(denial) => {
-                    Err(MutationHandlerExecutionDenial::Handler(denial))
-                }
-                HandlerResult::Cancelled => Ok(HandlerResult::Cancelled),
-                HandlerResult::DeadlineExceeded => Ok(HandlerResult::DeadlineExceeded),
-            }
-        })();
-        WorthQueryMutationHandlerExecutionReport::new(
-            outcome,
-            WorthQueryMutationHandlerWork::captured(work, handler_contacted),
-        )
+        ) {
+            Ok(prepared) => prepared.run(self, identities),
+            Err(report) => report,
+        }
     }
 }

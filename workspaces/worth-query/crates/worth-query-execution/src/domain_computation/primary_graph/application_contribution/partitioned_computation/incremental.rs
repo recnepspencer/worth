@@ -12,12 +12,18 @@
 //!
 //! A run's result, its charged work and the partition a work ceiling names
 //! never depend on reuse; request memory and checkpoint count do, since a
-//! carried partition holds no gather bytes. Carried charges replay in a full
+//! carried partition reserves its actual held objects rather than a full
+//! run's gathers and scratch. Memory is physical, so its refusal may differ
+//! with reuse or posture; work-ceiling stops and logical outcomes may not. Carried charges replay in a full
 //! run's order among the calls made again, membership, item keys, gathers and
 //! kernels by identity over the run's own items and partitions, then the
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
 
+mod kernel_steps;
+pub(super) use kernel_steps::KernelSteps;
+mod kernel_recording;
+pub(super) use kernel_recording::KernelRecording;
 mod carriage;
 mod deposit;
 mod next_tree;

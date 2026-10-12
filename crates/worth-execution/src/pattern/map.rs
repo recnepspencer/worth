@@ -13,6 +13,7 @@ mod declarations;
 mod keyless;
 mod owned;
 mod prepared;
+mod storage;
 use access::access_memory_bytes;
 use declarations::{check_read_key_order, check_read_write_conflicts};
 pub use keyless::{KeylessPartition, MapMemoryOverflow};

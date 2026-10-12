@@ -28,7 +28,10 @@ pub(crate) fn execute_index_backed_query_from_generation(
     let Some(generation) = runtime.indexes.generation(generation_id) else {
         return Ok(None);
     };
-    let Some(exact_projection) = runtime.read_truth().project_snapshot(&plan.snapshot) else {
+    let Some(exact_projection) = runtime
+        .read_truth()
+        .project_snapshot(&plan.snapshot, execution)
+    else {
         return Ok(None);
     };
     let source = IndexProjectionSource::exact(&exact_projection)
@@ -186,7 +189,7 @@ fn execute_entity_index_lookup(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: &SnapshotPinnedQueryPlan,
-    source: &IndexProjectionSource<'_, '_>,
+    source: &IndexProjectionSource<'_>,
     _field_locator: &AspectFieldLocator,
     partition_scope: Option<&[crate::identity::data::PartitionId]>,
     candidate_ids: BTreeSet<crate::identity::data::EntityId>,
@@ -239,7 +242,7 @@ fn execute_relation_index_lookup(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: &SnapshotPinnedQueryPlan,
-    source: &IndexProjectionSource<'_, '_>,
+    source: &IndexProjectionSource<'_>,
     _field_locator: &AspectFieldLocator,
     partition_scope: Option<&[crate::identity::data::PartitionId]>,
     candidate_ids: BTreeSet<crate::identity::data::RelationId>,

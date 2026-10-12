@@ -67,7 +67,7 @@ impl HistoryReconstructionCharge {
         let aspect = locator.aspect().aspect_key();
         runtime
             .read_truth()
-            .project_snapshot(snapshot)
+            .project_snapshot(snapshot, &execution)
             .ok_or_else(|| denial("history reconstruction snapshot is unavailable"))?
             .entity_record_with_projection_scope(
                 execution,

@@ -1,12 +1,12 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationBasisSelectionIdentity, WorthQueryPrimaryGraphApplicationRuntime,
     output_lineage::invalidation::InvalidationEditAdmission,
     output_reuse::{
-        OutputDependencySelection, compare_retained_output_dependencies,
-        compare_retained_output_witness, require_installed_output_dependencies,
-        retained_output_settlement_is_verified,
+        compare_retained_output_dependencies, compare_retained_output_witness,
+        require_installed_output_dependencies, retained_output_settlement_is_verified,
+        OutputDependencySelection,
     },
+    WorthQueryApplicationBasisSelectionIdentity, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 type SelectedWithEntry<'a, Schema> = (
@@ -270,7 +270,7 @@ where
             let current = self.primary_provider.graph.with_runtime(execution, |runtime| {
                 let truth = runtime.read_truth();
                 let view = truth
-                    .project_snapshot(selected.application_basis().snapshot_handle())
+                    .project_snapshot(selected.application_basis().snapshot_handle(), &execution)
                     .ok_or_else(|| {
                         WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
