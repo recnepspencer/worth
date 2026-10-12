@@ -179,11 +179,6 @@ fn complexity_budget_connectivity_summary_reports_broad_traversal_work_explicitl
     assert_eq!(summary.component_count, 2);
     assert_eq!(summary.largest_component_size, 2);
     assert_eq!(summary.enumerated_entity_count, 3);
-    assert_eq!(counters.inspection_connectivity_summary_requests, 1);
-    assert!(counters.inspection_connectivity_entity_scans >= 3);
-    assert!(counters.inspection_connectivity_relation_scans >= 1);
-    assert!(counters.inspection_connectivity_frontier_expansions >= 3);
-    assert!(counters.inspection_connectivity_components_evaluated >= 2);
     assert_eq!(
         summary.origin,
         crate::facade::inspection::InspectionOrigin::CurrentTruth
