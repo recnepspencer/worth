@@ -151,7 +151,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                             key_bytes,
                             gather,
                             kernel_units,
-                            kernel_span: Some(kernel_span),
+                            kernel_span,
                             kernel_steps,
                         };
                         (identity, Arc::new(partition))

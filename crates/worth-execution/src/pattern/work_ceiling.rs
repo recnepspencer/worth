@@ -28,6 +28,17 @@ pub enum WorkCeilingDenial {
 }
 
 impl ExecutionWorkCeiling {
+    /// The framework objects held by a zero-payload one-stage scope.
+    #[doc(hidden)]
+    pub fn scope_memory_bound_for_test(
+        lease: Option<&ExecutionResourceLease<'_>>,
+        serial: Option<&SerialRequest>,
+    ) -> Option<u64> {
+        crate::backend::RunLimits::for_run(lease, false)
+            .within_serial(serial)
+            .framework_context_bytes(1, 1)
+    }
+
     /// Run one dependent stage, lending its checked checkpoint to the stage
     /// owner. Descendant reports and the owner's admitted cost settle together.
     pub fn run_with_checkpoint<R>(

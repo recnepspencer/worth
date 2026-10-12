@@ -240,7 +240,7 @@ where
                         key_bytes: marked.key_bytes,
                         gather,
                         kernel_units: units,
-                        kernel_span: Some(span),
+                        kernel_span: span,
                         kernel_steps,
                     };
                     partitions.insert(identity, Arc::new(partition));
@@ -276,7 +276,7 @@ where
                             .checked_full_build_cost()
                             .expect("a completed build has bounded cost")
                     } else {
-                        let metrics = tree.report.metrics_for_test();
+                        let metrics = tree.report.metrics();
                         (
                             u64::try_from(metrics.charged_work).unwrap_or(u64::MAX),
                             u64::try_from(metrics.charged_span).unwrap_or(u64::MAX),

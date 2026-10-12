@@ -120,24 +120,39 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
     // Native width two and serial width one hold different worker contexts.
     // Each posture must refuse at its own physical-memory boundary.
     for leased in [false, true] {
-        let admits = |memory| {
-            rebuilt_under(Some(memory), leased)
-                .iter()
-                .all(|(outcome, _)| refused_by_memory(outcome).is_none())
+        let policy = test_policy(NonZeroUsize::new(2).unwrap(), 1 << 30);
+        let token = worth_execution::CancellationToken::new();
+        let scope = if leased {
+            let root = query_test_execution_authority_for_test()
+                .request_lease(worth_execution::LeaseRequest {
+                    policy,
+                    deadline: None,
+                    cancellation: token,
+                })
+                .unwrap();
+            let child = root
+                .child(worth_execution::LeaseRequest {
+                    policy,
+                    deadline: None,
+                    cancellation: worth_execution::CancellationToken::new(),
+                })
+                .unwrap();
+            worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(Some(&child), None)
+                .unwrap()
+        } else {
+            let request = worth_execution::SerialRequest::from_policy(&policy, token, None);
+            worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(None, Some(&request))
+                .unwrap()
         };
-        let (mut refused, mut admitted) = (0_u64, 1 << 24);
-        assert!(admits(admitted));
-        while admitted - refused > 1 {
-            let middle = refused + (admitted - refused) / 2;
-            if admits(middle) {
-                admitted = middle;
-            } else {
-                refused = middle;
-            }
-        }
         let build =
             ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_build_memory_bound(4, DECLARED)
                 .unwrap();
+        // The rebuild holds its tree bound, four inline leaf copies, one
+        // replacement result, and this posture's one-stage framework scope.
+        let admitted = build
+            + 5 * u64::try_from(size_of::<(worth_foundational::PartitionIdentity, u64)>()).unwrap()
+            + scope;
+        let refused = admitted - 1;
         for (outcome, combines) in rebuilt_under(Some(refused), leased) {
             let requested = refused_by_memory(&outcome)
                 .unwrap_or_else(|| panic!("one byte short is a memory refusal: {outcome:?}"));

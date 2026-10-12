@@ -1189,6 +1189,7 @@ Membership and key edits re-route touched items incrementally. They do not
 rebuild the partitioner or introduce a full-run cause.
 
 An outcome never depends on reuse: a handler sees the same result, charged work
+Here, charged work and denial mean the work ceiling and typed logical outcome; memory is physical, so a carried partition reserves its actual held objects and a memory denial may differ with reuse or posture.
 and denial either way, and the execution report of a run is the observer's.
 
 ### Query: parallel advancement

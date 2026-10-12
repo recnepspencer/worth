@@ -170,8 +170,8 @@ pub(super) struct RetainedPartition<Key> {
     pub(super) gather: ComputationCallCharge,
     pub(super) kernel_units: u64,
     pub(super) kernel_steps: super::KernelSteps,
-    /// Absent records rebuild; a carried kernel never guesses its dependency span.
-    pub(super) kernel_span: Option<u64>,
+    /// The measured dependency span retained at settlement.
+    pub(super) kernel_span: u64,
 }
 
 /// The typed state: everything a later run of the same owner needs to skip

@@ -12,7 +12,9 @@
 //!
 //! A run's result, its charged work and the partition a work ceiling names
 //! never depend on reuse; request memory and checkpoint count do, since a
-//! carried partition holds no gather bytes. Carried charges replay in a full
+//! carried partition reserves its actual held objects rather than a full
+//! run's gathers and scratch. Memory is physical, so its refusal may differ
+//! with reuse or posture; work-ceiling stops and logical outcomes may not. Carried charges replay in a full
 //! run's order among the calls made again, membership, item keys, gathers and
 //! kernels by identity over the run's own items and partitions, then the
 //! combines of the run's own tree, so a ceiling names the partition a full
@@ -188,14 +190,6 @@ where
     // The installation fixes the state's type, so its own owner's state
     // always downcasts.
     let prior = TypedPrior::from_state(Arc::clone(&retained));
-    if prior
-        .typed()
-        .partitions
-        .values()
-        .any(|partition| partition.kernel_span.is_none())
-    {
-        return full(basis, WorthQueryPartitionedComputationFullCause::Unmeasured);
-    }
     let mut run = IncrementalRun {
         basis,
         prior,

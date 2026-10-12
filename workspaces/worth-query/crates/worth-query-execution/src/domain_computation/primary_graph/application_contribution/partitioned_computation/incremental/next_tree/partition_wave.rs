@@ -94,9 +94,7 @@ where
                             if partition.kernel_units <= context.remaining_work() {
                                 context.checkpoint_cost(
                                     partition.kernel_units,
-                                    partition
-                                        .kernel_span
-                                        .expect("only span-bearing records are reused"),
+                                    partition.kernel_span,
                                 )?;
                             } else {
                                 // The full kernel's accepted steps run in its original
