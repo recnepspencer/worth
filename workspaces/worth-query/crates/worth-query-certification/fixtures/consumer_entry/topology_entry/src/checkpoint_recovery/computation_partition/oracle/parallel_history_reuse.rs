@@ -111,8 +111,12 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
     );
     assert_eq!(
         first.runs,
-        [Run::Full(Cause::FirstRun)],
-        "no prior exists on the first demand"
+        [Run::Full(if reuse {
+            Cause::FirstRun
+        } else {
+            Cause::Unretained
+        })],
+        "the first demand has no prior when enabled, and policy refuses retention when disabled"
     );
     assert_eq!(first.outcome.unwrap().0, before_value.unwrap());
     assert_eq!(
