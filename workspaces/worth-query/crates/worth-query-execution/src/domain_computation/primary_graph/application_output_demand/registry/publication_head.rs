@@ -66,12 +66,14 @@ impl PublicationHeads {
                 "",
             )
         })?;
-        admission.charge_external_work(peak as u64).map_err(|_| {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                "",
-            )
-        })
+        admission
+            .charge_ordered_operations((2 * Self::node_bytes()) as u64, peak as u64)
+            .map_err(|_| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                    "",
+                )
+            })
     }
     pub(super) fn counter(
         &self,
