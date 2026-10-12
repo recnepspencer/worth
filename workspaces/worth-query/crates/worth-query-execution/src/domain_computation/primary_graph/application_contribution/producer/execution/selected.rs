@@ -264,7 +264,7 @@ where
         // The same native certification as Live. Its disclosure continuation
         // only reports not-current: no refresh claim, source read or plan.
         source_readmission::certify_ready_on_selected_with_disclosure::<_, Schema, Binding>(
-            &execution,
+            execution,
             runtime,
             &self.source_query,
             &self.principal_validation,
