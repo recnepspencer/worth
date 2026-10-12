@@ -202,7 +202,7 @@ impl WorthQueryRuntime {
     ) -> Result<WorthQueryRunReceipt, WorthQueryRuntimeError> {
         let execution = phase
             .checked_execution_request_for(&self.installed_product.world)
-            .map_err(WorthQueryRuntimeError::Advancement)?;
+            .map_err(WorthQueryRuntimeError::from)?;
         self.run_operation_with_request(&execution, operation, inputs)
     }
 

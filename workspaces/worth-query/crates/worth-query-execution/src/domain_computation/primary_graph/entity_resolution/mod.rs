@@ -141,6 +141,8 @@ impl WorthQueryEntityResolutionTruth<'_> {
                 2,
             )
             .map_err(|denial| map_index_denial(denial.kind(), field))?;
+            #[cfg(test)]
+            interruption_control::cancel_before_lookup_for_test();
             let lookup = self
                 .relational
                 .index_access()
@@ -218,7 +220,27 @@ fn map_index_denial(
         | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
             WorthQueryEntityResolutionDenialKind::CorruptIdentityIndex
         }
-        BoundedEntityFieldLookupDenialKind::Execution(_)
+        BoundedEntityFieldLookupDenialKind::Execution(
+            Cause::WorkerLimitExceedsParent
+            | Cause::MemoryLimitExceedsParent
+            | Cause::WorkLimitExceedsParent
+            | Cause::PolicyMemoryExhausted { .. }
+            | Cause::ProcessMemoryExhausted { .. }
+            | Cause::DeclaredMemoryExhausted { .. }
+            | Cause::ChargedBytesOverflow
+            | Cause::UnrelatedNestedLease
+            | Cause::NoActiveExecutionScope
+            | Cause::EquivalenceContractUnavailable
+            | Cause::WorkCounterOverflow
+            | Cause::WorkExhausted
+            | Cause::NestedStopped
+            | Cause::ResultCapacityExceeded
+            | Cause::WorkerFailed
+            | Cause::ScratchCapacityExceeded
+            | Cause::UncheckedCustomKernel
+            | Cause::ExpectedIdentitiesNotCanonical
+            | Cause::MemoryOverflow,
+        )
         | BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
         | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
         | BoundedEntityFieldLookupDenialKind::IndexNotInstalled

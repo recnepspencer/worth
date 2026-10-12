@@ -5,6 +5,7 @@ pub(super) struct LockObservationSlot(OnceLock<Mutex<Weak<Listener>>>);
 struct Listener(Box<dyn Fn() + Send + Sync>);
 /// Owns observation of the handle and its clones, without granting runtime access.
 #[must_use]
+#[doc(hidden)]
 pub struct RelationalRuntimeLockObservationForTest {
     _listener: Arc<Listener>,
 }

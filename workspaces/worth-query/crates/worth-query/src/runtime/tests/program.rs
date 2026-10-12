@@ -80,3 +80,37 @@ fn compiled_typed_program_rejects_type_mismatch_before_execution() {
 
     assert!(matches!(error, WorthQueryRuntimeError::Program(_)));
 }
+
+#[test]
+fn foreign_program_phase_keeps_the_runtime_foreign_phase_answer() {
+    use crate::consumer_kit::test_backend::{
+        in_memory_test_product_world_resources, in_memory_test_runtime, task_schema,
+    };
+    use crate::runtime::WorthQueryStopClass;
+    let host = crate::bridge_host_request::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let owner = in_memory_test_runtime()
+        .with_schema(task_schema())
+        .product_world_resources(in_memory_test_product_world_resources())
+        .workspace(&execution, "program-phase-owner")
+        .unwrap();
+    let mut receiver = stateful_bridge_task_runtime(&execution);
+    let program = WorthQueryProgram::compile(FakeDsl, &FakeSchemaAdapter).unwrap();
+    let operation = receiver
+        .install_program(program)
+        .unwrap()
+        .operation("create_task")
+        .unwrap();
+    owner
+        .with_advancement(|phase| {
+            let denial = receiver
+                .run_operation(&phase, operation, Vec::new())
+                .unwrap_err();
+            assert!(matches!(denial, WorthQueryRuntimeError::ForeignPhase(_)));
+            assert!(matches!(
+                denial.stop_class(),
+                WorthQueryStopClass::ForeignPhase { .. }
+            ));
+        })
+        .unwrap();
+}

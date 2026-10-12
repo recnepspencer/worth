@@ -356,6 +356,20 @@ impl From<WorthQueryProgramError> for WorthQueryRuntimeError {
     }
 }
 
+impl From<worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial>
+    for WorthQueryRuntimeError
+{
+    fn from(
+        denial: worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ) -> Self {
+        use worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase;
+        match WorthQueryForeignAdvancementPhase::try_from(denial) {
+            Ok(cause) => Self::ForeignPhase(cause),
+            Err(denial) => Self::Advancement(denial),
+        }
+    }
+}
+
 impl
     From<worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase>
     for WorthQueryRuntimeError

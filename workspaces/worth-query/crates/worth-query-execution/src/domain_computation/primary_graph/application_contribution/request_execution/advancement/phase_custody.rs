@@ -18,6 +18,19 @@ pub(in crate::domain_computation::primary_graph) struct ActiveAdvancement<'scope
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct WorthQueryForeignAdvancementPhase(());
 
+impl TryFrom<super::WorthQueryAdvancementDenial> for WorthQueryForeignAdvancementPhase {
+    type Error = super::WorthQueryAdvancementDenial;
+
+    fn try_from(denial: Self::Error) -> Result<Self, Self::Error> {
+        match denial {
+            super::WorthQueryAdvancementDenial::Resource(
+                super::Resource::ForeignAdvancementPhase,
+            ) => Ok(Self(())),
+            denial => Err(denial),
+        }
+    }
+}
+
 impl From<WorthQueryForeignAdvancementPhase> for super::WorthQueryAdvancementDenial {
     fn from(_: WorthQueryForeignAdvancementPhase) -> Self {
         Self::Resource(super::Resource::ForeignAdvancementPhase)
