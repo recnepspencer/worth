@@ -13,8 +13,8 @@ use crate::domain_computation::primary_graph::application_query::one_shot::outco
 #[cfg(test)]
 use crate::domain_computation::primary_graph::application_query::DispatchWitness;
 use crate::domain_computation::primary_graph::application_query::{
-    WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationOneShotResult,
-    WorthQueryDerivedPairReadPlans,
+    read_execution::read_plan::ReadPlan, WorthQueryApplicationAuthorizationWorkEvidence,
+    WorthQueryApplicationOneShotResult, WorthQueryDerivedPairReadPlans,
 };
 use std::collections::BTreeMap;
 use worth_execution::{
@@ -254,12 +254,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 .first
                                 .graph_work
                                 .seal_prepared_read(output.first.proof)
-                                .map_err(|cause| denial::session(cause, root, &crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan::of(&pair.first)))?;
+                                .map_err(|cause| denial::session(cause, root, &ReadPlan::of(&pair.first)))?;
                             let second_proof = pair
                                 .second
                                 .graph_work
                                 .seal_prepared_read(output.second.proof)
-                                .map_err(|cause| denial::session(cause, root, &crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan::of(&pair.second)))?;
+                                .map_err(|cause| denial::session(cause, root, &ReadPlan::of(&pair.second)))?;
                             let first = finalize_one_shot(
                                 self,
                                 pair.first,

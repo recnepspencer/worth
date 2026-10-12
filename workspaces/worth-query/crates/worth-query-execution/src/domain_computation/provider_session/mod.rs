@@ -65,3 +65,6 @@ pub use worth_execution::ExecutionRequest;
 
 #[cfg(test)]
 pub(in crate::domain_computation) use graph_obligation::pin_panic;
+
+#[cfg(test)]
+pub(in crate::domain_computation) use graph_obligation::pin_control;

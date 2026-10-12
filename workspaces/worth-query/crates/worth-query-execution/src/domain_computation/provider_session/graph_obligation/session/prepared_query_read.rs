@@ -83,7 +83,6 @@ impl WorthQueryManagedGraphWorkSession {
             // Operational snapshot ids differ between independently admitted
             // sessions on the same exact Native root and World occurrence.
             || pin.basis.runtime_instance_id() != basis.runtime_instance_id()
-            || pin.basis.branch_id() != basis.branch_id()
             || snapshot.runtime_instance_id() != basis.runtime_instance_id()
             || snapshot.branch_id() != basis.branch_id()
             || snapshot.snapshot_id() != basis.snapshot_id()
@@ -93,12 +92,14 @@ impl WorthQueryManagedGraphWorkSession {
         if pin.binding != self.binding {
             return Err(WorthQueryManagedGraphReadDenial::ForeignGraph);
         }
-        if pin.basis.descriptor() != basis.descriptor()
+        if pin.basis.branch_id() != basis.branch_id()
+            || pin.basis.descriptor() != basis.descriptor()
             || pin.basis.selection() != basis.selection()
         {
             // This is an admitted member on a different root/World selection,
             // not foreign custody. Read its own root, as before pin sharing;
-            // owner finalization then reports StaleSource with the same work.
+            // owner finalization then reports ForeignBranch or StaleSource
+            // with the same work as reading each member without pin sharing.
             return self.prepare_query_read(basis, execution, snapshot, select_indexes);
         }
         if snapshot.version_id() != pin.read.snapshot().version_id() {
@@ -166,10 +167,11 @@ impl WorthQueryManagedGraphWorkSession {
 
 impl worth_execution::ChargedBytes for WorthQueryPreparedSessionRead {
     fn additional_charged_bytes(&self) -> u64 {
-        // The owner-held side pin owns the index map, layout and exact basis.
-        // Its existing native-plan/index retention allowance funds that custody.
-        // Workers share the whole pin through Arc; no map nodes or basis strings
-        // are copied into this input, which adds only inline handles/identities.
+        // Equal roots share the owner-held side pin; a changed-root pin lives
+        // solely in this map input until settlement. Before pinning, owner_hold
+        // reserves each plan's max_inline_index_bytes and proof allowance via
+        // retained_input_bound. That reservation funds native-plan custody in
+        // both cases; this Arc adds no second retention charge.
         let Self {
             pin: _pin,
             session: _session,

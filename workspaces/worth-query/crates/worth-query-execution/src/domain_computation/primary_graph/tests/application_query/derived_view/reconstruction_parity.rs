@@ -165,7 +165,6 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                 })
                 .unwrap();
             assert_eq!(answer, Err(WorthQueryManagedDerivedViewDenial::StaleSource));
-            println!("stale-member-refusal charged={}", work.charged_work());
             // Frozen on bdb91675a9: includes the real publication and later admission
             // inside preparation, plus all four reads before the stale-source refusal.
             const MASTER_STALE_MEMBER_WORK: u64 = 2271;

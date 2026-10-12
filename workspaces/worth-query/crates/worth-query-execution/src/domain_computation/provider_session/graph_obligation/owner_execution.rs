@@ -51,6 +51,10 @@ impl WorthQueryGraphReadOwnerPort {
         let read = self
             .source
             .with_runtime_mut_unwind_isolated(execution, |runtime| {
+                #[cfg(test)]
+                let replacement = pin_control::snapshot();
+                #[cfg(test)]
+                let snapshot = replacement.as_ref().unwrap_or(snapshot);
                 let result = runtime.read_truth().pin_read_capability(
                     snapshot,
                     &selected_indexes,
@@ -132,3 +136,6 @@ pub(in crate::domain_computation) mod pin_panic {
         assert!(!ARMED.replace(false), "injected panic inside owner pin");
     }
 }
+
+#[cfg(test)]
+pub(in crate::domain_computation) mod pin_control;

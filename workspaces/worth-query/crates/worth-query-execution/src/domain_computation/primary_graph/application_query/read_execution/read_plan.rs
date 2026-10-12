@@ -122,7 +122,12 @@ impl ReadPlan<'_> {
         &self,
     ) -> super::WorthQueryApplicationReadExecutionDenial {
         let predicates = self.contract.predicates();
-        if let [predicate] = predicates {
+        if !self.contract.root_paths().is_empty() {
+            super::read_execution_denial(
+                super::WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
+                self.name,
+            )
+        } else if let [predicate] = predicates {
             super::read_execution_denial(
                 super::WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
                 predicate.field().2,

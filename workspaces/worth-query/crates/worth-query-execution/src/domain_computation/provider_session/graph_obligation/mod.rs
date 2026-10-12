@@ -32,3 +32,6 @@ pub use session_identity::{
 
 #[cfg(test)]
 pub(in crate::domain_computation) use owner_execution::pin_panic;
+
+#[cfg(test)]
+pub(in crate::domain_computation) use owner_execution::pin_control;
