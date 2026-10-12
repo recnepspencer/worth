@@ -306,3 +306,6 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/
 
 # Diagnostic resource proof uses the same sealed detached meter.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement/certification_tests.rs
+
+# Owned assessment-phase reports are read by this exact test adapter.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/assessment_trace.rs

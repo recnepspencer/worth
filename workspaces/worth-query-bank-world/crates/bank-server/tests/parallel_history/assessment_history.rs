@@ -1,6 +1,6 @@
 //! Real retained settlement checks typed phase outcomes and the independent journal.
 //! The focused assessment protocol model is unit-tested separately; it does not
-//! judge system transition order, which waits for the advancement report.
+//! judges each actual advancement and its owner-applied order.
 use super::journal_model;
 use bank_domain::schema::ApprovePayment;
 use bank_server::{BankApprovedPaymentAssessmentProgress, BankPaymentAssessmentSettlement};
@@ -32,6 +32,7 @@ fn assessment_history_settles_at_each_request_width() {
         let width = width.parse().unwrap();
         worth_query_host::facade::primary_graph::place_managed_computations_on_this_thread_for_test(NonZeroUsize::new(width).map_or(worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest::World,worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest::Leased));
     } else {
+        let mut baseline = None;
         for width in [0, 1, 2, 5] {
             let output=std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact","parallel_history::assessment_history::assessment_history_settles_at_each_request_width","--nocapture"]).env("WORTH_BANK_ASSESSMENT_WIDTH",width.to_string()).output().unwrap();
             assert!(
@@ -40,9 +41,26 @@ fn assessment_history_settles_at_each_request_width() {
                 String::from_utf8_lossy(&output.stdout),
                 String::from_utf8_lossy(&output.stderr)
             );
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let rows = stdout
+                .lines()
+                .filter(|line| line.starts_with("BANK_ASSESSMENT:"))
+                .collect::<Vec<_>>();
+            assert_eq!(
+                rows.len(),
+                8,
+                "eight observed public assessment phases per posture"
+            );
+            let actual = rows.join("\n");
+            assert_eq!(&actual, baseline.get_or_insert_with(||actual.clone()), "assessment charge and commit/publication identities agree across postures by value");
         }
         return;
     }
+    let width = std::env::var("WORTH_BANK_ASSESSMENT_WIDTH")
+        .unwrap()
+        .parse::<usize>()
+        .unwrap()
+        .max(1);
     let fixture = fixture::ordinary_read_world_with_payment_amount(
         "independent-assessment-history",
         authentication::approval_configuration(),
@@ -58,25 +76,35 @@ fn assessment_history_settles_at_each_request_width() {
         payment: fixture.payment,
         approver: fixture::principal_id(fixture::APPROVER),
     };
-    let published = match workflow
-        .publish_definition(
-            authority.clone(),
-            WorkflowDefinitionExpectedPredecessor::Absent,
-            &key("history.definition"),
-        )
-        .unwrap()
-    {
+    let mut trace = super::assessment_trace::Trace::default();
+    macro_rules! judged {
+        ($name:literal,$body:expr) => {
+            trace.phase($name, width, || $body)
+        };
+    }
+    let published = match judged!(
+        "definition",
+        workflow
+            .publish_definition(
+                authority.clone(),
+                WorkflowDefinitionExpectedPredecessor::Absent,
+                &key("history.definition"),
+            )
+            .unwrap()
+    ) {
         WorkflowDefinitionPublicationOutcome::Published(published) => published,
         other => panic!("{other:?}"),
     };
-    let instance = match workflow
-        .start(
-            published.definition().clone(),
-            authority.clone(),
-            &key("history.instance"),
-        )
-        .unwrap()
-    {
+    let instance = match judged!(
+        "start",
+        workflow
+            .start(
+                published.definition().clone(),
+                authority.clone(),
+                &key("history.instance"),
+            )
+            .unwrap()
+    ) {
         WorkflowInstanceStartOutcome::Started(started) => started.instance().clone(),
         other => panic!("{other:?}"),
     };
@@ -114,32 +142,43 @@ fn assessment_history_settles_at_each_request_width() {
         "seeded funding and transfer rules before assessment"
     );
     assert!(matches!(
-        workflow
-            .propose(instance.clone(), authority.clone(), &key("history.propose"))
-            .unwrap(),
+        judged!(
+            "propose",
+            workflow
+                .propose(instance.clone(), authority.clone(), &key("history.propose"))
+                .unwrap()
+        ),
         WorkflowProposalOutcome::Published(_)
     ));
-    match workflow
-        .advance(instance.clone(), authority.clone(), &key("history.advance"))
-        .unwrap()
-    {
+    match judged!(
+        "advance",
+        workflow
+            .advance(instance.clone(), authority.clone(), &key("history.advance"))
+            .unwrap()
+    ) {
         WorkflowProgressOutcome::AwaitingAssessment(required) => {
             assert_eq!(required.node_path(), "review/payment");
         }
         other => panic!("{other:?}"),
     }
-    let mut demand = workflow
-        .begin_payment_assessment(
-            instance.clone(),
-            authority.clone(),
-            BankPaymentAssessmentSettlement::new(
-                NonZeroUsize::new(1).unwrap(),
-                NonZeroUsize::new(1).unwrap(),
-            ),
-            &key("history.assess"),
-        )
-        .unwrap();
-    let assessment = match workflow.settle_payment_assessment(&mut demand).unwrap() {
+    let mut demand = judged!(
+        "begin",
+        workflow
+            .begin_payment_assessment(
+                instance.clone(),
+                authority.clone(),
+                BankPaymentAssessmentSettlement::new(
+                    NonZeroUsize::new(1).unwrap(),
+                    NonZeroUsize::new(1).unwrap(),
+                ),
+                &key("history.assess"),
+            )
+            .unwrap()
+    );
+    let assessment = match judged!(
+        "settle",
+        workflow.settle_payment_assessment(&mut demand).unwrap()
+    ) {
         BankApprovedPaymentAssessmentProgress::Settled(settled) => settled,
         BankApprovedPaymentAssessmentProgress::Pending => {
             panic!("one source settles in the declared round")
@@ -147,22 +186,26 @@ fn assessment_history_settles_at_each_request_width() {
     };
     assert!(
         matches!(
-            workflow.settle_payment_assessment(&mut demand).unwrap(),
+            judged!(
+                "retry",
+                workflow.settle_payment_assessment(&mut demand).unwrap()
+            ),
             BankApprovedPaymentAssessmentProgress::Settled(_)
         ),
         "settlement retry answers the retained demand"
     );
-    match workflow
-        .accept_assessment(instance, authority, &assessment, &key("history.accept"))
-        .unwrap()
-    {
+    match judged!(
+        "accept",
+        workflow
+            .accept_assessment(instance, authority, &assessment, &key("history.accept"))
+            .unwrap()
+    ) {
         WorkflowProgressOutcome::Completed(performed) => {
             assert_eq!(performed.node_path(), "review/payment");
         }
         other => panic!("{other:?}"),
     }
-    // Each phase is checked through its typed system outcome above. An
-    // aggregate committed transition sequence waits for the 7.7 report.
+    // The typed outcomes and observed application sequence are both judged.
     assert_eq!(
         bindings.postings(
             &super::observation::journal_from(

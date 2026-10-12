@@ -161,6 +161,24 @@ impl<'a> Observer<'a> {
             "Bank dispatches preserve the requested width"
         );
         place(previous);
+        let events = self
+            .last
+            .iter()
+            .flat_map(|record| &record.applied)
+            .collect::<Vec<_>>();
+        let expected_events = if matches!(
+            &result,
+            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+        ) {
+            2
+        } else {
+            0
+        };
+        assert_eq!(
+            events.len(),
+            expected_events,
+            "a new Bank commit has two events; retry and denial have none"
+        );
         match result {
             Ok(WorthQueryApplicationMutationOutcome::Committed { result, receipt }) => {
                 use worth_query_host::facade::primary_graph::WorthQueryAdvancementIdentityForTest as Identity;

@@ -17,6 +17,15 @@ fn run(posture: Posture) {
             "request {place}: declared commit, authorization, funds and retry outcome; native {actual:?}"
         );
         let records = &observer.last;
+        let expected_events = if [0, 4].contains(&place) { 2 } else { 0 };
+        assert_eq!(
+            records
+                .iter()
+                .map(|record| record.applied.len())
+                .sum::<usize>(),
+            expected_events,
+            "the declared transfer history has two first commits and no retry/denial events"
+        );
         for record in records {
             for pair in record.applied.chunks(2) {
                 assert_eq!(pair.len(), 2, "Bank commit/publication pair");
@@ -79,6 +88,11 @@ fn seeded_transfers_match_at_host_policy_and_each_request_width() {
             "Bank width {width}: {stdout}{}",
             String::from_utf8_lossy(&output.stderr)
         );
+        let lines = stdout
+            .lines()
+            .filter(|line| line.starts_with("BANK_CELL:"))
+            .collect::<Vec<_>>();
+        assert_eq!(lines.len(), 5, "five observed transfer steps at each width");
         let records = stdout
             .lines()
             .filter(|s| s.starts_with("BANK_CELL:"))
