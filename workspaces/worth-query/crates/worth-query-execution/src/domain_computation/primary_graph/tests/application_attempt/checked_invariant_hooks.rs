@@ -60,6 +60,10 @@ fn run_case(checked: bool, work: bool, ceiling: Option<u64>, cancel_in_preparati
         source.token(),
     );
     let program = program::prepare(&world, &scope);
+    // Installation completes before the rule control targets this commit.
+    contacts
+        .armed
+        .store(true, std::sync::atomic::Ordering::SeqCst);
     let before = contacts.snapshot();
     reports();
     place(Placement::Leased(NonZeroUsize::MIN));

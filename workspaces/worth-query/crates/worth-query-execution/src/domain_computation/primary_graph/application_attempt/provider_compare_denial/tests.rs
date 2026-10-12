@@ -199,7 +199,7 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+    {
         use crate::domain_computation::primary_graph::bootstrap_publication::{
             commit_refusals::work_refusal, execution_refusals::isolated,
         };
@@ -243,7 +243,7 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
                 }
             },
         );
-    });
+    }
 }
 
 #[test]

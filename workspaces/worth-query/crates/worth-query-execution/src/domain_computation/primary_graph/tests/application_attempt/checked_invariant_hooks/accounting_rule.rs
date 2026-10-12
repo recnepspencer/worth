@@ -3,7 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_invariant::*;
 use crate::facade::application_invariants::CustomInvariantLeaseBudget;
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
@@ -41,6 +41,7 @@ pub(super) fn definition() -> ApplicationInvariantDefinition<HookSchema, HookAcc
 
 #[derive(Clone, Default)]
 pub(super) struct Contacts {
+    pub(super) armed: Arc<AtomicBool>,
     pub(super) ordinary: Arc<AtomicUsize>,
     pub(super) preparation: Arc<AtomicUsize>,
     pub(super) evaluation: Arc<AtomicUsize>,
@@ -89,7 +90,7 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }
     fn supports_checked_preparation(&self) -> bool {
-        self.checked
+        !self.contacts.armed.load(Ordering::SeqCst) || self.checked
     }
     fn prepare_scope_checked(
         &self,
@@ -102,8 +103,10 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
                 "caller stopped",
             )));
         }
-        if let Some(source) = &self.cancellation {
-            source.cancel();
+        if self.contacts.armed.load(Ordering::SeqCst) {
+            if let Some(source) = &self.cancellation {
+                source.cancel();
+            }
         }
         if !budget.checkpoint(0) {
             return Some(Err(WorthQueryApplicationInvariantPreparationError::new(

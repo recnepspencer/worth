@@ -75,8 +75,6 @@ pub use producer::{
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use request_execution::query_test_execution_authority_for_test;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;
 pub(in crate::domain_computation::primary_graph) use request_execution::QueryRequestExecution;
 pub use request_execution::{
     bound_advancement_requests_on_this_thread_for_test,

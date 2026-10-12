@@ -59,8 +59,7 @@ pub(in crate::domain_computation::primary_graph) fn refused_commit(
         )
         .unwrap();
     let lease = authority().request_lease(request).unwrap();
-    // Bootstrap has no production lease injector until 7.6. Exercise its
-    // error-mapping seam using a real owner refusal, without threading a lease.
+    // Exercise the bootstrap mapper with a real refusal from its native owner.
     runtime
         .prepare_branch_transaction(
             &worth_execution::ExecutionRequest::leased(&lease),
@@ -74,7 +73,7 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+    {
         isolated(
             concat!(
                 module_path!(),
@@ -156,7 +155,7 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
             );
             },
         );
-    });
+    }
 }
 
 #[test]
