@@ -379,3 +379,11 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/fact/cancellation_tests.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/decision_facts/comparison/tests/indexed.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program/migration/lineage.rs
+
+# Exact callers of owned read-stop controls on the joined tree.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/decision_facts/authorization/durable_dependencies/cancellation_tests.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/retained_activation_read_tests.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_discovery/workflow/request_stops.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/equality_stop_oracle.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/workflow_approval_revalidation/read_stop_oracle.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/checkpoint_restore.rs
