@@ -11,7 +11,7 @@ pub(super) struct Finding {
     pub reason: &'static str,
 }
 
-pub(super) fn scan(files: &[(&str, &[Item])]) -> Vec<Finding> {
+pub(super) fn scan(files: &[(&[String], &str, &[Item])]) -> Vec<Finding> {
     let debug_inventory = super::debug_inventory::Inventories::from_files(files);
     let mut vocabulary = Vocabulary::default();
     vocabulary.type_ids.insert("TypeId".into());
@@ -21,7 +21,7 @@ pub(super) fn scan(files: &[(&str, &[Item])]) -> Vec<Finding> {
     vocabulary
         .containers
         .extend(["BTreeMap".into(), "BTreeSet".into()]);
-    for (_, items) in files {
+    for (_, _, items) in files {
         for item in *items {
             vocabulary.visit_item(item);
         }
@@ -39,7 +39,7 @@ pub(super) fn scan(files: &[(&str, &[Item])]) -> Vec<Finding> {
         }
     }
     let mut findings = Vec::new();
-    for (source, items) in files {
+    for (namespace, source, items) in files {
         let mut local = Vocabulary::default();
         for item in *items {
             local.visit_item(item);
@@ -51,6 +51,7 @@ pub(super) fn scan(files: &[(&str, &[Item])]) -> Vec<Finding> {
             local_fields: &local.fields,
             vocabulary: &vocabulary,
             debug_inventory: &debug_inventory,
+            debug_scope: namespace,
             findings: &mut findings,
         };
         for item in *items {
@@ -146,6 +147,7 @@ struct OrderingSites<'a> {
     local_fields: &'a BTreeMap<String, BTreeSet<String>>,
     vocabulary: &'a Vocabulary,
     debug_inventory: &'a super::debug_inventory::Inventories,
+    debug_scope: &'a [String],
     findings: &'a mut Vec<Finding>,
 }
 
@@ -196,6 +198,8 @@ impl<'ast> Visit<'ast> for OrderingSites<'_> {
         self.derives(&item.ident, &item.attrs, item.fields.iter().map(|f| &f.ty));
         if self.debug_inventory.derives_members(
             &item.attrs,
+            self.debug_scope,
+            &item.generics,
             item.fields.iter().map(|f| &f.ty),
             self.type_ids,
         ) {
@@ -216,6 +220,8 @@ impl<'ast> Visit<'ast> for OrderingSites<'_> {
         );
         if self.debug_inventory.derives_members(
             &item.attrs,
+            self.debug_scope,
+            &item.generics,
             item.variants
                 .iter()
                 .flat_map(|v| v.fields.iter().map(|f| &f.ty)),

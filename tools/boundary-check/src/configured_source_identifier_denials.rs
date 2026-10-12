@@ -325,14 +325,9 @@ mod tests {
 
     #[test]
     fn excluded_source_paths_are_the_only_escape_from_a_governed_root() {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("clock after epoch")
-            .as_nanos();
-        let workspace = std::env::temp_dir().join(format!(
-            "worth-boundary-identifier-exclusion-{}-{nonce}",
-            std::process::id()
-        ));
+        let workspace = worth_harness::tooling::fixture_path::unique_path(
+            "worth-boundary-identifier-exclusion",
+        );
         let governed = workspace.join("governed");
         let excluded = governed.join("allowed");
         std::fs::create_dir_all(&excluded).expect("create governed fixture");

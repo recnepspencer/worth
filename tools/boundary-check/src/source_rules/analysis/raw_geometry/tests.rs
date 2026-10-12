@@ -166,7 +166,7 @@ fn an_edge_that_holds_no_raw_form_is_stale() {
 
 #[test]
 fn a_missing_covered_crate_fails_closed() {
-    let root = std::env::temp_dir().join(format!("boundary-raw-geometry-{}", std::process::id()));
+    let root = worth_harness::tooling::fixture_path::unique_path("boundary-raw-geometry");
     let found = enforce_raw_geometry_denials(&root, &[rule(Vec::new())]);
     assert_eq!(found.len(), 1);
     assert!(found[0].message().contains("could not be read"));

@@ -1,10 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
-
-static NEXT_REPOSITORY: AtomicU64 = AtomicU64::new(0);
 
 struct Repository {
     root: PathBuf,
@@ -20,15 +16,7 @@ fn snapshot_fixture_lives_under_the_builds_temporary_directory() {
 
 impl Repository {
     fn new() -> Self {
-        let id = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let sequence = NEXT_REPOSITORY.fetch_add(1, Ordering::Relaxed);
-        let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!(
-            "snapshot-surface-{}-{id}-{sequence}",
-            std::process::id()
-        ));
+        let root = worth_harness::tooling::fixture_path::unique_path("snapshot-surface");
         write(&root, "Cargo.toml", ROOT_MANIFEST);
         write(&root, "plans/worthy/NAMING.md", "fixture\n");
         write(

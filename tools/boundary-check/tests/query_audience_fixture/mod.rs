@@ -3,16 +3,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn unique_temp_root(label: &str) -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("clock")
-        .as_nanos();
-    std::env::temp_dir().join(format!(
-        "boundary-check-query-audience-{label}-{}-{nanos}",
-        std::process::id()
+    worth_harness::tooling::fixture_path::unique_path(&format!(
+        "boundary-check-query-audience-{label}"
     ))
 }
 

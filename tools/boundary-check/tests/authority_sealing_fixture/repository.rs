@@ -2,7 +2,6 @@
 
 use std::fs;
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 mod assembly;
 mod configuration;
@@ -16,13 +15,8 @@ pub struct AuthoritySealingTestRepository {
 
 impl AuthoritySealingTestRepository {
     pub fn create(label: &str) -> Self {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("system clock")
-            .as_nanos();
-        let root = std::env::temp_dir().join(format!(
-            "boundary-check-authority-sealing-{label}-{}-{nanos}",
-            std::process::id()
+        let root = worth_harness::tooling::fixture_path::unique_path(&format!(
+            "boundary-check-authority-sealing-{label}"
         ));
         let _ = fs::remove_dir_all(&root);
         Self { root }
