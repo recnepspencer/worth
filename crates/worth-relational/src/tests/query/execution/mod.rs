@@ -11,4 +11,5 @@ use crate::facade::snapshots::SnapshotHandle;
 use crate::tests::support::*;
 use std::sync::Arc;
 
+mod read_law_matrix;
 mod read_request_custody;
