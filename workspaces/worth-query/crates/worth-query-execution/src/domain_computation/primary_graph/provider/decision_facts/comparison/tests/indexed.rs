@@ -180,29 +180,43 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
 
 #[test]
 fn prepared_indexed_comparison_keeps_a_native_cancellation() {
+    use std::{cell::Cell, rc::Rc};
+    use worth_query_admission::facade::authenticated_principal::{
+        WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
+    };
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
-    let source =
-        worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
-    let scope = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
-        None,
-        source.token(),
-    );
+    let source = WorthQueryCancellationSource::new();
+    let scope = WorthQueryRequestScope::new(None, source.token());
     world.application.with_application_advancement(&scope, |phase| {
         let execution = phase.checked_execution_request_for(world.application.product_runtime()).unwrap();
         let selected = world.selected_product(&phase.test_host_request());
         let snapshot = selected.application_basis().snapshot_handle();
         let graph = world.application.runtime.primary_graph().unwrap();
         let field = graph.layout.equality_field("Account", "AccountPolicy", "AccountStatus").unwrap();
-        graph.integration_handle().with_runtime(&execution, |runtime| {
-            let fact = observe_indexed_entity_selection(runtime, &execution, snapshot, field.equality_index_id.unwrap(), field.entity_kind, field.locator.clone(), StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(), 2).unwrap();
+        let (answer, seen) = graph.integration_handle().with_runtime(&execution, |runtime| {
+            let fact = observe_indexed_entity_selection(runtime, &execution, snapshot,
+                field.equality_index_id.unwrap(), field.entity_kind, field.locator.clone(),
+                StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(), 2).unwrap();
             let mut prepared = PreparedSelections::new();
             let control = StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, None);
             assert!(prepared.remains_equal(&execution, &fact, runtime, snapshot, control).unwrap());
-            let _probe = worth_execution::ExecutionCheckpointObservationForTest::install_on_this_thread_for_test(move || source.cancel());
-            let stopped = prepared.remains_equal(&execution, &fact, runtime, snapshot, control).unwrap_err();
-            assert_eq!(stopped.kind(), WorthQueryDecisionReadSetDenialKind::RequestInterrupted(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled));
+            let seen = Rc::new(Cell::new(0));
+            let contacts = Rc::clone(&seen);
+            // Query entry + Native admission precede the Native collector.
+            // Cancellation is raised at that collector's first consultation.
+            const NATIVE_COLLECTION_CONSULT: usize = 1 + 1 + 1;
+            let _probe = worth_execution::ExecutionCheckpointObservationForTest::install_on_this_thread_for_test(move || {
+                contacts.set(contacts.get() + 1);
+                if contacts.get() == NATIVE_COLLECTION_CONSULT { source.cancel(); }
+            });
+            let answer = prepared.remains_equal(&execution, &fact, runtime, snapshot, control);
+            (answer, seen.get())
         });
+        assert_eq!(seen, 3);
+        let stopped = answer.unwrap_err();
+        assert_eq!(stopped.kind(), WorthQueryDecisionReadSetDenialKind::RequestInterrupted(
+            WorthQueryRequestInterruption::Cancelled));
     }).unwrap();
 }
