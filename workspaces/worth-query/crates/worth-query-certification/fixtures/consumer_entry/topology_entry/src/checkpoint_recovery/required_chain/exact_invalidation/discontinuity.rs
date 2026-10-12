@@ -278,7 +278,6 @@ fn an_output_demanded_inside_every_window_never_leaves_it() {
 
 mod forked_branch;
 
-
 /// A consumer demanded before its upstream after a restore never settles on
 /// what the checkpoint held: it stops, as in a world that has not demanded
 /// that upstream. Demanded after it, the chain decides over the edited root.
