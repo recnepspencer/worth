@@ -300,3 +300,4 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/assessment_history.rs
 
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/computation/worker_custody.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement.rs

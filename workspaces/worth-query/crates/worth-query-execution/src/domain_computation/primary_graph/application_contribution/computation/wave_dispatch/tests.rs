@@ -231,4 +231,5 @@ mod nested_outcomes;
 
 pub(super) mod seeded_dispatch;
 
+mod diagnostic_charge;
 mod overlap;

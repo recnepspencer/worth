@@ -28,6 +28,17 @@ pub enum WorkCeilingDenial {
 }
 
 impl ExecutionWorkCeiling {
+    /// Runs a sealed diagnostic on its own meter. Its report and stops never
+    /// reach the invoking request; the caller drops this diagnostic's bill.
+    pub fn run_detached_for_test<R>(
+        self,
+        lease: &ExecutionResourceLease<'_>,
+        computation: impl FnOnce() -> R,
+    ) -> Result<(R, ExecutionReport), WorkCeilingDenial> {
+        let _detached = crate::backend::detach_meter_for_test();
+        self.run(lease, computation)
+    }
+
     pub const fn new(work_units: u64) -> Self {
         Self(work_units)
     }

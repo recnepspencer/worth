@@ -202,6 +202,7 @@ pub fn with_bootstrap_advancement<R>(
         cancellation: cancellation.clone(),
         deadline: None,
         declared_work: policy.budget().work_ceiling(),
+        certified_seed: super::test_placement::certifying(),
         form: Form::Serial(worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::from_policy(&policy),
             cancellation,
@@ -230,6 +231,7 @@ pub(in crate::domain_computation::primary_graph) fn with_serial_host_advancement
         cancellation: cancellation.clone(),
         deadline,
         declared_work: policy.budget().work_ceiling(),
+        certified_seed: super::test_placement::certifying(),
         form: Form::Serial(worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::from_policy(&policy),
             cancellation,

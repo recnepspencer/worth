@@ -27,6 +27,7 @@ impl<'authority> QueryRequestExecution<'authority> {
             cancellation: self.cancellation.clone(),
             deadline: self.deadline,
             declared_work: self.declared_work,
+            certified_seed: self.certified_seed,
             form,
         }
     }

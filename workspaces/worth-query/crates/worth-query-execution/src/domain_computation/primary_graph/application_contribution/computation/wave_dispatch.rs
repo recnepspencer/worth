@@ -112,17 +112,18 @@ pub(in crate::domain_computation::primary_graph) fn dispatch(
             };
             Ok(result)
         };
-        let outcome = match super::super::request_execution::certified_wave_seed_for_test() {
-            Some(seed) => {
-                let (outcome, order) = map.run_owned_perturbed_for_test(lease, seed, kernel);
-                #[cfg(test)]
-                tests::seeded_dispatch::record(order);
-                #[cfg(not(test))]
-                drop(order);
-                outcome
-            }
-            None => map.run_owned(lease, kernel),
-        };
+        let outcome =
+            match super::super::request_execution::certified_wave_seed_for_test(wave.request()) {
+                Some(seed) => {
+                    let (outcome, order) = map.run_owned_perturbed_for_test(lease, seed, kernel);
+                    #[cfg(test)]
+                    tests::seeded_dispatch::record(order);
+                    #[cfg(not(test))]
+                    drop(order);
+                    outcome
+                }
+                None => map.run_owned(lease, kernel),
+            };
         retain_outcome(execution, outcome)
     });
     match outcome {

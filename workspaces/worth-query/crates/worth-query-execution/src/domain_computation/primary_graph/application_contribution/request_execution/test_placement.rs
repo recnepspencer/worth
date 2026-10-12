@@ -161,7 +161,9 @@ pub(super) fn certify<T, K, R, E, Kernel, Combine>(
     Kernel: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
     Combine: Fn(&R, &R) -> R + Clone + Sync,
 {
-    let (certified, certified_report, _) = map
+    worth_execution::ExecutionWorkCeiling::new(u64::MAX)
+        .run_detached_for_test(lease, || {
+            let (certified, certified_report, _) = map
         .certify_reduce(lease, seed, kernel, identity, combine, max_value_bytes, 0)
         .unwrap_or_else(|failure| match failure {
             ReduceCertificationFailure::Run(_) => {
@@ -173,17 +175,21 @@ pub(super) fn certify<T, K, R, E, Kernel, Combine>(
                 panic!("the perturbed run of seed {seed} differs from the oracle: {mismatch:?}")
             }
         });
-    let same_bits = compare_canonical_values(lease, run.result(), certified.result())
-        .unwrap_or_else(|stop| panic!("the certified result could not be compared: {stop:?}"));
-    assert!(
-        same_bits,
-        "the run's result differs from the certified one under seed {seed}"
-    );
-    assert_eq!(
-        report.charged_work(),
-        certified_report.charged_work(),
-        "the run's charged work differs from the certified one under seed {seed}"
-    );
+            let same_bits = compare_canonical_values(lease, run.result(), certified.result())
+                .unwrap_or_else(|stop| {
+                    panic!("the certified result could not be compared: {stop:?}")
+                });
+            assert!(
+                same_bits,
+                "the run's result differs from the certified one under seed {seed}"
+            );
+            assert_eq!(
+                report.charged_work(),
+                certified_report.charged_work(),
+                "the run's charged work differs from the certified one under seed {seed}"
+            );
+        })
+        .expect("the detached diagnostic can enter its own meter");
 }
 
 /// Bounds the test thread's requests with a host's declared budget.

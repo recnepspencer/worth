@@ -26,6 +26,7 @@ pub(crate) use admission::execution_memory_requirement;
 pub(crate) use admission::execution_memory_requirement_for_lease;
 pub(crate) use admission::AdmittedBatch;
 pub use admission::BatchDenial;
+pub(crate) use meter::detach_meter_for_test;
 pub(crate) use meter::enter_certification_activity;
 pub(crate) use meter::enter_retained_memory;
 pub(crate) use meter::has_active_kernel;

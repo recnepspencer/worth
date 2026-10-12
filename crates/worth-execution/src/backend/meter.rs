@@ -44,6 +44,8 @@ pub(crate) fn active_stop() -> Option<KernelStop> {
 }
 
 mod activity;
+mod detached;
+pub(crate) use detached::detach_meter_for_test;
 mod checkpoint;
 mod framework_bytes;
 mod invoking_scope;

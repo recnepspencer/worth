@@ -49,6 +49,7 @@ pub(in crate::domain_computation::primary_graph) struct QueryRequestExecution<'a
     cancellation: worth_execution::CancellationToken,
     deadline: Option<std::time::Instant>,
     declared_work: u64,
+    certified_seed: Option<u64>,
     form: Form<'a>,
 }
 
@@ -108,6 +109,7 @@ impl<'a> QueryRequestExecution<'a> {
             cancellation,
             deadline,
             declared_work,
+            certified_seed: test_placement::certifying(),
             form,
         }
     }
@@ -166,7 +168,10 @@ impl<'a> QueryRequestExecution<'a> {
             }
             Form::Serial(request) => DispatchForm::Serial(request),
         };
-        Ok(QueryDispatch { form })
+        Ok(QueryDispatch {
+            form,
+            certified_seed: self.certified_seed,
+        })
     }
 }
 
@@ -219,6 +224,7 @@ enum DispatchForm<'d> {
 /// One run's placement. Each pattern runs inside a work ceiling on it.
 pub(super) struct QueryDispatch<'d> {
     form: DispatchForm<'d>,
+    certified_seed: Option<u64>,
 }
 
 /// What a reduction produced, as `run_reduce` returns it.
@@ -280,7 +286,8 @@ impl QueryDispatch<'_> {
             Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
         Combine: Fn(&R, &R) -> R + Clone + Sync,
     {
-        let certification = test_placement::certifying()
+        let certification = self
+            .certified_seed
             .map(|seed| (seed, kernel.clone(), identity.clone(), combine.clone()));
         let ceiling = ExecutionWorkCeiling::new(ceiling);
         let held = tree.held.as_mut();
@@ -349,6 +356,8 @@ pub(in crate::domain_computation::primary_graph) use advancement::record_caller_
 
 pub(in crate::domain_computation::primary_graph) use advancement::observation::record_event;
 
-pub(in crate::domain_computation::primary_graph) fn certified_wave_seed_for_test() -> Option<u64> {
-    test_placement::certifying()
+pub(in crate::domain_computation::primary_graph) fn certified_wave_seed_for_test(
+    request: &QueryRequestExecution<'_>,
+) -> Option<u64> {
+    request.certified_seed
 }
