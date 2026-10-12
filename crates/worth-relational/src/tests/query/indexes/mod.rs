@@ -70,3 +70,5 @@ mod patch_allocation;
 mod bulk_commit_allocation;
 
 mod cold_memory_boundary;
+
+mod read_charge_pins;

@@ -271,7 +271,7 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
                 .unwrap();
                 let mut stopped = None;
                 execution
-                    .run(worth_execution::ExecutionWorkCeiling::new(0), |lease| {
+                    .run(worth_execution::ExecutionWorkCeiling::new(2 * crate::visibility::materialization::read_records::read_prices::KEYED_RECORD), |lease| {
                         scan.run::<(), (), (), _>(lease, (), 0, 0, 0, 0, |_, _, work| {
                             stopped =
                                 Some(runtime.index_access().execute_prepared_entity_field_lookup(
@@ -288,7 +288,7 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
                                         if admission_calls == after {
                                             if exhaust_work {
                                                 assert_eq!(
-                                                    work.checkpoint(1),
+                                                    work.checkpoint(work.remaining_work()+1),
                                                     Err(
                                                         worth_execution::MapKernelStop::WorkCeiling
                                                     )

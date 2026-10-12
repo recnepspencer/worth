@@ -14,7 +14,6 @@ impl VisibilityProjectionView<'_> {
         scope: &ProjectionAspectScope,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
     ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
-        super::super::read_request::consult(execution)?;
         let SnapshotStateBasis::Exact(basis) = &self.basis else {
             // Historical reconstruction retains its own version-selection rules.
             let Some(record) = self.authoritative_entity_record(execution, entity)? else {
@@ -22,33 +21,41 @@ impl VisibilityProjectionView<'_> {
             };
             return Ok(project(EntityProjectionRecord::new(&record, scope)));
         };
-        Ok((|| {
-            let root = basis.root();
-            let partition = root.get_partition(entity.partition_id)?;
-            let slot = partition.entity_arena.get_slot(entity.slot_index())?;
-            if !slot.is_live()
-                || (!entity.generation.is_zero() && slot.generation() != entity.generation_value())
-            {
-                return None;
-            }
-            let kind = root
-                .schema_authority()
-                .registry()
-                .resolve_entity(slot.kind_id()?)
-                .ok()?;
-            let actual = EntityId::new(
-                entity.partition_id,
-                entity.local_slot_value(),
-                slot.generation(),
-            );
-            let created = partition
-                .entity_arena
-                .created_at_for_slot(entity.slot_index())
-                .expect("visible entity slot has creation metadata");
+        let resolved = super::super::read_work::point(
+            execution,
+            || {
+                let root = basis.root();
+                let partition = root.get_partition(entity.partition_id)?;
+                let slot = partition.entity_arena.get_slot(entity.slot_index())?;
+                if !slot.is_live()
+                    || (!entity.generation.is_zero()
+                        && slot.generation() != entity.generation_value())
+                {
+                    return None;
+                }
+                let kind = root
+                    .schema_authority()
+                    .registry()
+                    .resolve_entity(slot.kind_id()?)
+                    .ok()?;
+                let actual = EntityId::new(
+                    entity.partition_id,
+                    entity.local_slot_value(),
+                    slot.generation(),
+                );
+                let created = partition
+                    .entity_arena
+                    .created_at_for_slot(entity.slot_index())
+                    .expect("visible entity slot has creation metadata");
+                Some((actual, slot, kind, created))
+            },
+            |_| 0,
+        )?;
+        Ok(resolved.and_then(|(actual, slot, kind, created)| {
             project(EntityProjectionRecord::from_slot(
                 actual, &slot, &kind, created, scope,
             ))
-        })())
+        }))
     }
 }
 

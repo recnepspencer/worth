@@ -23,7 +23,7 @@ impl VisibilityProjectionView<'_> {
         Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::visibility::materialization::read_records::read_work::metered(
+        crate::visibility::materialization::read_records::read_work::scan(
             execution,
             |context| match &self.basis {
                 SnapshotStateBasis::Exact(basis) => {
@@ -48,7 +48,7 @@ impl VisibilityProjectionView<'_> {
                     )
                 }
             },
-            |result| result.as_ref().map_or(0, |read| read.owned_bytes()),
+            |read| read.owned_bytes(),
         )
     }
 
@@ -63,7 +63,7 @@ impl VisibilityProjectionView<'_> {
         Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::visibility::materialization::read_records::read_work::metered(
+        crate::visibility::materialization::read_records::read_work::scan(
             execution,
             |context| match &self.basis {
                 SnapshotStateBasis::Exact(basis) => {
@@ -88,7 +88,7 @@ impl VisibilityProjectionView<'_> {
                     )
                 }
             },
-            |result| result.as_ref().map_or(0, |read| read.owned_bytes()),
+            |read| read.owned_bytes(),
         )
     }
 }

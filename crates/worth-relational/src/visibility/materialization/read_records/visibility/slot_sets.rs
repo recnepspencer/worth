@@ -31,25 +31,32 @@ pub(in super::super) fn visible_relation_slots_in_partition_from_state(
     state: &(impl PartitionAccess + ?Sized),
     partition_id: PartitionId,
     version_id: VersionId,
+    charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     count_scans: impl Fn(&RelationalRuntime, usize),
-) -> Option<DenseSlotBitSet> {
+) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop> {
     let current_version = runtime.current_version_id();
-    let partition = state.get_partition(partition_id)?;
+    let Some(partition) = state.get_partition(partition_id) else {
+        return Ok(None);
+    };
     let arena = &partition.relation_arena;
     let mut visible_slots = DenseSlotBitSet::with_capacity(arena.slot_count());
     if version_id == current_version {
-        for slot in arena.live_bitset.iter_set_slots() {
+        for slot in arena.live_bitset.set_slots() {
+            charge(super::super::read_prices::EXAMINE_SLOT)?;
+            charge(super::super::read_prices::RESERVE_RECORD)?;
             visible_slots.set(slot, true);
         }
     } else {
         count_scans(runtime, arena.slot_count());
-        for slot in arena.occupied_slots() {
+        for slot in arena.occupied_slots_iter() {
+            charge(super::super::read_prices::EXAMINE_SLOT)?;
             if visible_relation_metadata(partition, slot, version_id).is_some() {
+                charge(super::super::read_prices::RESERVE_RECORD)?;
                 visible_slots.set(slot, true);
             }
         }
     }
-    (visible_slots.count_ones() > 0).then_some(visible_slots)
+    Ok((visible_slots.count_ones() > 0).then_some(visible_slots))
 }
 
 pub(in super::super) fn record_visible_in_arena_at_version<K: RecordKind>(
@@ -71,26 +78,33 @@ pub(in super::super) fn visible_slots_in_partition_from_state<K: RecordKind>(
     state: &(impl PartitionAccess + ?Sized),
     partition_id: PartitionId,
     version_id: VersionId,
+    charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     count_scans: impl Fn(&RelationalRuntime, usize),
-) -> Option<DenseSlotBitSet>
+) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop>
 where
     K::Meta: HistoricalMetadata,
 {
     let current_version = runtime.current_version_id();
-    let partition = state.get_partition(partition_id)?;
+    let Some(partition) = state.get_partition(partition_id) else {
+        return Ok(None);
+    };
     let arena = K::arena(partition);
     let mut visible_slots = DenseSlotBitSet::with_capacity(arena.slot_count());
     if version_id == current_version {
-        for slot in arena.live_bitset.iter_set_slots() {
+        for slot in arena.live_bitset.set_slots() {
+            charge(super::super::read_prices::EXAMINE_SLOT)?;
+            charge(super::super::read_prices::RESERVE_RECORD)?;
             visible_slots.set(slot, true);
         }
     } else {
         count_scans(runtime, arena.slot_count());
-        for slot in arena.occupied_slots() {
+        for slot in arena.occupied_slots_iter() {
+            charge(super::super::read_prices::EXAMINE_SLOT)?;
             if record_visible_in_arena_at_version(arena, slot, version_id) {
+                charge(super::super::read_prices::RESERVE_RECORD)?;
                 visible_slots.set(slot, true);
             }
         }
     }
-    (visible_slots.count_ones() > 0).then_some(visible_slots)
+    Ok((visible_slots.count_ones() > 0).then_some(visible_slots))
 }

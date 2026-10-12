@@ -20,7 +20,7 @@ use crate::visibility::materialization::read_records::reader::{
 };
 
 impl VisibilityProjectionView<'_> {
-    /// Reads the whole selected adjacency under the caller's request alone.
+    /// Reads the selected adjacency under the request, without a second ceiling.
     pub fn outgoing_relations_of_kind(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -33,58 +33,21 @@ impl VisibilityProjectionView<'_> {
         super::super::read_work::metered(
             execution,
             |context| {
-                let mut ledger = AdjacencyLeaseLedger::default();
-                let result = (|| {
-                    let Some(root) = self.basis.root() else {
-                        return Ok(Vec::new());
-                    };
-                    let basis = AdjacencyKindBasis::of_current_version(
-                        self.basis.root_version() == Some(self.version_id()),
-                    );
-                    let ids = ledger.lease(
-                        root.get_partition(entity_id.partition_id)
-                            .and_then(|partition| {
-                                AdjacencyDirection::Outgoing
-                                    .table(partition)
-                                    .get(entity_id.slot_index())
-                            }),
-                        basis,
-                        kind_id,
-                    );
-                    let mut records = Vec::new();
-                    for relation_id in ids.iter().copied() {
-                        context
-                            .checkpoint(1)
-                            .map_err(crate::execution::denial::kernel_stop)?;
-                        let Some(record) = self.project_relation_record(relation_id) else {
-                            continue;
-                        };
-                        if record.kind.kind_id != kind_id
-                            || record.lifecycle != RecordLifecycleState::Live
-                            || !AdjacencyDirection::Outgoing.matches_endpoint(&record, entity_id)
-                        {
-                            continue;
-                        }
-                        context
-                            .checkpoint(1)
-                            .map_err(crate::execution::denial::kernel_stop)?;
-                        records.push(record);
-                    }
-                    records.sort_by_key(relation_identity_order_key);
-                    Ok(records)
-                })();
-                ledger.settle(self.runtime);
-                result
+                self.entity_relations_of_kind(
+                    entity_id,
+                    kind_id,
+                    AdjacencyDirection::Outgoing,
+                    &mut |units, _, _| context.checkpoint(units),
+                )
+                .map(BoundedAdjacencyTruthRead::into_records)
             },
-            |result: &Result<
-                Vec<crate::storage::data::RelationReadRecord>,
-                crate::execution::RelationalExecutionDenialCause,
-            >| {
-                result
+            |answer| {
+                answer
                     .as_ref()
                     .map_or(0, super::super::read_footprint::relations)
             },
         )?
+        .map_err(crate::execution::denial::kernel_stop)
     }
 
     pub fn bounded_outgoing_relations_of_kind(
@@ -136,32 +99,60 @@ impl VisibilityProjectionView<'_> {
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        super::super::read_request::checked(execution, || {
-            let Some(root) = self.basis.root() else {
-                return Ok(BoundedAdjacencyTruthRead::new(Vec::new(), 0));
-            };
-            let adjacency_basis = AdjacencyKindBasis::of_current_version(
-                self.basis.root_version() == Some(self.version_id()),
-            );
-            let mut ledger = AdjacencyLeaseLedger::default();
-            let relation_ids = ledger.lease(
-                root.get_partition(entity_id.partition_id)
-                    .and_then(|partition| direction.table(partition).get(entity_id.slot_index())),
-                adjacency_basis,
-                kind_id,
-            );
+        super::super::read_work::scan(
+            execution,
+            |context| {
+                self.entity_relations_of_kind(
+                    entity_id,
+                    kind_id,
+                    direction,
+                    &mut |units, examined, reserved| {
+                        if examined + reserved == maximum_work_units {
+                            return Err(super::super::native_scan_stop::NativeScanStop::Limit(
+                                AdjacencyTruthReadLimitExceeded::new(examined, reserved),
+                            ));
+                        }
+                        context
+                            .checkpoint(units)
+                            .map_err(super::super::native_scan_stop::NativeScanStop::request)
+                    },
+                )
+            },
+            |read| read.owned_bytes(),
+        )
+    }
+
+    fn entity_relations_of_kind<E>(
+        &self,
+        entity_id: EntityId,
+        kind_id: KindId,
+        direction: AdjacencyDirection,
+        spend: &mut dyn FnMut(u64, usize, usize) -> Result<(), E>,
+    ) -> Result<BoundedAdjacencyTruthRead, E> {
+        let Some(root) = self.basis.root() else {
+            return Ok(BoundedAdjacencyTruthRead::new(Vec::new(), 0));
+        };
+        let basis = AdjacencyKindBasis::of_current_version(
+            self.basis.root_version() == Some(self.version_id()),
+        );
+        let mut ledger = AdjacencyLeaseLedger::default();
+        let ids = ledger.lease(
+            root.get_partition(entity_id.partition_id)
+                .and_then(|partition| direction.table(partition).get(entity_id.slot_index())),
+            basis,
+            kind_id,
+        );
+        let answer = (|| {
             let mut records = Vec::new();
-            let mut examined = 0_usize;
-            for relation_id in relation_ids.iter().copied() {
-                if examined + records.len() == maximum_work_units {
-                    ledger.settle(self.runtime);
-                    return Err(AdjacencyTruthReadLimitExceeded::new(
-                        examined,
-                        records.len(),
-                    ));
-                }
+            let mut examined = 0;
+            for id in ids.iter().copied() {
+                spend(
+                    super::super::read_prices::EXAMINE_SLOT,
+                    examined,
+                    records.len(),
+                )?;
                 examined += 1;
-                let Some(record) = self.project_relation_record(relation_id) else {
+                let Some(record) = self.project_relation_record(id) else {
                     continue;
                 };
                 if record.kind.kind_id != kind_id
@@ -170,18 +161,17 @@ impl VisibilityProjectionView<'_> {
                 {
                     continue;
                 }
-                if examined + records.len() == maximum_work_units {
-                    ledger.settle(self.runtime);
-                    return Err(AdjacencyTruthReadLimitExceeded::new(
-                        examined,
-                        records.len(),
-                    ));
-                }
+                spend(
+                    super::super::read_prices::RESERVE_RECORD,
+                    examined,
+                    records.len(),
+                )?;
                 records.push(record);
             }
-            ledger.settle(self.runtime);
             records.sort_by_key(relation_identity_order_key);
             Ok(BoundedAdjacencyTruthRead::new(records, examined))
-        })
+        })();
+        ledger.settle(self.runtime);
+        answer
     }
 }

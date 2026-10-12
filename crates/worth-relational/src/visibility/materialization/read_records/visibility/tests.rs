@@ -155,21 +155,23 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
     let state = runtime.storage_access().current_edition();
     let historical_records = runtime
         .read_truth()
-        .visible_entities_of_kind_in_partition_from_state(
+        .paid_entities_in_partition(
             &state,
+            &runtime.config.schema.registry,
             partition_id,
-            KindId(11),
-            VersionId(1),
+            Some(KindId(11)),
+            super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
             &mut |_| Ok(()),
         )
         .unwrap();
     let reused_kind_records = runtime
         .read_truth()
-        .visible_entities_of_kind_in_partition_from_state(
+        .paid_entities_in_partition(
             &state,
+            &runtime.config.schema.registry,
             partition_id,
-            KindId(12),
-            VersionId(1),
+            Some(KindId(12)),
+            super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
             &mut |_| Ok(()),
         )
         .unwrap();
@@ -240,21 +242,23 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
     let state = runtime.storage_access().current_edition();
     let historical_records = runtime
         .read_truth()
-        .visible_relations_of_kind_in_partition_from_state(
+        .paid_relations_in_partition(
             &state,
+            &runtime.config.schema.registry,
             partition_id,
-            KindId(21),
-            VersionId(1),
+            Some(KindId(21)),
+            super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
             &mut |_| Ok(()),
         )
         .unwrap();
     let reused_kind_records = runtime
         .read_truth()
-        .visible_relations_of_kind_in_partition_from_state(
+        .paid_relations_in_partition(
             &state,
+            &runtime.config.schema.registry,
             partition_id,
-            KindId(22),
-            VersionId(1),
+            Some(KindId(22)),
+            super::super::reader::KindScanVisibility::for_version(&runtime, VersionId(1)),
             &mut |_| Ok(()),
         )
         .unwrap();

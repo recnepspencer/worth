@@ -35,6 +35,7 @@ mod nesting;
 mod owned_map;
 mod prepared_map;
 mod request_consultation;
+mod request_descendant;
 
 pub(crate) fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {

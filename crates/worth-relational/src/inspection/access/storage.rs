@@ -79,14 +79,23 @@ impl<'runtime> InspectionAccess<'runtime> {
             _ => self.read_view_for_scope(execution, scope)?,
         };
         Ok(match scope {
-            InspectionScope::Current => self
-                .runtime
-                .read_truth()
-                .authoritative_entity_record_for_id_at_version(
-                    &self.runtime.storage_access().current_edition(),
-                    entity_id,
-                    self.runtime.current_version_id(),
-                ),
+            InspectionScope::Current => {
+                crate::visibility::materialization::read_records::read_work::point(
+                    execution,
+                    || {
+                        self.runtime
+                            .read_truth()
+                            .authoritative_entity_record_for_id_at_version(
+                                &self.runtime.storage_access().current_edition(),
+                                entity_id,
+                                self.runtime.current_version_id(),
+                            )
+                    },
+                    |record| {
+                        record.as_ref().map_or(0, crate::visibility::materialization::read_records::read_footprint::entity)
+                    },
+                )?
+            }
             InspectionScope::Version(_) | InspectionScope::Snapshot(_) => read_view
                 .as_ref()
                 .and_then(|view| view.get_entity(entity_id).cloned()),
@@ -105,14 +114,23 @@ impl<'runtime> InspectionAccess<'runtime> {
             _ => self.read_view_for_scope(execution, scope)?,
         };
         Ok(match scope {
-            InspectionScope::Current => self
-                .runtime
-                .read_truth()
-                .authoritative_relation_record_for_id_at_version(
-                    &self.runtime.storage_access().current_edition(),
-                    relation_id,
-                    self.runtime.current_version_id(),
-                ),
+            InspectionScope::Current => {
+                crate::visibility::materialization::read_records::read_work::point(
+                    execution,
+                    || {
+                        self.runtime
+                            .read_truth()
+                            .authoritative_relation_record_for_id_at_version(
+                                &self.runtime.storage_access().current_edition(),
+                                relation_id,
+                                self.runtime.current_version_id(),
+                            )
+                    },
+                    |record| {
+                        record.as_ref().map_or(0, crate::visibility::materialization::read_records::read_footprint::relation)
+                    },
+                )?
+            }
             InspectionScope::Version(_) | InspectionScope::Snapshot(_) => read_view
                 .as_ref()
                 .and_then(|view| view.get_relation(relation_id).cloned()),

@@ -122,7 +122,7 @@ impl VisibilityProjectionView<'_> {
     }
 }
 
-fn btree_navigation_work(entries: usize) -> u64 {
+pub(super) fn btree_navigation_work(entries: usize) -> u64 {
     // A nonleaf root has two children; every other std B-tree node has at
     // least six. Eleven fixed-key comparisons per occupied level is safe.
     let mut minimum = 1_usize;

@@ -10,6 +10,7 @@
 //! The bound is applied while the arena is walked, never after materializing
 //! the answer, so an over-large scope costs the declared budget and stops.
 
+use super::super::native_scan_stop::NativeScanStop;
 use super::*;
 
 /// The live entities of one kind, read under a declared work bound.
@@ -47,7 +48,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::visibility::materialization::read_records::read_work::metered(
+        crate::visibility::materialization::read_records::read_work::scan(
             execution,
             |context| {
                 let state = self.runtime.storage_access().current_edition();
@@ -60,17 +61,13 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     &mut |units| context.checkpoint(units),
                 )
             },
-            |result| {
-                result.as_ref().map_or(0, |read| {
-                    super::super::read_footprint::entities(&read.records)
-                })
-            },
+            |result| super::super::read_footprint::entities(&result.records),
         )
     }
 
     /// Reads the entities of one kind in one state, such as a branch root,
     /// under the same bound and cost model as the current-edition scan.
-    pub(crate) fn bounded_entities_of_kind_in_state(
+    pub(in crate::visibility::materialization::read_records) fn bounded_entities_of_kind_in_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),
         registry: &crate::schema::data::RelationalSchemaRegistry,
@@ -78,7 +75,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         visibility: KindScanVisibility,
         maximum_work_units: usize,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded> {
+    ) -> Result<BoundedEntityKindTruthRead, NativeScanStop<EntityKindTruthReadLimitExceeded>> {
         let mut scan = EntityKindScan::funded(maximum_work_units, charge);
         for partition_id in state.partition_ids() {
             self.scan_entity_kind_in_partition(
@@ -105,7 +102,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         kind_id: crate::identity::data::KindId,
         visibility: KindScanVisibility,
         scan: &mut EntityKindScan<'_>,
-    ) -> Result<(), EntityKindTruthReadLimitExceeded> {
+    ) -> Result<(), NativeScanStop<EntityKindTruthReadLimitExceeded>> {
         let current_version = VersionSource::current_version_id(self.runtime);
         let Some(partition) = state.get_partition(partition_id) else {
             return Ok(());
@@ -189,16 +186,8 @@ impl<'charge> EntityKindScan<'charge> {
         }
     }
 
-    pub(super) fn request_funded(
-        charge: &'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Self {
-        let mut scan = Self::funded(0, charge);
-        scan.maximum_work_units = None;
-        scan
-    }
-
-    fn examine_slot(&mut self) -> Result<(), EntityKindTruthReadLimitExceeded> {
-        self.spend()?;
+    fn examine_slot(&mut self) -> Result<(), NativeScanStop<EntityKindTruthReadLimitExceeded>> {
+        self.spend(super::super::read_prices::EXAMINE_SLOT)?;
         self.entity_slots_examined += 1;
         Ok(())
     }
@@ -206,28 +195,24 @@ impl<'charge> EntityKindScan<'charge> {
     fn reserve_with(
         &mut self,
         materialize: impl FnOnce() -> EntityReadRecord,
-    ) -> Result<(), EntityKindTruthReadLimitExceeded> {
-        self.spend()?;
+    ) -> Result<(), NativeScanStop<EntityKindTruthReadLimitExceeded>> {
+        self.spend(super::super::read_prices::RESERVE_RECORD)?;
         self.records.push(materialize());
         Ok(())
     }
 
-    fn spend(&mut self) -> Result<(), EntityKindTruthReadLimitExceeded> {
+    fn spend(
+        &mut self,
+        units: u64,
+    ) -> Result<(), NativeScanStop<EntityKindTruthReadLimitExceeded>> {
         if self.maximum_work_units == Some(self.work_units) {
-            return Err(EntityKindTruthReadLimitExceeded {
+            return Err(NativeScanStop::Limit(EntityKindTruthReadLimitExceeded {
                 entity_slots_examined: self.entity_slots_examined,
                 entity_records_reserved: self.records.len(),
-            });
+            }));
         }
-        if self
-            .charge
-            .as_mut()
-            .is_some_and(|charge| charge(1).is_err())
-        {
-            return Err(EntityKindTruthReadLimitExceeded {
-                entity_slots_examined: self.entity_slots_examined,
-                entity_records_reserved: self.records.len(),
-            });
+        if let Some(charge) = self.charge.as_mut() {
+            charge(units).map_err(NativeScanStop::request)?;
         }
         self.work_units += 1;
         Ok(())
@@ -238,10 +223,6 @@ impl<'charge> EntityKindScan<'charge> {
             records: self.records,
             entity_slots_examined: self.entity_slots_examined,
         }
-    }
-
-    pub(super) fn into_records(self) -> Vec<EntityReadRecord> {
-        self.records
     }
 }
 
@@ -282,5 +263,28 @@ impl EntityKindTruthReadLimitExceeded {
 
     pub const fn consumed_work_units(self) -> usize {
         self.entity_slots_examined + self.entity_records_reserved
+    }
+}
+
+#[cfg(test)]
+mod paid_stop_tests {
+    use super::*;
+    #[test]
+    fn entity_scan_keeps_the_request_charge_failure() {
+        for stop in [
+            worth_execution::MapKernelStop::Cancelled,
+            worth_execution::MapKernelStop::DeadlineElapsed,
+            worth_execution::MapKernelStop::WorkCeiling,
+        ] {
+            let mut charge = |_| Err(stop);
+            let mut scan = EntityKindScan::funded(8, &mut charge);
+            assert_eq!(
+                scan.examine_slot(),
+                Err(NativeScanStop::Request(
+                    crate::execution::denial::kernel_stop(stop)
+                ))
+            );
+            assert_eq!(scan.finish().entity_records_reserved(), 0);
+        }
     }
 }

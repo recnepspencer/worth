@@ -12,7 +12,12 @@ use crate::visibility::snapshot_states::SnapshotState;
 use super::HistoryAuthority;
 
 impl<'runtime> HistoryAuthority<'runtime> {
-    pub fn retain_version_for_replay(&self, version_id: crate::identity::data::VersionId) -> bool {
+    pub fn retain_version_for_replay(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        version_id: crate::identity::data::VersionId,
+    ) -> Result<bool, crate::execution::RelationalExecutionDenialCause> {
+        crate::visibility::materialization::read_records::read_request::consult(execution)?;
         if self
             .runtime
             .visibility
@@ -28,16 +33,16 @@ impl<'runtime> HistoryAuthority<'runtime> {
             {
                 bump_replay_ref(self.runtime, version_id, 1);
             }
-            return true;
+            return Ok(true);
         }
         if version_id.is_zero() || version_id.as_u64() > self.runtime.current_version_id().as_u64()
         {
-            return false;
+            return Ok(false);
         }
         let Ok(basis) = historical_basis_for_retained_version(self.runtime, version_id) else {
-            return false;
+            return Ok(false);
         };
-        let state = ensure_historical_state(self.runtime, basis, false);
+        let state = ensure_historical_state(execution, self.runtime, basis, false)?;
         self.runtime.visibility_pins().pin_replay_state(&state);
         if self
             .runtime
@@ -63,7 +68,7 @@ impl<'runtime> HistoryAuthority<'runtime> {
             version_id,
             crate::runtime::ReplayRetentionState { ref_count: 1 },
         );
-        true
+        Ok(true)
     }
 
     pub fn release_version_replay_retention(

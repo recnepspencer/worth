@@ -154,98 +154,27 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         }
     }
 
-    pub(crate) fn visible_entities_of_kind_in_partition_from_state(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
-        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<EntityReadRecord>, super::EntityKindTruthReadLimitExceeded> {
-        self.visible_entities_of_kind_in_partition_from_state_with_registry(
-            state,
-            &self.runtime.config.schema.registry,
-            partition_id,
-            kind_id,
-            version_id,
-            charge,
-        )
-    }
-
-    pub(crate) fn visible_entities_of_kind_in_partition_from_state_with_registry(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
-        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<EntityReadRecord>, super::EntityKindTruthReadLimitExceeded> {
-        let mut scan = super::truth_kind_scan::EntityKindScan::request_funded(charge);
-        self.scan_entity_kind_in_partition(
-            state,
-            registry,
-            partition_id,
-            kind_id,
-            super::KindScanVisibility::for_version(self.runtime, version_id),
-            &mut scan,
-        )?;
-        Ok(scan.into_records())
-    }
-
-    pub(crate) fn visible_relations_of_kind_in_partition_from_state(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
-        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<RelationReadRecord>, super::RelationKindTruthReadDenial> {
-        self.visible_relations_of_kind_in_partition_from_state_with_registry(
-            state,
-            &self.runtime.config.schema.registry,
-            partition_id,
-            kind_id,
-            version_id,
-            charge,
-        )
-    }
-
-    pub(crate) fn visible_relations_of_kind_in_partition_from_state_with_registry(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
-        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<RelationReadRecord>, super::RelationKindTruthReadDenial> {
-        let mut scan = super::truth_relation_kind_scan::RelationKindScan::request_funded(charge);
-        self.scan_relation_kind_in_partition(
-            state,
-            registry,
-            partition_id,
-            kind_id,
-            super::KindScanVisibility::for_version(self.runtime, version_id),
-            &mut scan,
-        )?;
-        Ok(scan.into_records())
-    }
-
     pub(crate) fn visible_entity_slots_from_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)> {
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<
+        Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
+        worth_execution::MapKernelStop,
+    > {
         let mut partitions = Vec::new();
         for partition_id in state.partition_ids() {
-            if let Some(entity_slots) =
-                self.visible_entity_slots_in_partition_from_state(state, partition_id, version_id)
-            {
+            if let Some(entity_slots) = self.visible_entity_slots_in_partition_from_state(
+                state,
+                partition_id,
+                version_id,
+                charge,
+            )? {
                 partitions.push((partition_id, entity_slots));
             }
         }
-        partitions
+        Ok(partitions)
     }
 
     pub(crate) fn visible_entity_slots_in_partition_from_state(
@@ -253,12 +182,14 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         state: &(impl PartitionAccess + ?Sized),
         partition_id: crate::identity::data::PartitionId,
         version_id: crate::identity::data::VersionId,
-    ) -> Option<DenseSlotBitSet> {
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop> {
         visible_slots_in_partition_from_state::<crate::storage::substrate::EntityRecordKind>(
             self.runtime,
             state,
             partition_id,
             version_id,
+            charge,
             |runtime, scanned| {
                 runtime.services.instrumentation.count(|counters| {
                     counters.visibility_entity_slot_scans += scanned;
@@ -271,16 +202,23 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         state: &(impl PartitionAccess + ?Sized),
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)> {
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<
+        Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
+        worth_execution::MapKernelStop,
+    > {
         let mut partitions = Vec::new();
         for partition_id in state.partition_ids() {
-            if let Some(relation_slots) =
-                self.visible_relation_slots_in_partition_from_state(state, partition_id, version_id)
-            {
+            if let Some(relation_slots) = self.visible_relation_slots_in_partition_from_state(
+                state,
+                partition_id,
+                version_id,
+                charge,
+            )? {
                 partitions.push((partition_id, relation_slots));
             }
         }
-        partitions
+        Ok(partitions)
     }
 
     pub(crate) fn visible_relation_slots_in_partition_from_state(
@@ -288,12 +226,14 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         state: &(impl PartitionAccess + ?Sized),
         partition_id: crate::identity::data::PartitionId,
         version_id: crate::identity::data::VersionId,
-    ) -> Option<DenseSlotBitSet> {
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop> {
         visible_relation_slots_in_partition_from_state(
             self.runtime,
             state,
             partition_id,
             version_id,
+            charge,
             |runtime, scanned| {
                 runtime.services.instrumentation.count(|counters| {
                     counters.visibility_relation_slot_scans += scanned;

@@ -109,7 +109,8 @@ fn perf_retention_reclaim_matrix() {
                 .is_ok());
             assert!(runtime
                 .history_authority()
-                .retain_version_for_replay(created.version_id));
+                .retain_version_for_replay(execution, created.version_id)
+                .unwrap());
 
             runtime.performance_access().reset_counters();
             let inspect_started_at = Instant::now();

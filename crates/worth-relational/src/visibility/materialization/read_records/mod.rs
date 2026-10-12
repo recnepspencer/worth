@@ -1,8 +1,10 @@
 pub(crate) mod materialization;
+mod native_scan_stop;
 mod projection;
-mod read_footprint;
+pub(crate) mod read_footprint;
+pub(crate) mod read_prices;
 pub(crate) mod read_request;
-mod read_work;
+pub(crate) mod read_work;
 mod reader;
 mod visibility;
 

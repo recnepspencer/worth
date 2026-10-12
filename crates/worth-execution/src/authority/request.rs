@@ -124,7 +124,10 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         operation: impl for<'scope> FnOnce(Option<&'scope ExecutionResourceLease<'authority>>) -> R,
     ) -> Result<R, WorkCeilingDenial> {
         match self.form {
-            RequestBacking::Leased(lease) => Ok(operation(Some(lease))),
+            RequestBacking::Leased(lease) => {
+                let active = lease.current_descendant();
+                Ok(operation(Some(active.as_ref().unwrap_or(lease))))
+            }
             RequestBacking::Serial(request) => ExecutionWorkCeiling::new(self.work_ceiling())
                 .run_serial(request, || operation(None))
                 .map(|(value, _)| value),

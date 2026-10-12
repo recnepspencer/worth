@@ -18,7 +18,7 @@ impl<T> ChargedBytes for MaterializedRead<T> {
 
 /// Run the native scan's checkpoints in the caller's active request. Native
 /// limits stay in the value; request stops return before any value can escape.
-pub(super) fn metered<T>(
+pub(crate) fn metered<T>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     mut read: impl FnMut(&mut MapKernelContext<'_, '_>) -> T,
     owned_bytes: impl Fn(&T) -> u64,
@@ -33,7 +33,9 @@ pub(super) fn metered<T>(
                 lease,
                 (),
                 0,
-                execution.memory_limit() / 4,
+                lease.map_or(execution.memory_limit(), |lease| {
+                    lease.policy().budget().charged_memory_bytes()
+                }) / 4,
                 0,
                 0,
                 |_, _, context| {
@@ -69,7 +71,7 @@ pub(super) fn metered<T>(
 
 /// A keyed record read uses the same one-unit checkpoint as its streamed
 /// neighbor, before touching or cloning the record.
-pub(super) fn point<T>(
+pub(crate) fn point<T>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     mut read: impl FnMut() -> T,
     owned_bytes: impl Fn(&T) -> u64,
@@ -77,10 +79,29 @@ pub(super) fn point<T>(
     metered(
         execution,
         |context| {
-            context.checkpoint(1).ok()?;
-            Some(read())
+            context
+                .checkpoint(super::read_prices::KEYED_RECORD)
+                .map_err(crate::execution::denial::kernel_stop)?;
+            Ok(read())
         },
-        |value| value.as_ref().map_or(0, &owned_bytes),
+        |value: &Result<T, Cause>| value.as_ref().map_or(0, &owned_bytes),
     )?
-    .ok_or(Cause::WorkExhausted)
+}
+
+pub(super) fn scan<T, Limit>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    mut read: impl FnMut(
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<T, super::native_scan_stop::NativeScanStop<Limit>>,
+    owned_bytes: impl Fn(&T) -> u64,
+) -> Result<Result<T, Limit>, Cause> {
+    match metered(
+        execution,
+        |context| read(context),
+        |answer| answer.as_ref().map_or(0, &owned_bytes),
+    )? {
+        Ok(value) => Ok(Ok(value)),
+        Err(super::native_scan_stop::NativeScanStop::Request(cause)) => Err(cause),
+        Err(super::native_scan_stop::NativeScanStop::Limit(limit)) => Ok(Err(limit)),
+    }
 }

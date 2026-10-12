@@ -250,7 +250,8 @@ fn retention_plan_reports_explicit_replay_pins_until_released() {
         .is_ok());
     assert!(runtime
         .history_authority()
-        .retain_version_for_replay(created.version_id));
+        .retain_version_for_replay(execution, created.version_id)
+        .unwrap());
 
     let pinned = runtime.retention().inspect_plan();
     assert!(pinned.replay_pinned_entities >= 1);
@@ -279,7 +280,8 @@ fn replay_retention_preserves_historical_live_entity_aspects_across_updates() {
         .is_ok());
     assert!(runtime
         .history_authority()
-        .retain_version_for_replay(created.version_id));
+        .retain_version_for_replay(execution, created.version_id)
+        .unwrap());
 
     let _updated = update_entity(execution, &runtime, entity, "replay-history-updated");
     let historical = runtime
@@ -332,7 +334,8 @@ fn retention_plan_reports_explicit_replay_pins_for_deleted_relations_until_relea
         .is_ok());
     assert!(runtime
         .history_authority()
-        .retain_version_for_replay(created.version_id));
+        .retain_version_for_replay(execution, created.version_id)
+        .unwrap());
 
     let pinned = runtime.retention().inspect_plan();
     let diagnostics = runtime.publication().diagnostics();

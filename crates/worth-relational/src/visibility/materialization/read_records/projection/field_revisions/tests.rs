@@ -1,12 +1,12 @@
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 
-use super::*;
 use crate::facade::identity::{KindId, PartitionId};
 use crate::facade::mvcc::WorkerIntentBatch;
 use crate::facade::transactions::{
     ApplyEntityAspectPatchIntent, CreateIntent, EntityMutationIntent, MutationIntent,
     UpdateEntityFieldsIntent,
 };
+use crate::storage::data::RelationalFieldPresence;
 use crate::tests::support::*;
 use worth_foundational::facade::{
     PortableAspectContractBasis, PortableAspectPatchOperation, PortableRecordAspectPatch,

@@ -195,7 +195,8 @@ pub(super) fn recover_stage_from_final_history(
         if let Some(base_version_id) = base_version_id {
             recovered
                 .history_authority()
-                .retain_version_for_replay(base_version_id);
+                .retain_version_for_replay(execution, base_version_id)
+                .unwrap();
         }
     }
     recovered

@@ -8,6 +8,7 @@ mod context;
 mod diagnostics;
 mod kind_scan_visibility;
 mod native_output_probe;
+mod paid_record_walk;
 mod positioned_snapshot;
 mod query_execution;
 mod query_packetization;

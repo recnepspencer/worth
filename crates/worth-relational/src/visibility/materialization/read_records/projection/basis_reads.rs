@@ -15,7 +15,8 @@ impl VisibilityProjectionView<'_> {
             execution,
             |context| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    Ok(ExactProjectionReader::new(self, basis.root()).entity_records(kind_id))
+                    ExactProjectionReader::new(self, basis.root())
+                        .entity_records(kind_id, &mut |units| context.checkpoint(units))
                 }
                 crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
                     HistoricalProjectionReader::new(self, basis)
@@ -28,7 +29,7 @@ impl VisibilityProjectionView<'_> {
                     .map_or(0, super::super::read_footprint::entities)
             },
         )?
-        .map_err(|_| crate::execution::RelationalExecutionDenialCause::WorkExhausted)
+        .map_err(crate::execution::denial::kernel_stop)
     }
 
     pub(crate) fn authoritative_entity_record(
@@ -36,32 +37,47 @@ impl VisibilityProjectionView<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
     ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        crate::visibility::materialization::read_records::read_request::checked(execution, || {
-            match &self.basis {
+        crate::visibility::materialization::read_records::read_work::point(
+            execution,
+            || match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
                     ExactProjectionReader::new(self, basis.root()).entity_record(entity_id)
                 }
                 crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
                     HistoricalProjectionReader::new(self, basis).entity_record(entity_id)
                 }
-            }
-        })
+            },
+            |record| {
+                record
+                    .as_ref()
+                    .map_or(0, super::super::read_footprint::entity)
+            },
+        )
     }
 
     pub(crate) fn all_authoritative_entity_records(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        crate::visibility::materialization::read_records::read_request::checked(execution, || {
-            match &self.basis {
+        super::super::read_work::metered(
+            execution,
+            |context| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    ExactProjectionReader::new(self, basis.root()).all_entity_records()
+                    ExactProjectionReader::new(self, basis.root())
+                        .all_entity_records(&mut |units| context.checkpoint(units))
                 }
                 crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
-                    HistoricalProjectionReader::new(self, basis).all_entity_records()
+                    HistoricalProjectionReader::new(self, basis)
+                        .all_entity_records(&mut |units| context.checkpoint(units))
                 }
-            }
-        })
+            },
+            |answer| {
+                answer
+                    .as_ref()
+                    .map_or(0, super::super::read_footprint::entities)
+            },
+        )?
+        .map_err(crate::execution::denial::kernel_stop)
     }
 
     pub(crate) fn authoritative_entity_records_in(
@@ -74,8 +90,11 @@ impl VisibilityProjectionView<'_> {
             execution,
             |context| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    Ok(ExactProjectionReader::new(self, basis.root())
-                        .entity_records_in(partition_id, kind_id))
+                    ExactProjectionReader::new(self, basis.root()).entity_records_in(
+                        partition_id,
+                        kind_id,
+                        &mut |units| context.checkpoint(units),
+                    )
                 }
                 crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
                     HistoricalProjectionReader::new(self, basis).entity_records_in(
@@ -91,7 +110,7 @@ impl VisibilityProjectionView<'_> {
                     .map_or(0, super::super::read_footprint::entities)
             },
         )?
-        .map_err(|_| crate::execution::RelationalExecutionDenialCause::WorkExhausted)
+        .map_err(crate::execution::denial::kernel_stop)
     }
 
     pub(crate) fn authoritative_relation_records(
@@ -103,7 +122,8 @@ impl VisibilityProjectionView<'_> {
             execution,
             |context| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    Ok(ExactProjectionReader::new(self, basis.root()).relation_records(kind_id))
+                    ExactProjectionReader::new(self, basis.root())
+                        .relation_records(kind_id, &mut |units| context.checkpoint(units))
                 }
                 crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
                     HistoricalProjectionReader::new(self, basis)
@@ -116,7 +136,7 @@ impl VisibilityProjectionView<'_> {
                     .map_or(0, super::super::read_footprint::relations)
             },
         )?
-        .map_err(|_| crate::execution::RelationalExecutionDenialCause::WorkExhausted)
+        .map_err(crate::execution::denial::kernel_stop)
     }
 
     pub(crate) fn authoritative_relation_record(
@@ -124,23 +144,40 @@ impl VisibilityProjectionView<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
     ) -> Result<Option<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        super::super::read_request::checked(execution, || self.project_relation_record(relation_id))
+        super::super::read_work::point(
+            execution,
+            || self.project_relation_record(relation_id),
+            |record| {
+                record
+                    .as_ref()
+                    .map_or(0, super::super::read_footprint::relation)
+            },
+        )
     }
 
     pub(crate) fn all_authoritative_relation_records(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        crate::visibility::materialization::read_records::read_request::checked(execution, || {
-            match &self.basis {
+        super::super::read_work::metered(
+            execution,
+            |context| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    ExactProjectionReader::new(self, basis.root()).all_relation_records()
+                    ExactProjectionReader::new(self, basis.root())
+                        .all_relation_records(&mut |units| context.checkpoint(units))
                 }
                 crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
-                    HistoricalProjectionReader::new(self, basis).all_relation_records()
+                    HistoricalProjectionReader::new(self, basis)
+                        .all_relation_records(&mut |units| context.checkpoint(units))
                 }
-            }
-        })
+            },
+            |answer| {
+                answer
+                    .as_ref()
+                    .map_or(0, super::super::read_footprint::relations)
+            },
+        )?
+        .map_err(crate::execution::denial::kernel_stop)
     }
 
     pub(crate) fn authoritative_relation_records_in(
@@ -153,8 +190,11 @@ impl VisibilityProjectionView<'_> {
             execution,
             |context| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    Ok(ExactProjectionReader::new(self, basis.root())
-                        .relation_records_in(partition_id, kind_id))
+                    ExactProjectionReader::new(self, basis.root()).relation_records_in(
+                        partition_id,
+                        kind_id,
+                        &mut |units| context.checkpoint(units),
+                    )
                 }
                 crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
                     HistoricalProjectionReader::new(self, basis).relation_records_in(
@@ -170,7 +210,7 @@ impl VisibilityProjectionView<'_> {
                     .map_or(0, super::super::read_footprint::relations)
             },
         )?
-        .map_err(|_| crate::execution::RelationalExecutionDenialCause::WorkExhausted)
+        .map_err(crate::execution::denial::kernel_stop)
     }
     pub(super) fn project_relation_record(
         &self,

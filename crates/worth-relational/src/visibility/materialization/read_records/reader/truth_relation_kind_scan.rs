@@ -1,5 +1,6 @@
 //! Bounded authoritative enumeration of live relations of one kind.
 
+use super::super::native_scan_stop::NativeScanStop;
 use super::*;
 
 #[derive(Debug)]
@@ -37,7 +38,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::visibility::materialization::read_records::read_work::metered(
+        crate::visibility::materialization::read_records::read_work::scan(
             execution,
             |context| {
                 let state = self.runtime.storage_access().current_edition();
@@ -50,17 +51,13 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     &mut |units| context.checkpoint(units),
                 )
             },
-            |result| {
-                result.as_ref().map_or(0, |read| {
-                    super::super::read_footprint::relations(&read.records)
-                })
-            },
+            |result| super::super::read_footprint::relations(&result.records),
         )
     }
 
     /// Reads the relations of one kind in one state, such as a branch root,
     /// under the same bound and cost model as the current-edition scan.
-    pub(crate) fn bounded_relations_of_kind_in_state(
+    pub(in crate::visibility::materialization::read_records) fn bounded_relations_of_kind_in_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),
         registry: &crate::schema::data::RelationalSchemaRegistry,
@@ -68,7 +65,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         visibility: KindScanVisibility,
         maximum_work_units: usize,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial> {
+    ) -> Result<BoundedRelationKindTruthRead, NativeScanStop<RelationKindTruthReadDenial>> {
         let mut scan = RelationKindScan::funded(maximum_work_units, true, charge);
         for partition_id in state.partition_ids() {
             self.scan_relation_kind_in_partition(
@@ -91,7 +88,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         kind_id: crate::identity::data::KindId,
         visibility: KindScanVisibility,
         scan: &mut RelationKindScan<'_>,
-    ) -> Result<(), RelationKindTruthReadDenial> {
+    ) -> Result<(), NativeScanStop<RelationKindTruthReadDenial>> {
         let current_version = VersionSource::current_version_id(self.runtime);
         let Some(partition) = state.get_partition(partition_id) else {
             return Ok(());
@@ -184,41 +181,26 @@ impl<'charge> RelationKindScan<'charge> {
         }
     }
 
-    fn spend(&mut self) -> Result<(), RelationKindTruthReadDenial> {
+    fn spend(&mut self, units: u64) -> Result<(), NativeScanStop<RelationKindTruthReadDenial>> {
         if self.maximum_work_units == Some(self.work_units) {
-            return Err(RelationKindTruthReadDenial::WorkLimitExceeded(
-                RelationKindTruthReadLimitExceeded {
-                    relation_slots_examined: self.relation_slots_examined,
-                    relation_records_reserved: self.relation_records_reserved,
-                },
+            return Err(NativeScanStop::Limit(
+                RelationKindTruthReadDenial::WorkLimitExceeded(
+                    RelationKindTruthReadLimitExceeded {
+                        relation_slots_examined: self.relation_slots_examined,
+                        relation_records_reserved: self.relation_records_reserved,
+                    },
+                ),
             ));
         }
-        if self
-            .charge
-            .as_mut()
-            .is_some_and(|charge| charge(1).is_err())
-        {
-            return Err(RelationKindTruthReadDenial::WorkLimitExceeded(
-                RelationKindTruthReadLimitExceeded {
-                    relation_slots_examined: self.relation_slots_examined,
-                    relation_records_reserved: self.relation_records_reserved,
-                },
-            ));
+        if let Some(charge) = self.charge.as_mut() {
+            charge(units).map_err(NativeScanStop::request)?;
         }
         self.work_units += 1;
         Ok(())
     }
 
-    pub(super) fn request_funded(
-        charge: &'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Self {
-        let mut scan = Self::funded(0, false, charge);
-        scan.maximum_work_units = None;
-        scan
-    }
-
-    fn examine_slot(&mut self) -> Result<(), RelationKindTruthReadDenial> {
-        self.spend()?;
+    fn examine_slot(&mut self) -> Result<(), NativeScanStop<RelationKindTruthReadDenial>> {
+        self.spend(super::super::read_prices::EXAMINE_SLOT)?;
         self.relation_slots_examined += 1;
         Ok(())
     }
@@ -228,13 +210,15 @@ impl<'charge> RelationKindScan<'charge> {
         partition_id: crate::identity::data::PartitionId,
         slot: usize,
         materialize: impl FnOnce() -> Option<RelationReadRecord>,
-    ) -> Result<(), RelationKindTruthReadDenial> {
-        self.spend()?;
+    ) -> Result<(), NativeScanStop<RelationKindTruthReadDenial>> {
+        self.spend(super::super::read_prices::RESERVE_RECORD)?;
         self.relation_records_reserved += 1;
         if let Some(record) = materialize() {
             self.records.push(record);
         } else if self.require_materialization {
-            return Err(RelationKindTruthReadDenial::UnreadableRelationSlot { partition_id, slot });
+            return Err(NativeScanStop::Limit(
+                RelationKindTruthReadDenial::UnreadableRelationSlot { partition_id, slot },
+            ));
         }
         Ok(())
     }
@@ -249,6 +233,7 @@ impl<'charge> RelationKindScan<'charge> {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn into_records(self) -> Vec<RelationReadRecord> {
         self.records
     }
@@ -305,15 +290,40 @@ mod tests {
         bounded.examine_slot().unwrap();
         assert_eq!(
             bounded.reserve_with(partition_id, 7, || None),
-            Err(RelationKindTruthReadDenial::UnreadableRelationSlot {
-                partition_id,
-                slot: 7,
-            }),
+            Err(NativeScanStop::Limit(
+                RelationKindTruthReadDenial::UnreadableRelationSlot {
+                    partition_id,
+                    slot: 7,
+                }
+            )),
         );
 
         let mut legacy = RelationKindScan::new(usize::MAX, false);
         legacy.examine_slot().unwrap();
         legacy.reserve_with(partition_id, 7, || None).unwrap();
         assert!(legacy.into_records().is_empty());
+    }
+}
+
+#[cfg(test)]
+mod paid_stop_tests {
+    use super::*;
+    #[test]
+    fn relation_scan_keeps_the_request_charge_failure() {
+        for stop in [
+            worth_execution::MapKernelStop::Cancelled,
+            worth_execution::MapKernelStop::DeadlineElapsed,
+            worth_execution::MapKernelStop::WorkCeiling,
+        ] {
+            let mut charge = |_| Err(stop);
+            let mut scan = RelationKindScan::funded(8, true, &mut charge);
+            assert_eq!(
+                scan.examine_slot(),
+                Err(NativeScanStop::Request(
+                    crate::execution::denial::kernel_stop(stop)
+                ))
+            );
+            assert_eq!(scan.finish().relation_records_reserved(), 0);
+        }
     }
 }

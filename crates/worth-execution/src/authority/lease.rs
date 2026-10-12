@@ -277,7 +277,12 @@ impl<'a> ExecutionResourceLease<'a> {
         memory_bytes: u64,
     ) -> Result<ResourceReservation, LeaseDenial> {
         let identity = Arc::as_ptr(&self.authority.inner) as usize;
-        let active = ACTIVE_WORKER.with(|workers| workers.borrow().last().copied());
+        let active = ACTIVE_WORKER.with(|workers| {
+            workers
+                .borrow()
+                .last()
+                .map(|(owner, node, _)| (*owner, node.id))
+        });
         match active {
             Some((owner, active_node)) if owner == identity => {
                 let lineage = self.lineage();
