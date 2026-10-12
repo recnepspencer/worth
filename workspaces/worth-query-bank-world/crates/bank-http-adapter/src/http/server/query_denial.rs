@@ -187,6 +187,7 @@ fn projection(kind: BankApplicationProjectionDenialKind) -> BankHttpDenial {
 fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
     use BankEntityResolutionDenialKind as Entity;
     match kind {
+        Entity::ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted, .. }) => exhausted(),
         Entity::ExecutionRequest(kind) => {
             super::mutation_application::pending_execution_denial(kind)
         }

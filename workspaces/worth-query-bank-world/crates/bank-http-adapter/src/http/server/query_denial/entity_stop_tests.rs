@@ -46,7 +46,6 @@ fn entity_stop_controls_keep_retry_status_and_wire_code() {
 #[test]
 fn entity_stop_request_ceilings_ask_for_correction() {
     for denial in [
-        Resource::WorkExhausted,
         Resource::MemoryLimit {
             requested: 43,
             admitted: 17,
@@ -90,5 +89,16 @@ fn entity_stop_misuse_names_the_operator() {
         Next::ContactOperator,
         500,
         "internal_denied",
+    );
+}
+
+#[test]
+fn entity_stop_work_keeps_master_narrow_request_status_and_code() {
+    assert_answer(
+        resource(Resource::WorkExhausted),
+        Kind::ResourceExhausted,
+        Next::NarrowRequest,
+        429,
+        "resource_exhausted",
     );
 }
