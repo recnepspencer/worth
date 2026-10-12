@@ -153,8 +153,11 @@ where
         &mut self,
         kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        let _ = self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled);
-        WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)
+        if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
+            WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)
+        } else {
+            WorthQueryApplicationLiveOutcome::Unavailable
+        }
     }
 
     fn cancelled_outcome(&mut self) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {

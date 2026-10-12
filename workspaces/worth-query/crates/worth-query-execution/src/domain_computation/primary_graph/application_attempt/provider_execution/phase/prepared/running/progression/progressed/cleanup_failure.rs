@@ -82,6 +82,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::ProgramActivationUnresolved
             | Kind::RecoveryHandoffMismatch { .. } => cleanup_indeterminate(),
         },
+        Progression::Indeterminate(evidence) => Outcome::Indeterminate(evidence),
         Progression::Committed(_)
         | Progression::AlreadyCommitted(_)
         | Progression::Stale(_)
@@ -89,8 +90,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
         | Progression::TimedOut
         | Progression::Aborted
         | Progression::Deferred(_)
-        | Progression::SettlementDeferred(_)
-        | Progression::Indeterminate(_) => cleanup_indeterminate(),
+        | Progression::SettlementDeferred(_) => cleanup_indeterminate(),
     }
 }
 

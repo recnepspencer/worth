@@ -311,3 +311,5 @@ fn query_has_no_parallel_lineage_or_replay_residue() {
         assert!(!source.contains("BridgeLineageContext"));
     }
 }
+
+mod read_stops;

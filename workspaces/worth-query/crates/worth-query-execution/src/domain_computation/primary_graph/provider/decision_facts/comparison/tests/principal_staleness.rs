@@ -121,6 +121,24 @@ impl WorthQueryPrimaryGraphProvider {
                 WorthQueryRequestInterruption::Cancelled
             )
         );
+        // Assert the dependency itself: the fact wrapper's trailing check_live
+        // must not rescue a cancellation folded by freshness.
+        let WorthQueryPrimaryGraphApplicationDecisionFact::Principal(dependency) = fact else {
+            unreachable!()
+        };
+        let source = worth_execution::CancellationSource::new();
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(64 << 20),
+            source.token(),
+            None,
+        );
+        let reader = worth_execution::ExecutionRequest::serial(&host);
+        let direct = self.graph.with_runtime(&reader, |runtime| {
+            crate::test_read_stops::cancelled_at_consult_for_test(2, source, || {
+                dependency.remains_current_in(&reader, runtime, &snapshot)
+            })
+        });
+        assert_eq!(direct, Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Cancelled));
         self.graph.release_query_snapshot(&snapshot);
     }
 }
