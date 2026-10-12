@@ -5,11 +5,14 @@ use std::{
     time::{Duration, Instant},
 };
 use worth_relational::facade::identity::EntityId;
+mod native_rendezvous;
+pub(in crate::domain_computation::primary_graph) use native_rendezvous::NativeReadRendezvousGuardForTest;
 thread_local! { static ACTIVE: RefCell<Option<Arc<DispatchWitness>>> = const { RefCell::new(None) }; }
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct DispatchWitness {
     state: Mutex<State>,
     finished: Condvar,
+    native_reads: Mutex<Option<Arc<native_rendezvous::NativeReadRendezvous>>>,
 }
 #[derive(Default)]
 struct State {

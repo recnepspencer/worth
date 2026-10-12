@@ -113,7 +113,7 @@ fn authoritative_locator(
 
 fn revision(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     entity: EntityId,
     planned: &AspectFieldLocator,
     admission: &mut InvalidationEditAdmission,
@@ -128,7 +128,7 @@ fn revision(
 
 fn selected_value(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     entity: EntityId,
     expected_kind: KindId,
     locator: &AspectFieldLocator,
@@ -207,7 +207,7 @@ fn selected_field_from_aspect(
 
 pub(super) fn observe_mapping(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    candidate: &CheckedMappingCandidate<'_, '_, '_, '_>,
+    candidate: &CheckedMappingCandidate<'_, '_, '_>,
     admission: &mut InvalidationEditAdmission,
 ) -> ObservationResult<WorthQueryPrincipalMappingObservation> {
     let entry_work = std::mem::size_of::<EntityId>()
@@ -271,7 +271,7 @@ pub(super) fn observe_mapping(
 
 pub(super) fn observe_target(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     mapping: EntityId,
     layout: &WorthQueryPrimaryPrincipalBindingLayout,
     admission: &mut InvalidationEditAdmission,

@@ -24,8 +24,8 @@ pub(super) fn update_entries(
     definition: &DerivedIndexDefinition,
     entries: &mut DerivedIndexEntries,
     changes: &ChangeRouting,
-    before: Option<&VisibilityProjectionView<'_>>,
-    after: &VisibilityProjectionView<'_>,
+    before: Option<&VisibilityProjectionView>,
+    after: &VisibilityProjectionView,
     work: &mut MaintenanceWork,
 ) -> Result<(), DerivedIndexMaintenanceDenialKind> {
     match (&definition.kind, entries) {

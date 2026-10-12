@@ -14,7 +14,7 @@ type OrderedRelation = ((u32, u64, u32, u64, u32, u64), RelationId);
 
 pub(super) fn collect<A: RelationalAuthorizationObservationAdmission>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    context: &Context<'_, '_, '_>,
+    context: &Context<'_, '_>,
     entity: EntityId,
     traversal: &RelationalAuthorizationTraversal,
     state: &mut State<'_, A>,
@@ -121,7 +121,7 @@ pub(super) fn collect<A: RelationalAuthorizationObservationAdmission>(
 
 pub(super) fn traverse<A: RelationalAuthorizationObservationAdmission>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    context: &Context<'_, '_, '_>,
+    context: &Context<'_, '_>,
     id: RelationId,
     current: EntityId,
     traversal: &RelationalAuthorizationTraversal,

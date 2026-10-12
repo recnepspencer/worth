@@ -25,7 +25,7 @@ pub struct StrategyObservationContext<'runtime> {
     schema_registry: &'runtime RelationalSchemaRegistry,
     aspect_plans: &'runtime AspectContractPlanCatalog,
     metrics: RefCell<StrategyObservationMetrics>,
-    projection: VisibilityProjectionView<'runtime>,
+    projection: VisibilityProjectionView,
 }
 
 impl<'runtime> StrategyObservationContext<'runtime> {
@@ -35,7 +35,7 @@ impl<'runtime> StrategyObservationContext<'runtime> {
         read_contract: &'runtime crate::commit_strategies::data::StrategyReadContract,
         schema_registry: &'runtime RelationalSchemaRegistry,
         aspect_plans: &'runtime AspectContractPlanCatalog,
-        visibility: VisibilityProjectionView<'runtime>,
+        visibility: VisibilityProjectionView,
     ) -> Self {
         Self {
             snapshot,

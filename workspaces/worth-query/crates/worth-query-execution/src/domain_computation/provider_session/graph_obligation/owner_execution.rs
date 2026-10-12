@@ -28,20 +28,41 @@ impl WorthQueryGraphReadOwnerPort {
         }
     }
 
-    pub(super) fn execute_prepared<T>(
+    pub(super) fn pin_prepared(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &ApplicationSchemaBindingIdentity,
-        read: impl FnOnce(&RelationalRuntime, &WorthQueryPrimaryGraphLayout) -> T,
-    ) -> Result<T, WorthQueryGraphReadOwnerPortDenial> {
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        select_indexes: impl FnOnce(
+            &WorthQueryPrimaryGraphLayout,
+        ) -> Vec<worth_relational::facade::indexes::DerivedIndexId>,
+    ) -> Result<
+        (
+            worth_relational::facade::runtime::RelationalPinnedRead,
+            Arc<WorthQueryPrimaryGraphLayout>,
+        ),
+        super::WorthQueryManagedGraphReadDenial,
+    > {
+        use super::WorthQueryManagedGraphReadDenial as Denial;
         if &self.binding != binding {
-            return Err(WorthQueryGraphReadOwnerPortDenial::ForeignGraph);
+            return Err(Denial::ForeignGraph);
         }
-        // Release graph custody before resuming a worker panic, so the read-only
-        // operation cannot poison the runtime for another root or request.
-        Ok(self
+        let selected_indexes = select_indexes(&self.layout);
+        let read = self
             .source
-            .with_runtime_unwind_isolated(execution, |runtime| read(runtime, &self.layout)))
+            .with_runtime(execution, |runtime| {
+                runtime
+                    .read_truth()
+                    .pin_read_capability(snapshot, &selected_indexes, execution)
+            })
+            .map_err(|denial| {
+                use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as Pin;
+                match denial {
+                    Pin::Request(stop) => Denial::RequestStop(stop),
+                    Pin::SnapshotUnavailable | Pin::IndexNotInstalled(_) => Denial::ForeignBasis,
+                }
+            })?;
+        Ok((read, Arc::clone(&self.layout)))
     }
 
     pub(super) fn execute<T>(

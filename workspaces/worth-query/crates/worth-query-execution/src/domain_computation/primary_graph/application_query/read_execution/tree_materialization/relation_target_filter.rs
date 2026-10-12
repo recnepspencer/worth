@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::{
 
 pub(super) fn retain_matching_targets(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &WorthQueryPrimaryGraphLayout,
     governance: &WorthQueryApplicationQueryGovernance,
     parameters: &WorthQueryAdmittedApplicationQueryParameters,

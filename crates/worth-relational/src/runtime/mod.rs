@@ -85,3 +85,5 @@ pub(crate) use state::{
     PerformedRelationalSettlement, RelationalPendingSettlementReservation,
     RelationalSettlementClaim, RelationalSettlementReservationDenial, ReservedRelationalSettlement,
 };
+
+pub use crate::visibility::materialization::read_records::BoundedFrontierReadStop;

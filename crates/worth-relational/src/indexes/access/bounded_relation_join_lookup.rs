@@ -155,7 +155,7 @@ impl RelationJoinVerification {
     fn verify_external_endpoints(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
+        source: &super::super::projected_field_values::IndexProjectionSource<'_>,
     ) -> Result<(), BoundedRelationJoinLookupDenial> {
         let left = source
             .with_entity(execution, self.left_entity_id, Clone::clone)
@@ -175,7 +175,7 @@ impl RelationJoinVerification {
     fn verify_entries(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
+        source: &super::super::projected_field_values::IndexProjectionSource<'_>,
         entries: &[RelationJoinEntry],
     ) -> Result<Vec<crate::identity::data::EntityId>, BoundedRelationJoinLookupDenial> {
         self.verify_external_endpoints(execution, source)?;
@@ -194,7 +194,7 @@ impl RelationJoinVerification {
     fn verify_entry(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
+        source: &super::super::projected_field_values::IndexProjectionSource<'_>,
         entry: &RelationJoinEntry,
     ) -> Result<crate::identity::data::EntityId, BoundedRelationJoinLookupDenial> {
         let shared = source
@@ -245,7 +245,7 @@ impl RelationJoinVerification {
 
 fn certify_storage_parity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
+    source: &super::super::projected_field_values::IndexProjectionSource<'_>,
     verification: &RelationJoinVerification,
     request: &BoundedRelationJoinLookupRequest,
     indexed: &BoundedRelationJoinLookupOutcome,

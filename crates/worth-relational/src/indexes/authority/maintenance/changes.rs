@@ -43,7 +43,7 @@ impl ChangedRecords {
     }
 
     pub(super) fn cold(
-        view: &VisibilityProjectionView<'_>,
+        view: &VisibilityProjectionView,
         work: &mut MaintenanceWork,
     ) -> Result<Self, Denial> {
         let root = view.selected_root().ok_or(Denial::CommitMismatch)?;

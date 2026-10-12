@@ -37,9 +37,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// cancellation or an elapsed deadline can stop its projection. Projection
     /// failures keep all work the map settled. Retention changes atomically
     /// only on success; admitting a newer product may first make the view cold.
-    /// Reads serialize at the installed Relational owner: its native indexed
-    /// read door still borrows the locked runtime. The map supplies canonical
-    /// order, charging and one execution authority, not concurrent native reads.
+    /// Owner preparation pins exact native read custody under the source lock.
+    /// Workers carry that immutable capability and no owner port, so native
+    /// reads overlap while the map preserves canonical order and caller charging.
     /// Cancellation and deadline boundaries may differ with placement: each
     /// reports a canonical prefix and only its admitted work, not width equality.
     pub fn reconstruct_managed_derived_collection_pair<
@@ -191,7 +191,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             Ok((
                                 PartitionIdentity::new(index as u64 + 1),
                                 KeylessPartition {
-                                    value: pair.worker(self, *root)?,
+                                    value: pair.worker(&request, self, *root)?,
                                     kernel_scratch_bytes: 0,
                                     max_result_bytes: capacity,
                                 },

@@ -11,6 +11,7 @@ use std::{collections::BTreeMap, sync::Arc};
 
 #[cfg(test)]
 mod commit_tests;
+mod frontier_reads;
 mod pinning;
 mod record_reads;
 #[cfg(test)]
@@ -63,7 +64,7 @@ pub(crate) struct PinnedIndex {
 
 #[derive(Debug)]
 pub enum RelationalPinnedReadAdmissionDenial {
-    Request(super::QueryReadExecutionStop),
+    Request(worth_execution::MapKernelStop),
     SnapshotUnavailable,
     IndexNotInstalled(DerivedIndexId),
 }

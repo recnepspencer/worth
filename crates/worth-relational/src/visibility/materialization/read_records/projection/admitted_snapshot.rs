@@ -20,10 +20,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         handle: &SnapshotHandle,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,
-    ) -> Result<
-        Option<VisibilityProjectionView<'runtime>>,
-        RelationalSnapshotProjectionAdmissionStop<Stop>,
-    > {
+    ) -> Result<Option<VisibilityProjectionView>, RelationalSnapshotProjectionAdmissionStop<Stop>>
+    {
         use RelationalSnapshotProjectionAdmissionStop as Denial;
         admit(3, 0).map_err(Denial::Admission)?;
         let runtime = self.runtime();

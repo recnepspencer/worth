@@ -1,7 +1,5 @@
 use super::*;
-use crate::visibility::materialization::read_records::reader::{
-    query_preparation::check_query_preparation_request, VisibilityReadContext,
-};
+use crate::visibility::materialization::read_records::reader::VisibilityReadContext;
 use crate::visibility::snapshot_states::resolve_snapshot_basis;
 
 impl VisibilityReadContext<'_> {
@@ -15,7 +13,7 @@ impl VisibilityReadContext<'_> {
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalPinnedRead, RelationalPinnedReadAdmissionDenial> {
         use RelationalPinnedReadAdmissionDenial as Denial;
-        check_query_preparation_request(request).map_err(Denial::Request)?;
+        request.check_live().map_err(Denial::Request)?;
         let snapshot = self
             .resolved_snapshot_handle(handle)
             .ok_or(Denial::SnapshotUnavailable)?;

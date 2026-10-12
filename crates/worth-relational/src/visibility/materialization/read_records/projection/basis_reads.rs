@@ -5,7 +5,7 @@ use super::exact_basis_reads::ExactProjectionReader;
 use super::historical_basis_reads::HistoricalProjectionReader;
 use super::VisibilityProjectionView;
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     pub(crate) fn authoritative_entity_records(
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,

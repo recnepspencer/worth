@@ -29,8 +29,8 @@ pub(super) fn refresh(
         &[RelatedEntityOrderingField],
     ),
     changes: &ChangeRouting,
-    before: Option<&VisibilityProjectionView<'_>>,
-    after: &VisibilityProjectionView<'_>,
+    before: Option<&VisibilityProjectionView>,
+    after: &VisibilityProjectionView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     let contract = OrderingContract {
@@ -89,7 +89,7 @@ pub(super) fn refresh(
 
 fn child_values(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     child: EntityId,
     contract: &OrderingContract<'_>,
     work: &mut MaintenanceWork,
@@ -117,7 +117,7 @@ fn child_values(
 
 fn row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     id: RelationId,
     contract: &OrderingContract<'_>,
     work: &mut MaintenanceWork,

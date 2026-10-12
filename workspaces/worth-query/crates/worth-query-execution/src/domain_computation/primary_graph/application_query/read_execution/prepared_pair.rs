@@ -1,5 +1,5 @@
 //! The worker carries a scope-free read capability and a closed raw binding.
-//! Native reads still borrow the installed owner under its runtime lock.
+//! Native reads carry exact immutable custody and cannot name the owner port.
 pub(in crate::domain_computation::primary_graph::application_query) mod batch;
 
 use super::super::{
@@ -19,7 +19,7 @@ use worth_relational::facade::identity::EntityId;
 pub(in crate::domain_computation::primary_graph::application_query) struct PreparedRead<'a> {
     pub(in crate::domain_computation::primary_graph::application_query) plan: ReadPlan<'a>,
     pub(in crate::domain_computation::primary_graph::application_query) session:
-        WorthQueryPreparedSessionRead<'a>,
+        WorthQueryPreparedSessionRead,
     pub(in crate::domain_computation::primary_graph::application_query) buffer:
         WorthQueryApplicationResultBufferReservation,
     pub(in crate::domain_computation::primary_graph::application_query) batch:
@@ -207,6 +207,10 @@ impl PreparedRead<'_> {
         let check = |subject: &str| charge(0, subject);
         let read = session.execute(execution, |runtime, graph| {
             entered.set(true);
+            #[cfg(test)]
+            if let Some(witness) = witness {
+                witness.native_read_enter(root);
+            }
             super::read_prepared_root_rows(
                 runtime,
                 execution,
@@ -249,6 +253,9 @@ impl PreparedRead<'_> {
                 root,
                 denial: map_authorized_read_denial(ReadDenial::Read(read), plan.name),
             })),
+            Err(WorthQueryManagedGraphReadDenial::RequestStop(stop)) => {
+                Err(MapKernelFailure::Stop(stop))
+            }
             Err(
                 WorthQueryManagedGraphReadDenial::MutationSession
                 | WorthQueryManagedGraphReadDenial::ForeignBasis

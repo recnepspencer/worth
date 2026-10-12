@@ -1,7 +1,7 @@
 use super::*;
 use crate::identity::data::{EntityId, RelationId, VersionId};
 
-impl super::ProjectionRecordSource for VisibilityProjectionView<'_> {
+impl super::ProjectionRecordSource for VisibilityProjectionView {
     fn selected_root(&self) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>> {
         self.selected_root()
     }

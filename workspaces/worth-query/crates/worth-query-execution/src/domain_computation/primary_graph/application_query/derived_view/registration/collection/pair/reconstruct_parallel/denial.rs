@@ -147,6 +147,7 @@ pub(super) fn session(
 ) -> Denial {
     use crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial as Cause;
     match cause {
+        Cause::RequestStop(stop) => kernel(stop, None),
         Cause::MutationSession
         | Cause::ForeignBasis
         | Cause::ForeignGraph

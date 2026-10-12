@@ -62,3 +62,8 @@ mod read_observation;
 pub use read_observation::installed_source_reads_on_this_thread_for_test;
 
 pub(crate) use read_observation::record_read_for_test as record_installed_source_read_for_test;
+
+#[cfg(test)]
+mod read_lock_probe;
+#[cfg(test)]
+pub(in crate::domain_computation) use read_lock_probe::ReadLockProbeForTest;

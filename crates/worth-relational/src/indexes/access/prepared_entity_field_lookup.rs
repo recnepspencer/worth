@@ -57,7 +57,7 @@ impl std::fmt::Debug for PreparedEntityFieldLookup {
 impl IndexAccess<'_> {
     pub fn prepare_entity_field_lookup(
         &self,
-        view: &VisibilityProjectionView<'_>,
+        view: &VisibilityProjectionView,
         index: DerivedIndexId,
         kind: KindId,
         locator: &AspectFieldLocator,

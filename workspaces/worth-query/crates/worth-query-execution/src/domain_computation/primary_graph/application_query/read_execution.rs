@@ -10,8 +10,10 @@ use interruption::ReadInterruption;
 mod kernel_capacity;
 mod kernel_outcome;
 mod live_target;
+mod pinning;
 pub(super) mod prepared_pair;
 pub(super) mod read_plan;
+use pinning::pin_runtime_read;
 mod root_selection;
 mod tree_materialization;
 mod work_observation;
@@ -98,8 +100,10 @@ pub(super) fn read_bounded_root_rows<
     spent: Option<&OneShotReadWorkObservation<'_>>,
     maximum_work: usize,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
+    let read = read_plan::ReadPlan::of(plan);
+    let pinned = pin_runtime_read(runtime, execution, graph, &read, &[])?;
     read_prepared_root_rows(
-        runtime,
+        &pinned,
         execution,
         graph,
         &read_plan::ReadPlan::of(plan),
@@ -111,7 +115,7 @@ pub(super) fn read_bounded_root_rows<
 }
 
 pub(super) fn read_prepared_root_rows(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &read_plan::ReadPlan<'_>,

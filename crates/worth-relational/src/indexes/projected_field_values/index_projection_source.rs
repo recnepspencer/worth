@@ -9,24 +9,20 @@ use crate::visibility::materialization::read_records::ProjectionRecordSource;
 ///
 /// Construction is private to this module so a caller cannot pair records
 /// with an ambient or unrelated schema authority.
-pub(in crate::indexes) struct IndexProjectionSource<'view, 'runtime> {
-    projection: &'view VisibilityProjectionView<'runtime>,
+pub(in crate::indexes) struct IndexProjectionSource<'view> {
+    projection: &'view VisibilityProjectionView,
 }
 
-impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
-    pub(in crate::indexes) fn selected(
-        projection: &'view VisibilityProjectionView<'runtime>,
-    ) -> Self {
+impl<'view> IndexProjectionSource<'view> {
+    pub(in crate::indexes) fn selected(projection: &'view VisibilityProjectionView) -> Self {
         Self { projection }
     }
-    pub(in crate::indexes) fn exact(
-        projection: &'view VisibilityProjectionView<'runtime>,
-    ) -> Option<Self> {
+    pub(in crate::indexes) fn exact(projection: &'view VisibilityProjectionView) -> Option<Self> {
         projection.is_exact_basis().then_some(Self { projection })
     }
 
     pub(in crate::indexes) fn historical(
-        projection: &'view VisibilityProjectionView<'runtime>,
+        projection: &'view VisibilityProjectionView,
     ) -> Option<Self> {
         (!projection.is_exact_basis()).then_some(Self { projection })
     }

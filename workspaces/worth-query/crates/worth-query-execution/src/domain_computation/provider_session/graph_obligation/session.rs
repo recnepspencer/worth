@@ -360,6 +360,7 @@ impl WorthQueryManagedGraphWorkSession {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryManagedGraphReadDenial {
+    RequestStop(worth_execution::MapKernelStop),
     MutationSession,
     ForeignBasis,
     ForeignGraph,

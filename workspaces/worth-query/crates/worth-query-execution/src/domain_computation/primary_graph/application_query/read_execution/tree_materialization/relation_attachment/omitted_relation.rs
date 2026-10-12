@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
 
 pub(in crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization) fn advance_omitted_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     relation: &WorthQueryInstalledGraphRelation,
     parents: &[WorthQueryApplicationProjectionNode],
@@ -52,7 +52,6 @@ pub(in crate::domain_computation::primary_graph::application_query::read_executi
     }
     work.checkpoint(relation.result_path())?;
     let page = runtime
-        .index_access()
         .execute_bounded_related_entity_ordered_lookup(
             lookup,
             BoundedIndexParityMode::Production,

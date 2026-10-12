@@ -38,6 +38,14 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
             plan.query.name(),
         )
     })?;
+    let pinned = pin_runtime_read(
+        runtime,
+        execution,
+        graph,
+        &read_plan::ReadPlan::of(plan),
+        &[index_id],
+    )?;
+    let runtime = &pinned;
     let selection = select_bounded_roots(
         runtime,
         execution,

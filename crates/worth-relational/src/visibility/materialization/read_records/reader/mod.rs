@@ -6,10 +6,12 @@ mod aspect_version_read;
 mod aspect_versions;
 mod context;
 mod diagnostics;
+mod frontier_admission;
 mod kind_scan_visibility;
 mod native_output_probe;
 mod pinned_read;
 mod positioned_snapshot;
+mod projection_record_reader;
 mod query_execution;
 mod query_packetization;
 mod query_plan_execution;
@@ -84,3 +86,7 @@ pub use truth_kind_scan::{BoundedEntityKindTruthRead, EntityKindTruthReadLimitEx
 pub use truth_relation_kind_scan::{
     BoundedRelationKindTruthRead, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
 };
+
+pub(crate) use projection_record_reader::ProjectionRecordReader;
+
+pub use frontier_admission::BoundedFrontierReadStop;

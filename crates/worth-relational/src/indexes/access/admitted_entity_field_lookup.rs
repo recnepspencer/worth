@@ -32,7 +32,7 @@ impl IndexAccess<'_> {
     pub(super) fn collect_admitted_entity_field_lookup<E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        view: &VisibilityProjectionView<'_>,
+        view: &VisibilityProjectionView,
         index: DerivedIndexId,
         kind: KindId,
         locator: &AspectFieldLocator,
@@ -153,15 +153,14 @@ impl IndexAccess<'_> {
     }
 }
 
-struct AdmittedCollectionRead<'a, 'runtime, F> {
-    view: &'a VisibilityProjectionView<'runtime>,
+struct AdmittedCollectionRead<'a, F> {
+    view: &'a VisibilityProjectionView,
     locator: &'a AspectFieldLocator,
     value: &'a AspectValue,
     prepare: &'a mut F,
 }
 impl<E, F: FnMut(SelectedIndexReadWork, u64) -> Result<(), E>>
-    super::entity_field_collection::EntityFieldCollectionRead<E>
-    for AdmittedCollectionRead<'_, '_, F>
+    super::entity_field_collection::EntityFieldCollectionRead<E> for AdmittedCollectionRead<'_, F>
 {
     fn prepare_results(&mut self, examined: usize) -> Result<(), Stop<E>> {
         let bytes = width(examined)?
@@ -200,7 +199,7 @@ impl<E, F: FnMut(SelectedIndexReadWork, u64) -> Result<(), E>>
 
 fn certify_storage<E>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     kind: KindId,
     locator: &AspectFieldLocator,
     value: &AspectValue,

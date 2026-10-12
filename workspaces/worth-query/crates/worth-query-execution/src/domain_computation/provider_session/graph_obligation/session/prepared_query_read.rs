@@ -1,9 +1,6 @@
 //! Read-only dispatch custody; the capacity-reserved session stays on its owner.
 
-use super::super::{
-    WorthQueryGraphReadOwnerPort, WorthQueryGraphWorkSessionIdentity,
-    WorthQuerySessionGraphReadProof,
-};
+use super::super::{WorthQueryGraphWorkSessionIdentity, WorthQuerySessionGraphReadProof};
 use super::{
     WorthQueryGraphWorkBasis, WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSession,
 };
@@ -11,13 +8,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationBasisIdentity, WorthQueryPrimaryGraphLayout,
 };
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
-use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 /// A move-only operation on an exact admitted session's source. This excludes
 /// its Send-only capacity reservation and exposes no mutation capability.
-pub(in crate::domain_computation) struct WorthQueryPreparedSessionRead<'a> {
-    port: &'a WorthQueryGraphReadOwnerPort,
-    binding: &'a ApplicationSchemaBindingIdentity,
+pub(in crate::domain_computation) struct WorthQueryPreparedSessionRead {
+    read: worth_relational::facade::runtime::RelationalPinnedRead,
+    layout: std::sync::Arc<WorthQueryPrimaryGraphLayout>,
     session: WorthQueryGraphWorkSessionIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
 }
@@ -26,38 +22,42 @@ impl WorthQueryManagedGraphWorkSession {
     pub(in crate::domain_computation) fn prepare_query_read(
         &self,
         basis: &WorthQueryApplicationBasisIdentity,
-    ) -> Result<WorthQueryPreparedSessionRead<'_>, WorthQueryManagedGraphReadDenial> {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        select_indexes: impl FnOnce(
+            &WorthQueryPrimaryGraphLayout,
+        ) -> Vec<worth_relational::facade::indexes::DerivedIndexId>,
+    ) -> Result<WorthQueryPreparedSessionRead, WorthQueryManagedGraphReadDenial> {
         let WorthQueryGraphWorkBasis::Query { identity, port, .. } = &self.basis else {
             return Err(WorthQueryManagedGraphReadDenial::MutationSession);
         };
         if identity != basis || !self.branch.admits_query_basis(basis) {
             return Err(WorthQueryManagedGraphReadDenial::ForeignBasis);
         }
+        let (read, layout) =
+            port.pin_prepared(execution, &self.binding, snapshot, select_indexes)?;
         Ok(WorthQueryPreparedSessionRead {
-            port,
-            binding: &self.binding,
+            read,
+            layout,
             session: self.identity,
             plan: self.plan.identity(),
         })
     }
 }
 
-impl WorthQueryPreparedSessionRead<'_> {
+impl WorthQueryPreparedSessionRead {
     pub(in crate::domain_computation) fn execute<T>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce(
-            &worth_relational::facade::runtime::RelationalRuntime,
+            &worth_relational::facade::runtime::RelationalPinnedRead,
             &WorthQueryPrimaryGraphLayout,
         ) -> T,
     ) -> Result<(T, WorthQueryPreparedReadCompletion), WorthQueryManagedGraphReadDenial> {
-        use super::super::owner_execution::WorthQueryGraphReadOwnerPortDenial as PortDenial;
-        let output = self
-            .port
-            .execute_prepared(execution, self.binding, read)
-            .map_err(|cause| match cause {
-                PortDenial::ForeignGraph => WorthQueryManagedGraphReadDenial::ForeignGraph,
-            })?;
+        execution
+            .check_live()
+            .map_err(WorthQueryManagedGraphReadDenial::RequestStop)?;
+        let output = read(&self.read, &self.layout);
         Ok((
             output,
             WorthQueryPreparedReadCompletion {
@@ -93,12 +93,12 @@ impl WorthQueryManagedGraphWorkSession {
     }
 }
 
-impl worth_execution::ChargedBytes for WorthQueryPreparedSessionRead<'_> {
+impl worth_execution::ChargedBytes for WorthQueryPreparedSessionRead {
     fn additional_charged_bytes(&self) -> u64 {
         // Shared source custody is retained by the owner-side session.
         let Self {
-            port: _port,
-            binding: _binding,
+            read: _read,
+            layout: _layout,
             session: _session,
             plan: _plan,
         } = self;

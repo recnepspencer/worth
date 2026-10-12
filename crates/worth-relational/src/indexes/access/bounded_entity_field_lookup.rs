@@ -84,18 +84,50 @@ impl IndexAccess<'_> {
                     Pin::IndexNotInstalled(_) => {
                         BoundedEntityFieldLookupDenialKind::IndexNotInstalled
                     }
-                    Pin::Request(stop) => stop
-                        .execution_denial()
-                        .map(|denial| {
-                            let crate::transactions::data::CommitExecutionDenialKind::Cause(cause) =
-                                denial.kind;
-                            BoundedEntityFieldLookupDenialKind::Execution(cause)
-                        })
-                        .unwrap_or(BoundedEntityFieldLookupDenialKind::SnapshotUnavailable),
+                    Pin::Request(stop) => BoundedEntityFieldLookupDenialKind::Execution(
+                        crate::execution::denial::kernel_stop(stop),
+                    ),
                 };
                 BoundedEntityFieldLookupDenial::new(kind, request.index_id())
             })?;
-        let prepared = pinned.prepare_entity_field_lookup(
+        pinned.lookup_pinned_entity_field(request, parity_mode, execution)
+    }
+}
+
+impl crate::runtime::RelationalPinnedRead {
+    /// Execute the snapshot-input lane against retained definitions and generations.
+    /// Its established liveness/accounting policy is unchanged.
+    pub fn execute_bounded_entity_field_lookup(
+        &self,
+        request: BoundedEntityFieldLookupRequest,
+        parity_mode: BoundedIndexParityMode,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupDenial> {
+        crate::execution::check_request(execution).map_err(|cause| {
+            BoundedEntityFieldLookupDenial::new(
+                BoundedEntityFieldLookupDenialKind::Execution(cause),
+                request.index_id(),
+            )
+        })?;
+        self.performance_access().count_query_index_attempt();
+        self.lookup_pinned_entity_field(request, parity_mode, execution)
+    }
+    fn lookup_pinned_entity_field(
+        &self,
+        request: BoundedEntityFieldLookupRequest,
+        parity_mode: BoundedIndexParityMode,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupDenial> {
+        let unavailable = || {
+            BoundedEntityFieldLookupDenial::new(
+                BoundedEntityFieldLookupDenialKind::SnapshotUnavailable,
+                request.index_id(),
+            )
+        };
+        if request.snapshot() != self.snapshot() {
+            return Err(unavailable());
+        }
+        let prepared = self.prepare_entity_field_lookup(
             request.index_id(),
             request.entity_kind(),
             request.field_locator(),

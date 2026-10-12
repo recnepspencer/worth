@@ -37,3 +37,5 @@ impl RelationalRuntime {
 }
 
 pub(crate) use projection::ProjectionRecordSource;
+
+pub use reader::BoundedFrontierReadStop;

@@ -80,3 +80,21 @@ impl worth_execution::ChargedBytes for ReadPlan<'_> {
         0
     }
 }
+
+impl ReadPlan<'_> {
+    pub(in crate::domain_computation::primary_graph::application_query) fn selected_indexes(
+        &self,
+        graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    ) -> Vec<worth_relational::facade::indexes::DerivedIndexId> {
+        self.contract
+            .predicates()
+            .iter()
+            .filter_map(|predicate| {
+                let (entity, aspect, field) = predicate.field();
+                graph
+                    .equality_field(entity, aspect, field)?
+                    .equality_index_id
+            })
+            .collect()
+    }
+}

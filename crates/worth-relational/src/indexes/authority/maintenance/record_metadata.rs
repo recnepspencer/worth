@@ -15,7 +15,7 @@ pub(super) struct RelationMetadata {
 
 pub(super) fn entity_kind(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     id: EntityId,
     work: &mut MaintenanceWork,
 ) -> Result<Option<KindId>, Denial> {
@@ -32,7 +32,7 @@ pub(super) fn entity_kind(
 
 pub(super) fn relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     id: RelationId,
     work: &mut MaintenanceWork,
 ) -> Result<Option<RelationMetadata>, Denial> {

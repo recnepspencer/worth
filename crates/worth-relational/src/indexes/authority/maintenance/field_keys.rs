@@ -15,7 +15,7 @@ use worth_foundational::facade::{
 };
 
 pub(super) fn entity(
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     id: EntityId,
     locator: &AspectFieldLocator,
     work: &mut MaintenanceWork,
@@ -59,7 +59,7 @@ pub(super) fn entity(
 }
 
 pub(super) fn relation(
-    view: Option<&VisibilityProjectionView<'_>>,
+    view: Option<&VisibilityProjectionView>,
     id: RelationId,
     locator: &AspectFieldLocator,
     work: &mut MaintenanceWork,

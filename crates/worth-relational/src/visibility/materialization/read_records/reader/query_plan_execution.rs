@@ -78,7 +78,11 @@ impl VisibilityReadContext<'_> {
     ) -> Result<Option<QueryLeasedReadOutcome>, QueryReadExecutionStop> {
         let read = match self.pin_read_capability(&plan.snapshot, &[], execution) {
             Ok(read) => read,
-            Err(RelationalPinnedReadAdmissionDenial::Request(stop)) => return Err(stop),
+            Err(RelationalPinnedReadAdmissionDenial::Request(stop)) => {
+                return Err(super::query_preparation::query_preparation_request_stop(
+                    stop, execution,
+                ))
+            }
             Err(_) => return Ok(None),
         };
         read.execute_query_plan(plan, execution)

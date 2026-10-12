@@ -39,7 +39,7 @@ impl AdjacencyStructuralRevision {
     }
 }
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     pub fn bounded_adjacency_structural_revision(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

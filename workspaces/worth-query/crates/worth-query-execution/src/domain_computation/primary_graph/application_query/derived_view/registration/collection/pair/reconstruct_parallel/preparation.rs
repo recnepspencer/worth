@@ -106,6 +106,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
 
     pub(super) fn worker(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         root: EntityId,
     ) -> Result<PreparedPair<'_>, Denial> {
@@ -143,7 +144,12 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                 session: self
                     .first
                     .graph_work
-                    .prepare_query_read(self.first.basis.identity())
+                    .prepare_query_read(
+                        self.first.basis.identity(),
+                        execution,
+                        self.first.basis.snapshot_handle(),
+                        |graph| ReadPlan::public_worker(&self.first).selected_indexes(graph),
+                    )
                     .map_err(super::denial::session)?,
                 buffer: first_buffer,
                 batch: first_batch,
@@ -153,7 +159,12 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                 session: self
                     .second
                     .graph_work
-                    .prepare_query_read(self.second.basis.identity())
+                    .prepare_query_read(
+                        self.second.basis.identity(),
+                        execution,
+                        self.second.basis.snapshot_handle(),
+                        |graph| ReadPlan::public_worker(&self.second).selected_indexes(graph),
+                    )
                     .map_err(super::denial::session)?,
                 buffer: second_buffer,
                 batch: second_batch,

@@ -16,11 +16,11 @@ pub(super) struct WorthQueryAdoptionSelection {
 
 /// The selected branch's own root. Adoption reads the branch's writes and
 /// never another branch's, so a fork decides only what the fork holds.
-pub(super) fn branch_view<'runtime>(
+pub(super) fn branch_view(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'runtime RelationalRuntime,
+    runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
-) -> Result<VisibilityProjectionView<'runtime>, WorthQueryBranchAdoptionPreparationDenial> {
+) -> Result<VisibilityProjectionView, WorthQueryBranchAdoptionPreparationDenial> {
     runtime
         .read_truth()
         .project_observation(execution, &basis.observation())
@@ -29,7 +29,7 @@ pub(super) fn branch_view<'runtime>(
 
 pub(super) fn select(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    branch: &VisibilityProjectionView<'_>,
+    branch: &VisibilityProjectionView,
     layout: &WorthQueryPrimaryGraphLayout,
     requirements: &WorthQueryProgramAdoptionRequirements,
     maximum_work_units: usize,

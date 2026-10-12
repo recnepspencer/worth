@@ -208,7 +208,7 @@ fn source_contributions(
 /// The kind of a live entity on the view's own branch root.
 fn live_entity_kind(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     entity: EntityId,
 ) -> Option<KindId> {
     view.entity_record_with_projection_scope(

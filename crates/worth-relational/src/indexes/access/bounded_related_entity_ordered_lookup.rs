@@ -5,7 +5,7 @@ use crate::indexes::data::{
     RelatedEntityEndpoint, RelatedEntityOrderingBoundary, RelatedEntityOrderingEntry,
     RelatedEntityOrderingField,
 };
-use crate::runtime::RelationalRuntime;
+use crate::runtime::RelationalPinnedRead;
 use crate::visibility::snapshot_states::resolve_snapshot_handle;
 
 use super::super::projected_field_values::{
@@ -13,7 +13,9 @@ use super::super::projected_field_values::{
 };
 use super::IndexAccess;
 
-impl IndexAccess<'_> {
+mod runtime_entry;
+impl RelationalPinnedRead {
+    /// Traverse the ordered generation selected when this capability was pinned.
     pub fn execute_bounded_related_entity_ordered_lookup(
         &self,
         request: BoundedRelatedEntityOrderedLookupRequest,
@@ -21,27 +23,37 @@ impl IndexAccess<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BoundedRelatedEntityOrderedLookupOutcome, BoundedRelatedEntityOrderedLookupDenial>
     {
-        let runtime = self.runtime;
-        runtime.performance_access().count_query_index_attempt();
-        let snapshot = resolve_snapshot_handle(runtime, request.snapshot()).ok_or_else(|| {
+        self.performance_access().count_query_index_attempt();
+        execution.check_live().map_err(|stop| {
+            denial(
+                BoundedRelatedEntityOrderedLookupDenialKind::Execution(
+                    crate::execution::denial::kernel_stop(stop),
+                ),
+                &request,
+            )
+        })?;
+        self.lookup_pinned_related_ordering(request, parity_mode, execution)
+    }
+}
+impl RelationalPinnedRead {
+    fn lookup_pinned_related_ordering(
+        &self,
+        request: BoundedRelatedEntityOrderedLookupRequest,
+        parity_mode: BoundedIndexParityMode,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<BoundedRelatedEntityOrderedLookupOutcome, BoundedRelatedEntityOrderedLookupDenial>
+    {
+        let snapshot = request.snapshot();
+        let projection = self.project_snapshot(snapshot, execution).ok_or_else(|| {
             denial(
                 BoundedRelatedEntityOrderedLookupDenialKind::SnapshotUnavailable,
                 &request,
             )
         })?;
-        let projection = runtime
-            .read_truth()
-            .project_snapshot(&snapshot, execution)
-            .ok_or_else(|| {
-                denial(
-                    BoundedRelatedEntityOrderedLookupDenialKind::SnapshotUnavailable,
-                    &request,
-                )
-            })?;
         let source =
             super::super::projected_field_values::IndexProjectionSource::exact(&projection)
                 .expect("resolved snapshot projection must carry an exact basis");
-        let prepared = prepare_related_lookup(runtime, &snapshot, &request)?;
+        let prepared = prepare_related_lookup(self, &request)?;
         let page = select_page(
             &prepared.parent_entries(),
             prepared.contract.ordering(),
@@ -51,11 +63,10 @@ impl IndexAccess<'_> {
         let outcome = outcome_from_page(prepared.generation_id, page, parity_mode);
         if parity_mode == BoundedIndexParityMode::Certification {
             certify_storage_parity(execution, &source, &prepared.contract, &outcome)?;
-            runtime
-                .performance_access()
+            self.performance_access()
                 .count_query_index_parity_verification();
         }
-        runtime.performance_access().count_query_index_path();
+        self.performance_access().count_query_index_path();
         Ok(outcome)
     }
 }
@@ -101,22 +112,20 @@ impl RelatedLookupContract<'_> {
 }
 
 fn prepare_related_lookup<'request>(
-    runtime: &RelationalRuntime,
-    snapshot: &crate::snapshots::data::SnapshotHandle,
+    read: &RelationalPinnedRead,
     request: &'request BoundedRelatedEntityOrderedLookupRequest,
 ) -> Result<PreparedRelatedLookup<'request>, BoundedRelatedEntityOrderedLookupDenial> {
-    let contract = resolve_related_lookup_contract(runtime, request)?;
-    let generation = super::generation_selection::exact_published_generation(
-        runtime,
-        snapshot,
-        &contract.definition,
-    )
-    .ok_or_else(|| {
-        denial(
-            BoundedRelatedEntityOrderedLookupDenialKind::ExactGenerationUnavailable,
-            request,
-        )
-    })?;
+    let contract = resolve_related_lookup_contract(read, request)?;
+    let generation = read
+        .indexes
+        .get(&request.index_id())
+        .and_then(|index| index.generation.clone())
+        .ok_or_else(|| {
+            denial(
+                BoundedRelatedEntityOrderedLookupDenialKind::ExactGenerationUnavailable,
+                request,
+            )
+        })?;
     if request
         .expected_generation()
         .is_some_and(|expected| expected != generation.generation_id)
@@ -143,12 +152,13 @@ fn prepare_related_lookup<'request>(
 }
 
 fn resolve_related_lookup_contract<'request>(
-    runtime: &RelationalRuntime,
+    read: &RelationalPinnedRead,
     request: &'request BoundedRelatedEntityOrderedLookupRequest,
 ) -> Result<RelatedLookupContract<'request>, BoundedRelatedEntityOrderedLookupDenial> {
-    let definition = runtime
+    let definition = read
         .indexes
-        .definition(request.index_id())
+        .get(&request.index_id())
+        .map(|index| index.definition.clone())
         .ok_or_else(|| {
             denial(
                 BoundedRelatedEntityOrderedLookupDenialKind::IndexNotInstalled,
@@ -253,7 +263,7 @@ fn outcome_from_page(
 
 fn verify_entries(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
+    projection: &super::super::projected_field_values::IndexProjectionSource<'_>,
     contract: &RelatedLookupContract<'_>,
     entries: &[RelatedEntityOrderingEntry],
 ) -> Result<(), BoundedRelatedEntityOrderedLookupDenial> {
@@ -300,7 +310,7 @@ fn verify_entries(
 
 fn certify_storage_parity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    projection: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
+    projection: &super::super::projected_field_values::IndexProjectionSource<'_>,
     contract: &RelatedLookupContract<'_>,
     indexed: &BoundedRelatedEntityOrderedLookupOutcome,
 ) -> Result<(), BoundedRelatedEntityOrderedLookupDenial> {

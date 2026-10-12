@@ -155,17 +155,6 @@ impl WorthQueryRelationalSourceOwner {
         mutate(&mut runtime)
     }
 
-    /// The prepared read needs immutable access, while the installed owner's
-    /// mutex remains exclusive. Freeing this lock requires a native pinned
-    /// read capability; cloning a runtime would create a second owner.
-    pub(crate) fn with_runtime_unwind_isolated<T>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        read: impl FnOnce(&RelationalRuntime) -> T,
-    ) -> T {
-        self.with_runtime_mut_unwind_isolated(execution, |runtime| read(runtime))
-    }
-
     pub(crate) fn with_runtime_mut_unwind_isolated<T>(
         &self,
         // Required caller request proves custody for this callback.
