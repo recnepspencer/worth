@@ -1,5 +1,5 @@
 //! Isolated fixture paths owned by the Cargo build, not the system temporary tree.
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static SEQUENCE: AtomicU64 = AtomicU64::new(0);
@@ -29,16 +29,66 @@ pub fn unique_path(label: &str) -> PathBuf {
         .expect("Cargo target directory")
         .join("tmp");
     std::fs::create_dir_all(&temporary).expect("create target fixture directory");
-    temporary.join(format!(
-        "{label}-{}-{}",
+    prepare_fixture_path(
+        &temporary,
+        &label,
         std::process::id(),
         SEQUENCE.fetch_add(1, Ordering::Relaxed),
-    ))
+    )
+}
+
+fn prepare_fixture_path(temporary: &Path, label: &str, process: u32, sequence: u64) -> PathBuf {
+    let path = temporary.join(format!("{label}-{process}-{sequence}"));
+    match std::fs::symlink_metadata(&path) {
+        Ok(metadata) => {
+            assert!(
+                !metadata.file_type().is_symlink(),
+                "fixture leaf must not redirect cleanup"
+            );
+            let base = temporary.canonicalize().expect("resolve fixture directory");
+            let previous = path.canonicalize().expect("resolve previous fixture");
+            assert_eq!(
+                previous.parent(),
+                Some(base.as_path()),
+                "cleanup must stay within the fixture directory"
+            );
+            if metadata.is_dir() {
+                std::fs::remove_dir_all(previous).expect("clear previous fixture directory");
+            } else {
+                std::fs::remove_file(previous).expect("clear previous fixture file");
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => panic!("inspect previous fixture {}: {error}", path.display()),
+    }
+    path
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn recycled_fixture_identity_clears_an_earlier_file_or_directory() {
+        let temporary = unique_path("recycled-fixture");
+        std::fs::create_dir_all(&temporary).unwrap();
+        for directory in [false, true] {
+            let path = prepare_fixture_path(&temporary, "previous-run", 7, 9);
+            if directory {
+                std::fs::create_dir(&path).unwrap();
+                std::fs::write(path.join("old-output"), "stale").unwrap();
+            } else {
+                std::fs::write(&path, "stale").unwrap();
+            }
+            assert_eq!(prepare_fixture_path(&temporary, "previous-run", 7, 9), path);
+            assert!(
+                !path.exists(),
+                "the reused identity retained earlier output"
+            );
+        }
+        let canonical = temporary.canonicalize().unwrap();
+        assert!(canonical.starts_with(temporary.parent().unwrap().canonicalize().unwrap()));
+        std::fs::remove_dir_all(canonical).unwrap();
+    }
     #[test]
     fn extensions_preserve_fixture_isolation() {
         let first = unique_path("fixture.rs").with_extension("json");

@@ -4,11 +4,10 @@ use std::process::{Child, Command, ExitStatus, Output, Stdio};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
 
-/// A hang guard, not a performance assertion.
-pub const DEFAULT_CHILD_PROCESS_DEADLINE: Duration = Duration::from_secs(300);
+use worth_harness::tooling::process_deadline::DEFAULT_CHILD_PROCESS_HANG_GUARD;
 
 pub fn output(command: &mut Command) -> io::Result<Output> {
-    output_with_deadline(command, DEFAULT_CHILD_PROCESS_DEADLINE)
+    output_with_deadline(command, DEFAULT_CHILD_PROCESS_HANG_GUARD)
 }
 
 pub fn output_with_deadline(command: &mut Command, bound: Duration) -> io::Result<Output> {

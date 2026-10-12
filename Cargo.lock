@@ -1508,6 +1508,7 @@ dependencies = [
  "stats_alloc",
  "worth-execution",
  "worth-foundational",
+ "worth-harness",
  "worth-proof",
  "worth-query-admission",
  "worth-query-declaration",
@@ -1523,6 +1524,7 @@ name = "worth-query-host"
 version = "0.1.0"
 dependencies = [
  "worth-foundational",
+ "worth-harness",
  "worth-query-admission",
  "worth-query-decl",
  "worth-query-declaration",

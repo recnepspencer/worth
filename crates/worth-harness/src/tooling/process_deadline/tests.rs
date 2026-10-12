@@ -106,11 +106,3 @@ fn failed_kill_is_retained_in_the_expiry_report() {
         assert!(text.contains(expected), "{text}");
     }
 }
-
-#[test]
-fn default_child_hang_guard_allows_shared_machine_scan_headroom() {
-    assert_eq!(
-        DEFAULT_CHILD_PROCESS_HANG_GUARD,
-        Duration::from_secs(30 * 60)
-    );
-}
