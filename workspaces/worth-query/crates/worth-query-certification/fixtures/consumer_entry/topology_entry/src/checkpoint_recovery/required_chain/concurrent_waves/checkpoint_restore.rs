@@ -23,6 +23,15 @@ fn a_checkpoint_of_a_frozen_head_restores_truth_without_a_publication_hold() {
         owner.advance(&request).unwrap(),
         WorthQueryApplicationOutputDemandProgress::Settled(_)
     ));
+    let before = request
+        .query(PlanarOutputRead {
+            body_key: "anchor-a".into(),
+        })
+        .execute()
+        .unwrap();
+    assert_eq!(before.rows().len(), 1);
+    let pre_edit_truth = before.rows()[0].value;
+    drop(before);
     let source = request
         .query(PlanarRead {
             body_key: "anchor-a".into(),
@@ -58,6 +67,10 @@ fn a_checkpoint_of_a_frozen_head_restores_truth_without_a_publication_hold() {
         .unwrap();
     assert_eq!(published.rows().len(), 1);
     let last_published_truth = published.rows()[0].value;
+    assert_ne!(
+        last_published_truth, pre_edit_truth,
+        "the checkpoint preserves the changed publication, not the pre-edit output"
+    );
     let checkpoint = application
         .capture_application_checkpoint(WorthQueryCheckpointCapturePolicy::SystemAllocation)
         .unwrap();
@@ -77,9 +90,17 @@ fn a_checkpoint_of_a_frozen_head_restores_truth_without_a_publication_hold() {
         1_000_000,
         source_world::seed,
     );
-    assert_eq!(restored.undelivered_publication_counts_for_test(), (0, 0));
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
+    let mut owner = request
+        .demand(PlanarOutputDemand::new("anchor-a"))
+        .start_in_program::<application::Program, program::ChainRoot>(&restored)
+        .unwrap();
+    assert!(matches!(
+        owner.advance(&request).unwrap(),
+        WorthQueryApplicationOutputDemandProgress::Settled(_)
+    ));
+    assert_eq!(restored.undelivered_publication_counts_for_test(), (0, 0));
     let published = request
         .query(PlanarOutputRead {
             body_key: "anchor-a".into(),
