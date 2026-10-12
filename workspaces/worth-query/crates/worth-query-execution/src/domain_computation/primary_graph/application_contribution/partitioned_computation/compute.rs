@@ -172,8 +172,7 @@ where
             }
             PreparedRun::Incremental(prepared) => prepared.can_retain(),
         };
-        let recording_steps =
-            super::incremental::KernelRecording::new(execution.request, retain, declared_bytes);
+        let recording_steps = super::incremental::KernelRecording::new(execution.request, retain);
         let compute_kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                               context: &mut MapKernelContext<'_, '_>,
                               steps: &mut Option<super::incremental::KernelSteps>,

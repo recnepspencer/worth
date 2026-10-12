@@ -6,18 +6,12 @@ use std::sync::Mutex;
 use worth_foundational::PartitionIdentity;
 
 pub(in super::super) struct KernelRecording {
-    limit: u64,
     memory: Mutex<Option<QueryMemoryReservation>>,
     receipts: Mutex<BTreeMap<PartitionIdentity, Option<KernelSteps>>>,
 }
 impl KernelRecording {
-    pub(in super::super) fn new(
-        request: &QueryRequestExecution<'_>,
-        retain: bool,
-        limit: u64,
-    ) -> Self {
+    pub(in super::super) fn new(request: &QueryRequestExecution<'_>, retain: bool) -> Self {
         Self {
-            limit,
             // Preparation already admitted this request's lease. room::check
             // tests requested > room, so a zero-byte hold cannot be refused,
             // even with a full lineage or a cancelled request.
@@ -40,21 +34,15 @@ impl KernelRecording {
         let Some(recorded) = steps else {
             return;
         };
-        // At most 2 * accepted work + 1 RLE entries; all vector capacities
-        // fit each partition's declared retained bytes; their aggregate is
-        // reserved against the request before any vector grows.
-        let recorded_bytes = worth_execution::ChargedBytes::additional_charged_bytes(recorded);
+        // At most 2 * accepted work + 1 RLE entries, paid before growth by
+        // the request's memory ledger. These framework checkpoints are not
+        // owner result bytes: a scalar result may hold less than one entry.
         if !recorded.accepted(work, |bytes| {
             let mut memory = self
                 .memory
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            memory.as_mut().is_some_and(|held| {
-                recorded_bytes
-                    .checked_add(bytes)
-                    .is_some_and(|n| n <= self.limit)
-                    && held.grow(bytes).is_ok()
-            })
+            memory.as_mut().is_some_and(|held| held.grow(bytes).is_ok())
         }) {
             *steps = None;
         }
