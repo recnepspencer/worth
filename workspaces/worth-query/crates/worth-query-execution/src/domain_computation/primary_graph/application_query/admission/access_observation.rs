@@ -105,7 +105,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .and_then(|()| {
                         entity_resolution
                             .at_snapshot(
-                                execution,
                                 runtime,
                                 snapshot,
                                 WorthQueryPrincipalResolutionMode::Ordinary,

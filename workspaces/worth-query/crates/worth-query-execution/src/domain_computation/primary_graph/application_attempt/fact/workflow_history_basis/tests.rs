@@ -26,22 +26,8 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         .snapshot_for_observation(&retained.observation())
         .unwrap();
     assert_ne!(first.snapshot_id(), second_lease.snapshot_id());
-    assert!(remains_equal(
-        &runtime,
-        execution,
-        &second_lease,
-        &first,
-        2,
-        1
-    ));
-    assert!(!remains_equal(
-        &runtime,
-        execution,
-        &second_lease,
-        &first,
-        1,
-        1
-    ));
+    assert!(remains_equal(&runtime, &second_lease, &first, 2, 1));
+    assert!(!remains_equal(&runtime, &second_lease, &first, 1, 1));
     let (_, source) = runtime.observe_fork_source(first.branch_id()).unwrap();
     let fork = runtime
         .fork_branch(BranchId("history-fork".to_owned()), source)
@@ -52,52 +38,17 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         .snapshot_for_observation(&fork_basis.observation())
         .unwrap();
     assert_eq!(fork_snapshot.version_id(), first.version_id());
-    assert!(!remains_equal(
-        &runtime,
-        execution,
-        &fork_snapshot,
-        &first,
-        2,
-        1
-    ));
+    assert!(!remains_equal(&runtime, &fork_snapshot, &first, 2, 1));
     let changed = commit(execution, &mut runtime, "second");
-    assert!(!remains_equal(&runtime, execution, &changed, &first, 2, 1));
-    assert!(remains_equal(
-        &runtime,
-        execution,
-        &second_lease,
-        &first,
-        2,
-        1
-    ));
+    assert!(!remains_equal(&runtime, &changed, &first, 2, 1));
+    assert!(remains_equal(&runtime, &second_lease, &first, 2, 1));
     let mut foreign = history_runtime();
     let foreign_snapshot = commit(execution, &mut foreign, "first");
     assert_eq!(foreign_snapshot.version_id(), first.version_id());
-    assert!(!remains_equal(
-        &foreign,
-        execution,
-        &foreign_snapshot,
-        &first,
-        2,
-        1
-    ));
-    assert!(!remains_equal(
-        &foreign,
-        execution,
-        &second_lease,
-        &first,
-        2,
-        1
-    ));
+    assert!(!remains_equal(&foreign, &foreign_snapshot, &first, 2, 1));
+    assert!(!remains_equal(&foreign, &second_lease, &first, 2, 1));
     crate::relational_snapshot_release::release_query_snapshot(&mut runtime, &second_lease);
-    assert!(!remains_equal(
-        &runtime,
-        execution,
-        &second_lease,
-        &first,
-        2,
-        1
-    ));
+    assert!(!remains_equal(&runtime, &second_lease, &first, 2, 1));
     // An invalid lease must be distinguished before reading any anchor.
     assert_eq!(
         super::super::observe_adjacency_checked(

@@ -70,7 +70,7 @@ pub(super) fn materialize_result_tree(
     spent: Option<&OneShotReadWorkObservation<'_>>,
 ) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| projection_denial(contract.root_entity()))?;
     let mut work = ResultTreeWork::new(maximum_work, interruption, spent);
     work.checkpoint("root")?;

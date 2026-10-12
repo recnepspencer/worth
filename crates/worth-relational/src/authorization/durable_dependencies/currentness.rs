@@ -37,7 +37,7 @@ impl RelationalAuthorizationDurableDependencies {
         }
         let view = runtime
             .read_truth()
-            .project_snapshot(snapshot, execution)
+            .project_snapshot(snapshot)
             .ok_or(Denial::SnapshotUnavailable)?;
         if !view.is_exact_basis() {
             return Err(Denial::InexactSnapshot);

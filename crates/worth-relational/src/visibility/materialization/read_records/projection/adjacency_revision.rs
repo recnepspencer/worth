@@ -110,7 +110,7 @@ mod tests {
         let revision_at = |snapshot| {
             let view = runtime
                 .read_truth()
-                .project_snapshot(snapshot, execution)
+                .project_snapshot(snapshot)
                 .expect("commit snapshot remains readable");
             let revision = view
                 .bounded_adjacency_structural_revision(
@@ -144,7 +144,7 @@ mod tests {
         );
         let deleted_view = runtime
             .read_truth()
-            .project_snapshot(&deletion_commit.snapshot, execution)
+            .project_snapshot(&deletion_commit.snapshot)
             .expect("deleted-relation snapshot remains readable");
         assert_eq!(
             deleted_view.bounded_adjacency_structural_revision(
@@ -200,7 +200,7 @@ mod tests {
         assert_eq!(
             recovered
                 .read_truth()
-                .project_snapshot(&recovered_snapshot, execution)
+                .project_snapshot(&recovered_snapshot)
                 .expect("recovered main basis is readable")
                 .bounded_adjacency_structural_revision(
                     execution,

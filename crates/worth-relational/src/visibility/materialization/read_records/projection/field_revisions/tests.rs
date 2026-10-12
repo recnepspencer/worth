@@ -56,10 +56,7 @@ fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
     let title = locator("summary", "title");
     let status = locator("summary", "status");
     let read = |snapshot| {
-        let view = runtime
-            .read_truth()
-            .project_snapshot(snapshot, execution)
-            .unwrap();
+        let view = runtime.read_truth().project_snapshot(snapshot).unwrap();
         (
             view.entity_field_revision(execution, entity, &title)
                 .expect("read request remains live"),
@@ -143,7 +140,7 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
     let revision = |snapshot| {
         runtime
             .read_truth()
-            .project_snapshot(snapshot, execution)
+            .project_snapshot(snapshot)
             .unwrap()
             .entity_field_revision(execution, entity, &status)
             .expect("read request remains live")
@@ -153,7 +150,7 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
     assert_eq!(initial.presence(), RelationalFieldPresence::Absent);
     let title_initial = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap()
         .entity_field_revision(execution, entity, &title)
         .expect("read request remains live");
@@ -206,7 +203,7 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
         title_initial,
         runtime
             .read_truth()
-            .project_snapshot(&absent_again.snapshot, execution)
+            .project_snapshot(&absent_again.snapshot)
             .unwrap()
             .entity_field_revision(execution, entity, &title)
             .expect("read request remains live")
@@ -227,7 +224,7 @@ fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_id
     let name = locator("name", "name");
     let original = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap()
         .entity_field_revision(execution, entity, &name)
         .expect("read request remains live")
@@ -236,7 +233,7 @@ fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_id
     let changed = update_entity_on_branch(execution, &runtime, entity, "second", fork.clone());
     let on_fork = runtime
         .read_truth()
-        .project_snapshot(&changed.snapshot, execution)
+        .project_snapshot(&changed.snapshot)
         .unwrap()
         .entity_field_revision(execution, entity, &name)
         .expect("read request remains live")
@@ -245,7 +242,7 @@ fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_id
     assert_eq!(
         runtime
             .read_truth()
-            .project_snapshot(&created.snapshot, execution)
+            .project_snapshot(&created.snapshot)
             .unwrap()
             .entity_field_revision(execution, entity, &name)
             .expect("read request remains live"),
@@ -258,7 +255,7 @@ fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_id
     assert_eq!(
         runtime
             .read_truth()
-            .project_snapshot(&main, execution)
+            .project_snapshot(&main)
             .unwrap()
             .entity_field_revision(execution, entity, &name)
             .expect("read request remains live"),
@@ -270,7 +267,7 @@ fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_id
     assert_eq!(
         runtime
             .read_truth()
-            .project_snapshot(&deleted.snapshot, execution)
+            .project_snapshot(&deleted.snapshot)
             .unwrap()
             .entity_field_revision(execution, entity, &name)
             .expect("read request remains live"),
@@ -282,7 +279,7 @@ fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_id
     assert_ne!(
         runtime
             .read_truth()
-            .project_snapshot(&recreated.snapshot, execution)
+            .project_snapshot(&recreated.snapshot)
             .unwrap()
             .entity_field_revision(execution, new_entity, &name)
             .expect("read request remains live"),

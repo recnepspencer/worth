@@ -80,7 +80,7 @@ pub(super) fn observe(
             check_request_live(observation_request, "workflow retained evidence")?;
             let view = runtime
                 .read_truth()
-                .project_snapshot(snapshot, execution)
+                .project_snapshot(snapshot)
                 .ok_or_else(|| denial("applicability snapshot is unavailable"))?;
             for (entity, kind) in [(resource, binding.from), (related, binding.to)] {
                 let matches =

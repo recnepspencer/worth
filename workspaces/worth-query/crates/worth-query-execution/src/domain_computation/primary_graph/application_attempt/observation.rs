@@ -50,7 +50,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
         locator.aspect().aspect_key().clone(),
         [field.clone()],
     )]);
-    let Some(view) = runtime.read_truth().project_snapshot(snapshot, execution) else {
+    let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
         return Ok(None);
     };
     view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {

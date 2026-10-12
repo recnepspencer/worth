@@ -318,7 +318,7 @@ impl RetainedInputCutoffCandidate {
                 ));
             }
         }
-        if !witness.unchanged_in(execution, runtime, snapshot, admission)? {
+        if !witness.unchanged_in(runtime, snapshot, admission)? {
             return Ok(None);
         }
         Ok(Some(VerifiedDependencies {

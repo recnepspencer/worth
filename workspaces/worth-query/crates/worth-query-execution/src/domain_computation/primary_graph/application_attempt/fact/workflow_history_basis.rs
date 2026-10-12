@@ -2,7 +2,6 @@ use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHa
 
 pub(super) fn remains_equal(
     runtime: &RelationalRuntime,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     current: &SnapshotHandle,
     observed: &SnapshotHandle,
     maximum_transitions: usize,
@@ -15,10 +14,7 @@ pub(super) fn remains_equal(
         && current.runtime_instance_id() == observed.runtime_instance_id()
         && current.branch_id() == observed.branch_id()
         && current.version_id() == observed.version_id()
-        && runtime
-            .read_truth()
-            .project_snapshot(current, execution)
-            .is_some()
+        && runtime.read_truth().project_snapshot(current).is_some()
 }
 
 #[cfg(test)]

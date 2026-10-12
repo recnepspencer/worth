@@ -193,7 +193,7 @@ where
                         || stop(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable);
                     let truth = relational.read_truth();
                     let live = truth
-                        .project_snapshot(snapshot, execution)
+                        .project_snapshot(snapshot)
                         .ok_or_else(unavailable)?
                         .entity_record_with_projection_scope(
                             execution,

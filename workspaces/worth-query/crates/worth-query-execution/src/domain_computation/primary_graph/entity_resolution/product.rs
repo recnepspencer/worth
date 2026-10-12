@@ -227,12 +227,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     })?;
             }
             installed
-                .at_snapshot(
-                    execution,
-                    relational,
-                    self.application_basis().snapshot_handle(),
-                    mode,
-                )
+                .at_snapshot(relational, self.application_basis().snapshot_handle(), mode)
                 .map(|truth| truth.resolve_with_work(execution, entity, aspect, field, encoded))
         })?;
         if let Some(admission) = admission {

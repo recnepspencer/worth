@@ -27,7 +27,7 @@ pub(super) fn select_root_path_union(
     interruption: super::super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
-        .project_snapshot(plan.snapshot, execution)
+        .project_snapshot(plan.snapshot)
         .ok_or_else(|| traversal_denial(plan.name))?;
     let mut roots = BTreeMap::new();
     let mut work = RootSelectionWork::new(maximum_work, interruption, spent);

@@ -111,7 +111,6 @@ where
             })?;
             entity_resolution
                 .at_snapshot(
-                    execution,
                     relational,
                     &snapshot,
                     WorthQueryPrincipalResolutionMode::Ordinary,

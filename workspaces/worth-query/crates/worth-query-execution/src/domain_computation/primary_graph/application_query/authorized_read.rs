@@ -113,7 +113,6 @@ where
                 authorization_work.with_execution_security_product_resolution();
             entity_resolution
                 .at_snapshot(
-                    execution,
                     runtime,
                     plan.basis.snapshot_handle(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -279,7 +278,6 @@ where
     }
     entity_resolution
         .at_snapshot(
-            execution,
             runtime,
             current,
             WorthQueryPrincipalResolutionMode::Ordinary,

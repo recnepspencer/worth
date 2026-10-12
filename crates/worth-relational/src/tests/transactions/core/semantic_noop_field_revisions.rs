@@ -39,10 +39,7 @@ fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
     let before = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let title = locator("summary", "title");
     let status = locator("summary", "status");
-    let before_view = runtime
-        .read_truth()
-        .project_snapshot(&before, execution)
-        .unwrap();
+    let before_view = runtime.read_truth().project_snapshot(&before).unwrap();
     let title_before = before_view
         .entity_field_revision(execution, entity, &title)
         .expect("read request remains live")
@@ -69,7 +66,7 @@ fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
     let updated = txn.commit(execution, &runtime).unwrap();
     let after_view = runtime
         .read_truth()
-        .project_snapshot(&updated.snapshot, execution)
+        .project_snapshot(&updated.snapshot)
         .unwrap();
     assert_eq!(
         after_view
@@ -99,7 +96,7 @@ fn scalar_equal_value_is_stable_but_return_to_original_value_revises() {
     let revision = |outcome: &crate::facade::transactions::CommitResult| {
         runtime
             .read_truth()
-            .project_snapshot(&outcome.snapshot, execution)
+            .project_snapshot(&outcome.snapshot)
             .unwrap()
             .entity_field_revision(execution, entity, &name)
             .expect("read request remains live")
@@ -131,7 +128,7 @@ fn equal_scalar_patch_keeps_the_native_field_revision() {
     let name = locator("name", "name");
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap()
         .entity_field_revision(execution, entity, &name)
         .expect("read request remains live");
@@ -140,7 +137,7 @@ fn equal_scalar_patch_keeps_the_native_field_revision() {
     assert_eq!(
         runtime
             .read_truth()
-            .project_snapshot(&equal.snapshot, execution)
+            .project_snapshot(&equal.snapshot)
             .unwrap()
             .entity_field_revision(execution, entity, &name)
             .expect("read request remains live"),
@@ -165,7 +162,7 @@ fn relation_equal_value_patch_preserves_native_field_revision() {
     let before = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let original = runtime
         .read_truth()
-        .project_snapshot(&before, execution)
+        .project_snapshot(&before)
         .unwrap()
         .relation_field_revision(execution, relation, &label)
         .expect("read request remains live")
@@ -202,7 +199,7 @@ fn relation_equal_value_patch_preserves_native_field_revision() {
     let equal = commit("original");
     let equal_revision = runtime
         .read_truth()
-        .project_snapshot(&equal.snapshot, execution)
+        .project_snapshot(&equal.snapshot)
         .unwrap()
         .relation_field_revision(execution, relation, &label)
         .expect("read request remains live")
@@ -212,7 +209,7 @@ fn relation_equal_value_patch_preserves_native_field_revision() {
     assert_ne!(
         runtime
             .read_truth()
-            .project_snapshot(&changed.snapshot, execution)
+            .project_snapshot(&changed.snapshot)
             .unwrap()
             .relation_field_revision(execution, relation, &label)
             .expect("read request remains live"),

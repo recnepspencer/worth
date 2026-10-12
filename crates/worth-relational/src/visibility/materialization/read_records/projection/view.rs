@@ -199,11 +199,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         ))
     }
 
-    pub fn project_snapshot(
-        &self,
-        handle: &SnapshotHandle,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Option<VisibilityProjectionView> {
+    /// Retain immutable basis metadata; record reads consult their request.
+    pub fn project_snapshot(&self, handle: &SnapshotHandle) -> Option<VisibilityProjectionView> {
         let basis =
             crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime(), handle)?;
         if basis.root().has_materialization_unavailable() {

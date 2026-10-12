@@ -116,7 +116,7 @@ fn snapshot_projection_resolves_version_without_manual_kind_scan_parameters() {
 
     let projected = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap()
         .entities::<NamedEntityProjection>(execution)
         .expect("read request remains live");
@@ -212,7 +212,7 @@ fn snapshot_projection_uses_authoritative_published_binding_version() {
 
     let projected = runtime
         .read_truth()
-        .project_snapshot(&stale_handle, execution)
+        .project_snapshot(&stale_handle)
         .unwrap()
         .entities::<NamedEntityProjection>(execution)
         .expect("read request remains live");

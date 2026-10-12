@@ -203,14 +203,12 @@ fn select_indexed_root(
             field,
         ));
     }
-    let projection = runtime
-        .project_snapshot(plan.snapshot, execution)
-        .ok_or_else(|| {
-            read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
-                field,
-            )
-        })?;
+    let projection = runtime.project_snapshot(plan.snapshot).ok_or_else(|| {
+        read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+            field,
+        )
+    })?;
     let mut set_source = RootPathSourceBuilder::default();
     let selected_predicate_source = if capture_result_set || scoped.is_some() {
         set_source.observe_entity(plan.root);

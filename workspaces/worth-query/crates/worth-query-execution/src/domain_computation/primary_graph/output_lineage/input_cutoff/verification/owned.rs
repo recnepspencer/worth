@@ -147,7 +147,7 @@ impl OwnedVerifiedInputCutoff {
                 .candidate
                 .native_output_witness()
                 .ok_or(InputCutoffVerificationStop::CurrentnessRaced)?
-                .unchanged_in(execution, runtime, snapshot, admission)?
+                .unchanged_in(runtime, snapshot, admission)?
         {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
         }

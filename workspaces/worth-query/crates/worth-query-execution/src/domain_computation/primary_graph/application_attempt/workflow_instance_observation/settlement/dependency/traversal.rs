@@ -25,7 +25,7 @@ pub(super) fn observe(
     check_request_live(policy, subject)?;
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| super::denial(subject))?;
     let mut relations = Vec::new();
     let mut examined = 0usize;

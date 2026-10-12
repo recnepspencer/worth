@@ -28,10 +28,7 @@ pub(crate) fn execute_index_backed_query_from_generation(
     let Some(generation) = runtime.indexes.generation(generation_id) else {
         return Ok(None);
     };
-    let Some(exact_projection) = runtime
-        .read_truth()
-        .project_snapshot(&plan.snapshot, execution)
-    else {
+    let Some(exact_projection) = runtime.read_truth().project_snapshot(&plan.snapshot) else {
         return Ok(None);
     };
     let source = IndexProjectionSource::exact(&exact_projection)

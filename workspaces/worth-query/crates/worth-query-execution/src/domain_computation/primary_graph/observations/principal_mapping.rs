@@ -17,7 +17,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_mapping(
     })?;
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let scope = mapping_projection_scope(layout);
     let identity_revision = view

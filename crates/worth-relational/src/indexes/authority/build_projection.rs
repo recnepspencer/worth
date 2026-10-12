@@ -6,8 +6,8 @@ pub(super) enum IndexBuildProjection {
 }
 
 impl IndexBuildProjection {
+    /// Select immutable source metadata before request-paid index record reads.
     pub(super) fn select(
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         branch_id: &crate::history::data::BranchId,
         version_id: crate::identity::data::VersionId,

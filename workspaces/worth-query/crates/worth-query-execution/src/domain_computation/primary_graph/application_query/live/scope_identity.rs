@@ -58,7 +58,7 @@ pub(super) fn read_scope_identity<
         .ok_or_else(|| projection_denial(identity.result_path()))?;
     let view = runtime
         .read_truth()
-        .project_snapshot(plan.basis.snapshot_handle(), execution)
+        .project_snapshot(plan.basis.snapshot_handle())
         .ok_or_else(|| projection_denial(identity.result_path()))?;
     let projection_fields = computation.projection_fields();
     let scope = ProjectionAspectScope::fields(identity.aspect_key().clone(), projection_fields);

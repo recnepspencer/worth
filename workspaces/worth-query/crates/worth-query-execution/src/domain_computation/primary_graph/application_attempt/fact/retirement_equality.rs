@@ -1,7 +1,6 @@
 //! Exact retirement equality shared by fact comparison and currentness.
 pub(super) fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: worth_relational::facade::identity::EntityId,
     kind: worth_relational::facade::identity::KindId,
@@ -10,7 +9,7 @@ pub(super) fn remains_equal(
 ) -> bool {
     runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .and_then(|view| view.entity_retirement(entity))
         .is_some_and(|record| {
             record.kind_id() == kind

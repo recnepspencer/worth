@@ -56,7 +56,7 @@ pub(crate) fn completion_records(
                 .unwrap();
             let count = runtime
                 .read_truth()
-                .project_snapshot(&snapshot, execution)
+                .project_snapshot(&snapshot)
                 .unwrap()
                 .bounded_entities_of_kind(execution, kind, 100)
                 .expect("fixture read request remains live")

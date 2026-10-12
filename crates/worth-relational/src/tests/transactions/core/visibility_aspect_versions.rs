@@ -91,7 +91,7 @@ fn selected_basis_aspect_revision_reads_only_the_requested_aspect() {
     let updated = update_entity(execution, &runtime, entity, "beta");
     let view = runtime
         .read_truth()
-        .project_snapshot(&updated.snapshot, execution)
+        .project_snapshot(&updated.snapshot)
         .expect("the committed basis remains projectable");
 
     assert_eq!(

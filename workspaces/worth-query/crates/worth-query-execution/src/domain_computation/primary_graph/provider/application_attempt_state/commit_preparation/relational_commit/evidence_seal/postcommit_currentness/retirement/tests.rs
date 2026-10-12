@@ -131,7 +131,7 @@ fn reads(
         .with_runtime(execution, |runtime| {
             let view = runtime
                 .read_truth()
-                .project_snapshot(selected.application_basis().snapshot_handle(), execution)
+                .project_snapshot(selected.application_basis().snapshot_handle())
                 .unwrap();
             (
                 view.entity_aspect_version(entity, locator.aspect().aspect_key()),
@@ -256,7 +256,6 @@ fn rebase_current(
         .integration_handle()
         .with_runtime(execution, |runtime| {
             rebase(
-                execution,
                 runtime,
                 selected.application_basis().snapshot_handle(),
                 facts,

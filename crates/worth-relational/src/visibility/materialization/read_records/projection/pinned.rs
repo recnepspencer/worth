@@ -22,7 +22,6 @@ impl RelationalPinnedRead {
     pub fn project_snapshot(
         &self,
         handle: &crate::snapshots::data::SnapshotHandle,
-        _request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Option<VisibilityProjectionView> {
         (handle == self.snapshot()).then(|| VisibilityProjectionView::from_pinned(self))
     }

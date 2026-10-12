@@ -32,7 +32,7 @@ fn exact_admitted_lookup_preserves_production_and_certification_results() {
     assert!(build.failed_indexes.is_empty());
     let view = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .expect("issued exact snapshot");
     for mode in [
         BoundedIndexParityMode::Production,
@@ -158,7 +158,7 @@ fn exact_admitted_lookup_keeps_a_one_short_stop_in_the_callers_lane() {
     assert!(build.failed_indexes.is_empty());
     let view = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap();
     let mut actual_work = 0_u64;
     runtime

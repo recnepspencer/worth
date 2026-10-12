@@ -281,7 +281,7 @@ impl TargetHead<'_> {
         let snapshot = self.snapshot()?;
         let truth = runtime.read_truth();
         let view = truth
-            .project_snapshot(snapshot, execution)
+            .project_snapshot(snapshot)
             .ok_or_else(target_head_unavailable)?;
         view.entity_record_with_projection_scope(
             execution,

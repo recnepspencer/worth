@@ -31,7 +31,7 @@ fn runtime_read_law_remaining_view_input_preparation() {
     let view = world
         .runtime
         .read_truth()
-        .project_snapshot(&world.snapshot, &setup)
+        .project_snapshot(&world.snapshot)
         .unwrap();
     for parity in [
         BoundedIndexParityMode::Production,
@@ -80,7 +80,7 @@ fn runtime_read_law_remaining_selected_view() {
     let view = world
         .runtime
         .read_truth()
-        .project_snapshot(&world.snapshot, &setup)
+        .project_snapshot(&world.snapshot)
         .unwrap();
     let value = string_aspect_value("a");
     with_backings(|execution| {

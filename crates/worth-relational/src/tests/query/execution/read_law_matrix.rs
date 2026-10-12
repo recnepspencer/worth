@@ -94,7 +94,7 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
                 let projection = world
                     .runtime
                     .read_truth()
-                    .project_snapshot(&world.snapshot, &request)
+                    .project_snapshot(&world.snapshot)
                     .unwrap();
                 for (row, &i) in result.entities.iter().zip(case.entities) {
                     assert_eq!(row.created_at_version, VersionId((i + 1) as u64));

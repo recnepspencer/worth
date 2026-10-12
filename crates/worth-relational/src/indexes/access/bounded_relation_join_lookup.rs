@@ -31,14 +31,12 @@ impl RelationalPinnedRead {
                 &request,
             )
         })?;
-        let projection = self
-            .project_snapshot(request.snapshot(), execution)
-            .ok_or_else(|| {
-                denial(
-                    BoundedRelationJoinLookupDenialKind::SnapshotUnavailable,
-                    &request,
-                )
-            })?;
+        let projection = self.project_snapshot(request.snapshot()).ok_or_else(|| {
+            denial(
+                BoundedRelationJoinLookupDenialKind::SnapshotUnavailable,
+                &request,
+            )
+        })?;
         let source =
             super::super::projected_field_values::IndexProjectionSource::exact(&projection)
                 .ok_or_else(|| {

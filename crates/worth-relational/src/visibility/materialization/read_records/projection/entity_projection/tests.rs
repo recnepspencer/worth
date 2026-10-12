@@ -48,10 +48,7 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
     let entity = changed_entities(&created)[0];
     let updated = update_entity(execution, &runtime, entity, "after");
     for (snapshot, expected_name) in [(&created.snapshot, "before"), (&updated.snapshot, "after")] {
-        let view = runtime
-            .read_truth()
-            .project_snapshot(snapshot, execution)
-            .unwrap();
+        let view = runtime.read_truth().project_snapshot(snapshot).unwrap();
         assert_borrowed_title(execution, &view, entity);
         let name = view
             .entity_record_with_projection_scope(
@@ -121,11 +118,11 @@ fn projection_preserves_identity_kind_and_lifecycle_across_exact_and_historical_
     let deleted = delete_entity(execution, &runtime, entity);
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap();
     let after = runtime
         .read_truth()
-        .project_snapshot(&deleted.snapshot, execution)
+        .project_snapshot(&deleted.snapshot)
         .unwrap();
     let historical_before = runtime
         .read_truth()
@@ -199,7 +196,7 @@ fn borrowed_projection_cannot_bypass_installed_mask_contract() {
     let created = create_entity_outcome(execution, &runtime, "masked");
     runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap()
         .entity_record_with_projection_scope(
             execution,

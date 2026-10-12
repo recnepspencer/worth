@@ -63,7 +63,7 @@ impl RelationalRuntime {
         }
         let view = self
             .read_truth()
-            .project_snapshot(plan.snapshot(), execution)
+            .project_snapshot(plan.snapshot())
             .ok_or(Stop::Native(
                 RelationalAuthorizationObservationDenial::SnapshotUnavailable,
             ))?;

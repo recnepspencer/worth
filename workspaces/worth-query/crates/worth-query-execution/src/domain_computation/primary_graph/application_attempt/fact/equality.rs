@@ -21,8 +21,8 @@ impl WorthQueryApplicationObservedFact {
         };
         check_request()?;
         let equal = match self {
-            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(runtime, execution, snapshot, *entity_id, *kind, *created_at, *deleted_at),
-            Self::SourceEntity { entity_id } => match runtime.read_truth().project_snapshot(snapshot, execution) {
+            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(runtime, snapshot, *entity_id, *kind, *created_at, *deleted_at),
+            Self::SourceEntity { entity_id } => match runtime.read_truth().project_snapshot(snapshot) {
                 Some(view) => {
                     view.entity_record_with_projection_scope(execution,
                         *entity_id,
@@ -47,7 +47,7 @@ impl WorthQueryApplicationObservedFact {
                 == Some(*native_revision),
             Self::SourceFieldRevision { entity_id, locator, native_revision } =>
                 if let Some(expected) = native_revision {
-                    match runtime.read_truth().project_snapshot(snapshot, execution) {
+                    match runtime.read_truth().project_snapshot(snapshot) {
                         Some(view) => view.entity_field_revision(execution, *entity_id, locator)
                             .map_err(|cause| SelfDenial::relational_read_stopped(cause, "source field comparison"))? == Some(*expected),
                         None => false,
@@ -60,7 +60,7 @@ impl WorthQueryApplicationObservedFact {
                 native_revision,
                 comparison_work_limit,
                 ..
-            } => match runtime.read_truth().project_snapshot(snapshot, execution) {
+            } => match runtime.read_truth().project_snapshot(snapshot) {
                 Some(view) => {
                     match view.bounded_adjacency_structural_revision(execution,
                         *anchor,
@@ -207,7 +207,6 @@ impl WorthQueryApplicationObservedFact {
                 ..
             } => workflow_history_basis::remains_equal(
                 runtime,
-                execution,
                 snapshot,
                 observed,
                 *maximum_transitions,

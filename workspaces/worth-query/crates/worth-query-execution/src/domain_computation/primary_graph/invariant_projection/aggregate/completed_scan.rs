@@ -57,7 +57,7 @@ impl AggregateScanReader<'_, '_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<AggregateScanAccumulator, WorthQueryInvariantAggregateDenial> {
         let read = self
-            .branch_view(execution)?
+            .branch_view()?
             .bounded_incoming_relations_of_kind(
                 execution,
                 self.plan.target(),
@@ -97,7 +97,7 @@ impl AggregateScanReader<'_, '_> {
         record: &worth_relational::facade::runtime::RelationReadRecord,
     ) -> Result<Option<AspectValue>, WorthQueryInvariantAggregateDenial> {
         let relations = self
-            .branch_view(execution)?
+            .branch_view()?
             .bounded_outgoing_relations_of_kind(
                 execution,
                 record.source,
@@ -154,14 +154,13 @@ impl AggregateScanReader<'_, '_> {
     /// has no readable source field, as `observe_field_value` also reports.
     fn branch_view(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_relational::facade::runtime::VisibilityProjectionView,
         WorthQueryInvariantAggregateDenial,
     > {
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot, execution)
+            .project_snapshot(self.snapshot)
             .ok_or_else(|| {
                 denial(
                     WorthQueryInvariantAggregateDenialKind::InvalidScalar,

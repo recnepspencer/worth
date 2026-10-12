@@ -41,7 +41,7 @@ impl RelationalPinnedRead {
     ) -> Result<BoundedRelatedEntityOrderedLookupOutcome, BoundedRelatedEntityOrderedLookupDenial>
     {
         let snapshot = request.snapshot();
-        let projection = self.project_snapshot(snapshot, execution).ok_or_else(|| {
+        let projection = self.project_snapshot(snapshot).ok_or_else(|| {
             denial(
                 BoundedRelatedEntityOrderedLookupDenialKind::SnapshotUnavailable,
                 &request,

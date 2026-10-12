@@ -31,7 +31,7 @@ where
         }
         self.admit_adjacency_list(relation.name())?;
         let read = self
-            .branch_view(execution, relation.name())?
+            .branch_view(relation.name())?
             .bounded_outgoing_relations_of_kind(
                 execution,
                 from.entity_id,
@@ -84,7 +84,7 @@ where
         }
         self.admit_adjacency_list(relation.name())?;
         let read = self
-            .branch_view(execution, relation.name())?
+            .branch_view(relation.name())?
             .bounded_incoming_relations_of_kind(
                 execution,
                 to.entity_id,
@@ -176,7 +176,7 @@ where
         WorthQueryInvariantProjectionTraversalDenial,
     > {
         let available = self
-            .branch_view(execution, entity)?
+            .branch_view(entity)?
             .entity_record_with_projection_scope(
                 execution,
                 entity_id,
@@ -212,12 +212,11 @@ where
     /// a sibling branch's commits made at older versions.
     fn branch_view(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         subject: &str,
     ) -> Result<VisibilityProjectionView, WorthQueryInvariantProjectionTraversalDenial> {
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot, execution)
+            .project_snapshot(self.snapshot)
             .ok_or_else(|| endpoint_unavailable(subject))
     }
 

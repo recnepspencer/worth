@@ -147,10 +147,10 @@ fn affected_sources(
     let truth = runtime.read_truth();
     let views = [
         truth
-            .project_snapshot(before, execution)
+            .project_snapshot(before)
             .ok_or(RefreshReadDenial::Unavailable)?,
         truth
-            .project_snapshot(after, execution)
+            .project_snapshot(after)
             .ok_or(RefreshReadDenial::Unavailable)?,
     ];
     let mut sources = BTreeSet::new();
@@ -194,7 +194,7 @@ fn source_contributions(
 ) -> Result<BTreeMap<EntityId, i64>, RefreshReadDenial> {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or(RefreshReadDenial::Unavailable)?;
     if live_entity_kind(execution, &view, source)? != Some(key.source_kind) {
         return Ok(BTreeMap::new());

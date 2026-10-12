@@ -30,10 +30,7 @@ fn retained_output_liveness_door_preserves_stops_at_every_consult() {
                 .with_runtime(&execution, |runtime| {
                     let view = runtime
                         .read_truth()
-                        .project_snapshot(
-                            selected.application_basis().snapshot_handle(),
-                            &execution,
-                        )
+                        .project_snapshot(selected.application_basis().snapshot_handle())
                         .unwrap();
                     crate::test_read_stops::every_consult(
                         |request| read(request, &view, entity).map_err(|denied| denied.kind()),

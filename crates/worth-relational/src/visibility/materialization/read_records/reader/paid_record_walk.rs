@@ -210,7 +210,7 @@ mod tests {
         let relation = create_relation_outcome(&execution, &runtime, left, right, "edge");
         let later = create_entity_outcome(&execution, &runtime, "later");
         let truth = runtime.read_truth();
-        let current = truth.project_snapshot(&later.snapshot, &execution).unwrap();
+        let current = truth.project_snapshot(&later.snapshot).unwrap();
         let historical = truth.project_historical_version(relation.version_id);
         for (view, entities, entity_scans, relation_scans) in
             [(&current, 3, 0, 0), (&historical, 2, 2, 1)]

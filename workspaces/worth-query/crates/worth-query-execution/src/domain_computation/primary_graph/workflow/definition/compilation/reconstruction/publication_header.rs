@@ -76,7 +76,7 @@ fn observe_adjacency_revision(
     const COMPARISON_WORK_LIMIT: usize = 1;
     let truth = runtime.read_truth();
     let revision = truth
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| super::denial("workflow publication snapshot is unavailable"))?
         .bounded_adjacency_structural_revision(
             execution,

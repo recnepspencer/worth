@@ -47,7 +47,6 @@ where
             )
         })?;
         let truth = self.entity_resolution.at_snapshot(
-            execution,
             self.runtime,
             self.snapshot,
             WorthQueryPrincipalResolutionMode::Ordinary,

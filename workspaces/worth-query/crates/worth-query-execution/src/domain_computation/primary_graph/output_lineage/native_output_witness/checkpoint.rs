@@ -19,7 +19,7 @@ impl SealedNativeOutputWitness {
         facts: &[Fact],
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, super::super::invalidation::SettlementVerificationStop> {
-        if !self.unchanged_in(execution, relational, snapshot, admission)? {
+        if !self.unchanged_in(relational, snapshot, admission)? {
             return Ok(false);
         }
         for fact in facts {

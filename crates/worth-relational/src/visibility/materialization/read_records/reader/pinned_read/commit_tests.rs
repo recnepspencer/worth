@@ -89,10 +89,7 @@ fn pinned_read_keeps_rows_and_generation_across_a_commit_and_discard() {
         .index_authority()
         .discard_generations(DerivedIndexDiscardRequest::all_bases(definition.index_id))
         .unwrap();
-    let late_view = runtime
-        .read_truth()
-        .project_snapshot(&snapshot, &request)
-        .unwrap();
+    let late_view = runtime.read_truth().project_snapshot(&snapshot).unwrap();
     assert_eq!(
         runtime
             .index_access()

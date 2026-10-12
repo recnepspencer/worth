@@ -34,10 +34,7 @@ where
             return Ok(Vec::new());
         };
         let records = self.graph.with_runtime(execution, |runtime| {
-            let Some(view) = runtime
-                .read_truth()
-                .project_snapshot(self.snapshot(), execution)
-            else {
+            let Some(view) = runtime.read_truth().project_snapshot(self.snapshot()) else {
                 return Ok(Vec::new());
             };
             view.entity_records_with_projection_scope(
@@ -75,10 +72,7 @@ where
             return Ok(Vec::new());
         };
         let records = self.graph.with_runtime(execution, |runtime| {
-            let Some(view) = runtime
-                .read_truth()
-                .project_snapshot(self.snapshot(), execution)
-            else {
+            let Some(view) = runtime.read_truth().project_snapshot(self.snapshot()) else {
                 return Ok(Vec::new());
             };
             view.relation_records_with_projection_scope(

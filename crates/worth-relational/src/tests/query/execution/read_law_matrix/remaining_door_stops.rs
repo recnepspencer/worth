@@ -51,7 +51,7 @@ fn runtime_read_law_view_input_stops_and_refuses_by_value() {
     let view = world
         .runtime
         .read_truth()
-        .project_snapshot(&world.snapshot, &setup)
+        .project_snapshot(&world.snapshot)
         .unwrap();
     // New pin-stop law: these rows intentionally are not run on bdb91675a9.
     stopped_backings(|request, cause| {
@@ -91,7 +91,7 @@ fn runtime_read_law_selected_view_stops_and_refuses_by_value() {
     let view = world
         .runtime
         .read_truth()
-        .project_snapshot(&world.snapshot, &setup)
+        .project_snapshot(&world.snapshot)
         .unwrap();
     let value = string_aspect_value("a");
     let lookup = |request: &ExecutionRequest<'_, '_>, index| {

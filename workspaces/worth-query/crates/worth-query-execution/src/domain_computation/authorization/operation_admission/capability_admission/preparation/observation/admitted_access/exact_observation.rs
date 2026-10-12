@@ -129,7 +129,7 @@ where
         WorthQueryResolvedCapabilityRequest<Schema, Scope>,
         WorthQueryOperationAuthorizationDenial,
     > {
-        let truth = self.resolution_truth(execution, projection.resource().field())?;
+        let truth = self.resolution_truth(projection.resource().field())?;
         resolve_capability_request(
             execution,
             &truth,
@@ -143,7 +143,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         selector: &ErasedApplicationCapabilityEntitySelector,
     ) -> Result<WorthQueryResolvedEntity, WorthQueryOperationAuthorizationDenial> {
-        let truth = self.resolution_truth(execution, selector.field())?;
+        let truth = self.resolution_truth(selector.field())?;
         resolve_erased_selector(execution, &truth, &self.runtime.installed_schema, selector)
     }
 
@@ -153,7 +153,7 @@ where
         field: &ApplicationCapabilityFieldBinding,
         value: AspectValue,
     ) -> Result<WorthQueryResolvedEntity, WorthQueryOperationAuthorizationDenial> {
-        self.resolution_truth(execution, field.field())?
+        self.resolution_truth(field.field())?
             .resolve(
                 execution,
                 field.entity(),
@@ -166,12 +166,10 @@ where
 
     fn resolution_truth(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         subject: &str,
     ) -> Result<WorthQueryEntityResolutionTruth<'_>, WorthQueryOperationAuthorizationDenial> {
         self.resolution
             .at_snapshot(
-                execution,
                 self.relational,
                 self.snapshot,
                 WorthQueryPrincipalResolutionMode::Ordinary,

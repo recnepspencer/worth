@@ -64,7 +64,6 @@ impl<Schema, Operation, Input, Scope, Phase>
             .with_runtime(execution, |runtime| {
                 self.entity_resolution
                     .at_snapshot(
-                        execution,
                         runtime,
                         self.lease.snapshot(),
                         super::super::super::WorthQueryPrincipalResolutionMode::Ordinary,

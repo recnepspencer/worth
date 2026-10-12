@@ -128,7 +128,7 @@ fn perf_snapshot_materialization_matrix() {
             let started_at = Instant::now();
             let projected = runtime
                 .read_truth()
-                .project_snapshot(&snapshot, execution)
+                .project_snapshot(&snapshot)
                 .expect("projection snapshot")
                 .entities::<EntityIdentityProjection>(execution)
                 .expect("read request remains live");

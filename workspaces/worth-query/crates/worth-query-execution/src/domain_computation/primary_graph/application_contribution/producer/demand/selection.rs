@@ -270,7 +270,7 @@ where
             let current = self.primary_provider.graph.with_runtime(execution, |runtime| {
                 let truth = runtime.read_truth();
                 let view = truth
-                    .project_snapshot(selected.application_basis().snapshot_handle(), execution)
+                    .project_snapshot(selected.application_basis().snapshot_handle())
                     .ok_or_else(|| {
                         WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -326,7 +326,7 @@ where
                             OutputDependencySelection::Reuse
                         )
                         && matches!(
-                            compare_retained_output_witness(execution,
+                            compare_retained_output_witness(
                                 runtime,
                                 selected.application_basis().snapshot_handle(),
                                 witness,

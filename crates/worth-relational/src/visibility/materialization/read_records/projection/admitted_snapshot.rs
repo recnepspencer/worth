@@ -48,6 +48,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             u64::try_from(bytes).map_err(|_| Denial::AccountingOverflow)?,
         )
         .map_err(Denial::Admission)?;
-        Ok(self.project_snapshot(handle, execution))
+        Ok(self.project_snapshot(handle))
     }
 }

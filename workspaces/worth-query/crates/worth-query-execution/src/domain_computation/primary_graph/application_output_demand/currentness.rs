@@ -167,7 +167,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .invalidation_owner;
         let snapshot = self.application_basis().snapshot_handle();
         require_witnessed_output(
-            execution,
             relational,
             snapshot,
             read.native_output_witness.as_ref(),
@@ -265,7 +264,6 @@ fn require_own_publication(
 }
 
 fn require_witnessed_output(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     witness: Option<
@@ -281,7 +279,7 @@ fn require_witnessed_output(
     let witness = witness
         .and_then(|witness| witness.get())
         .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable))?;
-    match witness.unchanged_in(execution, relational, snapshot, admission) {
+    match witness.unchanged_in( relational, snapshot, admission) {
         Err(CompanionPreflightStop::Execution(cause)) => Err(super::super::output_reuse::read_denial(cause)),
         Ok(true) => Ok(()),
         Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),

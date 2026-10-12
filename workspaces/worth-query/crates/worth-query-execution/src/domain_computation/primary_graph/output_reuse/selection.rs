@@ -146,7 +146,6 @@ pub(in crate::domain_computation::primary_graph) fn memory_denial() -> WorthQuer
 /// A row no sealed witness covers is decided by its source facts and by the
 /// full verification its lineage row requires.
 pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witness(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     witness: Option<&SealedNativeOutputWitness>,
@@ -156,7 +155,7 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witn
         return Ok(OutputDependencySelection::Reuse);
     };
     let unchanged = owner_read(
-        witness.unchanged_in(execution, runtime, snapshot, admission),
+        witness.unchanged_in(runtime, snapshot, admission),
         "retained output witness could not be compared",
     )?;
     Ok(if unchanged {

@@ -164,7 +164,6 @@ where
         validate_principal_freshness(execution, prepared, principal, relational, &snapshot)?;
         let truth = resolution
             .at_snapshot(
-                execution,
                 relational,
                 &snapshot,
                 WorthQueryPrincipalResolutionMode::Ordinary,

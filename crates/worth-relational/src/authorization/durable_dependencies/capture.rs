@@ -27,7 +27,7 @@ pub(super) fn capture(
     }
     let view = runtime
         .read_truth()
-        .project_snapshot(evidence.snapshot(), execution)
+        .project_snapshot(evidence.snapshot())
         .ok_or(Denial::SnapshotUnavailable)?;
     if !view.is_exact_basis() {
         return Err(Denial::InexactSnapshot);

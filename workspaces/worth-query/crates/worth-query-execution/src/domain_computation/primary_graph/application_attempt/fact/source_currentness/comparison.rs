@@ -23,7 +23,6 @@ impl WorthQueryApplicationObservedFact {
             } => Ok((
                 super::super::retirement_equality::remains_equal(
                     runtime,
-                    execution,
                     snapshot,
                     *entity_id,
                     *kind,
@@ -35,7 +34,7 @@ impl WorthQueryApplicationObservedFact {
             Self::SourceEntity { entity_id } => {
                 let view = runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
+                    .project_snapshot(snapshot)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 Ok((
                     view.entity_record_with_projection_scope(
@@ -82,7 +81,7 @@ impl WorthQueryApplicationObservedFact {
                     native_revision.ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 let Some(current) = runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
+                    .project_snapshot(snapshot)
                     .map(|view| view.entity_field_revision(execution, *entity_id, locator))
                     .transpose()
                     .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
@@ -101,7 +100,7 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let view = runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
+                    .project_snapshot(snapshot)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 // The owner-index lookup costs one unit whatever the fact's
                 // recorded limit.
@@ -263,7 +262,6 @@ impl WorthQueryApplicationObservedFact {
             } => Ok((
                 super::super::workflow_history_basis::remains_equal(
                     runtime,
-                    execution,
                     snapshot,
                     observed,
                     *maximum_transitions,
