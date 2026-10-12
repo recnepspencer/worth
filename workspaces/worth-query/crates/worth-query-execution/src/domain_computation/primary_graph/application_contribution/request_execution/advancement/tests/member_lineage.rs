@@ -36,6 +36,8 @@ fn nested(
 }
 #[test]
 fn wave_and_member_descendants_share_the_advancements_work_ceiling() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     const UNITS: u64 = 3;
     for posture in [
         Placement::Serial,
@@ -96,6 +98,8 @@ fn wave_and_member_descendants_share_the_advancements_work_ceiling() {
 }
 #[test]
 fn a_partition_drawn_from_the_root_is_refused_inside_a_wave_member() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for workers in [NonZeroUsize::MIN, NonZeroUsize::new(4).unwrap()] {
         let _restore = Restore(place(Placement::Leased(workers)), bound(None));
         let root = request();
