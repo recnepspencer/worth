@@ -120,14 +120,15 @@ fn four_inner_kernels_cannot_hide_in_one_member_window() {
         control.enter_compute(8, part, 1);
         flights.push(control::KernelFlight(&control));
     }
-    {
+    let measured = {
         let state = control.state.lock().unwrap();
-        assert_eq!(
-            (state.peak, state.kernel_peak),
-            (1, 4),
-            "one member window contains four kernel lifetimes"
-        );
-    }
+        (state.peak, state.kernel_peak)
+    };
+    assert_eq!(
+        measured,
+        (1, 4),
+        "one member window contains four kernel lifetimes"
+    );
     let peak = control.state.lock().unwrap().kernel_peak;
     assert!(
         kernel_width_exceeded(peak, 1),
