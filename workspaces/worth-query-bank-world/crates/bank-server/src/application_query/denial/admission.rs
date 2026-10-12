@@ -30,6 +30,7 @@ pub enum BankGraphReadPlanReviewDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationQueryAdmissionDenialKind {
+    ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     InstalledQuery(BankApplicationQueryInstallationDenialKind),
     ForeignPrincipal,
     ForeignScope,
@@ -82,6 +83,7 @@ pub(super) const fn admission(kind: Query) -> BankApplicationQueryAdmissionDenia
         Query::Authorization(kind) => {
             Bank::Authorization(crate::BankAuthorizationDenial::from_kind(kind, 0).kind())
         }
+        Query::ExecutionRequest(cause) => Bank::ExecutionRequest(cause),
         Query::Cancelled => Bank::Cancelled,
         Query::DeadlineExceeded => Bank::DeadlineExceeded,
         Query::BasisUnsupported => Bank::BasisUnsupported,
@@ -146,3 +148,6 @@ const fn graph_read(kind: QueryGraphRead) -> BankGraphReadPlanReviewDenialKind {
         QueryGraphRead::UnsupportedGraphIndexSupport => Bank::UnsupportedGraphIndexSupport,
     }
 }
+
+#[cfg(test)]
+mod request_stop_tests;

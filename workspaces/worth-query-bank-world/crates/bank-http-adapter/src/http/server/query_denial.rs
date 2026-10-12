@@ -75,6 +75,9 @@ fn admission(kind: BankApplicationQueryAdmissionDenialKind) -> BankHttpDenial {
     use BankApplicationQueryAdmissionDenialKind as Admission;
     match kind {
         Admission::Authorization(kind) => authorization_denial(kind),
+        Admission::ExecutionRequest(cause) => {
+            super::mutation_application::pending_execution_denial(cause)
+        }
         Admission::Cancelled => cancelled(),
         Admission::DeadlineExceeded => deadline(),
         Admission::StalePrincipal
@@ -275,3 +278,7 @@ const fn exhausted() -> BankHttpDenial {
 const fn internal_denied() -> BankHttpDenial {
     BankHttpDenial::new(Kind::InternalDenied, Next::None)
 }
+
+#[cfg(test)]
+#[path = "query_denial/request_stop_tests.rs"]
+mod request_stop_tests;
