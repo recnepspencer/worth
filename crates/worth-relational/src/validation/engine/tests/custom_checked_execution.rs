@@ -298,6 +298,8 @@ fn checked_custom_preparation_observes_cancellation_mid_scan() {
 
 #[test]
 fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
+    const REQUEST_MEMORY: u64 = 128 * 1024;
+    // One claim larger than the entire request cannot be funded at any posture.
     let evaluation_visits = Arc::new(AtomicUsize::new(0));
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
@@ -308,13 +310,13 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
                 preparation_visits: Arc::new(AtomicUsize::new(0)),
                 cancellation: None,
                 preparation_steps: 1,
-                preparation_scratch_bytes: 20_000,
+                preparation_scratch_bytes: REQUEST_MEMORY + 1,
                 target: None,
             })
             .unwrap(),
         )
         .build();
-    let lease = checked_lease(128 * 1024, 10_000, CancellationToken::new());
+    let lease = checked_lease(REQUEST_MEMORY, 10_000, CancellationToken::new());
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
         &runtime,
