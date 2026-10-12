@@ -83,10 +83,11 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommittedChanges,
-    WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
-    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
-    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUncommitted,
-    WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryCommittedProductPublication,
+    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationNoEffectCause, WorthQueryApplicationSettlementDeferred,
+    WorthQueryApplicationSettlementNextAction, WorthQueryApplicationStaleAttempt,
+    WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryCommittedProductPublication,
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,

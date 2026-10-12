@@ -1,4 +1,9 @@
 //! World publication from one installed transport's observed completion.
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
@@ -6,7 +11,6 @@ use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 use super::installed_transport::{
     InstalledTransportCompletion, InstalledTransportPublicationDenial as Denial,
@@ -105,14 +109,10 @@ where
         let recovery = publication.recovery();
         let prepared = match publication.prepare_relational_candidate(candidate, request, false) {
             Ok(prepared) => prepared,
-            Err(no_effect) => {
-                if let Some(cause) =
-                    super::super::super::publication_request_denial::publication(no_effect.cause())
-                {
-                    return Outcome::Denied(evidence, Denial::ExecutionDenied(cause));
-                }
-                return Outcome::NoEffect(evidence);
+            Err(PublicationDenial::Stopped(stop)) => {
+                return Outcome::Denied(evidence, Denial::ExecutionDenied(advancement_denial(stop)))
             }
+            Err(PublicationDenial::Refused(_)) => return Outcome::NoEffect(evidence),
         };
         let terminal = WorthQueryReservedProductPublicationReceipt::new(
             publication.root_identity(),
@@ -125,7 +125,7 @@ where
         self.primary_provider
             .mark_inbound_completion_publication_pending(&correlation);
         match prepared.execute(publication_execution) {
-            RuntimeWorldPublicationOutcome::Performed(performed) => {
+            Ok(PublicationOutcome::Performed(performed)) => {
                 Outcome::Performed(PerformedInstalledTransportCompletion::new(
                     evidence,
                     binding,
@@ -133,17 +133,17 @@ where
                     terminal.fill(performed.consume(), None),
                 ))
             }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+            Err(PublicationDenial::Stopped(stop)) => {
                 self.primary_provider
                     .clear_inbound_completion_publication_pending(&correlation);
-                match super::super::super::publication_request_denial::publication(
-                    no_effect.cause(),
-                ) {
-                    Some(cause) => Outcome::Denied(evidence, Denial::ExecutionDenied(cause)),
-                    None => Outcome::NoEffect(evidence),
-                }
+                Outcome::Denied(evidence, Denial::ExecutionDenied(advancement_denial(stop)))
             }
-            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+            Err(PublicationDenial::Refused(_)) => {
+                self.primary_provider
+                    .clear_inbound_completion_publication_pending(&correlation);
+                Outcome::NoEffect(evidence)
+            }
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 Outcome::ProductUnpublished(UnpublishedInstalledTransportCompletion::new(
                     evidence,
                     WorthQueryProductUnpublishedApplication::new(

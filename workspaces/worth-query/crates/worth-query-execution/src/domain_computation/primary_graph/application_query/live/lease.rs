@@ -66,6 +66,7 @@ pub struct WorthQueryApplicationLiveLease<
     Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
 {
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    termination_failed: bool,
     query: WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
     parameters: ApplicationQueryParameterSet<Query>,
@@ -223,19 +224,14 @@ where
         &mut self,
         request: &WorthQueryRequestScope,
     ) -> Option<WorthQueryApplicationLiveOutcome<Query, QueryResult>> {
-        if self.basis.is_none() {
+        if self.termination_failed || self.basis.is_none() {
             return Some(WorthQueryApplicationLiveOutcome::Closed);
         }
         let interruption = request.interruption()?;
         self.controls.replace_request(request.clone());
-        if !self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
-            return Some(WorthQueryApplicationLiveOutcome::Unavailable);
-        }
         Some(match interruption {
-            WorthQueryRequestInterruption::Cancelled => WorthQueryApplicationLiveOutcome::Cancelled,
-            WorthQueryRequestInterruption::DeadlineExceeded => {
-                WorthQueryApplicationLiveOutcome::DeadlineExceeded
-            }
+            WorthQueryRequestInterruption::Cancelled => self.cancelled_outcome(),
+            WorthQueryRequestInterruption::DeadlineExceeded => self.deadline_exceeded_outcome(),
         })
     }
 
@@ -256,7 +252,7 @@ where
             Err(cause) => {
                 return match basis_interruption::outcome(cause) {
                     Some(outcome) => {
-                        let _ = self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled);
+                        self.terminate_stopped_read();
                         outcome
                     }
                     None => WorthQueryApplicationLiveOutcome::Unavailable,

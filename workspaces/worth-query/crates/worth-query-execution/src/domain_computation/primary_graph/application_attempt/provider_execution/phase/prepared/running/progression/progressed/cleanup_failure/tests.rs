@@ -63,6 +63,6 @@ fn cleanup_failure_preserves_the_complete_interrupted_commit_evidence() {
         else {
             panic!("cleanup must retain indeterminate evidence")
         };
-        assert_eq!(retained, evidence);
+        assert_eq!(retained, evidence.with_cleanup_failure());
     }
 }

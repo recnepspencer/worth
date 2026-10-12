@@ -1,3 +1,8 @@
+use super::publication_denial::{
+    WorthQueryProductPublicationDenial as Denial, WorthQueryProductPublicationOutcome as Outcome,
+};
+use std::sync::Arc;
+
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_bridge::facade::{
     BridgePreparedConditionalInstallationExtension, BridgeSealedRuntimeAssembly,
@@ -38,19 +43,39 @@ impl WorthQueryPreparedCombinedProductPublication {
         execution: worth_execution::ExecutionRequest<'_, '_>,
         bridge_prepared: BridgePreparedConditionalInstallationExtension,
         bridge: &BridgeSealedRuntimeAssembly,
-    ) -> RuntimeWorldConditionalDefinitionPublicationOutcome {
+    ) -> Result<
+        Outcome<
+            (
+                worth_runtime_world::facade::PerformedCompositePublication,
+                Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+            ),
+            worth_runtime_world::facade::RuntimeWorldUnpublishedConditionalDefinition,
+        >,
+        Denial<NoEffectCompositePublication>,
+    > {
         let Self {
             publication,
             prepared,
             control,
         } = self;
-        publication.publish_bridge_conditional_definition(
+        match publication.publish_bridge_conditional_definition(
             execution,
             prepared,
             bridge_prepared,
             bridge,
             control.cancellation(),
-        )
+        ) {
+            RuntimeWorldConditionalDefinitionPublicationOutcome::Performed {
+                publication,
+                lowering,
+            } => Ok(Outcome::Performed((publication, lowering))),
+            RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects) => {
+                Ok(Outcome::ProductUnpublished(effects))
+            }
+            RuntimeWorldConditionalDefinitionPublicationOutcome::NoEffect(no_effect) => {
+                Err(Denial::publication(no_effect))
+            }
+        }
     }
 }
 
@@ -60,7 +85,8 @@ impl WorthQueryProductPublicationBinding {
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,
         successor_observation_requested: bool,
-    ) -> Result<WorthQueryPreparedCombinedProductPublication, NoEffectCompositePublication> {
+    ) -> Result<WorthQueryPreparedCombinedProductPublication, Denial<NoEffectCompositePublication>>
+    {
         let control = self.request_control(request);
         let intent = CompositePublicationIntent::with_signal(Some(
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
@@ -71,12 +97,15 @@ impl WorthQueryProductPublicationBinding {
         } else {
             intent
         };
-        let prepared = self.publication().prepare_with_signal(
-            self.observation().clone(),
-            intent,
-            control.cancellation(),
-            control.deadline(),
-        )?;
+        let prepared = self
+            .publication()
+            .prepare_with_signal(
+                self.observation().clone(),
+                intent,
+                control.cancellation(),
+                control.deadline(),
+            )
+            .map_err(Denial::publication)?;
         Ok(WorthQueryPreparedCombinedProductPublication {
             publication: self.publication().clone(),
             prepared,

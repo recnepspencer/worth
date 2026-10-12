@@ -16,8 +16,8 @@ fn admit_redo_keeps_the_prior_redo_read_stop_at_every_consult() {
         .application
         .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
         .unwrap();
-    crate::test_read_stops::every_advancement_consult(
-        |request, ceiling| {
+    let charged_work = crate::test_read_stops::every_advancement_consult_with_door(
+        |counted| {
             let proved = WorthQueryProvedUndo::axis_probe_with_product_publication(
                 WorthQueryProvedUndoAxisProbe {
                     original_operation: [0x44; 32],
@@ -42,22 +42,31 @@ fn admit_redo_keeps_the_prior_redo_read_stop_at_every_consult() {
                 handle.authority_identity(),
             );
             let recovery = WorthQueryRedoRecovery::axis_probe(proved, handle);
-            world
-                .application
-                .with_application_advancement(request, |phase| {
-                    phase
-                        .execution_request_for(&world.application.product_runtime)
-                        .unwrap()
-                        .run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| {
-                            selected
-                                .admit_redo(&phase, recovery, &authority, &intent)
-                                .map(|_| ())
-                                .map_err(|denial| denial.kind())
-                        })
-                        .unwrap()
-                        .0
-                })
-                .unwrap()
+            let recovery = std::cell::RefCell::new(Some(recovery));
+            counted(&|request, ceiling| {
+                let recovery = recovery.borrow_mut().take().unwrap();
+                world
+                    .application
+                    .with_application_advancement(request, |phase| {
+                        let (answer, report) = phase
+                            .execution_request_for(&world.application.product_runtime)
+                            .unwrap()
+                            .run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| {
+                                selected
+                                    .admit_redo(&phase, recovery, &authority, &intent)
+                                    .map(|_| ())
+                                    .map_err(|denial| denial.kind())
+                            })
+                            .unwrap();
+                        assert_eq!(
+                            report.charged_work(),
+                            0,
+                            "the empty indexed result charges no packet work"
+                        );
+                        answer
+                    })
+                    .unwrap()
+            })
         },
         WorthQueryRedoDenialKind::ExecutionRequest(Err(Stop::Cancelled)),
         WorthQueryRedoDenialKind::ExecutionRequest(Ok(Session::ExecutionResource {
@@ -65,5 +74,9 @@ fn admit_redo_keeps_the_prior_redo_read_stop_at_every_consult() {
             partition_identity: None,
             policy_ancestor: None,
         })),
+    );
+    assert_eq!(
+        charged_work, 0,
+        "the empty prior-redo index charges no packet work"
     );
 }

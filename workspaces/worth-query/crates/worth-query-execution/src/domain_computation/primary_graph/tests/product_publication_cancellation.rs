@@ -1,10 +1,10 @@
+use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
 use std::time::{Duration, Instant};
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 use worth_relational::facade::transactions::WorkerIntentBatch;
-use worth_runtime_world::facade::{NoEffectCause, RuntimeWorldPublicationOutcome};
 
 use super::fixture::{installed_authorization_world, prepare_relational_mutation_on_application};
 
@@ -30,8 +30,11 @@ fn cancellation_after_world_preparation_reaches_execution_before_owner_effects()
     let outcome = crate::domain_computation::primary_graph::with_test_advancement(|phase| {
         prepared.execute(phase.borrowed_request_for_test())
     });
-    let RuntimeWorldPublicationOutcome::NoEffect(no_effect) = outcome else {
+    let Err(PublicationDenial::Stopped(stop)) = outcome else {
         panic!("cancellation after preparation must prevent owner effects")
     };
-    assert_eq!(no_effect.cause(), NoEffectCause::CancelledBeforeEffect);
+    assert_eq!(
+        stop,
+        worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+    );
 }

@@ -9,7 +9,7 @@ use worth_query_admission::facade::authenticated_principal::{
 fn aftermath_sealing_interruption_reaches_commit_evidence() {
     let _listener =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    for expired in [false, true] {
+    for (expired, reject_cleanup) in [(false, false), (true, false), (false, true), (true, true)] {
         let world = installed_authorization_world(true);
         let request = live_scope();
         let (program, parent) = world
@@ -45,6 +45,7 @@ fn aftermath_sealing_interruption_reaches_commit_evidence() {
         world
             .faults
             .interrupt_next_aftermath_seal(cancellation, deadline);
+        let _cleanup_guard = reject_cleanup.then(|| world.faults.reject_managed_cleanup_for_test());
         let outcome = world
             .application
             .with_application_advancement(&request, |phase| {
@@ -78,5 +79,28 @@ fn aftermath_sealing_interruption_reaches_commit_evidence() {
             evidence.stage(),
             crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit
         );
+        use crate::domain_computation::primary_graph::{
+            WorthQueryApplicationCommitRecoveryKind as Recovery,
+            WorthQueryApplicationManagedCleanupFailure as Cleanup,
+            WorthQueryApplicationUnresolvedCommitEvidence as Evidence,
+        };
+        let expected_failure =
+            crate::domain_computation::WorthQueryProviderSessionFailure::checked_read_stopped(
+                Err(expected),
+                crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+                "request stopped during aftermath sealing",
+            );
+        let mut expected_evidence = Evidence::from_provider_session_failure(
+            Recovery::CommitRecoveryRequired,
+            &expected_failure,
+        );
+        if reject_cleanup {
+            expected_evidence = expected_evidence.with_cleanup_failure();
+        }
+        assert_eq!(
+            evidence.cleanup_failure(),
+            reject_cleanup.then_some(Cleanup::RunFinishRejected)
+        );
+        assert_eq!(evidence, expected_evidence);
     }
 }

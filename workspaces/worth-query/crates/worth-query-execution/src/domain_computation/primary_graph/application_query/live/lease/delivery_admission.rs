@@ -50,12 +50,25 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     ) -> Result<(), super::super::outcome::WorthQueryApplicationLiveOutcome<Query, QueryResult>>
     {
-        let access = WorthQueryApplicationQueryAccessContext::new(principal, &self.scope);
         let product = self._opening_product.read_lease();
         let application_basis = self
             .runtime
             .retain_product_application_basis(execution, product.observation())
-            .map_err(|_| super::super::outcome::WorthQueryApplicationLiveOutcome::Unavailable)?;
+            .map_err(|cause| match cause {
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(Ok(kind)) => {
+                    self.execution_denied_outcome(kind)
+                }
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(Err(
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                )) => self.cancelled_outcome(),
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(Err(
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                )) => self.deadline_exceeded_outcome(),
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                    super::super::outcome::WorthQueryApplicationLiveOutcome::Unavailable
+                }
+            })?;
+        let access = WorthQueryApplicationQueryAccessContext::new(principal, &self.scope);
         let controls = WorthQueryApplicationQueryControls::product_live(
             product,
             application_basis,
@@ -121,6 +134,9 @@ where
         use super::super::outcome::WorthQueryApplicationLiveOutcome as Outcome;
 
         match denial.kind() {
+            WorthQueryApplicationQueryAdmissionDenialKind::ExecutionRequest(kind) => {
+                self.execution_denied_outcome(kind)
+            }
             WorthQueryApplicationQueryAdmissionDenialKind::Cancelled => {
                 self.terminate_delivery_outcome(Outcome::Cancelled)
             }
@@ -140,9 +156,7 @@ where
                 let authorization = denial.into_authorization_denial().unwrap_or_else(|| {
                     WorthQueryOperationAuthorizationDenial::inconsistent(self.query.name())
                 });
-                self.terminate_delivery_outcome(Outcome::AuthorizationDenied(Box::new(
-                    authorization,
-                )))
+                self.delivery_authorization_denial(authorization)
             }
             WorthQueryApplicationQueryAdmissionDenialKind::DisclosureGovernanceRequired
             | WorthQueryApplicationQueryAdmissionDenialKind::DisclosureAuthorizationMismatch
@@ -169,11 +183,13 @@ where
             Denial::StaleScope | Denial::StaleBasisScope => {
                 self.terminate_delivery_outcome(Outcome::StaleScope)
             }
-            Denial::Authorization(authorization) => self
-                .terminate_delivery_outcome(Outcome::AuthorizationDenied(Box::new(authorization))),
+            Denial::Authorization(authorization) => {
+                self.delivery_authorization_denial(authorization)
+            }
             Denial::Read(read) => {
                 use crate::domain_computation::primary_graph::application_query::read_execution::WorthQueryApplicationReadExecutionDenialKind as Read;
                 let outcome = match read.kind() {
+                    Read::ExecutionRequest(kind) => Outcome::ExecutionRequest(kind),
                     Read::Cancelled => Outcome::Cancelled,
                     Read::DeadlineExceeded => Outcome::DeadlineExceeded,
                     _ => Outcome::Unavailable,
@@ -184,14 +200,43 @@ where
         }
     }
 
+    fn delivery_authorization_denial(
+        &mut self,
+        denial: WorthQueryOperationAuthorizationDenial,
+    ) -> super::super::outcome::WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        use super::super::outcome::WorthQueryApplicationLiveOutcome as Outcome;
+        let outcome = match denial.kind() {
+            WorthQueryOperationAuthorizationDenialKind::ExecutionRequest(kind) => {
+                Outcome::ExecutionRequest(kind)
+            }
+            WorthQueryOperationAuthorizationDenialKind::Cancelled => Outcome::Cancelled,
+            WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded => {
+                Outcome::DeadlineExceeded
+            }
+            _ => Outcome::AuthorizationDenied(Box::new(denial)),
+        };
+        self.terminate_delivery_outcome(outcome)
+    }
+
     fn terminate_delivery_outcome(
         &mut self,
         outcome: super::super::outcome::WorthQueryApplicationLiveOutcome<Query, QueryResult>,
     ) -> super::super::outcome::WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
-            outcome
-        } else {
-            super::super::outcome::WorthQueryApplicationLiveOutcome::Unavailable
+        use super::super::outcome::WorthQueryApplicationLiveOutcome as Outcome;
+        match outcome {
+            stop @ (Outcome::ExecutionRequest(_)
+            | Outcome::Cancelled
+            | Outcome::DeadlineExceeded) => {
+                self.terminate_stopped_read();
+                stop
+            }
+            ordinary => {
+                if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
+                    ordinary
+                } else {
+                    Outcome::Unavailable
+                }
+            }
         }
     }
 }

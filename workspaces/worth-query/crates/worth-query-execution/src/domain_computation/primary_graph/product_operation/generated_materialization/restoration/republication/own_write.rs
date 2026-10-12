@@ -1,5 +1,6 @@
 //! Native suspension/restoration must preserve the computation's original basis.
 use super::*;
+use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
 use crate::domain_computation::primary_graph::{
     output_lineage::own_write_fixture::with_generated_own_write,
     tests::{
@@ -20,7 +21,6 @@ use worth_query_declaration::facade::application_schema::TypedMutationPreconditi
 use worth_relational::facade::{
     branch::RelationalEntityMaterialization, transactions::AspectFieldPatch,
 };
-use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 #[test]
 fn republication_cannot_certify_output_computed_before_its_own_write() {
@@ -179,7 +179,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                     )
             })
             .expect("the fixture publication policy admits execution");
-        let RuntimeWorldPublicationOutcome::Performed(performed) = published else {
+        let Ok(PublicationOutcome::Performed(performed)) = published else {
             panic!("suspension publishes");
         };
         let commit = performed
@@ -242,7 +242,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                     )
             })
             .expect("the fixture publication policy admits execution");
-        let RuntimeWorldPublicationOutcome::Performed(performed) = published else {
+        let Ok(PublicationOutcome::Performed(performed)) = published else {
             panic!("restoration publishes");
         };
         let commit = performed

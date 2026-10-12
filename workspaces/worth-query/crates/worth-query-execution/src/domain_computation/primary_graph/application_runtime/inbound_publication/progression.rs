@@ -1,3 +1,8 @@
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::atomic::Ordering;
@@ -6,7 +11,6 @@ use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 use super::outcome::{
     WorthQueryInboundPublicationDenial as Denial, WorthQueryInboundPublicationOutcome as Outcome,
@@ -106,14 +110,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let recovery = binding.recovery();
         let prepared = match binding.prepare_relational_candidate(candidate, request, false) {
             Ok(prepared) => prepared,
-            Err(no_effect) => {
-                if let Some(cause) =
-                    super::super::super::publication_request_denial::publication(no_effect.cause())
-                {
-                    return Outcome::Denied(Denial::ExecutionDenied(cause));
-                }
-                return Outcome::NoEffect;
+            Err(PublicationDenial::Stopped(stop)) => {
+                return Outcome::Denied(Denial::ExecutionDenied(advancement_denial(stop)))
             }
+            Err(PublicationDenial::Refused(_)) => return Outcome::NoEffect,
         };
         let terminal = WorthQueryReservedProductPublicationReceipt::new(
             binding.root_identity(),
@@ -129,7 +129,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .world_publication_attempts
             .fetch_add(1, Ordering::Relaxed);
         match prepared.execute(publication_execution) {
-            RuntimeWorldPublicationOutcome::Performed(publication) => {
+            Ok(PublicationOutcome::Performed(publication)) => {
                 cost.cost
                     .world_performed_publications
                     .fetch_add(1, Ordering::Relaxed);
@@ -139,17 +139,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     terminal.fill(publication.consume(), None),
                 ))
             }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+            Err(PublicationDenial::Stopped(stop)) => {
                 self.primary_provider
                     .clear_inbound_completion_publication_pending(&correlation);
-                match super::super::super::publication_request_denial::publication(
-                    no_effect.cause(),
-                ) {
-                    Some(cause) => Outcome::Denied(Denial::ExecutionDenied(cause)),
-                    None => Outcome::NoEffect,
-                }
+                Outcome::Denied(Denial::ExecutionDenied(advancement_denial(stop)))
             }
-            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+            Err(PublicationDenial::Refused(_)) => {
+                self.primary_provider
+                    .clear_inbound_completion_publication_pending(&correlation);
+                Outcome::NoEffect
+            }
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 Outcome::ProductUnpublished(WorthQueryUnpublishedInboundCompletion::new(
                     accepted,
                     WorthQueryProductUnpublishedApplication::new(

@@ -1,4 +1,9 @@
 use super::*;
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -34,7 +39,21 @@ where
         };
         let prepared = match publication.prepare_relational_candidate(candidate, request, true) {
             Ok(prepared) => prepared,
-            Err(no_effect) => {
+            Err(PublicationDenial::Stopped(stop)) => {
+                return Err(restoration_failure(
+                    suspended_from_completion(
+                        publication,
+                        branch,
+                        correspondence,
+                        producer,
+                        completion,
+                    ),
+                    WorthQueryGeneratedOutputRestorationFailureCause::advancement(
+                        advancement_denial(stop),
+                    ),
+                ))
+            }
+            Err(PublicationDenial::Refused(no_effect)) => {
                 return Err(restoration_failure(
                     suspended_from_completion(
                         publication,
@@ -50,7 +69,7 @@ where
             }
         };
         match prepared.execute(publication_execution) {
-            RuntimeWorldPublicationOutcome::Performed(performed) => {
+            Ok(PublicationOutcome::Performed(performed)) => {
                 let commit = performed
                     .component_results()
                     .relational_commit_result()
@@ -76,7 +95,19 @@ where
                     ),
                 })
             }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Err(restoration_failure(
+            Err(PublicationDenial::Stopped(stop)) => Err(restoration_failure(
+                suspended_from_completion(
+                    publication,
+                    branch,
+                    correspondence,
+                    producer,
+                    completion,
+                ),
+                WorthQueryGeneratedOutputRestorationFailureCause::advancement(advancement_denial(
+                    stop,
+                )),
+            )),
+            Err(PublicationDenial::Refused(no_effect)) => Err(restoration_failure(
                 suspended_from_completion(
                     publication,
                     branch,
@@ -88,7 +119,7 @@ where
                     WorthQueryGeneratedOutputPublicationNoEffect::from_world(no_effect),
                 ),
             )),
-            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 let product = self.unpublished_materialization_from_binding(effects, &publication);
                 Err(
                     WorthQueryGeneratedOutputRestorationFailure::ProductUnpublished(

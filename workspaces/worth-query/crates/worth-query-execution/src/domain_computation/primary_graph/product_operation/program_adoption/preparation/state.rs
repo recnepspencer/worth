@@ -1,3 +1,5 @@
+use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -208,7 +210,14 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         .product()
         .publication_binding()
         .prepare_relational_candidate(candidate, request, successor_observation_requested)
-        .map_err(WorthQueryBranchAdoptionPreparationDenial::WorldPreparation)?;
+        .map_err(|denial| match denial {
+            PublicationDenial::Stopped(stop) => {
+                WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(advancement_denial(stop))
+            }
+            PublicationDenial::Refused(no_effect) => {
+                WorthQueryBranchAdoptionPreparationDenial::WorldPreparation(no_effect)
+            }
+        })?;
     Ok(WorthQueryPreparedBranchAdoption {
         owner: std::sync::Arc::downgrade(&selected.application().product_runtime.owner),
         owner_identity: selected

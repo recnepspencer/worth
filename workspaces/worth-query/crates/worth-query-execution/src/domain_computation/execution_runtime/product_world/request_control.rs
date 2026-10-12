@@ -10,6 +10,9 @@ use worth_runtime_world::facade::{
     RuntimeWorldCancellationToken, RuntimeWorldPublicationOutcome, RuntimeWorldPublicationPort,
 };
 
+use super::publication_denial::{
+    WorthQueryProductPublicationDenial as Denial, WorthQueryProductPublicationOutcome as Outcome,
+};
 use super::WorthQueryProductPublicationBinding;
 
 #[must_use = "a prepared product publication owns a reserved World attempt"]
@@ -35,13 +38,23 @@ impl WorthQueryPreparedProductPublication {
     pub(crate) fn execute(
         self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
-    ) -> RuntimeWorldPublicationOutcome {
+    ) -> Result<Outcome, Denial<NoEffectCompositePublication>> {
         let Self {
             publication,
             prepared,
             control,
         } = self;
-        publication.execute_without_signal(execution, prepared, control.cancellation())
+        match publication.execute_without_signal(execution, prepared, control.cancellation()) {
+            RuntimeWorldPublicationOutcome::Performed(performed) => {
+                Ok(Outcome::Performed(performed))
+            }
+            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+                Ok(Outcome::ProductUnpublished(effects))
+            }
+            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+                Err(Denial::publication(no_effect))
+            }
+        }
     }
 }
 
@@ -81,11 +94,13 @@ impl WorthQueryProductPublicationBinding {
         request: &WorthQueryRequestScope,
     ) -> Result<
         WorthQueryPreparedProductPublication,
-        worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial,
+        Denial<worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial>,
     > {
         let control = self.request_control(request);
+        self.adoption_preparation.reached();
         let prepared = unpublished
-            .prepare_settled_relational_adoption(control.cancellation(), control.deadline())?;
+            .prepare_settled_relational_adoption(control.cancellation(), control.deadline())
+            .map_err(Denial::adoption)?;
         Ok(WorthQueryPreparedProductPublication {
             publication: self.publication().clone(),
             prepared,
@@ -123,7 +138,7 @@ impl WorthQueryProductPublicationBinding {
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,
         successor_observation_requested: bool,
-    ) -> Result<WorthQueryPreparedProductPublication, NoEffectCompositePublication> {
+    ) -> Result<WorthQueryPreparedProductPublication, Denial<NoEffectCompositePublication>> {
         let control = self.request_control(request);
         let intent = CompositePublicationIntent::without_signal(
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
@@ -134,12 +149,15 @@ impl WorthQueryProductPublicationBinding {
         } else {
             intent
         };
-        let prepared = self.publication().prepare_without_signal(
-            self.observation().clone(),
-            intent,
-            control.cancellation(),
-            control.deadline(),
-        )?;
+        let prepared = self
+            .publication()
+            .prepare_without_signal(
+                self.observation().clone(),
+                intent,
+                control.cancellation(),
+                control.deadline(),
+            )
+            .map_err(Denial::publication)?;
         Ok(WorthQueryPreparedProductPublication {
             publication: self.publication().clone(),
             prepared,

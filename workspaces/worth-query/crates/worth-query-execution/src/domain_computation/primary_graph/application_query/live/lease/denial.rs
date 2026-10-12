@@ -149,32 +149,36 @@ where
         }
     }
 
-    fn execution_denied_outcome(
+    pub(super) fn execution_denied_outcome(
         &mut self,
         kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
-            WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)
-        } else {
-            WorthQueryApplicationLiveOutcome::Unavailable
-        }
+        self.terminate_stopped_read();
+        WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)
     }
 
-    fn cancelled_outcome(&mut self) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
-            WorthQueryApplicationLiveOutcome::Cancelled
-        } else {
-            WorthQueryApplicationLiveOutcome::Unavailable
-        }
-    }
-
-    fn deadline_exceeded_outcome(
+    pub(super) fn cancelled_outcome(
         &mut self,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
-            WorthQueryApplicationLiveOutcome::DeadlineExceeded
-        } else {
-            WorthQueryApplicationLiveOutcome::Unavailable
+        self.terminate_stopped_read();
+        WorthQueryApplicationLiveOutcome::Cancelled
+    }
+
+    pub(super) fn deadline_exceeded_outcome(
+        &mut self,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        self.terminate_stopped_read();
+        WorthQueryApplicationLiveOutcome::DeadlineExceeded
+    }
+
+    pub(super) fn terminate_stopped_read(&mut self) {
+        if !self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
+            self.termination_failed = true;
         }
+    }
+
+    /// Whether ending this lease after a stopped read also failed.
+    pub fn termination_failed(&self) -> bool {
+        self.termination_failed
     }
 }

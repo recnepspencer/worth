@@ -1,54 +1,56 @@
 //! Request stops carried by World's no-effect publication outcomes.
-use super::WorthQueryAdvancementDenial;
-use worth_runtime_world::facade::{NoEffectCause, RuntimeWorldSettledRelationalAdoptionDenial};
-
-pub(super) fn publication(cause: NoEffectCause) -> Option<WorthQueryAdvancementDenial> {
-    use super::WorthQueryManagedComputationInterruption as Interruption;
+use worth_runtime_world::facade::NoEffectCause;
+pub(crate) fn publication(
+    cause: NoEffectCause,
+) -> Result<NoEffectCause, worth_execution::WorkCeilingDenial> {
+    use worth_execution::{MapKernelStop, WorkCeilingDenial as Stop};
     match cause {
-        NoEffectCause::CancelledBeforeEffect => Some(WorthQueryAdvancementDenial::Interrupted(
-            Interruption::Cancelled,
-        )),
-        NoEffectCause::DeadlineBeforeEffect => Some(WorthQueryAdvancementDenial::Interrupted(
-            Interruption::DeadlineExceeded,
-        )),
-        NoEffectCause::ExecutionRequest(cause) => {
-            Some(super::application_contribution::advancement_denial(cause))
-        }
-        NoEffectCause::StaleExpectedProductHead
+        NoEffectCause::CancelledBeforeEffect => Err(Stop::Stopped(MapKernelStop::Cancelled)),
+        NoEffectCause::DeadlineBeforeEffect => Err(Stop::Stopped(MapKernelStop::DeadlineElapsed)),
+        NoEffectCause::ExecutionRequest(cause) => Err(cause),
+        ordinary @ (NoEffectCause::StaleExpectedProductHead
         | NoEffectCause::OwnerDeniedBeforeEffect
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted
         | NoEffectCause::OwnerUnavailable
         | NoEffectCause::RelationalDeferred(_)
-        | NoEffectCause::PreEffectFailure => None,
+        | NoEffectCause::PreEffectFailure) => Ok(ordinary),
     }
 }
-
-pub(super) fn adoption(
-    denial: &RuntimeWorldSettledRelationalAdoptionDenial,
-) -> Option<WorthQueryAdvancementDenial> {
-    match denial {
-        RuntimeWorldSettledRelationalAdoptionDenial::Publication(no_effect) => {
-            publication(no_effect.cause())
-        }
-        RuntimeWorldSettledRelationalAdoptionDenial::Recovery(_) => None,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as Stop;
+    use worth_execution::{MapKernelStop, WorkCeilingDenial as Stop};
     #[test]
     fn publication_stop_classification_preserves_control_and_ordinary_causes() {
         for (cause, expected) in [
-            (NoEffectCause::CancelledBeforeEffect, Stop::Cancelled),
-            (NoEffectCause::DeadlineBeforeEffect, Stop::DeadlineExceeded),
+            (
+                NoEffectCause::CancelledBeforeEffect,
+                MapKernelStop::Cancelled,
+            ),
+            (
+                NoEffectCause::DeadlineBeforeEffect,
+                MapKernelStop::DeadlineElapsed,
+            ),
+        ] {
+            assert_eq!(publication(cause), Err(Stop::Stopped(expected)));
+        }
+        for stop in [
+            Stop::Stopped(MapKernelStop::Cancelled),
+            Stop::Stopped(MapKernelStop::DeadlineElapsed),
+            Stop::Stopped(MapKernelStop::WorkCeiling),
+            Stop::Admission(worth_execution::LeaseDenial::MemoryExhausted(
+                worth_execution::MemoryLimitDenial {
+                    requested: 43,
+                    admitted: 17,
+                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 2 },
+                },
+            )),
         ] {
             assert_eq!(
-                publication(cause),
-                Some(WorthQueryAdvancementDenial::Interrupted(expected))
+                publication(NoEffectCause::ExecutionRequest(stop)),
+                Err(stop)
             );
         }
         for cause in [
@@ -59,8 +61,9 @@ mod tests {
             NoEffectCause::CapacityExhausted,
             NoEffectCause::OwnerUnavailable,
             NoEffectCause::PreEffectFailure,
+            NoEffectCause::RelationalDeferred(worth_relational::facade::mvcc::RelationalPublicationDeferred::PatchPositionReservationContended),
         ] {
-            assert_eq!(publication(cause), None);
+            assert_eq!(publication(cause), Ok(cause));
         }
     }
 }

@@ -54,13 +54,7 @@ impl WorthQueryProductRuntime {
                 )
             })?;
         Ok(WorthQueryProductBranchLease::new(
-            super::WorthQueryProductPublicationBinding::new(
-                observation,
-                self.owner.publication_port(),
-                self.owner.recovery_port(),
-                self.clock.clone(),
-                self.root_identity(),
-            ),
+            self.publication_binding(observation),
             bridge_source,
         ))
     }

@@ -10,6 +10,7 @@ use super::runtime::WorthQueryProductRootIdentity;
 /// ports cannot extend the root's admission lifetime or choose a different head.
 #[derive(Clone)]
 pub(crate) struct WorthQueryProductPublicationBinding {
+    pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     observation: ProductBranchObservation,
     publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
     recovery: RuntimeWorldRecoveryPort,
@@ -18,7 +19,8 @@ pub(crate) struct WorthQueryProductPublicationBinding {
 }
 
 impl WorthQueryProductPublicationBinding {
-    pub(crate) fn new(
+    pub(super) fn new(
+        adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
         observation: ProductBranchObservation,
         publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
         recovery: RuntimeWorldRecoveryPort,
@@ -26,6 +28,7 @@ impl WorthQueryProductPublicationBinding {
         root_identity: Arc<WorthQueryProductRootIdentity>,
     ) -> Self {
         Self {
+            adoption_preparation,
             observation,
             publication,
             recovery,
@@ -55,5 +58,21 @@ impl WorthQueryProductPublicationBinding {
         deadline: std::time::Instant,
     ) -> worth_runtime_world::facade::RuntimeWorldInstant {
         self.clock.deadline(deadline)
+    }
+}
+
+impl super::WorthQueryProductRuntime {
+    pub(crate) fn publication_binding(
+        &self,
+        observation: ProductBranchObservation,
+    ) -> WorthQueryProductPublicationBinding {
+        WorthQueryProductPublicationBinding::new(
+            Arc::clone(&self.adoption_preparation),
+            observation,
+            self.owner.publication_port(),
+            self.owner.recovery_port(),
+            self.clock.clone(),
+            self.root_identity(),
+        )
     }
 }

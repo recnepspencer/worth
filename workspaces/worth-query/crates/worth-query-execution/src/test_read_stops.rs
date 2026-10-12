@@ -148,8 +148,8 @@ pub(crate) fn every_advancement_consult<T: Eq + Debug, E: Eq + Debug>(
     ) -> Result<T, E>,
     cancelled: E,
     exhausted: E,
-) {
-    every_advancement_consult_with_door(|counted| counted(&door), cancelled, exhausted);
+) -> u64 {
+    every_advancement_consult_with_door(|counted| counted(&door), cancelled, exhausted)
 }
 
 type AdvancementDoor<'a, T, E> = dyn Fn(
@@ -162,7 +162,7 @@ pub(crate) fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
     with_door: impl Fn(&CountedAdvancementDoor<'_, T, E>) -> ConsultRun<T, E>,
     cancelled: E,
     exhausted: E,
-) {
+) -> u64 {
     use crate::facade::primary_graph::{
         advancement_requests_on_this_thread_for_test,
         bound_advancement_requests_on_this_thread_for_test,
@@ -205,7 +205,7 @@ pub(crate) fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
             (answer, work, count)
         })
     };
-    assert_every_consult(run, 100_000, cancelled, exhausted);
+    assert_every_consult(run, 100_000, cancelled, exhausted)
 }
 
 fn assert_every_consult<T: Eq + Debug, E: Eq + Debug>(
@@ -213,7 +213,7 @@ fn assert_every_consult<T: Eq + Debug, E: Eq + Debug>(
     healthy_work: u64,
     cancelled: E,
     exhausted: E,
-) {
+) -> u64 {
     let (healthy, work, count) = run(None, healthy_work);
     assert_ne!(
         healthy.as_ref().err(),
@@ -242,6 +242,7 @@ fn assert_every_consult<T: Eq + Debug, E: Eq + Debug>(
             "one unit short"
         );
     }
+    work
 }
 
 /// Signals external cancellation inside a named read consult, using the sealed

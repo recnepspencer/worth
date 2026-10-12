@@ -266,3 +266,6 @@ impl<Stopped> WorthQueryComputationPartitionStop<Stopped> {
 
 #[cfg(test)]
 mod tests;
+
+mod publication;
+pub(in crate::domain_computation::primary_graph) use publication::publication_execution_kind;

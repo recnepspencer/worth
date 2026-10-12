@@ -36,7 +36,12 @@ where
     application
         .primary_provider
         .observe_managed_application_cleanup();
-    let completion = match cleanup.finish(running, terminal, snapshot_release) {
+    let completion = match cleanup.finish(
+        &application.primary_provider,
+        running,
+        terminal,
+        snapshot_release,
+    ) {
         Ok(completion) => completion,
         Err(()) => {
             return cleanup_failure::cleanup_failed_outcome(outcome);

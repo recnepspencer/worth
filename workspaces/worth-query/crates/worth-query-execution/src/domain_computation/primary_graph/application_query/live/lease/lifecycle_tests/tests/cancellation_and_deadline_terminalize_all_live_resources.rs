@@ -84,3 +84,84 @@ fn cancellation_and_deadline_terminalize_all_live_resources() {
     drop(deadline_lease);
     deadline_context.assert_source_released();
 }
+
+#[test]
+fn read_stops_survive_a_failed_live_lease_termination() {
+    for mode in 0..3 {
+        let cancellation = WorthQueryCancellationSource::new();
+        let context = LiveContext::new(WorthQueryRequestScope::new(None, cancellation.token()));
+        let mut lease = context
+            .world
+            .application
+            .with_host_advancement(|phase| context.open(&phase.test_host_request()))
+            .unwrap();
+        if mode == 2 {
+            commit_live_activity_with_identity(
+                &context.world,
+                &context.principal,
+                &context.request,
+                "stopped-live-read",
+                228,
+                92,
+            );
+        }
+        let refreshed = (mode == 2).then(|| {
+            context
+                .world
+                .application
+                .with_host_advancement(|phase| {
+                    context.principal(&phase.test_host_request(), "alice")
+                })
+                .unwrap()
+        });
+        // Hold the real owned read work away from finalization: Bridge can end,
+        // but the managed read cannot finish without this completion evidence.
+        let held_work = lease
+            .initial_read_work
+            .take()
+            .expect("an open lease owns read work");
+        let expired = context.already_expired_request();
+        if mode == 0 {
+            cancellation.cancel();
+        }
+        let answer = context
+            .world
+            .application
+            .with_host_advancement(|phase| {
+                let host = phase.test_host_request();
+                let installed_phase = lease.fixture_phase(&host);
+                let execution = installed_phase
+                    .execution_request_for(context.world.application.product_runtime())
+                    .unwrap();
+                execution
+                    .run(
+                        worth_execution::ExecutionWorkCeiling::new(if mode == 2 {
+                            0
+                        } else {
+                            100_000
+                        }),
+                        |_| {
+                            lease.next(
+                                &installed_phase,
+                                refreshed.as_ref().unwrap_or(&context.principal),
+                                if mode == 1 {
+                                    &expired
+                                } else {
+                                    &context.request
+                                },
+                            )
+                        },
+                    )
+                    .unwrap()
+                    .0
+            })
+            .unwrap();
+        match (mode, answer) {
+            (0, WorthQueryApplicationLiveOutcome::Cancelled) | (1, WorthQueryApplicationLiveOutcome::DeadlineExceeded) => {},
+            (2, WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)) => assert_eq!(kind, crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }),
+            (_, answer) => panic!("mode {mode}: the request stop remains the answer, got {:?}", std::mem::discriminant(&answer)),
+        }
+        assert!(lease.termination_failed());
+        drop(held_work);
+    }
+}

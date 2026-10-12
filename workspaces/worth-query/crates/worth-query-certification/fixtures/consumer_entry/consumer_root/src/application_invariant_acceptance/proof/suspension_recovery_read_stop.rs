@@ -14,13 +14,23 @@ use worth_query_topology_entry::{PlanarFinalOutputProducer, PlanarSourceAdjustme
 fn suspension_recovery_keeps_the_cancelled_source_read_and_live_retry() {
     std::thread::Builder::new()
         .stack_size(8 * 1024 * 1024)
-        .spawn(prove)
+        .spawn(|| prove(false))
         .unwrap()
         .join()
         .unwrap();
 }
 
-fn prove() {
+#[test]
+fn suspension_recovery_keeps_cancellation_inside_adoption_preparation() {
+    std::thread::Builder::new()
+        .stack_size(8 * 1024 * 1024)
+        .spawn(|| prove(true))
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+fn prove(at_preparation: bool) {
     let schema = crate::installed_schema();
     let world = installation::install(&schema);
     let application = &world.application;
@@ -96,6 +106,12 @@ fn prove() {
     };
     let cancellation = WorthQueryCancellationSource::new();
     let interrupted = WorthQueryRequestScope::new(None, cancellation.token());
+    let preparation_cancellation = cancellation.clone();
+    let _preparation_guard = at_preparation.then(|| {
+        application
+            .product_runtime()
+            .before_adoption_preparation_for_test(move || preparation_cancellation.cancel())
+    });
     let host = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
         worth_execution::CancellationSource::new().token(),
@@ -104,7 +120,7 @@ fn prove() {
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (result, consults) = worth_execution::with_request_consult_observer_for_test(
         move |at| {
-            if at == 3 {
+            if !at_preparation && at == 3 {
                 cancellation.cancel();
             }
         },
@@ -112,16 +128,26 @@ fn prove() {
             execution.run(worth_execution::ExecutionWorkCeiling::new(100_000), |_| application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<crate::ConsumerSchema>>(&execution, recovery, &interrupted)).unwrap().0
         },
     );
-    assert!(consults >= 3);
+    if !at_preparation {
+        assert!(consults >= 3);
+    }
     let failure = match result {
         Err(failure) => failure,
         Ok(_) => panic!("cancelled source read retains recovery"),
     };
     assert_eq!(
         failure.stage(),
-        primary_graph::WorthQueryGeneratedOutputSuspensionRecoveryStage::SourceSelection(
-            Branch::Stopped(Err(Stop::Cancelled))
-        )
+        if at_preparation {
+            primary_graph::WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(
+                    worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled,
+                ),
+            )
+        } else {
+            primary_graph::WorthQueryGeneratedOutputSuspensionRecoveryStage::SourceSelection(
+                Branch::Stopped(Err(Stop::Cancelled)),
+            )
+        }
     );
     let recovery = failure.into_recovery();
     assert_eq!(recovery.product_branch(), branch);

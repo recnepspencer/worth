@@ -1,4 +1,9 @@
 use crate::basis::WorthQueryProductBranchAdmissionDenial as Admission;
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -315,19 +320,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let binding = selected.product().publication_binding();
         let prepared = match binding.prepare_settled_relational_adoption(&unpublished, request) {
             Ok(prepared) => prepared,
-            Err(denial) => {
-                let stage =
-                    super::super::super::super::publication_request_denial::adoption(&denial)
-                        .map_or(
-                            WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPreparation,
-                            WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied,
-                        );
-                return Err(failure(stage, RecoveryState::World { recovery, retry }));
+            Err(PublicationDenial::Stopped(stop)) => {
+                return Err(failure(
+                    WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                        advancement_denial(stop),
+                    ),
+                    RecoveryState::World { recovery, retry },
+                ))
+            }
+            Err(PublicationDenial::Refused(_)) => {
+                return Err(failure(
+                    WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPreparation,
+                    RecoveryState::World { recovery, retry },
+                ))
             }
         };
         drop(unpublished);
         match prepared.execute(publication_execution) {
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
+            Ok(PublicationOutcome::Performed(performed)) => {
                 let commit = performed
                     .component_results()
                     .relational_commit_result()
@@ -346,19 +356,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     },
                 )
             }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
-                let stage = super::super::super::super::publication_request_denial::publication(
-                    no_effect.cause(),
-                )
-                .map_or(
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPublication,
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied,
-                );
-                Err(failure(stage, RecoveryState::World { recovery, retry }))
-            }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::ProductUnpublished(
-                effects,
-            ) => {
+            Err(PublicationDenial::Stopped(stop)) => Err(failure(
+                WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                    advancement_denial(stop),
+                ),
+                RecoveryState::World { recovery, retry },
+            )),
+            Err(PublicationDenial::Refused(_)) => Err(failure(
+                WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPublication,
+                RecoveryState::World { recovery, retry },
+            )),
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 let next = self
                     .unpublished_materialization_from_binding(effects, &binding)
                     .into_recovery();

@@ -1,3 +1,4 @@
+mod freshness_denial;
 use super::super::{
     WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
@@ -95,9 +96,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         &principal_layout,
                         &expected_external_identity,
                     )
-                    .map_err(|_| {
+                    .map_err(|cause| {
                         denial(
-                            WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
+                            freshness_denial::principal(cause.kind()),
                             principal.binding(),
                         )
                     })
@@ -110,11 +111,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 WorthQueryPrincipalResolutionMode::Ordinary,
                             )
                             .and_then(|truth| truth.validate_entity_freshness(execution, scope))
-                            .map_err(|_| {
-                                denial(
-                                    WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
-                                    query.name(),
-                                )
+                            .map_err(|cause| {
+                                denial(freshness_denial::entity(cause.kind()), query.name())
                             })
                     })
                     .and_then(|()| {

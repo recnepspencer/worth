@@ -1,7 +1,11 @@
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{
-    RuntimeWorldPublicationOutcome, RuntimeWorldRecoveryDenial,
-    RuntimeWorldSettledRelationalAdoptionDenial,
+    RuntimeWorldRecoveryDenial, RuntimeWorldSettledRelationalAdoptionDenial,
 };
 
 use super::{publish_recovered, unpublished_idempotency::ManagedUnpublishedRecoveryStop};
@@ -240,7 +244,12 @@ where
             }
             let prepared = binding
                 .prepare_settled_relational_adoption(&unpublished, admission.publication_request())
-                .map_err(Denial::Adoption)?;
+                .map_err(|denial| match denial {
+                    PublicationDenial::Stopped(stop) => {
+                        Denial::ExecutionDenied(advancement_denial(stop))
+                    }
+                    PublicationDenial::Refused(denial) => Denial::Adoption(denial),
+                })?;
             let successor = prepared.unpublished_recovery_handle();
             guard
                 .attempt_mut()
@@ -261,10 +270,13 @@ where
             drop(binding);
             drop(lease);
             match outcome {
-                RuntimeWorldPublicationOutcome::NoEffect(_) => {
+                Err(PublicationDenial::Stopped(stop)) => {
+                    Err(Denial::ExecutionDenied(advancement_denial(stop)))
+                }
+                Err(PublicationDenial::Refused(_)) => {
                     Ok((WorthQueryManagedApplicationRecoveryOutcome::NoEffect, None))
                 }
-                RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+                Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                     let next = WorthQueryProductUnpublishedApplication::new(
                         effects,
                         world_recovery,
@@ -283,7 +295,7 @@ where
                         None,
                     ))
                 }
-                RuntimeWorldPublicationOutcome::Performed(publication) => {
+                Ok(PublicationOutcome::Performed(publication)) => {
                     let session = guard.take_attempt().complete(publication, None);
                     let source = match delivery {
                         RecoveredPublicationDelivery::Ordinary => None,

@@ -106,3 +106,5 @@ pub(crate) use request_execution::{with_test_advancement, TestHostRequest};
 pub use request_execution::with_bootstrap_advancement;
 
 pub use request_execution::WorthQueryBootstrapAdvancementPhase;
+
+pub(in crate::domain_computation::primary_graph) use execution_denial::publication_execution_kind;

@@ -1,4 +1,9 @@
-use worth_runtime_world::facade::{NoEffectCompositePublication, RuntimeWorldPublicationOutcome};
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use worth_runtime_world::facade::NoEffectCompositePublication;
 
 use super::{WorthQueryPerformedBranchAdoption, WorthQueryUnpublishedBranchAdoption};
 use crate::domain_computation::primary_graph::product_operation::program_adoption::preparation::WorthQueryPreparedBranchAdoption;
@@ -52,7 +57,7 @@ impl WorthQueryPreparedBranchAdoption {
             ..
         } = self;
         match publication.execute(execution) {
-            RuntimeWorldPublicationOutcome::Performed(performed) => {
+            Ok(PublicationOutcome::Performed(performed)) => {
                 WorthQueryBranchAdoptionPublicationOutcome::Performed(
                     WorthQueryPerformedBranchAdoption::new(
                         performed.consume(),
@@ -64,10 +69,15 @@ impl WorthQueryPreparedBranchAdoption {
                     ),
                 )
             }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+            Err(PublicationDenial::Stopped(stop)) => {
+                WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(advancement_denial(
+                    stop,
+                ))
+            }
+            Err(PublicationDenial::Refused(no_effect)) => {
                 WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect)
             }
-            RuntimeWorldPublicationOutcome::ProductUnpublished(unpublished) => {
+            Ok(PublicationOutcome::ProductUnpublished(unpublished)) => {
                 WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(
                     WorthQueryUnpublishedBranchAdoption::new(
                         source,

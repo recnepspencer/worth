@@ -1,13 +1,16 @@
 //! Owner-only continuation of accepted completion and exact World recovery.
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 
-use super::super::super::publication_request_denial;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::{Arc, Mutex};
 
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 use super::super::{
     WorthQueryPerformedInboundCompletion, WorthQueryPrimaryGraphApplicationRuntime,
@@ -276,10 +279,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let prepared = match binding.prepare_settled_relational_adoption(&unpublished, request) {
             Ok(prepared) => prepared,
-            Err(denial) => {
-                let denial = publication_request_denial::adoption(&denial)
-                    .map_or(Denial::RecoveryUnavailable, Denial::ExecutionDenied);
-                return RecoveryStep::Retain(State::Active(recovery), Err(denial));
+            Err(PublicationDenial::Stopped(stop)) => {
+                return RecoveryStep::Retain(
+                    State::Active(recovery),
+                    Err(Denial::ExecutionDenied(advancement_denial(stop))),
+                )
+            }
+            Err(PublicationDenial::Refused(_)) => {
+                return RecoveryStep::Retain(
+                    State::Active(recovery),
+                    Err(Denial::RecoveryUnavailable),
+                )
             }
         };
         drop(unpublished);
@@ -295,7 +305,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         drop(lease);
         drop(binding);
         match outcome {
-            RuntimeWorldPublicationOutcome::Performed(publication) => {
+            Ok(PublicationOutcome::Performed(publication)) => {
                 let performed = WorthQueryPerformedInboundCompletion::new(
                     Arc::clone(accepted),
                     incarnation,
@@ -306,12 +316,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ));
                 self.finish_inbound_published(recovery, terminal)
             }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
-                let denial = publication_request_denial::publication(no_effect.cause())
-                    .map_or(Denial::RecoveryUnavailable, Denial::ExecutionDenied);
-                RecoveryStep::Retain(State::Active(recovery), Err(denial))
+            Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
+                State::Active(recovery),
+                Err(Denial::ExecutionDenied(advancement_denial(stop))),
+            ),
+            Err(PublicationDenial::Refused(_)) => {
+                RecoveryStep::Retain(State::Active(recovery), Err(Denial::RecoveryUnavailable))
             }
-            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 let next = WorthQueryProductUnpublishedApplication::new(
                     effects,
                     world_recovery,

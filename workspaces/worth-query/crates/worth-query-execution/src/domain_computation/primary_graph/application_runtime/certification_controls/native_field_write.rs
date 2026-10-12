@@ -1,4 +1,5 @@
 //! Native Relational writer that is not Query, for subscription certification.
+use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
 
 use std::collections::BTreeMap;
 
@@ -16,7 +17,6 @@ use worth_relational::facade::{
     },
 };
 use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
-use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::basis::WorthQueryProductBranch;
@@ -99,7 +99,7 @@ where
             .prepare_relational_candidate(candidate, request, false)
             .expect("the native World publication prepares")
             .execute(execution);
-        let RuntimeWorldPublicationOutcome::Performed(performed) = outcome else {
+        let Ok(PublicationOutcome::Performed(performed)) = outcome else {
             panic!("the native World publication must perform: {outcome:?}");
         };
         let published = performed.commit().basis().relational_basis().clone();

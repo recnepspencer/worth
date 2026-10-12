@@ -237,6 +237,12 @@ pub struct WorthQueryApplicationUnresolvedCommitEvidence {
     >,
     stage: crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage,
     detail: String,
+    cleanup_failure: Option<WorthQueryApplicationManagedCleanupFailure>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationManagedCleanupFailure {
+    RunFinishRejected,
 }
 
 /// Distinguishes commit-path vs abort-path recovery requirement (R8.26).
@@ -256,6 +262,7 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
             denial_kind: failure.checked_read_stop().unwrap_or(Ok(failure.kind())),
             stage: failure.stage(),
             detail: failure.detail().to_owned(),
+            cleanup_failure: None,
         }
     }
 
@@ -268,6 +275,14 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
     ) -> Self {
         self.denial_kind = cause;
         self
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_cleanup_failure(mut self) -> Self {
+        self.cleanup_failure = Some(WorthQueryApplicationManagedCleanupFailure::RunFinishRejected);
+        self
+    }
+    pub const fn cleanup_failure(&self) -> Option<WorthQueryApplicationManagedCleanupFailure> {
+        self.cleanup_failure
     }
 
     pub const fn recovery(&self) -> WorthQueryApplicationCommitRecoveryKind {
