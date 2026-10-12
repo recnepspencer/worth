@@ -52,9 +52,8 @@ pub(super) fn require_stale_source_denial(
         Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
             WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
         )) => {}
-        outcome => {
-            panic!("a predecessor source proof must not suspend current output: {outcome:?}")
-        }
+        Err(failure) => panic!("the predecessor source refusal had the wrong cause: {failure:?}"),
+        Ok(_) => panic!("a predecessor source proof must not suspend current output"),
     }
 }
 

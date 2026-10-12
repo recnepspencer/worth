@@ -127,12 +127,11 @@ fn execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_r
             "{}::execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_reopen",
             module_path!().split_once("::").unwrap().1
         );
-        let output = crate::process_deadline::output(
-            std::process::Command::new(std::env::current_exe().unwrap())
-                .args(["--exact", &name, "--nocapture"])
-                .env(CHILD, "1"),
-        )
-        .unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", &name, "--nocapture"])
+            .env(CHILD, "1")
+            .output()
+            .unwrap();
         assert!(
             output.status.success(),
             "{}\n{}",
