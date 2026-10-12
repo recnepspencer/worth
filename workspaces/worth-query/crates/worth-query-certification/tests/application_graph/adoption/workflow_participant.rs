@@ -65,7 +65,8 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
                 .workflow_definition_revisions_for_test(&host_phase, &definition)
         })
         .expect("installed host call opens")
-        .expect("workflow branch remains admitted");
+        .expect("workflow branch remains admitted")
+        .expect("workflow activation facts remain readable");
     assert!(published_under.is_some() && carried.is_none());
     publish_adoption(prepare_second_program_adoption(
         &application,
@@ -79,7 +80,8 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
                 .workflow_definition_revisions_for_test(&host_phase, &definition)
         })
         .expect("installed host call opens")
-        .expect("workflow branch remains admitted");
+        .expect("workflow branch remains admitted")
+        .expect("workflow activation facts remain readable");
     assert_eq!(
         still_published_under, published_under,
         "carriage never rewrites publication provenance",

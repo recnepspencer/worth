@@ -4,6 +4,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as Kind,
 };
+use crate::facade::application_installation::WorthQueryProgramOwner;
 use crate::facade::application_installation::{
     in_memory_program, WorthQueryInMemoryApplicationLimits,
 };
@@ -78,23 +79,7 @@ impl ApplicationProgramDefinition<PreviewSchema> for PreviewProgram {
 
 #[test]
 fn begin_preview_preserves_admission_stops_at_every_consult() {
-    let program = ApplicationProgramAuthoring::<PreviewSchema, PreviewProgram>::begin()
-        .validated_program()
-        .unwrap();
-    let runtime = in_memory_program(
-        program, PreviewSchema::declaration().unwrap(), ((),),
-        WorthQueryInMemoryApplicationLimits::new(
-            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
-            Default::default(), Default::default(),
-            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
-        ),
-        |_, graph, installed| {
-            let binding = installed.principal_binding(PreviewBinding::reference()).unwrap();
-            graph.bind_principal(&binding, crate::domain_computation::primary_graph::WorthQueryApplicationPrincipalKey::new("preview-owner").unwrap(), 1_u64,
-                WorthQueryExternalPrincipalIdentity::new("preview", "owner").unwrap(), WorthQueryPrincipalMappingStatus::Enabled)?;
-            Ok(())
-        },
-    ).unwrap();
+    let runtime = installed_preview_runtime();
     let observation = runtime
         .with_host_advancement(|phase| {
             runtime
@@ -125,4 +110,133 @@ fn begin_preview_preserves_admission_stops_at_every_consult() {
             partition_identity: None, policy_ancestor: None,
         }))),
     );
+}
+
+fn installed_preview_runtime() -> WorthQueryProgramApplicationRuntime<PreviewSchema, PreviewProgram>
+{
+    let program = ApplicationProgramAuthoring::<PreviewSchema, PreviewProgram>::begin()
+        .validated_program()
+        .unwrap();
+    in_memory_program(
+        program, PreviewSchema::declaration().unwrap(), ((),),
+        WorthQueryInMemoryApplicationLimits::new(
+            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+            Default::default(), Default::default(),
+            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+        ),
+        |_, graph, installed| {
+            let binding = installed.principal_binding(PreviewBinding::reference()).unwrap();
+            graph.bind_principal(&binding, crate::domain_computation::primary_graph::WorthQueryApplicationPrincipalKey::new("preview-owner").unwrap(), 1_u64,
+                WorthQueryExternalPrincipalIdentity::new("preview", "owner").unwrap(), WorthQueryPrincipalMappingStatus::Enabled)?;
+            Ok(())
+        },
+    ).unwrap()
+}
+
+#[test]
+fn readmit_preview_keeps_source_selection_stops_at_every_consult() {
+    let runtime = installed_preview_runtime();
+    let observation = runtime
+        .with_host_advancement(|phase| {
+            runtime
+                .on_branch(runtime.current_world())
+                .select(&phase)
+                .unwrap()
+                .retain_application_read()
+        })
+        .unwrap();
+    let identity = std::cell::Cell::new(0);
+    crate::test_read_stops::every_advancement_consult_with_door(
+        |counted| {
+            let ordinal = identity.get(); identity.set(ordinal + 1);
+            let preview = runtime.with_host_advancement(|phase| runtime.begin_preview(&phase, &observation, WorthQueryApplicationPreviewRequest::new(format!("readmit-preview-{ordinal}")))).unwrap().unwrap();
+            let preview = std::cell::RefCell::new(Some(preview));
+            counted(&|request, ceiling| runtime.with_application_advancement(request, |phase| {
+                phase.execution_request_for(&runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| preview.borrow_mut().take().unwrap().readmit(&phase, &runtime).map(|readmitted| readmitted.discard().unwrap())).unwrap().0
+            }).unwrap())
+        },
+        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::ReadExecution(Err(Control::Cancelled))),
+        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::ReadExecution(Ok(Kind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }))),
+    );
+}
+
+#[test]
+fn support_retirement_keeps_read_stops_inventory_and_active_roster_at_every_consult() {
+    use crate::facade::application_installation::WorthQueryProgramSupportRetirementFailure as Failure;
+    use worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial as Policy;
+    let runtime = installed_preview_runtime();
+    let revision = *runtime.owned_revision();
+    crate::test_read_stops::every_consult(
+        |execution| match runtime.retire_program_support(execution, &revision) {
+            Err(Failure::ReadExecution { stop, inventory }) => {
+                assert_eq!(inventory.revision(), &revision);
+
+                assert!(inventory.retained_program_bytes() > 0);
+                assert_eq!(inventory.retained_interpretations(), 0);
+                assert_eq!(inventory.mandatory_custody(), 0);
+                assert!(runtime.presented_program().is_some(), "stopped retirement resets the roster to active");
+                Err(stop)
+            }
+            Err(Failure::Policy(Policy::CurrentBranches(inventory))) => {
+                assert_eq!(inventory.current_branches(), 1);
+                Ok(())
+            }
+            other => panic!("unexpected retirement answer: {other:?}"),
+        },
+        Err(Control::Cancelled),
+        Ok(Kind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }),
+    );
+}
+
+#[test]
+fn branch_creation_keeps_the_source_program_resolver_read_stop() {
+    use worth_query_admission::facade::authenticated_principal::{
+        WorthQueryCancellationSource, WorthQueryRequestScope,
+    };
+    let runtime = installed_preview_runtime();
+    let before = runtime.current_world();
+    let source = WorthQueryCancellationSource::new();
+    let request = WorthQueryRequestScope::new(None, source.token());
+    let result = runtime
+        .with_application_advancement(&request, |phase| {
+            let _guard = crate::test_read_stops::observe_consults_for_test(move |at| {
+                if at == 1 {
+                    source.cancel();
+                }
+            });
+            runtime
+                .branches()
+                .fork(before)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+        })
+        .unwrap();
+    assert!(matches!(
+        result,
+        Err(
+            crate::basis::WorthQueryProductBranchCreateError::SourceAdmission(
+                Branch::ReadExecution(Err(Control::Cancelled))
+            )
+        )
+    ));
+    assert_eq!(runtime.current_world(), before);
+    let child = runtime
+        .with_host_advancement(|phase| {
+            runtime
+                .branches()
+                .fork(before)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+        })
+        .unwrap()
+        .expect("live retry forks the same rostered source");
+    runtime
+        .with_host_advancement(|phase| {
+            let selected = runtime.on_branch(child).select(&phase).unwrap();
+            assert_eq!(
+                selected.inspect_selected_program().unwrap().revision(),
+                runtime.owned_revision()
+            );
+        })
+        .unwrap();
 }

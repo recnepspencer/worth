@@ -80,6 +80,20 @@ pub(crate) fn every_advancement_consult<T: Eq + Debug, E: Eq + Debug>(
     cancelled: E,
     exhausted: E,
 ) {
+    every_advancement_consult_with_door(|counted| counted(&door), cancelled, exhausted);
+}
+
+type AdvancementDoor<'a, T, E> = dyn Fn(
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        u64,
+    ) -> Result<T, E>
+    + 'a;
+type CountedAdvancementDoor<'a, T, E> = dyn Fn(&AdvancementDoor<'_, T, E>) -> ConsultRun<T, E> + 'a;
+pub(crate) fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
+    with_door: impl Fn(&CountedAdvancementDoor<'_, T, E>) -> ConsultRun<T, E>,
+    cancelled: E,
+    exhausted: E,
+) {
     use crate::facade::primary_graph::{
         advancement_requests_on_this_thread_for_test,
         bound_advancement_requests_on_this_thread_for_test,
@@ -101,24 +115,26 @@ pub(crate) fn every_advancement_consult<T: Eq + Debug, E: Eq + Debug>(
                 100_000,
             ),
         ));
-        let source = WorthQueryCancellationSource::new();
-        let request = WorthQueryRequestScope::new(None, source.token());
-        let (answer, count) = with_request_consult_observer_for_test(
-            move |at| {
-                if Some(at) == k {
-                    source.cancel();
-                }
-            },
-            || door(&request, ceiling),
-        );
-        let reports = advancement_requests_on_this_thread_for_test();
-        let work = reports
-            .last()
-            .expect("door opened its request")
-            .as_ref()
-            .unwrap()
-            .charged_work();
-        (answer, work, count)
+        with_door(&|door| {
+            let source = WorthQueryCancellationSource::new();
+            let request = WorthQueryRequestScope::new(None, source.token());
+            let (answer, count) = with_request_consult_observer_for_test(
+                move |at| {
+                    if Some(at) == k {
+                        source.cancel();
+                    }
+                },
+                || door(&request, ceiling),
+            );
+            let reports = advancement_requests_on_this_thread_for_test();
+            let work = reports
+                .last()
+                .expect("door opened its request")
+                .as_ref()
+                .unwrap()
+                .charged_work();
+            (answer, work, count)
+        })
     };
     assert_every_consult(run, 100_000, cancelled, exhausted);
 }
@@ -175,4 +191,17 @@ pub(crate) fn cancelled_at_consult_for_test<T>(
         read,
     )
     .0
+}
+
+/// Receiver-owned SDK observation guard; only signals the supplied request.
+pub(crate) fn observe_consults_for_test(
+    observe: impl FnMut(usize) + 'static,
+) -> worth_execution::RequestConsultObservationForTest {
+    worth_execution::RequestConsultObservationForTest::install_on_this_thread_for_test(observe)
+}
+
+pub(crate) fn consult_count_for_test(
+    observation: &worth_execution::RequestConsultObservationForTest,
+) -> usize {
+    observation.count_for_test()
 }
