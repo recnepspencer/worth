@@ -67,6 +67,8 @@ fn lookup_candidate_grants(
         MAX_BOUNDED_INDEX_CANDIDATES,
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
+    #[cfg(test)]
+    late_cancellation::cancel_at_join();
     let lookup = relational
         .index_access()
         .execute_bounded_relation_join_lookup(
@@ -74,9 +76,9 @@ fn lookup_candidate_grants(
             BoundedIndexParityMode::Production,
             execution,
         )
-        .map_err(|_| {
+        .map_err(|refusal| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+                grant_lookup_denial_kind(refusal.kind()),
                 installed.contract().name(),
             )
         })?;
@@ -270,3 +272,50 @@ fn denial(
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(kind, subject)
 }
+
+#[cfg(test)]
+#[path = "grant_selection/late_cancellation.rs"]
+pub(in crate::domain_computation) mod late_cancellation;
+
+fn grant_lookup_denial_kind(
+    refusal: worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind,
+) -> WorthQueryOperationAuthorizationDenialKind {
+    use worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind as Kind;
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+    use WorthQueryOperationAuthorizationDenialKind as Denial;
+    match refusal {
+        Kind::Execution(cause) => match cause {
+            Cause::Cancelled => Denial::Cancelled,
+            Cause::DeadlineElapsed => Denial::DeadlineExceeded,
+            Cause::WorkerLimitExceedsParent
+            | Cause::MemoryLimitExceedsParent
+            | Cause::WorkLimitExceedsParent
+            | Cause::PolicyMemoryExhausted { .. }
+            | Cause::ProcessMemoryExhausted { .. }
+            | Cause::DeclaredMemoryExhausted { .. }
+            | Cause::ChargedBytesOverflow
+            | Cause::UnrelatedNestedLease
+            | Cause::NoActiveExecutionScope
+            | Cause::EquivalenceContractUnavailable
+            | Cause::WorkCounterOverflow
+            | Cause::WorkExhausted
+            | Cause::NestedStopped
+            | Cause::ResultCapacityExceeded
+            | Cause::WorkerFailed
+            | Cause::ScratchCapacityExceeded
+            | Cause::UncheckedCustomKernel
+            | Cause::ExpectedIdentitiesNotCanonical
+            | Cause::MemoryOverflow => Denial::CanonicalWorkDenied,
+        },
+        Kind::InvalidCandidateLimit
+        | Kind::SnapshotUnavailable
+        | Kind::IndexNotInstalled
+        | Kind::WrongIndexKind
+        | Kind::ExactGenerationUnavailable
+        | Kind::CorruptIndexEntries
+        | Kind::StorageParityMismatch => Denial::RelationalObservationRejected,
+    }
+}
+#[cfg(test)]
+#[path = "grant_selection/denial_tests.rs"]
+mod denial_tests;

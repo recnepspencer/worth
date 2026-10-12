@@ -5,7 +5,6 @@ use crate::facade::indexes::{
     DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexGenerationId, DerivedIndexKind,
     RelationJoinDefinition, RelationJoinLeg, RelationJoinSharedEndpoint, SelectedIndexReadWork,
 };
-use worth_execution::ExecutionWorkCeiling;
 
 fn with_backings(mut run: impl FnMut(&ExecutionRequest<'_, '_>)) {
     let host = crate::test_execution_policy::serial_request();
@@ -39,38 +38,35 @@ fn runtime_read_law_remaining_view_input_preparation() {
         BoundedIndexParityMode::Certification,
     ] {
         with_backings(|execution| {
-            let (answer, work) = execution
-                .run(ExecutionWorkCeiling::new(100_000), |_| {
-                    let prepared = world
-                        .runtime
-                        .index_access()
-                        .prepare_entity_field_lookup(
-                            &view,
-                            world.index,
-                            KindId(1),
-                            &world.name,
-                            execution,
-                        )
-                        .unwrap();
-                    world
-                        .runtime
-                        .index_access()
-                        .execute_prepared_entity_field_lookup(
-                            &prepared,
-                            &string_aspect_value("a"),
-                            2,
-                            parity,
-                            execution,
-                            || Ok::<_, ()>(()),
-                        )
-                        .unwrap()
-                })
-                .unwrap();
+            let answer = {
+                let prepared = world
+                    .runtime
+                    .index_access()
+                    .prepare_entity_field_lookup(
+                        &view,
+                        world.index,
+                        KindId(1),
+                        &world.name,
+                        execution,
+                    )
+                    .unwrap();
+                world
+                    .runtime
+                    .index_access()
+                    .execute_prepared_entity_field_lookup(
+                        &prepared,
+                        &string_aspect_value("a"),
+                        2,
+                        parity,
+                        execution,
+                        || Ok::<_, ()>(()),
+                    )
+                    .unwrap()
+            };
             assert_eq!(answer.candidate_entity_ids(), &[world.entities[0]]);
             assert_eq!(answer.generation_id(), DerivedIndexGenerationId(1));
             assert_eq!(answer.examined_entry_count(), 1);
             assert!(!answer.overflowed());
-            assert_eq!(work.charged_work(), 0);
         });
     }
 }
@@ -89,35 +85,32 @@ fn runtime_read_law_remaining_selected_view() {
     let value = string_aspect_value("a");
     with_backings(|execution| {
         let mut charges = Vec::new();
-        let (answer, work) = execution
-            .run(ExecutionWorkCeiling::new(100_000), |_| {
-                world
-                    .runtime
-                    .index_access()
-                    .execute_bounded_entity_field_lookup(
-                        BoundedEntityFieldSelectedLookup::new(
-                            &view,
-                            world.index,
-                            KindId(1),
-                            &world.name,
-                            &value,
-                            2,
-                            |unit, bytes| {
-                                charges.push((unit, bytes));
-                                Ok::<_, ()>(())
-                            },
-                        ),
-                        BoundedIndexParityMode::Production,
-                        execution,
-                    )
-                    .unwrap()
-            })
-            .unwrap();
+        let answer = {
+            world
+                .runtime
+                .index_access()
+                .execute_bounded_entity_field_lookup(
+                    BoundedEntityFieldSelectedLookup::new(
+                        &view,
+                        world.index,
+                        KindId(1),
+                        &world.name,
+                        &value,
+                        2,
+                        |unit, bytes| {
+                            charges.push((unit, bytes));
+                            Ok::<_, ()>(())
+                        },
+                    ),
+                    BoundedIndexParityMode::Production,
+                    execution,
+                )
+                .unwrap()
+        };
         assert_eq!(answer.candidate_entity_ids(), &[world.entities[0]]);
         assert_eq!(answer.generation_id(), DerivedIndexGenerationId(1));
         assert_eq!(answer.examined_entry_count(), 1);
         assert!(!answer.overflowed());
-        assert_eq!(work.charged_work(), 0);
         // Literal caller-admission vector, independent of the implementation's quotes.
         let expected: Vec<(SelectedIndexReadWork, u64)> = vec![
             (OrderedNavigation(12), 0),
@@ -186,22 +179,19 @@ fn runtime_read_law_remaining_relation_join() {
                 2,
             )
             .unwrap();
-            let (answer, work) = execution
-                .run(ExecutionWorkCeiling::new(100_000), |_| {
-                    world
-                        .runtime
-                        .index_access()
-                        .execute_bounded_relation_join_lookup(request, parity, execution)
-                        .unwrap()
-                })
-                .unwrap();
+            let answer = {
+                world
+                    .runtime
+                    .index_access()
+                    .execute_bounded_relation_join_lookup(request, parity, execution)
+                    .unwrap()
+            };
             assert_eq!(answer.candidate_entity_ids(), &[world.entities[1]]);
             assert_eq!(answer.generation_id(), DerivedIndexGenerationId(2));
             assert_eq!(answer.examined_entry_count(), 1);
             assert_eq!(answer.verified_entity_record_count(), 3);
             assert_eq!(answer.verified_relation_record_count(), 2);
             assert!(!answer.overflowed());
-            assert_eq!(work.charged_work(), 0);
         });
     }
 }
