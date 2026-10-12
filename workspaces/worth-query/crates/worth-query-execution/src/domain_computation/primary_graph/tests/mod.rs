@@ -1,6 +1,6 @@
 pub(in crate::domain_computation::primary_graph) mod application_attempt;
 mod application_outcome_identity;
-mod application_query;
+pub(in crate::domain_computation::primary_graph) mod application_query;
 mod authorization;
 mod checkpoint_allocation;
 mod committed_publication;

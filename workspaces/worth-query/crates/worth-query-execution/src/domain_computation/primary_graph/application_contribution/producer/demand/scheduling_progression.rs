@@ -48,6 +48,12 @@ where
             })?;
         let selected_branch = match self.on_branch(branch).select_with_request(execution) {
             Ok(selected) => selected,
+            Err(error) if error.request_stop().is_some() => {
+                return Err(WorthQueryOutputDemandDenial::product_selection(
+                    error,
+                    format!("{}: scheduling product selection", selected.identity),
+                ))
+            }
             Err(error) if error.is_transient() => {
                 return Ok(WorthQueryOutputSchedulingResult::Deferred)
             }

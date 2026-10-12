@@ -152,7 +152,13 @@ where
             } else {
                 let retained = self
                     .select_application_read_observation_with_request(execution, retained_basis)
-                    .map_err(|_| {
+                    .map_err(|cause| {
+                        if cause.request_stop().is_some() {
+                            return WorthQueryOutputDemandDenial::product_selection(
+                                cause,
+                                Family::IDENTITY,
+                            );
+                        }
                         WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                             Family::IDENTITY,

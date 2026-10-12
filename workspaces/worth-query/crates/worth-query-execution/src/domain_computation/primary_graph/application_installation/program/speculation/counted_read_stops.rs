@@ -1,0 +1,128 @@
+use super::*;
+use crate::basis::WorthQueryProductBranchAdmissionDenial as Branch;
+use crate::domain_computation::{
+    WorthQueryProviderSessionControlStopKind as Control,
+    WorthQueryProviderSessionDenialKind as Kind,
+};
+use crate::facade::application_installation::{
+    in_memory_program, WorthQueryInMemoryApplicationLimits,
+};
+use worth_query_declaration::facade::application_program::*;
+use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
+use worth_query_declaration::facade::authentication::{
+    WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
+    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
+};
+
+worth_query_declaration::worth_query_application! {
+    PreviewSchema { owner: "worth.query.test.preview", version: (1, 0), contributions: [PreviewMembers], }
+}
+worth_query_declaration::worth_query_entity!(PreviewEntity for PreviewSchema);
+worth_query_declaration::worth_query_entity!(PreviewMapping for PreviewSchema);
+worth_query_declaration::worth_query_aspect!(MappingAspect for PreviewSchema, PreviewMapping; identity = AspectIdentity(0x720001), revision = AspectContractRevision(1),);
+worth_query_declaration::worth_query_aspect!(PrincipalAspect for PreviewSchema, PreviewEntity; identity = AspectIdentity(0x720002), revision = AspectContractRevision(1),);
+worth_query_declaration::worth_query_field!(MappingIdentity for PreviewSchema, PreviewMapping, MappingAspect: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
+worth_query_declaration::worth_query_field!(MappingStatus for PreviewSchema, PreviewMapping, MappingAspect: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
+worth_query_declaration::worth_query_field!(PrincipalIdentity for PreviewSchema, PreviewEntity, PrincipalAspect: u64 => U64ApplicationValueBinding, read_only, equality);
+worth_query_declaration::worth_query_relation!(MappingTarget in PreviewSchema, PreviewMapping => PreviewEntity; integrity = same_context_unbounded_retain_dangling);
+worth_query_declaration::worth_query_principal_binding!(PreviewBinding in PreviewSchema, mapping PreviewMapping {
+    identity: MappingIdentity, status: MappingStatus, target: MappingTarget => PreviewEntity, principal_identity: PrincipalIdentity
+});
+worth_query_declaration::worth_query_application_contribution! {
+    contribution PreviewMembers in PreviewSchema {
+        identity: "worth.query.test.preview-members", members: |builder| {
+            builder.entity(PreviewEntity::reference()).entity(PreviewMapping::reference())
+                .aspect(PreviewMapping::reference(), MappingAspect::reference())
+                .aspect(PreviewEntity::reference(), PrincipalAspect::reference())
+                .field(PreviewMapping::reference(), MappingIdentity::reference())
+                .field(PreviewMapping::reference(), MappingStatus::reference())
+                .field(PreviewEntity::reference(), PrincipalIdentity::reference())
+                .relation(MappingTarget::reference(), PreviewMapping::reference(), PreviewEntity::reference())
+                .principal_binding(PreviewBinding::reference())
+        }
+    }
+}
+impl crate::domain_computation::primary_graph::WorthQueryApplicationContribution<PreviewSchema>
+    for PreviewMembers
+{
+    type Configuration = ();
+    fn configure(
+        _: (),
+        _: &mut crate::domain_computation::primary_graph::WorthQueryApplicationContributionSetup<
+            '_,
+            PreviewSchema,
+        >,
+    ) -> Result<
+        (),
+        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+    > {
+        Ok(())
+    }
+}
+struct PreviewFeature;
+impl ApplicationFeature<PreviewSchema> for PreviewFeature {
+    type Inputs = ApplicationFeatureInputLeaf;
+    const IDENTITY: &'static str = "worth.query.test.preview-feature";
+}
+struct PreviewProgram;
+impl ApplicationProgramDefinition<PreviewSchema> for PreviewProgram {
+    type Contributions = (PreviewMembers,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.query.test.preview-program");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![ApplicationFeatureSpec::root::<PreviewSchema, PreviewFeature>().finish()]
+    }
+}
+
+#[test]
+fn begin_preview_preserves_admission_stops_at_every_consult() {
+    let program = ApplicationProgramAuthoring::<PreviewSchema, PreviewProgram>::begin()
+        .validated_program()
+        .unwrap();
+    let runtime = in_memory_program(
+        program, PreviewSchema::declaration().unwrap(), ((),),
+        WorthQueryInMemoryApplicationLimits::new(
+            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+            Default::default(), Default::default(),
+            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+        ),
+        |_, graph, installed| {
+            let binding = installed.principal_binding(PreviewBinding::reference()).unwrap();
+            graph.bind_principal(&binding, crate::domain_computation::primary_graph::WorthQueryApplicationPrincipalKey::new("preview-owner").unwrap(), 1_u64,
+                WorthQueryExternalPrincipalIdentity::new("preview", "owner").unwrap(), WorthQueryPrincipalMappingStatus::Enabled)?;
+            Ok(())
+        },
+    ).unwrap();
+    let observation = runtime
+        .with_host_advancement(|phase| {
+            runtime
+                .on_branch(runtime.current_world())
+                .select(&phase)
+                .unwrap()
+                .retain_application_read()
+        })
+        .unwrap();
+    let identity = std::cell::Cell::new(0);
+    crate::test_read_stops::every_advancement_consult(
+        |request, ceiling| runtime.with_application_advancement(request, |phase| {
+            let ordinal = identity.get();
+            identity.set(ordinal + 1);
+            phase.execution_request_for(&runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| {
+                runtime.begin_preview(&phase, &observation, WorthQueryApplicationPreviewRequest::new(format!("counted-preview-{ordinal}")))
+                .map(|session| session.discard().unwrap())
+                .inspect_err(|denial| {
+                    if let WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(cause) = denial {
+                        assert!(!cause.is_transient(), "a request stop cannot defer admission");
+                    }
+                })
+            }).unwrap().0
+        }).unwrap(),
+        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::ReadExecution(Err(Control::Cancelled))),
+        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::ReadExecution(Ok(Kind::ExecutionResource {
+            denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted,
+            partition_identity: None, policy_ancestor: None,
+        }))),
+    );
+}

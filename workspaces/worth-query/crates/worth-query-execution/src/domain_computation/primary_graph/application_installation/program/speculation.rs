@@ -18,6 +18,9 @@ pub struct WorthQueryApplicationPreviewRequest {
     identity: String,
 }
 
+#[cfg(test)]
+mod counted_read_stops;
+
 impl WorthQueryApplicationPreviewRequest {
     pub fn new(identity: impl Into<String>) -> Self {
         Self {
@@ -75,14 +78,15 @@ impl WorthQueryApplicationPreviewSession {
         {
             Ok(current) => current,
             Err(cause) => {
+                if cause.request_stop().is_some() {
+                    let _ = self.discard_active();
+                    return Err(
+                        WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(cause),
+                    );
+                }
                 self.discard_active()
                     .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
-                return Err(match cause {
-                    crate::basis::WorthQueryProductBranchAdmissionDenial::ReadExecution(_)
-                    | crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCancelled
-                    | crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationDeadlineExceeded => WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(cause),
-                    _ => WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable,
-                });
+                return Err(WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable);
             }
         };
         if current.product().selected_commit() != &self.source_commit {
@@ -179,6 +183,9 @@ where
         let selected = self
             .select_application_read_observation_with_request(execution, observation)
             .map_err(|denial| match denial {
+                cause if cause.request_stop().is_some() => {
+                    WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(cause)
+                }
                 crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignOwner => {
                     WorthQueryApplicationPreviewReadmissionDenial::ForeignObservation
                 }

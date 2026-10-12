@@ -20,6 +20,7 @@ mod graph_work_capacity;
 mod identity_convergence;
 mod lifecycle;
 mod lifecycle_mutations;
+mod observed_source_fixture;
 mod optional_result_presence;
 mod ordering_support;
 mod planning_budget;
@@ -29,6 +30,7 @@ mod root_selection;
 mod runtime_support;
 mod scope_liveness;
 mod shared_basis;
+pub(in crate::domain_computation::primary_graph) use observed_source_fixture::observed_account_source;
 
 fn installed_query(
     world: &super::fixture::AuthorizationWorld,

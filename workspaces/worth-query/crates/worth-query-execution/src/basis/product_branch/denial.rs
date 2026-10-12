@@ -2,7 +2,7 @@
 ///
 /// Returned when a request, read, or mutation names a product branch that the
 /// owning runtime cannot observe now. The refusal happens before any effect.
-/// Use [`Self::is_transient`] to tell capacity, cancellation, deadline, and
+/// Use [`Self::is_transient`] to tell capacity and
 /// availability causes (retry later) from a branch that is foreign, retired, or
 /// rejected (choose another branch).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -69,13 +69,27 @@ impl std::fmt::Display for WorthQueryProductBranchAdmissionDenial {
 impl std::error::Error for WorthQueryProductBranchAdmissionDenial {}
 
 impl WorthQueryProductBranchAdmissionDenial {
+    pub(crate) const fn request_stop(
+        self,
+    ) -> Option<
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    > {
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+        match self {
+            Self::ReadExecution(cause) => Some(cause),
+            Self::ObservationCancelled => Some(Err(Control::Cancelled)),
+            Self::ObservationDeadlineExceeded => Some(Err(Control::TimedOut)),
+            _ => None,
+        }
+    }
+
     pub const fn is_transient(self) -> bool {
         matches!(
             self,
-            Self::ReadExecution(_)
-                | Self::OwnerUnavailable
-                | Self::ObservationCancelled
-                | Self::ObservationDeadlineExceeded
+            Self::OwnerUnavailable
                 | Self::ObservationCapacityExhausted
                 | Self::CustodyCapacityExhausted
                 | Self::ObservationStaleSourceHead

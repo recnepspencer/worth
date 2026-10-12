@@ -34,6 +34,66 @@ pub(crate) fn every_consult<T: Eq + Debug, E: Eq + Debug>(
         );
         (answer, report.charged_work(), count)
     };
+    assert_every_consult(run, cancelled, exhausted);
+}
+
+/// The same counted oracle for doors borrowing their request from a phase.
+pub(crate) fn every_advancement_consult<T: Eq + Debug, E: Eq + Debug>(
+    door: impl Fn(
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        u64,
+    ) -> Result<T, E>,
+    cancelled: E,
+    exhausted: E,
+) {
+    use crate::facade::primary_graph::{
+        advancement_requests_on_this_thread_for_test,
+        bound_advancement_requests_on_this_thread_for_test,
+        place_managed_computations_on_this_thread_for_test, WorthQueryExecutionObservation,
+        WorthQueryExecutionPlacementForTest,
+    };
+    use worth_query_admission::facade::authenticated_principal::{
+        WorthQueryCancellationSource, WorthQueryRequestScope,
+    };
+    let run = |k: Option<usize>, ceiling: u64| {
+        let _guard = WorthQueryExecutionObservation::install_on_this_thread();
+        place_managed_computations_on_this_thread_for_test(
+            WorthQueryExecutionPlacementForTest::Serial,
+        );
+        bound_advancement_requests_on_this_thread_for_test(Some(
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                64 * 1024 * 1024,
+                100_000,
+            ),
+        ));
+        let source = WorthQueryCancellationSource::new();
+        let request = WorthQueryRequestScope::new(None, source.token());
+        let (answer, count) = with_request_consult_observer_for_test(
+            move |at| {
+                if Some(at) == k {
+                    source.cancel();
+                }
+            },
+            || door(&request, ceiling),
+        );
+        let reports = advancement_requests_on_this_thread_for_test();
+        let work = reports
+            .last()
+            .expect("door opened its request")
+            .as_ref()
+            .unwrap()
+            .charged_work();
+        (answer, work, count)
+    };
+    assert_every_consult(run, cancelled, exhausted);
+}
+
+fn assert_every_consult<T: Eq + Debug, E: Eq + Debug>(
+    run: impl Fn(Option<usize>, u64) -> (Result<T, E>, u64, usize),
+    cancelled: E,
+    exhausted: E,
+) {
     let (healthy, work, count) = run(None, 100_000);
     assert_ne!(
         healthy.as_ref().err(),

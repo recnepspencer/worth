@@ -274,7 +274,17 @@ impl WorkflowOperationAuthority {
         let selected = runtime
             .on_branch(self.observation.product_branch())
             .select_with_request(execution)
-            .map_err(|_| mismatch())?;
+            .map_err(|denial| match denial.request_stop() {
+                Some(cause) => WorthQueryApplicationAttemptDenial::new(
+                    match cause {
+                        Ok(kind) => WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind),
+                        Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,
+                        Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
+                    },
+                    "workflow operation authority",
+                ),
+                None => mismatch(),
+            })?;
         let current =
             WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
         if !self.observation.same_branch_occurrence(&current) {

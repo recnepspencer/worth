@@ -5,6 +5,8 @@ use std::sync::{mpsc, Mutex};
 use std::time::Duration;
 use worth_runtime_bridge::facade::*;
 
+mod counted_read_stops;
+
 struct Compute;
 struct Block {
     entered: mpsc::SyncSender<()>,

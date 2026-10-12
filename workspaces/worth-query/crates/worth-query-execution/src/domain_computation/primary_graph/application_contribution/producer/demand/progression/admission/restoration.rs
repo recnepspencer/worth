@@ -100,7 +100,13 @@ where
         let selected = self
             .on_branch(source_read.product_branch())
             .select_with_request(execution)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::Superseded, ""))?;
+            .map_err(|cause| {
+                if cause.request_stop().is_some() {
+                    WorthQueryOutputDemandDenial::product_selection(cause, "")
+                } else {
+                    denial(WorthQueryOutputDemandDenialKind::Superseded, "")
+                }
+            })?;
         admission
             .charge_external_work(4)
             .map_err(restoration_resource_denial)?;
