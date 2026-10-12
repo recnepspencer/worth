@@ -13,6 +13,21 @@ where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
     Owned: TestOwner<Tested>,
 {
+    attempt_billed(world, installed, prior, request, placement, None)
+}
+
+pub(super) fn attempt_billed<Tested, Owned>(
+    world: &AuthorizationWorld,
+    installed: &WorthQueryInstalledPartitionedComputation<Schema, Feature, Tested, Owned>,
+    prior: Option<ComputationPrior>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    placement: RuntimeWorldExecutionPlacement<'_>,
+    ceiling: Option<u64>,
+) -> Attempt
+where
+    Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
+    Owned: TestOwner<Tested>,
+{
     let principal = authenticated_principal(world, request);
     let account = resolved_account(world, "open", request);
     let operation = world
@@ -36,14 +51,29 @@ where
     ComputationPrior::hand_in_test(prior);
     SealedComputationRun::keep_in_test(None);
     let mut outcome = None;
+    let mut bill = None;
     let completed = world.invariant.project_admitted_operation(
         &admission,
         |reader, root| {
             outcome = Some((|| -> Outcome {
                 let execution = QueryRequestExecution::open(placement, request);
-                let computed = installed
-                    .prepare_through(reader, &execution, root)?
-                    .compute(WorthQueryManagedComputationExecution::new(&execution))?;
+                let prepared = installed.prepare_through(reader, &execution, root)?;
+                let compute =
+                    || prepared.compute(WorthQueryManagedComputationExecution::new(&execution));
+                let computed = if let Some(ceiling) = ceiling {
+                    let (computed, report) = execution
+                        .execution_request()
+                        .unwrap()
+                        .run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| {
+                            compute()
+                        })
+                        .unwrap();
+                    bill = Some(report);
+                    computed
+                } else {
+                    compute()
+                };
+                let computed = computed?;
                 let charged = computed.charged_work();
                 Ok((computed.complete()?, charged))
             })());
@@ -95,6 +125,14 @@ where
     gathered.sort_unstable();
     Attempt {
         outcome,
+        bill: bill.unwrap_or_else(|| {
+            ExecutionReport::new(
+                worth_foundational::ExecutionPosture::Serial,
+                0,
+                0,
+                Default::default(),
+            )
+        }),
         work,
         runs: runs(),
         tree_runs: tree_runs(),

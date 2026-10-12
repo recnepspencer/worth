@@ -33,6 +33,7 @@ pub use test_authority::query_test_execution_authority_for_test;
 type Resource = WorthQueryManagedComputationResourceDenial;
 
 mod descendants;
+mod tree_charge;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
 pub(in crate::domain_computation::primary_graph) mod advancement;
 pub(in crate::domain_computation::primary_graph) use advancement::{

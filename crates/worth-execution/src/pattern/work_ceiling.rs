@@ -28,6 +28,29 @@ pub enum WorkCeilingDenial {
 }
 
 impl ExecutionWorkCeiling {
+    /// Run one dependent stage, lending its checked checkpoint to the stage
+    /// owner. Descendant reports and the owner's admitted cost settle together.
+    pub fn run_with_checkpoint<R>(
+        self,
+        lease: Option<&ExecutionResourceLease<'_>>,
+        serial: Option<&SerialRequest>,
+        computation: impl FnOnce(&mut crate::MapKernelContext<'_, '_>) -> R,
+    ) -> Result<(R, ExecutionReport), WorkCeilingDenial> {
+        let mut value = None;
+        let outcome = run_scope_within::<(), (), _>(lease, 0, 0, true, self.0, serial, |context| {
+            value = Some(computation(context));
+            Ok(())
+        });
+        match (value, outcome.result) {
+            (Some(value), _) => Ok((value, outcome.report)),
+            (None, Err(ScopeStop::Admission(denial))) => Err(WorkCeilingDenial::Admission(denial)),
+            (None, Err(ScopeStop::Failure(KernelFailure::Stop(stop)))) => {
+                Err(WorkCeilingDenial::Stopped(stop))
+            }
+            (None, _) => Err(WorkCeilingDenial::Panicked),
+        }
+    }
+
     /// Runs a sealed diagnostic on its own meter. Its report and stops never
     /// reach the invoking request; the caller drops this diagnostic's bill.
     pub fn run_detached_for_test<R>(

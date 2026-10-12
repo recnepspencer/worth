@@ -177,6 +177,7 @@ fn edition() -> InstalledProducerEdition {
 /// parities it gathered, and the run seal kept, or the seal's refusal.
 struct Attempt {
     outcome: Outcome,
+    bill: ExecutionReport,
     /// The work the projection's reader charged.
     work: crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork,
     runs: Vec<(Run, Option<ExecutionReport>)>,
@@ -294,6 +295,7 @@ fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
     first
 }
 
+mod advancement_charge;
 mod carrying;
 mod certified;
 mod collision;

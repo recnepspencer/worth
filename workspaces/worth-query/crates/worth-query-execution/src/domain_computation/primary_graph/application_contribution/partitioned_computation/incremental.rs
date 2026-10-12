@@ -186,6 +186,14 @@ where
     // The installation fixes the state's type, so its own owner's state
     // always downcasts.
     let prior = TypedPrior::from_state(Arc::clone(&retained));
+    if prior
+        .typed()
+        .partitions
+        .values()
+        .any(|partition| partition.kernel_span.is_none())
+    {
+        return full(basis, WorthQueryPartitionedComputationFullCause::Unmeasured);
+    }
     let mut run = IncrementalRun {
         basis,
         prior,

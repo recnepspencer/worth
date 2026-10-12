@@ -20,7 +20,7 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
             match disposition {
                 Disposition::Carried(_) => {} // The prior's state custody remains held.
                 Disposition::Recomputed(Recomputed {
-                    map,
+                    value,
                     key: _,
                     key_bytes,
                     gather,
@@ -28,7 +28,8 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
                 }) => {
                     bytes = bytes
                         .saturating_add(
-                            map.additional_charged_bytes()
+                            value
+                                .additional_charged_bytes()
                                 .saturating_sub(memory.held_bytes()),
                         )
                         .saturating_add(*key_bytes)

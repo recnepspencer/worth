@@ -8,6 +8,23 @@ pub(crate) enum StructuralSpanFailure {
 }
 
 impl KernelContext<'_, '_> {
+    /// The work and structural span already admitted on this kernel.
+    pub fn charged_cost(&self) -> (u64, u64) {
+        self.cost()
+    }
+
+    /// Admit a retained or declared stage's work and its dependency span.
+    /// The same checkpoint enforces the work ceiling before either advances.
+    pub fn checkpoint_cost(&mut self, work: u64, span: u64) -> Result<(), super::KernelStop> {
+        if span > work {
+            return Err(super::KernelStop::work_counter_overflow());
+        }
+        let before = self.cost();
+        self.checkpoint(work)?;
+        self.apply_structural_span(before, work, span)
+            .map_err(|_| super::KernelStop::work_counter_overflow())
+    }
+
     /// Replace a completed stage's sequential span with its proven dependency
     /// span. Work remains the exact checkpoint count.
     pub(crate) fn apply_structural_span(

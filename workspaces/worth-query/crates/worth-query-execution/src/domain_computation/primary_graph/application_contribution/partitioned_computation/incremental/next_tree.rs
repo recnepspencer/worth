@@ -1,6 +1,8 @@
 //! The next tree of an incremental run: every partition carried or computed
 //! again, in a full run's order and with a full run's charges.
 
+mod partition_wave;
+mod preparation;
 mod transport;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -25,10 +27,7 @@ use super::super::items::{ItemDigests, Items};
 use super::super::plan::GatheredComputationPartition;
 use super::super::remaining_work::RemainingWork;
 use super::super::routing::ComputationPartitionRouting;
-use super::super::{
-    WorthQueryComputationPartitionStop, WorthQueryDeterministicReducer,
-    WorthQueryPartitionedComputationDenial,
-};
+use super::super::{WorthQueryDeterministicReducer, WorthQueryPartitionedComputationDenial};
 use super::observed::{observe, observe_tree};
 use super::retained::{
     CarriedCalls, CompletedComputationRun, RetainedBasis, RetainedCall, RetainedPartition,
@@ -41,12 +40,11 @@ use crate::domain_computation::primary_graph::invariant_projection::ComputationC
 
 /// One marked partition, gathered again for its kernel.
 struct Recomputed<Key, Gathered> {
-    map: ExecutionMap<GatheredComputationPartition<Key, Gathered>, u64>,
+    value: GatheredComputationPartition<Key, Gathered>,
     key: Arc<Key>,
     key_bytes: u64,
     gather: Option<ComputationCallCharge>,
-    /// The request memory its gathering holds until its map's admission
-    /// takes it over.
+    /// The request memory keeps gathered data held while the wave borrows it.
     memory: GatheredMemory,
 }
 
@@ -97,85 +95,14 @@ where
     Key: Send + Sync + 'static,
     Gathered: Send + Sync + worth_execution::ChargedBytes,
 {
-    pub(super) fn new(
-        remaining_work: RemainingWork,
-        declared_bytes: u64,
-        basis: RetainedBasis,
-        prior: TypedPrior<Key, Item, Reduced>,
-        next: NextPartitioning<Item>,
-    ) -> Self {
-        Self {
-            remaining_work,
-            declared_bytes,
-            partitions: BTreeMap::new(),
-            next,
-            basis,
-            prior,
-        }
-    }
-
-    pub(in super::super) const fn remaining_work(&self) -> RemainingWork {
-        self.remaining_work
-    }
-
-    /// Carries one partition's gathering and kernel from the retained run.
-    pub(super) fn carried(
-        &mut self,
-        identity: PartitionIdentity,
-        partition: &Arc<RetainedPartition<Key>>,
-    ) {
-        self.partitions
-            .insert(identity, Disposition::Carried(Arc::clone(partition)));
-    }
-
-    /// Readies one marked partition's kernel.
-    pub(super) fn gathered<Stopped>(
-        &mut self,
-        identity: PartitionIdentity,
-        key: Arc<Key>,
-        key_bytes: u64,
-        members: Arc<[PartitionItemId]>,
-        gathered: Gathered,
-        gather: Option<ComputationCallCharge>,
-        mut memory: GatheredMemory,
-    ) -> Result<(), WorthQueryPartitionedComputationDenial<Stopped>> {
-        let value = GatheredComputationPartition {
-            identity,
-            key: Arc::clone(&key),
-            items: members,
-            gathered,
-        };
-        memory.after_gather(&value)?;
-        let map = ExecutionMap::from_keyless_partitions(BTreeMap::from([(
-            identity,
-            KeylessPartition {
-                value,
-                kernel_scratch_bytes: 0,
-                max_result_bytes: self.declared_bytes,
-            },
-        )]))
-        .map_err(WorthQueryPartitionedComputationDenial::from_map_overflow)?;
-        self.partitions.insert(
-            identity,
-            Disposition::Recomputed(Recomputed {
-                map,
-                key,
-                key_bytes,
-                gather,
-                memory,
-            }),
-        );
-        Ok(())
-    }
-
-    /// Computes the marked partitions and builds the next tree from the
-    /// retained one. A carried kernel is charged its retained work in its
-    /// place among this run's partitions; a recomputed result with the
+    /// Settles every partition through one independent map, computing only
+    /// marked partitions. Carried kernels contribute retained work and span;
+    /// a recomputed result with the
     /// retained result's canonical bits replaces nothing, a new partition's
     /// is a new leaf, and a partition the run no longer has leaves the
     /// tree. A recomputed kernel's work
-    /// is execution's report of its one-partition map, run on its own
-    /// dispatch of the request's execution.
+    /// is execution's admitted receipt in that same wave. The private declared
+    /// budget spends that receipt, which also settles on the member meter.
     pub(in super::super) fn compute<Stopped, Kernel>(
         self,
         execution: &QueryRequestExecution<'_>,
@@ -210,12 +137,6 @@ where
             prior,
         } = self;
         let retained = prior.typed();
-        let exhausted = |partition| WorthQueryPartitionedComputationDenial::Partition {
-            partition,
-            cause: WorthQueryComputationPartitionStop::Resource(
-                WorthQueryManagedComputationResourceDenial::WorkExhausted,
-            ),
-        };
         let mut remaining = remaining_work;
         let mut partitions = BTreeMap::new();
         let mut carried = BTreeSet::new();
@@ -235,60 +156,51 @@ where
         let plan = ReductionPlan::from_canonical(CanonicalUniqueVec::from_btree_set(
             dispositions.keys().copied().collect(),
         ));
+        let all_results = u64::try_from(
+            dispositions
+                .values()
+                .filter(|disposition| matches!(disposition, Disposition::Recomputed(_)))
+                .count(),
+        )
+        .ok()
+        .and_then(|count| count.checked_mul(result_bound))
+        .ok_or(WorthQueryPartitionedComputationDenial::Resource(
+            WorthQueryManagedComputationResourceDenial::CapacityOverflow,
+        ))?;
+        results_memory
+            .grow(all_results)
+            .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+        let settled_wave = partition_wave::run(
+            &dispositions,
+            retained,
+            execution,
+            remaining.remaining(),
+            declared_bytes,
+            &kernel,
+            transport,
+        )?;
+        remaining.spend(Some(settled_wave.work)).map_err(|_| {
+            WorthQueryPartitionedComputationDenial::Resource(
+                WorthQueryManagedComputationResourceDenial::WorkExhausted,
+            )
+        })?;
+        let mut values = settled_wave.values;
+        let costs = settled_wave.costs;
+        let mut results_held = 0_u64;
         for (identity, disposition) in dispositions {
+            let (units, span) = costs[&identity];
             let marked = match disposition {
                 Disposition::Carried(partition) => {
-                    remaining
-                        .spend(Some(partition.kernel_units))
-                        .map_err(|_| exhausted(identity))?;
                     partitions.insert(identity, partition);
                     carried.insert(identity);
                     continue;
                 }
                 Disposition::Recomputed(marked) => marked,
             };
-            let dispatch = execution
-                .dispatch()
-                .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-            // The result's bound is held before its map runs, so the result
-            // never exists unreserved; it settles to the result's own bytes.
-            let settled = results_memory.bytes();
-            results_memory
-                .grow(result_bound)
-                .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-            // The map's admission takes over the gathered partition's hold.
-            let (value, units) = transport.call(|| {
-                let outcome = dispatch
-                    .map(
-                        remaining.remaining(),
-                        &marked.map,
-                        marked.memory.into_held(),
-                        &kernel,
-                    )
-                    .map_err(|denial| {
-                        // Only the map runs under this ceiling, and it contains
-                        // its kernel's panics: what is left is the kernel's.
-                        WorthQueryPartitionedComputationDenial::from_work_ceiling(
-                            denial,
-                            WorthQueryPartitionedComputationDenial::Partition {
-                                partition: identity,
-                                cause: WorthQueryComputationPartitionStop::Panicked,
-                            },
-                        )
-                    })?;
-                match outcome {
-                    MapOutcome::Complete { mut values, report } => Ok((
-                        values.pop().expect("one partition yields one result"),
-                        report.charged_work(),
-                    )),
-                    MapOutcome::Stopped { reason, .. } => Err(
-                        WorthQueryPartitionedComputationDenial::from_map_stop(reason),
-                    ),
-                }
-            })?;
-            remaining
-                .spend(Some(units))
-                .map_err(|_| exhausted(identity))?;
+            let value = values
+                .remove(&identity)
+                .expect("every recomputed partition settles once");
+            let settled = results_held;
             // A partition the retained tree does not hold is a new leaf.
             let replaced = retained
                 .tree
@@ -303,8 +215,7 @@ where
             } else {
                 Ok(settled)
             };
-            kept.and_then(|bytes| results_memory.resize(bytes))
-                .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+            results_held = kept.map_err(WorthQueryPartitionedComputationDenial::Resource)?;
             if replaced {
                 results.insert(identity, value);
             }
@@ -315,41 +226,84 @@ where
                         key_bytes: marked.key_bytes,
                         gather,
                         kernel_units: units,
+                        kernel_span: Some(span),
                     };
                     partitions.insert(identity, Arc::new(partition));
                 }
                 None => gathers_measured = false,
             }
         }
+        results_memory
+            .resize(results_held)
+            .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         // The combines a full build of this run's tree charges, from its
         // shape alone, by the reduce's own rule.
         let reduction_work = plan.checked_build_work();
-        let tree = next_tree(
-            retained,
-            plan,
-            reduction_work,
-            results,
-            remaining.remaining(),
-            declared_bytes,
-            reducer,
-            execution,
-            &mut results_memory,
-        );
-        observe_tree(tree.report);
-        let tree = tree.outcome?;
+        let (tree, tree_bill) = transport.call(|| {
+            execution
+                .dispatch()
+                .map_err(WorthQueryPartitionedComputationDenial::Resource)?
+                .tree_stage(remaining.remaining(), |context| {
+                    let tree = next_tree(
+                        retained,
+                        plan,
+                        reduction_work,
+                        results,
+                        context.remaining_work().min(remaining.remaining()),
+                        declared_bytes,
+                        reducer,
+                        execution,
+                        &mut results_memory,
+                    );
+                    observe_tree(tree.report);
+                    let (work, span) = if let Ok(completed) = &tree.outcome {
+                        completed
+                            .checked_full_build_cost()
+                            .expect("a completed build has bounded cost")
+                    } else {
+                        let metrics = tree.report.metrics_for_test();
+                        (
+                            u64::try_from(metrics.charged_work).unwrap_or(u64::MAX),
+                            u64::try_from(metrics.charged_span).unwrap_or(u64::MAX),
+                        )
+                    };
+                    context
+                        .checkpoint_cost(work, span)
+                        .map_err(WorthQueryPartitionedComputationDenial::from_kernel_stop)?;
+                    if work == context.charged_cost().0
+                        && tree.outcome.is_err()
+                        && context.remaining_work() == 0
+                    {
+                        let _ = context.checkpoint(1);
+                    }
+                    tree.outcome
+                })
+                .map_err(|denial| {
+                    WorthQueryPartitionedComputationDenial::from_work_ceiling(
+                        denial,
+                        WorthQueryPartitionedComputationDenial::ReducerPanicked,
+                    )
+                })
+                .and_then(|(outcome, report)| outcome.map(|tree| (tree, report)))
+        })?;
+        remaining
+            .spend(Some(tree_bill.charged_work()))
+            .map_err(|_| {
+                WorthQueryPartitionedComputationDenial::Resource(
+                    WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                )
+            })?;
         // The results are the tree's now: the hold settles to what the tree
         // keeps, as a full run's tree is handed over when its run ends.
         kept_tree_bytes(&tree)
             .ok_or(WorthQueryManagedComputationResourceDenial::CapacityOverflow)
             .and_then(|bytes| results_memory.resize(bytes))
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-        let computed_work = remaining
-            .spent_since(remaining_work)
-            .zip(reduction_work)
-            .and_then(|(kernels, combines)| kernels.checked_add(combines))
-            .ok_or(WorthQueryPartitionedComputationDenial::Resource(
+        let computed_work = remaining.spent_since(remaining_work).ok_or(
+            WorthQueryPartitionedComputationDenial::Resource(
                 WorthQueryManagedComputationResourceDenial::WorkExhausted,
-            ))?;
+            ),
+        )?;
         let reduced = tree.result().clone();
         // A call made again whose charge did not measure cannot be carried
         // again, so the run retains nothing.

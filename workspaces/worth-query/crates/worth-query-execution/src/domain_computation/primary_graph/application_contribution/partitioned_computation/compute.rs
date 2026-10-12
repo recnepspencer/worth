@@ -6,7 +6,7 @@ mod transport;
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-use worth_execution::{ExecutionMap, MapKernelContext, MapKernelStop};
+use worth_execution::{ExecutionMap, MapKernelContext};
 use worth_query_declaration::facade::application_program::{
     ApplicationFeature, ApplicationManagedComputation,
 };
@@ -144,13 +144,9 @@ where
         let kernel_units = Mutex::new(BTreeMap::new());
         let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                       context: &mut MapKernelContext<'_, '_>| {
-            let mut spent = 0_u64;
             let (computed, refused) = {
                 let mut charge = |work| {
                     context.checkpoint(work)?;
-                    spent = spent
-                        .checked_add(work)
-                        .ok_or(MapKernelStop::WorkCounterOverflow)?;
                     Ok(())
                 };
                 let mut checkpoint =
@@ -164,7 +160,7 @@ where
             kernel_units
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .insert(partition.identity, spent);
+                .insert(partition.identity, context.charged_cost());
             match refused {
                 Some(refused) => Err(kernel_failure(refused.into())),
                 None => computed.map_err(kernel_failure),

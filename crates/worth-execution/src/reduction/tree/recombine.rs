@@ -129,6 +129,12 @@ fn make_node<T: ChargedBytes, E>(
 ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
     let retained_bytes = node_bytes(&value, &aggregate, &left, &right)
         .ok_or(ReductionRunStop::ResultCapacityExceeded)?;
+    let full_subtree_span = left
+        .as_ref()
+        .map_or(0, |node| node.full_subtree_span)
+        .max(right.as_ref().map_or(0, |node| node.full_subtree_span))
+        .checked_add(4)
+        .ok_or_else(ReductionRunStop::work_counter_overflow)?;
     Ok(Arc::new(Node {
         identity,
         value,
@@ -136,6 +142,7 @@ fn make_node<T: ChargedBytes, E>(
         left,
         right,
         retained_bytes,
+        full_subtree_span,
     }))
 }
 

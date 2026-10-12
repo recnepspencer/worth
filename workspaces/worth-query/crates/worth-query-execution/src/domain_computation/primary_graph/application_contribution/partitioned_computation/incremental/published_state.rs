@@ -156,6 +156,7 @@ impl WorthQueryPublishedComputationStateForTest {
                     same_key(&partition.key, &next.key)
                         && partition.key_bytes == next.key_bytes
                         && partition.kernel_units == next.kernel_units
+                        && partition.kernel_span == next.kernel_span
                         && a.tree.leaf(*identity).map(bits) == b.tree.leaf(*identity).map(bits)
                 })
             })
